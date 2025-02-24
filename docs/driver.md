@@ -134,14 +134,14 @@ All drivers MUST provide the following methods:
 
 - `setup()`: This is a special method that has two purposes:
 
-    o Any arguments in the definition of the method are used to
+    - Any arguments in the definition of the method are used to
       auto-generate a user interface. For example, if the setup()
       method ist defined as `setup(self, hostname: str)`, then
       Rayforge will use the type hint to offer the user a UI
       for entering a hostname.
       **Only `str`, `int`, and `bool` types are supported.**
 
-    o `setup()` is invoked after the user has configured the
+    - `setup()` is invoked after the user has configured the
        driver in the UI.
 
   Example:
