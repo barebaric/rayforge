@@ -1,6 +1,6 @@
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from .. import __version__
-from ..asyncloop import run_async
+from ..task import task_mgr
 from ..config import config
 from ..driver import get_driver_cls
 from ..driver.driver import driver_mgr, DeviceStatus
@@ -17,6 +17,7 @@ from .statusview import ConnectionStatusMonitor, \
                         MachineStatusMonitor
 from .machineview import MachineView
 from .machinesettings import MachineSettingsDialog
+from .progress import TaskProgressBar
 
 
 css = """
@@ -32,6 +33,22 @@ css = """
 
 .statusbar:hover {
     background-color: @theme_hover_bg_color;
+}
+
+/* Style for the progress bar */
+.statusbar > progressbar {
+    background-color: alpha(@theme_fg_color, 0.1);
+    border-color: alpha(@theme_fg_color, 0.3);
+}
+
+/* Style for the progress bar's trough */
+.statusbar > progressbar > trough {
+    background-color: alpha(@theme_fg_color, 0.2);
+}
+
+/* Style for the progress bar's progress indicator */
+.statusbar > progressbar > trough > progress {
+    background-color: alpha(@theme_fg_color, 0.4);
 }
 """
 
@@ -200,18 +217,40 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create a status bar.
         status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        status_bar.set_halign(Gtk.Align.END)
+        status_bar.set_hexpand(True)
+        status_bar.set_halign(Gtk.Align.FILL)
         status_bar.set_margin_end(12)
         status_bar.get_style_context().add_class("statusbar")
         vbox.append(status_bar)
 
+        # Add the TaskProgressBar to the status bar
+        self.progress_bar = TaskProgressBar(task_mgr)
+        status_bar.append(self.progress_bar)
+
+        # Machine and connection status box.
+        status_box_outer = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=6
+        )
+        status_box_outer.set_size_request(500, -1)
+        status_box_outer.set_hexpand(False)
+        status_bar.append(status_box_outer)
+
+        status_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=6
+        )
+        status_box.set_halign(Gtk.Align.END)
+        status_box.set_hexpand(True)
+        status_box_outer.append(status_box)
+
         # Monitor machine status
         label = Gtk.Label()
         label.set_markup("<b>Machine status:</b>")
-        status_bar.append(label)
+        status_box.append(label)
 
         self.machine_status = MachineStatusMonitor()
-        status_bar.append(self.machine_status)
+        status_box.append(self.machine_status)
         self.machine_status.changed.connect(
             self.on_machine_status_changed
         )
@@ -220,10 +259,10 @@ class MainWindow(Adw.ApplicationWindow):
         label = Gtk.Label()
         label.set_markup("<b>Connection status:</b>")
         label.set_margin_start(12)
-        status_bar.append(label)
+        status_box.append(label)
 
         self.connection_status = ConnectionStatusMonitor()
-        status_bar.append(self.connection_status)
+        status_box.append(self.connection_status)
         self.connection_status.changed.connect(
             self.on_connection_status_changed
         )
@@ -243,7 +282,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Reconfigure, because params may have changed.
         driver_cls = get_driver_cls(config.machine.driver)
         try:
-            run_async(driver_mgr.select_by_cls(
+            task_mgr.add_coroutine(driver_mgr.select_by_cls(
                 driver_cls,
                 **config.machine.driver_args
             ))
@@ -261,7 +300,7 @@ class MainWindow(Adw.ApplicationWindow):
             device_status = self.machine_status.get_status()
             if device_status == DeviceStatus.IDLE:
                 self.needs_homing = False
-                run_async(driver_mgr.driver.home())
+                task_mgr.add_coroutine(driver_mgr.driver.home())
 
         self.update_state()
 
@@ -395,7 +434,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.save(self, None, self.on_save_dialog_response)
 
     def on_home_clicked(self, button):
-        run_async(driver_mgr.driver.home())
+        task_mgr.add_coroutine(driver_mgr.driver.home())
 
     def on_frame_clicked(self, button):
         try:
@@ -411,22 +450,22 @@ class MainWindow(Adw.ApplicationWindow):
             speed=config.machine.max_travel_speed
         )
         frame *= 20  # cycle 20 times
-        run_async(driver_mgr.driver.run(frame, config.machine))
+        task_mgr.add_coroutine(driver_mgr.driver.run(frame, config.machine))
 
     def on_send_clicked(self, button):
         ops = self.doc.workplan.execute()
-        run_async(driver_mgr.driver.run(ops, config.machine))
+        task_mgr.add_coroutine(driver_mgr.driver.run(ops, config.machine))
 
     def on_hold_clicked(self, button):
         if button.get_active():
-            run_async(driver_mgr.driver.set_hold())
+            task_mgr.add_coroutine(driver_mgr.driver.set_hold())
             button.set_child(self.hold_on_icon)
         else:
-            run_async(driver_mgr.driver.set_hold(False))
+            task_mgr.add_coroutine(driver_mgr.driver.set_hold(False))
             button.set_child(self.hold_off_icon)
 
     def on_cancel_clicked(self, button):
-        run_async(driver_mgr.driver.cancel())
+        task_mgr.add_coroutine(driver_mgr.driver.cancel())
 
     def on_save_dialog_response(self, dialog, result):
         try:

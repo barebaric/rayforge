@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 from blinker import Signal
-from gi.repository import GLib
 from dataclasses import dataclass
 from enum import Enum, auto
 from ..transport import TransportStatus
+from ..util.glib import idle_add
 from ..models.ops import Ops
 from ..models.machine import Machine
 
@@ -34,15 +34,6 @@ class DeviceState:
     machine_pos: tuple[float, float, float] = None, None, None  # x, y, z in mm
     work_pos: tuple[float, float, float] = None, None, None  # x, y, z in mm
     feed_rate: int = None
-
-
-def _falsify(func, *args, **kwargs):
-    """
-    Wrapper for GLib.idle_add, as function must return False, otherwise it
-    is automatically rescheduled into the event loop.
-    """
-    func(*args, **kwargs)
-    return False
 
 
 class Driver(ABC):
@@ -137,38 +128,38 @@ class Driver(ABC):
         pass
 
     def _log(self, message: str):
-        GLib.idle_add(lambda: _falsify(
+        idle_add(
             self.log_received.send,
             self,
             message=message
-        ))
+        )
 
     def _on_state_changed(self):
-        GLib.idle_add(lambda: _falsify(
+        idle_add(
             self.state_changed.send,
             self,
             state=self.state
-        ))
+        )
 
     def _on_command_status_changed(self,
                                    status: TransportStatus,
                                    message: Optional[str] = None):
-        GLib.idle_add(lambda: _falsify(
+        idle_add(
             self.command_status_changed.send,
             self,
             status=status,
             message=message
-        ))
+        )
 
     def _on_connection_status_changed(self,
                                       status: TransportStatus,
                                       message: Optional[str] = None):
-        GLib.idle_add(lambda: _falsify(
+        idle_add(
             self.connection_status_changed.send,
             self,
             status=status,
             message=message
-        ))
+        )
 
 
 class DriverManager:
@@ -194,11 +185,11 @@ class DriverManager:
         await self._assign_driver(driver, **args)
 
     def _on_driver_changed(self):
-        GLib.idle_add(lambda: _falsify(
+        idle_add(
             self.changed.send,
             self,
             driver=self.driver
-        ))
+        )
 
     async def select_by_cls(self, driver_cls, **args):
         if self.driver and self.driver.__class__ == driver_cls:

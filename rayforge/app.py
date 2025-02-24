@@ -6,7 +6,7 @@ gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
 from gi.repository import Adw  # noqa: E402
 from .widgets.mainwindow import MainWindow  # noqa: E402
-from .asyncloop import shutdown  # noqa: E402
+from .task import task_mgr  # noqa: E402
 from .config import config_mgr  # noqa: E402
 
 
@@ -25,10 +25,6 @@ class App(Adw.Application):
             win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
 
         win.present()
-
-    def do_shutdown(self):
-        shutdown()
-        Adw.Application.do_shutdown(self)
 
 
 def main():
@@ -50,6 +46,7 @@ def main():
     args = parser.parse_args()
     app = App(args)
     app.run(None)
+    task_mgr.shutdown()
     config_mgr.save()
 
 

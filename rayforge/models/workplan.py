@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict
 from copy import deepcopy
-from ..asyncloop import run_async
+from ..task import task_mgr, CancelledError
 from ..config import config, getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
@@ -127,7 +127,7 @@ class WorkStep:
         if self.can_scale():
             # Size does not matter unless it is so small that rounding
             # errors become relevant. So to be able to handle very small
-            # images gracefull, we just assume a fixed size for the off
+            # images gracefully, we just assume a fixed size for the off
             # screen rendering. Later it is scaled for display anyway.
             size = 50, 50  # in mm
         else:  # Render at current size in canvas
@@ -136,7 +136,7 @@ class WorkStep:
                                        size=size,
                                        force=True)
 
-        # There is no guarantee that the renderer was able to delivered
+        # There is no guarantee that the renderer was able to deliver
         # the size we asked for. Check the actual size.
         width, height = surface.get_width(), surface.get_height()
         width_mm = width / self.pixels_per_mm[0]
@@ -176,18 +176,22 @@ class WorkStep:
 
     def update_workpiece(self, workpiece):
         key = id(self), id(workpiece)
-        run_async(self.execute_async(workpiece),
-                  self._on_ops_created,
-                  key=key)
+        task_mgr.add_coroutine(
+            self.execute_async(workpiece),
+            when_done=self._on_ops_created,
+            key=key
+        )
 
     def update_all_workpieces(self):
         for workpiece in self.workpiece_to_ops.keys():
-            self.update_workpiece()
+            self.update_workpiece(workpiece)
 
-    def _on_ops_created(self, result):
-        workpiece, ops, size = result
+    def _on_ops_created(self, task):
+        try:
+            workpiece, ops, size = task.result()
+        except CancelledError:
+            return
         self.ops_changed.send(self, workpiece=workpiece)
-        return False
 
     def get_ops(self, workpiece):
         """
@@ -214,7 +218,7 @@ class WorkStep:
 
     def dump(self, indent=0):
         print("  "*indent, self.name)
-        for workpiece in self.workpieces:
+        for workpiece in self.workpieces():
             workpiece.dump(1)
 
 
