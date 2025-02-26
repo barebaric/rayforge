@@ -121,7 +121,16 @@ class SVGRenderer(Renderer):
         # Adjust viewBox by applying the margin percentages
         viewbox_str = root.get("viewBox")
         if not viewbox_str:
-            return data  # not sure what to do in this case. bail out
+            # If no viewBox, use width and height as fallback
+            width_str = root.get("width")
+            height_str = root.get("height")
+            if width_str and height_str:
+                width = float(width_str)
+                height = float(height_str)
+                viewbox_str = f"0 0 {width} {height}"
+                root.set("viewBox", viewbox_str)
+            else:
+                return data  # Cannot crop without dimensions
 
         vb_x, vb_y, vb_w, vb_h = map(float, viewbox_str.split())
         new_x = vb_x + left_pct * vb_w
