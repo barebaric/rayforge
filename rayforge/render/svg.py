@@ -1,7 +1,12 @@
 import re
 import io
+import math
 import cairo
 import cairosvg
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 from xml.etree import ElementTree as ET
 from PIL import Image
 from .renderer import Renderer
@@ -71,6 +76,42 @@ class SVGRenderer(Renderer):
     @classmethod
     def render_workpiece(cls, data, width=None, height=None):
         return cls._render_data(data, width, height)
+
+    @classmethod
+    def render_chunk(cls, data, chunk_width=32000, chunk_height=32000):
+        # Render SVG to pyvips image
+        vips_image = pyvips.Image.new_from_buffer(data, "")
+
+        # Calculate number of chunks needed
+        cols = math.ceil(vips_image.width / chunk_width)
+        rows = math.ceil(vips_image.height / chunk_height)
+
+        for row in range(rows):
+            for col in range(cols):
+                # Calculate chunk boundaries
+                left = col * chunk_width
+                top = row * chunk_height
+                width = min(chunk_width, vips_image.width - left)
+                height = min(chunk_height, vips_image.height - top)
+
+                # Extract chunk
+                chunk = vips_image.crop(left, top, width, height)
+
+                # Convert to Cairo-compatible format
+                chunk_rgba = chunk.colourspace("srgb").bandjoin(255)  # Add alpha
+                buf = chunk_rgba.write_to_memory()
+
+                # Create Cairo surface for the chunk
+                surface = cairo.ImageSurface.create_for_data(
+                    buf,
+                    cairo.FORMAT_ARGB32,
+                    chunk.width,
+                    chunk.height,
+                    chunk_rgba.width * 4  # Stride for RGBA
+                )
+
+                # Yield surface + position metadata
+                yield (surface, (left, top))
 
     @classmethod
     def _render_data(cls, data, width=None, height=None):

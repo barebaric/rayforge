@@ -41,3 +41,11 @@ class Renderer(ABC):
         Renders to a Cairo surface.
         """
         pass
+
+    @classmethod
+    def render_chunk(cls, data, chunk_width=1000, chunk_height=1000):
+        """
+        Generator that renders to a Cairo surface, but in chunks.
+        Yields one chunk per iteration.
+        """
+        raise NotImplementedError
