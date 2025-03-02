@@ -1,7 +1,6 @@
 import asyncio
 from asyncio.exceptions import CancelledError
 from blinker import Signal
-from collections import defaultdict
 from typing import Optional, Callable, Coroutine
 import threading
 from .util.glib import idle_add

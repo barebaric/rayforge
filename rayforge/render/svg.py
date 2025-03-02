@@ -97,8 +97,8 @@ class SVGRenderer(Renderer):
                 # Extract chunk
                 chunk = vips_image.crop(left, top, width, height)
 
-                # Convert to Cairo-compatible format
-                chunk_rgba = chunk.colourspace("srgb").bandjoin(255)  # Add alpha
+                # Convert to Cairo-compatible format by adding alpha.
+                chunk_rgba = chunk.colourspace("srgb").bandjoin(255)
                 buf = chunk_rgba.write_to_memory()
 
                 # Create Cairo surface for the chunk
