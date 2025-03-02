@@ -58,12 +58,28 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title("Rayforge")
 
-        # Get the primary monitor size
         display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor()
-        geometry = monitor.get_geometry()
-        self.set_default_size(int(geometry.width*0.6),
-                              int(geometry.height*0.6))
+        monitors = display.get_monitors()
+
+        # Try to get the monitor under the cursor (heuristic for active monitor)
+        # Note: Wayland has no concept of "primary monitor" anymore, so
+        # Gdk.get_primary_monitor() is obsolete.
+        try:
+            seat = display.get_default_seat()
+            pointer = seat.get_pointer()
+            _, x, y = pointer.get_position()  # Get cursor position
+            monitor = display.get_monitor_at_point(x, y)
+        except:
+            monitor = None
+        if not monitor and monitors:
+            monitor = monitors[0]
+
+        # Set default window size.
+        if monitor:
+            geometry = monitor.get_geometry()
+            self.set_default_size(int(geometry.width * 0.6), int(geometry.height * 0.6))
+        else:
+            self.set_default_size(1200, 900)
 
         # Define a "window quit" action.
         quit_action = Gio.SimpleAction.new("quit", None)
@@ -183,6 +199,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.paned.add_css_class("mainpaned")
         provider = Gtk.CssProvider()
         provider.load_from_data(css.encode())
+        display = Gdk.Display.get_default()
         Gtk.StyleContext.add_provider_for_display(
             display,
             provider,
