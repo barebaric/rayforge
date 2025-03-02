@@ -1,4 +1,4 @@
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 
 
 class TaskProgressBar(Gtk.Box):
@@ -51,7 +51,7 @@ class TaskProgressBar(Gtk.Box):
         status and a count of others.
         """
         if not tasks:
-            #self.label.set_text("No tasks running")
+            # self.label.set_text("No tasks running")
             self.set_opacity(0)  # Hide when no tasks are running
             return
 

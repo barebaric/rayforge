@@ -61,23 +61,28 @@ class MainWindow(Adw.ApplicationWindow):
         display = Gdk.Display.get_default()
         monitors = display.get_monitors()
 
-        # Try to get the monitor under the cursor (heuristic for active monitor)
-        # Note: Wayland has no concept of "primary monitor" anymore, so
-        # Gdk.get_primary_monitor() is obsolete.
-        try:
+        # Try to get the monitor under the cursor (heuristic for active
+        # monitor). Note: Wayland has no concept of "primary monitor"
+        # anymore, so Gdk.get_primary_monitor() is obsolete.
+        monitor = None
+        if monitors:
             seat = display.get_default_seat()
-            pointer = seat.get_pointer()
-            _, x, y = pointer.get_position()  # Get cursor position
-            monitor = display.get_monitor_at_point(x, y)
-        except:
-            monitor = None
+            if seat:
+                pointer = seat.get_pointer()
+                if pointer:
+                    surface, x, y = pointer.get_surface_at_position()
+                    if surface:
+                        monitor = display.get_monitor_at_surface(surface)
+
+        # Fallback to the first monitor if no monitor is found under the cursor
         if not monitor and monitors:
             monitor = monitors[0]
 
-        # Set default window size.
+        # Set the window size based on the monitor's geometry or a default size
         if monitor:
             geometry = monitor.get_geometry()
-            self.set_default_size(int(geometry.width * 0.6), int(geometry.height * 0.6))
+            self.set_default_size(int(geometry.width * 0.6),
+                                  int(geometry.height * 0.6))
         else:
             self.set_default_size(1200, 900)
 
