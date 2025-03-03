@@ -47,5 +47,6 @@ class Renderer(ABC):
         """
         Generator that renders to a Cairo surface, but in chunks.
         Yields one chunk per iteration.
+        chunk_width and chunk_height are specified in pixels.
         """
         raise NotImplementedError
