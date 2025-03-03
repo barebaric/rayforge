@@ -4,6 +4,7 @@ import cairo
 from PIL import Image
 import pymupdf
 from pypdf import PdfReader, PdfWriter
+from ..util.unit import to_mm
 from .renderer import Renderer
 
 
@@ -12,19 +13,6 @@ def parse_length(s):
     if m:
         return float(m.group(1)), m.group(2) or "pt"
     return float(s), "pt"
-
-
-def to_mm(value, unit):
-    """Convert a value to millimeters based on its unit."""
-    if unit == "cm":
-        return value * 10
-    if unit == "mm":
-        return value
-    elif unit == "in":
-        return value * 25.4
-    elif unit == "pt":
-        return value * 25.4 / 72
-    raise ValueError(f"Unsupported unit: {unit}")
 
 
 class PDFRenderer(Renderer):
@@ -37,13 +25,14 @@ class PDFRenderer(Renderer):
         return cls._crop_to_content(data)
 
     @classmethod
-    def get_natural_size(cls, data):
+    def get_natural_size(cls, data, px_factor=0):
         reader = PdfReader(io.BytesIO(data))
         page = reader.pages[0]
         media_box = page.mediabox
         width_pt = float(media_box.width)
         height_pt = float(media_box.height)
-        return to_mm(width_pt, "pt"), to_mm(height_pt, "pt")
+        return to_mm(width_pt, "pt", px_factor), \
+               to_mm(height_pt, "pt", px_factor)
 
     @classmethod
     def get_aspect_ratio(cls, data):

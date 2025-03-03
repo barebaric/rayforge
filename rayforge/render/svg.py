@@ -9,6 +9,7 @@ with warnings.catch_warnings():
     import pyvips
 from xml.etree import ElementTree as ET
 from PIL import Image
+from ..util.unit import to_mm
 from .renderer import Renderer
 
 
@@ -17,17 +18,6 @@ def parse_length(s):
     if m:
         return float(m.group(1)), m.group(2) or "px"
     return float(s), "px"
-
-
-def to_mm(value, unit):
-    """Convert a value to millimeters based on its unit."""
-    if unit == "cm":
-        return value*10
-    if unit == "mm":
-        return value
-    elif unit == "in":
-        return value * 25.4  # 1 inch = 25.4 mm
-    raise ValueError("Cannot convert to millimeters without DPI information.")
 
 
 class SVGRenderer(Renderer):
@@ -40,11 +30,7 @@ class SVGRenderer(Renderer):
         return cls._crop_to_content(data)
 
     @classmethod
-    def get_natural_size(cls, data):
-        """
-        Returns the natural size of the document in mm as a tuple (w, h).
-        This is BEFORE cropping the margins.
-        """
+    def get_natural_size(cls, data, px_factor=0):
         # Parse the SVG from the bytestring
         root = ET.fromstring(data)
 
@@ -61,8 +47,8 @@ class SVGRenderer(Renderer):
 
         # Convert to millimeters
         try:
-            width_mm = to_mm(width, width_unit)
-            height_mm = to_mm(height, height_unit)
+            width_mm = to_mm(width, width_unit, px_factor=px_factor)
+            height_mm = to_mm(height, height_unit, px_factor=px_factor)
         except ValueError:
             return None, None
 

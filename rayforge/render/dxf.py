@@ -207,7 +207,7 @@ class DXFRenderer(Renderer):
         return ezdxf.read(io.StringIO(data.decode("utf-8")))
 
     @classmethod
-    def get_natural_size(cls, data):
+    def get_natural_size(cls, data, px_factor=0):
         """
         Returns the natural size of the document in mm as a tuple (w, h).
         This is BEFORE cropping the margins.

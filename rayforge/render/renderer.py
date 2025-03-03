@@ -19,10 +19,15 @@ class Renderer(ABC):
 
     @classmethod
     @abstractmethod
-    def get_natural_size(cls, data):
+    def get_natural_size(cls, data, px_factor=0):
         """
         Returns the natural (untransformed) size of the image in mm, if
         known. Return None, None, otherwise.
+
+        If px_factor is given and the document dimensions are in pixels,
+        then the factor is used to convert to millimeters.
+        If the document uses pixel unit and the factor is not given,
+        a tuple of None is returned.
         """
         return None, None
 
