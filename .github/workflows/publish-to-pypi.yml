@@ -23,7 +23,7 @@ jobs:
 
     - name: Install build environment
       run: |
-        sudo apt install libcairo2-dev libgirepository1.0-dev
+        sudo apt install libcairo2-dev libgirepository1.0-dev libvips42t64
         python3 -m pip install build --user
 
     - name: Install requirements
