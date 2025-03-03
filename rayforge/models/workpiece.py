@@ -62,7 +62,7 @@ class WorkPiece:
                pixels_per_mm_y: int,
                size: tuple[float, float] = None,
                force: bool = False):
-        size = self.get_natural_size() if size is None else size
+        size = self.get_default_size() if size is None else size
         width = size[0] * pixels_per_mm_x
         height = size[1] * pixels_per_mm_y
 
