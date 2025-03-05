@@ -125,23 +125,33 @@ class WorkStep:
         workpiece: the input workpiece to generate Ops for.
         """
         if self.can_scale():
-            # Size does not matter unless it is so small that rounding
-            # errors become relevant. So to be able to handle very small
-            # images gracefully, we just assume a fixed size for the off
-            # screen rendering. Later it is scaled for display anyway.
-            size = 50, 50  # in mm
-        else:  # Render at current size in canvas
-            size = workpiece.size
-        surface, _ = workpiece.render(*self.pixels_per_mm,
-                                       size=size,
-                                       force=True)
+            # Since we are producing a vector as an output, and the
+            # result is later scaled, the render size does not matter much
+            # unless it is so small that rounding errors become relevant.
+            # So we can choose a relatively small value for speed and memory
+            # efficiency.
+            size = 100, 100  # in mm
+            surface, _ = workpiece.render(*self.pixels_per_mm,
+                                           size=size,
+                                           force=True)
 
-        # There is no guarantee that the renderer was able to deliver
-        # the size we asked for. Check the actual size.
-        width, height = surface.get_width(), surface.get_height()
-        width_mm = width / self.pixels_per_mm[0]
-        height_mm = height / self.pixels_per_mm[1]
-        size = width_mm, height_mm
+            # There is no guarantee that the renderer was able to deliver
+            # the size we asked for. Check the actual size.
+            width, height = surface.get_width(), surface.get_height()
+            width_mm = width / self.pixels_per_mm[0]
+            height_mm = height / self.pixels_per_mm[1]
+            size = width_mm, height_mm
+
+            chunks = [(surface, (0, 0))]
+
+        else:
+            # Rendering a large work surface (say, 1 x 2 meters for example)
+            # at the required pixel density is unmanagably large.
+            # So we must render and process the surface in chunks.
+            size = workpiece.size
+            chunks = workpiece.render_chunk(*self.pixels_per_mm,
+                                            size=size,
+                                            force=True)
 
         ops = Ops()
         ops.set_power(self.power)
@@ -149,17 +159,24 @@ class WorkStep:
         ops.set_travel_speed(self.travel_speed)
         ops.enable_air_assist(self.air_assist)
 
-        # Apply bitmap modifiers.
-        for modifier in self.modifiers:
-            modifier.run(surface)
+        for surface, (x_offset, y_offset) in chunks:
+            # Apply bitmap modifiers.
+            for modifier in self.modifiers:
+                modifier.run(surface)
 
-        # Produce an Ops object from the resulting surface.
-        ops += self.opsproducer.run(
-            config.machine,
-            self.laser,
-            surface,
-            self.pixels_per_mm
-        )
+            # Produce an Ops object from the resulting surface.
+            chunk_ops = self.opsproducer.run(
+                config.machine,
+                self.laser,
+                surface,
+                self.pixels_per_mm
+            )
+
+            y_offset = size[1] - (surface.get_height()+y_offset) \
+                     / self.pixels_per_mm[1]
+            chunk_ops.translate(x_offset/self.pixels_per_mm[0], y_offset)
+            ops += chunk_ops
+            surface.flush()  # Free memory after use
 
         # Apply Ops object transformations.
         for transformer in self.opstransformers:

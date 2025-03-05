@@ -78,5 +78,24 @@ class WorkPiece:
 
         return self.surface, True
 
+    def render_chunk(self,
+                     pixels_per_mm_x: int,
+                     pixels_per_mm_y: int,
+                     size: tuple[float, float] = None,
+                     force: bool = False):
+        natsize = self.get_default_size()
+        size = natsize if size is None else size
+        width = size[0] * pixels_per_mm_x
+        height = size[1] * pixels_per_mm_y
+
+        if self.surface \
+                and self.surface.get_width() == width \
+                and self.surface.get_height() == height \
+                and not force:
+            yield self.surface, 0, 0
+
+        for chunk in self.renderer.render_chunk(self.data, width, height):
+            yield chunk
+
     def dump(self, indent=0):
         print("  "*indent, self.name, self.renderer.label)

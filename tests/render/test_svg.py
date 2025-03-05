@@ -62,11 +62,11 @@ class TestSVGRenderer:
         assert ratio == pytest.approx(2.0, abs=0.01)
 
     def test_render_workpiece(self, basic_svg):
-        surface = SVGRenderer.render_workpiece(basic_svg)
+        surface = SVGRenderer.render_workpiece(basic_svg, pixels_per_mm=(10, 10))
         assert isinstance(surface, cairo.ImageSurface)
         
         # Calculate expected width in pixels (100mm at 96 DPI)
-        expected_width = int(100 * 96 / 25.4)  # 1 inch = 25.4 mm
+        expected_width = int(100 * 10)
         assert surface.get_width() == expected_width
 
     def test_get_margins(self, transparent_svg):
@@ -84,13 +84,16 @@ class TestSVGRenderer:
         assert root.get("height") == "100.0px"
 
     def test_render_chunk_generator(self, tmp_path):
-        # Create a large test SVG (10000x5000)
-        large_svg = b'''<svg xmlns="http://www.w3.org/2000/svg" 
-                       width="10000px" height="5000px" viewBox="0 0 10000 5000">
-                       <rect width="10000" height="5000" fill="yellow"/>
-                     </svg>'''
+        svg = b'''<svg xmlns="http://www.w3.org/2000/svg" 
+                   width="10000px" height="5000px" viewBox="0 0 10000 5000">
+                    <rect width="10000" height="5000" fill="yellow"/>
+                  </svg>'''
         chunk_count = 0
-        for chunk, (x, y) in SVGRenderer.render_chunk(large_svg, 3000, 2000):
+        for chunk, (x, y) in SVGRenderer.render_chunk(svg,
+                                                      10000, 5000,
+                                                      3000, 2000,
+                                                      overlap_x=0,
+                                                      overlap_y=0):
             assert isinstance(chunk, cairo.ImageSurface)
             assert chunk.get_width() <= 3000
             assert chunk.get_height() <= 2000
@@ -98,6 +101,26 @@ class TestSVGRenderer:
         
         # Verify total chunks (3 rows x 4 cols = 12 chunks)
         assert chunk_count == 12
+
+    def test_render_chunk_generator_overlap(self, tmp_path):
+        svg = b'''<svg xmlns="http://www.w3.org/2000/svg" 
+                   width="1000px" height="500px" viewBox="0 0 1000 500">
+                    <rect width="1000" height="500" fill="yellow"/>
+                  </svg>'''
+        chunks = []
+        for chunk, (x, y) in SVGRenderer.render_chunk(svg,
+                                                      1000, 500,
+                                                      400, 300,
+                                                      overlap_x=2,
+                                                      overlap_y=2):
+            assert isinstance(chunk, cairo.ImageSurface)
+            chunks.append((x, y, chunk.get_width(), chunk.get_height()))
+        
+        # Verify total chunks (2 rows x 3 cols = 6 chunks)
+        assert chunks == [
+            (0, 0, 402, 302),   (400, 0, 402, 302),   (800, 0, 200, 302),
+            (0, 300, 402, 200), (400, 300, 402, 200), (800, 300, 200, 200)
+        ]
 
     def test_invalid_svg_handling(self):
         invalid_svg = b"<svg>invalid content"

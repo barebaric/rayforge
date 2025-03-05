@@ -48,7 +48,14 @@ class Renderer(ABC):
         pass
 
     @classmethod
-    def render_chunk(cls, data, chunk_width=1000, chunk_height=1000):
+    def render_chunk(cls,
+                     data,
+                     width_px,
+                     height_px,
+                     chunk_width=100000,
+                     chunk_height=2,
+                     overlap_x=1,
+                     overlap_y=0):
         """
         Generator that renders to a Cairo surface, but in chunks.
         Yields one chunk per iteration.
