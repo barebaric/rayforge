@@ -39,6 +39,7 @@ parts:
     build-packages:
       - python3-pip
       - python3-setuptools
+      - libvips-dev
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
