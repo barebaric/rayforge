@@ -17,7 +17,7 @@ On Linux the only currently supported method is Snap:
 You can also install it through PIP if you know what you are doing. Something like this:
 
 ```
-sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-1 libgirepository-2.0-0 libvips42t64
+sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
 
 pip3 install rayforge
 ```
@@ -48,7 +48,7 @@ PIP on Windows or Mac - the source code should be fully cross-platform.
 
 Setup:
 ```
-sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-1 libgirepository-2.0-0 libvips42t64
+sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
 git clone git@github.com:barebaric/rayforge.git
 cd rayforge
 python3 -m venv venv
