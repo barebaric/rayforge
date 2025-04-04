@@ -96,7 +96,12 @@ class WorkPieceOpsElement(CanvasElement):
             return
         pixels_per_mm = self.get_pixels_per_mm()
         encoder = CairoEncoder()
-        encoder.encode(ops, config.machine, self.surface, pixels_per_mm)
+        show_travel = self.canvas.show_travel_moves if self.canvas else False
+        encoder.encode(ops,
+                       config.machine,
+                       self.surface,
+                       pixels_per_mm,
+                       show_travel_moves=show_travel)
 
 
 class WorkStepElement(CanvasElement):
@@ -182,6 +187,7 @@ class WorkSurface(Canvas):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.show_travel_moves = False
         self.workpiece_elements = CanvasElement(
             *self.root.rect(),
             selectable=False
@@ -192,6 +198,15 @@ class WorkSurface(Canvas):
         self.root.add(self.laser_dot)
         self.grid_size = 10  # in mm
         self.update()
+
+    def set_show_travel_moves(self, show: bool):
+        """Sets whether to display travel moves and triggers a redraw."""
+        if self.show_travel_moves != show:
+            self.show_travel_moves = show
+            # Mark elements dirty that depend on this setting
+            for elem in self.find_by_type(WorkStepElement):
+                elem.dirty = True
+            self.queue_draw()
 
     def set_size(self, width_mm, height_mm):
         self.root.set_size(width_mm, height_mm)

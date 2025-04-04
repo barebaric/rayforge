@@ -158,6 +158,14 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(button)
         button.connect('clicked', self.on_button_visibility_clicked)
 
+        # Show Travel Moves Toggle Button
+        self.show_travel_button = Gtk.ToggleButton()
+        self.show_travel_button.set_child(get_icon('timeline')) # Use 'timeline' icon
+        self.show_travel_button.set_active(False) # Default to hidden
+        self.show_travel_button.set_tooltip_text("Toggle travel move visibility")
+        self.show_travel_button.connect("toggled", self._on_show_travel_toggled)
+        toolbar.append(self.show_travel_button)
+
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         toolbar.append(sep)
@@ -429,6 +437,11 @@ class MainWindow(Adw.ApplicationWindow):
             button.set_child(self.visibility_on_icon)
         else:
             button.set_child(self.visibility_off_icon)
+
+    def _on_show_travel_toggled(self, button):
+        is_active = button.get_active()
+        # Access WorkSurface through WorkBench
+        self.workbench.surface.set_show_travel_moves(is_active)
 
     def on_clear_clicked(self, button):
         self.workbench.clear()

@@ -1,12 +1,8 @@
 import math
 import cairo
-from ..config import getflag
 from ..models.ops import Ops, MoveToCommand, LineToCommand, ArcToCommand
 from ..models.machine import Machine
 from .encoder import OpsEncoder
-
-
-SHOW_TRAVEL_MOVES = getflag('SHOW_TRAVEL_MOVES')
 
 
 class CairoEncoder(OpsEncoder):
@@ -18,7 +14,8 @@ class CairoEncoder(OpsEncoder):
                ops: Ops,
                machine: Machine,
                surface: cairo.Surface,
-               scale: tuple[float, float]) -> None:
+               scale: tuple[float, float],
+               show_travel_moves: bool = False) -> None:
         # Set up Cairo context and scaling
         ctx = cairo.Context(surface)
         ctx.set_source_rgb(1, 0, 1)
@@ -47,7 +44,7 @@ class CairoEncoder(OpsEncoder):
                         # there may be any unpainted path before it, because
                         # Ops.segments() ensures that each travel move opens
                         # a new segment.
-                        if SHOW_TRAVEL_MOVES:
+                        if show_travel_moves:
                             ctx.set_source_rgb(.8, .8, .8)
                             ctx.move_to(*prev_point)
                             ctx.line_to(x, adjusted_y)
