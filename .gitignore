@@ -10,3 +10,4 @@ build
 .flatpak-builder
 repo
 builddir
+.aider*
