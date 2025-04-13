@@ -1,9 +1,12 @@
 import asyncio
 from asyncio.exceptions import CancelledError
 from blinker import Signal
+import logging
 from typing import Optional, Callable, Coroutine
 import threading
 from .util.glib import idle_add
+
+logger = logging.getLogger(__name__)
 
 
 class Task:
@@ -11,28 +14,72 @@ class Task:
         self.coro = coro
         self.key = key if key is not None else id(self)
         self.monitor_callback = monitor_callback
-        self._task = None
+        self._task = None  # The asyncio.Task executing self.coro
         self._status = "pending"
         self._progress = 0.0
+        self._cancel_requested = False  # Flag for early cancellation
         self.status_changed = Signal()
         self.progress_changed = Signal()
 
     async def run(self):
         """Run the task and update its status and progress."""
+        logger.debug(f"Task {self.key}: Entering run method.")
+
+        # --- Early Cancellation Check ---
+        if self._cancel_requested:
+            logger.debug(
+                f"Task {self.key}: Cancellation requested before coro start."
+            )
+            self._status = "canceled"
+            self._emit_status_changed()
+            # Ensure status update even if cancelled early
+            self._emit_progress_changed()  # Ensure progress update
+            raise CancelledError("Task cancelled before coro execution")
+
+        # --- Start Execution ---
         self._status = "running"
+        self._emit_status_changed()  # Emit running status
+        logger.debug(
+            f"Task {self.key}: Creating internal asyncio.Task for coro."
+        )
         self._task = asyncio.create_task(self.coro)
-        self._emit_status_changed()
+
+        # --- Start Progress Monitor (if applicable) ---
+        monitor_task = None
         if self.monitor_callback:
-            asyncio.create_task(self._monitor_progress())
+            monitor_task = asyncio.create_task(self._monitor_progress())
+
+        # --- Await Coroutine Completion ---
         try:
+            logger.debug(f"Task {self.key}: Awaiting internal asyncio.Task.")
             await self._task
+            # If await completes without CancelledError or other Exception:
+            logger.debug(f"Task {self.key}: Coro completed successfully.")
             self._status = "completed"
             self._progress = 1.0
         except asyncio.CancelledError:
+            # This catches cancellation of self._task (the coro)
+            logger.warning(
+                f"Task {self.key}: Internal asyncio.Task was cancelled."
+            )
             self._status = "canceled"
+            # Propagate so the outer _run_task knows about the cancellation
+            raise
         except Exception:
+            logger.exception(f"Task {self.key}: Coro failed with exception.")
             self._status = "failed"
+            # Optionally propagate? Depends on desired behavior for _run_task
+            # For now, we just log and set status. The finally block runs.
         finally:
+            # --- Cleanup ---
+            logger.debug(
+                f"Task {self.key}: Run method finished "
+                f"with status '{self._status}'."
+            )
+            # Ensure progress monitor is stopped if it was started
+            if monitor_task and not monitor_task.done():
+                monitor_task.cancel()
+            # Emit final status and progress
             self._emit_status_changed()
             self._emit_progress_changed()
 
@@ -64,9 +111,30 @@ class Task:
         return self._task.result()
 
     def cancel(self):
-        """Cancel the task."""
-        if self._task and not self._task.done():
-            self._task.cancel()
+        """
+        Request cancellation of the task.
+        Sets a flag to prevent starting if not already started,
+        and attempts to cancel the underlying asyncio.Task if it exists.
+        """
+        logger.debug(f"Task {self.key}: Cancel method called.")
+        self._cancel_requested = True  # Set flag regardless of current state
+
+        task_to_cancel = self._task
+        if task_to_cancel and not task_to_cancel.done():
+            logger.info(
+                f"Task {self.key}: Attempting to cancel "
+                f"running internal asyncio.Task."
+            )
+            task_to_cancel.cancel()
+        elif task_to_cancel:
+            logger.debug(
+                f"Task {self.key}: Internal asyncio.Task already done."
+            )
+        else:
+            logger.debug(
+                f"Task {self.key}: Internal asyncio.Task not yet "
+                f"created, flag set."
+            )
 
 
 class TaskManager:
@@ -91,7 +159,13 @@ class TaskManager:
         """Add a task to the manager."""
         old_task = self._tasks.get(task.key)
         if old_task:
+            logger.info(
+                f"TaskManager: Found existing task key '{task.key}'. "
+                f"Attempting cancellation."
+            )
             old_task.cancel()
+        else:
+            logger.info(f"TaskManager: Adding new task key '{task.key}'.")
         self._tasks[task.key] = task
         task.status_changed.connect(self._on_task_status_changed)
         task.progress_changed.connect(self._on_task_progress_changed)
@@ -121,10 +195,12 @@ class TaskManager:
 
     async def _run_task(self, task: Task, when_done: Optional[Callable]):
         """Run the task and clean up when done."""
+        # If task.run() raises CancelledError
+        # (because task._task was cancelled),
+        # that exception will propagate and cancel this _run_task coroutine.
+        # The finally block will still execute for cleanup.
         try:
             await task.run()
-        except CancelledError:
-            pass
         finally:
             self._cleanup_task(task)
             self._emit_overall_progress_changed()
@@ -133,9 +209,28 @@ class TaskManager:
                 idle_add(when_done, task)
 
     def _cleanup_task(self, task: Task):
-        """Clean up a completed task."""
-        if task.key in self._tasks:
+        """
+        Clean up a completed task. Only remove the task from the dictionary
+        if it is the *same object* currently associated with the key.
+        This prevents a cancelled task from inadvertently removing a newer
+        task that replaced it due to rapid additions.
+        """
+        current_task_in_dict = self._tasks.get(task.key)
+        if current_task_in_dict is task:  # Check object identity
+            logger.debug(
+                f"TaskManager: Cleaning up task '{task.key}' "
+                f"(status: {task.get_status()})."
+            )
             del self._tasks[task.key]
+        else:
+            # This task finished, but it's no longer the active one
+            # for this key in the dictionary (it was replaced).
+            # Don't remove the newer task.
+            logger.debug(
+                f"TaskManager: Skipping cleanup for finished task "
+                f"'{task.key}' (status: {task.get_status()}) as it was "
+                f"already replaced in the manager."
+            )
 
     def _on_task_status_changed(self, task):
         """Handle task status changes."""

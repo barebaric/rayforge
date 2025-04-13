@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import asyncio
 from typing import List, Dict, Iterator
 from copy import deepcopy
@@ -14,6 +15,8 @@ from .ops import (Ops, SetPowerCommand, SetCutSpeedCommand,
                   DisableAirAssistCommand)
 from blinker import Signal
 
+
+logger = logging.getLogger(__name__)
 
 DEBUG_OPTIMIZE = getflag('DEBUG_OPTIMIZE')
 DEBUG_SMOOTH = getflag('DEBUG_SMOOTH')
@@ -227,13 +230,19 @@ class WorkStep:
         try:
             # --- Geometry Generation ---
             for chunk_ops in self.execute(workpiece):
-                # Check for cancellation before processing chunk?
-                # Task mgr might handle this.
+                # Yield control *before* processing the chunk to allow
+                # cancellation exception to be raised promptly.
+                await asyncio.sleep(0)
+
+                # If sleep(0) didn't raise CancelledError, proceed.
+                logger.debug(
+                    f"Workplan {self.name}: Processing chunk for "
+                    f"{workpiece.name}"
+                )
                 self.ops_chunk_available.send(
                     self, workpiece=workpiece, chunk=chunk_ops
                 )
                 accumulated_ops += chunk_ops
-                await asyncio.sleep(0)  # Yield control
 
             # --- Apply Transformers (after all geometry) ---
             for transformer in self.opstransformers:
@@ -253,11 +262,16 @@ class WorkStep:
             self.ops_generation_finished.send(self, workpiece=workpiece)
 
         except CancelledError:
-            # Clear partial cache entry if cancelled?
+            logger.info(
+                f"Workplan {self.name}: Ops generation for {workpiece.name} "
+                f"cancelled."
+            )
+            # Clear partial cache entry if cancelled
             if workpiece in self.workpiece_to_ops:
                 self.workpiece_to_ops[workpiece] = None, None
-            # Optionally send a cancellation signal?
-            return  # Stop processing
+            # Re-raise so the Task wrapper in task.py sees the cancellation
+            # and updates its status correctly.
+            raise
         except Exception as e:
             # Log error, maybe send an error signal?
             print(f"Error during Ops generation for {workpiece}: {e}")

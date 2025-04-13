@@ -1,5 +1,6 @@
 import cairo
 import numpy as np
+import logging
 from ..models.ops import Ops
 from .producer import OpsProducer
 
@@ -73,20 +74,21 @@ def rasterize_horizontally(surface,
         # Convert y_mm to pixel coordinates (floating-point)
         y_px = y_mm * pixels_per_mm_y
 
-        # Interpolate between the two nearest rows for Y direction
-        y1 = int(np.floor(y_px))
-        y2 = int(np.ceil(y_px))
-        if y2 >= height:
-            y2 = height - 1
+        # TODO: Re-enable Y interpolation between nearest rows
+        y1 = int(round(y_px))  # Use nearest neighbor instead of interpolation
+        # y1 = int(np.floor(y_px))
+        # y2 = int(np.ceil(y_px))
+        # if y2 >= height:
+        #     y2 = height - 1
 
         # Blend the two rows if y1 != y2
-        if y1 == y2:
-            row = bw_image[y1, x_min:x_max + 1]
-        else:
-            alpha_y = y_px - y1
-            row = (1 - alpha_y) * bw_image[y1, x_min:x_max + 1] \
-                + alpha_y * bw_image[y2, x_min:x_max + 1]
-            row = (row > 0.5).astype(np.uint8)  # Threshold the blended row
+        # if y1 == y2:
+        row = bw_image[y1, x_min:x_max + 1]  # Directly use the nearest row
+        # else:
+        #     alpha_y = y_px - y1
+        #     row = (1 - alpha_y) * bw_image[y1, x_min:x_max + 1] \
+        #         + alpha_y * bw_image[y2, x_min:x_max + 1]
+        #     row = (row > 0.5).astype(np.uint8)  # Threshold the blended row
 
         # Find the start and end of black segments in the current row
         black_segments = np.where(np.diff(
@@ -94,7 +96,7 @@ def rasterize_horizontally(surface,
         ))[0].reshape(-1, 2)
         for start, end in black_segments:
             if row[start] == 1:  # Only process black segments
-                # Convert segment start and end to millimeters
+                # Convert segment start/end to mm (original simple version)
                 start_mm = x_min_mm + (start / pixels_per_mm_x)
                 end_mm = x_min_mm + ((end - 1) / pixels_per_mm_x)
 
@@ -115,6 +117,11 @@ class Rasterizer(OpsProducer):
     across filled pixels in the surface.
     """
     def run(self, machine, laser, surface, pixels_per_mm):
+        width = surface.get_width()
+        height = surface.get_height()
+        logging.debug(f"Rasterizer received surface: {width}x{height} pixels")
+        logging.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
+
         ymax = surface.get_height()/pixels_per_mm[1]
         return rasterize_horizontally(
             surface,

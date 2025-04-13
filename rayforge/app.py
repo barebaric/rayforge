@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 import argparse
 import gi
@@ -42,8 +43,24 @@ def main():
         help="Stores the work surface (no paths) as a PNG image.",
         nargs='?'
     )
+    parser.add_argument(
+        '--loglevel',
+        default='INFO',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='Set the logging level (default: INFO)'
+    )
 
     args = parser.parse_args()
+
+    # Configure logging based on the command-line argument
+    log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+    logger.info(f"Application starting with log level {args.loglevel.upper()}")
+
     app = App(args)
     app.run(None)
     task_mgr.shutdown()
