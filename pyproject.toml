@@ -24,7 +24,7 @@ rayforge = "rayforge.app:main"
 
 [build-system]
 requires = [
-  "setuptools >= 40.9.0", "setuptools-git-versioning", "pytest"
+  "setuptools >= 40.9.0", "setuptools-git-versioning"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -42,6 +42,13 @@ enabled = true
 "share/metainfo" = ["data/com.barebaric.rayforge.metainfo.xml"]
 "share/icons/hicolor/scalable/apps" = ["data/com.barebaric.rayforge.svg"]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "pytest-cov", # Add coverage tool
+]
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"

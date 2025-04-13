@@ -26,13 +26,10 @@ jobs:
         sudo apt install libcairo2-dev libgirepository1.0-dev libvips42t64
         python3 -m pip install build --user
 
-    - name: Install requirements
-      run: pip install --no-cache-dir -r requirements.txt
-
-    - name: Run pytest
+    - name: Install dependencies and run tests
       run: |
-        pip install pytest pytest-cov
-        python -m pytest -vv
+        python -m pip install .[test]
+        python -m pytest -vv --cov=rayforge --cov-report=xml
 
     - name: Build a wheel
       run: python3 -m build
