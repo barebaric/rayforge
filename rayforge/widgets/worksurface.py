@@ -1,4 +1,5 @@
 import math
+import logging
 from gi.repository import Graphene, GLib
 import cairo
 from ..models.ops import Ops
@@ -7,6 +8,7 @@ from ..config import config
 from ..models.workpiece import WorkPiece
 from ..models.workplan import WorkStep
 from .canvas import Canvas, CanvasElement
+logger = logging.getLogger(__name__)
 
 
 def _copy_surface(source, target, width, height, clip):
@@ -182,12 +184,24 @@ class WorkStepElement(CanvasElement):
     def _on_ops_generation_starting(self, sender: WorkStep,
                                     workpiece: WorkPiece):
         """Called before ops generation starts for a workpiece."""
+        logger.debug(
+            f"WorkStepElem '{sender.name}': Received ops_generation_starting "
+            f"for {workpiece.name}"
+        )
         elem = self._find_or_add_workpiece_elem(workpiece)
         if elem:
             # Ensure it's clean before starting
+            logger.debug(
+                f"WorkStepElem '{sender.name}': Calling clear_ops() for "
+                f"{workpiece.name}"
+            )
             elem.clear_ops()
             if self.canvas:
                 # Initial clear needs a redraw
+                logger.debug(
+                    f"WorkStepElem '{sender.name}': Calling queue_draw() via "
+                    f"idle_add for {workpiece.name}"
+                )
                 GLib.idle_add(self.canvas.queue_draw)
 
     # Removed _on_ops_cleared as there's no corresponding signal in the
@@ -196,6 +210,10 @@ class WorkStepElement(CanvasElement):
     def _on_ops_chunk_available(self, sender: WorkStep, workpiece: WorkPiece,
                                 chunk: Ops):
         """Called when a chunk of ops is available for a workpiece."""
+        logger.debug(
+            f"WorkStepElem '{sender.name}': Received ops_chunk_available for "
+            f"{workpiece.name} (chunk size: {len(chunk)})"
+        )
         elem = self._find_or_add_workpiece_elem(workpiece)
         if elem:
             # The chunk includes initial/final commands, add them directly.
@@ -203,6 +221,10 @@ class WorkStepElement(CanvasElement):
             elem.add_ops(chunk)
             if self.canvas:
                 # Trigger redraw incrementally
+                logger.debug(
+                    f"WorkStepElem '{sender.name}': Calling queue_draw() via "
+                    f"idle_add for chunk {workpiece.name}"
+                )
                 GLib.idle_add(self.canvas.queue_draw)
 
     def _on_ops_generation_finished(self, sender: WorkStep,
@@ -350,6 +372,7 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def do_snapshot(self, snapshot):
+        logger.debug("WorkSurface: do_snapshot called (actual redraw)")
         # Create a Cairo context for the snapshot
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)

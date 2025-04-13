@@ -141,6 +141,9 @@ class WorkStep:
         self.changed.send(self)
 
     def _on_workpiece_size_changed(self, workpiece):
+        logger.debug(
+            f"WorkStep '{self.name}' size change for {workpiece.name}"
+        )
         # Always update when workpiece size changes.
         # Scalable steps re-run execute() for the new scale factor.
         # Non-scalable steps (like raster) regenerate for the new size.
@@ -207,6 +210,10 @@ class WorkStep:
         """
         Internal coroutine to run generation, emit signals, and cache result.
         """
+        logger.debug(
+            f"WorkStep '{self.name}': Coroutine started for {workpiece.name}."
+            f" Emitting ops_generation_starting."
+        )
         self.ops_generation_starting.send(self, workpiece=workpiece)
         accumulated_ops = Ops()
         # Use the size determined during execute (vector or actual)
@@ -284,6 +291,10 @@ class WorkStep:
     def update_workpiece(self, workpiece):
         """Triggers the asynchronous generation and caching for a workpiece."""
         key = id(self), id(workpiece)
+        logger.debug(
+            f"WorkStep '{self.name}': Scheduling coroutine for"
+            f" {workpiece.name} with key {key}"
+        )
         # Cancellation of existing task with the same key is handled
         # internally by task_mgr.add_coroutine / add_task.
         # No need to call cancel explicitly here.
