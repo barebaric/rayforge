@@ -160,10 +160,14 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Show Travel Moves Toggle Button
         self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon('timeline')) # Use 'timeline' icon
-        self.show_travel_button.set_active(False) # Default to hidden
-        self.show_travel_button.set_tooltip_text("Toggle travel move visibility")
-        self.show_travel_button.connect("toggled", self._on_show_travel_toggled)
+        self.show_travel_button.set_child(get_icon('timeline'))
+        self.show_travel_button.set_active(False)
+        self.show_travel_button.set_tooltip_text(
+            "Toggle travel move visibility"
+        )
+        self.show_travel_button.connect(
+            "toggled", self._on_show_travel_toggled
+        )
         toolbar.append(self.show_travel_button)
 
         # Control buttons: home, send, pause, stop

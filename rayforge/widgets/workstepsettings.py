@@ -100,13 +100,13 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         self.changed.send(self)
 
     def on_cut_speed_changed(self, spin_row):
-        self.workstep.cut_speed = get_spinrow_int(spin_row)
+        self.workstep.set_cut_speed(get_spinrow_int(spin_row))
         self.changed.send(self)
 
     def on_travel_speed_changed(self, spin_row):
-        self.workstep.travel_speed = get_spinrow_int(spin_row)
+        self.workstep.set_travel_speed(get_spinrow_int(spin_row))
         self.changed.send(self)
 
     def on_air_assist_changed(self, row, _):
-        self.workstep.air_assist = row.get_active()
+        self.workstep.set_air_assist(row.get_active())
         self.changed.send(self)

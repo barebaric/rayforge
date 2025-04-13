@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import List, Dict
+import asyncio
+from typing import List, Dict, Iterator
 from copy import deepcopy
 from ..task import task_mgr, CancelledError
 from ..config import config, getflag
@@ -8,7 +9,9 @@ from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth, ArcWeld
 from .workpiece import WorkPiece
 from .machine import Laser
-from .ops import Ops
+from .ops import (Ops, SetPowerCommand, SetCutSpeedCommand,
+                  SetTravelSpeedCommand, EnableAirAssistCommand,
+                  DisableAirAssistCommand)
 from blinker import Signal
 
 
@@ -48,7 +51,9 @@ class WorkStep:
         self.laser: Laser = None
 
         self.changed = Signal()
-        self.ops_changed: Signal = Signal()
+        self.ops_generation_starting = Signal()  # (sender, workpiece)
+        self.ops_chunk_available = Signal()      # (sender, workpiece, chunk)
+        self.ops_generation_finished = Signal()  # (sender, workpiece)
         self.set_laser(config.machine.heads[0])
 
         self.power: int = self.laser.max_power
@@ -65,6 +70,7 @@ class WorkStep:
 
     def set_passes(self, passes=True):
         self.passes = int(passes)
+        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_visible(self, visible=True):
@@ -87,6 +93,24 @@ class WorkStep:
 
     def set_power(self, power):
         self.power = power
+        self.update_all_workpieces()
+        self.changed.send(self)
+
+    def set_cut_speed(self, speed):
+        """Sets the cut speed and triggers regeneration."""
+        self.cut_speed = int(speed)
+        self.update_all_workpieces()
+        self.changed.send(self)
+
+    def set_travel_speed(self, speed):
+        """Sets the travel speed and triggers regeneration."""
+        self.travel_speed = int(speed)
+        self.update_all_workpieces()
+        self.changed.send(self)
+
+    def set_air_assist(self, enabled: bool):
+        """Sets air assist state and triggers regeneration."""
+        self.air_assist = bool(enabled)
         self.update_all_workpieces()
         self.changed.send(self)
 
@@ -114,52 +138,43 @@ class WorkStep:
         self.changed.send(self)
 
     def _on_workpiece_size_changed(self, workpiece):
-        if not self.can_scale():
-            self.update_workpiece(workpiece)
+        # Always update when workpiece size changes.
+        # Scalable steps re-run execute() for the new scale factor.
+        # Non-scalable steps (like raster) regenerate for the new size.
+        self.update_workpiece(workpiece)
 
     def workpieces(self):
         return self.workpiece_to_ops.keys()
 
-    def execute(self, workpiece) -> [Ops, [float, float]]:
+    def execute(self, workpiece: WorkPiece) -> Iterator[Ops]:
         """
+        Generates Ops chunks for the given workpiece.
+
+        Yields geometry Ops chunks based on rendering/tracing the workpiece.
+
         workpiece: the input workpiece to generate Ops for.
         """
         if self.can_scale():
-            # Since we are producing a vector as an output, and the
-            # result is later scaled, the render size does not matter much
-            # unless it is so small that rounding errors become relevant.
-            # So we can choose a relatively small value for speed and memory
-            # efficiency.
-            size = 100, 100  # in mm
+            # Vector output, render size doesn't matter much. Use small size.
             surface, _ = workpiece.render(*self.pixels_per_mm,
-                                           size=size,
+                                           size=(100, 100),
                                            force=True)
-
-            # There is no guarantee that the renderer was able to deliver
-            # the size we asked for. Check the actual size.
-            width, height = surface.get_width(), surface.get_height()
-            width_mm = width / self.pixels_per_mm[0]
-            height_mm = height / self.pixels_per_mm[1]
+            # Check actual rendered size
+            width_px, height_px = surface.get_width(), surface.get_height()
+            width_mm = width_px / self.pixels_per_mm[0]
+            height_mm = height_px / self.pixels_per_mm[1]
+            # Store the size the Ops corresponds to for later scaling
             size = width_mm, height_mm
-
-            chunks = [(surface, (0, 0))]
-
+            render_chunks = [(surface, (0, 0))]  # Single chunk only
         else:
-            # Rendering a large work surface (say, 1 x 2 meters for example)
-            # at the required pixel density is unmanagably large.
-            # So we must render and process the surface in chunks.
+            # Non-scalable (e.g., raster), render in chunks at actual size
             size = workpiece.size
-            chunks = workpiece.render_chunk(*self.pixels_per_mm,
-                                            size=size,
-                                            force=True)
+            render_chunks = workpiece.render_chunk(*self.pixels_per_mm,
+                                                   size=size,
+                                                   force=True)
 
-        ops = Ops()
-        ops.set_power(self.power)
-        ops.set_cut_speed(self.cut_speed)
-        ops.set_travel_speed(self.travel_speed)
-        ops.enable_air_assist(self.air_assist)
-
-        for surface, (x_offset, y_offset) in chunks:
+        # Process render chunks
+        for surface, (x_offset_px, y_offset_px) in render_chunks:
             # Apply bitmap modifiers.
             for modifier in self.modifiers:
                 modifier.run(surface)
@@ -172,30 +187,96 @@ class WorkStep:
                 self.pixels_per_mm
             )
 
-            y_offset = size[1] - (surface.get_height()+y_offset) \
+            # Translate chunk ops based on its offset within the full workpiece
+            # Calculate offsets in mm relative to workpiece bottom-left origin
+            y_offset_px = size[1] - (surface.get_height()+y_offset_px) \
                      / self.pixels_per_mm[1]
-            chunk_ops.translate(x_offset/self.pixels_per_mm[0], y_offset)
-            ops += chunk_ops
+            chunk_ops.translate(x_offset_px/self.pixels_per_mm[0], y_offset_px)
+
+            if self.can_scale():
+                chunk_ops.scale(workpiece.size[0] / size[0],
+                                workpiece.size[1] / size[1])
+
+            yield chunk_ops
             surface.flush()  # Free memory after use
 
-        # Apply Ops object transformations.
-        for transformer in self.opstransformers:
-            transformer.run(ops)
+    async def _stream_ops_and_cache(self, workpiece: WorkPiece):
+        """
+        Internal coroutine to run generation, emit signals, and cache result.
+        """
+        self.ops_generation_starting.send(self, workpiece=workpiece)
+        accumulated_ops = Ops()
+        # Use the size determined during execute (vector or actual)
+        size_for_cache = getattr(
+            self, '_render_size_for_cache', workpiece.size
+        )
 
-        ops.disable_air_assist()
-        self.workpiece_to_ops[workpiece] = ops, size
-        return ops, size
+        # --- Initial Commands ---
+        initial_ops = Ops()
+        initial_ops.add(SetPowerCommand(self.power))
+        initial_ops.add(SetCutSpeedCommand(self.cut_speed))
+        initial_ops.add(SetTravelSpeedCommand(self.travel_speed))
+        if self.air_assist:
+            initial_ops.add(EnableAirAssistCommand())
+        if initial_ops.commands:  # Only send if not empty
+            self.ops_chunk_available.send(
+                self, workpiece=workpiece, chunk=initial_ops
+            )
+            accumulated_ops += initial_ops
 
-    async def execute_async(self, workpiece: WorkPiece) -> [
-            WorkPiece, Ops, [float, float]]:
-        ops, size = self.execute(workpiece)
-        return workpiece, ops, size
+        try:
+            # --- Geometry Generation ---
+            for chunk_ops in self.execute(workpiece):
+                # Check for cancellation before processing chunk?
+                # Task mgr might handle this.
+                self.ops_chunk_available.send(
+                    self, workpiece=workpiece, chunk=chunk_ops
+                )
+                accumulated_ops += chunk_ops
+                await asyncio.sleep(0)  # Yield control
+
+            # --- Apply Transformers (after all geometry) ---
+            for transformer in self.opstransformers:
+                transformer.run(accumulated_ops)  # Apply to accumulated ops
+
+            # --- Final Commands ---
+            final_ops = Ops()
+            if self.air_assist:  # Only disable if it was enabled
+                final_ops.add(DisableAirAssistCommand())
+            if final_ops.commands:  # Only send if not empty
+                self.ops_chunk_available.send(
+                    self, workpiece=workpiece, chunk=final_ops
+                )
+                accumulated_ops += final_ops
+            # --- Caching and Completion Signal (on success) ---
+            self.workpiece_to_ops[workpiece] = accumulated_ops, size_for_cache
+            self.ops_generation_finished.send(self, workpiece=workpiece)
+
+        except CancelledError:
+            # Clear partial cache entry if cancelled?
+            if workpiece in self.workpiece_to_ops:
+                self.workpiece_to_ops[workpiece] = None, None
+            # Optionally send a cancellation signal?
+            return  # Stop processing
+        except Exception as e:
+            # Log error, maybe send an error signal?
+            print(f"Error during Ops generation for {workpiece}: {e}")
+            # Clear cache entry on error
+            if workpiece in self.workpiece_to_ops:
+                self.workpiece_to_ops[workpiece] = None, None
+            # Optionally send an error signal?
+            return  # Stop processing
 
     def update_workpiece(self, workpiece):
+        """Triggers the asynchronous generation and caching for a workpiece."""
         key = id(self), id(workpiece)
+        # Cancellation of existing task with the same key is handled
+        # internally by task_mgr.add_coroutine / add_task.
+        # No need to call cancel explicitly here.
+        # Add the new coroutine
         task_mgr.add_coroutine(
-            self.execute_async(workpiece),
-            when_done=self._on_ops_created,
+            self._stream_ops_and_cache(workpiece),
+            # No 'when_done' needed here, signals handle updates
             key=key
         )
 
@@ -203,12 +284,7 @@ class WorkStep:
         for workpiece in self.workpiece_to_ops.keys():
             self.update_workpiece(workpiece)
 
-    def _on_ops_created(self, task):
-        try:
-            workpiece, ops, size = task.result()
-        except CancelledError:
-            return
-        self.ops_changed.send(self, workpiece=workpiece)
+    # _on_ops_created is removed as signals now handle completion/updates
 
     def get_ops(self, workpiece):
         """
@@ -302,17 +378,53 @@ class WorkPlan:
     def has_steps(self):
         return len(self.worksteps) > 0
 
-    def execute(self, optimize=True):
-        ops = Ops()
+    def execute(self, optimize=True) -> Ops:
+        """
+        Executes all visible worksteps and returns the final, combined Ops.
+
+        This method synchronously generates, collects, transforms, and
+        optimizes operations from all steps for all workpieces.
+        It consumes the WorkStep.execute generators internally.
+
+        Args:
+            optimize: Whether to apply path optimization.
+
+        Returns:
+            A single Ops object containing the fully processed operations.
+        """
+        final_ops = Ops()
+        optimizer = Optimize() if optimize else None
+
         for step in self.worksteps:
+            if not step.visible:
+                continue
+
             for workpiece in step.workpieces():
-                step.execute(workpiece)
-                step_ops = step.get_ops(workpiece)
-                x, y = workpiece.pos
-                ymax = config.machine.dimensions[1]
-                translate_y = ymax - y - workpiece.size[1]
-                step_ops.translate(x, translate_y)
-                if optimize:
-                    Optimize().run(step_ops)
-                ops += step_ops*step.passes
-        return ops
+                # Consume the generator for this step/workpiece
+                step_ops_for_workpiece = Ops()
+                # The step.execute generator yields Ops relative to
+                # workpiece (0,0). We need to translate it here for the
+                # final machine coordinates.
+                generator = step.execute(workpiece=workpiece)
+                for ops_chunk in generator:
+                    step_ops_for_workpiece += ops_chunk
+
+                # Apply workpiece translation to machine coordinates
+                if step_ops_for_workpiece:
+                    x, y = workpiece.pos
+                    # Assuming machine Y=0 is bottom-left,
+                    # render Y=0 is top-left
+                    ymax = config.machine.dimensions[1]
+                    translate_y = ymax - y - workpiece.size[1]
+                    step_ops_for_workpiece.translate(x, translate_y)
+
+                # Apply optimization if enabled, after collecting and
+                # translating
+                if optimizer and step_ops_for_workpiece:
+                    optimizer.run(step_ops_for_workpiece)  # Optimize in-place
+
+                # Apply passes and accumulate
+                if step_ops_for_workpiece:
+                    final_ops += (step_ops_for_workpiece * step.passes)
+
+        return final_ops

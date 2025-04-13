@@ -1,6 +1,7 @@
 import math
-from gi.repository import Graphene
+from gi.repository import Graphene, GLib
 import cairo
+from ..models.ops import Ops
 from ..opsencoder.cairoencoder import CairoEncoder
 from ..config import config
 from ..models.workpiece import WorkPiece
@@ -65,6 +66,7 @@ class WorkPieceElement(CanvasElement):
 
 
 class WorkPieceOpsElement(CanvasElement):
+    """Displays the generated Ops for a single WorkPiece."""
     def __init__(self, workpiece, x_mm, y_mm, width_mm, height_mm,
                  **kwargs):
         super().__init__(x_mm,
@@ -75,7 +77,7 @@ class WorkPieceOpsElement(CanvasElement):
                          selectable=False,
                          **kwargs)
         workpiece.changed.connect(self._on_workpiece_changed)
-        self.ops = None
+        self._accumulated_ops = Ops()
 
     def _on_workpiece_changed(self, workpiece: WorkPiece):
         self.set_pos(*workpiece.pos)
@@ -83,21 +85,34 @@ class WorkPieceOpsElement(CanvasElement):
         self.allocate()
         self.canvas.queue_draw()
 
+    def clear_ops(self):
+        """Clears the accumulated operations and the drawing surface."""
+        self._accumulated_ops = Ops()
+        self.clear_surface()
+        self.dirty = True
+
+    def add_ops(self, ops_chunk: Ops):
+        """Adds a chunk of operations to the accumulated total."""
+        if not ops_chunk:
+            return
+        self._accumulated_ops += ops_chunk
+        self.dirty = True
+
     def render(self, clip):
+        """Renders the accumulated Ops to the element's surface."""
         super().render(clip)
         if not self.parent:
             return
 
-        # Replace the current bitmap by the rendered Ops.
+        # Replace the current bitmap by the rendered accumulated Ops.
         self.clear_surface()
-        workstep = self.parent.data
-        ops = workstep.get_ops(self.data)
-        if ops is None:
+        if not self._accumulated_ops:
             return
+
         pixels_per_mm = self.get_pixels_per_mm()
         encoder = CairoEncoder()
         show_travel = self.canvas.show_travel_moves if self.canvas else False
-        encoder.encode(ops,
+        encoder.encode(self._accumulated_ops,
                        config.machine,
                        self.surface,
                        pixels_per_mm,
@@ -118,7 +133,18 @@ class WorkStepElement(CanvasElement):
                          selectable=False,
                          **kwargs)
         workstep.changed.connect(self._on_workstep_changed)
-        workstep.ops_changed.connect(self._on_ops_changed)
+        # Connect to the actual signals from WorkStep's async pipeline
+        workstep.ops_generation_starting.connect(
+            self._on_ops_generation_starting
+        )
+        # Note: There is no explicit 'cleared' signal in the async pipeline,
+        # starting implies clearing for the UI representation.
+        workstep.ops_chunk_available.connect(
+            self._on_ops_chunk_available
+        )
+        workstep.ops_generation_finished.connect(
+            self._on_ops_generation_finished
+        )
         for workpiece in workstep.workpieces():
             self.add_workpiece(workpiece)
 
@@ -142,13 +168,50 @@ class WorkStepElement(CanvasElement):
         # We do not need to add new workpieces here, because they are
         # dynamically added once the Ops is ready in _on_ops_changed()
 
-    def _on_ops_changed(self, sender: WorkStep, workpiece: WorkPiece):
-        ops = self.data.get_ops(workpiece)
-        if not ops:
-            return None
-        self.add_workpiece(workpiece)
-        self.dirty = True
-        self.canvas.queue_draw()
+    def _find_or_add_workpiece_elem(
+            self, workpiece: WorkPiece) -> WorkPieceOpsElement | None:
+        """Finds the element for a workpiece, creating if necessary."""
+        elem = self.find_by_data(workpiece)
+        if not elem:
+            # This might happen if the workpiece was added *during* generation
+            # Although ideally _on_workstep_changed handles workpiece
+            # additions/removals before generation starts. Add defensively.
+            elem = self.add_workpiece(workpiece)
+        return elem
+
+    def _on_ops_generation_starting(self, sender: WorkStep,
+                                    workpiece: WorkPiece):
+        """Called before ops generation starts for a workpiece."""
+        elem = self._find_or_add_workpiece_elem(workpiece)
+        if elem:
+            # Ensure it's clean before starting
+            elem.clear_ops()
+            if self.canvas:
+                # Initial clear needs a redraw
+                GLib.idle_add(self.canvas.queue_draw)
+
+    # Removed _on_ops_cleared as there's no corresponding signal in the
+    # async pipeline. Clearing happens in _on_ops_generation_starting.
+
+    def _on_ops_chunk_available(self, sender: WorkStep, workpiece: WorkPiece,
+                                chunk: Ops):
+        """Called when a chunk of ops is available for a workpiece."""
+        elem = self._find_or_add_workpiece_elem(workpiece)
+        if elem:
+            # The chunk includes initial/final commands, add them directly.
+            # Translation is handled within the WorkStep generation now.
+            elem.add_ops(chunk)
+            if self.canvas:
+                # Trigger redraw incrementally
+                GLib.idle_add(self.canvas.queue_draw)
+
+    def _on_ops_generation_finished(self, sender: WorkStep,
+                                      workpiece: WorkPiece):
+        """Called when ops generation is finished for a workpiece."""
+        # Final redraw is triggered by the last _on_ops_chunk_available call's
+        # queue_draw. No extra action needed here unless we add UI
+        # indicators for processing state (e.g., hide a spinner).
+        pass
 
 
 class LaserDotElement(CanvasElement):
