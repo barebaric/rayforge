@@ -50,7 +50,7 @@ class WorkStep:
         self._ops_ref_for_pyreverse: Ops
 
         self.passes: int = 1
-        self.pixels_per_mm = 25, 25
+        self.pixels_per_mm = 50, 50
         self.laser: Laser = None
 
         self.changed = Signal()
