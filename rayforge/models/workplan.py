@@ -173,9 +173,11 @@ class WorkStep:
 
         if self.can_scale():
             # Vector output, render size doesn't matter much. Use small size.
-            surface, _ = workpiece.render(*self.pixels_per_mm,
-                                           size=(100, 100),
-                                           force=True)
+            surface, _ = workpiece.render(
+                *self.pixels_per_mm,
+                size=(100, 100),
+                force=True
+            )
             # Check actual rendered size
             width_px, height_px = surface.get_width(), surface.get_height()
             width_mm = width_px / self.pixels_per_mm[0]
@@ -206,8 +208,9 @@ class WorkStep:
 
             # Translate chunk ops based on its offset within the full workpiece
             # Calculate offsets in mm relative to workpiece bottom-left origin
-            y_offset_px = size[1] - (surface.get_height()+y_offset_px) \
-                     / self.pixels_per_mm[1]
+            y_offset_px = (
+                size[1] - (surface.get_height() + y_offset_px)
+            ) / self.pixels_per_mm[1]
             chunk_ops.translate(x_offset_px/self.pixels_per_mm[0], y_offset_px)
 
             if self.can_scale():

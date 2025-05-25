@@ -36,8 +36,10 @@ class PDFRenderer(VipsRenderer):
         media_box = page.mediabox
         width_pt = float(media_box.width)
         height_pt = float(media_box.height)
-        return to_mm(width_pt, "pt", px_factor), \
-               to_mm(height_pt, "pt", px_factor)
+        return (
+            to_mm(width_pt, "pt", px_factor),
+            to_mm(height_pt, "pt", px_factor),
+        )
 
     @classmethod
     def _crop_to_content(cls, data):

@@ -206,10 +206,14 @@ def two_opt(ordered, max_iter=1000):
                 e_end = ordered[j][-1]
                 if j < n - 1:
                     f_start = ordered[j+1][0]
-                    curr_cost = math.dist(a_end.end, b_start.end) \
-                              + math.dist(e_end.end, f_start.end)
-                    new_cost = math.dist(a_end.end, e_end.end) \
-                             + math.dist(b_start.end, f_start.end)
+                    curr_cost = (
+                        math.dist(a_end.end, b_start.end)
+                        + math.dist(e_end.end, f_start.end)
+                    )
+                    new_cost = (
+                        math.dist(a_end.end, e_end.end)
+                        + math.dist(b_start.end, f_start.end)
+                    )
                 else:
                     curr_cost = math.dist(a_end.end, b_start.end)
                     new_cost = math.dist(a_end.end, e_end.end)

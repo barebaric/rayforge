@@ -227,8 +227,9 @@ class WorkStepElement(CanvasElement):
                 )
                 GLib.idle_add(self.canvas.queue_draw)
 
-    def _on_ops_generation_finished(self, sender: WorkStep,
-                                      workpiece: WorkPiece):
+    def _on_ops_generation_finished(
+        self, sender: WorkStep, workpiece: WorkPiece
+    ):
         """Called when ops generation is finished for a workpiece."""
         # Final redraw is triggered by the last _on_ops_chunk_available call's
         # queue_draw. No extra action needed here unless we add UI
@@ -358,8 +359,12 @@ class WorkSurface(Canvas):
 
         if wp_width_nat_mm > ws_width_mm or wp_height_nat_mm > ws_height_mm:
             # Calculate scaling factor while maintaining aspect ratio
-            scale_w = ws_width_mm / wp_width_nat_mm if wp_width_nat_mm > 0 else 1
-            scale_h = ws_height_mm / wp_height_nat_mm if wp_height_nat_mm > 0 else 1
+            scale_w = (
+                ws_width_mm / wp_width_nat_mm if wp_width_nat_mm > 0 else 1
+            )
+            scale_h = (
+                ws_height_mm / wp_height_nat_mm if wp_height_nat_mm > 0 else 1
+            )
             scale = min(scale_w, scale_h)
 
             width_mm = wp_width_nat_mm * scale
