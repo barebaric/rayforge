@@ -66,7 +66,13 @@ class OutlineTracer(OpsProducer):
     def run(self, machine, laser, surface, pixels_per_mm):
         # Find contours of the black areas
         binary = prepare_surface_for_tracing(surface)
-        _, binary = cv2.threshold(binary, 10, 255, cv2.THRESH_BINARY_INV)
+        binary = cv2.GaussianBlur(binary, (3, 3), 0)
+        binary = cv2.adaptiveThreshold(binary, 255,
+                                       cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY_INV, 11, 2)
+        # Apply erosion to clean up edges
+        kernel = np.ones((3, 3), np.uint8)
+        binary = cv2.erode(binary, kernel, iterations=1)
         contours, _ = cv2.findContours(binary,
                                        cv2.RETR_EXTERNAL,
                                        cv2.CHAIN_APPROX_NONE)
@@ -89,6 +95,9 @@ class EdgeTracer(OpsProducer):
 
         # Retrieve all contours (including holes)
         edges = cv2.Canny(binary, 10, 250)
+        # Apply dilation to connect edges
+        kernel = np.ones((3, 3), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
         contours, _ = cv2.findContours(edges,
                                        cv2.RETR_LIST,
                                        cv2.CHAIN_APPROX_NONE)
