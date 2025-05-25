@@ -160,6 +160,17 @@ class WorkStep:
 
         workpiece: the input workpiece to generate Ops for.
         """
+        # Yield state-setting commands once per step
+        initial_ops = Ops()
+        initial_ops.set_power(self.power)
+        initial_ops.set_cut_speed(self.cut_speed)
+        initial_ops.set_travel_speed(self.travel_speed)
+        if self.air_assist:
+            initial_ops.enable_air_assist()
+        else:
+            initial_ops.disable_air_assist()
+        yield initial_ops
+
         if self.can_scale():
             # Vector output, render size doesn't matter much. Use small size.
             surface, _ = workpiece.render(*self.pixels_per_mm,
