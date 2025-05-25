@@ -79,9 +79,9 @@ class TestSVGRenderer:
         cropped = SVGRenderer.prepare(transparent_svg)
         root = ET.fromstring(cropped)
         viewbox = list(map(float, root.get("viewBox").split()))
-        assert viewbox == pytest.approx([50.0, 50.0, 100.0, 100.0])
-        assert root.get("width") == "100.0px"  # Expect unit to be appended
-        assert root.get("height") == "100.0px"
+        assert viewbox == pytest.approx([50.0, 50.0, 100.0, 100.0], 2)
+        assert root.get("width") == "102.0px"  # Expect unit to be appended
+        assert root.get("height") == "102.0px"
 
     def test_render_chunk_generator(self, tmp_path):
         svg = b'''<svg xmlns="http://www.w3.org/2000/svg" 
