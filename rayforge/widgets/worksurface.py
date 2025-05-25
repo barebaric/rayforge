@@ -347,10 +347,28 @@ class WorkSurface(Canvas):
         if self.workpiece_elements.find_by_data(workpiece):
             self.queue_draw()
             return
-        width_mm, height_mm = workpiece.get_default_size()
+        # Get workpiece natural size and work surface size
+        wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size()
+        ws_width_mm = self.root.width_mm
+        ws_height_mm = self.root.height_mm
+
+        # Determine the size to use, scaling down if necessary
+        width_mm = wp_width_nat_mm
+        height_mm = wp_height_nat_mm
+
+        if wp_width_nat_mm > ws_width_mm or wp_height_nat_mm > ws_height_mm:
+            # Calculate scaling factor while maintaining aspect ratio
+            scale_w = ws_width_mm / wp_width_nat_mm if wp_width_nat_mm > 0 else 1
+            scale_h = ws_height_mm / wp_height_nat_mm if wp_height_nat_mm > 0 else 1
+            scale = min(scale_w, scale_h)
+
+            width_mm = wp_width_nat_mm * scale
+            height_mm = wp_height_nat_mm * scale
+
+        # Create and add the workpiece element
         elem = WorkPieceElement(workpiece,
-                                self.root.width_mm/2-width_mm/2,
-                                self.root.height_mm/2-height_mm/2,
+                                ws_width_mm/2 - width_mm/2,
+                                ws_height_mm/2 - height_mm/2,
                                 width_mm,
                                 height_mm)
         self.workpiece_elements.add(elem)
