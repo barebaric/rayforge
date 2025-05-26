@@ -209,7 +209,8 @@ class WorkStep:
             # Translate chunk ops based on its offset within the full workpiece
             # Calculate offsets in mm relative to workpiece bottom-left origin
             y_offset_px = (
-                size[1] - (surface.get_height()+y_offset_px) / self.pixels_per_mm[1]
+                size[1] - (surface.get_height()+y_offset_px)
+                / self.pixels_per_mm[1]
             )
             chunk_ops.translate(x_offset_px/self.pixels_per_mm[0], y_offset_px)
 
