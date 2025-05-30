@@ -1,6 +1,10 @@
-from gi.repository import Gtk, Graphene
+from gi.repository import Gtk, Graphene  # type: ignore
 import cairo
+import logging
 from .worksurface import WorkSurface, WorkPieceElement, WorkStepElement
+
+
+logger = logging.getLogger(__name__)
 
 
 class Axis(Gtk.DrawingArea):
@@ -98,6 +102,7 @@ class WorkBench(Gtk.Grid):
         self.surface.set_halign(Gtk.Align.FILL)
         self.surface.set_valign(Gtk.Align.FILL)
         self.attach(self.surface, 1, 0, 1, 1)
+        self.surface.set_size(width_mm, height_mm)
         self.surface.elem_removed.connect(self.on_elem_removed)
 
         # Add the X axis

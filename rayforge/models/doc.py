@@ -1,5 +1,5 @@
 import cairo
-from typing import List
+from typing import List, Optional
 from blinker import Signal
 from ..config import config
 from .workpiece import WorkPiece
@@ -17,7 +17,7 @@ class Doc:
         self.workpieces: List[WorkPiece] = []
         self._workpiece_ref_for_pyreverse: WorkPiece
         self.workplan: WorkPlan = WorkPlan(self, "Default plan")
-        self.surface: cairo.Surface = None
+        self.surface: Optional[cairo.ImageSurface] = None
         self.changed = Signal()
         self.workplan.changed.connect(self.changed.send)
 
@@ -60,9 +60,10 @@ class Doc:
         for workpiece in self.workpieces:
             surface, changed = workpiece.render(pixels_per_mm_x,
                                                 pixels_per_mm_y,
-                                                force)
+                                                size=(width, height),
+                                                force=force)
             if changed:
-                pos_x_mm, pos_y_mm = workpiece.pos
+                pos_x_mm, pos_y_mm = workpiece.pos or (0, 0)
                 pos_x = pos_x_mm * pixels_per_mm_x
                 pos_y = pos_y_mm * pixels_per_mm_y
                 ctx = cairo.Context(self.surface)

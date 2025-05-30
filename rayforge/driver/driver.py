@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Tuple
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -30,10 +30,10 @@ class DeviceStatus(Enum):
 
 @dataclass
 class DeviceState:
-    status: int = DeviceStatus.UNKNOWN
-    machine_pos: tuple[float, float, float] = None, None, None  # x, y, z in mm
-    work_pos: tuple[float, float, float] = None, None, None  # x, y, z in mm
-    feed_rate: int = None
+    status: DeviceStatus = DeviceStatus.UNKNOWN
+    machine_pos: Tuple[Optional[float], Optional[float], Optional[float]] = None, None, None  # x, y, z in mm
+    work_pos: Tuple[Optional[float], Optional[float], Optional[float]] = None, None, None  # x, y, z in mm
+    feed_rate: Optional[int] = None
 
 
 class Driver(ABC):
@@ -174,14 +174,17 @@ class DriverManager:
         await self.driver.connect()
 
     async def _reconfigure_driver(self, **args):
+        if not self.driver:
+            return
         await self.driver.cleanup()
         self._on_driver_changed()
         self.driver.setup(**args)
         await self.driver.connect()
 
     async def _switch_driver(self, driver, **args):
-        await self.driver.cleanup()
-        del self.driver
+        if self.driver:
+            await self.driver.cleanup()
+            del self.driver
         await self._assign_driver(driver, **args)
 
     def _on_driver_changed(self):

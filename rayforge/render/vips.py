@@ -1,3 +1,4 @@
+from typing import Generator, Optional, Tuple
 import cairo
 import io
 import math
@@ -26,16 +27,14 @@ class VipsRenderer(Renderer):
                        data,
                        width_px=None,
                        height_px=None,
-                       pixels_per_mm=None):
+                       pixels_per_mm: Optional[Tuple[float, float]] = None):
         """
         Return the pyvips image by using the loader function for the
         specific format.
         """
         if pixels_per_mm is None or None in pixels_per_mm:
-            assert width_px or height_px, \
+            assert width_px and height_px, \
                    "Need either width/height or pixels_per_mm"
-
-        if width_px and height_px:
             natsize = cls.get_natural_size(data, px_factor=.1)
             pixels_per_mm = width_px/natsize[0], height_px/natsize[1]
 
@@ -55,7 +54,11 @@ class VipsRenderer(Renderer):
         return cls._crop_to_content(data)
 
     @classmethod
-    def get_aspect_ratio(cls, data):
+    def _crop_to_content(cls, data):
+        return data
+
+    @classmethod
+    def get_aspect_ratio(cls, data: bytes) -> float:
         width_mm, height_mm = cls.get_natural_size(data)
         if width_mm is None or height_mm is None:
             return 1.0  # Default to square aspect ratio
@@ -73,14 +76,16 @@ class VipsRenderer(Renderer):
         return cairo.ImageSurface.create_from_png(io.BytesIO(buf))
 
     @classmethod
-    def render_chunk(cls,
-                     data,
-                     width_px,
-                     height_px,
-                     chunk_width=10000,
-                     chunk_height=20,
-                     overlap_x=1,
-                     overlap_y=0):
+    def render_chunk(
+        cls,
+        data,
+        width_px,
+        height_px,
+        chunk_width=10000,
+        chunk_height=20,
+        overlap_x=1,
+        overlap_y=0,
+    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         vips_image = cls.get_vips_image(data, width_px, height_px)
 
         # Resize to exact target dimensions

@@ -1,7 +1,8 @@
 from __future__ import annotations
 import logging
 import asyncio
-from typing import List, Dict, Iterator
+from abc import ABC
+from typing import List, Dict, Iterator, Tuple, Optional
 from copy import deepcopy
 from ..task import task_mgr, CancelledError
 from ..config import config, getflag
@@ -23,7 +24,7 @@ DEBUG_SMOOTH = getflag('DEBUG_SMOOTH')
 DEBUG_ARCWELD = getflag('DEBUG_ARCWELD')
 
 
-class WorkStep:
+class WorkStep(ABC):
     """
     A WorkStep is a set of Modifiers that operate on a set of
     WorkPieces. It normally generates a Ops in the end, but
@@ -32,7 +33,10 @@ class WorkStep:
     typelabel = None
 
     def __init__(self, opsproducer: OpsProducer, name=None):
-        self.workplan: WorkPlan = None
+        if not self.typelabel:
+            raise AttributeError('BUG: subclass must set typelabel attribute')
+
+        self.workplan: Optional[WorkPlan] = None
         self.name: str = name or self.typelabel
         self.visible: bool = True
         self.modifiers: List[Modifier] = [
@@ -45,18 +49,21 @@ class WorkStep:
         self._opstransformer_ref_for_pyreverse: OpsTransformer
 
         # Map WorkPieces to Ops and size
-        self.workpiece_to_ops: Dict[WorkPiece, [Ops, [float, float]]] = {}
+        self.workpiece_to_ops: Dict[
+            WorkPiece,
+            Tuple[Optional[Ops], Optional[Tuple[float, float]]]
+        ] = {}
         self._workpiece_ref_for_pyreverse: WorkPiece
         self._ops_ref_for_pyreverse: Ops
 
         self.passes: int = 1
         self.pixels_per_mm = 50, 50
-        self.laser: Laser = None
 
         self.changed = Signal()
         self.ops_generation_starting = Signal()  # (sender, workpiece)
         self.ops_chunk_available = Signal()      # (sender, workpiece, chunk)
         self.ops_generation_finished = Signal()  # (sender, workpiece)
+        self.laser: Laser = Laser()
         self.set_laser(config.machine.heads[0])
 
         self.power: int = self.laser.max_power
@@ -160,6 +167,10 @@ class WorkStep:
 
         workpiece: the input workpiece to generate Ops for.
         """
+        if not workpiece.size:
+            logger.error(f"failed to render workpiece {workpiece.name}: missing size")
+            return
+
         # Yield state-setting commands once per step
         initial_ops = Ops()
         initial_ops.set_power(self.power)
@@ -178,6 +189,10 @@ class WorkStep:
                 size=(100, 100),
                 force=True
             )
+            if not surface:
+                logger.error(f"failed to render workpiece {workpiece.name} to surface")
+                return
+
             # Check actual rendered size
             width_px, height_px = surface.get_width(), surface.get_height()
             width_mm = width_px / self.pixels_per_mm[0]
@@ -332,8 +347,11 @@ class WorkStep:
         the workpiece.
         Returns None if no Ops were made yet.
         """
+        if not workpiece.size:
+            logger.error(f"failed to render ops for workpiece {workpiece.name}: missing size")
+            return
         ops, size = self.workpiece_to_ops.get(workpiece, (None, None))
-        if ops is None:
+        if ops is None or size is None:
             return None
         orig_width_mm, orig_height_mm = size
         width_mm, height_mm = workpiece.size
@@ -440,6 +458,9 @@ class WorkPlan:
                 continue
 
             for workpiece in step.workpieces():
+                if not workpiece.pos or not workpiece.size:
+                    continue  # workpiece is not added to canvas
+
                 # Consume the generator for this step/workpiece
                 step_ops_for_workpiece = Ops()
                 # The step.execute generator yields Ops relative to
@@ -454,8 +475,7 @@ class WorkPlan:
                     x, y = workpiece.pos
                     # Assuming machine Y=0 is bottom-left,
                     # render Y=0 is top-left
-                    ymax = config.machine.dimensions[1]
-                    translate_y = ymax - y - workpiece.size[1]
+                    translate_y = y - workpiece.size[1]
                     step_ops_for_workpiece.translate(x, translate_y)
 
                 # Apply optimization if enabled, after collecting and

@@ -66,12 +66,18 @@ class WorkStepBox(GroupBox):
 
 
 if __name__ == "__main__":
+    from typing import cast
+    from ..opsproducer import OpsProducer
+    from ..render import Renderer
+
     class TestWindow(Gtk.ApplicationWindow):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
 
-            workstep = WorkStep('My test workstep')
-            workstep.add_workpiece(WorkPiece('Item one'))
+            producer = cast(OpsProducer, object)  # dummy
+            renderer = cast(Renderer, object)  # dummy
+            workstep = WorkStep(producer, 'My test workstep')
+            workstep.add_workpiece(WorkPiece('Item one', b'', renderer))
 
             box = WorkStepBox(workstep)
             self.set_child(box)

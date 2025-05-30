@@ -1,8 +1,12 @@
 import math
 import cairo
+import logging
 from ..models.ops import Ops, MoveToCommand, LineToCommand, ArcToCommand
 from ..models.machine import Machine
 from .encoder import OpsEncoder
+
+
+logger = logging.getLogger(__name__)
 
 
 class CairoEncoder(OpsEncoder):
@@ -13,7 +17,7 @@ class CairoEncoder(OpsEncoder):
     def encode(self,
                ops: Ops,
                machine: Machine,
-               surface: cairo.Surface,
+               surface: cairo.ImageSurface,
                scale: tuple[float, float],
                show_travel_moves: bool = False) -> None:
         # Set up Cairo context and scaling

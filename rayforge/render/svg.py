@@ -2,7 +2,7 @@ import re
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips
+    import pyvips  # type: ignore
 from xml.etree import ElementTree as ET
 from ..util.unit import to_mm
 from .vips import VipsRenderer

@@ -3,7 +3,7 @@ import io
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips
+    import pyvips  # type: ignore
 from pypdf import PdfReader, PdfWriter
 from ..util.unit import to_mm
 from .vips import VipsRenderer

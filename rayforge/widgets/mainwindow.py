@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Gio, GLib, Gdk, Adw
+from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
 from ..task import task_mgr
 from ..config import config
@@ -330,7 +330,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_machine_status_changed(self, sender):
         # If the machine is idle for the first time, perform auto-homing
         # if requested.
-        if self.needs_homing:
+        if self.needs_homing and driver_mgr.driver:
             device_status = self.machine_status.get_status()
             if device_status == DeviceStatus.IDLE:
                 self.needs_homing = False
@@ -473,9 +473,13 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.save(self, None, self.on_save_dialog_response)
 
     def on_home_clicked(self, button):
+        if not driver_mgr.driver:
+            return
         task_mgr.add_coroutine(driver_mgr.driver.home())
 
     def on_frame_clicked(self, button):
+        if not driver_mgr.driver:
+            return
         try:
             head = config.machine.heads[0]
         except IndexError:
@@ -492,10 +496,14 @@ class MainWindow(Adw.ApplicationWindow):
         task_mgr.add_coroutine(driver_mgr.driver.run(frame, config.machine))
 
     def on_send_clicked(self, button):
+        if not driver_mgr.driver:
+            return
         ops = self.doc.workplan.execute()
         task_mgr.add_coroutine(driver_mgr.driver.run(ops, config.machine))
 
     def on_hold_clicked(self, button):
+        if not driver_mgr.driver:
+            return
         if button.get_active():
             task_mgr.add_coroutine(driver_mgr.driver.set_hold())
             button.set_child(self.hold_on_icon)
@@ -504,6 +512,8 @@ class MainWindow(Adw.ApplicationWindow):
             button.set_child(self.hold_off_icon)
 
     def on_cancel_clicked(self, button):
+        if not driver_mgr.driver:
+            return
         task_mgr.add_coroutine(driver_mgr.driver.cancel())
 
     def on_save_dialog_response(self, dialog, result):

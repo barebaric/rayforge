@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
+from typing import Generator, Optional, Tuple
+import cairo
 
 
 class Renderer(ABC):
     """
     Reads image data and renders to a Cairo surface.
     """
+
     label = None
     mime_types = None
     extensions = None
@@ -19,7 +22,9 @@ class Renderer(ABC):
 
     @classmethod
     @abstractmethod
-    def get_natural_size(cls, data, px_factor=0):
+    def get_natural_size(
+        cls, data, px_factor: float = 0.0
+    ) -> Tuple[Optional[float], Optional[float]]:
         """
         Returns the natural (untransformed) size of the image in mm, if
         known. Return None, None, otherwise.
@@ -33,7 +38,7 @@ class Renderer(ABC):
 
     @classmethod
     @abstractmethod
-    def get_aspect_ratio(cls, data):
+    def get_aspect_ratio(cls, data: bytes) -> float:
         """
         Returns the natural (untransformed) aspect ratio of the image.
         """
@@ -41,24 +46,29 @@ class Renderer(ABC):
 
     @classmethod
     @abstractmethod
-    def render_workpiece(cls, data, width=None, height=None):
+    def render_workpiece(
+        cls, data, width=None, height=None
+    ) -> cairo.ImageSurface:
         """
         Renders to a Cairo surface.
         """
         pass
 
     @classmethod
-    def render_chunk(cls,
-                     data,
-                     width_px,
-                     height_px,
-                     chunk_width=100000,
-                     chunk_height=2,
-                     overlap_x=1,
-                     overlap_y=0):
+    def render_chunk(
+        cls,
+        data,
+        width_px,
+        height_px,
+        chunk_width=100000,
+        chunk_height=2,
+        overlap_x=1,
+        overlap_y=0,
+    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """
         Generator that renders to a Cairo surface, but in chunks.
-        Yields one chunk per iteration.
         chunk_width and chunk_height are specified in pixels.
+
+        Yields one chunk per iteration, as a tuple: ImageSurface, (x_pos, y_pos)
         """
         raise NotImplementedError
