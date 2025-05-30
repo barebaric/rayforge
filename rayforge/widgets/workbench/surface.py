@@ -38,24 +38,7 @@ class WorkSurface(Canvas):
         # Initial size will be set by do_size_allocate
         # self.update() # update is called by set_size
 
-    def _mm_to_canvas_pixel(self, x_mm, y_mm):
-        """Converts real-world mm coordinates to canvas pixel coordinates."""
-        # Assuming canvas origin is top-left, y-down.
-        # Real-world origin is typically bottom-left, y-up.
-        # Need to flip y-axis and scale.
-        x_px = x_mm * self.pixels_per_mm_x
-        y_px = self.root.height - (y_mm * self.pixels_per_mm_y)
-        return x_px, y_px
 
-    def _canvas_pixel_to_mm(self, x_canvas_pixel, y_canvas_pixel):
-        """Converts canvas pixel coordinates to real-world mm coordinates."""
-        # Assuming canvas origin is top-left, y-down.
-        # Real-world origin is typically bottom-left, y-up.
-        # Need to flip y-axis and scale.
-        x_mm = x_canvas_pixel / self.pixels_per_mm_x if self.pixels_per_mm_x else 0
-        #y_mm = (self.height_mm * self.pixels_per_mm_y - y_canvas_pixel) / self.pixels_per_mm_y if self.pixels_per_mm_y > 0 else 0
-        y_mm = self.height_mm - y_canvas_pixel/self.pixels_per_mm_y
-        return x_mm, y_mm
 
     def do_size_allocate(self, width, height, baseline):
         """Handles canvas size allocation in pixels."""
@@ -89,8 +72,8 @@ class WorkSurface(Canvas):
         # Need to get current mm position first
         # Use pos_abs() to get position relative to canvas root in pixels
         current_dot_pos_px = self.laser_dot.pos_abs()
-        current_dot_pos_mm = self._canvas_pixel_to_mm(*current_dot_pos_px)
-        self.set_laser_dot_position(*current_dot_pos_mm) # This will convert back to new pixels
+        current_dot_pos_mm = self.laser_dot.pixel_to_mm(*current_dot_pos_px)
+        self.set_laser_dot_position(*current_dot_pos_mm)  # This will convert back to new pixels
 
         # Allocate children based on new pixel sizes
         for elem in self.find_by_type(WorkStepElement):
@@ -157,15 +140,14 @@ class WorkSurface(Canvas):
 
     def set_laser_dot_position(self, x_mm, y_mm):
         """Sets the laser dot position in real-world mm."""
-        # Convert mm position to canvas pixel position
-        x_px, y_px = self._mm_to_canvas_pixel(x_mm, y_mm)
 
         # LaserDotElement is sized to represent the dot diameter in pixels.
         # Its position should be the top-left corner of its bounding box.
         # We want the center of the dot to be at (x_px, y_px).
+        x_px, y_px = self.laser_dot.mm_to_pixel(x_mm, y_mm)
         dot_width_px = self.laser_dot.width
-        self.laser_dot.set_pos(x_px - dot_width_px / 2,
-                               y_px - dot_width_px / 2)
+        self.laser_dot.set_pos(round(x_px - dot_width_px / 2),
+                               round(y_px - dot_width_px / 2))
         self.queue_draw()
 
     def on_workstep_changed(self, workstep, **kwargs):

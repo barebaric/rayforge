@@ -3,13 +3,13 @@ from ...config import config
 from ...opsencoder.cairoencoder import CairoEncoder
 from ...models.ops import Ops
 from ...models.workpiece import WorkPiece
-from ..canvas import CanvasElement
+from .surfaceelem import SurfaceElement
 
 
 logger = logging.getLogger(__name__)
 
 
-class WorkPieceOpsElement(CanvasElement):
+class WorkPieceOpsElement(SurfaceElement):
     """Displays the generated Ops for a single WorkPiece."""
     def __init__(self, workpiece: WorkPiece, **kwargs):
         """
@@ -42,7 +42,7 @@ class WorkPieceOpsElement(CanvasElement):
         # a re-caclulation of the positions in pixel.
         x_mm, y_mm = self.data.pos or (0, 0)
         width_mm, height_mm = self.data.size or (0, 0)
-        self.x, self.y = self.canvas._mm_to_canvas_pixel(x_mm, y_mm+height_mm)
+        self.x, self.y = self.mm_to_pixel(x_mm, y_mm+height_mm)
 
         # Calculate the size of the surface.
         width_mm, height_mm = self.data.size or (0, 0)

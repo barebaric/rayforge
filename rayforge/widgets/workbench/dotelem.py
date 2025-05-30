@@ -1,13 +1,13 @@
 import math
 import logging
 import cairo
-from ..canvas import CanvasElement
+from .surfaceelem import SurfaceElement
 
 
 logger = logging.getLogger(__name__)
 
 
-class DotElement(CanvasElement):
+class DotElement(SurfaceElement):
     """
     Draws a simple red dot.
     """
@@ -50,8 +50,7 @@ class DotElement(CanvasElement):
         ctx.set_source_rgb(.9, 0, 0)
 
         # Calculate radius in pixels based on the stored mm radius
-        pixels_per_mm_x = self.canvas.pixels_per_mm_x
-        radius_px = self.radius_mm * pixels_per_mm_x
+        radius_px = self.radius_mm * self.canvas.pixels_per_mm_x
 
         # Draw the circle centered within the element's pixel bounds
         center_x = self.width / 2

@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 from ...models.workpiece import WorkPiece
-from ..canvas import CanvasElement
+from .surfaceelem import SurfaceElement
 from .util import copy_surface
 
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class WorkPieceElement(CanvasElement):
+class WorkPieceElement(SurfaceElement):
     """
     A CanvasElement that displays a WorkPiece.
 
@@ -57,7 +57,7 @@ class WorkPieceElement(CanvasElement):
         width_mm, height_mm = workpiece.size or (0, 0)
 
         # Convert the mm values to pixel values.
-        new_x, new_y = self.canvas._mm_to_canvas_pixel(x_mm, y_mm + height_mm)
+        new_x, new_y = self.mm_to_pixel(x_mm, y_mm + height_mm)
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
@@ -93,7 +93,7 @@ class WorkPieceElement(CanvasElement):
         x, y, width, height = self.rect_abs()
 
         # Convert the pixel values to mm values.
-        x_mm, y_mm = self.canvas._canvas_pixel_to_mm(x, y + height)
+        x_mm, y_mm = self.pixel_to_mm(x, y + height)
         width_mm = width / self.canvas.pixels_per_mm_x
         height_mm = height / self.canvas.pixels_per_mm_y
 
@@ -127,7 +127,7 @@ class WorkPieceElement(CanvasElement):
         width_mm, height_mm = self.data.size or self.data.get_default_size()
 
         # Convert the mm values to pixel values.
-        new_x, new_y = self.canvas._mm_to_canvas_pixel(x_mm, y_mm + height_mm)
+        new_x, new_y = self.mm_to_pixel(x_mm, y_mm + height_mm)
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
