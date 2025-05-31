@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import Tuple, cast
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.workpiece import WorkPiece
 from ..canvas import Canvas, CanvasElement
@@ -39,7 +39,7 @@ class WorkSurface(Canvas):
             pan_y_mm=self.pan_y_mm,
             zoom_level=self.zoom_level,
         )
-        self.root.background = 0.9, 0.9, 0.9, 0.1  # light gray background
+        self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
 
         # These elements will be sized and positioned in pixels by WorkSurface
         self.workpiece_elements = CanvasElement(0, 0, 0, 0, selectable=False)
@@ -67,24 +67,53 @@ class WorkSurface(Canvas):
         self.add_controller(self.pan_gesture)
         self.pan_start = 0, 0
 
+        # This is hacky, but what to do: The EventControllerScroll provides
+        # no access to any mouse position, and there is no easy way to
+        # get the mouse position in Gtk4. So I have to store it here and
+        # track the motion event...
+        self.mouse_pos = 0, 0
+
         # Initial size will be set by do_size_allocate
         # self.update() # update is called by set_size
 
+    def on_motion(self, gesture, x: int, y: int):
+        self.mouse_pos = x, y
+        return super().on_motion(gesture, x, y)
+
     def on_scroll(self, controller, dx, dy):
         """Handles the scroll event for zoom."""
-        zoom_speed = 0.00    # Zoom disabled; does not work yet
-        if dy > 0:
-            self.zoom_level -= zoom_speed
-        else:
-            self.zoom_level += zoom_speed
-        self.zoom_level = max(0.5, self.zoom_level)  # Prevent zoom level
-        # from becoming too small
+        zoom_speed = 0.1
+        old_zoom_level = self.zoom_level
 
-        # Update AxisRenderer with the new zoom level
+        # Adjust zoom level
+        if dy > 0:  # Scroll down - zoom out
+            self.zoom_level *= (1 - zoom_speed)
+        else:  # Scroll up - zoom in
+            self.zoom_level *= (1 + zoom_speed)
+        # conservative limits for performance considerations, for now...
+        self.zoom_level = max(0.5, min(self.zoom_level, 1.5))
+
+        # Get current mouse position in mm
+        mouse_x_px, mouse_y_px = self.mouse_pos
+        focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
+
+        # Calculate the correct zoom factor
+        zoom_factor = self.zoom_level / old_zoom_level
+
+        # Calculate new pan position to keep focus point stable
+        self.pan_x_mm = focus_x_mm - (focus_x_mm - self.pan_x_mm) / zoom_factor
+        self.pan_y_mm = focus_y_mm - (focus_y_mm - self.pan_y_mm) / zoom_factor
+
+        # Update rendering
         self.axis_renderer.set_zoom(self.zoom_level)
-
         self.do_size_allocate(self.get_width(), self.get_height(), 0)
         self.queue_draw()
+
+    def pixel_to_mm(self, x_px: int, y_px: int) -> Tuple[float, float]:
+        """Converts pixel coordinates to real-world mm."""
+        x_mm = self.pan_x_mm + (x_px - self.root.x) / self.pixels_per_mm_x
+        y_mm = self.pan_y_mm + (self.root.height - y_px) / self.pixels_per_mm_y
+        return x_mm, y_mm
 
     def do_size_allocate(self, width, height, baseline):
         """Handles canvas size allocation in pixels."""
@@ -117,10 +146,12 @@ class WorkSurface(Canvas):
 
         # Update WorkSurface's internal pixel dimensions based on content area
         self.pixels_per_mm_x = (
-            content_width / self.width_mm if self.width_mm > 0 else 0
+            (content_width / self.width_mm * self.zoom_level
+             if self.width_mm > 0 else 0)
         )
         self.pixels_per_mm_y = (
-            content_height / self.height_mm if self.height_mm > 0 else 0
+            (content_height / self.height_mm * self.zoom_level
+             if self.height_mm > 0 else 0)
         )
 
         # Set the root element's size directly in pixels

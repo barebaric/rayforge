@@ -45,7 +45,7 @@ class WorkPieceElement(SurfaceElement):
         x, y, width, height = self.rect()
 
         # Convert the pixel values to mm values.
-        x_mm, y_mm = self.pixel_to_mm(x, y + height)
+        x_mm, y_mm = self.pixel_to_mm(x, y)
         width_mm = width / self.canvas.pixels_per_mm_x
         height_mm = height / self.canvas.pixels_per_mm_y
 
@@ -74,7 +74,6 @@ class WorkPieceElement(SurfaceElement):
         width_mm, height_mm = self.data.size or self.data.get_default_size()
 
         # Convert the mm values to pixel values.
-        new_x, new_y = self.mm_to_pixel(x_mm, y_mm + height_mm)
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
@@ -104,6 +103,7 @@ class WorkPieceElement(SurfaceElement):
             return
         if not self.canvas or not self.parent or self.surface is None:
             return
+
         surface, changed = self.data.render(
             self.canvas.pixels_per_mm_x,
             self.canvas.pixels_per_mm_y,
@@ -111,6 +111,7 @@ class WorkPieceElement(SurfaceElement):
         )
         if not changed or surface is None:
             return
+
         self.clear_surface(clip or self.rect())
         self.surface = copy_surface(
             surface,

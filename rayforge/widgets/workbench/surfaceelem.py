@@ -41,7 +41,8 @@ class SurfaceElement(CanvasElement, ABC):
             else 0
         )
         y_mm = (
-            self.canvas.height_mm - y_px / self.canvas.pixels_per_mm_y
+            ((self.canvas.root.height - self.height - y_px) /
+             self.canvas.pixels_per_mm_y)
             if self.canvas.pixels_per_mm_y
             else 0
         )
