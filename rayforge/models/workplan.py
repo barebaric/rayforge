@@ -479,11 +479,7 @@ class WorkPlan:
 
                 # Apply workpiece translation to machine coordinates
                 if step_ops_for_workpiece:
-                    x, y = workpiece.pos
-                    # Assuming machine Y=0 is bottom-left,
-                    # render Y=0 is top-left
-                    translate_y = y - workpiece.size[1]
-                    step_ops_for_workpiece.translate(x, translate_y)
+                    step_ops_for_workpiece.translate(*workpiece.pos)
 
                 # Apply optimization if enabled, after collecting and
                 # translating
