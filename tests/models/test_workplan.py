@@ -37,7 +37,7 @@ def mock_config(mocker):
     return mock_cfg
 
 @pytest.fixture
-def mock_task_mgr(mocker, event_loop):
+def mock_task_mgr(mocker, _function_event_loop):
     """Mocks the task manager to integrate with pytest-asyncio loop."""
     mock_mgr = MagicMock()
     created_tasks = [] # Store created tasks
@@ -45,7 +45,7 @@ def mock_task_mgr(mocker, event_loop):
     # This function will be called by the code under test
     def add_coroutine_mock(coro, when_done=None, key=None):
         # Schedule the coroutine on the event loop provided by pytest-asyncio
-        task = event_loop.create_task(coro)
+        task = _function_event_loop.create_task(coro)
         created_tasks.append(task) # Store the task
 
         # If a callback is provided, wrap it to match the expected signature
