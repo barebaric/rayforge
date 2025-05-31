@@ -1,8 +1,10 @@
 import logging
 from typing import cast
+import cairo
 from gi.repository import Graphene, Gdk  # type: ignore
 from ...models.workpiece import WorkPiece
 from ..canvas import Canvas, CanvasElement
+from .axis import AxisRenderer
 from .dotelem import DotElement
 from .workstepelem import WorkStepElement
 from .workpieceelem import WorkPieceElement
@@ -19,12 +21,25 @@ class WorkSurface(Canvas):
     def __init__(self, **kwargs):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
+        self.zoom_level = 1.0
+        self.pan_x_mm = 0.0
+        self.pan_y_mm = 0.0
         self.show_travel_moves = False
         self.width_mm = 100.0
         self.height_mm = 100.0
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
         self.grid_size_mm = 10.0  # in mm
+        self.font_size = 10  # Hardcoded font size
+
+        self.axis_renderer = AxisRenderer(
+            font_size=self.font_size,
+            width_mm=self.width_mm,
+            height_mm=self.height_mm,
+            pan_x_mm=self.pan_x_mm,
+            pan_y_mm=self.pan_y_mm,
+            zoom_level=self.zoom_level,
+        )
 
         # These elements will be sized and positioned in pixels by WorkSurface
         self.workpiece_elements = CanvasElement(0, 0, 0, 0, selectable=False)
@@ -38,30 +53,36 @@ class WorkSurface(Canvas):
         # Initial size will be set by do_size_allocate
         # self.update() # update is called by set_size
 
-
-
     def do_size_allocate(self, width, height, baseline):
         """Handles canvas size allocation in pixels."""
-        logger.debug(f"WorkSurface.do_size_allocate: width={width}, height={height}, baseline={baseline}")
+        #logger.debug(f"WorkSurface.do_size_allocate: width={width}, height={height}, baseline={baseline}")
         # Check if the size has actually changed
         if width == self.root.width and height == self.root.height:
             logger.debug("WorkSurface.do_size_allocate: Size has not changed, skipping re-allocation")
             return
 
+        # Calculate grid bounds using AxisRenderer
+        self.axis_renderer.set_width_mm(self.width_mm)
+        self.axis_renderer.set_height_mm(self.height_mm)
+        self.axis_renderer.set_pan_x_mm(self.pan_x_mm)
+        self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
+        self.axis_renderer.set_zoom(self.zoom_level)
+        origin_x, origin_y, max_x, max_y = self.axis_renderer.get_grid_bounds(width, height)
+
+        # Calculate content area based on grid bounds
+        content_width = max_x - origin_x
+        content_height = origin_y - max_y
+
+        # Update WorkSurface's internal pixel dimensions based on content area
+        self.pixels_per_mm_x = content_width / self.width_mm if self.width_mm > 0 else 0
+        self.pixels_per_mm_y = content_height / self.height_mm if self.height_mm > 0 else 0
+
         # Set the root element's size directly in pixels
-        self.root.set_size(width, height)
+        self.root.set_pos(origin_x, origin_y-content_height)
+        self.root.set_size(content_width, content_height)
 
-        # Update WorkSurface's internal pixel dimensions
-        self.pixels_per_mm_x = width / self.width_mm if self.width_mm > 0 else 0
-        self.pixels_per_mm_y = height / self.height_mm if self.height_mm > 0 else 0
-        logger.debug(
-            "WorkSurface.do_size_allocate: width=%s, height=%s, pixels_per_mm_x=%s, pixels_per_mm_y=%s, width_mm=%s, height_mm=%s",
-            width, height, self.pixels_per_mm_x, self.pixels_per_mm_y, self.width_mm, self.height_mm
-        )
-
-        # Update children elements that need to match canvas size
-        self.workpiece_elements.set_size(width, height)
-        logger.debug(f"WorkSurface.do_size_allocate: width={width}, height={height}, pixels_per_mm_x={self.pixels_per_mm_x}, pixels_per_mm_y={self.pixels_per_mm_y}")
+        # Update child elements that need to match canvas size
+        self.workpiece_elements.set_size(content_width, content_height)
 
         # Update laser dot size based on new pixel dimensions and its mm radius
         dot_radius_mm = self.laser_dot.radius_mm
@@ -77,8 +98,8 @@ class WorkSurface(Canvas):
 
         # Allocate children based on new pixel sizes
         for elem in self.find_by_type(WorkStepElement):
-            elem.set_size(width, height)
-        
+            elem.set_size(content_width, content_height)
+
         self.root.mark_dirty(recursive=True)
         self.root.allocate()
         self.queue_draw()
@@ -108,6 +129,23 @@ class WorkSurface(Canvas):
         # Aspect ratio calculation might still be useful here.
         self.aspect_ratio = self.width_mm / self.height_mm if self.height_mm > 0 else 1.0
         self.queue_draw()
+
+    def update_from_doc(self, doc):
+        self.doc = doc
+
+        # Remove anything from the canvas that no longer exists.
+        for elem in self.find_by_type(WorkStepElement):
+            if elem.data not in doc.workplan:
+                elem.remove()
+        for elem in self.find_by_type(WorkPieceElement):
+            if elem.data not in doc:
+                elem.remove()
+
+        # Add any new elements.
+        for workpiece in doc.workpieces:
+            self.add_workpiece(workpiece)
+        for workstep in doc.workplan:
+            self.add_workstep(workstep)
 
     def add_workstep(self, workstep):
         """
@@ -228,46 +266,26 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def do_snapshot(self, snapshot):
-        logger.debug("WorkSurface: do_snapshot called (actual redraw)")
-
         # Create a Cairo context for the snapshot
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
 
-        self.pixels_per_mm_x = width/self.width_mm if self.width_mm > 0 else 0
-        self.pixels_per_mm_y = height/self.height_mm if self.height_mm > 0 else 0
-        self._draw_grid(ctx, width, height)
+        # Draw grid
+        self.axis_renderer.draw_grid(
+            ctx,
+            width,
+            height,
+        )
+
+        # Draw axes and labels
+        self.axis_renderer.draw_axes_and_labels(
+            ctx,
+            width,
+            height,
+        )
 
         super().do_snapshot(snapshot)
-
-    def _draw_grid(self, ctx, width, height):
-        """Draws the grid on the work surface."""
-        if self.grid_size_mm <= 0 or self.pixels_per_mm_x <= 0 or self.pixels_per_mm_y <= 0:
-            return
-
-        grid_size_px_x = self.grid_size_mm * self.pixels_per_mm_x
-        grid_size_px_y = self.grid_size_mm * self.pixels_per_mm_y
-
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)  # Gray, semi-transparent
-        ctx.set_line_width(1.0)
-        ctx.set_hairline(True)
-
-        # Draw vertical lines
-        x = 0
-        while x <= width:
-            ctx.move_to(x, 0)
-            ctx.line_to(x, height)
-            x += grid_size_px_x
-
-        # Draw horizontal lines
-        y = 0
-        while y <= height:
-            ctx.move_to(0, y)
-            ctx.line_to(width, y)
-            y += grid_size_px_y
-
-        ctx.stroke()
 
     def on_key_pressed(self, controller, keyval: int, keycode: int, state: Gdk.ModifierType):
         if keyval == Gdk.KEY_Delete:

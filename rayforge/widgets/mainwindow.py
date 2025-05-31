@@ -10,8 +10,8 @@ from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
 from ..opsencoder.gcode import GcodeEncoder
 from ..render import renderers, renderer_by_mime_type
-from .workbench import WorkBench
 from .workplanview import WorkPlanView
+from .workbench.surface import WorkSurface
 from .statusview import ConnectionStatusMonitor, \
                         TransportStatus, \
                         MachineStatusMonitor
@@ -226,15 +226,17 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a work area to display the image and paths
         width_mm, height_mm = config.machine.dimensions
         ratio = width_mm/height_mm
-        self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=False)
+        self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=True)
         self.frame.set_margin_start(12)
         self.frame.set_margin_end(12)
         self.frame.set_hexpand(True)
+        self.frame.set_vexpand(True)
         self.paned.set_start_child(self.frame)
 
-        self.workbench = WorkBench(width_mm, height_mm)
-        self.workbench.set_hexpand(True)
-        self.frame.set_child(self.workbench)
+        self.surface = WorkSurface()
+        self.surface.set_size(width_mm, height_mm)
+        self.surface.set_hexpand(True)
+        self.frame.set_child(self.surface)
 
         # Make a default document.
         self.doc = Doc()
@@ -342,18 +344,18 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def on_doc_changed(self, sender, **kwargs):
-        self.workbench.update(self.doc)
+        self.surface.update_from_doc(self.doc)
         self.update_state()
 
     def on_config_changed(self, sender, **kwargs):
-        self.workbench.set_size(*config.machine.dimensions)
+        self.surface.set_size(*config.machine.dimensions)
         width_mm, height_mm = config.machine.dimensions
         ratio = width_mm/height_mm
         self.frame.set_ratio(ratio)
 
         # Apply selected device driver.
         self._try_driver_setup()
-        self.workbench.update(self.doc)
+        self.surface.update_from_doc(self.doc)
         self.update_state()
 
     def update_state(self):
@@ -398,10 +400,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Laser dot
         connected = conn_status == TransportStatus.CONNECTED
-        self.workbench.set_laser_dot_visible(connected)
+        self.surface.set_laser_dot_visible(connected)
         state = self.machine_status.state
         if state and None not in state.machine_pos:
-            self.workbench.set_laser_dot_position(*state.machine_pos[:2])
+            self.surface.set_laser_dot_position(*state.machine_pos[:2])
 
     def on_status_bar_clicked(self, gesture, n_press, x, y, box):
         dialog = MachineView()
@@ -436,7 +438,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.open(self, None, self.on_file_dialog_response)
 
     def on_button_visibility_clicked(self, button):
-        self.workbench.set_workpieces_visible(button.get_active())
+        self.surface.set_workpieces_visible(button.get_active())
         if button.get_active():
             button.set_child(self.visibility_on_icon)
         else:
@@ -444,11 +446,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_show_travel_toggled(self, button):
         is_active = button.get_active()
-        # Access WorkSurface through WorkBench
-        self.workbench.surface.set_show_travel_moves(is_active)
+        self.surface.set_show_travel_moves(is_active)
 
     def on_clear_clicked(self, button):
-        self.workbench.clear()
+        self.surface.clear()
 
     def on_export_clicked(self, button):
         # Create a file chooser dialog for saving the file
@@ -555,7 +556,7 @@ class MainWindow(Adw.ApplicationWindow):
         renderer = renderer_by_mime_type[mime_type]
         wp = WorkPiece.from_file(filename, renderer)
         self.doc.add_workpiece(wp)
-        self.workbench.update(self.doc)
+        self.surface.update_from_doc(self.doc)
         self.update_state()
 
     def show_about_dialog(self, action, param):

@@ -29,58 +29,9 @@ class WorkPieceElement(SurfaceElement):
         """
         self.canvas: Optional["WorkSurface"]
         self.data: WorkPiece = workpiece
-        self._last_pos_mm: Optional[Tuple[float, float]] = None
-        self._last_size_mm: Optional[Tuple[float, float]] = None
-        x_mm, y_mm = workpiece.pos or (0, 0)
-        width_mm, height_mm = workpiece.size or workpiece.get_default_size()
+        self._in_update = False
         super().__init__(0, 0, 0, 0, data=workpiece, **kwargs)
-        self._last_pos_mm = (x_mm, y_mm)
-        self._last_size_mm = (width_mm, height_mm)
         workpiece.size_changed.connect(self.allocate)
-        workpiece.changed.connect(self._on_workpiece_changed)
-
-    def _on_workpiece_changed(self, workpiece: WorkPiece):
-        """
-        Handles changes to the WorkPiece data.
-
-        Updates the element's position and size if they have changed
-        significantly.
-
-        Args:
-            workpiece: The WorkPiece that has changed.
-        """
-        if not self.canvas:
-            return
-
-        # Get the new position and size in mm.
-        x_mm, y_mm = workpiece.pos or (0, 0)
-        width_mm, height_mm = workpiece.size or (0, 0)
-
-        # Convert the mm values to pixel values.
-        new_x, new_y = self.mm_to_pixel(x_mm, y_mm + height_mm)
-        new_width = round(width_mm * self.canvas.pixels_per_mm_x)
-        new_height = round(height_mm * self.canvas.pixels_per_mm_y)
-
-        # Check if the position or size has changed significantly.
-        if (
-            abs(new_x - self.x) >= 1
-            or abs(new_y - self.y) >= 1
-            or abs(new_width - self.width) >= 1
-            or abs(new_height - self.height) >= 1
-        ):
-            # Update the element's position and size.
-            self.x, self.y = new_x, new_y
-            self.width, self.height = new_width, new_height
-
-            # Update the last known position and size in mm.
-            self._last_pos_mm = (x_mm, y_mm)
-            self._last_size_mm = (width_mm, height_mm)
-
-            # Allocate the element and mark it as dirty.
-            super().allocate()
-            self.mark_dirty()
-            self.canvas.queue_draw()
-
 
     def _update_workpiece(self):
         """
@@ -90,26 +41,19 @@ class WorkPieceElement(SurfaceElement):
             return
 
         # Get the element's position and size in pixels.
-        x, y, width, height = self.rect_abs()
+        x, y, width, height = self.rect()
 
         # Convert the pixel values to mm values.
         x_mm, y_mm = self.pixel_to_mm(x, y + height)
         width_mm = width / self.canvas.pixels_per_mm_x
         height_mm = height / self.canvas.pixels_per_mm_y
 
-        # Update the WorkPiece's position if it has changed.
-        if self._last_pos_mm is None or (x_mm, y_mm) != self._last_pos_mm:
+        self._in_update = True
+        try:
             self.data.set_pos(x_mm, y_mm)
-            self._last_pos_mm = (x_mm, y_mm)
-
-        # Update the WorkPiece's size if it has changed.
-        if (
-            self._last_size_mm is None
-            or (width_mm, height_mm) != self._last_size_mm
-        ):
             self.data.set_size(width_mm, height_mm)
-            self._last_size_mm = (width_mm, height_mm)
-
+        finally:
+            self._in_update = False
 
     def allocate(self, force: bool = False):
         """
@@ -121,6 +65,8 @@ class WorkPieceElement(SurfaceElement):
         """
         if not self.canvas:
             return
+        if self._in_update:
+            return
 
         # Get the position and size in mm from the WorkPiece.
         x_mm, y_mm = self.data.pos or (0, 0)
@@ -131,26 +77,14 @@ class WorkPieceElement(SurfaceElement):
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
-        # Check if the position or size has changed significantly.
-        if (
-            force
-            or abs(new_x - self.x) >= 1
-            or abs(new_y - self.y) >= 1
-            or abs(new_width - self.width) >= 1
-            or abs(new_height - self.height) >= 1
-        ):
-            # Update the element's position and size.
-            self.x, self.y = new_x, new_y
-            self.width, self.height = new_width, new_height
+        # Update the element's position and size.
+        self.set_pos_mm(x_mm, y_mm+height_mm)
+        self.width, self.height = new_width, new_height
 
-            # Update the last known position and size in mm.
-            self._last_pos_mm = (x_mm, y_mm)
-            self._last_size_mm = (width_mm, height_mm)
-
-            # Allocate the element and mark it as dirty.
-            super().allocate(force)
-            self.mark_dirty()
-            self.canvas.queue_draw()
+        # Allocate the element and mark it as dirty.
+        super().allocate(force)
+        self.mark_dirty()
+        self.canvas.queue_draw()
 
     def render(
         self,
@@ -206,3 +140,4 @@ class WorkPieceElement(SurfaceElement):
         """
         super().set_size(width, height)
         self._update_workpiece()
+        self.allocate()

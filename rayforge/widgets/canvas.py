@@ -133,7 +133,7 @@ class CanvasElement:
 
     def set_pos(self, x: int, y: int):
         self.x, self.y = x, y
-        if self.parent:
+        if isinstance(self.parent, CanvasElement):
             self.parent.mark_dirty()
 
     def pos(self) -> tuple[int, int]:
@@ -370,16 +370,15 @@ class Canvas(Gtk.DrawingArea):
 
         self.root.render()
         ctx = snapshot.append_cairo(bounds)
-        # The root element's position is always (0,0) relative to the canvas
         if self.root.surface:
-            ctx.set_source_surface(self.root.surface, 0, 0)
+            ctx.set_source_surface(self.root.surface, *self.root.pos())
             ctx.paint()
 
         self._render_selection(ctx, self.root)
 
     def _render_selection(self, ctx, elem: CanvasElement):
         # Calculate absolute position of the elem using the new method
-        elem_x, elem_y = elem.get_position_in_ancestor(self.root)
+        elem_x, elem_y = elem.get_position_in_ancestor(self)
         target_width = elem.width
         target_height = elem.height
 
@@ -416,7 +415,7 @@ class Canvas(Gtk.DrawingArea):
         Coordinates are relative to the canvas's top-left.
         """
         # Translate the hit coordinates to the element's local coordinate system
-        elem_x, elem_y = elem.get_position_in_ancestor(self.root)
+        elem_x, elem_y = elem.get_position_in_ancestor(self)
         local_x = x - elem_x
         local_y = y - elem_y
 
@@ -446,10 +445,9 @@ class Canvas(Gtk.DrawingArea):
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         self.grab_focus()
-
-        # x and y are already in canvas pixel coordinates
+        # Check whether the resize handle was clicked.
+        # x and y are in canvas pixel coordinates
         hit = self.get_elem_handle_hit(self.root, x, y, selectable=True)
-
         self.root.unselect_all()
 
         if hit and hit != self.root:
@@ -461,8 +459,9 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
             return
 
+        # Check whether the element body was clicked.
         # Translate the hit coordinates to the root element's local coordinate system (which is the canvas's)
-        hit = self.root.get_elem_hit(x, y, selectable=True)
+        hit = self.root.get_elem_hit(x-self.root.x, y-self.root.y, selectable=True)
         if hit and hit != self.root:
             hit.selected = True
             self.moving = True
@@ -509,7 +508,7 @@ class Canvas(Gtk.DrawingArea):
             self.active_elem.set_pos(start_x + delta_x,
                                      start_y + delta_y)
             if isinstance(self.active_elem.parent, CanvasElement):
-                self.active_elem.parent.dirty = True
+                self.active_elem.parent.mark_dirty()
 
         if self.resizing:
             new_w = max(self.handle_size, start_w + delta_x)

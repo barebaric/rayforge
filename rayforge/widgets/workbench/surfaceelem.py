@@ -36,8 +36,22 @@ class SurfaceElement(CanvasElement, ABC):
         if not self.canvas:
             return 0, 0
         x_mm = x_px / self.canvas.pixels_per_mm_x if self.canvas.pixels_per_mm_x else 0
-        y_mm = self.canvas.height_mm - y_px/self.canvas.pixels_per_mm_y
+        y_mm = self.canvas.height_mm - y_px/self.canvas.pixels_per_mm_y if self.canvas.pixels_per_mm_y else 0
         return x_mm, y_mm
+
+    def pos_mm(self) -> Tuple[float, float]:
+        """Gets the absolute position of the element in real-world mm."""
+        if not self.canvas:
+            return 0.0, 0.0
+        x_px, y_px = self.pos()
+        return self.pixel_to_mm(x_px, y_px)
+
+    def pos_abs_mm(self) -> Tuple[float, float]:
+        """Gets the absolute position of the element in real-world mm."""
+        if not self.canvas:
+            return 0.0, 0.0
+        x_px, y_px = self.pos_abs()
+        return self.pixel_to_mm(x_px, y_px)
 
     def set_pos_mm(self, x_mm, y_mm):
         """Sets the position of the element in real-world mm."""
@@ -45,3 +59,10 @@ class SurfaceElement(CanvasElement, ABC):
             return
         x_px, y_px = self.mm_to_pixel(x_mm, y_mm)
         super().set_pos(x_px, y_px)
+
+    def rect_mm(self) -> Tuple[float, float, float, float]:
+        """Gets the absolute position of the element in real-world mm."""
+        if not self.canvas:
+            return 0.0, 0.0, 0.0, 0.0
+        x_px, y_px, width_px, height_px = self.rect()
+        return *self.pixel_to_mm(x_px, y_px), *self.pixel_to_mm(width_px, height_px)
