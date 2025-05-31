@@ -1,7 +1,6 @@
 import logging
 from typing import cast
-import cairo
-from gi.repository import Graphene, Gdk  # type: ignore
+from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.workpiece import WorkPiece
 from ..canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
@@ -40,6 +39,7 @@ class WorkSurface(Canvas):
             pan_y_mm=self.pan_y_mm,
             zoom_level=self.zoom_level,
         )
+        self.root.background = 0.9, 0.9, 0.9, 0.1  # light gray background
 
         # These elements will be sized and positioned in pixels by WorkSurface
         self.workpiece_elements = CanvasElement(0, 0, 0, 0, selectable=False)
@@ -50,8 +50,37 @@ class WorkSurface(Canvas):
         self.laser_dot = DotElement(0, 0, 0, 0)
         self.root.add(self.laser_dot)
 
+        # Add scroll event controller for zoom
+        self.scroll_controller = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
+        self.scroll_controller.connect("scroll", self.on_scroll)
+        self.add_controller(self.scroll_controller)
+
+        # Add middle click gesture for panning
+        self.pan_gesture = Gtk.GestureDrag.new()
+        self.pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
+        self.pan_gesture.connect("drag-begin", self.on_pan_begin)
+        self.pan_gesture.connect("drag-update", self.on_pan_update)
+        self.pan_gesture.connect("drag-end", self.on_pan_end)
+        self.add_controller(self.pan_gesture)
+        self.pan_start = 0, 0
+
         # Initial size will be set by do_size_allocate
         # self.update() # update is called by set_size
+
+    def on_scroll(self, controller, dx, dy):
+        """Handles the scroll event for zoom."""
+        zoom_speed = 0.00    # Zoom disabled; does not work yet
+        if dy > 0:
+            self.zoom_level -= zoom_speed
+        else:
+            self.zoom_level += zoom_speed
+        self.zoom_level = max(0.5, self.zoom_level)  # Prevent zoom level from becoming too small
+
+        # Update AxisRenderer with the new zoom level
+        self.axis_renderer.set_zoom(self.zoom_level)
+
+        self.do_size_allocate(self.get_width(), self.get_height(), 0)
+        self.queue_draw()
 
     def do_size_allocate(self, width, height, baseline):
         """Handles canvas size allocation in pixels."""
@@ -68,17 +97,18 @@ class WorkSurface(Canvas):
         self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
         self.axis_renderer.set_zoom(self.zoom_level)
         origin_x, origin_y, max_x, max_y = self.axis_renderer.get_grid_bounds(width, height)
+        axis_width = self.axis_renderer.get_y_axis_width()
+        axis_height = self.axis_renderer.get_x_axis_height()
 
         # Calculate content area based on grid bounds
-        content_width = max_x - origin_x
-        content_height = origin_y - max_y
+        content_width, content_height = self.axis_renderer.get_content_size(width, height)
 
         # Update WorkSurface's internal pixel dimensions based on content area
         self.pixels_per_mm_x = content_width / self.width_mm if self.width_mm > 0 else 0
         self.pixels_per_mm_y = content_height / self.height_mm if self.height_mm > 0 else 0
 
         # Set the root element's size directly in pixels
-        self.root.set_pos(origin_x, origin_y-content_height)
+        self.root.set_pos(2*axis_width - origin_x, height - origin_y - axis_height)
         self.root.set_size(content_width, content_height)
 
         # Update child elements that need to match canvas size
@@ -298,3 +328,18 @@ class WorkSurface(Canvas):
                     ops_elem.remove()
                     del ops_elem   # to ensure signals disconnect
         return super().on_key_pressed(controller, keyval, keycode, state)
+
+    def on_pan_begin(self, gesture, x, y):
+        self.pan_start = self.pan_x_mm, self.pan_y_mm
+        logger.debug(f"on_pan_begin: x={x}, y={y}")
+
+    def on_pan_update(self, gesture, x, y):
+        # Calculate pan offset based on drag delta
+        offset = gesture.get_offset()
+        self.pan_x_mm = self.pan_start[0] - offset.x/self.pixels_per_mm_x
+        self.pan_y_mm = self.pan_start[1] + offset.y/self.pixels_per_mm_y
+        self.do_size_allocate(self.get_width(), self.get_height(), 0)
+        self.queue_draw()
+
+    def on_pan_end(self, gesture, x, y):
+        pass

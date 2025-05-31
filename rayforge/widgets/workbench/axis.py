@@ -22,13 +22,38 @@ class AxisRenderer:
         zoom_level: float = 1.0,
     ):
         self.grid_size_mm: float = grid_size_mm
-        self.axis_thickness_px: int = 25
         self.width_mm: float = width_mm
         self.height_mm: float = height_mm
         self.pan_x_mm: float = pan_x_mm
         self.pan_y_mm: float = pan_y_mm
         self.font_size: int = font_size
         self.zoom_level: float = zoom_level
+
+    def get_content_size(self, width_px: int, height_px: int) -> tuple[int, int]:
+        """
+        Calculates the content area dimensions and margins.
+
+        Args:
+            width_px: The width of the full drawing area in pixels.
+            height_px: The height of the full drawing area in pixels.
+
+        Returns:
+            Tuple of (content_width_px, content_height_px).
+        """
+        x_axis_height = self.get_x_axis_height()
+        y_axis_width = self.get_y_axis_width()
+        right_margin = math.ceil(y_axis_width / 2)
+        top_margin = math.ceil(x_axis_height / 2)
+
+        content_width_px = width_px - y_axis_width - right_margin
+        content_height_px = height_px - x_axis_height - top_margin
+
+        if content_width_px < 0 or content_height_px < 0:
+            logger.warning("Content area dimensions are negative; canvas may be too small.")
+            content_width_px = max(0, content_width_px)
+            content_height_px = max(0, content_height_px)
+
+        return content_width_px, content_height_px
 
     def get_grid_bounds(self, width_px: int, height_px: int) -> tuple[int, int, int, int]:
         """Calculates the origin coordinates in pixels."""
@@ -45,42 +70,51 @@ class AxisRenderer:
 
         origin_x_px = y_axis_width + round(self.pan_x_mm * pixels_per_mm_x)
         origin_y_px = (
-            content_height_px - round(self.pan_y_mm * pixels_per_mm_y) - x_axis_height
+            content_height_px - round(self.pan_y_mm * pixels_per_mm_y) 
         )  # Y inverted
 
         return origin_x_px, origin_y_px, width_px-right_margin, top_margin
 
     def _x_axis_intervals(self, width_px: int, height_px: int):
-        """Yields (x_mm, x_px) tuples."""
-        origin_x, _, max_x, _ = self.get_grid_bounds(width_px, height_px)
-        content_width_px = max_x - origin_x
+        """Yields (x_mm, x_px) tuples for grid lines within [0, self.width_mm] that are visible."""
+        y_axis_width = self.get_y_axis_width()
+        right_margin = math.ceil(y_axis_width / 2)
+        content_width_px = width_px - y_axis_width - right_margin
         pixels_per_mm_x = content_width_px / self.width_mm * self.zoom_level
+        visible_width_mm = self.width_mm / self.zoom_level
 
-        for x_mm in range(
-            0,
-            int(self.width_mm) + int(self.grid_size_mm),
-            int(self.grid_size_mm),
-        ):
-            x_px = origin_x + x_mm * pixels_per_mm_x - self.pan_x_mm * pixels_per_mm_x
-            #logger.debug(f"pixels_per_mm_x: {pixels_per_mm_x}, x_mm: {x_mm}, x_px: {x_px}")
+        visible_min_x_mm = max(0, self.pan_x_mm)
+        visible_max_x_mm = min(self.width_mm, self.pan_x_mm + visible_width_mm)
+
+        k_start = max(0, math.ceil(visible_min_x_mm / self.grid_size_mm))  # Ensure no negative k
+        k_end = math.floor(visible_max_x_mm / self.grid_size_mm)
+
+        for k in range(k_start, k_end + 1):
+            x_mm = k * self.grid_size_mm
+            if x_mm > self.width_mm:
+                break
+            x_px = y_axis_width + (x_mm - self.pan_x_mm) * pixels_per_mm_x
             yield x_mm, x_px
 
     def _y_axis_intervals(self, width_px: int, height_px: int):
-        """Yields (y_mm, y_px) tuples."""
-        _, origin_y, _, max_y = self.get_grid_bounds(width_px, height_px)
-        content_height_px = origin_y - max_y
+        """Yields (y_mm, y_px) tuples for grid lines within [0, self.height_mm] that are visible."""
+        x_axis_height = self.get_x_axis_height()
+        top_margin = math.ceil(x_axis_height / 2)
+        content_height_px = height_px - x_axis_height - top_margin
         pixels_per_mm_y = content_height_px / self.height_mm * self.zoom_level
+        visible_height_mm = self.height_mm / self.zoom_level
 
-        for y_mm in range(
-            0,
-            int(self.height_mm) + int(self.grid_size_mm),
-            int(self.grid_size_mm),
-        ):
-            y_px = (
-                origin_y
-                - (y_mm + self.pan_y_mm) * pixels_per_mm_y
-            )
-            #logger.debug(f"pixels_per_mm_y: {pixels_per_mm_y}, y_mm: {y_mm}, y_px: {y_px}")
+        visible_min_y_mm = max(0, self.pan_y_mm)
+        visible_max_y_mm = min(self.height_mm, self.pan_y_mm + visible_height_mm)
+
+        k_start = max(0, math.ceil(visible_min_y_mm / self.grid_size_mm))  # Ensure no negative k
+        k_end = math.floor(visible_max_y_mm / self.grid_size_mm)
+
+        for k in range(k_start, k_end + 1):
+            y_mm = k * self.grid_size_mm
+            if y_mm > self.height_mm:
+                break
+            y_px = content_height_px - (y_mm - self.pan_y_mm) * pixels_per_mm_y + top_margin
             yield y_mm, y_px
 
     def draw_grid(
@@ -104,23 +138,25 @@ class AxisRenderer:
         """
         ctx.save()
 
+        # Calculate content area dimensions
+        y_axis_width = self.get_y_axis_width()
+        right_margin = math.ceil(y_axis_width / 2)
+        top_margin = math.ceil(self.get_x_axis_height() / 2)
+
         # Draw grid lines
         ctx.set_source_rgb(0.9, 0.9, 0.9)
         ctx.set_hairline(True)
 
-        origin_x_px, origin_y_px, max_x_px, max_y_px = self.get_grid_bounds(width_px, height_px)
         # Vertical lines
         for x_mm, x_px in self._x_axis_intervals(width_px, height_px):
-            ctx.move_to(x_px, origin_y_px)
-            ctx.line_to(x_px, max_y_px)
-            #logger.debug(f"Vertical: x_px: {x_px}, origin_x_px: {origin_x_px}, origin_y_px: {origin_y_px}, height_px: {height_px}")
+            ctx.move_to(x_px, top_margin)
+            ctx.line_to(x_px, height_px - self.get_x_axis_height())
             ctx.stroke()
 
         # Horizontal lines
         for y_mm, y_px in self._y_axis_intervals(width_px, height_px):
-            #logger.debug(f"Horizontal: y_px: {y_px}, origin_x_px: {origin_x_px}, origin_y_px: {origin_y_px}, width_px: {width_px}")
-            ctx.move_to(origin_x_px, y_px)
-            ctx.line_to(max_x_px, y_px)
+            ctx.move_to(y_axis_width, y_px)
+            ctx.line_to(width_px - right_margin, y_px)
             ctx.stroke()
 
         ctx.restore()
@@ -139,54 +175,50 @@ class AxisRenderer:
         """
         ctx.save()
 
+        # Calculate fixed positions for axis lines
+        x_axis_height = self.get_x_axis_height()
+        y_axis_width = self.get_y_axis_width()
+        right_margin = math.ceil(y_axis_width / 2)
+        top_margin = math.ceil(x_axis_height / 2)
+        x_axis_y = height_px - x_axis_height  # Bottom edge of content area
+        y_axis_x = y_axis_width              # Left edge of content area
+
+        # Draw fixed axis lines
         ctx.set_source_rgb(0, 0, 0)
-        ctx.set_line_width(1)  # Axes lines are always 1px thick
+        ctx.set_line_width(1)
 
-        # Draw X axis line (at origin_y_px in screen coords) within the content area
-        origin_x_px, origin_y_px, max_x_px, max_y_px = self.get_grid_bounds(width_px, height_px)
-        ctx.move_to(origin_x_px, origin_y_px)
-        ctx.line_to(max_x_px, origin_y_px)
+        # X-axis line (fixed at bottom)
+        ctx.move_to(y_axis_width, x_axis_y)
+        ctx.line_to(width_px - right_margin, x_axis_y)
         ctx.stroke()
 
-        # Draw Y axis line (at origin_x_px in screen coords) within the content area
-        ctx.move_to(origin_x_px, origin_y_px)
-        ctx.line_to(origin_x_px, max_y_px)
+        # Y-axis line (fixed at left)
+        ctx.move_to(y_axis_x, top_margin)
+        ctx.line_to(y_axis_x, height_px - x_axis_height)
         ctx.stroke()
 
-        # Draw labels
+        # Configure font for labels
         layout = PangoCairo.create_layout(ctx)
         font_desc = Pango.FontDescription.from_string(f"Sans {self.font_size}")
         layout.set_font_description(font_desc)
         ctx.set_source_rgb(0, 0, 0)
 
-        # Draw origin label
-        label = "0"
-        extents = ctx.text_extents(label)
-        ctx.move_to(origin_x_px - extents.width, origin_y_px + extents.height)
-        ctx.show_text(label)
-
-        # X axis labels
+        # X-axis labels (below fixed x-axis)
         for x_mm, x_px in self._x_axis_intervals(width_px, height_px):
-            # Skip drawing the label if it's the origin (0, 0)
             if x_mm == 0:
-                continue
-
-            # Draw the label
-            label = f"{x_mm}"
+                continue  # Skip origin label or handle separately if needed
+            label = f"{x_mm:.0f}"
             extents = ctx.text_extents(label)
-            ctx.move_to(x_px - extents.width / 2, origin_y_px + extents.height + 4)
+            ctx.move_to(x_px - extents.width / 2, x_axis_y + extents.height + 4)
             ctx.show_text(label)
 
-        # Y axis labels
+        # Y-axis labels (left of fixed y-axis)
         for y_mm, y_px in self._y_axis_intervals(width_px, height_px):
-            # Skip drawing the label if it's the origin (0, 0)
             if y_mm == 0:
-                continue
-
-            # Draw the label
-            label = f"{y_mm}"
+                continue  # Skip origin label or handle separately if needed
+            label = f"{y_mm:.0f}"
             extents = ctx.text_extents(label)
-            ctx.move_to(origin_x_px - extents.width - 2, y_px + extents.height/2)
+            ctx.move_to(y_axis_x - extents.width - 4, y_px + extents.height / 2)
             ctx.show_text(label)
 
         ctx.restore()
@@ -206,7 +238,7 @@ class AxisRenderer:
                 continue
             extents = ctx.text_extents(f"{x_mm}")
             max_height = max(max_height, extents.height)
-        return math.ceil(max_height) + 2  # adding some margin
+        return math.ceil(max_height) + 4  # adding some margin
 
     def get_y_axis_width(self) -> int:
         """Calculates the maximum width of the Y-axis labels."""
@@ -219,9 +251,9 @@ class AxisRenderer:
             int(self.height_mm) + int(self.grid_size_mm),
             int(self.grid_size_mm),
         ):
-            extents = ctx.text_extents(f"{y_mm}")
+            extents = ctx.text_extents(f"{y_mm:.0f}")
             max_width = max(max_width, extents.width)
-        return math.ceil(max_width) + 2  # adding some margin
+        return math.ceil(max_width) + 4  # adding some margin
 
     def set_width_mm(self, width_mm: float):
         self.width_mm = width_mm

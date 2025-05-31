@@ -195,15 +195,14 @@ class CanvasElement:
         if self.surface is None:
             return # Cannot clear surface if it doesn't exist
 
+        # Apply clip, if any.
         if clip is None:
-            clip = self.rect()
+            clip = 0, 0, *self.size()
+        ctx = cairo.Context(self.surface)
+        ctx.rectangle(*clip)
+        ctx.clip()
 
         # Paint background
-        x, y, w, h = clip
-        ctx = cairo.Context(self.surface)
-        ctx.rectangle(0, 0, x+w, y+h)
-        ctx.clip()
-        ctx.save()
         ctx.set_source_rgba(*self.background)
         ctx.set_operator(cairo.OPERATOR_SOURCE)
         ctx.paint()
@@ -217,14 +216,15 @@ class CanvasElement:
         if not self.dirty and not force:
             return
 
-        clip = clip or self.rect()
+        # Apply clip, if any.
+        if clip is None:
+            clip = 0, 0, *self.size()
         self.clear_surface(clip)
+        ctx = cairo.Context(self.surface)
+        ctx.rectangle(*clip)
+        ctx.clip()
 
         # Paint children
-        x, y, w, h = clip
-        ctx = cairo.Context(self.surface)
-        ctx.rectangle(0, 0, x+w, y+h)
-        ctx.clip()
         for child in self.children:
             if child.dirty:
                 rect = self._rect_to_child_coords_px(child, child.rect())
@@ -475,7 +475,7 @@ class Canvas(Gtk.DrawingArea):
                 if hit in parent_children:
                     parent_children.remove(hit)
                     parent_children.append(hit)
-                    hit.parent.dirty = True # Mark parent dirty as child order changed
+                    hit.parent.mark_dirty()  # Mark parent dirty as child order changed
 
             self.queue_draw()
             return
@@ -526,8 +526,6 @@ class Canvas(Gtk.DrawingArea):
                     new_h = min(new_h, self.active_elem.parent.height - self.active_elem.y)
 
             self.active_elem.set_size(new_w, new_h)
-            if isinstance(self.active_elem.parent, CanvasElement):
-                self.active_elem.parent.dirty = True # Mark parent dirty as child size changed
             self.active_elem.allocate() # Reallocate surface for new size
 
         self.queue_draw()
