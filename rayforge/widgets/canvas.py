@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Tuple
 import cairo
-from gi.repository import Gtk, Gdk, Graphene # type: ignore
+from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from copy import deepcopy
 from blinker import Signal
 
@@ -11,7 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class CanvasElement:
-    def __init__(self, x: int, y: int, width: int, height: int,
+    def __init__(self,
+                 x: int,
+                 y: int,
+                 width: int,
+                 height: int,
                  selected: bool = False,
                  selectable: bool = True,
                  visible: bool = True,
@@ -19,7 +23,10 @@ class CanvasElement:
                  canvas: Canvas | None = None,
                  parent: Canvas | CanvasElement | None = None,
                  data: object = None):
-        logger.debug(f"CanvasElement.__init__: x={x}, y={y}, width={width}, height={height}")
+        logger.debug(
+            f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
+            f"height={height}"
+        )
 
         self.x: int = x  # Relative to parent (or canvas if top-level)
         self.y: int = y  # Relative to parent (or canvas if top-level)
@@ -164,7 +171,7 @@ class CanvasElement:
 
     def get_aspect_ratio(self) -> float:
         if self.height == 0:
-            return 0.0 # Avoid division by zero
+            return 0.0  # Avoid division by zero
         return self.width / self.height
 
     def allocate(self, force: bool = False):
@@ -180,7 +187,8 @@ class CanvasElement:
             return
 
         if width > 0 and height > 0:
-            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+            self.surface = cairo.ImageSurface(
+                cairo.FORMAT_ARGB32, width, height)
         else:
             self.surface = None  # Cannot create surface with zero size
 
@@ -191,9 +199,10 @@ class CanvasElement:
         child_x, child_y, child_w, child_h = child.rect()
         return x-child_x, y-child_y, w, h
 
-    def clear_surface(self, clip: tuple[float, float, float, float] | None = None):
+    def clear_surface(self,
+                      clip: tuple[float, float, float, float] | None = None):
         if self.surface is None:
-            return # Cannot clear surface if it doesn't exist
+            return  # Cannot clear surface if it doesn't exist
 
         # Apply clip, if any.
         if clip is None:
@@ -207,12 +216,16 @@ class CanvasElement:
         ctx.set_operator(cairo.OPERATOR_SOURCE)
         ctx.paint()
 
-    def render(self, clip: tuple[float, float, float, float] | None = None, force: bool = False):
+    def render(
+        self,
+        clip: tuple[float, float, float, float] | None = None,
+        force: bool = False
+    ):
         """
         clip: x, y, w, h. the region to render
         """
         if self.surface is None:
-            return # Cannot render if surface doesn't exist
+            return  # Cannot render if surface doesn't exist
         if not self.dirty and not force:
             return
 
@@ -242,7 +255,9 @@ class CanvasElement:
                 return True
         return False
 
-    def get_elem_hit(self, x: float, y: float, selectable: bool = False) -> CanvasElement | None:
+    def get_elem_hit(
+        self, x: float, y: float, selectable: bool = False
+    ) -> CanvasElement | None:
         """
         Check if the point (x, y) hits this elem or any of its children.
         If selectable is True, only selectable elems are considered.
@@ -266,7 +281,9 @@ class CanvasElement:
 
         return None
 
-    def get_position_in_ancestor(self, ancestor: Canvas | CanvasElement) -> tuple[float, float]:
+    def get_position_in_ancestor(
+        self, ancestor: Canvas | CanvasElement
+    ) -> tuple[float, float]:
         """
         Calculates and returns the (x, y) pixel position of the current element
         relative to the top-left corner of the specified ancestor.
@@ -280,17 +297,18 @@ class CanvasElement:
             pos_x += current.x
             pos_y += current.y
             if not isinstance(current.parent, CanvasElement):
-                 raise ValueError("Ancestor is not in the element's parent chain")
+                raise ValueError(
+                    "Ancestor is not in the element's parent chain")
             current = current.parent
 
         if current.parent != ancestor:
-             # This should not happen if ancestor is in the parent chain
-             raise ValueError("Ancestor is not in the element's parent chain")
+            # This should not happen if ancestor is in the parent chain
+            raise ValueError("Ancestor is not in the element's parent chain")
 
-        # Add the position relative to the direct parent (which is the ancestor)
+        # Add the position relative to the direct parent (which is the
+        # ancestor)
         pos_x += current.x
         pos_y += current.y
-
         return pos_x, pos_y
 
     def dump(self, indent: int = 0):
@@ -304,14 +322,18 @@ class CanvasElement:
 
 
 class Canvas(Gtk.DrawingArea):
-    def __init__(self, width_mm: float = 100, height_mm: float = 100, **kwargs):
+    def __init__(
+        self, width_mm: float = 100, height_mm: float = 100, **kwargs
+    ):
         super().__init__(**kwargs)
-        self.root = CanvasElement(0,
-                                  0,
-                                  0, # Initial size is 0, set in do_size_allocate
-                                  0, # Initial size is 0, set in do_size_allocate
-                                  canvas=self,
-                                  parent=self)
+        self.root = CanvasElement(
+            0,
+            0,
+            0,  # Initial size is 0, set in do_size_allocate
+            0,  # Initial size is 0, set in do_size_allocate
+            canvas=self,
+            parent=self,
+        )
         self.handle_size: int = 12   # Resize handle size
         self.active_elem: CanvasElement | None = None
         self.active_origin: tuple[int, int, int, int] | None = None
@@ -409,12 +431,20 @@ class Canvas(Gtk.DrawingArea):
         for child in elem.children:
             self._render_selection(ctx, child)
 
-    def get_elem_handle_hit(self, elem: CanvasElement, x: float, y: float, selectable: bool = True) -> CanvasElement | None:
+    def get_elem_handle_hit(
+        self,
+        elem: CanvasElement,
+        x: float,
+        y: float,
+        selectable: bool = True,
+    ) -> CanvasElement | None:
         """
-        Check if the point (x, y) hits the resize handle of this elem or any of its children.
+        Check if the point (x, y) hits the resize handle of this elem or
+        any of its children.
         Coordinates are relative to the canvas's top-left.
         """
-        # Translate the hit coordinates to the element's local coordinate system
+        # Translate the hit coordinates to the element's local coordinate
+        # system
         elem_x, elem_y = elem.get_position_in_ancestor(self)
         local_x = x - elem_x
         local_y = y - elem_y
@@ -433,13 +463,17 @@ class Canvas(Gtk.DrawingArea):
         if not elem.selected:
             return None
 
-        # Check if the point is within the elem's handle bounds (in local coordinates)
-        handle_x1 = elem.width - self.handle_size/2
+        # Check if the point is within the elem's handle bounds (in local
+        # coordinates)
+        handle_x1 = elem.width - self.handle_size / 2
         handle_x2 = handle_x1 + self.handle_size
         handle_y1 = elem.height - self.handle_size/2
         handle_y2 = handle_y1 + self.handle_size
 
-        if handle_x1 <= local_x <= handle_x2 and handle_y1 <= local_y <= handle_y2:
+        if (
+            handle_x1 <= local_x <= handle_x2
+            and handle_y1 <= local_y <= handle_y2
+        ):
             return elem
         return None
 
@@ -453,19 +487,21 @@ class Canvas(Gtk.DrawingArea):
         if hit and hit != self.root:
             hit.selected = True
             self.resizing = True
-            self.moving = False # Ensure moving is false when resizing
+            self.moving = False  # Ensure moving is false when resizing
             self.active_elem = hit
             self.active_origin = hit.rect()
             self.queue_draw()
             return
 
         # Check whether the element body was clicked.
-        # Translate the hit coordinates to the root element's local coordinate system (which is the canvas's)
-        hit = self.root.get_elem_hit(x-self.root.x, y-self.root.y, selectable=True)
+        # Translate the hit coordinates to the root element's local
+        # coordinate system (which is the canvas's)
+        hit = self.root.get_elem_hit(
+            x - self.root.x, y - self.root.y, selectable=True)
         if hit and hit != self.root:
             hit.selected = True
             self.moving = True
-            self.resizing = False # Ensure resizing is false when moving
+            self.resizing = False  # Ensure resizing is false when moving
             self.active_elem = hit
             self.active_origin = hit.rect()
 
@@ -475,7 +511,8 @@ class Canvas(Gtk.DrawingArea):
                 if hit in parent_children:
                     parent_children.remove(hit)
                     parent_children.append(hit)
-                    hit.parent.mark_dirty()  # Mark parent dirty as child order changed
+                    hit.parent.mark_dirty()  # Mark parent dirty as child
+                    # order changed
 
             self.queue_draw()
             return
@@ -514,19 +551,24 @@ class Canvas(Gtk.DrawingArea):
             new_w = max(self.handle_size, start_w + delta_x)
             # Ensure the new size does not exceed the parent's bounds
             if isinstance(self.active_elem.parent, CanvasElement):
-                new_w = min(new_w, self.active_elem.parent.width - self.active_elem.x)
+                new_w = min(
+                    new_w, self.active_elem.parent.width - self.active_elem.x)
 
             if self.shift_pressed:
                 aspect = start_w / start_h if start_h != 0 else 1
                 new_h = round(new_w / aspect)
             else:
                 new_h = max(self.handle_size, start_h + delta_y)
-                # Ensure the new size does not exceed the parent's bounds
+                # Ensure the new size does not exceed the parent's
+                # bounds
                 if isinstance(self.active_elem.parent, CanvasElement):
-                    new_h = min(new_h, self.active_elem.parent.height - self.active_elem.y)
+                    new_h = min(
+                        new_h,
+                        self.active_elem.parent.height - self.active_elem.y,
+                    )
 
             self.active_elem.set_size(new_w, new_h)
-            self.active_elem.allocate() # Reallocate surface for new size
+            self.active_elem.allocate()  # Reallocate surface for new size
 
         self.queue_draw()
 
@@ -534,7 +576,8 @@ class Canvas(Gtk.DrawingArea):
         self.resizing = False
         self.moving = False
 
-    def on_key_pressed(self, controller, keyval: int, keycode: int, state: Gdk.ModifierType):
+    def on_key_pressed(self, controller, keyval: int, keycode: int,
+                       state: Gdk.ModifierType):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = True
         elif keyval == Gdk.KEY_Delete:
@@ -543,7 +586,8 @@ class Canvas(Gtk.DrawingArea):
             self.active_origin = None
             self.queue_draw()
 
-    def on_key_released(self, controller, keyval: int, keycode: int, state: Gdk.ModifierType):
+    def on_key_released(self, controller, keyval: int, keycode: int,
+                        state: Gdk.ModifierType):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = False
 

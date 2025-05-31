@@ -35,8 +35,16 @@ class SurfaceElement(CanvasElement, ABC):
         # Need to flip y-axis and scale.
         if not self.canvas:
             return 0, 0
-        x_mm = x_px / self.canvas.pixels_per_mm_x if self.canvas.pixels_per_mm_x else 0
-        y_mm = self.canvas.height_mm - y_px/self.canvas.pixels_per_mm_y if self.canvas.pixels_per_mm_y else 0
+        x_mm = (
+            x_px / self.canvas.pixels_per_mm_x
+            if self.canvas.pixels_per_mm_x
+            else 0
+        )
+        y_mm = (
+            self.canvas.height_mm - y_px / self.canvas.pixels_per_mm_y
+            if self.canvas.pixels_per_mm_y
+            else 0
+        )
         return x_mm, y_mm
 
     def pos_mm(self) -> Tuple[float, float]:
@@ -65,4 +73,6 @@ class SurfaceElement(CanvasElement, ABC):
         if not self.canvas:
             return 0.0, 0.0, 0.0, 0.0
         x_px, y_px, width_px, height_px = self.rect()
-        return *self.pixel_to_mm(x_px, y_px), *self.pixel_to_mm(width_px, height_px)
+        return *self.pixel_to_mm(x_px, y_px), *self.pixel_to_mm(
+            width_px, height_px
+        )

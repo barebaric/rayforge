@@ -31,8 +31,12 @@ class DeviceStatus(Enum):
 @dataclass
 class DeviceState:
     status: DeviceStatus = DeviceStatus.UNKNOWN
-    machine_pos: Tuple[Optional[float], Optional[float], Optional[float]] = None, None, None  # x, y, z in mm
-    work_pos: Tuple[Optional[float], Optional[float], Optional[float]] = None, None, None  # x, y, z in mm
+    machine_pos: Tuple[Optional[float], Optional[float], Optional[float]] = (
+        None, None, None
+    )  # x, y, z in mm
+    work_pos: Tuple[Optional[float], Optional[float], Optional[float]] = (
+        None, None, None
+    )  # x, y, z in mm
     feed_rate: Optional[int] = None
 
 

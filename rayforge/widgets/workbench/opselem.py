@@ -20,7 +20,9 @@ class WorkPieceOpsElement(SurfaceElement):
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         if not workpiece.size:
-            raise AttributeError(f"attempt to add workpiece {workpiece.name} with no size")
+            raise AttributeError(
+                f"attempt to add workpiece {workpiece.name} with no size"
+            )
         super().__init__(0,
                          0,
                          0,
@@ -66,7 +68,11 @@ class WorkPieceOpsElement(SurfaceElement):
         self._accumulated_ops += ops_chunk
         self.mark_dirty()
 
-    def render(self, clip: tuple[float, float, float, float] | None = None, force: bool = False):
+    def render(
+        self,
+        clip: tuple[float, float, float, float] | None = None,
+        force: bool = False,
+    ):
         """Renders the accumulated Ops to the element's surface."""
         if not self.dirty and not force:
             return
@@ -81,7 +87,10 @@ class WorkPieceOpsElement(SurfaceElement):
             return
 
         # Get pixels_per_mm from the WorkSurface (self.canvas)
-        pixels_per_mm = self.canvas.pixels_per_mm_x, self.canvas.pixels_per_mm_y
+        pixels_per_mm = (
+            self.canvas.pixels_per_mm_x,
+            self.canvas.pixels_per_mm_y,
+        )
 
         encoder = CairoEncoder()
         show_travel = self.canvas.show_travel_moves if self.canvas else False

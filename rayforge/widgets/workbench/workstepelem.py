@@ -69,16 +69,23 @@ class WorkStepElement(CanvasElement):
     def _on_workstep_changed(self, step: WorkStep):
         # This signal is for changes to the WorkStep itself (e.g., visibility)
         # not changes to its workpieces or ops.
-        # Workpiece additions/removals are handled by the ops generation signals.
+        # Workpiece additions/removals are handled by the ops generation
+        # signals.
         # We just need to update visibility and redraw.
-        assert self.canvas, "Received ops_start, but element was not added to canvas"
+        assert (
+            self.canvas
+        ), "Received ops_start, but element was not added to canvas"
         self.set_visible(step.visible)
         if self.canvas:
             self.canvas.queue_draw()
 
-    def _find_or_add_workpiece_elem(self, workpiece: WorkPiece) -> WorkPieceOpsElement:
+    def _find_or_add_workpiece_elem(
+        self, workpiece: WorkPiece
+    ) -> WorkPieceOpsElement:
         """Finds the element for a workpiece, creating if necessary."""
-        elem = cast(Optional[WorkPieceOpsElement], self.find_by_data(workpiece))
+        elem = cast(
+            Optional[WorkPieceOpsElement], self.find_by_data(workpiece)
+        )
         if not elem:
             logger.debug(f"Adding workpiece to step: {workpiece.name}")
             elem = self.add_workpiece(workpiece)
@@ -92,7 +99,9 @@ class WorkStepElement(CanvasElement):
             f"WorkStepElem '{sender.name}': Received ops_generation_starting "
             f"for {workpiece.name}"
         )
-        assert self.canvas, "Received ops_start, but element was not added to canvas"
+        assert (
+            self.canvas
+        ), "Received ops_start, but element was not added to canvas"
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.clear_ops()
         GLib.idle_add(self.canvas.queue_draw)
@@ -104,15 +113,21 @@ class WorkStepElement(CanvasElement):
             f"WorkStepElem '{sender.name}': Received ops_chunk_available for "
             f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
         )
-        assert self.canvas, "Received update, but element was not added to canvas"
+        assert (
+            self.canvas
+        ), "Received update, but element was not added to canvas"
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.add_ops(chunk)
         GLib.idle_add(self.canvas.queue_draw)
 
-    def _on_ops_generation_finished(self, sender: WorkStep, workpiece: WorkPiece):
+    def _on_ops_generation_finished(
+        self, sender: WorkStep, workpiece: WorkPiece
+    ):
         """Called when ops generation is finished for a workpiece."""
         # Final redraw is triggered by the last _on_ops_chunk_available call's
         # queue_draw. No extra action needed here unless we add UI
         # indicators for processing state (e.g., hide a spinner).
-        assert self.canvas, "Received ops_finished, but element was not added to canvas"
+        assert (
+            self.canvas
+        ), "Received ops_finished, but element was not added to canvas"
         GLib.idle_add(self.canvas.queue_draw)

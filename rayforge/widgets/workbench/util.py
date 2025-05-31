@@ -16,6 +16,6 @@ def copy_surface(source, target, width, height, clip):
         ctx.rectangle(clip_x, clip_y, clip_w, clip_h)
         ctx.clip()
     ctx.scale(scale_x, scale_y)
-    ctx.set_source_surface(source, 0, 0) # Set source surface at (0,0)
+    ctx.set_source_surface(source, 0, 0)  # Set source surface at (0,0)
     ctx.paint()
     return target

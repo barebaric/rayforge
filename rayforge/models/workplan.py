@@ -168,7 +168,9 @@ class WorkStep(ABC):
         workpiece: the input workpiece to generate Ops for.
         """
         if not workpiece.size:
-            logger.error(f"failed to render workpiece {workpiece.name}: missing size")
+            logger.error(
+                f"failed to render workpiece {workpiece.name}: missing size"
+            )
             return
 
         # Yield state-setting commands once per step
@@ -190,7 +192,9 @@ class WorkStep(ABC):
                 force=True
             )
             if not surface:
-                logger.error(f"failed to render workpiece {workpiece.name} to surface")
+                logger.error(
+                    f"failed to render workpiece {workpiece.name} to surface"
+                )
                 return
 
             # Check actual rendered size
@@ -348,7 +352,10 @@ class WorkStep(ABC):
         Returns None if no Ops were made yet.
         """
         if not workpiece.size:
-            logger.error(f"failed to render ops for workpiece {workpiece.name}: missing size")
+            logger.error(
+                f"failed to render ops for workpiece {workpiece.name}: "
+                "missing size"
+            )
             return
         ops, size = self.workpiece_to_ops.get(workpiece, (None, None))
         if ops is None or size is None:

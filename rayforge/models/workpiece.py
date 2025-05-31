@@ -69,7 +69,8 @@ class WorkPiece:
                pixels_per_mm_x: float,
                pixels_per_mm_y: float,
                size: Optional[Tuple[float, float]] = None,
-               force: bool = False) -> Tuple[Optional[cairo.ImageSurface], bool]:
+               force: bool = False
+               ) -> Tuple[Optional[cairo.ImageSurface], bool]:
         size = self.get_default_size() if size is None else size
         if not size:
             return None, False
@@ -88,11 +89,15 @@ class WorkPiece:
                                                       height)
         return self.surface, True
 
-    def render_chunk(self,
-                     pixels_per_mm_x: int,
-                     pixels_per_mm_y: int,
-                     size: Optional[Tuple[float, float]] = None,
-                     force: bool = False) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
+    def render_chunk(
+            self,
+            pixels_per_mm_x: int,
+            pixels_per_mm_y: int,
+            size: Optional[Tuple[float, float]] = None,
+            force: bool = False
+        ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]],
+                       None,
+                       None]:
         natsize = self.get_default_size()
         size = natsize if size is None else size
         if not size:

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from ...models.workpiece import WorkPiece
 from .surfaceelem import SurfaceElement
 from .util import copy_surface
@@ -35,7 +35,8 @@ class WorkPieceElement(SurfaceElement):
 
     def _update_workpiece(self):
         """
-        Updates the WorkPiece data with the element's current position and size.
+        Updates the WorkPiece data with the element's current position and
+        size.
         """
         if not self.canvas:
             return
@@ -96,7 +97,8 @@ class WorkPieceElement(SurfaceElement):
 
         Args:
             clip: The clipping rectangle, or None for no clipping.
-            force: Whether to force rendering, even if the element is not dirty.
+            force: Whether to force rendering, even if the element is not
+            dirty.
         """
         if not self.dirty and not force:
             return

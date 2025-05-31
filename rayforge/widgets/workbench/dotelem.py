@@ -24,7 +24,7 @@ class DotElement(SurfaceElement):
         """
         # Laser dot is always a circle, so width and height should be equal.
         # We store the radius in mm for rendering purposes.
-        self.radius_mm = 1.0 # Default radius in mm
+        self.radius_mm = 1.0  # Default radius in mm
         super().__init__(x,
                          y,
                          width,
@@ -33,7 +33,11 @@ class DotElement(SurfaceElement):
                          selectable=False,
                          **kwargs)
 
-    def render(self, clip: tuple[float, float, float, float] | None = None, force: bool = False):
+    def render(
+        self,
+        clip: tuple[float, float, float, float] | None = None,
+        force: bool = False,
+    ):
         """Renders the dot to the element's surface."""
         if not self.dirty and not force:
             return

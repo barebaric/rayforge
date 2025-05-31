@@ -46,12 +46,15 @@ class WorkSurface(Canvas):
         self.root.add(self.workpiece_elements)
 
         # DotElement size will be set in pixels by WorkSurface
-        # Initialize with zero size, size and position will be set in do_size_allocate
+        # Initialize with zero size, size and position will be set in
+        # do_size_allocate
         self.laser_dot = DotElement(0, 0, 0, 0)
         self.root.add(self.laser_dot)
 
         # Add scroll event controller for zoom
-        self.scroll_controller = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
+        self.scroll_controller = Gtk.EventControllerScroll.new(
+            Gtk.EventControllerScrollFlags.VERTICAL
+        )
         self.scroll_controller.connect("scroll", self.on_scroll)
         self.add_controller(self.scroll_controller)
 
@@ -74,7 +77,8 @@ class WorkSurface(Canvas):
             self.zoom_level -= zoom_speed
         else:
             self.zoom_level += zoom_speed
-        self.zoom_level = max(0.5, self.zoom_level)  # Prevent zoom level from becoming too small
+        self.zoom_level = max(0.5, self.zoom_level)  # Prevent zoom level
+        # from becoming too small
 
         # Update AxisRenderer with the new zoom level
         self.axis_renderer.set_zoom(self.zoom_level)
@@ -84,10 +88,14 @@ class WorkSurface(Canvas):
 
     def do_size_allocate(self, width, height, baseline):
         """Handles canvas size allocation in pixels."""
-        #logger.debug(f"WorkSurface.do_size_allocate: width={width}, height={height}, baseline={baseline}")
+        # logger.debug(f"WorkSurface.do_size_allocate: width={width},
+        # height={height}, baseline={baseline}")
         # Check if the size has actually changed
         if width == self.root.width and height == self.root.height:
-            logger.debug("WorkSurface.do_size_allocate: Size has not changed, skipping re-allocation")
+            logger.debug(
+                "WorkSurface.do_size_allocate: Size has not changed, "
+                "skipping re-allocation"
+            )
             return
 
         # Calculate grid bounds using AxisRenderer
@@ -96,19 +104,29 @@ class WorkSurface(Canvas):
         self.axis_renderer.set_pan_x_mm(self.pan_x_mm)
         self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
         self.axis_renderer.set_zoom(self.zoom_level)
-        origin_x, origin_y, max_x, max_y = self.axis_renderer.get_grid_bounds(width, height)
+        origin_x, origin_y, max_x, max_y = self.axis_renderer.get_grid_bounds(
+            width, height
+        )
         axis_width = self.axis_renderer.get_y_axis_width()
         axis_height = self.axis_renderer.get_x_axis_height()
 
         # Calculate content area based on grid bounds
-        content_width, content_height = self.axis_renderer.get_content_size(width, height)
+        content_width, content_height = self.axis_renderer.get_content_size(
+            width, height
+        )
 
         # Update WorkSurface's internal pixel dimensions based on content area
-        self.pixels_per_mm_x = content_width / self.width_mm if self.width_mm > 0 else 0
-        self.pixels_per_mm_y = content_height / self.height_mm if self.height_mm > 0 else 0
+        self.pixels_per_mm_x = (
+            content_width / self.width_mm if self.width_mm > 0 else 0
+        )
+        self.pixels_per_mm_y = (
+            content_height / self.height_mm if self.height_mm > 0 else 0
+        )
 
         # Set the root element's size directly in pixels
-        self.root.set_pos(2*axis_width - origin_x, height - origin_y - axis_height)
+        self.root.set_pos(
+            2 * axis_width - origin_x, height - origin_y - axis_height
+        )
         self.root.set_size(content_width, content_height)
 
         # Update child elements that need to match canvas size
@@ -124,7 +142,8 @@ class WorkSurface(Canvas):
         # Use pos_abs() to get position relative to canvas root in pixels
         current_dot_pos_px = self.laser_dot.pos_abs()
         current_dot_pos_mm = self.laser_dot.pixel_to_mm(*current_dot_pos_px)
-        self.set_laser_dot_position(*current_dot_pos_mm)  # This will convert back to new pixels
+        self.set_laser_dot_position(*current_dot_pos_mm)  # This will
+        # convert back to new pixels
 
         # Allocate children based on new pixel sizes
         for elem in self.find_by_type(WorkStepElement):
@@ -147,7 +166,8 @@ class WorkSurface(Canvas):
         """Sets the real-world size of the work surface in mm."""
         self.width_mm = width_mm
         self.height_mm = height_mm
-        # The actual pixel size and pixels_per_mm will be calculated in do_size_allocate
+        # The actual pixel size and pixels_per_mm will be calculated in
+        # do_size_allocate
         # when the canvas widget is allocated.
         self.update()
 
@@ -157,7 +177,9 @@ class WorkSurface(Canvas):
         # This method is now primarily for triggering redraws or updates
         # that don't depend on pixel allocation.
         # Aspect ratio calculation might still be useful here.
-        self.aspect_ratio = self.width_mm / self.height_mm if self.height_mm > 0 else 1.0
+        self.aspect_ratio = (
+            self.width_mm / self.height_mm if self.height_mm > 0 else 1.0
+        )
         self.queue_draw()
 
     def update_from_doc(self, doc):
@@ -188,10 +210,10 @@ class WorkSurface(Canvas):
         if not elem:
             # WorkStepElement should cover the entire canvas area in pixels
             elem = WorkStepElement(workstep,
-                                   0, # x_px
-                                   0, # y_px
-                                   self.root.width, # width_px
-                                   self.root.height, # height_px
+                                   0,  # x_px
+                                   0,  # y_px
+                                   self.root.width,  # width_px
+                                   self.root.height,  # height_px
                                    canvas=self,
                                    parent=self.root)
             self.add(elem)
@@ -274,7 +296,8 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def clear(self):
-        # Clear all children except the fixed ones (workpiece_elements, laser_dot)
+        # Clear all children except the fixed ones
+        # (workpiece_elements, laser_dot)
         children_to_remove = [
             c for c in self.root.children
             if c not in [self.workpiece_elements, self.laser_dot]
@@ -317,9 +340,15 @@ class WorkSurface(Canvas):
 
         super().do_snapshot(snapshot)
 
-    def on_key_pressed(self, controller, keyval: int, keycode: int, state: Gdk.ModifierType):
+    def on_key_pressed(
+        self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
+    ):
         if keyval == Gdk.KEY_Delete:
-            selected = [e for e in self.root.get_selected_data() if isinstance(e, WorkPiece)]
+            selected = [
+                e
+                for e in self.root.get_selected_data()
+                if isinstance(e, WorkPiece)
+            ]
             for workpiece in selected:
                 for step_elem in self.find_by_type(WorkStepElement):
                     ops_elem = step_elem.find_by_data(workpiece)

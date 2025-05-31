@@ -69,6 +69,7 @@ class Renderer(ABC):
         Generator that renders to a Cairo surface, but in chunks.
         chunk_width and chunk_height are specified in pixels.
 
-        Yields one chunk per iteration, as a tuple: ImageSurface, (x_pos, y_pos)
+        Yields one chunk per iteration, as a tuple:
+            ImageSurface, (x_pos, y_pos)
         """
         raise NotImplementedError
