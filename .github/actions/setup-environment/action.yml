@@ -3,12 +3,6 @@ description: Sets up Python environment and installs dependencies for Rayforge w
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
