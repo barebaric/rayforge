@@ -1,0 +1,32 @@
+name: Setup Environment
+description: Sets up Python environment and installs dependencies for Rayforge workflows
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install build environment
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt install -y libcairo2-dev libgirepository1.0-dev libvips42t64
+        python3 -m pip install build --user
+
+    - name: Install runtime dependencies
+      shell: bash
+      run: pip install --no-cache-dir -r requirements.txt
+
+    - name: Install test dependencies
+      shell: bash
+      run: |
+        pip install pytest pytest-asyncio pytest-mock pytest-cov
+        pip install -e . # Install rayforge in editable mode

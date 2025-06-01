@@ -1,23 +1,27 @@
-name: Publish to Snapcraft.io
-on: push
+name: Build and Publish Snap
+on:
+  repository_dispatch:
+    types: [trigger-builds]
 
 jobs:
-  build-and-publish:
-    name: Build and publish Rayforge to Snapcraft.io
+  build-publish-snap:
+    name: Build and Publish Snap for Rayforge
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-    - uses: snapcore/action-build@v1
-      id: build
+      - name: Build snap
+        uses: snapcore/action-build@v1
+        id: build
 
-    - uses: snapcore/action-publish@v1
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
-      with:
-        snap: ${{ steps.build.outputs.snap }}
-        release: edge
+      - name: Publish to Snapcraft
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: edge
+  

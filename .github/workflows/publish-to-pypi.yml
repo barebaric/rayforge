@@ -1,43 +1,23 @@
-name: Publish to PyPi
-on: push
+name: Build and Publish Wheel
+on:
+  repository_dispatch:
+    types: [trigger-builds]
 
 jobs:
-  build-and-publish:
-    name: Build and publish Rayforge to PyPI
+  build-publish-wheel:
+    name: Build and Publish Wheel for Rayforge
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        fetch-tags: true
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.x"
+      - name: Build a wheel
+        run: python3 -m build
 
-    - name: Install build environment
-      run: |
-        sudo apt install libcairo2-dev libgirepository1.0-dev libvips42t64
-        python3 -m pip install build --user
-
-    - name: Install runtime dependencies
-      run: pip install --no-cache-dir -r requirements.txt
-
-    - name: Install test dependencies and run tests
-      run: |
-        pip install pytest pytest-asyncio pytest-mock pytest-cov
-        pip install -e . # Install rayforge itself in editable mode
-        python -m pytest -vv --cov=rayforge --cov-report=xml
-
-    - name: Build a wheel
-      run: python3 -m build
-
-    - name: Publish package distributions to PyPI
-      if: startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

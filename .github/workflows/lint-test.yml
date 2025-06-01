@@ -1,0 +1,35 @@
+name: Lint and Test
+on:
+  push:
+    branches:
+      - '**'  # Run on all branches
+    tags:
+      - '*'  # Include tags to trigger builds
+  pull_request:
+    branches:
+      - '**'  # Run on PRs targeting any branch
+
+jobs:
+  lint-test:
+    name: Lint and Test Rayforge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+
+      - name: Run flake8 Lint
+        uses: py-actions/flake8@v2
+        with:
+          ignore: E127,E128,E121,E123,E126,E226,E24,E704,W503,W504
+          path: rayforge
+
+      - name: Run tests
+        id: tests
+        run: python -m pytest -vv --cov=rayforge --cov-report=xml
+
+      - name: Trigger build and publish wheel
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')) && steps.tests.outcome == 'success'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: trigger-builds
