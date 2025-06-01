@@ -1,0 +1,156 @@
+name: Build Windows Executable
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set Version
+        id: set-version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          else
+            VERSION=$(git describe --tags)
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Error: No git version number found!"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up MSYS2
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-gtk4
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-libadwaita
+            mingw-w64-x86_64-adwaita-icon-theme
+            mingw-w64-x86_64-gobject-introspection
+            mingw-w64-x86_64-gobject-introspection-runtime
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
+            mingw-w64-x86_64-meson
+            mingw-w64-x86_64-libffi
+            mingw-w64-x86_64-python-cffi
+            mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-python-aiohttp
+            mingw-w64-x86_64-python-blinker
+            mingw-w64-x86_64-python-numpy
+            mingw-w64-x86_64-opencv
+            mingw-w64-x86_64-python-platformdirs
+            mingw-w64-x86_64-python-cairo
+            mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-python-pymupdf
+            mingw-w64-x86_64-python-scipy
+            mingw-w64-x86_64-python-websockets
+
+      - name: Set up environment
+        shell: msys2 {0}
+        run: |
+          MSYS2_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):[/\\]|/d/|g; s|\\|/|g')
+          echo "MSYS2_PATH=$MSYS2_PATH" >> $GITHUB_ENV
+          echo "$MSYS2_PATH/mingw64/bin" >> $GITHUB_PATH
+          echo "$MSYS2_PATH/usr/bin" >> $GITHUB_PATH
+          echo "MSYS2_PATH=$MSYS2_PATH" > $GITHUB_WORKSPACE/.msys2_env
+          echo "PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> $GITHUB_WORKSPACE/.msys2_env
+          echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_WORKSPACE/.msys2_env
+          echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> $GITHUB_WORKSPACE/.msys2_env
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          echo "PATH=$PATH"
+          $MSYS2_PATH/mingw64/bin/python --version
+          $MSYS2_PATH/mingw64/bin/gcc --version
+          $MSYS2_PATH/mingw64/bin/python -c "import cffi; print(cffi.__version__)"
+
+      - name: List MSYS2 packages
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          pacman --version
+          pacman -Q
+
+      - name: List pkg-config libraries
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          pkg-config --version
+          pkg-config --list-all | awk '{print $1}' | while read i; do echo -n "$i "; pkg-config --modversion "$i"; done
+
+      - name: Install Python dependencies
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir pyinstaller ezdxf==1.3.5 pypdf==5.3.1 pyserial_asyncio==0.6 PyYAML==6.0.2
+          python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==2.2.3
+
+      - name: Configure GTK Theme
+        shell: msys2 {0}
+        run: |
+          mkdir -p etc/gtk-4.0
+          echo "[Settings]" > etc/gtk-4.0/settings.ini
+          echo "gtk-theme-name=Windows10" >> etc/gtk-4.0/settings.ini
+          echo "gtk-font-name=Segoe UI 9" >> etc/gtk-4.0/settings.ini
+
+      - name: Build with PyInstaller
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          pyinstaller --onefile --noconsole \
+            --name rayforge-v${{ steps.set-version.outputs.version }} \
+            --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
+            --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libffi-8.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libopenblas.dll;." \
+            --hidden-import gi \
+            --hidden-import numpy \
+            --hidden-import scipy \
+            --hidden-import cffi \
+            --hidden-import pyvips \
+            rayforge/app.py
+          ls -l dist/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rayforge-v${{ steps.set-version.outputs.version }}.zip
+          path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+          draft: false
+          prerelease: false
+          name: Release ${{ steps.set-version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
