@@ -57,7 +57,7 @@ jobs:
           pyinstaller --onefile --noconsole --add-data "C:/tools/msys64/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" rayforge/app.py
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Rayforge-Installer
           path: dist/rayforge.exe
