@@ -1,7 +1,6 @@
 import math
 import logging
 import cairo
-from gi.repository import Pango, PangoCairo  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,8 @@ class AxisRenderer:
     def __init__(
         self,
         grid_size_mm: float = 10.0,
-        font_size: int = 10,
+        width_px: int = 1,
+        height_px: int = 1,
         width_mm: float = 100.0,
         height_mm: float = 100.0,
         pan_x_mm: float = 0.0,
@@ -23,22 +23,17 @@ class AxisRenderer:
         zoom_level: float = 1.0,
     ):
         self.grid_size_mm: float = grid_size_mm
+        self.width_px: int = width_px
+        self.height_px: int = height_px
         self.width_mm: float = width_mm
         self.height_mm: float = height_mm
         self.pan_x_mm: float = pan_x_mm
         self.pan_y_mm: float = pan_y_mm
-        self.font_size: int = font_size
         self.zoom_level: float = zoom_level
 
-    def get_content_size(
-        self, width_px: int, height_px: int
-    ) -> tuple[int, int]:
+    def get_content_size(self) -> tuple[int, int]:
         """
         Calculates the content area dimensions and margins.
-
-        Args:
-            width_px: The width of the full drawing area in pixels.
-            height_px: The height of the full drawing area in pixels.
 
         Returns:
             Tuple of (content_width_px, content_height_px).
@@ -48,8 +43,8 @@ class AxisRenderer:
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_width_px = width_px - y_axis_width - right_margin
-        content_height_px = height_px - x_axis_height - top_margin
+        content_width_px = self.width_px - y_axis_width - right_margin
+        content_height_px = self.height_px - x_axis_height - top_margin
 
         if content_width_px < 0 or content_height_px < 0:
             logger.warning(
@@ -63,16 +58,10 @@ class AxisRenderer:
             content_height_px * self.zoom_level
         )
 
-    def get_pixels_per_mm(
-        self, width_px: int, height_px: int
-    ) -> tuple[float, float]:
+    def get_pixels_per_mm(self) -> tuple[float, float]:
         """
         Calculates the pixel resolution, taking into account the current
         pan and zoom levels.
-
-        Args:
-            width_px: The width of the full drawing area in pixels.
-            height_px: The height of the full drawing area in pixels.
 
         Returns:
             Tuple of (pixels_per_mm_x, pixels_per_mm_y).
@@ -82,8 +71,8 @@ class AxisRenderer:
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_width_px = width_px - y_axis_width - right_margin
-        content_height_px = height_px - x_axis_height - top_margin
+        content_width_px = self.width_px - y_axis_width - right_margin
+        content_height_px = self.height_px - x_axis_height - top_margin
 
         if content_width_px <= 0 or content_height_px <= 0:
             logger.warning(
@@ -104,14 +93,10 @@ class AxisRenderer:
         )
         return pixels_per_mm_x, pixels_per_mm_y
 
-    def get_origin(self, width_px: int, height_px: int) -> tuple[int, int]:
+    def get_origin(self) -> tuple[int, int]:
         """
         Calculates the pixel position of the origin (0,0) in the content area,
         taking into account the current pan and zoom levels.
-
-        Args:
-            width_px: The width of the full drawing area in pixels.
-            height_px: The height of the full drawing area in pixels.
 
         Returns:
             Tuple of (x_px, y_px) representing the pixel position of the
@@ -121,24 +106,22 @@ class AxisRenderer:
         x_axis_height = self.get_x_axis_height()
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_height_px = height_px - x_axis_height - top_margin
+        content_height_px = self.height_px - x_axis_height - top_margin
 
-        pixels_per_mm_x, pixels_per_mm_y = self.get_pixels_per_mm(
-            width_px, height_px
-        )
+        pixels_per_mm_x, pixels_per_mm_y = self.get_pixels_per_mm()
         x_px = y_axis_width - self.pan_x_mm * pixels_per_mm_x
         y_px = top_margin + content_height_px + self.pan_y_mm * pixels_per_mm_y
 
         return round(x_px), round(y_px)
 
-    def _x_axis_intervals(self, width_px: int, height_px: int):
+    def _x_axis_intervals(self):
         """
         Yields (x_mm, x_px) tuples for grid lines within
         [0, self.width_mm] that are visible.
         """
         y_axis_width = self.get_y_axis_width()
         right_margin = math.ceil(y_axis_width / 2)
-        content_width_px = width_px - y_axis_width - right_margin
+        content_width_px = self.width_px - y_axis_width - right_margin
         pixels_per_mm_x = content_width_px / self.width_mm * self.zoom_level
         visible_width_mm = self.width_mm / self.zoom_level
 
@@ -157,14 +140,14 @@ class AxisRenderer:
             x_px = y_axis_width + (x_mm - self.pan_x_mm) * pixels_per_mm_x
             yield x_mm, x_px
 
-    def _y_axis_intervals(self, width_px: int, height_px: int):
+    def _y_axis_intervals(self):
         """
         Yields (y_mm, y_px) tuples for grid lines within
         [0, self.height_mm] that are visible.
         """
         x_axis_height = self.get_x_axis_height()
         top_margin = math.ceil(x_axis_height / 2)
-        content_height_px = height_px - x_axis_height - top_margin
+        content_height_px = self.height_px - x_axis_height - top_margin
         pixels_per_mm_y = content_height_px / self.height_mm * self.zoom_level
         visible_height_mm = self.height_mm / self.zoom_level
 
@@ -189,12 +172,7 @@ class AxisRenderer:
             )
             yield y_mm, y_px
 
-    def draw_grid(
-        self,
-        ctx: cairo.Context,
-        width_px: int,
-        height_px: int,
-    ):
+    def draw_grid(self, ctx: cairo.Context):
         """
         Draws the grid lines onto the Cairo context. Assumes
         context is already transformed for the worksurface content area.
@@ -203,10 +181,6 @@ class AxisRenderer:
 
         Args:
             ctx: The Cairo context to draw on.
-            pixels_per_mm_x: Pixels per mm in x direction for the current zoom.
-            pixels_per_mm_y: Pixels per mm in y direction for the current zoom.
-            content_width_px: The width of the content area in pixels.
-            content_height_px: The height of the content area in pixels.
         """
         ctx.save()
 
@@ -220,22 +194,20 @@ class AxisRenderer:
         ctx.set_hairline(True)
 
         # Vertical lines
-        for x_mm, x_px in self._x_axis_intervals(width_px, height_px):
+        for x_mm, x_px in self._x_axis_intervals():
             ctx.move_to(x_px, top_margin)
-            ctx.line_to(x_px, height_px - self.get_x_axis_height())
+            ctx.line_to(x_px, self.height_px - self.get_x_axis_height())
             ctx.stroke()
 
         # Horizontal lines
-        for y_mm, y_px in self._y_axis_intervals(width_px, height_px):
+        for y_mm, y_px in self._y_axis_intervals():
             ctx.move_to(y_axis_width, y_px)
-            ctx.line_to(width_px - right_margin, y_px)
+            ctx.line_to(self.width_px - right_margin, y_px)
             ctx.stroke()
 
         ctx.restore()
 
-    def draw_axes_and_labels(
-        self, ctx: cairo.Context, width_px: int, height_px: int
-    ):
+    def draw_axes_and_labels(self, ctx: cairo.Context):
         """
         Draws the axes and labels onto the Cairo context.
         Assumes context is in screen coordinates.
@@ -252,7 +224,7 @@ class AxisRenderer:
         y_axis_width = self.get_y_axis_width()
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
-        x_axis_y = height_px - x_axis_height  # Bottom edge of content area
+        x_axis_y = self.height_px - x_axis_height  # Bottom of content area
         y_axis_x = y_axis_width  # Left edge of content area
 
         # Draw fixed axis lines
@@ -261,22 +233,16 @@ class AxisRenderer:
 
         # X-axis line (fixed at bottom)
         ctx.move_to(y_axis_width, x_axis_y)
-        ctx.line_to(width_px - right_margin, x_axis_y)
+        ctx.line_to(self.width_px - right_margin, x_axis_y)
         ctx.stroke()
 
         # Y-axis line (fixed at left)
         ctx.move_to(y_axis_x, top_margin)
-        ctx.line_to(y_axis_x, height_px - x_axis_height)
+        ctx.line_to(y_axis_x, self.height_px - x_axis_height)
         ctx.stroke()
 
-        # Configure font for labels
-        layout = PangoCairo.create_layout(ctx)
-        font_desc = Pango.FontDescription.from_string(f"Sans {self.font_size}")
-        layout.set_font_description(font_desc)
-        ctx.set_source_rgb(0, 0, 0)
-
         # X-axis labels (below fixed x-axis)
-        for x_mm, x_px in self._x_axis_intervals(width_px, height_px):
+        for x_mm, x_px in self._x_axis_intervals():
             if x_mm == 0:
                 continue  # Skip origin label or handle separately if needed
             label = f"{x_mm:.0f}"
@@ -287,7 +253,7 @@ class AxisRenderer:
             ctx.show_text(label)
 
         # Y-axis labels (left of fixed y-axis)
-        for y_mm, y_px in self._y_axis_intervals(width_px, height_px):
+        for y_mm, y_px in self._y_axis_intervals():
             if y_mm == 0:
                 continue  # Skip origin label or handle separately if needed
             label = f"{y_mm:.0f}"
@@ -330,6 +296,12 @@ class AxisRenderer:
             extents = ctx.text_extents(f"{y_mm:.0f}")
             max_width = max(max_width, extents.width)
         return math.ceil(max_width) + 4  # adding some margin
+
+    def set_width_px(self, width_px: int):
+        self.width_px = width_px
+
+    def set_height_px(self, height_px: int):
+        self.height_px = height_px
 
     def set_width_mm(self, width_mm: float):
         self.width_mm = width_mm

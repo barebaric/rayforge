@@ -81,14 +81,12 @@ class WorkPieceElement(SurfaceElement):
         self.set_pos_mm(x_mm, y_mm+height_mm)
         self.width, self.height = new_width, new_height
 
-        # Allocate the element and mark it as dirty.
+        # Create the surface for the new element.
         super().allocate(force)
-        self.mark_dirty()
-        self.canvas.queue_draw()
 
     def render(
         self,
-        clip: tuple[float, float, float, float] | None = None,
+        clip: tuple[int, int, int, int] | None = None,
         force: bool = False,
     ):
         """
@@ -102,6 +100,9 @@ class WorkPieceElement(SurfaceElement):
         if not self.dirty and not force:
             return
         if not self.canvas or not self.parent or self.surface is None:
+            logger.debug(
+                "WorkPieceElement.render: canvas, parent, or surface is None"
+            )
             return
 
         surface, changed = self.data.render(

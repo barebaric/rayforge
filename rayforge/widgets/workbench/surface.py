@@ -23,22 +23,15 @@ class WorkSurface(Canvas):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
         self.zoom_level = 1.0
-        self.pan_x_mm = 0.0
-        self.pan_y_mm = 0.0
         self.show_travel_moves = False
         self.width_mm = 100.0
         self.height_mm = 100.0
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
-        self.grid_size_mm = 10.0  # in mm
-        self.font_size = 10  # Hardcoded font size
 
         self.axis_renderer = AxisRenderer(
-            font_size=self.font_size,
             width_mm=self.width_mm,
             height_mm=self.height_mm,
-            pan_x_mm=self.pan_x_mm,
-            pan_y_mm=self.pan_y_mm,
             zoom_level=self.zoom_level,
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
@@ -75,8 +68,31 @@ class WorkSurface(Canvas):
         # track the motion event...
         self.mouse_pos = 0, 0
 
-        # Initial size will be set by do_size_allocate
-        # self.update() # update is called by set_size
+    def set_pan(self, pan_x_mm: float, pan_y_mm: float):
+        """Sets the pan position in mm and updates the axis renderer."""
+        self.axis_renderer.set_pan_x_mm(pan_x_mm)
+        self.axis_renderer.set_pan_y_mm(pan_y_mm)
+        self._recalculate_sizes()
+        self.queue_draw()
+
+    def set_zoom(self, zoom_level: float):
+        """Sets the zoom level and updates the axis renderer."""
+        self.zoom_level = max(0.5, min(zoom_level, 1.5))
+        self.axis_renderer.set_zoom(self.zoom_level)
+        self.root.mark_dirty(recursive=True)
+        self.do_size_allocate(self.get_width(), self.get_height(), 0)
+        self.queue_draw()
+
+    def set_size(self, width_mm: float, height_mm: float):
+        """
+        Sets the real-world size of the work surface in mm
+        and updates related properties.
+        """
+        self.width_mm = width_mm
+        self.height_mm = height_mm
+        self.axis_renderer.set_width_mm(self.width_mm)
+        self.axis_renderer.set_height_mm(self.height_mm)
+        self.queue_draw()
 
     def on_motion(self, gesture, x: int, y: int):
         self.mouse_pos = x, y
@@ -88,10 +104,13 @@ class WorkSurface(Canvas):
         y_axis_pixels = self.axis_renderer.get_y_axis_width()
         x_axis_height = self.axis_renderer.get_x_axis_height()
         top_margin = math.ceil(x_axis_height / 2)
-        x_mm = self.pan_x_mm + (x_px - y_axis_pixels) / self.pixels_per_mm_x
+        x_mm = self.axis_renderer.pan_x_mm + (
+            (x_px - y_axis_pixels) / self.pixels_per_mm_x
+        )
         y_mm = (
-            self.pan_y_mm
-            + (height_pixels - y_px - top_margin) / self.pixels_per_mm_y
+            self.axis_renderer.pan_y_mm
+            + (height_pixels - y_px - top_margin)
+            / self.pixels_per_mm_y
         )
         return x_mm, y_mm
 
@@ -101,10 +120,13 @@ class WorkSurface(Canvas):
 
         # Adjust zoom level
         if dy > 0:  # Scroll down - zoom out
-            self.zoom_level *= 1 - zoom_speed
+            new_zoom = self.zoom_level * (1 - zoom_speed)
         else:  # Scroll up - zoom in
-            self.zoom_level *= 1 + zoom_speed
-        self.zoom_level = max(0.5, min(self.zoom_level, 1.5))
+            new_zoom = self.zoom_level * (1 + zoom_speed)
+
+        # Get current mouse position in mm
+        mouse_x_px, mouse_y_px = self.mouse_pos
+        focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
 
         # Calculate new content size and scaling
         width, height_pixels = self.get_width(), self.get_height()
@@ -115,19 +137,15 @@ class WorkSurface(Canvas):
         content_width_px = width - y_axis_pixels - right_margin
         content_height_px = height_pixels - x_axis_height - top_margin
         new_pixels_per_mm_x = (
-            content_width_px / self.width_mm * self.zoom_level
+            content_width_px / self.width_mm * new_zoom
             if self.width_mm > 0
             else 0
         )
         new_pixels_per_mm_y = (
-            content_height_px / self.height_mm * self.zoom_level
+            content_height_px / self.height_mm * new_zoom
             if self.height_mm > 0
             else 0
         )
-
-        # Get current mouse position in mm
-        mouse_x_px, mouse_y_px = self.mouse_pos
-        focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
 
         # Adjust pan to keep focus point under cursor
         new_pan_x_mm = (
@@ -138,54 +156,29 @@ class WorkSurface(Canvas):
             - (height_pixels - mouse_y_px - top_margin) / new_pixels_per_mm_y
         )
 
-        # Apply new pan values
-        self.pan_x_mm = new_pan_x_mm
-        self.pan_y_mm = new_pan_y_mm
-
         # Update rendering
-        self.axis_renderer.set_zoom(self.zoom_level)
-        self.axis_renderer.set_pan_x_mm(self.pan_x_mm)
-        self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
-        self.do_size_allocate(width, height_pixels, 0)
+        self.set_zoom(new_zoom)
+        self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
-        self.queue_draw()
-
-    def do_size_allocate(self, width: int, height: int, baseline: int):
-        """Handles canvas size allocation in pixels."""
-        # logger.debug(f"WorkSurface.do_size_allocate: width={width},
-        # height={height}, baseline={baseline}")
-        # Check if the size has actually changed
-        if width == self.root.width and height == self.root.height:
-            logger.debug(
-                "WorkSurface.do_size_allocate: Size has not changed, "
-                "skipping re-allocation"
-            )
-            return
-
-        # Calculate grid bounds using AxisRenderer
-        self.axis_renderer.set_width_mm(self.width_mm)
-        self.axis_renderer.set_height_mm(self.height_mm)
-        self.axis_renderer.set_pan_x_mm(self.pan_x_mm)
-        self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
-        self.axis_renderer.set_zoom(self.zoom_level)
-        origin_x, origin_y = self.axis_renderer.get_origin(width, height)
-
-        # Calculate content area based on grid bounds
-        content_width, content_height = self.axis_renderer.get_content_size(
-            width, height
-        )
-
-        # Update WorkSurface's internal pixel dimensions based on content area
-        self.pixels_per_mm_x, self.pixels_per_mm_y = (
-            self.axis_renderer.get_pixels_per_mm(width, height)
-        )
+    def _recalculate_sizes(self):
+        origin_x, origin_y = self.axis_renderer.get_origin()
+        content_width, content_height = self.axis_renderer.get_content_size()
 
         # Set the root element's size directly in pixels
         self.root.set_pos(origin_x, origin_y - content_height)
         self.root.set_size(content_width, content_height)
 
-        # Update child elements that need to match canvas size
+        # Update WorkSurface's internal pixel dimensions based on content area
+        self.pixels_per_mm_x, self.pixels_per_mm_y = (
+            self.axis_renderer.get_pixels_per_mm()
+        )
+
+        # Update the workpiece element group and WorkStepElement group sizes:
+        # they should always match root group size
+        content_width, content_height = self.axis_renderer.get_content_size()
         self.workpiece_elements.set_size(content_width, content_height)
+        for elem in self.find_by_type(WorkStepElement):
+            elem.set_size(content_width, content_height)
 
         # Update laser dot size based on new pixel dimensions and its mm radius
         dot_radius_mm = self.laser_dot.radius_mm
@@ -193,19 +186,17 @@ class WorkSurface(Canvas):
         self.laser_dot.set_size(dot_diameter_px, dot_diameter_px)
 
         # Re-position laser dot based on new pixel dimensions
-        # Need to get current mm position first
-        # Use pos_abs() to get position relative to canvas root in pixels
         current_dot_pos_px = self.laser_dot.pos_abs()
         current_dot_pos_mm = self.laser_dot.pixel_to_mm(*current_dot_pos_px)
         self.set_laser_dot_position(*current_dot_pos_mm)
 
-        # Allocate children based on new pixel sizes
-        for elem in self.find_by_type(WorkStepElement):
-            elem.set_size(content_width, content_height)
-
-        self.root.mark_dirty(recursive=True)
+    def do_size_allocate(self, width: int, height: int, baseline: int):
+        """Handles canvas size allocation in pixels."""
+        # Calculate grid bounds using AxisRenderer
+        self.axis_renderer.set_width_px(width)
+        self.axis_renderer.set_height_px(height)
+        self._recalculate_sizes()
         self.root.allocate()
-        self.queue_draw()
 
     def set_show_travel_moves(self, show: bool):
         """Sets whether to display travel moves and triggers a redraw."""
@@ -215,26 +206,6 @@ class WorkSurface(Canvas):
             for elem in self.find_by_type(WorkStepElement):
                 elem.mark_dirty()
             self.queue_draw()
-
-    def set_size(self, width_mm, height_mm):
-        """Sets the real-world size of the work surface in mm."""
-        self.width_mm = width_mm
-        self.height_mm = height_mm
-        # The actual pixel size and pixels_per_mm will be calculated in
-        # do_size_allocate
-        # when the canvas widget is allocated.
-        self.update()
-
-    def update(self):
-        logger.debug("WorkSurface.update called")
-        """Updates internal state and triggers redraw."""
-        # This method is now primarily for triggering redraws or updates
-        # that don't depend on pixel allocation.
-        # Aspect ratio calculation might still be useful here.
-        self.aspect_ratio = (
-            self.width_mm / self.height_mm if self.height_mm > 0 else 1.0
-        )
-        self.queue_draw()
 
     def update_from_doc(self, doc):
         self.doc = doc
@@ -286,7 +257,6 @@ class WorkSurface(Canvas):
 
     def set_laser_dot_position(self, x_mm, y_mm):
         """Sets the laser dot position in real-world mm."""
-
         # LaserDotElement is sized to represent the dot diameter in pixels.
         # Its position should be the top-left corner of its bounding box.
         # We want the center of the dot to be at (x_px, y_px).
@@ -382,19 +352,9 @@ class WorkSurface(Canvas):
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
 
-        # Draw grid
-        self.axis_renderer.draw_grid(
-            ctx,
-            width,
-            height,
-        )
-
-        # Draw axes and labels
-        self.axis_renderer.draw_axes_and_labels(
-            ctx,
-            width,
-            height,
-        )
+        # Draw grid, axis, and labels
+        self.axis_renderer.draw_grid(ctx)
+        self.axis_renderer.draw_axes_and_labels(ctx)
 
         super().do_snapshot(snapshot)
 
@@ -417,15 +377,17 @@ class WorkSurface(Canvas):
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x, y):
-        self.pan_start = self.pan_x_mm, self.pan_y_mm
+        self.pan_start = (
+            self.axis_renderer.pan_x_mm,
+            self.axis_renderer.pan_y_mm,
+        )
 
     def on_pan_update(self, gesture, x, y):
         # Calculate pan offset based on drag delta
         offset = gesture.get_offset()
-        self.pan_x_mm = self.pan_start[0] - offset.x / self.pixels_per_mm_x
-        self.pan_y_mm = self.pan_start[1] + offset.y / self.pixels_per_mm_y
-        self.do_size_allocate(self.get_width(), self.get_height(), 0)
-        self.queue_draw()
+        new_pan_x_mm = self.pan_start[0] - offset.x / self.pixels_per_mm_x
+        new_pan_y_mm = self.pan_start[1] + offset.y / self.pixels_per_mm_y
+        self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
     def on_pan_end(self, gesture, x, y):
         pass
