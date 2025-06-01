@@ -32,18 +32,6 @@ jobs:
             mingw-w64-ucrt-x86_64-python-cairo
             mingw-w64-ucrt-x86_64-pkgconf
 
-      - name: Install libvips
-        run: |
-          $vipsUrl = "https://github.com/libvips/build-win64/releases/download/v8.14.5/vips-dev-w64-all-8.14.5.zip"
-          Invoke-WebRequest -Uri $vipsUrl -OutFile vips.zip
-          Expand-Archive -Path vips.zip -DestinationPath C:\vips
-          echo "C:\vips\bin" >> $env:GITHUB_PATH
-
-      - name: Set Environment Paths
-        run: |
-          echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
-          echo "C:\msys64\ucrt64\bin" >> $GITHUB_PATH
-
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
