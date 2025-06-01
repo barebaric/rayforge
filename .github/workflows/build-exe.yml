@@ -1,0 +1,67 @@
+name: Build Windows Executable
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '*'
+
+jobs:
+  lint-test:
+    uses: ./.github/workflows/lint-test.yml
+
+  build:
+    runs-on: windows-latest
+    needs: [lint-test]  # Run only if tests pass
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install MSYS2
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-x86_64-latest.exe" -OutFile msys2.exe
+          Start-Process msys2.exe -ArgumentList "/S /D=C:\msys64" -Wait
+
+      - name: Update MSYS2
+        shell: bash
+        run: |
+          pacman -Syu --noconfirm --needed
+          pacman -S mingw-w64-ucrt-x86_64-gtk4 --noconfirm
+          pacman -S mingw-w64-ucrt-x86_64-python-gobject --noconfirm
+          pacman -S mingw-w64-ucrt-x86_64-cairo --noconfirm
+
+      - name: Set Environment Paths
+        run: |
+          echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+          echo "C:\msys64\ucrt64\bin" >> $GITHUB_PATH
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pyvips[binary]"
+          pip install pycairo PyGObject numpy opencv-python pymupdf scipy
+          pip install pyinstaller
+
+      - name: Configure GTK Theme
+        run: |
+          mkdir -p etc/gtk-4.0
+          echo "[Settings]" > etc/gtk-4.0/settings.ini
+          echo "gtk-theme-name=Windows10" >> etc/gtk-4.0/settings.ini
+          echo "gtk-font-name=Segoe UI 9" >> etc/gtk-4.0/settings.ini
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller rayforge.spec --onefile --noconsole
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Rayforge-Installer
+          path: dist/rayforge.exe
