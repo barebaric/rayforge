@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - '**'  # Run on PRs targeting any branch
+  workflow_call:  # Allow this workflow to be called by other workflows
 
 jobs:
   lint-test:
@@ -30,12 +31,4 @@ jobs:
           path: rayforge
 
       - name: Run tests
-        id: tests
         run: python -m pytest -vv --cov=rayforge --cov-report=xml
-
-      - name: Trigger build and publish wheel
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')) && steps.tests.outcome == 'success'
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          event-type: trigger-builds

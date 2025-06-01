@@ -1,11 +1,18 @@
 name: Build and Publish Snap
 on:
-  repository_dispatch:
-    types: [trigger-builds]
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
 
 jobs:
+  lint-test:
+    uses: ./.github/workflows/lint-test.yml
+
   build-publish-snap:
-    name: Build and Publish Snap for Rayforge
+    name: Build and Publish Snap
+    needs: [lint-test]  # Run only if tests pass
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
