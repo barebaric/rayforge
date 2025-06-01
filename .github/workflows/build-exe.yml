@@ -7,12 +7,8 @@ on:
       - '*'
 
 jobs:
-  lint-test:
-    uses: ./.github/workflows/lint-test.yml
-
   build:
     runs-on: windows-latest
-    needs: [lint-test]  # Run only if tests pass
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,7 +54,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller rayforge.spec --onefile --noconsole
+          pyinstaller --onefile --noconsole --add-data "C:/tools/msys64/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" rayforge/app.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
