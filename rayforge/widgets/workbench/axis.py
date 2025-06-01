@@ -11,6 +11,7 @@ class AxisRenderer:
     """
     Helper class to render the grid, axes, and labels on a Cairo context.
     """
+
     def __init__(
         self,
         grid_size_mm: float = 10.0,
@@ -58,29 +59,77 @@ class AxisRenderer:
             content_width_px = max(0, content_width_px)
             content_height_px = max(0, content_height_px)
 
-        return content_width_px, content_height_px
+        return math.ceil(content_width_px * self.zoom_level), math.ceil(
+            content_height_px * self.zoom_level
+        )
 
-    def get_grid_bounds(
+    def get_pixels_per_mm(
         self, width_px: int, height_px: int
-    ) -> tuple[int, int, int, int]:
-        """Calculates the origin coordinates in pixels."""
-        x_axis_height = self.get_x_axis_height()
+    ) -> tuple[float, float]:
+        """
+        Calculates the pixel resolution, taking into account the current
+        pan and zoom levels.
+
+        Args:
+            width_px: The width of the full drawing area in pixels.
+            height_px: The height of the full drawing area in pixels.
+
+        Returns:
+            Tuple of (pixels_per_mm_x, pixels_per_mm_y).
+        """
         y_axis_width = self.get_y_axis_width()
+        x_axis_height = self.get_x_axis_height()
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
 
         content_width_px = width_px - y_axis_width - right_margin
         content_height_px = height_px - x_axis_height - top_margin
 
-        pixels_per_mm_x = content_width_px / self.width_mm * self.zoom_level
-        pixels_per_mm_y = content_height_px / self.height_mm * self.zoom_level
+        if content_width_px <= 0 or content_height_px <= 0:
+            logger.warning(
+                "Content area dimensions are non-positive; "
+                "canvas may be too small."
+            )
+            return (0, 0)
 
-        origin_x_px = y_axis_width + round(self.pan_x_mm * pixels_per_mm_x)
-        origin_y_px = (
-            content_height_px - round(self.pan_y_mm * pixels_per_mm_y)
-        )  # Y inverted
+        pixels_per_mm_x = (
+            (content_width_px / self.width_mm) * self.zoom_level
+            if self.width_mm > 0
+            else 0
+        )
+        pixels_per_mm_y = (
+            (content_height_px / self.height_mm) * self.zoom_level
+            if self.height_mm > 0
+            else 0
+        )
+        return pixels_per_mm_x, pixels_per_mm_y
 
-        return origin_x_px, origin_y_px, width_px-right_margin, top_margin
+    def get_origin(self, width_px: int, height_px: int) -> tuple[int, int]:
+        """
+        Calculates the pixel position of the origin (0,0) in the content area,
+        taking into account the current pan and zoom levels.
+
+        Args:
+            width_px: The width of the full drawing area in pixels.
+            height_px: The height of the full drawing area in pixels.
+
+        Returns:
+            Tuple of (x_px, y_px) representing the pixel position of the
+            origin as integers.
+        """
+        y_axis_width = self.get_y_axis_width()
+        x_axis_height = self.get_x_axis_height()
+        top_margin = math.ceil(x_axis_height / 2)
+
+        content_height_px = height_px - x_axis_height - top_margin
+
+        pixels_per_mm_x, pixels_per_mm_y = self.get_pixels_per_mm(
+            width_px, height_px
+        )
+        x_px = y_axis_width - self.pan_x_mm * pixels_per_mm_x
+        y_px = top_margin + content_height_px + self.pan_y_mm * pixels_per_mm_y
+
+        return round(x_px), round(y_px)
 
     def _x_axis_intervals(self, width_px: int, height_px: int):
         """
@@ -204,7 +253,7 @@ class AxisRenderer:
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
         x_axis_y = height_px - x_axis_height  # Bottom edge of content area
-        y_axis_x = y_axis_width              # Left edge of content area
+        y_axis_x = y_axis_width  # Left edge of content area
 
         # Draw fixed axis lines
         ctx.set_source_rgb(0, 0, 0)

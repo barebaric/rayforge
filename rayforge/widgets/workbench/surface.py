@@ -133,11 +133,9 @@ class WorkSurface(Canvas):
         self.axis_renderer.set_pan_x_mm(self.pan_x_mm)
         self.axis_renderer.set_pan_y_mm(self.pan_y_mm)
         self.axis_renderer.set_zoom(self.zoom_level)
-        origin_x, origin_y, max_x, max_y = self.axis_renderer.get_grid_bounds(
+        origin_x, origin_y = self.axis_renderer.get_origin(
             width, height
         )
-        axis_width = self.axis_renderer.get_y_axis_width()
-        axis_height = self.axis_renderer.get_x_axis_height()
 
         # Calculate content area based on grid bounds
         content_width, content_height = self.axis_renderer.get_content_size(
@@ -145,18 +143,14 @@ class WorkSurface(Canvas):
         )
 
         # Update WorkSurface's internal pixel dimensions based on content area
-        self.pixels_per_mm_x = (
-            (content_width / self.width_mm * self.zoom_level
-             if self.width_mm > 0 else 0)
-        )
-        self.pixels_per_mm_y = (
-            (content_height / self.height_mm * self.zoom_level
-             if self.height_mm > 0 else 0)
+        self.pixels_per_mm_x, self.pixels_per_mm_y = (
+            self.axis_renderer.get_pixels_per_mm(width, height)
         )
 
         # Set the root element's size directly in pixels
+        logger.debug(f"POS: {origin_x} {origin_y}")
         self.root.set_pos(
-            2 * axis_width - origin_x, height - origin_y - axis_height
+            origin_x, (origin_y - content_height)
         )
         self.root.set_size(content_width, content_height)
 
