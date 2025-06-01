@@ -148,10 +148,7 @@ class WorkSurface(Canvas):
         )
 
         # Set the root element's size directly in pixels
-        logger.debug(f"POS: {origin_x} {origin_y}")
-        self.root.set_pos(
-            origin_x, (origin_y - content_height)
-        )
+        self.root.set_pos(origin_x, origin_y - content_height)
         self.root.set_size(content_width, content_height)
 
         # Update child elements that need to match canvas size
