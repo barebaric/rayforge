@@ -139,9 +139,10 @@ class CanvasElement:
         self.mark_dirty()
 
     def set_pos(self, x: int, y: int):
-        self.x, self.y = x, y
-        if isinstance(self.parent, CanvasElement):
-            self.parent.mark_dirty()
+        if self.x != x or self.y != y:
+            self.x, self.y = x, y
+            if isinstance(self.parent, CanvasElement):
+                self.parent.mark_dirty()
 
     def pos(self) -> tuple[int, int]:
         return self.x, self.y
@@ -156,10 +157,11 @@ class CanvasElement:
         return self.width, self.height
 
     def set_size(self, width: int, height: int):
-        self.width, self.height = width, height
-        self.mark_dirty()
-        if self.canvas:
-            self.canvas.queue_draw()
+        if width != self.width or height != self.height:
+            self.width, self.height = width, height
+            self.mark_dirty()
+            if self.canvas:
+                self.canvas.queue_draw()
 
     def rect(self) -> tuple[int, int, int, int]:
         """returns x, y, width, height"""
@@ -175,20 +177,18 @@ class CanvasElement:
         return self.width / self.height
 
     def allocate(self, force: bool = False):
-        width, height = int(self.width), int(self.height)
-
         for child in self.children:
             child.allocate(force)
 
         # If the size didn't change, do nothing.
         if self.surface is not None and not force and \
-                self.surface.get_width() == width and \
-                self.surface.get_height() == height:
+                self.surface.get_width() == self.width and \
+                self.surface.get_height() == self.height:
             return
 
-        if width > 0 and height > 0:
+        if self.width > 0 and self.height > 0:
             self.surface = cairo.ImageSurface(
-                cairo.FORMAT_ARGB32, width, height)
+                cairo.FORMAT_ARGB32, self.width, self.height)
         else:
             self.surface = None  # Cannot create surface with zero size
 
@@ -200,7 +200,7 @@ class CanvasElement:
         return x-child_x, y-child_y, w, h
 
     def clear_surface(self,
-                      clip: tuple[float, float, float, float] | None = None):
+                      clip: tuple[int, int, int, int] | None = None):
         if self.surface is None:
             return  # Cannot clear surface if it doesn't exist
 
@@ -218,7 +218,7 @@ class CanvasElement:
 
     def render(
         self,
-        clip: tuple[float, float, float, float] | None = None,
+        clip: tuple[int, int, int, int] | None = None,
         force: bool = False
     ):
         """
@@ -240,8 +240,9 @@ class CanvasElement:
         # Paint children
         for child in self.children:
             if child.dirty:
-                rect = self._rect_to_child_coords_px(child, child.rect())
-                child.render(rect)
+                child_clip = self._rect_to_child_coords_px(child, clip) \
+                             if clip else None
+                child.render(clip=child_clip, force=False)
                 child.dirty = False
             if child.visible and child.surface:
                 ctx.set_source_surface(child.surface, *child.pos())
@@ -544,8 +545,6 @@ class Canvas(Gtk.DrawingArea):
         if self.moving:
             self.active_elem.set_pos(start_x + delta_x,
                                      start_y + delta_y)
-            if isinstance(self.active_elem.parent, CanvasElement):
-                self.active_elem.parent.mark_dirty()
 
         if self.resizing:
             new_w = max(self.handle_size, start_w + delta_x)
