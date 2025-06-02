@@ -40,15 +40,8 @@ jobs:
         shell: bash
         run: |
           echo "MSYS2_PATH=${{ steps.msys2.outputs.msys2-location }}" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
-          set
-
-      - name: Verify dependencies
-        shell: msys2 {0}
-        run: |
-          pkg-config --modversion gobject-introspection-1.0
-          gtk4-demo --version
+          cat $MSYS2_PATH
 
       - name: Install Python dependencies
         shell: bash
@@ -71,7 +64,6 @@ jobs:
       - name: Build with PyInstaller
         env:
           MSYS2_PATH: ${{ steps.msys2.outputs.msys2-location }}
-          PKG_CONFIG_PATH: "${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig"
         run: |
           pyinstaller --onefile --noconsole \
             --add-data "$env:MSYS2_PATH\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
