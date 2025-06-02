@@ -94,31 +94,6 @@ jobs:
           echo "gtk-theme-name=Windows10" >> etc/gtk-4.0/settings.ini
           echo "gtk-font-name=Segoe UI 9" >> etc/gtk-4.0/settings.ini
 
-      - name: Diagnose GTK DLLs
-        shell: msys2 {0}
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          echo "Listing files in $MSYS2_PATH/mingw64/bin/"
-          ls -l $MSYS2_PATH/mingw64/bin/ | grep -E 'libgtk|libgobject|libglib|libgdk'
-          echo "Checking for libgtk-4-1.dll"
-          if [ -f "$MSYS2_PATH/mingw64/bin/libgtk-4-1.dll" ]; then
-            echo "Found libgtk-4-1.dll"
-          else
-            echo "libgtk-4-1.dll not found"
-          fi
-          echo "Checking for libgobject-2.0-0.dll"
-          if [ -f "$MSYS2_PATH/mingw64/bin/libgobject-2.0-0.dll" ]; then
-            echo "Found libgobject-2.0-0.dll"
-          else
-            echo "libgobject-2.0-0.dll not found"
-          fi
-          echo "Checking for libglib-2.0-0.dll"
-          if [ -f "$MSYS2_PATH/mingw64/bin/libglib-2.0-0.dll" ]; then
-            echo "Found libglib-2.0-0.dll"
-          else
-            echo "libglib-2.0-0.dll not found"
-          fi
-
       - name: Build with PyInstaller
         shell: msys2 {0}
         run: |
@@ -131,6 +106,7 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
             --hidden-import gi \
             rayforge/app.py
+          ls -l dist/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
