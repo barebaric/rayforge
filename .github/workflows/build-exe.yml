@@ -98,13 +98,33 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
+          VERSION=$(git describe --tags)
+          if [ -z "$VERSION" ]; then
+            echo "Error: No git version number found!"
+            exit 1
+          fi
+          echo "Version: $VERSION"
           pyinstaller --onefile --noconsole \
+            --name rayforge-v${VERSION} \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips42.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libffi-8.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libopenblas.dll;." \
             --hidden-import gi \
+            --hidden-import numpy \
+            --hidden-import scipy \
+            --hidden-import cffi \
+            --hidden-import pyvips \
             rayforge/app.py
           ls -l dist/
 
@@ -112,4 +132,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Rayforge-Installer
-          path: dist/rayforge.exe
+          path: dist/rayforge-v*.exe
