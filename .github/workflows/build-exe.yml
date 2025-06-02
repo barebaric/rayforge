@@ -117,12 +117,6 @@ jobs:
           else
             echo "libglib-2.0-0.dll not found"
           fi
-          echo "Checking for libgdk-4.dll"
-          if [ -f "$MSYS2_PATH/mingw64/bin/libgdk-4.dll" ]; then
-            echo "Found libgdk-4.dll"
-          else
-            echo "libgdk-4.dll not found"
-          fi
 
       - name: Build with PyInstaller
         shell: msys2 {0}
@@ -134,7 +128,6 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk-4.dll;." \
             --hidden-import gi \
             rayforge/app.py
 
