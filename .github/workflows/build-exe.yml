@@ -21,6 +21,7 @@ jobs:
           python-version: "3.x"
 
       - name: Set up MSYS2
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           update: true
@@ -32,12 +33,6 @@ jobs:
             mingw-w64-ucrt-x86_64-python-cairo
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-adwaita-icon-theme
-
-      - name: Verify GTK installation
-        shell: msys2 {0}
-        run: |
-          ls -la /mingw64/share/glib-2.0/schemas
-          gtk4-broadwayd --version
 
       - name: Install Python dependencies
         shell: bash
@@ -58,11 +53,14 @@ jobs:
           echo "gtk-font-name=Segoe UI 9" >> etc/gtk-4.0/settings.ini
 
       - name: Build with PyInstaller
+        env:
+          MSYS2_PATH: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           pyinstaller --onefile --noconsole \
-            --add-data "/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" \
-            --add-data "/mingw64/share/icons;share/icons" \
-            --add-binary "/mingw64/bin/libgtk-4-1.dll;." \
+            --add-data "$env:MSYS2_PATH\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
+            --add-data "$env:MSYS2_PATH\mingw64\share\icons;share\icons" \
+            --add-binary "$env:MSYS2_PATH\mingw64\bin\libgtk-4-1.dll;." \
+            --add-binary "$env:MSYS2_PATH\mingw64\bin\libgobject-2.0-0.dll;." \
             --hidden-import gi \
             rayforge/app.py
 
