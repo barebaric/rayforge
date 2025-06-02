@@ -47,9 +47,10 @@ jobs:
           echo "MSYS2_PATH=$MSYS2_PATH" >> $GITHUB_ENV
           echo "$MSYS2_PATH/mingw64/bin" >> $GITHUB_PATH
           echo "$MSYS2_PATH/usr/bin" >> $GITHUB_PATH
-          echo "PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> $GITHUB_ENV
-          echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> $GITHUB_ENV
+          echo "MSYS2_PATH=$MSYS2_PATH" > $GITHUB_WORKSPACE/.msys2_env
+          echo "PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> $GITHUB_WORKSPACE/.msys2_env
+          echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_WORKSPACE/.msys2_env
+          echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> $GITHUB_WORKSPACE/.msys2_env
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
           echo "PATH=$PATH"
           $MSYS2_PATH/mingw64/bin/python --version
@@ -59,18 +60,21 @@ jobs:
       - name: List MSYS2 packages
         shell: msys2 {0}
         run: |
-          $MSYS2_PATH/usr/bin/pacman --version
+          source $GITHUB_WORKSPACE/.msys2_env
+          pacman --version
           pacman -Q
 
       - name: List pkg-config libraries
         shell: msys2 {0}
         run: |
+          source $GITHUB_WORKSPACE/.msys2_env
           pkg-config --version
           pkg-config --list-all | awk '{print $1}' | while read i; do echo -n "$i "; pkg-config --modversion "$i"; done
 
       - name: Install Python dependencies
         shell: msys2 {0}
         run: |
+          source $GITHUB_WORKSPACE/.msys2_env
           python -m pip install --upgrade pip
           python -m pip install pyinstaller
           python -m pip install --no-cache-dir -r requirements.txt
@@ -85,17 +89,13 @@ jobs:
 
       - name: Build with PyInstaller
         shell: msys2 {0}
-        env:
-          MSYS2_PATH: ${{ env.MSYS2_PATH }}
-          PKG_CONFIG_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/pkgconfig
-          GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
-          LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
         run: |
+          source $GITHUB_WORKSPACE/.msys2_env
           pyinstaller --onefile --noconsole \
-            --add-data "${{ env.MSYS2_PATH }}/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" \
-            --add-data "${{ env.MSYS2_PATH }}/mingw64/share/icons;share/icons" \
-            --add-binary "${{ env.MSYS2_PATH }}/mingw64/bin/libgtk-4-1.dll;." \
-            --add-binary "${{ env.MSYS2_PATH }}/mingw64/bin/libgobject-2.0-0.dll;." \
+            --add-data "${MSYS2_PATH}/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" \
+            --add-data "${MSYS2_PATH}/mingw64/share/icons;share/icons" \
+            --add-binary "${MSYS2_PATH}/mingw64/bin/libgtk-4-1.dll;." \
+            --add-binary "${MSYS2_PATH}/mingw64/bin/libgobject-2.0-0.dll;." \
             --hidden-import gi \
             rayforge/app.py
 
