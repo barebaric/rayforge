@@ -36,6 +36,20 @@ jobs:
             mingw-w64-ucrt-x86_64-gobject-introspection
             mingw-w64-ucrt-x86_64-gobject-introspection-runtime
 
+      - name: Set up and dump environment
+        shell: bash
+        run: |
+          echo "MSYS2_PATH=${{ steps.msys2.outputs.msys2-location }}" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig" >> $GITHUB_ENV
+          echo "/mingw64/bin" >> $GITHUB_PATH
+          set
+
+      - name: Verify dependencies
+        shell: msys2 {0}
+        run: |
+          pkg-config --modversion gobject-introspection-1.0
+          gtk4-demo --version
+
       - name: Install Python dependencies
         shell: bash
         run: pip install --no-cache-dir -r requirements.txt
