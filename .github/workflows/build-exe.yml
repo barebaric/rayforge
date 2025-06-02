@@ -32,6 +32,7 @@ jobs:
             mingw-w64-x86_64-gobject-introspection
             mingw-w64-x86_64-gobject-introspection-runtime
             mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-meson
 
       - name: Set up environment
