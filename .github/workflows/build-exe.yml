@@ -41,10 +41,26 @@ jobs:
         shell: bash
         run: |
           echo "MSYS2_PATH=${{ steps.msys2.outputs.msys2-location }}" >> $GITHUB_ENV
-          echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> $GITHUB_PATH
+          echo "PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/bin:$PATH" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig" >> $GITHUB_ENV
+          echo "GI_TYPELIB_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib" >> $GITHUB_ENV
           echo $MSYS2_PATH
           echo $PKG_CONFIG_PATH
+          echo $PATH
+          ${{ steps.msys2.outputs.msys2-location }}/mingw64/bin/pkgconf --version
+          which pkgconf
+          which pkg-config
+
+      - name: Verify pkg-config and dependencies
+        shell: bash
+        env:
+          PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
+          GI_TYPELIB_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0
+          LD_LIBRARY_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib
+        run: |
+          ${{ steps.msys2.outputs.msys2-location }}/mingw64/bin/pkgconf --modversion gobject-introspection-1.0
+          ${{ steps.msys2.outputs.msys2-location }}/mingw64/bin/pkgconf --list-all | grep gobject-introspection
 
       - name: Install Python dependencies
         shell: bash
@@ -53,7 +69,6 @@ jobs:
           GI_TYPELIB_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0
           LD_LIBRARY_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib
         run: |
-          pkg-config --modversion gobject-introspection-1.0
           python -m pip install --upgrade pip
           pip install pyvips[binary] pyinstaller
           pip install --no-cache-dir -r requirements.txt
