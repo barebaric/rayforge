@@ -140,7 +140,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}-installer
+          name: rayforge-v${{ steps.set-version.outputs.version }}.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
 
       - name: Create GitHub Release
