@@ -15,6 +15,16 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Set Version
+        run: |
+          VERSION=$(git describe --tags)
+          if [ -z "$VERSION" ]; then
+            echo "Error: No git version number found!"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version: $VERSION"
+
       - name: Set up MSYS2
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -99,22 +109,13 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          VERSION=$(git describe --tags)
-          if [ -z "$VERSION" ]; then
-            echo "Error: No git version number found!"
-            exit 1
-          fi
-          echo "Version: $VERSION"
           pyinstaller --onefile --noconsole \
-            --name rayforge-v${VERSION} \
+            --name rayforge-v${{ env.VERSION }} \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
@@ -132,5 +133,17 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rayforge-Installer
-          path: dist/rayforge-v*.exe
+          name: rayforge-v${{ env.VERSION }}-installer
+          path: dist/rayforge-v${{ env.VERSION }}.exe
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/rayforge-v${{ env.VERSION }}.exe
+          draft: false
+          prerelease: false
+          name: Release ${{ env.VERSION }}
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
