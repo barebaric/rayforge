@@ -16,13 +16,20 @@ jobs:
           fetch-tags: true
 
       - name: Set Version
+        id: set-version
+        shell: bash
         run: |
-          VERSION=$(git describe --tags)
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          else
+            VERSION=$(git describe --tags)
+          fi
           if [ -z "$VERSION" ]; then
             echo "Error: No git version number found!"
             exit 1
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
       - name: Set up MSYS2
@@ -110,7 +117,7 @@ jobs:
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
           pyinstaller --onefile --noconsole \
-            --name rayforge-v${{ env.VERSION }} \
+            --name rayforge-v${{ steps.set-version.outputs.version }} \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
@@ -133,17 +140,17 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-v${{ env.VERSION }}-installer
-          path: dist/rayforge-v${{ env.VERSION }}.exe
+          name: rayforge-v${{ steps.set-version.outputs.version }}-installer
+          path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/rayforge-v${{ env.VERSION }}.exe
+          files: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
           draft: false
           prerelease: false
-          name: Release ${{ env.VERSION }}
+          name: Release ${{ steps.set-version.outputs.version }}
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
