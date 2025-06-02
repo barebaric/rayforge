@@ -36,11 +36,13 @@ jobs:
             mingw-w64-ucrt-x86_64-adwaita-icon-theme
             mingw-w64-ucrt-x86_64-gobject-introspection
             mingw-w64-ucrt-x86_64-gobject-introspection-runtime
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-meson
 
       - name: Set up environment
         shell: bash
         run: |
-          MSYS2_BASH_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):|/d/\1|g' | sed 's|\\|/|g')
+          MSYS2_BASH_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):|/d/\1/|g' | sed 's|\\|/|g')
           echo "MSYS2_PATH=$MSYS2_BASH_PATH" >> $GITHUB_ENV
           echo "PATH=$MSYS2_BASH_PATH/mingw64/bin:$MSYS2_BASH_PATH/usr/bin:$PATH" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=$MSYS2_BASH_PATH/mingw64/lib/pkgconfig" >> $GITHUB_ENV
@@ -54,13 +56,26 @@ jobs:
           ls -l $MSYS2_BASH_PATH/usr/bin/pacman || echo "pacman binary not found"
           $MSYS2_BASH_PATH/mingw64/bin/pkgconf --version || echo "pkgconf not found"
           $MSYS2_BASH_PATH/usr/bin/pacman --version || echo "pacman not found"
+          $MSYS2_BASH_PATH/mingw64/bin/gcc --version || echo "gcc not found"
           which pkgconf || echo "pkgconf not in PATH"
           which pkg-config || echo "pkg-config not in PATH"
+          which gcc || echo "gcc not in PATH"
 
       - name: Debug MSYS2 packages
         shell: bash
         run: |
-          ${{ env.MSYS2_PATH }}/usr/bin/pacman -Q | grep -E 'pkgconf|gobject-introspection' || echo "Failed to list pkgconf or gobject-introspection packages"
+          ${{ env.MSYS2_PATH }}/usr/bin/pacman -Q | grep -E 'pkgconf|gobject-introspection|python|meson' || echo "Failed to list pkgconf, gobject-introspection, python, or meson packages"
+
+      - name: Install Python dependencies
+        shell: bash
+        env:
+          PKG_CONFIG_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/pkgconfig
+          GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
+          LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
+        run: |
+          ${{ env.MSYS2_PATH }}/mingw64/bin/python -m pip install --upgrade pip
+          ${{ env.MSYS2_PATH }}/mingw64/bin/python -m pip install pyvips[binary] pyinstaller
+          ${{ env.MSYS2_PATH }}/mingw64/bin/python -m pip install --no-cache-dir -r requirements.txt
 
       - name: Verify pkg-config and dependencies
         shell: bash
@@ -71,17 +86,6 @@ jobs:
         run: |
           ${{ env.MSYS2_PATH }}/mingw64/bin/pkgconf --modversion gobject-introspection-1.0 || echo "Failed to find gobject-introspection-1.0"
           ${{ env.MSYS2_PATH }}/mingw64/bin/pkgconf --list-all | grep gobject-introspection || echo "gobject-introspection not in pkg-config list"
-
-      - name: Install Python dependencies
-        shell: bash
-        env:
-          PKG_CONFIG_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/pkgconfig
-          GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
-          LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyvips[binary] pyinstaller
-          pip install --no-cache-dir -r requirements.txt
 
       - name: Configure GTK Theme
         shell: bash
@@ -99,7 +103,7 @@ jobs:
           LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
         shell: bash
         run: |
-          pyinstaller --onefile --noconsole \
+          ${{ env.MSYS2_PATH }}/mingw64/bin/pyinstaller --onefile --noconsole \
             --add-data "${{ env.MSYS2_PATH }}/mingw64/share/glib-2.0/schemas;glib-2.0/schemas" \
             --add-data "${{ env.MSYS2_PATH }}/mingw64/share/icons;share/icons" \
             --add-binary "${{ env.MSYS2_PATH }}/mingw64/bin/libgtk-4-1.dll;." \
