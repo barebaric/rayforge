@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "MSYS2_PATH=${{ steps.msys2.outputs.msys2-location }}" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
-          cat $MSYS2_PATH
+          echo $MSYS2_PATH
 
       - name: Install Python dependencies
         shell: bash
