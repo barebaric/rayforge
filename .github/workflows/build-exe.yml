@@ -37,17 +37,12 @@ jobs:
             mingw-w64-ucrt-x86_64-gobject-introspection
             mingw-w64-ucrt-x86_64-gobject-introspection-runtime
 
-      - name: Debug MSYS2 packages
-        shell: bash
-        run: |
-          pacman -Q | grep -E 'pkgconf|gobject-introspection'
-
       - name: Set up environment
         shell: bash
         run: |
           MSYS2_BASH_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):|/d\1|g' | sed 's|\\|/|g')
           echo "MSYS2_PATH=$MSYS2_BASH_PATH" >> $GITHUB_ENV
-          echo "PATH=$MSYS2_BASH_PATH/mingw64/bin:$PATH" >> $GITHUB_ENV
+          echo "PATH=$MSYS2_BASH_PATH/mingw64/bin:$MSYS2_BASH_PATH/usr/bin:$PATH" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=$MSYS2_BASH_PATH/mingw64/lib/pkgconfig" >> $GITHUB_ENV
           echo "GI_TYPELIB_PATH=$MSYS2_BASH_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$MSYS2_BASH_PATH/mingw64/lib" >> $GITHUB_ENV
@@ -55,9 +50,16 @@ jobs:
           echo $PKG_CONFIG_PATH
           echo $PATH
           $MSYS2_BASH_PATH/mingw64/bin/pkgconf --version || echo "pkgconf not found"
+          $MSYS2_BASH_PATH/usr/bin/pacman --version || echo "pacman not found"
           which pkgconf || echo "pkgconf not in PATH"
           which pkg-config || echo "pkg-config not in PATH"
           ls -l $MSYS2_BASH_PATH/mingw64/bin/pkgconf || echo "pkgconf binary not found"
+          ls -l $MSYS2_BASH_PATH/usr/bin/pacman || echo "pacman binary not found"
+
+      - name: Debug MSYS2 packages
+        shell: bash
+        run: |
+          ${{ env.MSYS2_PATH }}/usr/bin/pacman -Q | grep -E 'pkgconf|gobject-introspection' || echo "Failed to list pkgconf or gobject-introspection packages"
 
       - name: Verify pkg-config and dependencies
         shell: bash
