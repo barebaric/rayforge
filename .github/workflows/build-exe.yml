@@ -15,11 +15,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
-
       - name: Set up MSYS2
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -28,16 +23,16 @@ jobs:
           update: true
           install: >-
             base-devel
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-gtk4
-            mingw-w64-ucrt-x86_64-python-gobject
-            mingw-w64-ucrt-x86_64-python-cairo
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-adwaita-icon-theme
-            mingw-w64-ucrt-x86_64-gobject-introspection
-            mingw-w64-ucrt-x86_64-gobject-introspection-runtime
-            mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-gtk4
+            mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-python-cairo
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-adwaita-icon-theme
+            mingw-w64-x86_64-gobject-introspection
+            mingw-w64-x86_64-gobject-introspection-runtime
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-meson
 
       - name: Set up environment
         shell: msys2 {0}
@@ -53,22 +48,22 @@ jobs:
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
           echo "PATH=$PATH"
           ls -ld $MSYS2_BASH_PATH || echo "MSYS2 directory not found"
-          ls -l $MSYS2_BASH_PATH/mingw64/bin/pkgconf || echo "pkgconf binary not found"
+          ls -l $MSYS2_BASH_PATH/mingw64/bin/pkg-config || echo "pkg-config binary not found"
           ls -l $MSYS2_BASH_PATH/usr/bin/pacman || echo "pacman binary not found"
           ls -l $MSYS2_BASH_PATH/mingw64/bin/python || echo "python binary not found"
-          pkgconf --version || echo "pkgconf not found"
-          pacman --version || echo "pacman not found"
-          gcc --version || echo "gcc not found"
-          python --version || echo "python not found"
-          which pkgconf || echo "pkgconf not in PATH"
+          ls -l $MSYS2_BASH_PATH/mingw64/bin/gcc || echo "gcc binary not found"
+          $MSYS2_BASH_PATH/mingw64/bin/pkg-config --version || echo "pkg-config not found"
+          $MSYS2_BASH_PATH/usr/bin/pacman --version || echo "pacman not found"
+          $MSYS2_BASH_PATH/mingw64/bin/python --version || echo "python not found"
+          $MSYS2_BASH_PATH/mingw64/bin/gcc --version || echo "gcc not found"
           which pkg-config || echo "pkg-config not in PATH"
-          which gcc || echo "gcc not in PATH"
           which python || echo "python not in PATH"
+          which gcc || echo "gcc not in PATH"
 
       - name: Debug MSYS2 packages
         shell: msys2 {0}
         run: |
-          pacman -Q | grep -E 'pkgconf|gobject-introspection|python|meson' || echo "Failed to list pkgconf, gobject-introspection, python, or meson packages"
+          pacman -Q | grep -E 'pkg-config|gobject-introspection|python|meson' || echo "Failed to list pkg-config, gobject-introspection, python, or meson packages"
 
       - name: Verify pkg-config and dependencies
         shell: msys2 {0}
@@ -77,8 +72,8 @@ jobs:
           GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
           LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
         run: |
-          pkgconf --modversion gobject-introspection-1.0 || echo "Failed to find gobject-introspection-1.0"
-          pkgconf --list-all | grep gobject-introspection || echo "gobject-introspection not in pkg-config list"
+          pkg-config --modversion gobject-introspection-1.0 || echo "Failed to find gobject-introspection-1.0"
+          pkg-config --list-all | grep gobject-introspection || echo "gobject-introspection not in pkg-config list"
 
       - name: Install Python dependencies
         shell: msys2 {0}
