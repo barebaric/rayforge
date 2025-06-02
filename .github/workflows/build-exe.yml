@@ -33,6 +33,8 @@ jobs:
             mingw-w64-ucrt-x86_64-python-cairo
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-adwaita-icon-theme
+            mingw-w64-ucrt-x86_64-gobject-introspection
+            mingw-w64-ucrt-x86_64-gobject-introspection-runtime
 
       - name: Install Python dependencies
         shell: bash
@@ -55,6 +57,7 @@ jobs:
       - name: Build with PyInstaller
         env:
           MSYS2_PATH: ${{ steps.msys2.outputs.msys2-location }}
+          PKG_CONFIG_PATH: "${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig"
         run: |
           pyinstaller --onefile --noconsole \
             --add-data "$env:MSYS2_PATH\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
