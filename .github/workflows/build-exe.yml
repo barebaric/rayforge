@@ -42,11 +42,18 @@ jobs:
         run: |
           echo "MSYS2_PATH=${{ steps.msys2.outputs.msys2-location }}" >> $GITHUB_ENV
           echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG_PATH=${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig" >> $GITHUB_ENV
           echo $MSYS2_PATH
+          echo $PKG_CONFIG_PATH
 
       - name: Install Python dependencies
         shell: bash
+        env:
+          PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
+          GI_TYPELIB_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0
+          LD_LIBRARY_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib
         run: |
+          pkg-config --modversion gobject-introspection-1.0
           python -m pip install --upgrade pip
           pip install pyvips[binary] pyinstaller
           pip install --no-cache-dir -r requirements.txt
@@ -63,6 +70,8 @@ jobs:
         env:
           MSYS2_PATH: ${{ steps.msys2.outputs.msys2-location }}
           PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
+          GI_TYPELIB_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0
+          LD_LIBRARY_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib
         shell: bash
         run: |
           pyinstaller --onefile --noconsole \
