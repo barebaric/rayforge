@@ -36,6 +36,8 @@ jobs:
             mingw-w64-x86_64-meson
             mingw-w64-x86_64-libffi
             mingw-w64-x86_64-python-cffi
+            mingw-w64-x86_64-opencv
+            mingw-w64-x86_64-libvips
 
       - name: Set up environment
         shell: msys2 {0}
@@ -50,18 +52,15 @@ jobs:
           echo "MSYS2_PATH=$MSYS2_BASH_PATH"
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
           echo "PATH=$PATH"
-          $MSYS2_BASH_PATH/mingw64/bin/pkg-config --version || echo "pkg-config not found"
-          $MSYS2_BASH_PATH/usr/bin/pacman --version || echo "pacman not found"
           $MSYS2_BASH_PATH/mingw64/bin/python --version || echo "python not found"
           $MSYS2_BASH_PATH/mingw64/bin/gcc --version || echo "gcc not found"
-          which pkg-config || echo "pkg-config not in PATH"
-          which python || echo "python not in PATH"
-          which gcc || echo "gcc not in PATH"
+          $MSYS2_BASH_PATH/mingw64/bin/python -c "import cffi; print(cffi.__version__)" || echo "cffi not found or importable"
 
-      - name: Debug MSYS2 packages
+      - name: List MSYS2 packages
         shell: msys2 {0}
         run: |
-          pacman -Q | grep -E 'pkg-config|gobject-introspection|python|meson' || echo "Failed to list pkg-config, gobject-introspection, python, or meson packages"
+          $MSYS2_BASH_PATH/usr/bin/pacman --version || echo "pacman not found"
+          pacman -Q
 
       - name: Verify pkg-config and dependencies
         shell: msys2 {0}
@@ -70,8 +69,9 @@ jobs:
           GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
           LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
         run: |
-          pkg-config --modversion gobject-introspection-1.0 || echo "Failed to find gobject-introspection-1.0"
-          pkg-config --list-all | grep gobject-introspection || echo "gobject-introspection not in pkg-config list"
+          pkg-config --version || echo "pkg-config not found"
+          pkg-config --list-all | awk '{print $1}' | while read i; do echo -n "$i "; pkg-config --modversion "$i"; done
+          python -c "import cffi; print(cffi.__version__)"
 
       - name: Install Python dependencies
         shell: msys2 {0}
@@ -80,8 +80,8 @@ jobs:
           GI_TYPELIB_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib/girepository-1.0
           LD_LIBRARY_PATH: ${{ env.MSYS2_PATH }}/mingw64/lib
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyvips[binary] pyinstaller
+          python -m pip install --upgrade pip || echo "Failed to upgrade pip"
+          python -m pip install pyvips[binary] pyinstaller || echo "Failed to install pyvips or pyinstaller"
           python -m pip install --no-cache-dir -r requirements.txt
 
       - name: Configure GTK Theme
