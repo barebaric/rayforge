@@ -26,6 +26,7 @@ jobs:
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-gtk4
             mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-libadwaita
             mingw-w64-x86_64-adwaita-icon-theme
             mingw-w64-x86_64-gobject-introspection
             mingw-w64-x86_64-gobject-introspection-runtime
