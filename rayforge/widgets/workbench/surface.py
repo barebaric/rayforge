@@ -1,7 +1,8 @@
 import math
 import logging
-from typing import Tuple, cast
+from typing import Optional, Tuple, cast
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
+from ...models.doc import Doc
 from ...models.workpiece import WorkPiece
 from ..canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
@@ -67,6 +68,8 @@ class WorkSurface(Canvas):
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
         self.mouse_pos = 0, 0
+        self.doc: Optional[Doc] = None
+        self.elem_removed.connect(self._on_elem_removed)
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
@@ -207,7 +210,13 @@ class WorkSurface(Canvas):
                 elem.mark_dirty()
             self.queue_draw()
 
-    def update_from_doc(self, doc):
+    def _on_elem_removed(self, sender, child):
+        if not self.doc or not isinstance(child.data, WorkPiece):
+            return
+        self.doc.remove_workpiece(child.data)
+        self.update_from_doc(self.doc)
+
+    def update_from_doc(self, doc: Doc):
         self.doc = doc
 
         # Remove anything from the canvas that no longer exists.

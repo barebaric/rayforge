@@ -102,6 +102,15 @@ class WorkStepElement(CanvasElement):
         assert (
             self.canvas
         ), "Received ops_start, but element was not added to canvas"
+
+        # If the workpiece is no longer part of the workstep, remove its
+        # ops element.
+        if workpiece not in sender.workpieces():
+            elem = self.find_by_data(workpiece)
+            if elem:
+                elem.remove()
+            return
+
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.clear_ops()
         GLib.idle_add(self.canvas.queue_draw)
@@ -116,6 +125,15 @@ class WorkStepElement(CanvasElement):
         assert (
             self.canvas
         ), "Received update, but element was not added to canvas"
+
+        # If the workpiece is no longer part of the workstep, remove its
+        # ops element.
+        if workpiece not in sender.workpieces():
+            elem = self.find_by_data(workpiece)
+            if elem:
+                elem.remove()
+            return
+
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.add_ops(chunk)
         GLib.idle_add(self.canvas.queue_draw)
