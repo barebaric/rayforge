@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -28,15 +28,14 @@ class DeviceStatus(Enum):
     TEST = auto()
 
 
+Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
+
+
 @dataclass
 class DeviceState:
     status: DeviceStatus = DeviceStatus.UNKNOWN
-    machine_pos: Tuple[Optional[float], Optional[float], Optional[float]] = (
-        None, None, None
-    )  # x, y, z in mm
-    work_pos: Tuple[Optional[float], Optional[float], Optional[float]] = (
-        None, None, None
-    )  # x, y, z in mm
+    machine_pos: Pos = (None, None, None)
+    work_pos: Pos = (None, None, None)
     feed_rate: Optional[int] = None
 
 
@@ -69,9 +68,9 @@ class Driver(ABC):
         self.command_status_changed = Signal()
         self.connection_status_changed = Signal()
         self.did_setup = False
-        self.state = DeviceState()
+        self.state: DeviceState = DeviceState()
 
-    def setup(self):
+    def setup(self, *args: Any, **kwargs: Any):
         """
         The type annotations of this method are used to generate a UI
         for the user! So if your driver requires any UI parameters,

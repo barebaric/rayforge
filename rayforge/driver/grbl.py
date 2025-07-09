@@ -2,12 +2,12 @@ import re
 import asyncio
 import aiohttp
 from copy import copy
-from typing import Optional
+from typing import Callable, Optional
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
-from .driver import Driver, DeviceStatus
+from .driver import Driver, DeviceStatus, DeviceState, Pos
 
 
 hw_info_url = '/command?plain=%5BESP420%5D&PAGEID='
@@ -23,11 +23,70 @@ pos_re = re.compile(r':(\d+\.\d+),(\d+\.\d+),(\d+\.\d+)')
 fs_re = re.compile(r'FS:(\d+),(\d+)')
 
 
-def _parse_pos_triplet(pos, default=None):
+def _parse_pos_triplet(pos) -> Optional[Pos]:
     match = pos_re.search(pos)
-    if not match or match.lastindex != 3:
-        return default
-    return [float(i) for i in match.groups()]
+    if not match:
+        return None
+    pos = tuple(float(i) for i in match.groups())
+    if len(pos) != 3:
+        return None
+    return pos
+
+
+def _parse_state(state_str: str, default: DeviceState, logger: Callable) -> DeviceState:
+    """
+    Example state_str:
+    Run|MPos:10.0,20.0,0.0|WPos:10.0,20.0,0.0|W0:10.0,20.0,0.0|FS:1500,0
+
+    - First field is always the status.
+    - MPos is position in machine coords.
+    - WPos is position in work coords.
+    - No idea what W0 is.
+    - FS: tuple of feed rate and spindle speed
+
+    Also note that not always all fields are included, and sometimes
+    others not listed here appear.
+    """
+    # Split out the status.
+    state = copy(default)
+    try:
+        status, *attribs = state_str.split('|')
+        status = status.split(':')[0]
+    except ValueError:
+        return state
+
+    try:
+        state.status = DeviceStatus[status.upper()]
+    except KeyError:
+        logger(
+            message=f"device sent an unupported status: {status}"
+        )
+
+    # Parse the substrings.
+    for attrib in attribs:
+        if attrib.startswith('MPos:'):
+            state.machine_pos = _parse_pos_triplet(
+                attrib
+            ) or state.machine_pos
+
+        elif attrib.startswith('WPos:'):
+            state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
+
+        elif attrib.startswith('FS:'):
+            try:
+                match = fs_re.match(attrib)
+                if not match:
+                    continue
+                fs = [int(i) for i in match.groups()]
+                state.feed_rate = int(fs[0])
+                # We ignore fs[1] (="spindle speed")
+            except (ValueError, IndexError):
+                pass
+
+        else:
+            pass  # Ignore everything else
+
+    return state
 
 
 class GrblDriver(Driver):
@@ -45,8 +104,10 @@ class GrblDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
 
-    def setup(self, host: str):
+    def setup(self, host: str = ""):
         assert not self.did_setup
+        if not host:
+            return  # Leave unconfigured
         super().setup()
 
         # Initialize transports
@@ -207,68 +268,13 @@ class GrblDriver(Driver):
                                message: Optional[str] = None):
         self._on_command_status_changed(status, message)
 
-    def _parse_state(self, state_str):
-        """
-        Example state_str:
-        Run|MPos:10.0,20.0,0.0|WPos:10.0,20.0,0.0|W0:10.0,20.0,0.0|FS:1500,0
-
-        - First field is always the status.
-        - MPos is position in machine coords.
-        - WPos is position in work coords.
-        - No idea what W0 is.
-        - FS: tuple of feed rate and spindle speed
-
-        Also note that not always all fields are included, and sometimes
-        others not listed here appear.
-        """
-        # Split out the status.
-        try:
-            status, *attribs = state_str.split('|')
-            status = status.split(':')[0]
-        except ValueError:
-            return
-
-        state = copy(self.state)
-        try:
-            state.status = DeviceStatus[status.upper()]
-        except KeyError:
-            self.log_received.send(
-                self,
-                message=f"device sent an unupported status: {status}"
-            )
-
-        # Parse the substrings.
-        for attrib in attribs:
-            if attrib.startswith('MPos:'):
-                state.machine_pos = _parse_pos_triplet(
-                    attrib,
-                    state.machine_pos
-                )
-
-            elif attrib.startswith('WPos:'):
-                state.work_pos = _parse_pos_triplet(attrib, state.work_pos)
-
-            elif attrib.startswith('FS:'):
-                try:
-                    match = fs_re.match(attrib)
-                    fs = [int(i) for i in match.groups()]
-                    state.feed_rate = int(fs[0])
-                    # We ignore fs[1] (="spindle speed")
-                except (ValueError, IndexError):
-                    pass
-
-            else:
-                pass  # Ignore everything else
-
-        return state
-
     def on_websocket_data_received(self, sender, data: bytes):
-        data = data.decode('utf-8')
-        for line in data.splitlines():
+        data_str = data.decode('utf-8')
+        for line in data_str.splitlines():
             self._log(line)
             if not line.startswith('<') or not line.endswith('>'):
                 continue
-            state = self._parse_state(line[1:-1])
+            state = _parse_state(line[1:-1], self.state, self._log)
             if state != self.state:
                 self.state = state
                 self._on_state_changed()
