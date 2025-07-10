@@ -18,6 +18,9 @@ from .statusview import ConnectionStatusMonitor, \
 from .machineview import MachineView
 from .machinesettings import MachineSettingsDialog
 from .progress import TaskProgressBar
+from .workpieceprops import WorkpiecePropertiesWidget
+from .canvas import CanvasElement
+from .workbench.workpieceelem import WorkPieceElement
 
 
 css = """
@@ -242,14 +245,44 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc = Doc()
         self.doc.changed.connect(self.on_doc_changed)
 
+        # Create a vertical paned for the right pane content
+        right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        right_pane_box.set_margin_top(6)
+        right_pane_box.set_margin_bottom(12)
+        self.paned.set_end_child(right_pane_box)
+        self.paned.set_resize_end_child(False)
+        self.paned.set_shrink_end_child(False)
+
         # Show the work plan.
         self.workplanview = WorkPlanView(self.doc.workplan)
         self.workplanview.set_size_request(400, -1)
-        self.workplanview.set_margin_top(12)
-        self.workplanview.set_margin_bottom(12)
-        self.paned.set_end_child(self.workplanview)
-        self.paned.set_resize_end_child(False)
-        self.paned.set_shrink_end_child(False)
+        self.workplanview.set_vexpand(True)
+        self.workplanview.set_margin_start(4)
+        right_pane_box.append(self.workplanview)
+
+        # Add the WorkpiecePropertiesWidget
+        self.workpiece_props_widget = WorkpiecePropertiesWidget(None)
+        workpiece_props_container = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL
+        )
+        workpiece_props_container.set_vexpand(False)
+        workpiece_props_container.set_valign(Gtk.Align.END)
+        workpiece_props_container.append(self.workpiece_props_widget)
+
+        self.workpiece_revealer = Gtk.Revealer()
+        self.workpiece_revealer.set_child(workpiece_props_container)
+        self.workpiece_revealer.set_reveal_child(False)
+        self.workpiece_revealer.set_transition_type(
+            Gtk.RevealerTransitionType.SLIDE_UP
+        )
+        right_pane_box.append(self.workpiece_revealer)
+        self.workpiece_props_widget.set_margin_top(20)
+        self.workpiece_props_widget.set_margin_start(4)
+
+        # Connect signals for workpiece selection
+        self.surface.active_element_changed.connect(
+            self._on_active_workpiece_changed
+        )
 
         # Create a status bar.
         status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -346,6 +379,13 @@ class MainWindow(Adw.ApplicationWindow):
     def on_doc_changed(self, sender, **kwargs):
         self.surface.update_from_doc(self.doc)
         self.update_state()
+
+    def _on_active_workpiece_changed(self, sender, element: CanvasElement):
+        workpiece = (
+            element.data if isinstance(element, WorkPieceElement) else None
+        )
+        self.workpiece_props_widget.set_workpiece(workpiece)
+        self.workpiece_revealer.set_reveal_child(workpiece is not None)
 
     def on_config_changed(self, sender, **kwargs):
         self.surface.set_size(*config.machine.dimensions)
@@ -558,6 +598,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc.add_workpiece(wp)
         self.surface.update_from_doc(self.doc)
         self.update_state()
+        # No workpiece is active after loading a new document,
+        # so ensure the properties widget is hidden.
+        self.workpiece_revealer.set_reveal_child(False)
 
     def show_about_dialog(self, action, param):
         about_dialog = Adw.AboutDialog(

@@ -338,6 +338,7 @@ class Canvas(Gtk.DrawingArea):
         self.handle_size: int = 12   # Resize handle size
         self.active_elem: CanvasElement | None = None
         self.active_origin: tuple[int, int, int, int] | None = None
+        self.active_element_changed = Signal()
         self._setup_interactions()
 
     def add(self, elem: CanvasElement):
@@ -492,6 +493,7 @@ class Canvas(Gtk.DrawingArea):
             self.active_elem = hit
             self.active_origin = hit.rect()
             self.queue_draw()
+            self.active_element_changed.send(self, element=self.active_elem)
             return
 
         # Check whether the element body was clicked.
@@ -516,12 +518,14 @@ class Canvas(Gtk.DrawingArea):
                     # order changed
 
             self.queue_draw()
+            self.active_element_changed.send(self, element=self.active_elem)
             return
 
         self.active_elem = None
         self.resizing = False
         self.moving = False
         self.queue_draw()
+        self.active_element_changed.send(self, element=None)
 
     def on_motion(self, gesture, x: int, y: int):
         # x and y are already in canvas pixel coordinates
@@ -584,11 +588,18 @@ class Canvas(Gtk.DrawingArea):
             self.active_elem = None
             self.active_origin = None
             self.queue_draw()
+            self.active_element_changed.send(self, element=None)
 
     def on_key_released(self, controller, keyval: int, keycode: int,
                         state: Gdk.ModifierType):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = False
+
+    def get_active_element(self) -> CanvasElement | None:
+        return self.active_elem
+
+    def get_selected_elements(self) -> list[CanvasElement]:
+        return list(self.root.get_selected())
 
 
 if __name__ == "__main__":

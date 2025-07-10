@@ -31,7 +31,8 @@ class WorkPieceElement(SurfaceElement):
         self.data: WorkPiece = workpiece
         self._in_update = False
         super().__init__(0, 0, 0, 0, data=workpiece, **kwargs)
-        workpiece.size_changed.connect(self.allocate)
+        workpiece.size_changed.connect(self._on_workpiece_size_changed)
+        workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
 
     def _update_workpiece(self):
         """
@@ -144,4 +145,23 @@ class WorkPieceElement(SurfaceElement):
         """
         super().set_size(width, height)
         self._update_workpiece()
+
+    def _on_workpiece_size_changed(self, workpiece):
+        """
+        Handles workpiece size changes and triggers a redraw.
+        """
         self.allocate()
+        self.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def _on_workpiece_pos_changed(self, workpiece):
+        """
+        Handles workpiece position changes and updates the element's position.
+        """
+        if not self.parent:
+            return
+        self.allocate()
+        self.parent.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()

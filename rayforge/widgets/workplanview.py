@@ -10,7 +10,7 @@ css = """
 .workplan {
     background-color: #ffffff;
     border-radius: 8px;
-    margin: 0;
+    margin: 0 0 9px 0;
     box-shadow: 0 8px 8px rgba(0, 0, 0, 0.1);
 }
 """

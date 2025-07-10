@@ -9,6 +9,7 @@ from .axis import AxisRenderer
 from .dotelem import DotElement
 from .workstepelem import WorkStepElement
 from .workpieceelem import WorkPieceElement
+from typing import List
 
 
 logger = logging.getLogger(__name__)
@@ -330,6 +331,7 @@ class WorkSurface(Canvas):
     def clear_workpieces(self):
         self.workpiece_elements.clear()
         self.queue_draw()
+        self.active_element_changed.send(self, element=None)
 
     def clear(self):
         # Clear all children except the fixed ones
@@ -400,3 +402,16 @@ class WorkSurface(Canvas):
 
     def on_pan_end(self, gesture, x, y):
         pass
+
+    def get_active_workpiece(self) -> Optional[WorkPiece]:
+        active_elem = self.get_active_element()
+        if active_elem and isinstance(active_elem.data, WorkPiece):
+            return active_elem.data
+        return None
+
+    def get_selected_workpieces(self) -> List[WorkPiece]:
+        selected_workpieces = []
+        for elem in self.get_selected_elements():
+            if isinstance(elem.data, WorkPiece):
+                selected_workpieces.append(elem.data)
+        return selected_workpieces
