@@ -1,7 +1,15 @@
 import inspect
+import re
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ..util.adwfix import get_spinrow_int
+from ..transport.serial import SerialTransport, SerialPort
+from typing import Any
+
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split('([0-9]+)', s)]
 
 
 class DynamicPreferencesGroup(Adw.PreferencesGroup):
@@ -15,7 +23,7 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
         self.data_changed = Signal()
 
     def clear(self):
-        for row in self.widget_map.values():
+        for row, _ in self.widget_map.values():
             self.remove(row)
         self.widget_map = {}
 
@@ -32,17 +40,19 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
             default = param.default if not isempty else None
 
             # Create appropriate row based on type
-            if annotation == str:
+            if annotation is SerialPort:
+                row = self._create_port_selection_row(name, default)
+            elif annotation is str:
                 row = self._create_string_row(name, default)
-            elif annotation == bool:
+            elif annotation is bool:
                 row = self._create_boolean_row(name, default)
-            elif annotation == int:
+            elif annotation is int:
                 row = self._create_integer_row(name, default)
             else:
                 continue  # Skip unsupported types
 
             self.add(row)
-            self.widget_map[name] = row
+            self.widget_map[name] = (row, annotation)
 
     def _create_string_row(self, name, default):
         row = Adw.EntryRow(title=name.capitalize())
@@ -72,29 +82,51 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
         row.connect("changed", lambda e: self.data_changed.send(e))
         return row
 
+    def _create_port_selection_row(self, name: str, default: Any):
+        ports = sorted(SerialTransport.list_ports(), key=natural_sort_key)
+        store = Gtk.StringList.new(ports)
+        row = Adw.ComboRow(title=name.capitalize(), model=store)
+        if default and default in ports:
+            row.set_selected(ports.index(default))
+        row.connect("notify::selected-item",
+                    lambda e, p: self.data_changed.send(e))
+        return row
+
     def get_values(self):
         values = {}
-        for name, row in self.widget_map.items():
-            if isinstance(row, Adw.EntryRow) and hasattr(row, 'spin'):
-                # Integer input
+        for name, (row, annotation) in self.widget_map.items():
+            if annotation is SerialPort:
+                selected_item = row.get_selected_item()
+                if selected_item:
+                    values[name] = selected_item.get_string()
+                else:
+                    values[name] = ""
+            elif annotation is int:
                 values[name] = get_spinrow_int(row)
-            elif isinstance(row, Adw.ActionRow):
-                # Boolean switch
+            elif annotation is bool:
                 values[name] = row.switch.get_active()
-            else:
-                # String input
+            elif annotation is str:
                 values[name] = row.get_text()
         return values
 
     def set_values(self, values):
         for name, value in values.items():
-            row = self.widget_map.get(name)
-            if row is None:
+            item = self.widget_map.get(name)
+            if item is None:
                 continue
-            if isinstance(row, Adw.EntryRow):
+            row, annotation = item
+
+            if annotation is SerialPort:
+                ports = SerialTransport.list_ports()
+                try:
+                    index = ports.index(str(value))
+                    row.set_selected(index)
+                except ValueError:
+                    row.set_selected(0) # Select the first item as a fallback
+            elif annotation is str:
                 row.set_text(str(value))
-            elif isinstance(row, Adw.SpinRow):
+            elif annotation is int:
                 row.set_value(int(value))
-            else:
+            elif annotation is bool:
                 row.switch.set_active(bool(value))
         return values

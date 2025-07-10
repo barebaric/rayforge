@@ -3,11 +3,12 @@ import inspect
 from .driver import Driver
 from .dummy import NoDeviceDriver
 from .grbl import GrblDriver
+from .grbl_serial import GrblSerialDriver
 
 def isdriver(obj):
     return (inspect.isclass(obj)
             and issubclass(obj, Driver)
-            and not obj is Driver)
+            and obj is not Driver)
 
 drivers = [obj for obj in list(locals().values())
            if isdriver(obj)]
@@ -23,3 +24,10 @@ def get_driver(classname: str, default=NoDeviceDriver):
 def get_params(driver_cls):
     signature = inspect.signature(driver_cls.setup)
     return signature.parameters.items()
+
+__all__ = [
+    'Driver',
+    'NoDeviceDriver',
+    'GrblDriver',
+    'GrblSerialDriver',
+]
