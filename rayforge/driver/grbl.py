@@ -33,7 +33,9 @@ def _parse_pos_triplet(pos) -> Optional[Pos]:
     return pos
 
 
-def _parse_state(state_str: str, default: DeviceState, logger: Callable) -> DeviceState:
+def _parse_state(
+    state_str: str, default: DeviceState, logger: Callable
+) -> DeviceState:
     """
     Example state_str:
     Run|MPos:10.0,20.0,0.0|WPos:10.0,20.0,0.0|W0:10.0,20.0,0.0|FS:1500,0

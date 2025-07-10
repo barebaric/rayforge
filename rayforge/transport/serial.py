@@ -50,12 +50,14 @@ class SerialTransport(Transport):
             logger.debug("serial_asyncio.open_serial_connection returned.")
             self._running = True
             self.status_changed.send(self, status=TransportStatus.CONNECTED)
-            self._receive_task = asyncio.create_task(self._receive_loop())  # Store the task
+            self._receive_task = asyncio.create_task(self._receive_loop())
             self.status_changed.send(self, status=TransportStatus.IDLE)
             logger.debug("Serial port connected successfully.")
         except Exception as e:
             logger.error(f"Failed to connect serial port: {e}")
-            self.status_changed.send(self, status=TransportStatus.ERROR, message=str(e))
+            self.status_changed.send(
+                self, status=TransportStatus.ERROR, message=str(e)
+            )
             raise
 
     async def disconnect(self) -> None:
@@ -120,8 +122,8 @@ class SerialTransport(Transport):
                     logger.debug(f"Received data: {data!r}")
                     self.received.send(self, data=data)
                 else:
-                    logger.debug("Received empty data, connection might be closed.")
-                    break # Exit loop if connection is closed
+                    logger.error("Received empty data, connection closed.")
+                    break  # Exit loop if connection is closed
             except asyncio.CancelledError:
                 logger.debug("_receive_loop cancelled.")
                 break

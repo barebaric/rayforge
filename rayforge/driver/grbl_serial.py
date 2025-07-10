@@ -88,16 +88,18 @@ class GrblSerialDriver(Driver):
             self._on_connection_status_changed(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
             try:
-                assert self.serial_transport, "Serial transport not initialized"
+                assert self.serial_transport, "Transport not initialized"
                 await self.serial_transport.connect()
                 # Send a status report request to get initial state
                 await self._send_command('?')
             except Exception as e:
                 logger.error(f"Connection error: {e}")
-                self._on_connection_status_changed(TransportStatus.ERROR, str(e))
+                self._on_connection_status_changed(
+                    TransportStatus.ERROR, str(e)
+                )
                 if self.serial_transport:
                     await self.serial_transport.disconnect()
-                logger.debug("Entrando em modo de reconexão em 5s…")
+                logger.debug("Reconnecting in 5s…")
                 await asyncio.sleep(5)
             else:
                 break
@@ -111,7 +113,7 @@ class GrblSerialDriver(Driver):
                 await self._send_command(line.strip())
                 # Add a small delay or wait for 'ok' from GRBL if flow control
                 # is not handled by the transport layer
-                await asyncio.sleep(0.01) # Adjust as needed
+                await asyncio.sleep(0.01)
 
     async def set_hold(self, hold: bool = True) -> None:
         if hold:

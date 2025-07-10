@@ -122,7 +122,7 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
                     index = ports.index(str(value))
                     row.set_selected(index)
                 except ValueError:
-                    row.set_selected(0) # Select the first item as a fallback
+                    row.set_selected(0)  # Select the first item as a fallback
             elif annotation is str:
                 row.set_text(str(value))
             elif annotation is int:
