@@ -8,6 +8,22 @@ It supports direct communication with GRBL based machines (network or serial).
 ![Screenshot](docs/ss-main.png)
 
 
+## Features
+
+| Feature                          | Description                                                |
+| -------------------------------- | ---------------------------------------------------------- |
+| Intuitive user interface         | Drag & drop reordering, focus on essentials                |
+| Multi step operations            | For example, first engrave, then cut                       |
+| Multiple operation types         | Countour, External Outline, Raster Engraving               |
+| High quality path generation     | Interpolation based on spot size, path optimization        |
+| Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
+| GRBL (network based)             | Connect your laser through WiFi or Ethernet                |
+| GRBL (serial port based)         | Starting with version 0.13, serial connection is supported |
+| Open development                 | Easily [add support for your own laser](docs/driver.md)    |
+| Cross-platform                   | Support for Linux and (experimental) support for Windows   |
+| Much more                        | Framing, support for air assist, control buttons, ...      |
+
+
 ## Installation
 
 ### Linux
@@ -24,6 +40,10 @@ sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirep
 pip3 install rayforge
 ```
 
+### Windows
+
+Head over to the [releases page](https://github.com/barebaric/rayforge/releases/).
+
 ### Other operating systems
 
 There is currently no installer for other operating systems - contributions are
@@ -31,22 +51,6 @@ welcome, in the form of Github workflow actions or build instructions.
 
 If you know what you are doing, you may be able to install manually using
 PIP on Windows or Mac - the source code should be fully cross-platform.
-
-
-## Features
-
-| Feature                          | Description                                                |
-| -------------------------------- | ---------------------------------------------------------- |
-| Intuitive user interface         | Drag & drop reordering, focus on essentials                |
-| Multi step operations            | For example, first engrave, then cut                       |
-| Multiple operation types         | Countour, External Outline, Raster Engraving               |
-| High quality path generation     | Interpolation based on spot size, path optimization        |
-| Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
-| GRBL (network based)             | Connect your laser through WiFi or Ethernet                |
-| GRBL (serial port based)         | Starting with version 0.13, serial connection is supported |
-| Open development                 | Easily [add support for your own laser](docs/driver.md)    |
-| Cross-platform                   | Support for Linux and (experimental) support for Windows   |
-| Much more                        | Framing, support for air assist, control buttons, ...      |
 
 
 ## Development
