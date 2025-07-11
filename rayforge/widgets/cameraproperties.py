@@ -36,10 +36,10 @@ class CameraProperties(Adw.PreferencesGroup):
             title="Width (mm)",
             subtitle="Width of the camera image in mm",
             adjustment=Gtk.Adjustment(
-                value=0, lower=0, upper=1000, step_increment=0.1,
+                value=100, lower=100, upper=1000, step_increment=1,
                 page_increment=1
             ),
-            digits=3
+            digits=1
         )
         self.width_mm_row.connect("changed", self.on_width_mm_changed)
         self.add(self.width_mm_row)
@@ -48,10 +48,10 @@ class CameraProperties(Adw.PreferencesGroup):
             title="Height (mm)",
             subtitle="Height of the camera image in mm",
             adjustment=Gtk.Adjustment(
-                value=0, lower=0, upper=1000, step_increment=0.1,
+                value=100, lower=100, upper=1000, step_increment=1,
                 page_increment=1
             ),
-            digits=3
+            digits=1
         )
         self.height_mm_row.connect("changed", self.on_height_mm_changed)
         self.add(self.height_mm_row)
