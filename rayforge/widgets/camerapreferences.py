@@ -86,6 +86,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         if selected_row:
             index = selected_row.get_index()
             camera = self.machine.cameras[index]
+            camera.enabled = False
             self.machine.remove_camera(camera)
             self.camera_list.remove(selected_row)
             self.camera_properties_widget.set_camera(None)

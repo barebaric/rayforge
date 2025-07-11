@@ -2,7 +2,7 @@ from gi.repository import Gtk, Adw
 from typing import Optional
 import logging
 from ..models.camera import Camera
-from ..util.adwfix import get_spinrow_float
+from .cameraimagesettingsdialog import CameraImageSettingsDialog
 
 
 logger = logging.getLogger(__name__)
@@ -31,30 +31,16 @@ class CameraProperties(Adw.PreferencesGroup):
         self.enabled_row.connect("notify::active", self.on_enabled_changed)
         self.add(self.enabled_row)
 
-        # Image Dimensions
-        self.width_mm_row = Adw.SpinRow(
-            title="Width (mm)",
-            subtitle="Width of the camera image in mm",
-            adjustment=Gtk.Adjustment(
-                value=100, lower=100, upper=1000, step_increment=1,
-                page_increment=1
-            ),
-            digits=1
+        # Image Settings button
+        self.image_settings_button = Gtk.Button(
+            label="View and Configure", valign=Gtk.Align.CENTER
         )
-        self.width_mm_row.connect("changed", self.on_width_mm_changed)
-        self.add(self.width_mm_row)
-
-        self.height_mm_row = Adw.SpinRow(
-            title="Height (mm)",
-            subtitle="Height of the camera image in mm",
-            adjustment=Gtk.Adjustment(
-                value=100, lower=100, upper=1000, step_increment=1,
-                page_increment=1
-            ),
-            digits=1
+        self.image_settings_button.connect(
+            "clicked", self.on_image_settings_button_clicked
         )
-        self.height_mm_row.connect("changed", self.on_height_mm_changed)
-        self.add(self.height_mm_row)
+        image_settings_row = Adw.ActionRow(title="Image Settings")
+        image_settings_row.add_suffix(self.image_settings_button)
+        self.add(image_settings_row)
 
         self.set_camera(camera)
 
@@ -82,8 +68,7 @@ class CameraProperties(Adw.PreferencesGroup):
             self.device_id_row.set_subtitle(self._camera.device_id)
             self.name_row.set_text(self._camera.name)
             self.enabled_row.set_active(self._camera.enabled)
-            self.width_mm_row.set_value(self._camera.width_mm)
-            self.height_mm_row.set_value(self._camera.height_mm)
+            self.image_settings_button.set_sensitive(self._camera.enabled)
         finally:
             self._updating_ui = False
 
@@ -91,8 +76,8 @@ class CameraProperties(Adw.PreferencesGroup):
         self.device_id_row.set_subtitle("")
         self.name_row.set_text("")
         self.enabled_row.set_active(False)
-        self.width_mm_row.set_value(0.0)
-        self.height_mm_row.set_value(0.0)
+        # Clear image settings and disable button
+        self.image_settings_button.set_sensitive(False)
 
     def _on_camera_changed(self, camera, *args):
         logger.debug("Camera model changed, updating UI for %s", camera.name)
@@ -108,28 +93,15 @@ class CameraProperties(Adw.PreferencesGroup):
             self._updating_ui = False
 
     def on_enabled_changed(self, switch_row, _):
-        if not self._camera or self._updating_ui:
+        if not self._camera:
             return
-        self._updating_ui = True
-        try:
-            self._camera.enabled = switch_row.get_active()
-        finally:
-            self._updating_ui = False
+        self._camera.enabled = switch_row.get_active()
 
-    def on_width_mm_changed(self, spin_row):
-        if not self._camera or self._updating_ui:
+    def on_image_settings_button_clicked(self, button):
+        """Open the CameraImageSettingsDialog."""
+        if not self._camera:
             return
-        self._updating_ui = True
-        try:
-            self._camera.width_mm = get_spinrow_float(spin_row)
-        finally:
-            self._updating_ui = False
-
-    def on_height_mm_changed(self, spin_row):
-        if not self._camera or self._updating_ui:
-            return
-        self._updating_ui = True
-        try:
-            self._camera.height_mm = get_spinrow_float(spin_row)
-        finally:
-            self._updating_ui = False
+        dialog = CameraImageSettingsDialog(
+            self.get_ancestor(Gtk.Window), self._camera
+        )
+        dialog.present()
