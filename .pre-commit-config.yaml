@@ -3,4 +3,5 @@ repos:
     rev: 7.1.0
     hooks:
       - id: flake8
-        args: ["--max-line-length=79", "--exclude=data,docs,flatpak,media,repo,scripts,snap,tests"]
+        args: ["--config=./.flake8", "--ignore=E127,E128,E121,E123,E126,E226,E24,E704,W503,W504"]
+        exclude: tests/

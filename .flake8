@@ -1,4 +1,4 @@
 [flake8]
 ignore = E127,E128,E121,E123,E126,E226,E24,E704,W503,W504
-exclude = .git,__pycache__,docs/source/conf.py,old,build,dist
+exclude = .git,__pycache__,docs/source/conf.py,old,build,dist,tests
 max-line-length = 79

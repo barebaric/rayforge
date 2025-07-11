@@ -2,7 +2,9 @@ import yaml
 import uuid
 import logging
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 from blinker import Signal
+from rayforge.models.camera import Camera
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ class Machine:
     def __init__(self):
         self.id = str(uuid.uuid4())
         self.name: str = 'Default Machine'
-        self.driver: str = None
+        self.driver: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
         self.home_on_start: bool = False
         self.preamble: List[str] = ["G21 ; Set units to mm",
@@ -57,6 +59,8 @@ class Machine:
         self.air_assist_off = "M9 ; Disable air assist"
         self.heads: List[Laser] = []
         self._heads_ref_for_pyreverse: Laser
+        self.cameras: List[Camera] = []
+        self._cameras_ref_for_pyreverse: Camera
         self.max_travel_speed: int = 3000   # in mm/min
         self.max_cut_speed: int = 1000   # in mm/min
         self.dimensions: tuple[int, int] = 200, 200
@@ -117,6 +121,19 @@ class Machine:
     def _on_head_changed(self, head, *args):
         self.changed.send(self)
 
+    def add_camera(self, camera: Camera):
+        self.cameras.append(camera)
+        camera.changed.connect(self._on_camera_changed)
+        self.changed.send(self)
+
+    def remove_camera(self, camera: Camera):
+        camera.changed.disconnect(self._on_camera_changed)
+        self.cameras.remove(camera)
+        self.changed.send(self)
+
+    def _on_camera_changed(self, camera, *args):
+        self.changed.send(self)
+
     def can_frame(self):
         for head in self.heads:
             if head.frame_power:
@@ -132,6 +149,7 @@ class Machine:
                 "home_on_start": self.home_on_start,
                 "dimensions": list(self.dimensions),
                 "heads": [head.to_dict() for head in self.heads],
+                "cameras": [camera.to_dict() for camera in self.cameras],
                 "speeds": {
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
@@ -157,6 +175,9 @@ class Machine:
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))
+        ma.cameras = []
+        for obj in ma_data.get("cameras", {}):
+            ma.add_camera(Camera.from_dict(obj))
         speeds = ma_data.get("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
         ma.max_travel_speed = speeds.get("max_travel_speed",
@@ -173,11 +194,11 @@ class MachineManager:
     def __init__(self, base_dir):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
-        self.machines: Dict[Machine] = dict()
+        self.machines: Dict[str, Machine] = dict()
         self._machine_ref_for_pyreverse: Machine
         self.load()
 
-    def filename_from_id(self, machine_id: str) -> 'Machine':
+    def filename_from_id(self, machine_id: str) -> Path:
         return self.base_dir / f"{machine_id}.yaml"
 
     def add_machine(self, machine):
@@ -198,9 +219,10 @@ class MachineManager:
     def save_machine(self, machine):
         machine_file = self.filename_from_id(machine.id)
         with open(machine_file, 'w') as f:
-            yaml.safe_dump(machine.to_dict(), f)
+            data = machine.to_dict()
+            yaml.safe_dump(data, f)
 
-    def load_machine(self, machine_id: str) -> 'Machine':
+    def load_machine(self, machine_id: str) -> Optional['Machine']:
         machine_file = self.filename_from_id(machine_id)
         if not machine_file.exists():
             raise FileNotFoundError(f"Machine file {machine_file} not found")
