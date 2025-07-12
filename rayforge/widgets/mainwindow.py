@@ -1,3 +1,4 @@
+import logging
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
 from ..task import task_mgr
@@ -21,6 +22,9 @@ from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
 from .workbench.workpieceelem import WorkPieceElement
+
+
+logger = logging.getLogger(__name__)
 
 
 css = """
@@ -161,6 +165,20 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(button)
         button.connect('clicked', self.on_button_visibility_clicked)
 
+        # Camera Image Visibility Toggle Button
+        self.camera_visibility_on_icon = get_icon('camera-on')
+        self.camera_visibility_off_icon = get_icon('camera-off')
+        self.camera_visibility_button = Gtk.ToggleButton()
+        self.camera_visibility_button.set_active(True)
+        self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
+        self.camera_visibility_button.set_tooltip_text(
+            "Toggle camera image visibility"
+        )
+        self.camera_visibility_button.connect(
+            "toggled", self._on_camera_image_visibility_toggled
+        )
+        toolbar.append(self.camera_visibility_button)
+
         # Show Travel Moves Toggle Button
         self.show_travel_button = Gtk.ToggleButton()
         self.show_travel_button.set_child(get_icon('timeline'))
@@ -236,8 +254,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.frame.set_vexpand(True)
         self.paned.set_start_child(self.frame)
 
-        self.surface = WorkSurface()
-        self.surface.set_size(width_mm, height_mm)
+        self.surface = WorkSurface(config.machine)
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
 
@@ -349,7 +366,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _try_driver_setup(self):
         # Reconfigure, because params may have changed.
-        driver_cls = get_driver_cls(config.machine.driver)
+        driver_name = config.machine.driver
+        if driver_name is None:
+            logger.warning("No driver configured.")
+            return
+        driver_cls = get_driver_cls(driver_name)
         try:
             task_mgr.add_coroutine(driver_mgr.select_by_cls(
                 driver_cls,
@@ -483,6 +504,14 @@ class MainWindow(Adw.ApplicationWindow):
             button.set_child(self.visibility_on_icon)
         else:
             button.set_child(self.visibility_off_icon)
+
+    def _on_camera_image_visibility_toggled(self, button):
+        is_active = button.get_active()
+        self.surface.set_camera_image_visibility(is_active)
+        if is_active:
+            button.set_child(self.camera_visibility_on_icon)
+        else:
+            button.set_child(self.camera_visibility_off_icon)
 
     def _on_show_travel_toggled(self, button):
         is_active = button.get_active()
@@ -619,3 +648,8 @@ class MainWindow(Adw.ApplicationWindow):
     def show_machine_settings(self, action, param):
         dialog = MachineSettingsDialog(config.machine)
         dialog.present(self)
+        dialog.connect("closed", self._on_settings_dialog_closed)
+
+    def _on_settings_dialog_closed(self, dialog):
+        logger.debug("Settings closed")
+        self.surface.grab_focus()  # re-enables keyboard shortcuts
