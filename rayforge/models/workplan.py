@@ -411,7 +411,7 @@ class WorkPlan:
         self.worksteps: List[WorkStep] = []
         self._workstep_ref_for_pyreverse: WorkStep
         self.changed = Signal()
-        self.add_workstep(Contour())
+        self.add_workstep(Outline())
 
     def __iter__(self):
         return iter(self.worksteps)
