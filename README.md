@@ -42,7 +42,7 @@ On Linux the only currently supported method is Snap:
 You can also install it through PIP if you know what you are doing. Something like this:
 
 ```
-sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
+sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
 
 pip3 install rayforge
 ```
