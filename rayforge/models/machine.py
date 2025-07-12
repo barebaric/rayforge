@@ -217,6 +217,7 @@ class MachineManager:
         return machine
 
     def save_machine(self, machine):
+        logger.debug("Saving machine")
         machine_file = self.filename_from_id(machine.id)
         with open(machine_file, 'w') as f:
             data = machine.to_dict()

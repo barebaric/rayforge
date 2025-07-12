@@ -14,6 +14,7 @@ class CameraDisplay(Gtk.DrawingArea):
         self.set_vexpand(True)
         self.set_size_request(640, 480)
         self.set_draw_func(self.on_draw)
+        self.marked_points = []
         self.start()
         self.connect("destroy", self.on_destroy)
 
@@ -42,6 +43,11 @@ class CameraDisplay(Gtk.DrawingArea):
         self.camera.image_captured.disconnect(self.on_image_captured)
         self.camera.settings_changed.disconnect(self.on_settings_changed)
 
+    def set_marked_points(self, points, active_point_index=-1):
+        self.marked_points = points
+        self.active_point_index = active_point_index
+        self.queue_draw()
+
     def on_draw(self, widget, cr, width, height):
         """
         Draw handler for the Gtk.DrawingArea. Scales and draws the camera's
@@ -66,11 +72,39 @@ class CameraDisplay(Gtk.DrawingArea):
             height,
             GdkPixbuf.InterpType.BILINEAR
         )
-        logger.debug(f"Scaled pixbuf to {width}x{height} for camera "
-                     f"{self.camera.name}")
 
         Gdk.cairo_set_source_pixbuf(cr, scaled_pixbuf, 0, 0)
         cr.paint()
+
+        # Draw markers for marked points
+        if self.marked_points:
+            display_width, display_height = self.get_size_request()
+            img_width, img_height = self.camera.resolution
+            scale_x = display_width / img_width
+            scale_y = display_height / img_height
+
+            for i, (x, y) in enumerate(self.marked_points):
+                display_x = x * scale_x
+                display_y = display_height - (y * scale_y)
+
+                # Set colors based on whether the point is active
+                if i == self.active_point_index:
+                    # Orange fill with darker orange border
+                    cr.set_source_rgb(1.0, 0.5, 0.0)  # Orange
+                    cr.arc(display_x, display_y, 5, 0, 2 * 3.1416)
+                    cr.fill_preserve()
+                    cr.set_source_rgb(0.8, 0.4, 0.0)  # Darker orange
+                    cr.set_line_width(1.5)
+                    cr.stroke()
+                else:
+                    # Light blue fill with darker blue border
+                    cr.set_source_rgb(0.53, 0.81, 0.98)  # Light blue
+                    cr.arc(display_x, display_y, 5, 0, 2 * 3.1416)
+                    cr.fill_preserve()
+                    cr.set_source_rgb(0.0, 0.0, 0.5)  # Darker blue
+                    cr.set_line_width(1.5)
+                    cr.stroke()
+
         return False
 
     def _draw_message(self, cr, width, height, message):

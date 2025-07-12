@@ -7,6 +7,12 @@ It supports direct communication with GRBL based machines (network or serial).
 
 ![Screenshot](docs/ss-main.png)
 
+### Camera Features
+
+![Camera Alignment](docs/camera-alignment.png)
+![Camera Image](docs/camera-image.png)
+![Camera Overlay](docs/camera-overlay.png)
+![Camera Settings](docs/camera-settings.png)
 
 ## Features
 
@@ -21,6 +27,7 @@ It supports direct communication with GRBL based machines (network or serial).
 | GRBL (serial port based)         | Starting with version 0.13, serial connection is supported |
 | Open development                 | Easily [add support for your own laser](docs/driver.md)    |
 | Cross-platform                   | Support for Linux and (experimental) support for Windows   |
+| Camera support                   | Live camera feed, de-distortion, alignment                 |
 | Much more                        | Framing, support for air assist, control buttons, ...      |
 
 

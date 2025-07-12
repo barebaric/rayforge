@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import Any, Tuple
+from typing import Any, Generator, Tuple, Optional
 import cairo
 from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from copy import deepcopy
@@ -348,12 +348,19 @@ class Canvas(Gtk.DrawingArea):
         # The root element's remove method handles removing from its children
         self.root.remove_child(elem)
 
-    def find_by_data(self, data: object) -> CanvasElement | None:
+    def find_by_data(self, data: object) -> Optional[CanvasElement]:
         """
         Returns the CanvasElement with the given data, or None if none
         was found.
         """
         return self.root.find_by_data(data)
+
+    def find_by_type(self, thetype: object) -> Generator[CanvasElement]:
+        """
+        Returns the CanvasElements with the given type, or None if none
+        was found.
+        """
+        return self.root.find_by_type(thetype)
 
     def size(self) -> tuple[int, int]:
         return self.root.size()

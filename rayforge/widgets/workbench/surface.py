@@ -9,6 +9,8 @@ from .axis import AxisRenderer
 from .dotelem import DotElement
 from .workstepelem import WorkStepElement
 from .workpieceelem import WorkPieceElement
+from .cameraelem import CameraImageElement
+from ...models.machine import Machine
 from typing import List
 
 
@@ -21,15 +23,20 @@ class WorkSurface(Canvas):
     WorkPieceOpsElements according to real world dimensions.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, machine: Machine, **kwargs):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
+        self.machine = machine
         self.zoom_level = 1.0
         self.show_travel_moves = False
-        self.width_mm = 100.0
-        self.height_mm = 100.0
+        self.width_mm, self.height_mm = machine.dimensions
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
+
+        # Add CameraImageElements for each camera
+        for camera in self.machine.cameras:
+            camera_image_elem = CameraImageElement(camera)
+            self.add(camera_image_elem)
 
         self.axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
@@ -182,6 +189,10 @@ class WorkSurface(Canvas):
         content_width, content_height = self.axis_renderer.get_content_size()
         self.workpiece_elements.set_size(content_width, content_height)
         for elem in self.find_by_type(WorkStepElement):
+            elem.set_size(content_width, content_height)
+
+        # Update CameraImageElement sizes
+        for elem in self.find_by_type(CameraImageElement):
             elem.set_size(content_width, content_height)
 
         # Update laser dot size based on new pixel dimensions and its mm radius
@@ -355,6 +366,11 @@ class WorkSurface(Canvas):
 
     def set_workpieces_visible(self, visible=True):
         self.workpiece_elements.set_visible(visible)
+        self.queue_draw()
+
+    def set_camera_image_visibility(self, visible: bool):
+        for elem in self.find_by_type(CameraImageElement):
+            elem.set_visible(visible)
         self.queue_draw()
 
     def do_snapshot(self, snapshot):

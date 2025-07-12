@@ -3,6 +3,7 @@ from typing import Optional
 import logging
 from ..models.camera import Camera
 from .cameraimagesettingsdialog import CameraImageSettingsDialog
+from .cameraalignment import CameraAlignmentDialog
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class CameraProperties(Adw.PreferencesGroup):
 
         # Image Settings button
         self.image_settings_button = Gtk.Button(
-            label="View and Configure", valign=Gtk.Align.CENTER
+            label="Configure", valign=Gtk.Align.CENTER
         )
         self.image_settings_button.connect(
             "clicked", self.on_image_settings_button_clicked
@@ -41,6 +42,17 @@ class CameraProperties(Adw.PreferencesGroup):
         image_settings_row = Adw.ActionRow(title="Image Settings")
         image_settings_row.add_suffix(self.image_settings_button)
         self.add(image_settings_row)
+
+        # Image alignment button
+        self.image_alignment_button = Gtk.Button(
+            label="Configure", valign=Gtk.Align.CENTER
+        )
+        self.image_alignment_button.connect(
+            "clicked", self.on_image_alignment_button_clicked
+        )
+        image_alignment_row = Adw.ActionRow(title="Image Alignment")
+        image_alignment_row.add_suffix(self.image_alignment_button)
+        self.add(image_alignment_row)
 
         self.set_camera(camera)
 
@@ -102,6 +114,15 @@ class CameraProperties(Adw.PreferencesGroup):
         if not self._camera:
             return
         dialog = CameraImageSettingsDialog(
+            self.get_ancestor(Gtk.Window), self._camera
+        )
+        dialog.present()
+
+    def on_image_alignment_button_clicked(self, button):
+        """Open the CameraImageAlignmentDialog."""
+        if not self._camera:
+            return
+        dialog = CameraAlignmentDialog(
             self.get_ancestor(Gtk.Window), self._camera
         )
         dialog.present()
