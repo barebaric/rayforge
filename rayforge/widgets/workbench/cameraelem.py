@@ -31,6 +31,12 @@ class CameraImageElement(CanvasElement):
         if self.canvas:
             self.canvas.queue_draw()
 
+    def allocate(self, force: bool = False):
+        if self.parent:
+            self.width = self.parent.width
+            self.height = self.parent.height
+        return super().allocate(force)
+
     def render(
         self,
         clip: tuple[int, int, int, int] | None = None,

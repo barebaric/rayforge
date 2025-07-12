@@ -254,7 +254,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.frame.set_vexpand(True)
         self.paned.set_start_child(self.frame)
 
-        self.surface = WorkSurface(config.machine)
+        self.surface = WorkSurface(
+            config.machine,
+            cam_visibie=self.camera_visibility_button.get_active(),
+        )
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
 

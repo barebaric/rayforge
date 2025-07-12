@@ -72,6 +72,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
                     return
 
                 new_camera = Camera(f"Camera {device_id}", device_id)
+                new_camera.enabled = True
                 self.machine.add_camera(new_camera)
                 row = Adw.ActionRow(title=f"Camera: {new_camera.name}")
                 row.set_margin_top(5)

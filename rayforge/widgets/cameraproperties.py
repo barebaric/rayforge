@@ -81,6 +81,7 @@ class CameraProperties(Adw.PreferencesGroup):
             self.name_row.set_text(self._camera.name)
             self.enabled_row.set_active(self._camera.enabled)
             self.image_settings_button.set_sensitive(self._camera.enabled)
+            self.image_alignment_button.set_sensitive(self._camera.enabled)
         finally:
             self._updating_ui = False
 
@@ -90,6 +91,7 @@ class CameraProperties(Adw.PreferencesGroup):
         self.enabled_row.set_active(False)
         # Clear image settings and disable button
         self.image_settings_button.set_sensitive(False)
+        self.image_alignment_button.set_sensitive(False)
 
     def _on_camera_changed(self, camera, *args):
         logger.debug("Camera model changed, updating UI for %s", camera.name)

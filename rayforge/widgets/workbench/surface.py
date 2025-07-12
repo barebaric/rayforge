@@ -23,7 +23,7 @@ class WorkSurface(Canvas):
     WorkPieceOpsElements according to real world dimensions.
     """
 
-    def __init__(self, machine: Machine, **kwargs):
+    def __init__(self, machine: Machine, cam_visibie: bool = False, **kwargs):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
         self.machine = machine
@@ -32,11 +32,7 @@ class WorkSurface(Canvas):
         self.width_mm, self.height_mm = machine.dimensions
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
-
-        # Add CameraImageElements for each camera
-        for camera in self.machine.cameras:
-            camera_image_elem = CameraImageElement(camera)
-            self.add(camera_image_elem)
+        self.cam_visibie = cam_visibie
 
         self.axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
@@ -78,6 +74,10 @@ class WorkSurface(Canvas):
         self.mouse_pos = 0, 0
         self.doc: Optional[Doc] = None
         self.elem_removed.connect(self._on_elem_removed)
+
+        # Add CameraImageElements for each camera
+        self.machine.changed.connect(self._on_machine_changed)
+        self._on_machine_changed(machine)
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
@@ -369,9 +369,38 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def set_camera_image_visibility(self, visible: bool):
+        self.cam_visibie = visible
         for elem in self.find_by_type(CameraImageElement):
             elem.set_visible(visible)
         self.queue_draw()
+
+    def _on_machine_changed(self, machine, **kwargs):
+        logger.debug("WorkSurface: Machine changed, updating camera elements.")
+        # Get current camera elements on the canvas
+        current_camera_elements = {}
+        for elem in self.find_by_type(CameraImageElement):
+            elem = cast(CameraImageElement, elem)
+            current_camera_elements[elem.camera] = elem
+
+        # Add new camera elements
+        for camera in self.machine.cameras:
+            if camera not in current_camera_elements:
+                camera_image_elem = CameraImageElement(camera)
+                camera_image_elem.set_visible(self.cam_visibie)
+                self.add(camera_image_elem)
+                logger.debug(
+                    f"Added CameraImageElement for camera {camera.name}"
+                )
+
+        # Remove camera elements that no longer exist in the machine
+        cameras_in_machine = {camera for camera in self.machine.cameras}
+        for camera_instance, elem in list(current_camera_elements.items()):
+            if camera_instance not in cameras_in_machine:
+                elem.remove()
+                logger.debug(
+                    "Removed CameraImageElement for camera "
+                    f"{camera_instance.name}"
+                )
 
     def do_snapshot(self, snapshot):
         # Create a Cairo context for the snapshot
