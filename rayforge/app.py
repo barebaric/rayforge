@@ -1,9 +1,17 @@
+import warnings
 import logging
 import mimetypes
 import argparse
 import sys
 import os
 import gettext
+
+# Suppress NumPy longdouble UserWarning when run under mingw on Windows
+warnings.filterwarnings(
+    "ignore",
+    message="Signature.*for <class 'numpy.longdouble'> does not"
+    " match any known type",
+)
 
 # When running in a PyInstaller bundle, we need to set the GI_TYPELIB_PATH
 # environment variable to point to the bundled typelib files.
@@ -12,7 +20,7 @@ if hasattr(sys, '_MEIPASS'):
         sys._MEIPASS, 'gi', 'repository'  # type: ignore
     )
 
-import gi
+import gi  # noqa: E402
 
 # Gettext must be initialized before importing app modules.
 # For installed applications, locale files are typically in
