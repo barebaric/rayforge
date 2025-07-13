@@ -7,10 +7,10 @@ in gi/repository, such that Python code like
 `gi.require_version('Gtk', '4.0')`
 works and finds the library.
 """
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-# Ensure the gi module is included
-hiddenimports = ['gi']
+# Ensure gi module and all its submodules are included
+hiddenimports = collect_submodules('gi')
 
 # Collect typelib files from the girepository-1.0 directory
 # Adjust the path based on your MSYS2 environment
