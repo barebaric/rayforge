@@ -56,6 +56,10 @@ jobs:
             mingw-w64-x86_64-libffi
             mingw-w64-x86_64-python-cffi
             mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-libheif
+            mingw-w64-x86_64-imagemagick
+            mingw-w64-x86_64-openslide
+            mingw-w64-x86_64-poppler
             mingw-w64-x86_64-python-aiohttp
             mingw-w64-x86_64-python-blinker
             mingw-w64-x86_64-python-numpy
@@ -79,10 +83,18 @@ jobs:
           echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_WORKSPACE/.msys2_env
           echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> $GITHUB_WORKSPACE/.msys2_env
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          echo "GI_TYPELIB_PATH=$GI_TYPELIB_PATH"
           echo "PATH=$PATH"
           $MSYS2_PATH/mingw64/bin/python --version
           $MSYS2_PATH/mingw64/bin/gcc --version
           $MSYS2_PATH/mingw64/bin/python -c "import cffi; print(cffi.__version__)"
+
+      - name: Verify GI Typelib Files
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          echo "Listing GI typelib files:"
+          ls -l $GI_TYPELIB_PATH/*.typelib
 
       - name: List MSYS2 packages
         shell: msys2 {0}
@@ -116,9 +128,12 @@ jobs:
 
       - name: Build with PyInstaller
         shell: msys2 {0}
+        env:
+          GI_TYPELIB_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/girepository-1.0
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
           pyinstaller --onefile --noconsole \
+            --log-level DEBUG \
             --name rayforge-v${{ steps.set-version.outputs.version }} \
             --add-data "rayforge/locale;rayforge/locale" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
@@ -134,6 +149,10 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libffi-8.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libopenblas.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-heif.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-magick.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-openslide.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-poppler.dll;." \
             --hidden-import gi \
             --hidden-import numpy \
             --hidden-import scipy \
