@@ -6,14 +6,14 @@ from ..util.adwfix import get_spinrow_int, get_spinrow_float
 class LaserHeadPreferencesPage(Adw.PreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title="Laser Heads",
+            title=_("Laser Heads"),
             icon_name="preferences-other-symbolic",
-            **kwargs
+            **kwargs,
         )
         self.machine = machine
 
         # List of Lasers
-        laserhead_list_group = Adw.PreferencesGroup(title="Laser Heads")
+        laserhead_list_group = Adw.PreferencesGroup(title=_("Laser Heads"))
         self.add(laserhead_list_group)
         self.laserhead_list = Gtk.ListBox()
         self.laserhead_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -24,7 +24,7 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         button_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=5,
-            halign=Gtk.Align.END
+            halign=Gtk.Align.END,
         )
         add_button = Gtk.Button(icon_name="list-add-symbolic")
         add_button.connect("clicked", self.on_add_laserhead)
@@ -36,37 +36,31 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
 
         # Configuration panel for the selected Laser
         self.laserhead_config_group = Adw.PreferencesGroup(
-            title="Laser Properties",
-            description="Configure the selected laser"
+            title=_("Laser Properties"),
+            description=_("Configure the selected laser"),
         )
         self.add(self.laserhead_config_group)
 
         max_power_adjustment = Gtk.Adjustment(
-            value=0,
-            lower=0,
-            upper=10000,
-            step_increment=1,
-            page_increment=10
+            value=0, lower=0, upper=10000, step_increment=1, page_increment=10
         )
         self.max_power_row = Adw.SpinRow(
-            title="Max Power",
-            subtitle="Maximum power value in GCode",
-            adjustment=max_power_adjustment
+            title=_("Max Power"),
+            subtitle=_("Maximum power value in GCode"),
+            adjustment=max_power_adjustment,
         )
         self.max_power_row.connect("changed", self.on_max_power_changed)
         self.laserhead_config_group.add(self.max_power_row)
 
         frame_power_adjustment = Gtk.Adjustment(
-            value=0,
-            lower=0,
-            upper=100,
-            step_increment=1,
-            page_increment=10
+            value=0, lower=0, upper=100, step_increment=1, page_increment=10
         )
         self.frame_power_row = Adw.SpinRow(
-            title="Frame Power",
-            subtitle="Power value in Gcode to use when framing. 0 to disable",
-            adjustment=frame_power_adjustment
+            title=_("Frame Power"),
+            subtitle=_(
+                "Power value in Gcode to use when framing. 0 to disable"
+            ),
+            adjustment=frame_power_adjustment,
         )
         self.frame_power_row.connect("changed", self.on_frame_power_changed)
         self.laserhead_config_group.add(self.frame_power_row)
@@ -76,13 +70,13 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             lower=0.01,
             upper=0.2,
             step_increment=0.01,
-            page_increment=0.05
+            page_increment=0.05,
         )
         self.spot_size_x_row = Adw.SpinRow(
-            title="Spot Size X",
-            subtitle="Size of the laser spot in the X direction",
+            title=_("Spot Size X"),
+            subtitle=_("Size of the laser spot in the X direction"),
             digits=3,
-            adjustment=spot_size_x_adjustment
+            adjustment=spot_size_x_adjustment,
         )
         self.spot_size_x_row.connect("changed", self.on_spot_size_changed)
         self.laserhead_config_group.add(self.spot_size_x_row)
@@ -92,13 +86,13 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             lower=0.01,
             upper=0.2,
             step_increment=0.01,
-            page_increment=0.05
+            page_increment=0.05,
         )
         self.spot_size_y_row = Adw.SpinRow(
-            title="Spot Size Y",
-            subtitle="Size of the laser spot in the Y direction",
+            title=_("Spot Size Y"),
+            subtitle=_("Size of the laser spot in the Y direction"),
             digits=3,
-            adjustment=spot_size_y_adjustment
+            adjustment=spot_size_y_adjustment,
         )
         self.spot_size_y_row.connect("changed", self.on_spot_size_changed)
         self.laserhead_config_group.add(self.spot_size_y_row)
@@ -112,7 +106,11 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
     def populate_laserhead_list(self):
         """Populate the list of Lasers."""
         for head in self.machine.heads:
-            row = Adw.ActionRow(title=f"Laser (Max Power: {head.max_power})")
+            row = Adw.ActionRow(
+                title=_("Laser (Max Power: {head.max_power})").format(
+                    head=head
+                )
+            )
             row.set_margin_top(5)
             row.set_margin_bottom(5)
             self.laserhead_list.append(row)
@@ -124,7 +122,11 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         """Add a new Laser to the machine."""
         new_head = Laser()
         self.machine.add_head(new_head)
-        row = Adw.ActionRow(title=f"Laser (Max Power: {new_head.max_power})")
+        row = Adw.ActionRow(
+            title=_("Laser (Max Power: {new_head.max_power})").format(
+                new_head=new_head
+            )
+        )
         row.set_margin_top(5)
         row.set_margin_bottom(5)
         self.laserhead_list.append(row)
@@ -187,4 +189,6 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         """Update the labels in the Laser list."""
         for i, row in enumerate(self.laserhead_list):
             head = self.machine.heads[i]
-            row.set_title(f"Laser (Max Power: {head.max_power})")
+            row.set_title(
+                _("Laser (Max Power: {head.max_power})").format(head=head)
+            )

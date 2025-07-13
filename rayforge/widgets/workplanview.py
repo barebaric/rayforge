@@ -53,7 +53,9 @@ class WorkPlanView(Gtk.ScrolledWindow):
             row = Gtk.ListBoxRow()
             row.data = step
             self.draglist.add_row(row)
-            workstepbox = WorkStepBox(step, prefix=f"Step {seq}: ")
+            workstepbox = WorkStepBox(
+                step, prefix=_("Step {seq}: ").format(seq=seq)
+            )
             workstepbox.delete_clicked.connect(self.on_button_delete_clicked)
             row.set_child(workstepbox)
 

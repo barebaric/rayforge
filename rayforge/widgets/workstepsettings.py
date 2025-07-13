@@ -8,7 +8,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
     def __init__(self, workstep, **kwargs):
         super().__init__(**kwargs)
         self.workstep = workstep
-        self.set_title(f"{workstep.name} Settings")
+        self.set_title(_("{workstep.name} Settings").format(workstep=workstep))
 
         # Create a preferences page
         page = Adw.PreferencesPage()
@@ -20,8 +20,8 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
         # Add a spin row for cut speed
         passes_row = Adw.SpinRow(
-            title="Number of Passes",
-            subtitle="How often to repeat this workstep",
+            title=_("Number of Passes"),
+            subtitle=_("How often to repeat this workstep"),
             adjustment=Gtk.Adjustment(
                 value=workstep.passes,
                 lower=1,
@@ -34,7 +34,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         group.add(passes_row)
 
         # Add a slider for power
-        power_row = Adw.ActionRow(title="Power (%)")
+        power_row = Adw.ActionRow(title=_("Power (%)"))
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=Gtk.Adjustment(
@@ -53,8 +53,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
         # Add a spin row for cut speed
         cut_speed_row = Adw.SpinRow(
-            title="Cut Speed (mm/min)",
-            subtitle=f"Max: {config.machine.max_cut_speed} mm/min",
+            title=_("Cut Speed (mm/min)"),
+            subtitle=_("Max: {config.machine.max_cut_speed} mm/min").format(
+                config=config
+            ),
             adjustment=Gtk.Adjustment(
                 value=workstep.cut_speed,
                 lower=0,
@@ -68,8 +70,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
         # Add a spin row for travel speed
         travel_speed_row = Adw.SpinRow(
-            title="Travel Speed (mm/min)",
-            subtitle=f"Max: {config.machine.max_travel_speed} mm/min",
+            title=_("Travel Speed (mm/min)"),
+            subtitle=_("Max: {config.machine.max_travel_speed} mm/min").format(
+                config=config
+            ),
             adjustment=Gtk.Adjustment(
                 value=workstep.travel_speed,
                 lower=0,
@@ -83,7 +87,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
         # Add a switch for air assist
         air_assist_row = Adw.SwitchRow()
-        air_assist_row.set_title("Air Assist")
+        air_assist_row.set_title(_("Air Assist"))
         air_assist_row.set_active(workstep.air_assist)
         air_assist_row.connect('notify::active', self.on_air_assist_changed)
         group.add(air_assist_row)

@@ -4,14 +4,14 @@ from gi.repository import Gtk, Adw
 class GCodePreferencesPage(Adw.PreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title="GCode",
+            title=_("GCode"),
             icon_name='applications-engineering-symbolic',
             **kwargs
         )
         self.machine = machine
 
         # Preamble
-        preamble_group = Adw.PreferencesGroup(title="Preamble")
+        preamble_group = Adw.PreferencesGroup(title=_("Preamble"))
         self.add(preamble_group)
         self.preamble_entry = Gtk.TextView()
         self.preamble_entry.set_size_request(300, 50)
@@ -24,7 +24,7 @@ class GCodePreferencesPage(Adw.PreferencesPage):
         preamble_group.add(self.preamble_entry)
 
         # Postscript
-        postscript_group = Adw.PreferencesGroup(title="Postscript")
+        postscript_group = Adw.PreferencesGroup(title=_("Postscript"))
         self.add(postscript_group)
         self.postscript_entry = Gtk.TextView()
         self.postscript_entry.set_size_request(300, 50)
@@ -37,14 +37,14 @@ class GCodePreferencesPage(Adw.PreferencesPage):
         postscript_group.add(self.postscript_entry)
 
         # Air Assist Settings
-        air_assist_group = Adw.PreferencesGroup(title="Air Assist")
+        air_assist_group = Adw.PreferencesGroup(title=_("Air Assist"))
         self.add(air_assist_group)
 
         # Air Assist Enable
         self.air_assist_on_row = Adw.EntryRow()
         gcode = self.machine.air_assist_on or ""
         self.air_assist_on_row.set_title(
-            "Air Assist Enable GCode (blank if unsupported)"
+            _("Air Assist Enable GCode (blank if unsupported)")
         )
         self.air_assist_on_row.set_text(gcode)
         self.air_assist_on_row.connect(
@@ -56,7 +56,7 @@ class GCodePreferencesPage(Adw.PreferencesPage):
         self.air_assist_off_row = Adw.EntryRow()
         gcode = self.machine.air_assist_off or ""
         self.air_assist_off_row.set_title(
-            "Air Assist Disable GCode (blank if unsupported)"
+            _("Air Assist Disable GCode (blank if unsupported)")
         )
         self.air_assist_off_row.set_text(gcode)
         self.air_assist_off_row.connect(

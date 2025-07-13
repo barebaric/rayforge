@@ -7,13 +7,13 @@ from .dynamicprefs import DynamicPreferencesGroup
 class GeneralPreferencesPage(Adw.PreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title="General",
-            icon_name='preferences-system-symbolic',
-            **kwargs
+            title=_("General"),
+            icon_name="preferences-system-symbolic",
+            **kwargs,
         )
         self.machine = machine
 
-        self.driver_group = DynamicPreferencesGroup(title="Driver Settings")
+        self.driver_group = DynamicPreferencesGroup(title=_("Driver Settings"))
         self.driver_group.data_changed.connect(self.on_driver_param_changed)
         self.add(self.driver_group)
 
@@ -23,9 +23,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.driver_store.append(d.label)
         driver_cls = get_driver_cls(machine.driver)
         self.combo_row = Adw.ComboRow(
-            title=driver_cls.label if driver_cls else 'Select driver',
+            title=driver_cls.label if driver_cls else _("Select driver"),
             subtitle=driver_cls.subtitle if driver_cls else None,
-            model=self.driver_store
+            model=self.driver_store,
         )
         self.combo_row.set_use_subtitle(True)
         self.combo_row.set_subtitle(driver_cls.subtitle)
@@ -47,18 +47,17 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.combo_row.connect("notify::selected", self.on_combo_row_changed)
 
         # Group for Machine Settings
-        machine_group = Adw.PreferencesGroup(title="Machine Settings")
+        machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
         self.add(machine_group)
 
         home_on_start_row = Adw.SwitchRow()
-        home_on_start_row.set_title("Home On Start")
+        home_on_start_row.set_title(_("Home On Start"))
         home_on_start_row.set_subtitle(
-            "Whether Rayforce will send a homing command when it is started"
+            _("Whether Rayforce will send a homing command when it is started")
         )
         home_on_start_row.set_active(machine.home_on_start)
         home_on_start_row.connect(
-            'notify::active',
-            self.on_home_on_start_changed
+            "notify::active", self.on_home_on_start_changed
         )
         machine_group.add(home_on_start_row)
 
@@ -68,12 +67,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             lower=0,
             upper=10000,
             step_increment=1,
-            page_increment=10
+            page_increment=10,
         )
         self.travel_speed_row = Adw.SpinRow(
-            title="Max Travel Speed",
-            subtitle="Maximum travel speed in mm/min",
-            adjustment=travel_speed_adjustment
+            title=_("Max Travel Speed"),
+            subtitle=_("Maximum travel speed in mm/min"),
+            adjustment=travel_speed_adjustment,
         )
         self.travel_speed_row.connect("changed", self.on_travel_speed_changed)
         machine_group.add(self.travel_speed_row)
@@ -84,18 +83,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             lower=0,
             upper=10000,
             step_increment=1,
-            page_increment=10
+            page_increment=10,
         )
         self.cut_speed_row = Adw.SpinRow(
-            title="Max Cut Speed",
-            subtitle="Maximum cutting speed in mm/min",
-            adjustment=cut_speed_adjustment
+            title=_("Max Cut Speed"),
+            subtitle=_("Maximum cutting speed in mm/min"),
+            adjustment=cut_speed_adjustment,
         )
         self.cut_speed_row.connect("changed", self.on_cut_speed_changed)
         machine_group.add(self.cut_speed_row)
 
         # Dimensions
-        dimensions_group = Adw.PreferencesGroup(title="Dimensions")
+        dimensions_group = Adw.PreferencesGroup(title=_("Dimensions"))
         self.add(dimensions_group)
 
         width_adjustment = Gtk.Adjustment(
@@ -103,12 +102,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             lower=50,
             upper=10000,
             step_increment=1,
-            page_increment=10
+            page_increment=10,
         )
         self.width_row = Adw.SpinRow(
-            title="Width",
-            subtitle="Width of the machine in mm",
-            adjustment=width_adjustment
+            title=_("Width"),
+            subtitle=_("Width of the machine in mm"),
+            adjustment=width_adjustment,
         )
         self.width_row.connect("changed", self.on_width_changed)
         dimensions_group.add(self.width_row)
@@ -118,12 +117,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             lower=50,
             upper=10000,
             step_increment=1,
-            page_increment=10
+            page_increment=10,
         )
         self.height_row = Adw.SpinRow(
-            title="Height",
-            subtitle="Height of the machine in mm",
-            adjustment=height_adjustment
+            title=_("Height"),
+            subtitle=_("Height of the machine in mm"),
+            adjustment=height_adjustment,
         )
         self.height_row.connect("changed", self.on_height_changed)
         dimensions_group.add(self.height_row)

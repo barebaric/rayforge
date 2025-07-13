@@ -93,7 +93,9 @@ class MachineView(Adw.Dialog):
                                   status: TransportStatus,
                                   message: Optional[str] = None):
         self.append_to_terminal(
-            f"Command status changed to {status} with message: {message}"
+            _(
+                "Command status changed to {status} with message: {message}"
+            ).format(status=status, message=message)
         )
 
     def on_connection_status_changed(self,
@@ -102,5 +104,7 @@ class MachineView(Adw.Dialog):
                                      TransportStatus,
                                      message: Optional[str] = None):
         self.append_to_terminal(
-            f"Connection status changed to {status} with message: {message}"
+            _(
+                "Connection status changed to {status} with message: {message}"
+            ).format(status=status, message=message)
         )

@@ -13,3 +13,6 @@ media
 repo
 builddir
 .aider*
+
+*.mo
+*.mo~

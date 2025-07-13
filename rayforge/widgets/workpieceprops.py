@@ -23,11 +23,11 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.apply_css()
         self.workpiece: Optional[WorkPiece] = workpiece
         self._in_update = False
-        self.set_title("Workpiece Properties")
+        self.set_title(_("Workpiece Properties"))
 
         # X Position Entry
         self.x_row = Adw.SpinRow(
-            title="X Position",
+            title=_("X Position"),
             adjustment=Gtk.Adjustment.new(0, -10000, 10000, 1.0, 1, 0),
         )
         self.x_row.set_digits(2)
@@ -36,7 +36,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
         # Y Position Entry
         self.y_row = Adw.SpinRow(
-            title="Y Position",
+            title=_("Y Position"),
             adjustment=Gtk.Adjustment.new(0, -10000, 10000, 1.0, 1, 0),
         )
         self.y_row.set_digits(2)
@@ -45,7 +45,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
         # Width Entry
         self.width_row = Adw.SpinRow(
-            title="Width",
+            title=_("Width"),
             adjustment=Gtk.Adjustment.new(10, 1, 10000, 1.0, 1, 0),
         )
         self.width_row.set_digits(2)
@@ -54,7 +54,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
         # Height Entry
         self.height_row = Adw.SpinRow(
-            title="Height",
+            title=_("Height"),
             adjustment=Gtk.Adjustment.new(10, 1, 10000, 1.0, 1, 0),
         )
         self.height_row.set_digits(2)
@@ -63,7 +63,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
         # Fixed Ratio Switch
         self.fixed_ratio_switch = Adw.SwitchRow(
-            title="Fixed Ratio", active=True
+            title=_("Fixed Ratio"), active=True
         )
         self.fixed_ratio_switch.connect(
             "notify::active", self._on_fixed_ratio_toggled
@@ -71,14 +71,14 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.add(self.fixed_ratio_switch)
 
         # Natural Size Label
-        self.natural_size_row = Adw.ActionRow(title="Natural Size")
-        self.natural_size_label = Gtk.Label(label="N/A", xalign=0)
+        self.natural_size_row = Adw.ActionRow(title=_("Natural Size"))
+        self.natural_size_label = Gtk.Label(label=_("N/A"), xalign=0)
         self.natural_size_row.add_suffix(self.natural_size_label)
         self.add(self.natural_size_row)
 
         # Reset Button
-        self.reset_row = Adw.ActionRow(title="Reset to Natural Size")
-        self.reset_button = Gtk.Button(label="Reset")
+        self.reset_row = Adw.ActionRow(title=_("Reset to Natural Size"))
+        self.reset_button = Gtk.Button(label=_("Reset"))
         self.reset_button.set_halign(Gtk.Align.END)
         self.reset_button.set_valign(Gtk.Align.CENTER)
         self.reset_button.connect("clicked", self._on_reset_clicked)

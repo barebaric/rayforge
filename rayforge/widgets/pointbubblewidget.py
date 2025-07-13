@@ -63,7 +63,7 @@ class PointBubbleWidget(Gtk.Box):
             "edit-delete-symbolic"
         )
         self.delete_button.set_valign(Gtk.Align.CENTER)
-        self.delete_button.set_tooltip_text("Delete this point")
+        self.delete_button.set_tooltip_text(_("Delete this point"))
         self.append(self.delete_button)
         self.delete_button.connect("clicked", self.on_delete_clicked)
 

@@ -381,21 +381,21 @@ class WorkStep(ABC):
 
 
 class Outline(WorkStep):
-    typelabel = "External Outline"
+    typelabel = _("External Outline")
 
     def __init__(self, name=None, **kwargs):
         super().__init__(OutlineTracer(), name, **kwargs)
 
 
 class Contour(WorkStep):
-    typelabel = "Contour"
+    typelabel = _("Contour")
 
     def __init__(self, name=None, **kwargs):
         super().__init__(EdgeTracer(), name, **kwargs)
 
 
 class Rasterize(WorkStep):
-    typelabel = "Raster Engrave"
+    typelabel = _("Raster Engrave")
 
     def __init__(self, name=None, **kwargs):
         super().__init__(Rasterizer(), name, **kwargs)

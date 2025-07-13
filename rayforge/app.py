@@ -2,6 +2,25 @@ import logging
 import mimetypes
 import argparse
 import gi
+import gettext
+import os
+
+# Gettext must be initialized before importing app modules.
+# For installed applications, locale files are typically in
+# /usr/share/locale or /usr/local/share/locale.
+# For development, they are in rayforge/locale.
+# gettext.install will handle finding the correct path.
+APP_NAME = "rayforge"
+LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
+try:
+    # Attempt to find the translation file
+    mo_file = gettext.find(APP_NAME, LOCALE_DIR)
+    trans = gettext.translation(APP_NAME, LOCALE_DIR)
+except Exception as e:
+    logging.getLogger(__name__).warning(f"Translation setup failed: {e}")
+
+# Make "_" available in all modules
+gettext.install(APP_NAME, LOCALE_DIR)
 
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
@@ -31,24 +50,24 @@ class App(Adw.Application):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="A GCode generator for laser cutters."
+        description=_("A GCode generator for laser cutters.")
     )
     parser.add_argument(
         "filename",
-        help="Path to the input SVG or image file.",
+        help=_("Path to the input SVG or image file."),
         nargs='?'
     )
     parser.add_argument(
         "--dumpsurface",
         metavar="FILENAME",
-        help="Stores the work surface (no paths) as a PNG image.",
+        help=_("Stores the work surface (no paths) as a PNG image."),
         nargs='?'
     )
     parser.add_argument(
         '--loglevel',
         default='INFO',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='Set the logging level (default: INFO)'
+        help=_('Set the logging level (default: INFO)')
     )
 
     args = parser.parse_args()

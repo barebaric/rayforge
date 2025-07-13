@@ -48,7 +48,7 @@ class Laser:
 class Machine:
     def __init__(self):
         self.id = str(uuid.uuid4())
-        self.name: str = 'Default Machine'
+        self.name: str = _('Default Machine')
         self.driver: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
         self.home_on_start: bool = False

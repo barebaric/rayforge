@@ -35,8 +35,10 @@ class CameraAlignmentDialog(Adw.Window):
         header_bar = Adw.HeaderBar()
         header_bar.set_title_widget(
             Adw.WindowTitle(
-                title=f"{camera.name} – Image Alignment",
-                subtitle=""
+                title=_("{camera.name} – Image Alignment").format(
+                    camera=camera
+                ),
+                subtitle="",
             )
         )
         content.append(header_bar)
@@ -72,8 +74,10 @@ class CameraAlignmentDialog(Adw.Window):
         vbox.append(bottom_bar)
 
         info_label = Gtk.Label(
-            label="Click the image to add new reference points. "
-            "Click or drag existing points to edit them.",
+            label=_(
+                "Click the image to add new reference points. "
+                "Click or drag existing points to edit them."
+            ),
             xalign=0,
         )
         info_label.set_wrap(True)
@@ -88,15 +92,15 @@ class CameraAlignmentDialog(Adw.Window):
         bottom_bar.append(btn_box)
 
         for label, cb in [
-            ("Reset Points", self.on_reset_points_clicked),
-            ("Clear All Points", self.on_clear_all_points_clicked),
-            ("Cancel", self.on_cancel_clicked),
+            (_("Reset Points"), self.on_reset_points_clicked),
+            (_("Clear All Points"), self.on_clear_all_points_clicked),
+            (_("Cancel"), self.on_cancel_clicked),
         ]:
             btn = Gtk.Button(label=label)
             btn.add_css_class("flat")
             btn.connect("clicked", cb)
             btn_box.append(btn)
-        self.apply_button = Gtk.Button(label="Apply")
+        self.apply_button = Gtk.Button(label=_("Apply"))
         self.apply_button.add_css_class("suggested-action")
         self.apply_button.connect("clicked", self.on_apply_clicked)
         btn_box.append(self.apply_button)
@@ -386,7 +390,7 @@ class CameraAlignmentDialog(Adw.Window):
 
         # Apply the new alignment to the camera.
         self.camera.image_to_world = (image_points, world_points)
-        logger.info("Camera alignment applied.")
+        logger.info(_("Camera alignment applied."))
         self.close()
 
     def on_cancel_clicked(self, _):

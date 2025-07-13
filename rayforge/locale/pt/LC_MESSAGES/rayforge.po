@@ -1,0 +1,553 @@
+# Portuguese translations for Rayforge.
+# Copyright (C) 2025 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version:  Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-13 13:48+0200\n"
+"PO-Revision-Date: 2025-07-13 11:39+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Portuguese <LL@li.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: rayforge/widgets/gcodepreferences.py:7
+msgid "GCode"
+msgstr "GCode"
+
+#: rayforge/widgets/gcodepreferences.py:14
+msgid "Preamble"
+msgstr "Preâmbulo"
+
+#: rayforge/widgets/gcodepreferences.py:27
+msgid "Postscript"
+msgstr "Pós-escrito"
+
+#: rayforge/widgets/gcodepreferences.py:40
+#: rayforge/widgets/workstepsettings.py:90
+msgid "Air Assist"
+msgstr "Assistência de Ar"
+
+#: rayforge/widgets/gcodepreferences.py:47
+msgid "Air Assist Enable GCode (blank if unsupported)"
+msgstr "GCode para Ativar Assistência de Ar (em branco se não suportado)"
+
+#: rayforge/widgets/gcodepreferences.py:59
+msgid "Air Assist Disable GCode (blank if unsupported)"
+msgstr "GCode para Desativar Assistência de Ar (em branco se não suportado)"
+
+#: rayforge/widgets/cameraproperties.py:18
+msgid "Camera Properties"
+msgstr "Propriedades da Câmera"
+
+#: rayforge/widgets/cameraproperties.py:19
+msgid "Configure the selected camera"
+msgstr "Configurar a câmera selecionada"
+
+#: rayforge/widgets/cameraproperties.py:22
+msgid "Device ID"
+msgstr "ID do Dispositivo"
+
+#: rayforge/widgets/cameraproperties.py:26
+msgid "Name"
+msgstr "Nome"
+
+#: rayforge/widgets/cameraproperties.py:31
+msgid "Enabled"
+msgstr "Ativado"
+
+#: rayforge/widgets/cameraproperties.py:37
+#: rayforge/widgets/cameraproperties.py:48
+msgid "Configure"
+msgstr "Configurar"
+
+#: rayforge/widgets/cameraproperties.py:42
+msgid "Image Settings"
+msgstr "Configurações de Imagem"
+
+#: rayforge/widgets/cameraproperties.py:53
+msgid "Image Alignment"
+msgstr "Alinhamento da Imagem"
+
+#: rayforge/widgets/machineview.py:97
+#, python-brace-format
+msgid "Command status changed to {status} with message: {message}"
+msgstr "Status do comando alterado para {status} com mensagem: {message}"
+
+#: rayforge/widgets/machineview.py:108
+#, python-brace-format
+msgid "Connection status changed to {status} with message: {message}"
+msgstr "Status da conexão alterado para {status} com mensagem: {message}"
+
+#: rayforge/widgets/generalpreferences.py:10
+msgid "General"
+msgstr "Geral"
+
+#: rayforge/widgets/generalpreferences.py:16
+msgid "Driver Settings"
+msgstr "Configurações do Driver"
+
+#: rayforge/widgets/generalpreferences.py:26
+msgid "Select driver"
+msgstr "Selecionar driver"
+
+#: rayforge/widgets/generalpreferences.py:50
+msgid "Machine Settings"
+msgstr "Configurações da Máquina"
+
+#: rayforge/widgets/generalpreferences.py:54
+msgid "Home On Start"
+msgstr "Home ao Iniciar"
+
+#: rayforge/widgets/generalpreferences.py:56
+msgid "Whether Rayforce will send a homing command when it is started"
+msgstr "Se o Rayforce enviará um comando de home ao ser iniciado"
+
+#: rayforge/widgets/generalpreferences.py:73
+msgid "Max Travel Speed"
+msgstr "Velocidade Máxima de Deslocamento"
+
+#: rayforge/widgets/generalpreferences.py:74
+msgid "Maximum travel speed in mm/min"
+msgstr "Velocidade máxima de deslocamento em mm/min"
+
+#: rayforge/widgets/generalpreferences.py:89
+msgid "Max Cut Speed"
+msgstr "Velocidade Máxima de Corte"
+
+#: rayforge/widgets/generalpreferences.py:90
+msgid "Maximum cutting speed in mm/min"
+msgstr "Velocidade máxima de corte em mm/min"
+
+#: rayforge/widgets/generalpreferences.py:97
+msgid "Dimensions"
+msgstr "Dimensões"
+
+#: rayforge/widgets/generalpreferences.py:108
+#: rayforge/widgets/workpieceprops.py:48
+msgid "Width"
+msgstr "Largura"
+
+#: rayforge/widgets/generalpreferences.py:109
+msgid "Width of the machine in mm"
+msgstr "Largura da máquina em mm"
+
+#: rayforge/widgets/generalpreferences.py:123
+#: rayforge/widgets/workpieceprops.py:57
+msgid "Height"
+msgstr "Altura"
+
+#: rayforge/widgets/generalpreferences.py:124
+msgid "Height of the machine in mm"
+msgstr "Altura da máquina em mm"
+
+#: rayforge/widgets/cameraalignment.py:38
+#, python-brace-format
+msgid "{camera.name} – Image Alignment"
+msgstr "{camera.name} – Alinhamento da Imagem"
+
+#: rayforge/widgets/cameraalignment.py:78
+msgid ""
+"Click the image to add new reference points. Click or drag existing points "
+"to edit them."
+msgstr ""
+"Clique na imagem para adicionar novos pontos de referência. Clique ou "
+"arraste os pontos existentes para editá-los."
+
+#: rayforge/widgets/cameraalignment.py:95
+msgid "Reset Points"
+msgstr "Redefinir Pontos"
+
+#: rayforge/widgets/cameraalignment.py:96
+msgid "Clear All Points"
+msgstr "Limpar Todos os Pontos"
+
+#: rayforge/widgets/cameraalignment.py:97
+#: rayforge/widgets/cameraselectiondialog.py:45
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: rayforge/widgets/cameraalignment.py:103
+msgid "Apply"
+msgstr "Aplicar"
+
+#: rayforge/widgets/cameraalignment.py:393
+msgid "Camera alignment applied."
+msgstr "Alinhamento da câmera aplicado."
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:15
+#, python-brace-format
+msgid "{camera.name} - Camera Image Settings"
+msgstr "{camera.name} - Configurações de Imagem da Câmera"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:37
+msgid "Camera Image Settings"
+msgstr "Configurações de Imagem da Câmera"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:43
+msgid "Auto White Balance"
+msgstr "Balanço de Branco Automático"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:44
+msgid "Automatically adjust white balance"
+msgstr "Ajustar automaticamente o balanço de branco"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:72
+msgid "White Balance (Kelvin)"
+msgstr "Balanço de Branco (Kelvin)"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:96
+msgid "Contrast"
+msgstr "Contraste"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:117
+msgid "Brightness"
+msgstr "Brilho"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:139
+msgid "Transparency"
+msgstr "Transparência"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:140
+msgid "Transparency on the worksurface"
+msgstr "Transparência na superfície de trabalho"
+
+#: rayforge/widgets/cameraimagesettingsdialog.py:146
+msgid "Close"
+msgstr "Fechar"
+
+#: rayforge/widgets/workplanview.py:57
+#, python-brace-format
+msgid "Step {seq}: "
+msgstr "Passo {seq}: "
+
+#: rayforge/widgets/statusview.py:118
+msgid "No driver selected"
+msgstr "Nenhum driver selecionado"
+
+#: rayforge/widgets/camerapreferences.py:10
+msgid "Camera"
+msgstr "Câmera"
+
+#: rayforge/widgets/camerapreferences.py:15
+msgid "Cameras"
+msgstr "Câmeras"
+
+#: rayforge/widgets/camerapreferences.py:50
+#, python-brace-format
+msgid "Camera: {camera.name}"
+msgstr "Câmera: {camera.name}"
+
+#: rayforge/widgets/camerapreferences.py:76
+#: rayforge/widgets/cameraselectiondialog.py:65
+#, python-brace-format
+msgid "Camera {device_id}"
+msgstr "Câmera {device_id}"
+
+#: rayforge/widgets/camerapreferences.py:82
+#, python-brace-format
+msgid "Camera: {new_camera.name}"
+msgstr "Câmera: {new_camera.name}"
+
+#: rayforge/widgets/laserheadpreferences.py:9
+#: rayforge/widgets/laserheadpreferences.py:16
+msgid "Laser Heads"
+msgstr "Cabeças de Laser"
+
+#: rayforge/widgets/laserheadpreferences.py:39
+msgid "Laser Properties"
+msgstr "Propriedades do Laser"
+
+#: rayforge/widgets/laserheadpreferences.py:40
+msgid "Configure the selected laser"
+msgstr "Configurar o laser selecionado"
+
+#: rayforge/widgets/laserheadpreferences.py:48
+msgid "Max Power"
+msgstr "Potência Máxima"
+
+#: rayforge/widgets/laserheadpreferences.py:49
+msgid "Maximum power value in GCode"
+msgstr "Valor de potência máxima no GCode"
+
+#: rayforge/widgets/laserheadpreferences.py:59
+msgid "Frame Power"
+msgstr "Potência do Quadro"
+
+#: rayforge/widgets/laserheadpreferences.py:61
+msgid "Power value in Gcode to use when framing. 0 to disable"
+msgstr "Valor de potência no Gcode a ser usado ao enquadrar. 0 para desativar"
+
+#: rayforge/widgets/laserheadpreferences.py:76
+msgid "Spot Size X"
+msgstr "Tamanho do Ponto X"
+
+#: rayforge/widgets/laserheadpreferences.py:77
+msgid "Size of the laser spot in the X direction"
+msgstr "Tamanho do ponto do laser na direção X"
+
+#: rayforge/widgets/laserheadpreferences.py:92
+msgid "Spot Size Y"
+msgstr "Tamanho do Ponto Y"
+
+#: rayforge/widgets/laserheadpreferences.py:93
+msgid "Size of the laser spot in the Y direction"
+msgstr "Tamanho do ponto do laser na direção Y"
+
+#: rayforge/widgets/laserheadpreferences.py:110
+#: rayforge/widgets/laserheadpreferences.py:193
+#, python-brace-format
+msgid "Laser (Max Power: {head.max_power})"
+msgstr "Laser (Potência Máxima: {head.max_power})"
+
+#: rayforge/widgets/laserheadpreferences.py:126
+#, python-brace-format
+msgid "Laser (Max Power: {new_head.max_power})"
+msgstr "Laser (Potência Máxima: {new_head.max_power})"
+
+#: rayforge/widgets/pointbubblewidget.py:66
+msgid "Delete this point"
+msgstr "Excluir este ponto"
+
+#: rayforge/widgets/workstepsettings.py:11
+#, python-brace-format
+msgid "{workstep.name} Settings"
+msgstr "Configurações de {workstep.name}"
+
+#: rayforge/widgets/workstepsettings.py:23
+msgid "Number of Passes"
+msgstr "Número de Passagens"
+
+#: rayforge/widgets/workstepsettings.py:24
+msgid "How often to repeat this workstep"
+msgstr "Quantas vezes repetir esta etapa de trabalho"
+
+#: rayforge/widgets/workstepsettings.py:37
+msgid "Power (%)"
+msgstr "Potência (%)"
+
+#: rayforge/widgets/workstepsettings.py:56
+msgid "Cut Speed (mm/min)"
+msgstr "Velocidade de Corte (mm/min)"
+
+#: rayforge/widgets/workstepsettings.py:57
+#, python-brace-format
+msgid "Max: {config.machine.max_cut_speed} mm/min"
+msgstr "Máx: {config.machine.max_cut_speed} mm/min"
+
+#: rayforge/widgets/workstepsettings.py:73
+msgid "Travel Speed (mm/min)"
+msgstr "Velocidade de Deslocamento (mm/min)"
+
+#: rayforge/widgets/workstepsettings.py:74
+#, python-brace-format
+msgid "Max: {config.machine.max_travel_speed} mm/min"
+msgstr "Máx: {config.machine.max_travel_speed} mm/min"
+
+#: rayforge/widgets/mainwindow.py:66
+msgid "Rayforge"
+msgstr "Rayforge"
+
+#: rayforge/widgets/mainwindow.py:113
+msgid "About"
+msgstr "Sobre"
+
+#: rayforge/widgets/mainwindow.py:114
+msgid "Preferences"
+msgstr "Preferências"
+
+#: rayforge/widgets/mainwindow.py:139
+msgid "Import image"
+msgstr "Importar imagem"
+
+#: rayforge/widgets/mainwindow.py:145
+msgid "Generate GCode"
+msgstr "Gerar GCode"
+
+#: rayforge/widgets/mainwindow.py:155
+msgid "Remove all workpieces"
+msgstr "Remover todas as peças de trabalho"
+
+#: rayforge/widgets/mainwindow.py:164
+msgid "Toggle workpiece visibility"
+msgstr "Alternar visibilidade da peça de trabalho"
+
+#: rayforge/widgets/mainwindow.py:175
+msgid "Toggle camera image visibility"
+msgstr "Alternar visibilidade da imagem da câmera"
+
+#: rayforge/widgets/mainwindow.py:187
+msgid "Toggle travel move visibility"
+msgstr "Alternar visibilidade do movimento de deslocamento"
+
+#: rayforge/widgets/mainwindow.py:200
+msgid "Home the machine"
+msgstr "Home da máquina"
+
+#: rayforge/widgets/mainwindow.py:207
+msgid "Cycle laser head around the occupied area"
+msgstr "Ciclar a cabeça do laser pela área ocupada"
+
+#: rayforge/widgets/mainwindow.py:214 rayforge/widgets/mainwindow.py:446
+msgid "Send to machine"
+msgstr "Enviar para a máquina"
+
+#: rayforge/widgets/mainwindow.py:222
+msgid "Pause machine"
+msgstr "Pausar máquina"
+
+#: rayforge/widgets/mainwindow.py:228
+msgid "Cancel running job"
+msgstr "Cancelar trabalho em execução"
+
+#: rayforge/widgets/mainwindow.py:338
+msgid "<b>Machine status:</b>"
+msgstr "<b>Status da máquina:</b>"
+
+#: rayforge/widgets/mainwindow.py:349
+msgid "<b>Connection status:</b>"
+msgstr "<b>Status da conexão:</b>"
+
+#: rayforge/widgets/mainwindow.py:374
+msgid "No driver configured."
+msgstr "Nenhum driver configurado."
+
+#: rayforge/widgets/mainwindow.py:383
+msgid "Failed to set up driver:"
+msgstr "Falha ao configurar o driver:"
+
+#: rayforge/widgets/mainwindow.py:440
+msgid "Send to machine (select driver to enable)"
+msgstr "Enviar para a máquina (selecione o driver para habilitar)"
+
+#: rayforge/widgets/mainwindow.py:443
+msgid "Send to machine (connect to enable)"
+msgstr "Enviar para a máquina (conectar para habilitar)"
+
+#: rayforge/widgets/mainwindow.py:482
+msgid "Open SVG File"
+msgstr "Abrir Arquivo SVG"
+
+#: rayforge/widgets/mainwindow.py:487
+msgid "All supported"
+msgstr "Todos os suportados"
+
+#: rayforge/widgets/mainwindow.py:529
+msgid "Save G-code File"
+msgstr "Salvar Arquivo G-code"
+
+#: rayforge/widgets/mainwindow.py:537
+msgid "G-code files"
+msgstr "Arquivos G-code"
+
+#: rayforge/widgets/mainwindow.py:608
+#, python-brace-format
+msgid "Error saving file: {e.message}"
+msgstr "Erro ao salvar arquivo: {e.message}"
+
+#: rayforge/widgets/mainwindow.py:625
+#, python-brace-format
+msgid "Error opening file: {e.message}"
+msgstr "Erro ao abrir arquivo: {e.message}"
+
+#: rayforge/widgets/mainwindow.py:642
+msgid "unknown"
+msgstr "desconhecido"
+
+#: rayforge/widgets/mainwindow.py:657
+msgid "Settings closed"
+msgstr "Configurações fechadas"
+
+#: rayforge/widgets/workpieceprops.py:26
+msgid "Workpiece Properties"
+msgstr "Propriedades da Peça de Trabalho"
+
+#: rayforge/widgets/workpieceprops.py:30
+msgid "X Position"
+msgstr "Posição X"
+
+#: rayforge/widgets/workpieceprops.py:39
+msgid "Y Position"
+msgstr "Posição Y"
+
+#: rayforge/widgets/workpieceprops.py:66
+msgid "Fixed Ratio"
+msgstr "Proporção Fixa"
+
+#: rayforge/widgets/workpieceprops.py:74
+msgid "Natural Size"
+msgstr "Tamanho Natural"
+
+#: rayforge/widgets/workpieceprops.py:75
+msgid "N/A"
+msgstr "N/A"
+
+#: rayforge/widgets/workpieceprops.py:80
+msgid "Reset to Natural Size"
+msgstr "Redefinir para Tamanho Natural"
+
+#: rayforge/widgets/workpieceprops.py:81
+msgid "Reset"
+msgstr "Redefinir"
+
+#: rayforge/widgets/cameraselectiondialog.py:11
+msgid "Select Camera"
+msgstr "Selecionar Câmera"
+
+#: rayforge/widgets/cameraselectiondialog.py:12
+msgid "Please select an available camera device"
+msgstr "Por favor, selecione um dispositivo de câmera disponível"
+
+#: rayforge/widgets/cameraselectiondialog.py:59
+msgid "No cameras found."
+msgstr "Nenhuma câmera encontrada."
+
+#: rayforge/widgets/cameraselectiondialog.py:74
+#, python-brace-format
+msgid "Failed to load image for Device ID: {device_id}"
+msgstr "Falha ao carregar imagem para o ID do Dispositivo: {device_id}"
+
+#: rayforge/widgets/cameraselectiondialog.py:106
+#, python-brace-format
+msgid "Device ID: {device_id}"
+msgstr "ID do Dispositivo: {device_id}"
+
+#: rayforge/models/machine.py:51
+msgid "Default Machine"
+msgstr "Máquina Padrão"
+
+#: rayforge/models/workplan.py:384
+msgid "External Outline"
+msgstr "Contorno Externo"
+
+#: rayforge/models/workplan.py:391
+msgid "Contour"
+msgstr "Contorno"
+
+#: rayforge/models/workplan.py:398
+msgid "Raster Engrave"
+msgstr "Gravação Raster"
+
+#: rayforge/app.py:53
+msgid "A GCode generator for laser cutters."
+msgstr "Um gerador de GCode para cortadores a laser."
+
+#: rayforge/app.py:57
+msgid "Path to the input SVG or image file."
+msgstr "Caminho para o arquivo SVG ou imagem de entrada."
+
+#: rayforge/app.py:63
+msgid "Stores the work surface (no paths) as a PNG image."
+msgstr "Armazena a superfície de trabalho (sem caminhos) como uma imagem PNG."
+
+#: rayforge/app.py:70
+msgid "Set the logging level (default: INFO)"
+msgstr "Defina o nível de log (padrão: INFO)"

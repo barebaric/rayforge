@@ -8,8 +8,8 @@ class CameraSelectionDialog(Adw.MessageDialog):
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading="Select Camera",
-            body="Please select an available camera device",
+            heading=_("Select Camera"),
+            body=_("Please select an available camera device"),
             close_response="cancel",
             **kwargs
         )
@@ -42,7 +42,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
 
         self.set_extra_child(self.carousel)
 
-        self.add_response("cancel", "Cancel")
+        self.add_response("cancel", _("Cancel"))
         self.set_response_enabled(
             "cancel", True
         )
@@ -56,18 +56,23 @@ class CameraSelectionDialog(Adw.MessageDialog):
     def list_available_cameras(self):
         self.available_devices = Camera.list_available_devices()
         if not self.available_devices:
-            label = Gtk.Label(label="No cameras found.")
+            label = Gtk.Label(label=_("No cameras found."))
             self.carousel.append(label)
             return
 
         for device_id in self.available_devices:
-            camera = Camera(name=f"Camera {device_id}", device_id=device_id)
+            camera = Camera(
+                name=_("Camera {device_id}").format(device_id=device_id),
+                device_id=device_id,
+            )
             camera.capture_image()
             pixbuf = camera.pixbuf
 
             if not pixbuf:
                 label = Gtk.Label(
-                    label=f"Failed to load image for Device ID: {device_id}"
+                    label=_(
+                        "Failed to load image for Device ID: {device_id}"
+                    ).format(device_id=device_id)
                 )
                 self.carousel.append(label)
                 continue
@@ -97,7 +102,9 @@ class CameraSelectionDialog(Adw.MessageDialog):
             image_widget.set_margin_bottom(5)
 
             # Add a label for the device ID
-            label = Gtk.Label(label=f"Device ID: {device_id}")
+            label = Gtk.Label(
+                label=_("Device ID: {device_id}").format(device_id=device_id)
+            )
             label.set_halign(Gtk.Align.CENTER)
             label.set_valign(Gtk.Align.CENTER)
             label.set_margin_bottom(12)

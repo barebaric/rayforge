@@ -115,7 +115,7 @@ class StatusWidget(Gtk.Box):
     def set_status(self, status):
         self.icon.set_status(status)
         if status is None:
-            self.label.set_label("No driver selected")
+            self.label.set_label(_("No driver selected"))
         else:
             self.label.set_label(status.name)
 

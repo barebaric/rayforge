@@ -37,6 +37,9 @@ include = ["rayforge*"]
 [tool.setuptools-git-versioning]
 enabled = true
 
+[tool.ruff]
+builtins = ["_"]
+
 [tool.setuptools.data-files]
 "share/applications" = ["data/com.barebaric.rayforge.desktop"]
 "share/metainfo" = ["data/com.barebaric.rayforge.metainfo.xml"]

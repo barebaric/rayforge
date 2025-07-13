@@ -12,9 +12,11 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading=f"{camera.name} - Camera Image Settings",
+            heading=_("{camera.name} - Camera Image Settings").format(
+                camera=camera
+            ),
             close_response="cancel",
-            **kwargs
+            **kwargs,
         )
         self.camera = camera
 
@@ -31,13 +33,15 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             spacing=12,
         )
         main_box.append(settings_box)
-        preferences_group = Adw.PreferencesGroup(title="Camera Image Settings")
+        preferences_group = Adw.PreferencesGroup(
+            title=_("Camera Image Settings")
+        )
         settings_box.append(preferences_group)
 
         # White balance
         self.auto_white_balance_switch = Adw.SwitchRow(
-            title="Auto White Balance",
-            subtitle="Automatically adjust white balance"
+            title=_("Auto White Balance"),
+            subtitle=_("Automatically adjust white balance"),
         )
         self.auto_white_balance_switch.set_active(
             self.camera.white_balance is None
@@ -54,7 +58,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             lower=2500,
             upper=10000,
             step_increment=10,
-            page_increment=100
+            page_increment=100,
         )
         self.white_balance_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.wb_adjustment
@@ -65,7 +69,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.white_balance_scale.connect(
             "value-changed", self.on_white_balance_changed
         )
-        white_balance_row = Adw.ActionRow(title="White Balance (Kelvin)")
+        white_balance_row = Adw.ActionRow(title=_("White Balance (Kelvin)"))
         white_balance_row.add_suffix(self.white_balance_scale)
         preferences_group.add(white_balance_row)
 
@@ -80,7 +84,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             lower=0.0,
             upper=100.0,
             step_increment=0.01,
-            page_increment=10.0
+            page_increment=10.0,
         )
         self.contrast_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.contrast_adjustment
@@ -89,7 +93,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.contrast_scale.set_digits(2)  # Contrast can have two decimals
         self.contrast_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.contrast_scale.connect("value-changed", self.on_contrast_changed)
-        contrast_row = Adw.ActionRow(title="Contrast")
+        contrast_row = Adw.ActionRow(title=_("Contrast"))
         contrast_row.add_suffix(self.contrast_scale)
         preferences_group.add(contrast_row)
 
@@ -99,7 +103,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             lower=-100.0,
             upper=100.0,
             step_increment=0.01,
-            page_increment=10.0
+            page_increment=10.0,
         )
         self.brightness_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.brightness_adjustment
@@ -110,7 +114,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.brightness_scale.connect(
             "value-changed", self.on_brightness_changed
         )
-        brightness_row = Adw.ActionRow(title="Brightness")
+        brightness_row = Adw.ActionRow(title=_("Brightness"))
         brightness_row.add_suffix(self.brightness_scale)
         preferences_group.add(brightness_row)
 
@@ -120,7 +124,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             lower=0.0,
             upper=1.0,
             step_increment=0.01,
-            page_increment=0.1
+            page_increment=0.1,
         )
         self.transparency_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.transparency_adjustment
@@ -132,14 +136,14 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
             "value-changed", self.on_transparency_changed
         )
         transparency_row = Adw.ActionRow(
-            title="Transparency",
-            subtitle="Transparency on the worksurface"
+            title=_("Transparency"),
+            subtitle=_("Transparency on the worksurface"),
         )
         transparency_row.add_suffix(self.transparency_scale)
         preferences_group.add(transparency_row)
 
         # Add buttons
-        self.add_response("close", "Close")
+        self.add_response("close", _("Close"))
         self.set_default_response("cancel")
         self.connect("response", self.on_dialog_response)
 

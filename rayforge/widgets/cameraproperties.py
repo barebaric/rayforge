@@ -15,42 +15,42 @@ class CameraProperties(Adw.PreferencesGroup):
         self._camera: Optional[Camera] = None
         self._updating_ui: bool = False
 
-        self.set_title("Camera Properties")
-        self.set_description("Configure the selected camera")
+        self.set_title(_("Camera Properties"))
+        self.set_description(_("Configure the selected camera"))
 
         # Device ID
-        self.device_id_row = Adw.ActionRow(title="Device ID")
+        self.device_id_row = Adw.ActionRow(title=_("Device ID"))
         self.add(self.device_id_row)
 
         # Camera Name
-        self.name_row = Adw.EntryRow(title="Name")
+        self.name_row = Adw.EntryRow(title=_("Name"))
         self.name_row.connect("changed", self.on_name_changed)
         self.add(self.name_row)
 
         # Enabled Switch
-        self.enabled_row = Adw.SwitchRow(title="Enabled")
+        self.enabled_row = Adw.SwitchRow(title=_("Enabled"))
         self.enabled_row.connect("notify::active", self.on_enabled_changed)
         self.add(self.enabled_row)
 
         # Image Settings button
         self.image_settings_button = Gtk.Button(
-            label="Configure", valign=Gtk.Align.CENTER
+            label=_("Configure"), valign=Gtk.Align.CENTER
         )
         self.image_settings_button.connect(
             "clicked", self.on_image_settings_button_clicked
         )
-        image_settings_row = Adw.ActionRow(title="Image Settings")
+        image_settings_row = Adw.ActionRow(title=_("Image Settings"))
         image_settings_row.add_suffix(self.image_settings_button)
         self.add(image_settings_row)
 
         # Image alignment button
         self.image_alignment_button = Gtk.Button(
-            label="Configure", valign=Gtk.Align.CENTER
+            label=_("Configure"), valign=Gtk.Align.CENTER
         )
         self.image_alignment_button.connect(
             "clicked", self.on_image_alignment_button_clicked
         )
-        image_alignment_row = Adw.ActionRow(title="Image Alignment")
+        image_alignment_row = Adw.ActionRow(title=_("Image Alignment"))
         image_alignment_row.add_suffix(self.image_alignment_button)
         self.add(image_alignment_row)
 

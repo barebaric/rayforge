@@ -63,7 +63,7 @@ css = """
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title("Rayforge")
+        self.set_title(_("Rayforge"))
 
         display = Gdk.Display.get_default()
         monitors = display.get_monitors()
@@ -110,8 +110,8 @@ class MainWindow(Adw.ApplicationWindow):
         menu_button = Gtk.MenuButton()
         menu_button.set_icon_name("open-menu-symbolic")
         menu_model = Gio.Menu()
-        menu_model.append("About", "win.about")
-        menu_model.append("Preferences", "win.settings")
+        menu_model.append(_("About"), "win.about")
+        menu_model.append(_("Preferences"), "win.settings")
         menu_button.set_menu_model(menu_model)
         header_bar.pack_end(menu_button)
 
@@ -136,13 +136,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Import and export icons
         open_button = Gtk.Button()
         open_button.set_child(get_icon('open'))
-        open_button.set_tooltip_text("Import image")
+        open_button.set_tooltip_text(_("Import image"))
         open_button.connect("clicked", self.on_open_clicked)
         toolbar.append(open_button)
 
         self.export_button = Gtk.Button()
         self.export_button.set_child(get_icon('publish'))
-        self.export_button.set_tooltip_text("Generate GCode")
+        self.export_button.set_tooltip_text(_("Generate GCode"))
         self.export_button.connect("clicked", self.on_export_clicked)
         toolbar.append(self.export_button)
 
@@ -152,7 +152,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         clear_button = Gtk.Button()
         clear_button.set_child(get_icon('clear-layers'))
-        clear_button.set_tooltip_text("Remove all workpieces")
+        clear_button.set_tooltip_text(_("Remove all workpieces"))
         clear_button.connect("clicked", self.on_clear_clicked)
         toolbar.append(clear_button)
 
@@ -161,7 +161,7 @@ class MainWindow(Adw.ApplicationWindow):
         button = Gtk.ToggleButton()
         button.set_active(True)
         button.set_child(self.visibility_on_icon)
-        button.set_tooltip_text("Toggle workpiece visibility")
+        button.set_tooltip_text(_("Toggle workpiece visibility"))
         toolbar.append(button)
         button.connect('clicked', self.on_button_visibility_clicked)
 
@@ -172,7 +172,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.camera_visibility_button.set_active(True)
         self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
         self.camera_visibility_button.set_tooltip_text(
-            "Toggle camera image visibility"
+            _("Toggle camera image visibility")
         )
         self.camera_visibility_button.connect(
             "toggled", self._on_camera_image_visibility_toggled
@@ -184,7 +184,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_travel_button.set_child(get_icon('timeline'))
         self.show_travel_button.set_active(False)
         self.show_travel_button.set_tooltip_text(
-            "Toggle travel move visibility"
+            _("Toggle travel move visibility")
         )
         self.show_travel_button.connect(
             "toggled", self._on_show_travel_toggled
@@ -197,21 +197,21 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.home_button = Gtk.Button()
         self.home_button.set_child(get_icon('home'))
-        self.home_button.set_tooltip_text("Home the machine")
+        self.home_button.set_tooltip_text(_("Home the machine"))
         self.home_button.connect("clicked", self.on_home_clicked)
         toolbar.append(self.home_button)
 
         self.frame_button = Gtk.Button()
         self.frame_button.set_child(get_icon('frame'))
         self.frame_button.set_tooltip_text(
-            "Cycle laser head around the occupied area"
+            _("Cycle laser head around the occupied area")
         )
         self.frame_button.connect("clicked", self.on_frame_clicked)
         toolbar.append(self.frame_button)
 
         self.send_button = Gtk.Button()
         self.send_button.set_child(get_icon('send'))
-        self.send_button.set_tooltip_text("Send to machine")
+        self.send_button.set_tooltip_text(_("Send to machine"))
         self.send_button.connect("clicked", self.on_send_clicked)
         toolbar.append(self.send_button)
 
@@ -219,13 +219,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.hold_off_icon = get_icon('pause')
         self.hold_button = Gtk.ToggleButton()
         self.hold_button.set_child(self.hold_off_icon)
-        self.hold_button.set_tooltip_text("Pause machine")
+        self.hold_button.set_tooltip_text(_("Pause machine"))
         self.hold_button.connect("clicked", self.on_hold_clicked)
         toolbar.append(self.hold_button)
 
         self.cancel_button = Gtk.Button()
         self.cancel_button.set_child(get_icon('stop'))
-        self.cancel_button.set_tooltip_text("Cancel running job")
+        self.cancel_button.set_tooltip_text(_("Cancel running job"))
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         toolbar.append(self.cancel_button)
 
@@ -335,7 +335,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Monitor machine status
         label = Gtk.Label()
-        label.set_markup("<b>Machine status:</b>")
+        label.set_markup(_("<b>Machine status:</b>"))
         status_box.append(label)
 
         self.machine_status = MachineStatusMonitor()
@@ -346,7 +346,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Monitor connection status
         label = Gtk.Label()
-        label.set_markup("<b>Connection status:</b>")
+        label.set_markup(_("<b>Connection status:</b>"))
         label.set_margin_start(12)
         status_box.append(label)
 
@@ -371,7 +371,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Reconfigure, because params may have changed.
         driver_name = config.machine.driver
         if driver_name is None:
-            logger.warning("No driver configured.")
+            logger.warning(_("No driver configured."))
             return
         driver_cls = get_driver_cls(driver_name)
         try:
@@ -380,7 +380,7 @@ class MainWindow(Adw.ApplicationWindow):
                 **config.machine.driver_args
             ))
         except Exception as e:
-            print("Failed to set up driver:", e)
+            print(_("Failed to set up driver:"), e)
             return
 
     def on_driver_changed(self, sender, driver):
@@ -437,13 +437,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Send button
         conn_status = self.connection_status.get_status()
         if driver_mgr.driver.__class__ is NoDeviceDriver:
-            text = "Send to machine (select driver to enable)"
+            text = _("Send to machine (select driver to enable)")
             sensitive = False
         elif conn_status != TransportStatus.CONNECTED:
-            text = "Send to machine (connect to enable)"
+            text = _("Send to machine (connect to enable)")
             sensitive = False
         else:
-            text = "Send to machine"
+            text = _("Send to machine")
             sensitive = True
         self.send_button.set_sensitive(sensitive)
         self.send_button.set_tooltip_text(text)
@@ -479,15 +479,15 @@ class MainWindow(Adw.ApplicationWindow):
     def on_open_clicked(self, button):
         # Create a file chooser dialog
         dialog = Gtk.FileDialog.new()
-        dialog.set_title("Open SVG File")
+        dialog.set_title(_("Open SVG File"))
 
         # Create a Gio.ListModel for the filters
         filter_list = Gio.ListStore.new(Gtk.FileFilter)
         all_supported = Gtk.FileFilter()
-        all_supported.set_name("All supported")
+        all_supported.set_name(_("All supported"))
         for renderer in renderers:
             file_filter = Gtk.FileFilter()
-            file_filter.set_name(renderer.label)
+            file_filter.set_name(_(renderer.label))
             for mime_type in renderer.mime_types:
                 file_filter.add_mime_type(mime_type)
                 all_supported.add_mime_type(mime_type)
@@ -526,7 +526,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_export_clicked(self, button):
         # Create a file chooser dialog for saving the file
         dialog = Gtk.FileDialog.new()
-        dialog.set_title("Save G-code File")
+        dialog.set_title(_("Save G-code File"))
 
         # Set the default file name
         dialog.set_initial_name("output.gcode")
@@ -534,7 +534,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a Gio.ListModel for the filters
         filter_list = Gio.ListStore.new(Gtk.FileFilter)
         gcode_filter = Gtk.FileFilter()
-        gcode_filter.set_name("G-code files")
+        gcode_filter.set_name(_("G-code files"))
         gcode_filter.add_mime_type("text/x.gcode")
         filter_list.append(gcode_filter)
 
@@ -605,7 +605,7 @@ class MainWindow(Adw.ApplicationWindow):
             with open(file_path, 'w') as f:
                 f.write(gcode)
         except GLib.Error as e:
-            print(f"Error saving file: {e.message}")
+            print(_(f"Error saving file: {e.message}"))
 
     def on_file_dialog_response(self, dialog, result):
         try:
@@ -622,7 +622,7 @@ class MainWindow(Adw.ApplicationWindow):
                 mime_type = file_info.get_content_type()
                 self.load_file(file_path, mime_type)
         except GLib.Error as e:
-            print(f"Error opening file: {e.message}")
+            print(_(f"Error opening file: {e.message}"))
 
     def load_file(self, filename, mime_type):
         renderer = renderer_by_mime_type[mime_type]
@@ -639,7 +639,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="Rayforge",
             application_icon="com.barebaric.rayforge",
             developer_name="Barebaric",
-            version=__version__ or 'unknown',
+            version=__version__ or _('unknown'),
             copyright="© 2025 Samuel Abels",
             website="https://github.com/barebaric/rayforge",
             issue_url="https://github.com/barebaric/rayforge/issues",
@@ -654,5 +654,5 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.connect("closed", self._on_settings_dialog_closed)
 
     def _on_settings_dialog_closed(self, dialog):
-        logger.debug("Settings closed")
+        logger.debug(_("Settings closed"))
         self.surface.grab_focus()  # re-enables keyboard shortcuts

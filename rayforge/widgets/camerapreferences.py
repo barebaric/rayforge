@@ -7,14 +7,12 @@ from .cameraselectiondialog import CameraSelectionDialog
 class CameraPreferencesPage(Adw.PreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title="Camera",
-            icon_name="camera-photo-symbolic",
-            **kwargs
+            title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs
         )
         self.machine = machine
 
         # List of Cameras
-        camera_list_group = Adw.PreferencesGroup(title="Cameras")
+        camera_list_group = Adw.PreferencesGroup(title=_("Cameras"))
         self.add(camera_list_group)
         self.camera_list = Gtk.ListBox()
         self.camera_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -25,7 +23,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         camera_button_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=5,
-            halign=Gtk.Align.END
+            halign=Gtk.Align.END,
         )
         add_camera_button = Gtk.Button(icon_name="list-add-symbolic")
         add_camera_button.connect("clicked", self.on_add_camera)
@@ -48,7 +46,9 @@ class CameraPreferencesPage(Adw.PreferencesPage):
     def populate_camera_list(self):
         """Populate the list of Cameras."""
         for camera in self.machine.cameras:
-            row = Adw.ActionRow(title=f"Camera: {camera.name}")
+            row = Adw.ActionRow(
+                title=_("Camera: {camera.name}").format(camera=camera)
+            )
             row.set_margin_top(5)
             row.set_margin_bottom(5)
             self.camera_list.append(row)
@@ -68,13 +68,21 @@ class CameraPreferencesPage(Adw.PreferencesPage):
             if device_id:
                 # Check if a camera with this device_id already exists
                 if any(c.device_id == device_id for c in self.machine.cameras):
-                    # Optionally, show a message to the user that camera exists
+                    # Optionally, show a message to the user that camera
+                    # exists
                     return
 
-                new_camera = Camera(f"Camera {device_id}", device_id)
+                new_camera = Camera(
+                    _("Camera {device_id}").format(device_id=device_id),
+                    device_id,
+                )
                 new_camera.enabled = True
                 self.machine.add_camera(new_camera)
-                row = Adw.ActionRow(title=f"Camera: {new_camera.name}")
+                row = Adw.ActionRow(
+                    title=_("Camera: {new_camera.name}").format(
+                        new_camera=new_camera
+                    )
+                )
                 row.set_margin_top(5)
                 row.set_margin_bottom(5)
                 self.camera_list.append(row)
