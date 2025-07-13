@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -143,14 +145,42 @@ jobs:
           name: rayforge-v${{ steps.set-version.outputs.version }}.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
 
+  test:
+    name: Test Executable
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rayforge-v${{ needs.build.outputs.version }}.zip
+
+      - name: Test Executable
+        shell: bash
+        run: |
+          echo "Listing files in current directory:"
+          ls -l
+          echo "Running executable with --help:"
+          ./rayforge-v${{ needs.build.outputs.version }}.exe --help
+
+  release:
+    name: Create GitHub Release
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rayforge-v${{ needs.build.outputs.version }}.zip
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+          files: rayforge-v${{ needs.build.outputs.version }}.exe
           draft: false
           prerelease: false
-          name: Release ${{ steps.set-version.outputs.version }}
+          name: Release ${{ needs.build.outputs.version }}
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
