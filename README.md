@@ -42,23 +42,39 @@ It supports direct communication with GRBL based machines (network or serial).
 
 ## Installation
 
-### Linux
+### Linux with Snap
 
 On Linux the only currently supported method is Snap:
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
 
-You can also install it through PIP if you know what you are doing. Something like this:
+To be able to use your camera, you will then have to run this once:
 
+```bash
+snap connect rayforge:camera
 ```
+
+### Linux with PIP
+
+Advanced users may also install it through PIP, but know what you are doing. Something like this:
+
+```bash
 sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
 
 pip3 install rayforge
 ```
 
+### ~~Linux with Flatpak~~
+
+Unfortunately this does not work yet. I would love for someone to fix it up, see [flatpak](flatpak/).
+What would be needed is a Github workflow that publishes the Flatpak. I tried many hours trying
+to get this to work, but did not find a way.
+
+
 ### Windows
 
 Head over to the [releases page](https://github.com/barebaric/rayforge/releases/).
+
 
 ### Other operating systems
 
@@ -72,7 +88,7 @@ PIP on Windows or Mac - the source code should be fully cross-platform.
 ## Development
 
 Setup:
-```
+```bash
 sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64
 git clone git@github.com:barebaric/rayforge.git
 cd rayforge
