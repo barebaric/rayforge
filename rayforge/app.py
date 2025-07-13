@@ -13,6 +13,12 @@ warnings.filterwarnings(
     " match any known type",
 )
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 # When running in a PyInstaller bundle, we need to set the GI_TYPELIB_PATH
 # environment variable to point to the bundled typelib files.
 if hasattr(sys, '_MEIPASS'):
@@ -40,11 +46,11 @@ else:
 try:
     # Debug: Log the locale directory and its contents
     if os.path.exists(LOCALE_DIR):
+        logging.info(f"Using translations from {LOCALE_DIR}")
         lang_folders = [
             d for d in os.listdir(LOCALE_DIR)
             if os.path.isdir(os.path.join(LOCALE_DIR, d))
         ]
-        logging.info(f"Using translations from {LOCALE_DIR}")
         logging.info(f"{len(lang_folders)} language folders found.")
         logging.info(f"Folders: {lang_folders}")
     else:
@@ -109,12 +115,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Configure logging based on the command-line argument
+    # Set logging level based on the command-line argument
     log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    logging.getLogger().setLevel(log_level)
     logger = logging.getLogger(__name__)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
