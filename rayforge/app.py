@@ -43,35 +43,6 @@ else:
     # In development, they are in rayforge/locale
     LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
 
-try:
-    # Debug: Log the locale directory and its contents
-    if os.path.exists(LOCALE_DIR):
-        logging.info(f"Using translations from {LOCALE_DIR}")
-        lang_folders = [
-            d for d in os.listdir(LOCALE_DIR)
-            if os.path.isdir(os.path.join(LOCALE_DIR, d))
-        ]
-        logging.info(f"{len(lang_folders)} language folders found.")
-
-        mo_files = []
-        for lang in lang_folders:
-            mo_path = os.path.join(
-                LOCALE_DIR, lang, "LC_MESSAGES", f"{APP_NAME}.mo"
-            )
-            if os.path.isfile(mo_path):
-                mo_files.append(mo_path)
-        logging.info(f"{len(mo_files)} .mo files found.")
-
-        logging.info(f"Folders: {lang_folders}")
-    else:
-        logging.warning(f"Locale directory not found at {LOCALE_DIR}")
-
-    # Attempt to find the translation file
-    mo_file = gettext.find(APP_NAME, LOCALE_DIR)
-    trans = gettext.translation(APP_NAME, LOCALE_DIR)
-except Exception as e:
-    logging.getLogger(__name__).warning(f"Translation setup failed: {e}")
-
 # Make "_" available in all modules
 gettext.install(APP_NAME, LOCALE_DIR)
 
