@@ -237,10 +237,14 @@ class CameraAlignmentDialog(Adw.Window):
         image_x, image_y = self._display_to_image_coords(x, y)
         point_index = self._find_point_near(image_x, image_y)
         if point_index >= 0:
+            point = self.image_points[point_index]
+            if point is None:
+                self.dragging_point_index = -1
+                gesture.set_state(Gtk.EventSequenceState.DENIED)
+                return
+
             self.dragging_point_index = point_index
-            self.drag_start_image_x, self.drag_start_image_y = (
-                self.image_points[point_index]
-            )
+            self.drag_start_image_x, self.drag_start_image_y = point
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
             self.dragging_point_index = -1
@@ -390,7 +394,7 @@ class CameraAlignmentDialog(Adw.Window):
 
         # Apply the new alignment to the camera.
         self.camera.image_to_world = (image_points, world_points)
-        logger.info(_("Camera alignment applied."))
+        logger.info("Camera alignment applied.")
         self.close()
 
     def on_cancel_clicked(self, _):

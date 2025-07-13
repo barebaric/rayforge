@@ -55,6 +55,9 @@ class PointBubbleWidget(Gtk.Box):
         self.world_y_spin = Gtk.SpinButton.new(adjustment_y, 0.1, 2)
         self.world_y_spin.set_valign(Gtk.Align.CENTER)
 
+        self.world_x_spin.connect("value-changed", self.on_value_changed)
+        self.world_y_spin.connect("value-changed", self.on_value_changed)
+
         self.append(self.world_x_spin)
         self.append(self.world_y_spin)
 

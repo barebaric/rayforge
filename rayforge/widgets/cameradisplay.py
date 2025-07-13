@@ -46,7 +46,7 @@ class CameraDisplay(Gtk.DrawingArea):
         self.camera.settings_changed.disconnect(self.on_settings_changed)
 
     def set_marked_points(self, points, active_point_index=-1):
-        self.marked_points = points
+        self.marked_points = points or []
         self.active_point_index = active_point_index
         self.queue_draw()
 
