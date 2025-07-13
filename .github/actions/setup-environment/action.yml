@@ -23,4 +23,4 @@ runs:
       shell: bash
       run: |
         pip install pytest pytest-asyncio pytest-mock pytest-cov
-        pip install -e . # Install rayforge in editable mode
+        pip install -ve . # Install rayforge in editable mode
