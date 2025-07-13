@@ -148,6 +148,7 @@ jobs:
           source $GITHUB_WORKSPACE/.msys2_env
           pyinstaller --onefile --noconsole \
             --log-level DEBUG \
+            --runtime-hook rayforge/pyinstaller_hooks/rthook-gi.py \
             --additional-hooks-dir rayforge/pyinstaller_hooks \
             --name rayforge-v${{ steps.set-version.outputs.version }} \
             --add-data "rayforge/locale;locale" \
