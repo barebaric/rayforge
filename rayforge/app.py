@@ -1,9 +1,18 @@
 import logging
 import mimetypes
 import argparse
-import gi
-import gettext
+import sys
 import os
+import gettext
+
+# When running in a PyInstaller bundle, we need to set the GI_TYPELIB_PATH
+# environment variable to point to the bundled typelib files.
+if hasattr(sys, '_MEIPASS'):
+    os.environ['GI_TYPELIB_PATH'] = os.path.join(
+        sys._MEIPASS, 'gi', 'repository'  # type: ignore
+    )
+
+import gi
 
 # Gettext must be initialized before importing app modules.
 # For installed applications, locale files are typically in
