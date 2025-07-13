@@ -34,6 +34,9 @@ include-package-data = true
 [tool.setuptools.packages.find]
 include = ["rayforge*"]
 
+[tool.setuptools.package-data]
+"rayforge" = ["locale/**/*.mo"]
+
 [tool.setuptools-git-versioning]
 enabled = true
 
