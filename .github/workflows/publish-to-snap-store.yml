@@ -24,6 +24,11 @@ jobs:
         uses: snapcore/action-build@v1
         id: build
 
+      - name: Test built snap
+        run: |
+          sudo snap install ${{ steps.build.outputs.snap }} --dangerous
+          rayforge --help
+
       - name: Publish to Snapcraft
         uses: snapcore/action-publish@v1
         env:

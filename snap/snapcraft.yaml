@@ -19,6 +19,7 @@ apps:
       - x11
       - wayland
       - opengl
+      - camera
     environment:
       GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages
