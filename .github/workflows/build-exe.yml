@@ -120,8 +120,11 @@ jobs:
           source $GITHUB_WORKSPACE/.msys2_env
           pyinstaller --onefile --noconsole \
             --name rayforge-v${{ steps.set-version.outputs.version }} \
+            --add-data "rayforge/locale;rayforge/locale" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
+            --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libadwaita-1-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
