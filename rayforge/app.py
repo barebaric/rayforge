@@ -30,6 +30,18 @@ else:
     LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
 
 try:
+    # Debug: Log the locale directory and its contents
+    if os.path.exists(LOCALE_DIR):
+        lang_folders = [
+            d for d in os.listdir(LOCALE_DIR)
+            if os.path.isdir(os.path.join(LOCALE_DIR, d))
+        ]
+        logging.info(f"Using translations from {LOCALE_DIR}")
+        logging.info(f"{len(lang_folders)} language folders found.")
+        logging.info(f"Folders: {lang_folders}")
+    else:
+        logging.warning(f"Locale directory not found at {LOCALE_DIR}")
+
     # Attempt to find the translation file
     mo_file = gettext.find(APP_NAME, LOCALE_DIR)
     trans = gettext.translation(APP_NAME, LOCALE_DIR)
