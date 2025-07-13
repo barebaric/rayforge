@@ -25,7 +25,8 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         logger.debug(
             "CameraDisplay.start called for camera %s (instance: %s)",
-            self.camera.name, id(self)
+            self.camera.name,
+            id(self),
         )
         self.queue_draw()
         self.camera.image_captured.connect(self.on_image_captured)
@@ -38,7 +39,8 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         logger.debug(
             "CameraDisplay.stop called for camera %s (instance: %s)",
-            self.camera.name, id(self)
+            self.camera.name,
+            id(self),
         )
         self.camera.image_captured.disconnect(self.on_image_captured)
         self.camera.settings_changed.disconnect(self.on_settings_changed)
@@ -59,8 +61,7 @@ class CameraDisplay(Gtk.DrawingArea):
 
         pixbuf = self.camera.pixbuf
         if pixbuf is None:
-            logger.debug("No pixbuf available for camera %s",
-                         self.camera.name)
+            logger.debug("No pixbuf available for camera %s", self.camera.name)
             self._draw_no_image_message(cr, width, height)
             return False
 
@@ -68,9 +69,7 @@ class CameraDisplay(Gtk.DrawingArea):
             return False
 
         scaled_pixbuf = pixbuf.scale_simple(
-            width,
-            height,
-            GdkPixbuf.InterpType.BILINEAR
+            width, height, GdkPixbuf.InterpType.BILINEAR
         )
 
         Gdk.cairo_set_source_pixbuf(cr, scaled_pixbuf, 0, 0)
@@ -78,7 +77,7 @@ class CameraDisplay(Gtk.DrawingArea):
 
         # Draw markers for marked points
         if self.marked_points:
-            display_width, display_height = self.get_size_request()
+            display_width, display_height = width, height
             img_width, img_height = self.camera.resolution
             scale_x = display_width / img_width
             scale_y = display_height / img_height
@@ -91,27 +90,26 @@ class CameraDisplay(Gtk.DrawingArea):
                 if i == self.active_point_index:
                     # Orange fill with darker orange border
                     cr.set_source_rgb(1.0, 0.5, 0.0)  # Orange
-                    cr.arc(display_x, display_y, 5, 0, 2 * 3.1416)
+                    cr.arc(display_x, display_y, 6, 0, 2 * 3.1416)
                     cr.fill_preserve()
                     cr.set_source_rgb(0.8, 0.4, 0.0)  # Darker orange
-                    cr.set_line_width(1.5)
-                    cr.stroke()
                 else:
                     # Light blue fill with darker blue border
                     cr.set_source_rgb(0.53, 0.81, 0.98)  # Light blue
-                    cr.arc(display_x, display_y, 5, 0, 2 * 3.1416)
+                    cr.arc(display_x, display_y, 6, 0, 2 * 3.1416)
                     cr.fill_preserve()
                     cr.set_source_rgb(0.0, 0.0, 0.5)  # Darker blue
-                    cr.set_line_width(1.5)
-                    cr.stroke()
+                cr.set_line_width(1.5)
+                cr.stroke()
 
         return False
 
     def _draw_message(self, cr, width, height, message):
         """Helper to draw a message in the center of the widget."""
         cr.set_source_rgb(0.5, 0.5, 0.5)  # Grey color for text
-        cr.select_font_face("Sans", cairo.FontSlant.NORMAL,
-                            cairo.FontWeight.BOLD)
+        cr.select_font_face(
+            "Sans", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD
+        )
         cr.set_font_size(24)
 
         # Get text extents
@@ -134,10 +132,6 @@ class CameraDisplay(Gtk.DrawingArea):
 
     def on_image_captured(self, camera):
         """Callback for the camera's image_captured signal."""
-        logger.debug(
-            f"CameraDisplay.on_image_captured called for camera "
-            f"{self.camera.name} (instance: {id(self)})"
-        )
         self.queue_draw()
 
     def on_settings_changed(self, camera):

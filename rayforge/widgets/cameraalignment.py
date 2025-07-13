@@ -1,409 +1,352 @@
 import logging
+import math
 from typing import List, Optional, Tuple
 import numpy as np
-from blinker import Signal
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, GLib
 from ..models.camera import Camera, Pos
 from .cameradisplay import CameraDisplay
-
+from .pointbubblewidget import PointBubbleWidget
 
 logger = logging.getLogger(__name__)
 
 
-class CameraAlignmentPointRow(Adw.ActionRow):
-    def __init__(self, point_index: int, **kwargs):
-        super().__init__(**kwargs)
-        self.point_index = point_index
-        self.set_title(f"Point {point_index + 1}")
-        self.set_subtitle("")  # Initially not active
-        self.set_activatable(True)
-
-        # Define blinker signals
-        self.row_activated = Signal()
-        self.value_changed = Signal()
-        self.delete_requested = Signal()
-
-        # Replace Entries with SpinButtons for World X and Y
-        adjustment_x = Gtk.Adjustment.new(
-            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0
-        )
-        self.world_x_spin = Gtk.SpinButton.new(adjustment_x, 0.1, 2)
-        self.world_x_spin.set_valign(Gtk.Align.CENTER)
-        adjustment_y = Gtk.Adjustment.new(
-            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0
-        )
-        self.world_y_spin = Gtk.SpinButton.new(adjustment_y, 0.1, 2)
-        self.world_y_spin.set_valign(Gtk.Align.CENTER)
-
-        self.input_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
-        )
-        self.input_box.append(self.world_x_spin)
-        self.input_box.append(self.world_y_spin)
-        self.add_suffix(self.input_box)
-
-        # Add delete button
-        self.delete_button = Gtk.Button.new_from_icon_name(
-            "edit-delete-symbolic"
-        )
-        self.delete_button.set_valign(Gtk.Align.CENTER)
-        self.delete_button.set_tooltip_text("Delete this point")
-        self.add_suffix(self.delete_button)
-        self.delete_button.connect("clicked", self.on_delete_clicked)
-
-        self.is_active = False
-        self.image_x = None
-        self.image_y = None
-
-        # Use separate EventControllerFocus for each spinbox
-        focus_controller_x = Gtk.EventControllerFocus()
-        focus_controller_x.connect(
-            "enter", self.on_spin_focus, self.world_x_spin
-        )
-        self.world_x_spin.add_controller(focus_controller_x)
-
-        focus_controller_y = Gtk.EventControllerFocus()
-        focus_controller_y.connect(
-            "enter", self.on_spin_focus, self.world_y_spin
-        )
-        self.world_y_spin.add_controller(focus_controller_y)
-
-        # Connect value-changed to emit signal
-        self.world_x_spin.connect("value-changed", self.on_value_changed)
-        self.world_y_spin.connect("value-changed", self.on_value_changed)
-
-    def on_spin_focus(self, controller, widget):
-        self.row_activated.send(self, widget=widget)
-
-    def on_value_changed(self, widget):
-        self.value_changed.send(self)
-
-    def on_delete_clicked(self, button):
-        self.delete_requested.send(self)
-
-    def set_active(self, active: bool):
-        self.is_active = active
-        if active:
-            self.set_subtitle("Click a position in the image")
-        else:
-            self.set_subtitle("")
-
-    def set_image_coords(self, x: float, y: float):
-        self.image_x = x
-        self.image_y = y
-        self.set_title(
-            f"Point {self.point_index + 1} (X: {x:.2f}, Y: {y:.2f})"
-        )
-
-    def get_image_coords(self) -> Optional[Tuple[float, float]]:
-        if self.image_x is not None and self.image_y is not None:
-            return (self.image_x, self.image_y)
-        return None
-
-    def get_world_coords(self) -> Tuple[float, float]:
-        x = self.world_x_spin.get_value()
-        y = self.world_y_spin.get_value()
-        return x, y
-
-    def clear_focus(self):
-        if self.world_x_spin.has_focus() or self.world_y_spin.has_focus():
-            window = self.world_x_spin.get_ancestor(Gtk.Window)
-            if window:
-                window.set_focus(None)
-
-
-class CameraAlignmentDialog(Adw.MessageDialog):
+class CameraAlignmentDialog(Adw.Window):
     def __init__(self, parent: Gtk.Window, camera: Camera, **kwargs):
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading=f"{camera.name} - Image Alignment",
-            close_response="cancel",
-            **kwargs
+            default_width=1280,
+            default_height=960,
+            **kwargs,
         )
+
         self.camera = camera
-        self.set_title(f"{self.camera.name} - Image Alignment")
-        self.image_points: List[Pos] = []
+        self.image_points: List[Optional[Pos]] = []
         self.world_points: List[Pos] = []
-        self.point_rows: List[CameraAlignmentPointRow] = []
-        self.active_point_row: Optional[CameraAlignmentPointRow] = None
+        self.active_point_index = -1
+        self.dragging_point_index = -1
+        self.drag_start_image_x = 0
+        self.drag_start_image_y = 0
+        self._display_ready = False
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.set_extra_child(main_box)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content)
 
-        # Camera Display
-        self.camera_display = CameraDisplay(self.camera)
-        self.camera_display.set_size_request(1280, 960)
-        main_box.append(self.camera_display)
-
-        # Event handling for point selection
-        self.gesture_click = Gtk.GestureClick.new()
-        self.gesture_click.connect("pressed", self.on_image_click)
-        self.camera_display.add_controller(self.gesture_click)
-
-        # Points List
-        points_group = Adw.PreferencesGroup(title="Alignment Points")
-        main_box.append(points_group)
-        self.points_group = points_group
-
-        # Buttons
-        button_box = Gtk.Box(
-            spacing=10, orientation=Gtk.Orientation.HORIZONTAL
+        header_bar = Adw.HeaderBar()
+        header_bar.set_title_widget(
+            Adw.WindowTitle(
+                title=f"{camera.name} – Image Alignment",
+                subtitle=""
+            )
         )
-        main_box.append(button_box)
+        content.append(header_bar)
 
-        add_point_button = Gtk.Button(label="Add Point")
-        add_point_button.connect("clicked", self.on_add_point_clicked)
-        button_box.append(add_point_button)
+        vbox = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+        content.append(vbox)
 
-        clear_points_button = Gtk.Button(label="Clear Points")
-        clear_points_button.connect("clicked", self.on_clear_points_clicked)
-        button_box.append(clear_points_button)
+        self.overlay = Gtk.Overlay()
+        self.camera_display = CameraDisplay(camera)
+        self.overlay.set_child(self.camera_display)
+        vbox.append(self.overlay)
 
-        self.add_response("cancel", "Cancel")
-        self.add_response("apply", "Apply")
-        self.set_default_response("apply")
-        self.connect("response", self.on_dialog_response)
+        # um só bubble
+        self.bubble = PointBubbleWidget(0)
+        self.overlay.add_overlay(self.bubble)
+        self.bubble.set_halign(Gtk.Align.START)
+        self.bubble.set_valign(Gtk.Align.START)
+        self.bubble.set_visible(False)
+        self.bubble.value_changed.connect(self.update_apply_button_sensitivity)
+        self.bubble.delete_requested.connect(self.on_point_delete_requested)
+        self.bubble.focus_requested.connect(self.on_bubble_focus_requested)
 
-        # Populate with existing points or add four initial rows
-        if self.camera.image_to_world:
-            image_points, world_points = self.camera.image_to_world
-            for img_pt, world_pt in zip(image_points, world_points):
-                new_row = CameraAlignmentPointRow(len(self.point_rows))
-                new_row.connect("activated", self.set_active_row)
-                new_row.row_activated.connect(self.set_active_row)
-                new_row.value_changed.connect(
-                    self.update_apply_button_sensitivity
-                )
-                new_row.delete_requested.connect(self.on_row_delete_requested)
-                new_row.set_image_coords(img_pt[0], img_pt[1])
-                new_row.world_x_spin.set_value(world_pt[0])
-                new_row.world_y_spin.set_value(world_pt[1])
-                self.image_points.append(img_pt)
-                self.world_points.append(world_pt)
-                self.point_rows.append(new_row)
-                self.points_group.add(new_row)
+        bottom_bar = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=12, margin_top=12
+        )
+        vbox.append(bottom_bar)
+
+        info_label = Gtk.Label(
+            label="Click the image to add new reference points. "
+            "Click or drag existing points to edit them.",
+            xalign=0,
+        )
+        info_label.set_wrap(True)
+        info_label.set_hexpand(True)
+        bottom_bar.append(info_label)
+
+        btn_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            halign=Gtk.Align.END,
+        )
+        bottom_bar.append(btn_box)
+
+        for label, cb in [
+            ("Reset Points", self.on_reset_points_clicked),
+            ("Clear All Points", self.on_clear_all_points_clicked),
+            ("Cancel", self.on_cancel_clicked),
+        ]:
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("flat")
+            btn.connect("clicked", cb)
+            btn_box.append(btn)
+        self.apply_button = Gtk.Button(label="Apply")
+        self.apply_button.add_css_class("suggested-action")
+        self.apply_button.connect("clicked", self.on_apply_clicked)
+        btn_box.append(self.apply_button)
+
+        # Attach gestures to the camera_display, not the overlay.
+        click = Gtk.GestureClick.new()
+        click.set_button(Gdk.BUTTON_PRIMARY)
+        click.connect("pressed", self.on_image_click)
+        self.camera_display.add_controller(click)
+
+        drag = Gtk.GestureDrag.new()
+        drag.set_button(Gdk.BUTTON_PRIMARY)
+        drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-update", self.on_drag_update)
+        drag.connect("drag-end", self.on_drag_end)
+        self.camera_display.add_controller(drag)
+
+        key_controller = Gtk.EventControllerKey.new()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        self.add_controller(key_controller)
+
+        # quando display pronto/resized
+        self.camera_display.connect("realize", self._on_display_ready)
+        self.camera_display.connect(
+            "resize", lambda w, x, y: self._on_display_ready()
+        )
+
+        # init pontos
+        if camera.image_to_world:
+            img_pts, wld_pts = camera.image_to_world
+            self.image_points, self.world_points = list(img_pts), list(wld_pts)
         else:
-            # Add four initial rows
-            for _ in range(4):
-                self.on_add_point_clicked(None)
-        self.set_active_row(self.point_rows[0])
-        self.update_delete_buttons()
+            self.image_points = [None] * 4
+            self.world_points = [(0.0, 0.0)] * 4
+
+        self.set_active_point(0)
         self.update_apply_button_sensitivity()
 
-    def set_active_row(self, row: CameraAlignmentPointRow, widget=None):
-        # Clear focus from all rows except the new one
-        for r in self.point_rows:
-            if r != row:
-                r.remove_css_class("active-row")
-                r.set_active(False)
-                r.clear_focus()
-
-        self.active_point_row = row
-        self.active_point_row.add_css_class("active-row")
-        self.active_point_row.set_active(True)
-
-        # Set focus to the specific widget if provided,
-        # otherwise to world_x_spin
-        if widget and widget in (row.world_x_spin, row.world_y_spin):
-            widget.grab_focus()
+    def _on_display_ready(self, *args):
+        if not self._display_ready:
+            self._display_ready = True
+            GLib.idle_add(self._position_bubble)
         else:
-            row.world_x_spin.grab_focus()
+            self._position_bubble()
 
-        # Update camera display with active point index
+    def _position_bubble(self) -> bool:
+        if not self._display_ready or self.active_point_index < 0:
+            return False
+        coords = self.image_points[self.active_point_index]
+        if coords is None:
+            return False
+        img_x, img_y = coords
+        dw, dh = (
+            self.camera_display.get_width(),
+            self.camera_display.get_height(),
+        )
+        if dw <= 0 or dh <= 0:
+            return True  # Try again
+        sw, sh = self.camera.resolution
+        dx = img_x * (dw / sw)
+        dy = dh - (img_y * (dh / sh))
+        alloc = self.bubble.get_allocation()
+        bw, bh = alloc.width, alloc.height
+        if bw <= 0 or bh <= 0:
+            return True  # Try again
+        x = max(0, min(dx - bw / 2, dw - bw))
+        y = dy + 10
+        if y + bh > dh:
+            y = max(0, dy - bh - 10)
+        self.bubble.set_margin_start(int(x))
+        self.bubble.set_margin_top(int(y))
+        if not self.bubble.get_visible():
+            self.bubble.set_visible(True)
+        return False  # Success, do not repeat
+
+    def set_active_point(self, index: int, widget=None):
+        if index < 0 or index >= len(self.image_points):
+            self.active_point_index = -1
+            self.bubble.set_visible(False)
+            self.camera_display.set_marked_points(self.image_points, -1)
+            return
+        self.active_point_index = index
+        self.bubble.point_index = index
+        img = self.image_points[index]
+        if img:
+            self.bubble.set_image_coords(*img)
+        self.bubble.set_world_coords(*self.world_points[index])
+        GLib.idle_add(self._position_bubble)
+        (widget or self.bubble.world_x_spin).grab_focus()
+        self.camera_display.set_marked_points(self.image_points, index)
+
+    def on_bubble_focus_requested(self, bubble, widget):
+        self.set_active_point(self.active_point_index, widget)
+
+    def on_image_click(self, gesture, n, x, y):
+        if gesture.get_current_button() != Gdk.BUTTON_PRIMARY:
+            return
+        ix, iy = self._display_to_image_coords(x, y)
+        idx = self._find_point_near(ix, iy)
+        if idx >= 0:
+            self.set_active_point(idx)
+        else:
+            self.image_points.append((ix, iy))
+            self.world_points.append((0.0, 0.0))
+            self.set_active_point(len(self.image_points) - 1)
         self.camera_display.set_marked_points(
-            self.image_points, self.active_point_row.point_index
+            self.image_points, self.active_point_index
+        )
+        self.update_apply_button_sensitivity()
+
+    def on_drag_begin(self, gesture, x, y):
+        ix, iy = self._display_to_image_coords(x, y)
+        idx = self._find_point_near(ix, iy)
+        if idx >= 0:
+            self.dragging_point_index = idx
+            self.drag_start_image_x, self.drag_start_image_y = (
+                self.image_points[idx]
+            )
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        else:
+            self.dragging_point_index = -1
+            gesture.set_state(Gtk.EventSequenceState.DENIED)
+
+    def on_drag_update(self, gesture, dx, dy):
+        idx = self.dragging_point_index
+        if idx < 0:
+            return
+        dw, dh = (
+            self.camera_display.get_width(),
+            self.camera_display.get_height(),
+        )
+        iw, ih = self.camera.resolution
+        sx, sy = (dw / iw if dw > 0 else 1), (dh / ih if dh > 0 else 1)
+        nx = self.drag_start_image_x + dx / sx
+        ny = self.drag_start_image_y - dy / sy
+        self.image_points[idx] = (nx, ny)
+        if idx == self.active_point_index:
+            self.bubble.set_image_coords(nx, ny)
+            self._position_bubble()
+        self.camera_display.set_marked_points(
+            self.image_points, self.active_point_index
+        )
+        self.camera_display.queue_draw()
+
+    def on_drag_end(self, gesture, dx, dy):
+        if self.dragging_point_index >= 0:
+            self.dragging_point_index = -1
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.close()
+            return Gdk.EVENT_STOP
+
+        return Gdk.EVENT_PROPAGATE
+
+    def on_reset_points_clicked(self, _):
+        self.image_points.clear()
+        self.world_points.clear()
+        if self.camera.image_to_world:
+            img, wld = self.camera.image_to_world
+            self.image_points, self.world_points = list(img), list(wld)
+        else:
+            self.image_points = [None] * 4
+            self.world_points = [(0.0, 0.0)] * 4
+        self.set_active_point(0)
+        self.update_apply_button_sensitivity()
+
+    def on_clear_all_points_clicked(self, _):
+        self.image_points.clear()
+        self.world_points.clear()
+        self.set_active_point(-1)
+        self.update_apply_button_sensitivity()
+
+    def on_point_delete_requested(self, bubble):
+        i = bubble.point_index
+        if 0 <= i < len(self.image_points):
+            self.image_points.pop(i)
+            self.world_points.pop(i)
+        if self.image_points:
+            self.set_active_point(min(i, len(self.image_points) - 1))
+        else:
+            self.set_active_point(-1)
+        self.camera_display.set_marked_points(
+            self.image_points, self.active_point_index
+        )
+        self.update_apply_button_sensitivity()
+
+    def update_apply_button_sensitivity(self, *_):
+        if self.active_point_index >= 0 and self.active_point_index < len(
+            self.world_points
+        ):
+            self.world_points[self.active_point_index] = (
+                self.bubble.get_world_coords()
+            )
+
+        valid = [
+            (img, self.world_points[i])
+            for i, img in enumerate(self.image_points)
+            if img
+        ]
+        ok = len(valid) >= 4
+        if ok:
+            A = np.hstack(
+                [np.array([v[0] for v in valid]), np.ones((len(valid), 1))]
+            )
+            B = np.hstack(
+                [np.array([v[1] for v in valid]), np.ones((len(valid), 1))]
+            )
+            ok = (
+                np.linalg.matrix_rank(A) >= 3
+                and np.linalg.matrix_rank(B) >= 3
+                and len({tuple(p) for _, p in valid}) == len(valid)
+            )
+        self.apply_button.set_sensitive(ok)
+
+    def on_apply_clicked(self, _):
+        pts, wpts = [], []
+        for i, img in enumerate(self.image_points):
+            if not img:
+                continue
+            wx, wy = (
+                self.bubble.get_world_coords()
+                if i == self.active_point_index
+                else self.world_points[i]
+            )
+            pts.append(img)
+            wpts.append((wx, wy))
+        if len(pts) < 4:
+            raise ValueError("Less than 4 points.")
+        self.camera.image_to_world = (pts, wpts)
+        logger.info("Camera alignment applied.")
+        self.close()
+
+    def on_cancel_clicked(self, _):
+        self.camera_display.stop()
+        self.close()
+
+    def _display_to_image_coords(self, dx, dy) -> Tuple[float, float]:
+        dw, dh = (
+            self.camera_display.get_width(),
+            self.camera_display.get_height(),
+        )
+        iw, ih = self.camera.resolution
+        return (
+            dx / (dw / iw if dw > 0 else 1),
+            (dh - dy) / (dh / ih if dh > 0 else 1),
         )
 
-    def on_image_click(self, gesture, n_press, x, y):
-        if (
-            gesture.get_current_button() == Gdk.BUTTON_PRIMARY
-            and self.active_point_row
-        ):
-            # Account for CameraDisplay scaling and invert Y-axis:
-            # (0,0) at bottom-left
-            display_width, display_height = (
-                self.camera_display.get_size_request()
-            )
-            img_width, img_height = self.camera.resolution
-            scale_x = img_width / display_width
-            scale_y = img_height / display_height
-            x_scaled = x * scale_x
-            y_scaled = (display_height - y) * scale_y
-
-            # Check if click is near a marked point
-            for i, (img_x, img_y) in enumerate(self.image_points):
-                distance = ((img_x - x_scaled)**2 + (img_y - y_scaled)**2)**0.5
-                if distance < 10:
-                    self.set_active_row(self.point_rows[i])
-                    return
-
-            # If not near a marked point, set new point for active row
-            if self.active_point_row:
-                self.active_point_row.set_image_coords(x_scaled, y_scaled)
-                idx = self.active_point_row.point_index
-                if idx < len(self.image_points):
-                    self.image_points[idx] = (x_scaled, y_scaled)
-                else:
-                    self.image_points.append((x_scaled, y_scaled))
-                self.camera_display.set_marked_points(
-                    self.image_points, self.active_point_row.point_index
-                )
-                self.update_apply_button_sensitivity()
-
-    def on_add_point_clicked(self, button):
-        new_row = CameraAlignmentPointRow(len(self.point_rows))
-        new_row.connect("activated", self.set_active_row)
-        new_row.row_activated.connect(self.set_active_row)
-        new_row.value_changed.connect(self.update_apply_button_sensitivity)
-        new_row.delete_requested.connect(self.on_row_delete_requested)
-        self.point_rows.append(new_row)
-        self.points_group.add(new_row)
-        self.set_active_row(new_row)
-        self.update_delete_buttons()
-        self.update_apply_button_sensitivity()
-
-    def on_row_delete_requested(self, row):
-        if len(self.point_rows) > 4:
-            self.points_group.remove(row)
-            self.point_rows.remove(row)
-            self.image_points.pop(row.point_index)
-            for i, r in enumerate(self.point_rows):
-                r.point_index = i
-                img_coords = r.get_image_coords()
-                if img_coords:
-                    r.set_image_coords(img_coords[0], img_coords[1])
-                else:
-                    r.set_title(f"Point {i + 1}")
-            self.camera_display.set_marked_points(
-                self.image_points,
-                self.active_point_row.point_index
-                if self.active_point_row
-                else -1,
-            )
-            self.update_delete_buttons()
-            self.update_apply_button_sensitivity()
-        else:
-            self.show_alert_dialog(
-                "Cannot Delete", "At least 4 points are required."
-            )
-
-    def update_delete_buttons(self):
-        for row in self.point_rows:
-            row.delete_button.set_sensitive(len(self.point_rows) > 4)
-
-    def on_clear_points_clicked(self, button):
-        self.image_points = []
-        self.world_points = []
-        self.active_point_row = None
-        for row in self.point_rows:
-            self.points_group.remove(row)
-        self.point_rows = []
-
-        # Add four new rows
-        for _ in range(4):
-            self.on_add_point_clicked(None)
-        self.camera_display.set_marked_points(self.image_points, -1)
-        self.update_apply_button_sensitivity()
-
-    def update_apply_button_sensitivity(self, *args):
-        # Collect valid points
-        valid_image_points = []
-        valid_world_points = []
-        for row in self.point_rows:
-            img_coords = row.get_image_coords()
-            if img_coords is None:
-                continue
-            img_x, img_y = img_coords
-            world_x, world_y = row.get_world_coords()
-            valid_image_points.append([img_x, img_y])
-            valid_world_points.append([world_x, world_y])
-
-        # Check for at least 4 points and non-degeneracy
-        valid = len(valid_image_points) >= 4 and len(valid_world_points) >= 4
-        if valid:
-            try:
-                # Check if points are non-degenerate (not collinear/coincident)
-                img_matrix = np.array(valid_image_points, dtype=np.float32)
-                world_matrix = np.array(valid_world_points, dtype=np.float32)
-                # Add homogeneous coordinate for rank check
-                img_matrix_h = np.hstack(
-                    [img_matrix, np.ones((img_matrix.shape[0], 1))]
-                )
-                world_matrix_h = np.hstack(
-                    [world_matrix, np.ones((world_matrix.shape[0], 1))]
-                )
-                # Rank of at least 3 indicates points are not collinear
-                img_rank = np.linalg.matrix_rank(img_matrix_h)
-                world_rank = np.linalg.matrix_rank(world_matrix_h)
-                valid = img_rank >= 3 and world_rank >= 3
-                # Check for duplicate world points
-                if valid:
-                    world_points_set = {tuple(pt) for pt in valid_world_points}
-                    valid = len(world_points_set) == len(valid_world_points)
-                    if not valid:
-                        logger.debug(
-                            "Invalid point configuration: "
-                            "duplicate world points"
-                        )
-            except np.linalg.LinAlgError:
-                valid = False
-                logger.debug("Invalid point configuration: singular matrix")
-
-        # Enable "Apply" button only if valid
-        self.set_response_enabled("apply", valid)
-
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == "apply":
-            valid_image_points = []
-            valid_world_points = []
-            for i, row in enumerate(self.point_rows):
-                # Check if image coordinates are set
-                img_coords = row.get_image_coords()
-                if img_coords is None:
-                    continue
-
-                try:
-                    img_x, img_y = img_coords
-                    world_x, world_y = row.get_world_coords()
-                    valid_image_points.append((img_x, img_y))
-                    valid_world_points.append((world_x, world_y))
-                except ValueError:
-                    logger.warning(
-                        f"Skipping row {i} due to invalid coordinate input."
-                    )
-                    continue
-
-            if len(valid_image_points) < 4 or len(valid_world_points) < 4:
-                raise ValueError(
-                    "Attempted to apply alignment with less than 4 points."
-                )
-
-            try:
-                self.camera.image_to_world = (
-                    valid_image_points, valid_world_points
-                )
-                logger.info("Camera alignment applied.")
-                self.close()
-            except ValueError as e:
-                logger.error(f"Error setting corresponding points: {e}")
-                self.show_alert_dialog("Alignment Error", str(e))
-            except Exception as e:
-                logger.error(f"Unexpected error during alignment: {e}")
-                self.show_alert_dialog(
-                    "Error", f"An unexpected error occurred: {e}"
-                )
-        elif response_id == "cancel":
-            logger.debug(
-                "CameraAlignmentDialog closing, calling "
-                f"CameraDisplay.stop() for camera {self.camera.name}"
-            )
-            self.camera_display.stop()
-            self.close()
-
-    def show_alert_dialog(self, title: str, message: str):
-        dialog = Adw.AlertDialog.new(title, message)
-        dialog.add_response("ok", "OK")
-        dialog.set_default_response("ok")
-        dialog.set_can_close(True)
-        dialog.present(self.get_ancestor(Gtk.Window))
+    def _find_point_near(self, x, y, threshold=10) -> int:
+        for i, pt in enumerate(self.image_points):
+            if pt and math.hypot(pt[0] - x, pt[1] - y) < threshold:
+                return i
+        return -1
