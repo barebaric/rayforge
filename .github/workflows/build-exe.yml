@@ -170,12 +170,14 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-openslide.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-poppler.dll;." \
             --hidden-import gi \
+            --hidden-import gi.repository.Gtk \
             --hidden-import numpy \
             --hidden-import scipy \
             --hidden-import cffi \
             --hidden-import pyvips \
             rayforge/app.py
-          ls -l dist/
+          echo "Listing bundled .mo, .typelib and .dll files in dist:"
+          unzip -l dist/rayforge-v${{ steps.set-version.outputs.version }}.exe | grep -iE 'typelib$|dll$|mo$'
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
