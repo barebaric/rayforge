@@ -19,6 +19,7 @@ It supports direct communication with GRBL based machines (network or serial).
 | Open development                 | Easily [add support for your own laser](docs/driver.md)    |
 | Cross-platform                   | Support for Linux and (experimental) support for Windows   |
 | Camera support                   | Live camera feed, de-distortion, alignment                 |
+| Multi-language support           | English, Portuguese and German are supported               |
 | Much more                        | Framing, support for air assist, control buttons, ...      |
 
 
