@@ -25,6 +25,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-environment
 
+      - name: Compile Translations
+        uses: ./.github/actions/compile-translations
+
       - name: Build a wheel
         run: python3 -m build
 

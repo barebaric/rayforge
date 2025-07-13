@@ -20,6 +20,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Compile Translations
+        uses: ./.github/actions/compile-translations
+
       - name: Build snap
         uses: snapcore/action-build@v1
         id: build

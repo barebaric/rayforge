@@ -1,0 +1,22 @@
+name: Compile Translations
+description: Generates and compiles translations using gettext
+runs:
+  using: "composite"
+  steps:
+    - name: Install gettext
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext
+
+    - name: Generate and Compile Translations
+      shell: bash
+      run: |
+        find rayforge/ -name "*.py" | xgettext --from-code=UTF-8 -o rayforge/locale/rayforge.pot -f -
+        for lang_dir in rayforge/locale/*/; do
+          lang=$(basename "$lang_dir")
+          if [ -d "$lang_dir/LC_MESSAGES" ]; then
+            msgmerge --update "$lang_dir/LC_MESSAGES/rayforge.po" rayforge/locale/rayforge.pot
+            msgfmt "$lang_dir/LC_MESSAGES/rayforge.po" -o "$lang_dir/LC_MESSAGES/rayforge.mo"
+          fi
+        done

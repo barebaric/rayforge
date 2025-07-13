@@ -4,7 +4,9 @@ to set up the environment.
 """
 import os
 import sys
-import gettext
+# import gettext
+
+print("Loading hook-environment.py")
 
 # Only set GI_TYPELIB_PATH when running as a PyInstaller bundle
 if getattr(sys, 'frozen', False):
@@ -18,6 +20,6 @@ if getattr(sys, 'frozen', False):
     os.environ['GI_TYPELIB_PATH'] = gi_typelib_path
 
     # Set locale directory for gettext
-    locale_dir = os.path.join(base_dir, 'rayforge', 'locale')
-    gettext.bindtextdomain('rayforge', locale_dir)
-    gettext.textdomain('rayforge')
+    # locale_dir = os.path.join(base_dir, 'rayforge', 'locale')
+    # gettext.bindtextdomain('rayforge', locale_dir)
+    # gettext.textdomain('rayforge')

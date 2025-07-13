@@ -70,6 +70,7 @@ jobs:
             mingw-w64-x86_64-python-pymupdf
             mingw-w64-x86_64-python-scipy
             mingw-w64-x86_64-python-websockets
+            mingw-w64-x86_64-gettext
 
       - name: Set up environment
         shell: msys2 {0}
@@ -125,6 +126,20 @@ jobs:
           echo "[Settings]" > etc/gtk-4.0/settings.ini
           echo "gtk-theme-name=Windows10" >> etc/gtk-4.0/settings.ini
           echo "gtk-font-name=Segoe UI 9" >> etc/gtk-4.0/settings.ini
+
+      - name: Compile translations
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          echo "Compiling translations..."
+          find rayforge/ -name "*.py" | xgettext --from-code=UTF-8 -o rayforge/locale/rayforge.pot -f -
+          for lang_dir in rayforge/locale/*/; do
+            lang=$(basename "$lang_dir")
+            if [ -d "$lang_dir/LC_MESSAGES" ]; then
+              msgmerge --update "$lang_dir/LC_MESSAGES/rayforge.po" rayforge/locale/rayforge.pot
+              msgfmt "$lang_dir/LC_MESSAGES/rayforge.po" -o "$lang_dir/LC_MESSAGES/rayforge.mo"
+            fi
+          done
 
       - name: Build with PyInstaller
         shell: msys2 {0}
