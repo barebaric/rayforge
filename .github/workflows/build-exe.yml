@@ -151,6 +151,7 @@ jobs:
             --log-level DEBUG \
             --additional-hooks-dir rayforge/pyinstaller_hooks \
             --name rayforge-v${{ steps.set-version.outputs.version }} \
+            --add-data "rayforge/locale;locale" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
