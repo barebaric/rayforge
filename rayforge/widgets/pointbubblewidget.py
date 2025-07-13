@@ -67,9 +67,14 @@ class PointBubbleWidget(Gtk.Box):
         self.append(self.delete_button)
         self.delete_button.connect("clicked", self.on_delete_clicked)
 
-        # Connect value-changed to emit signal
-        self.world_x_spin.connect("value-changed", self.on_value_changed)
-        self.world_y_spin.connect("value-changed", self.on_value_changed)
+        # Connect key release events to trigger value changed
+        key_controller_x = Gtk.EventControllerKey.new()
+        key_controller_x.connect("key-released", self.on_key_released)
+        self.world_x_spin.add_controller(key_controller_x)
+
+        key_controller_y = Gtk.EventControllerKey.new()
+        key_controller_y.connect("key-released", self.on_key_released)
+        self.world_y_spin.add_controller(key_controller_y)
 
         # Connect focus events to emit signal
         focus_controller_x = Gtk.EventControllerFocus()
@@ -83,6 +88,9 @@ class PointBubbleWidget(Gtk.Box):
             "enter", self.on_spin_focus, self.world_y_spin
         )
         self.world_y_spin.add_controller(focus_controller_y)
+
+    def on_key_released(self, controller, keyval, keycode, state):
+        self.on_value_changed(controller.get_widget())
 
     def on_spin_focus(self, controller, widget):
         self.focus_requested.send(self, widget=widget)
@@ -103,8 +111,14 @@ class PointBubbleWidget(Gtk.Box):
         return None
 
     def get_world_coords(self) -> Tuple[float, float]:
-        x = self.world_x_spin.get_value()
-        y = self.world_y_spin.get_value()
+        try:
+            x = float(self.world_x_spin.get_text())
+        except ValueError:
+            x = self.world_x_spin.get_value()
+        try:
+            y = float(self.world_y_spin.get_text())
+        except ValueError:
+            y = self.world_y_spin.get_value()
         return x, y
 
     def set_world_coords(self, x: float, y: float):
