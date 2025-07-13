@@ -140,6 +140,7 @@ jobs:
               msgfmt "$lang_dir/LC_MESSAGES/rayforge.po" -o "$lang_dir/LC_MESSAGES/rayforge.mo"
             fi
           done
+          ls -l rayforge/locale/*/LC_MESSAGES/
 
       - name: Build with PyInstaller
         shell: msys2 {0}
