@@ -20,7 +20,15 @@ import gi
 # For development, they are in rayforge/locale.
 # gettext.install will handle finding the correct path.
 APP_NAME = "rayforge"
-LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
+if hasattr(sys, '_MEIPASS'):
+    # In a PyInstaller bundle, locale files are in the 'rayforge/locale'
+    # directory
+    base_dir = sys._MEIPASS  # type: ignore
+    LOCALE_DIR = os.path.join(base_dir, 'rayforge', 'locale')
+else:
+    # In development, they are in rayforge/locale
+    LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
+
 try:
     # Attempt to find the translation file
     mo_file = gettext.find(APP_NAME, LOCALE_DIR)

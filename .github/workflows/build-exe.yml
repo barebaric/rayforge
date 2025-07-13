@@ -173,6 +173,7 @@ jobs:
             --hidden-import scipy \
             --hidden-import cffi \
             --hidden-import pyvips \
+            --hidden-import cv2 \
             rayforge/app.py
 
       - name: Upload Artifact
