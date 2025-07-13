@@ -7,28 +7,36 @@ It supports direct communication with GRBL based machines (network or serial).
 
 ![Screenshot](docs/ss-main.png)
 
-### Camera Features
-
-![Camera Alignment](docs/camera-alignment.png)
-![Camera Image](docs/camera-image.png)
-![Camera Overlay](docs/camera-overlay.png)
-![Camera Settings](docs/camera-settings.png)
-
 ## Features
 
 | Feature                          | Description                                                |
 | -------------------------------- | ---------------------------------------------------------- |
 | Intuitive user interface         | Drag & drop reordering, focus on essentials                |
 | Multi step operations            | For example, first engrave, then cut                       |
-| Multiple operation types         | Countour, External Outline, Raster Engraving               |
+| Multiple operation types         | Contour, External Outline, Raster Engraving                |
 | High quality path generation     | Interpolation based on spot size, path optimization        |
 | Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
-| GRBL (network based)             | Connect your laser through WiFi or Ethernet                |
-| GRBL (serial port based)         | Starting with version 0.13, serial connection is supported |
 | Open development                 | Easily [add support for your own laser](docs/driver.md)    |
 | Cross-platform                   | Support for Linux and (experimental) support for Windows   |
 | Camera support                   | Live camera feed, de-distortion, alignment                 |
 | Much more                        | Framing, support for air assist, control buttons, ...      |
+
+
+## Device support
+
+| Device Type                      | Description                                                  |
+| -------------------------------- | ------------------------------------------------------------ |
+| GRBL (network based)             | Connect any GRBL based laser through WiFi or Ethernet        |
+| GRBL (serial port based)         | Since version 0.13, serial GRBL based machines are supported |
+| Smoothieware (Telnet based)      | Starting with version 0.15                                   |
+
+
+### Screenshots
+
+![Camera Alignment](docs/camera-alignment.png)
+![Camera Image](docs/camera-image.png)
+![Camera Overlay](docs/camera-overlay.png)
+![Camera Settings](docs/camera-settings.png)
 
 
 ## Installation
