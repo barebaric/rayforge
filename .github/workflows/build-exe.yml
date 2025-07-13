@@ -64,6 +64,7 @@ jobs:
             mingw-w64-x86_64-python-blinker
             mingw-w64-x86_64-python-numpy
             mingw-w64-x86_64-opencv
+            mingw-w64-x86_64-python-opencv
             mingw-w64-x86_64-python-platformdirs
             mingw-w64-x86_64-python-cairo
             mingw-w64-x86_64-python-gobject
