@@ -143,33 +143,55 @@ class CameraAlignmentDialog(Adw.Window):
             self._position_bubble()
 
     def _position_bubble(self) -> bool:
+        # Wait until the display is ready and a point is selected.
         if not self._display_ready or self.active_point_index < 0:
             return False
+
+        # Get the coordinates of the active point.
         coords = self.image_points[self.active_point_index]
         if coords is None:
             return False
         img_x, img_y = coords
-        dw, dh = (
+
+        # Get the dimensions of the camera display.
+        display_width, display_height = (
             self.camera_display.get_width(),
             self.camera_display.get_height(),
         )
-        if dw <= 0 or dh <= 0:
-            return True  # Try again
-        sw, sh = self.camera.resolution
-        dx = img_x * (dw / sw)
-        dy = dh - (img_y * (dh / sh))
+        if display_width <= 0 or display_height <= 0:
+            return True  # Try again if the display is not ready.
+
+        # Convert image coordinates to display coordinates.
+        source_width, source_height = self.camera.resolution
+        display_x = img_x * (display_width / source_width)
+        display_y = display_height - (img_y * (display_height / source_height))
+
+        # Get the dimensions of the bubble widget.
         alloc = self.bubble.get_allocation()
-        bw, bh = alloc.width, alloc.height
-        if bw <= 0 or bh <= 0:
-            return True  # Try again
-        x = max(0, min(dx - bw / 2, dw - bw))
-        y = dy + 10
-        if y + bh > dh:
-            y = max(0, dy - bh - 10)
+        bubble_width, bubble_height = alloc.width, alloc.height
+        if bubble_width <= 0 or bubble_height <= 0:
+            return True  # Try again if the bubble is not ready.
+
+        # Center the bubble horizontally on the point, but keep it inside
+        # the display area.
+        x = max(
+            0, min(display_x - bubble_width / 2, display_width - bubble_width)
+        )
+
+        # Position the bubble below the point.
+        y = display_y + 10
+        # If it goes off-screen, position it above the point.
+        if y + bubble_height > display_height:
+            y = max(0, display_y - bubble_height - 10)
+
+        # Set the position of the bubble.
         self.bubble.set_margin_start(int(x))
         self.bubble.set_margin_top(int(y))
+
+        # Make the bubble visible if it's not already.
         if not self.bubble.get_visible():
             self.bubble.set_visible(True)
+
         return False  # Success, do not repeat
 
     def set_active_point(self, index: int, widget=None):
@@ -194,12 +216,12 @@ class CameraAlignmentDialog(Adw.Window):
     def on_image_click(self, gesture, n, x, y):
         if gesture.get_current_button() != Gdk.BUTTON_PRIMARY:
             return
-        ix, iy = self._display_to_image_coords(x, y)
-        idx = self._find_point_near(ix, iy)
-        if idx >= 0:
-            self.set_active_point(idx)
+        image_x, image_y = self._display_to_image_coords(x, y)
+        point_index = self._find_point_near(image_x, image_y)
+        if point_index >= 0:
+            self.set_active_point(point_index)
         else:
-            self.image_points.append((ix, iy))
+            self.image_points.append((image_x, image_y))
             self.world_points.append((0.0, 0.0))
             self.set_active_point(len(self.image_points) - 1)
         self.camera_display.set_marked_points(
@@ -208,12 +230,12 @@ class CameraAlignmentDialog(Adw.Window):
         self.update_apply_button_sensitivity()
 
     def on_drag_begin(self, gesture, x, y):
-        ix, iy = self._display_to_image_coords(x, y)
-        idx = self._find_point_near(ix, iy)
-        if idx >= 0:
-            self.dragging_point_index = idx
+        image_x, image_y = self._display_to_image_coords(x, y)
+        point_index = self._find_point_near(image_x, image_y)
+        if point_index >= 0:
+            self.dragging_point_index = point_index
             self.drag_start_image_x, self.drag_start_image_y = (
-                self.image_points[idx]
+                self.image_points[point_index]
             )
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
@@ -224,17 +246,22 @@ class CameraAlignmentDialog(Adw.Window):
         idx = self.dragging_point_index
         if idx < 0:
             return
-        dw, dh = (
+
+        display_width, display_height = (
             self.camera_display.get_width(),
             self.camera_display.get_height(),
         )
-        iw, ih = self.camera.resolution
-        sx, sy = (dw / iw if dw > 0 else 1), (dh / ih if dh > 0 else 1)
-        nx = self.drag_start_image_x + dx / sx
-        ny = self.drag_start_image_y - dy / sy
-        self.image_points[idx] = (nx, ny)
+        image_width, image_height = self.camera.resolution
+
+        scale_x = display_width / image_width if display_width > 0 else 1
+        scale_y = display_height / image_height if display_height > 0 else 1
+
+        new_image_x = self.drag_start_image_x + dx / scale_x
+        new_image_y = self.drag_start_image_y - dy / scale_y
+
+        self.image_points[idx] = new_image_x, new_image_y
         if idx == self.active_point_index:
-            self.bubble.set_image_coords(nx, ny)
+            self.bubble.set_image_coords(new_image_x, new_image_y)
             self._position_bubble()
         self.camera_display.set_marked_points(
             self.image_points, self.active_point_index
@@ -256,8 +283,11 @@ class CameraAlignmentDialog(Adw.Window):
         self.image_points.clear()
         self.world_points.clear()
         if self.camera.image_to_world:
-            img, wld = self.camera.image_to_world
-            self.image_points, self.world_points = list(img), list(wld)
+            image_points_data, world_points_data = self.camera.image_to_world
+            self.image_points, self.world_points = (
+                list(image_points_data),
+                list(world_points_data),
+            )
         else:
             self.image_points = [None] * 4
             self.world_points = [(0.0, 0.0)] * 4
@@ -271,12 +301,12 @@ class CameraAlignmentDialog(Adw.Window):
         self.update_apply_button_sensitivity()
 
     def on_point_delete_requested(self, bubble):
-        i = bubble.point_index
-        if 0 <= i < len(self.image_points):
-            self.image_points.pop(i)
-            self.world_points.pop(i)
+        index = bubble.point_index
+        if 0 <= index < len(self.image_points):
+            self.image_points.pop(index)
+            self.world_points.pop(index)
         if self.image_points:
-            self.set_active_point(min(i, len(self.image_points) - 1))
+            self.set_active_point(min(index, len(self.image_points) - 1))
         else:
             self.set_active_point(-1)
         self.camera_display.set_marked_points(
@@ -285,6 +315,7 @@ class CameraAlignmentDialog(Adw.Window):
         self.update_apply_button_sensitivity()
 
     def update_apply_button_sensitivity(self, *_):
+        # Update the world coordinates of the active point from the bubble.
         if self.active_point_index >= 0 and self.active_point_index < len(
             self.world_points
         ):
@@ -292,41 +323,69 @@ class CameraAlignmentDialog(Adw.Window):
                 self.bubble.get_world_coords()
             )
 
-        valid = [
+        # Get a list of all valid points (i.e., points that have been set).
+        valid_points = [
             (img, self.world_points[i])
             for i, img in enumerate(self.image_points)
             if img
         ]
-        ok = len(valid) >= 4
-        if ok:
-            A = np.hstack(
-                [np.array([v[0] for v in valid]), np.ones((len(valid), 1))]
+
+        # We need at least 4 points for a valid transformation.
+        can_apply = len(valid_points) >= 4
+        if can_apply:
+            # Check for collinearity of points. For a valid perspective
+            # transform, we need at least 3 non-collinear points.
+            # The rank of the matrix of homogeneous coordinates will be 3
+            # if they are not collinear.
+            image_coords = np.array([p[0] for p in valid_points])
+            world_coords = np.array([p[1] for p in valid_points])
+
+            image_points_matrix = np.hstack(
+                [image_coords, np.ones((len(valid_points), 1))]
             )
-            B = np.hstack(
-                [np.array([v[1] for v in valid]), np.ones((len(valid), 1))]
+            world_points_matrix = np.hstack(
+                [world_coords, np.ones((len(valid_points), 1))]
             )
-            ok = (
-                np.linalg.matrix_rank(A) >= 3
-                and np.linalg.matrix_rank(B) >= 3
-                and len({tuple(p) for _, p in valid}) == len(valid)
+
+            # Also check that world points are unique.
+            world_points_are_unique = len(
+                {tuple(p) for p in world_coords}
+            ) == len(world_coords)
+
+            can_apply = (
+                np.linalg.matrix_rank(image_points_matrix) >= 3
+                and np.linalg.matrix_rank(world_points_matrix) >= 3
+                and world_points_are_unique
             )
-        self.apply_button.set_sensitive(ok)
+
+        # Enable or disable the "Apply" button based on the validity of the
+        # points.
+        self.apply_button.set_sensitive(can_apply)
 
     def on_apply_clicked(self, _):
-        pts, wpts = [], []
-        for i, img in enumerate(self.image_points):
-            if not img:
+        # Collect all valid points.
+        image_points = []
+        world_points = []
+        for i, img_coords in enumerate(self.image_points):
+            if not img_coords:
                 continue
-            wx, wy = (
+
+            # Get the world coordinates from the bubble if it's the active
+            # point.
+            world_x, world_y = (
                 self.bubble.get_world_coords()
                 if i == self.active_point_index
                 else self.world_points[i]
             )
-            pts.append(img)
-            wpts.append((wx, wy))
-        if len(pts) < 4:
-            raise ValueError("Less than 4 points.")
-        self.camera.image_to_world = (pts, wpts)
+            image_points.append(img_coords)
+            world_points.append((world_x, world_y))
+
+        # Ensure we have enough points for the transformation.
+        if len(image_points) < 4:
+            raise ValueError("Less than 4 points for alignment.")
+
+        # Apply the new alignment to the camera.
+        self.camera.image_to_world = (image_points, world_points)
         logger.info("Camera alignment applied.")
         self.close()
 
@@ -334,16 +393,25 @@ class CameraAlignmentDialog(Adw.Window):
         self.camera_display.stop()
         self.close()
 
-    def _display_to_image_coords(self, dx, dy) -> Tuple[float, float]:
-        dw, dh = (
+    def _display_to_image_coords(
+        self, display_x: float, display_y: float
+    ) -> Tuple[float, float]:
+        """Converts display coordinates to image coordinates."""
+        display_width, display_height = (
             self.camera_display.get_width(),
             self.camera_display.get_height(),
         )
-        iw, ih = self.camera.resolution
-        return (
-            dx / (dw / iw if dw > 0 else 1),
-            (dh - dy) / (dh / ih if dh > 0 else 1),
-        )
+        image_width, image_height = self.camera.resolution
+
+        if display_width <= 0 or display_height <= 0:
+            return 0.0, 0.0
+
+        scale_x = display_width / image_width
+        scale_y = display_height / image_height
+
+        image_x = display_x / scale_x
+        image_y = (display_height - display_y) / scale_y
+        return image_x, image_y
 
     def _find_point_near(self, x, y, threshold=10) -> int:
         for i, pt in enumerate(self.image_points):
