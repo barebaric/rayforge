@@ -52,6 +52,16 @@ try:
             if os.path.isdir(os.path.join(LOCALE_DIR, d))
         ]
         logging.info(f"{len(lang_folders)} language folders found.")
+
+        mo_files = []
+        for lang in lang_folders:
+            mo_path = os.path.join(
+                LOCALE_DIR, lang, "LC_MESSAGES", f"{APP_NAME}.mo"
+            )
+            if os.path.isfile(mo_path):
+                mo_files.append(mo_path)
+        logging.info(f"{len(mo_files)} .mo files found.")
+
         logging.info(f"Folders: {lang_folders}")
     else:
         logging.warning(f"Locale directory not found at {LOCALE_DIR}")
