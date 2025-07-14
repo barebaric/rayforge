@@ -181,6 +181,7 @@ jobs:
             --hidden-import scipy \
             --hidden-import cffi \
             --hidden-import pyvips \
+            --hidden-import pymupdf \
             --hidden-import cv2 \
             rayforge/app.py
 
