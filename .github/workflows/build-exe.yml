@@ -186,6 +186,11 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-magick.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-openslide.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-poppler.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpng16-16.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\zlib1.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libfreetype-6.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libfontconfig-1.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpixman-1-0.dll;." \
             --hidden-import gi \
             --hidden-import numpy \
             --hidden-import scipy \
