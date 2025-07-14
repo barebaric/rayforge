@@ -50,11 +50,18 @@ if hasattr(sys, '_MEIPASS'):
     logging.info(f"Files in typelib path: {files}")
 
 # --------------------------------------------------------
+# Test PyCairo functionality
+# --------------------------------------------------------
+import cairo
+logging.info(f"PyCairo version: {cairo.version}")
+# Create a dummy surface to test PyCairo
+surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
+ctx = cairo.Context(surface)
+logging.info("Successfully created cairo.Context")
+
+# --------------------------------------------------------
 # Now we should be ready to import the app.
 # --------------------------------------------------------
-# Import Cairo before gi tries importing it, because it does
-# not work via gi.
-import cairo  # noqa: F401
 import gi
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
