@@ -160,6 +160,7 @@ jobs:
           pyinstaller --onefile --noconsole \
             --log-level DEBUG \
             --name rayforge-v${{ steps.set-version.outputs.version }} \
+            --add-data "rayforge/resources:rayforge/resources" \
             --add-data "rayforge/locale:rayforge/locale" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \

@@ -15,4 +15,5 @@ builddir
 .aider*
 
 *.mo
+*.po~
 *.mo~
