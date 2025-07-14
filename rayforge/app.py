@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import warnings
 import logging
 import mimetypes
@@ -5,6 +6,7 @@ import argparse
 import sys
 import os
 import gettext
+from pathlib import Path
 
 # Suppress NumPy longdouble UserWarning when run under mingw on Windows
 warnings.filterwarnings(
@@ -19,40 +21,45 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+# --------------------------------------------------------
+# Gettext MUST be initialized before importing app modules
+# --------------------------------------------------------
+if hasattr(sys, '_MEIPASS'):
+    # In a PyInstaller bundle, the project root is in a temporary
+    # directory stored in sys._MEIPASS.
+    base_dir = Path(sys._MEIPASS)  # type: ignore
+else:
+    # In other environments, this is safer.
+    base_dir = Path(__file__).parent.parent
+
+# Make "_" available in all modules
+locale_dir = base_dir / 'rayforge' / 'locale'
+logging.info(f"Loading locales from {locale_dir}")
+gettext.install("rayforge", locale_dir)
+
+# --------------------------------------------------------
+# GObject Introspection Repository (gi)
+# --------------------------------------------------------
 # When running in a PyInstaller bundle, we need to set the GI_TYPELIB_PATH
 # environment variable to point to the bundled typelib files.
 if hasattr(sys, '_MEIPASS'):
-    os.environ['GI_TYPELIB_PATH'] = os.path.join(
-        sys._MEIPASS, 'gi', 'repository'  # type: ignore
-    )
+    typelib_path = base_dir / 'gi' / 'repository'
+    logging.info(f"GI_TYPELIB_PATH is {typelib_path}")
+    os.environ['GI_TYPELIB_PATH'] = str(typelib_path)
+    files = [p.name for p in typelib_path.iterdir()]
+    logging.info(f"Files in typelib path: {files}")
 
-import gi  # noqa: E402
-
-# Gettext must be initialized before importing app modules.
-# For installed applications, locale files are typically in
-# /usr/share/locale or /usr/local/share/locale.
-# For development, they are in rayforge/locale.
-# gettext.install will handle finding the correct path.
-APP_NAME = "rayforge"
-if hasattr(sys, '_MEIPASS'):
-    # In a PyInstaller bundle, locale files are in the 'rayforge/locale'
-    # directory
-    base_dir = sys._MEIPASS  # type: ignore
-    LOCALE_DIR = os.path.join(base_dir, 'rayforge', 'locale')
-else:
-    # In development, they are in rayforge/locale
-    LOCALE_DIR = os.path.join(os.path.dirname(__file__), "locale")
-
-# Make "_" available in all modules
-gettext.install(APP_NAME, LOCALE_DIR)
-
+# --------------------------------------------------------
+# Now we should be ready to import the app.
+# --------------------------------------------------------
+import gi
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import Adw  # noqa: E402
-from rayforge.widgets.mainwindow import MainWindow  # noqa: E402
-from rayforge.task import task_mgr  # noqa: E402
-from rayforge.config import config_mgr  # noqa: E402
+from gi.repository import Adw
+from rayforge.widgets.mainwindow import MainWindow
+from rayforge.task import task_mgr
+from rayforge.config import config_mgr
 
 
 class App(Adw.Application):
