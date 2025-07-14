@@ -52,6 +52,9 @@ if hasattr(sys, '_MEIPASS'):
 # --------------------------------------------------------
 # Now we should be ready to import the app.
 # --------------------------------------------------------
+# Import Cairo before gi tries importing it, because it does
+# not work via gi.
+import cairo  # noqa: F401
 import gi
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
