@@ -29,7 +29,10 @@ jobs:
         uses: ./.github/actions/compile-translations
 
       - name: Build a wheel
-        run: python3 -m build
+        run: |
+          git status
+          git describe
+          python3 -m build
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
