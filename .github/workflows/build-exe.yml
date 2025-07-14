@@ -43,38 +43,41 @@ jobs:
           install: >-
             base-devel
             git
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-gtk4
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-libadwaita
             mingw-w64-x86_64-adwaita-icon-theme
+            mingw-w64-x86_64-cairo
+            mingw-w64-x86_64-gettext
             mingw-w64-x86_64-gobject-introspection
             mingw-w64-x86_64-gobject-introspection-runtime
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-python-pip
-            mingw-w64-x86_64-meson
-            mingw-w64-x86_64-libffi
-            mingw-w64-x86_64-python-cffi
-            mingw-w64-x86_64-libvips
-            mingw-w64-x86_64-libheif
+            mingw-w64-x86_64-gtk4
             mingw-w64-x86_64-imagemagick
+            mingw-w64-x86_64-libadwaita
+            mingw-w64-x86_64-libffi
+            mingw-w64-x86_64-libheif
+            mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-meson
+            mingw-w64-x86_64-ntldd
+            mingw-w64-x86_64-opencv
             mingw-w64-x86_64-openslide
+            mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-poppler
+            mingw-w64-x86_64-pyinstaller
+            mingw-w64-x86_64-python
             mingw-w64-x86_64-python-aiohttp
             mingw-w64-x86_64-python-blinker
-            mingw-w64-x86_64-python-numpy
-            mingw-w64-x86_64-opencv
-            mingw-w64-x86_64-python-opencv
-            mingw-w64-x86_64-python-platformdirs
             mingw-w64-x86_64-python-cairo
+            mingw-w64-x86_64-python-cffi
             mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-python-numpy
+            mingw-w64-x86_64-python-opencv
+            mingw-w64-x86_64-python-pip
+            mingw-w64-x86_64-python-platformdirs
+            mingw-w64-x86_64-python-pytest-asyncio
+            mingw-w64-x86_64-python-pytest-cov
+            mingw-w64-x86_64-python-pytest-mock
             mingw-w64-x86_64-python-scipy
             mingw-w64-x86_64-python-websockets
-            mingw-w64-x86_64-gettext
-            mingw-w64-x86_64-cairo
-            mingw-w64-x86_64-ntldd
-            mingw-w64-x86_64-pyinstaller
             mingw-w64-x86_64-python-yaml
+            mingw-w64-x86_64-toolchain
 
       - name: Force update package database
         shell: msys2 {0}
@@ -129,11 +132,14 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/python -m pip install --upgrade pip
-          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1
-          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==2.2.3
-          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir pytest pytest-asyncio pytest-mock pytest-cov
-          $MSYS2_PATH/mingw64/bin/python -c "import cairo; print('PyCairo version:', cairo.version)" || true
+          
+          # Upgrade pip and install pip-only packages
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1
+          python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==2.2.3
+          
+          # Verify PyCairo is correct from the base MSYS2 install
+          python -c "import cairo; print('PyCairo version:', cairo.version)"
 
       - name: Run pytest
         shell: msys2 {0}
@@ -178,34 +184,7 @@ jobs:
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libadwaita-1-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgtk-4-1.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgobject-2.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-gobject-2.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libffi-8.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libopenblas.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-heif.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-magick.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-openslide.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\vips-modules-8.16\vips-poppler.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpng16-16.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\zlib1.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libfreetype-6.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libfontconfig-1.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpixman-1-0.dll;." \
-            --hidden-import gi \
-            --hidden-import gi.repository.cairo \
-            --hidden-import numpy \
-            --hidden-import scipy \
-            --hidden-import cffi \
-            --hidden-import pyvips \
-            --hidden-import cv2 \
-            --hidden-import cairo \
             rayforge/app.py
 
       - name: Upload Artifact
