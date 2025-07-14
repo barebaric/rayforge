@@ -6,7 +6,6 @@ opencv_python==4.11.0.86
 platformdirs==4.3.6
 pycairo==1.27.0
 PyGObject==3.50.0
-pymupdf==1.25.3
 pypdf==5.3.1
 pyserial_asyncio==0.6
 pyvips==2.2.3

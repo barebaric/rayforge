@@ -1,53 +1,71 @@
 import pytest
 import io
 import cairo
-import pymupdf
-from rayforge.render.pdf import PDFRenderer, parse_length, to_mm
 from pypdf import PdfReader
+from rayforge.render.pdf import PDFRenderer, parse_length, to_mm
 
-# Fixtures for generating sample PDFs
-@pytest.fixture
-def basic_pdf():
-    """A PDF with a 100pt x 50pt page containing a red rectangle."""
-    doc = pymupdf.open()
-    page = doc.new_page(width=100, height=50)  # Dimensions in points
-    page.draw_rect(pymupdf.Rect(0, 0, 100, 50), fill=(1, 0, 0))  # Red fill
+# Helper functions to create sample PDFs using cairo
+def create_basic_pdf():
+    """Create a PDF with a 100pt x 50pt page containing a red rectangle."""
     buf = io.BytesIO()
-    doc.save(buf)
+    surface = cairo.PDFSurface(buf, 100, 50)
+    cr = cairo.Context(surface)
+    cr.set_source_rgb(1, 0, 0)  # Red
+    cr.rectangle(0, 0, 100, 50)
+    cr.fill()
+    surface.finish()
     buf.seek(0)
     return buf.getvalue()
+
+def create_transparent_pdf():
+    """Create a PDF with a 200pt x 200pt page and a green rectangle from (50,50) to (150,150)."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, 200, 200)
+    cr = cairo.Context(surface)
+    cr.set_source_rgb(0, 1, 0)  # Green
+    cr.rectangle(50, 50, 100, 100)  # From (50,50) to (150,150)
+    cr.fill()
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+def create_large_pdf():
+    """Create a large PDF with a 10000pt x 5000pt page filled with yellow."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, 10000, 5000)
+    cr = cairo.Context(surface)
+    cr.set_source_rgb(1, 1, 0)  # Yellow
+    cr.rectangle(0, 0, 10000, 5000)
+    cr.fill()
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+def create_empty_pdf():
+    """Create an empty PDF page of 100pt x 100pt with no content."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, 100, 100)
+    # No drawing commands
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+# Fixtures using the helper functions
+@pytest.fixture
+def basic_pdf():
+    return create_basic_pdf()
 
 @pytest.fixture
 def transparent_pdf():
-    """A PDF with a 200pt x 200pt page and a green rectangle from (50,50) to (150,150)."""
-    doc = pymupdf.open()
-    page = doc.new_page(width=200, height=200)
-    page.draw_rect(pymupdf.Rect(50, 50, 150, 150), fill=(0, 1, 0))  # Green fill
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.getvalue()
+    return create_transparent_pdf()
 
 @pytest.fixture
 def large_pdf():
-    """A large PDF with a 10000pt x 5000pt page filled with yellow."""
-    doc = pymupdf.open()
-    page = doc.new_page(width=10000, height=5000)
-    page.draw_rect(pymupdf.Rect(0, 0, 10000, 5000), fill=(1, 1, 0))  # Yellow fill
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.getvalue()
+    return create_large_pdf()
 
 @pytest.fixture
 def empty_pdf():
-    """An empty PDF page of 100pt x 100pt with no content."""
-    doc = pymupdf.open()
-    doc.new_page(width=100, height=100)  # No drawing commands
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.getvalue()
+    return create_empty_pdf()
 
 # Test class for PDFRenderer
 class TestPDFRenderer:
@@ -85,16 +103,15 @@ class TestPDFRenderer:
 
     def test_render_workpiece(self, basic_pdf):
         """
-        Test rendering to a Cairo surface at default pixels_per_mm.
-        (1 mm = 25px).
+        Test rendering to a Cairo surface at default pixels_per_mm (1 mm = 25px).
         1 mm = 1 pt * 25.4 / 72
         """
         surface = PDFRenderer.render_workpiece(basic_pdf)
-        x_mm = 100*25.4/72
-        y_mm = 50*25.4/72
+        x_mm = 100 * 25.4 / 72
+        y_mm = 50 * 25.4 / 72
         assert isinstance(surface, cairo.ImageSurface)
-        assert surface.get_width() == pytest.approx(x_mm*25, abs=0.1)
-        assert surface.get_height() == pytest.approx(y_mm*25, abs=0.1)
+        assert surface.get_width() == pytest.approx(x_mm * 25, abs=0.1)
+        assert surface.get_height() == pytest.approx(y_mm * 25, abs=0.1)
 
     def test_get_margins(self, transparent_pdf):
         """Test margin calculation for a PDF with content in the center."""
