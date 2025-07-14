@@ -72,6 +72,7 @@ jobs:
             mingw-w64-x86_64-python-websockets
             mingw-w64-x86_64-gettext
             mingw-w64-x86_64-cairo
+            mingw-w64-x86_64-ntldd
 
       - name: Force update package database
         shell: msys2 {0}
@@ -117,9 +118,10 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/ldd $MSYS2_PATH/mingw64/bin/libcairo-2.dll
-          $MSYS2_PATH/mingw64/bin/ldd $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll
+          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-2.dll
+          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll
           $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
+          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll | grep "DLL Name"
 
       - name: Install Python dependencies
         shell: msys2 {0}
