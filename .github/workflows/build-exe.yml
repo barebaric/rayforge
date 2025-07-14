@@ -71,6 +71,7 @@ jobs:
             mingw-w64-x86_64-python-scipy
             mingw-w64-x86_64-python-websockets
             mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-cairo
 
       - name: Force update package database
         shell: msys2 {0}
@@ -112,6 +113,14 @@ jobs:
           pacman --version
           pacman -Q
 
+      - name: Check Cairo DLL Dependencies
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          $MSYS2_PATH/mingw64/bin/ldd $MSYS2_PATH/mingw64/bin/libcairo-2.dll
+          $MSYS2_PATH/mingw64/bin/ldd $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll
+          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
+
       - name: Install Python dependencies
         shell: msys2 {0}
         run: |
@@ -122,12 +131,6 @@ jobs:
           $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --no-build-isolation --no-deps --break-system-packages pyvips==2.2.3
           $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --break-system-packages pytest pytest-asyncio pytest-mock pytest-cov
           $MSYS2_PATH/mingw64/bin/python -c "import cairo; print('PyCairo version:', cairo.version)" || true
-
-      - name: Check Cairo DLL Dependencies
-        shell: msys2 {0}
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
 
       - name: Run pytest
         shell: msys2 {0}
@@ -193,6 +196,7 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libfontconfig-1.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpixman-1-0.dll;." \
             --hidden-import gi \
+            --hidden-import gi.repository.cairo \
             --hidden-import numpy \
             --hidden-import scipy \
             --hidden-import cffi \
