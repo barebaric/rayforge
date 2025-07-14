@@ -40,7 +40,7 @@ class DragListBox(Gtk.ListBox):
 
     def apply_css(self):
         provider = Gtk.CssProvider()
-        provider.load_from_data(css.encode())
+        provider.load_from_string(css)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             provider,

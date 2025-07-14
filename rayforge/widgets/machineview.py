@@ -33,7 +33,7 @@ class MachineView(Adw.Dialog):
 
         # Apply a monospace font using CSS
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(css)
+        css_provider.load_from_string(css)
         self.terminal.get_style_context().add_provider(
             css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )

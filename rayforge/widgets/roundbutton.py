@@ -40,7 +40,7 @@ class RoundButton(Gtk.Button):
 
     def apply_css(self):
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(css.encode())
+        css_provider.load_from_string(css)
         style_context = self.get_style_context()
         style_context.add_provider(
             css_provider,

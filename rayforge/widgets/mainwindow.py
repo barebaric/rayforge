@@ -236,7 +236,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Apply styles
         self.paned.add_css_class("mainpaned")
         provider = Gtk.CssProvider()
-        provider.load_from_data(css.encode())
+        provider.load_from_string(css)
         display = Gdk.Display.get_default()
         Gtk.StyleContext.add_provider_for_display(
             display,

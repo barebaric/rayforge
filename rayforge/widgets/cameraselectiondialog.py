@@ -18,7 +18,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
 
         # Add CSS for hover effect
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
+        css_provider.load_from_string("""
             .rounded-image {
                 border-radius: 8px;
             }
