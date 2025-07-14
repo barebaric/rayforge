@@ -178,6 +178,7 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libglib-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libpango-1.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-2.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libcairo-gobject-2.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libgdk_pixbuf-2.0-0.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libffi-8.dll;." \
