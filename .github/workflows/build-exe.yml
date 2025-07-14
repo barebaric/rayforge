@@ -84,6 +84,10 @@ jobs:
           echo "PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> $GITHUB_WORKSPACE/.msys2_env
           echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> $GITHUB_WORKSPACE/.msys2_env
           echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> $GITHUB_WORKSPACE/.msys2_env
+          # Dynamically determine Python version
+          PYTHON_VERSION=$($MSYS2_PATH/mingw64/bin/python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_ENV
+          echo "PYTHONPATH=$MSYS2_PATH/mingw64/lib/$PYTHON_VERSION/site-packages:$PYTHONPATH" >> $GITHUB_WORKSPACE/.msys2_env
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
           echo "PATH=$PATH"
           $MSYS2_PATH/mingw64/bin/python --version
@@ -115,16 +119,17 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          python -m pip install --upgrade pip
-          python -m pip install --no-cache-dir pyinstaller pyinstaller-hooks-contrib ezdxf==1.3.5 pypdf==5.3.1 pyserial_asyncio==0.6 PyYAML==6.0.2
-          python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==2.2.3
-          python -m pip install pytest pytest-asyncio pytest-mock pytest-cov
+          $MSYS2_PATH/mingw64/bin/python -m pip install --upgrade pip
+          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --break-system-packages \
+            pyinstaller pyinstaller-hooks-contrib ezdxf==1.3.5 pypdf==5.3.1 pyserial_asyncio==0.6 PyYAML==6.0.2
+          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --no-build-isolation --no-deps --break-system-packages pyvips==2.2.3
+          $MSYS2_PATH/mingw64/bin/python -m pip install --no-cache-dir --break-system-packages pytest pytest-asyncio pytest-mock pytest-cov
 
       - name: Run pytest
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          python -m pytest
+          $MSYS2_PATH/mingw64/bin/python -m pytest
 
       - name: Configure GTK Theme
         shell: msys2 {0}
