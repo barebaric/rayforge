@@ -206,9 +206,9 @@ class WorkStep(ABC):
         else:
             # Non-scalable (e.g., raster), render in chunks at actual size
             size = workpiece.size
-            render_chunks = workpiece.render_chunk(*self.pixels_per_mm,
-                                                   size=size,
-                                                   force=True)
+            render_chunks = workpiece.render_chunk(
+                *self.pixels_per_mm, size=size
+            )
 
         # Process render chunks
         for surface, (x_offset_px, y_offset_px) in render_chunks:

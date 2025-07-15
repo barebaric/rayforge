@@ -111,7 +111,6 @@ class WorkPiece:
             pixels_per_mm_x: int,
             pixels_per_mm_y: int,
             size: Optional[Tuple[float, float]] = None,
-            force: bool = False
         ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]],
                        None,
                        None]:
