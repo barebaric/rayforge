@@ -1,6 +1,6 @@
 from __future__ import annotations
 import math
-from copy import copy
+from copy import copy, deepcopy
 from typing import List
 from dataclasses import dataclass
 
@@ -151,6 +151,13 @@ class Ops:
 
     def __len__(self):
         return len(self.commands)
+
+    def copy(self) -> Ops:
+        """Creates a deep copy of the Ops object."""
+        new_ops = Ops()
+        new_ops.commands = deepcopy(self.commands)
+        new_ops.last_move_to = self.last_move_to
+        return new_ops
 
     def preload_state(self):
         """
