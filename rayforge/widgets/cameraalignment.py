@@ -122,19 +122,14 @@ class CameraAlignmentDialog(Adw.Window):
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.add_controller(key_controller)
 
-        # quando display pronto/resized
         self.camera_display.connect("realize", self._on_display_ready)
         self.camera_display.connect(
             "resize", lambda w, x, y: self._on_display_ready()
         )
 
-        # init pontos
         if camera.image_to_world:
             img_pts, wld_pts = camera.image_to_world
             self.image_points, self.world_points = list(img_pts), list(wld_pts)
-        else:
-            self.image_points = [None] * 4
-            self.world_points = [(0.0, 0.0)] * 4
 
         self.set_active_point(0)
         self.update_apply_button_sensitivity()

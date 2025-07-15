@@ -101,36 +101,64 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         self.laserhead_list.connect("row-selected", self.on_laserhead_selected)
 
         # Populate the list with existing Lasers
-        self.populate_laserhead_list()
+        self.refresh_laserhead_list()
 
-    def populate_laserhead_list(self):
-        """Populate the list of Lasers."""
-        for head in self.machine.heads:
-            row = Adw.ActionRow(
-                title=_("Laser (Max Power: {head.max_power})").format(
-                    head=head
+    def refresh_laserhead_list(self):
+        """
+        Refresh the list of Lasers, preserving selection and avoiding flicker.
+        """
+        selected_index = -1
+        selected_row = self.laserhead_list.get_selected_row()
+        if selected_row:
+            selected_index = selected_row.get_index()
+
+        # Get current number of rows
+        row_count = 0
+        while self.laserhead_list.get_row_at_index(row_count):
+            row_count += 1
+
+        # Update or add rows to match machine.heads
+        for i, head in enumerate(self.machine.heads):
+            if i < row_count:
+                # Update existing row
+                row = self.laserhead_list.get_row_at_index(i)
+                row.set_title(
+                    _("Laser (Max Power: {head.max_power})").format(head=head)
                 )
-            )
-            row.set_margin_top(5)
-            row.set_margin_bottom(5)
-            self.laserhead_list.append(row)
-        row = self.laserhead_list.get_row_at_index(0)
-        if row:
+            else:
+                # Add new row
+                row = Adw.ActionRow(
+                    title=_("Laser (Max Power: {head.max_power})").format(
+                        head=head
+                    )
+                )
+                row.set_margin_top(5)
+                row.set_margin_bottom(5)
+                self.laserhead_list.append(row)
+
+        # Remove extra rows
+        while row_count > len(self.machine.heads):
+            last_row = self.laserhead_list.get_row_at_index(row_count - 1)
+            self.laserhead_list.remove(last_row)
+            row_count -= 1
+
+        # Restore selection
+        if selected_index >= 0 and selected_index < len(self.machine.heads):
+            row = self.laserhead_list.get_row_at_index(selected_index)
+            self.laserhead_list.select_row(row)
+        elif len(self.machine.heads) > 0:
+            row = self.laserhead_list.get_row_at_index(0)
             self.laserhead_list.select_row(row)
 
     def on_add_laserhead(self, button):
         """Add a new Laser to the machine."""
         new_head = Laser()
         self.machine.add_head(new_head)
-        row = Adw.ActionRow(
-            title=_("Laser (Max Power: {new_head.max_power})").format(
-                new_head=new_head
-            )
-        )
-        row.set_margin_top(5)
-        row.set_margin_bottom(5)
-        self.laserhead_list.append(row)
-        self.laserhead_list.select_row(row)
+        self.refresh_laserhead_list()
+        # Select the newly added laser
+        last_index = len(self.machine.heads) - 1
+        last_row = self.laserhead_list.get_row_at_index(last_index)
+        self.laserhead_list.select_row(last_row)
 
     def on_remove_laserhead(self, button):
         """Remove the selected Laser from the machine."""
@@ -139,7 +167,7 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             index = selected_row.get_index()
             head = self.machine.heads[index]
             self.machine.remove_head(head)
-            self.laserhead_list.remove(selected_row)
+            self.refresh_laserhead_list()
 
     def on_laserhead_selected(self, listbox, row):
         """Update the configuration panel when a Laser is selected."""
@@ -165,7 +193,7 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         if not selected_laser:
             return
         selected_laser.set_max_power(get_spinrow_int(spinrow))
-        self.update_laserhead_list()
+        self.refresh_laserhead_list()
 
     def on_frame_power_changed(self, spinrow):
         """Update the max power of the selected Laser."""
@@ -173,7 +201,7 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         if not selected_laser:
             return
         selected_laser.set_frame_power(get_spinrow_int(spinrow))
-        self.update_laserhead_list()
+        self.refresh_laserhead_list()
 
     def on_spot_size_changed(self, spinrow):
         """Update the spot size of the selected Laser."""
@@ -183,12 +211,4 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         x = get_spinrow_float(self.spot_size_x_row)
         y = get_spinrow_float(self.spot_size_y_row)
         selected_laser.set_spot_size(x, y)
-        self.update_laserhead_list()
-
-    def update_laserhead_list(self):
-        """Update the labels in the Laser list."""
-        for i, row in enumerate(self.laserhead_list):
-            head = self.machine.heads[i]
-            row.set_title(
-                _("Laser (Max Power: {head.max_power})").format(head=head)
-            )
+        self.refresh_laserhead_list()
