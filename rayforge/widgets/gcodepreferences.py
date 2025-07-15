@@ -16,7 +16,7 @@ class GCodePreferencesPage(Adw.PreferencesPage):
         self.preamble_entry = Gtk.TextView()
         self.preamble_entry.set_size_request(300, 50)
         self.preamble_entry.get_buffer().set_text(
-            "\n".join(self.machine.preamble)
+            "\n".join(self.machine.preamble), -1
         )
         self.preamble_entry.get_buffer().connect(
             "changed", self.on_preamble_changed
@@ -29,7 +29,7 @@ class GCodePreferencesPage(Adw.PreferencesPage):
         self.postscript_entry = Gtk.TextView()
         self.postscript_entry.set_size_request(300, 50)
         self.postscript_entry.get_buffer().set_text(
-            "\n".join(self.machine.postscript)
+            "\n".join(self.machine.postscript), -1
         )
         self.postscript_entry.get_buffer().connect(
             "changed", self.on_postscript_changed
