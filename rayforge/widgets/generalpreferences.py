@@ -63,7 +63,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         # Max Travel Speed
         travel_speed_adjustment = Gtk.Adjustment(
-            value=self.machine.max_travel_speed,
             lower=0,
             upper=10000,
             step_increment=1,
@@ -74,12 +73,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             subtitle=_("Maximum travel speed in mm/min"),
             adjustment=travel_speed_adjustment,
         )
+        travel_speed_adjustment.set_value(self.machine.max_travel_speed)
         self.travel_speed_row.connect("changed", self.on_travel_speed_changed)
         machine_group.add(self.travel_speed_row)
 
         # Max Cut Speed
         cut_speed_adjustment = Gtk.Adjustment(
-            value=self.machine.max_cut_speed,
             lower=0,
             upper=10000,
             step_increment=1,
@@ -90,6 +89,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             subtitle=_("Maximum cutting speed in mm/min"),
             adjustment=cut_speed_adjustment,
         )
+        cut_speed_adjustment.set_value(self.machine.max_cut_speed)
         self.cut_speed_row.connect("changed", self.on_cut_speed_changed)
         machine_group.add(self.cut_speed_row)
 
@@ -98,7 +98,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.add(dimensions_group)
 
         width_adjustment = Gtk.Adjustment(
-            value=self.machine.dimensions[0],
             lower=50,
             upper=10000,
             step_increment=1,
@@ -109,11 +108,11 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             subtitle=_("Width of the machine in mm"),
             adjustment=width_adjustment,
         )
+        width_adjustment.set_value(self.machine.dimensions[0])
         self.width_row.connect("changed", self.on_width_changed)
         dimensions_group.add(self.width_row)
 
         height_adjustment = Gtk.Adjustment(
-            value=self.machine.dimensions[1],
             lower=50,
             upper=10000,
             step_increment=1,
@@ -124,6 +123,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             subtitle=_("Height of the machine in mm"),
             adjustment=height_adjustment,
         )
+        height_adjustment.set_value(self.machine.dimensions[1])
         self.height_row.connect("changed", self.on_height_changed)
         dimensions_group.add(self.height_row)
 

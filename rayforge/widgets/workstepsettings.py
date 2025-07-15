@@ -19,32 +19,36 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         page.add(group)
 
         # Add a spin row for cut speed
+        passes_adjustment = Gtk.Adjustment(
+            lower=1,
+            upper=100,
+            step_increment=1,
+            page_increment=10
+        )
         passes_row = Adw.SpinRow(
             title=_("Number of Passes"),
             subtitle=_("How often to repeat this workstep"),
-            adjustment=Gtk.Adjustment(
-                value=workstep.passes,
-                lower=1,
-                upper=100,
-                step_increment=1,
-                page_increment=10
-            )
+            adjustment=passes_adjustment
         )
+        passes_adjustment.set_value(workstep.passes)
         passes_row.connect('changed', self.on_passes_changed)
         group.add(passes_row)
 
         # Add a slider for power
         power_row = Adw.ActionRow(title=_("Power (%)"))
+        power_adjustment = Gtk.Adjustment(
+            upper=100,
+            step_increment=1,
+            page_increment=10
+        )
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=Gtk.Adjustment(
-                value=workstep.power/workstep.laser.max_power*100,
-                upper=100,
-                step_increment=1,
-                page_increment=10
-            ),
+            adjustment=power_adjustment,
             digits=0,  # No decimal places
             draw_value=True  # Show the current value
+        )
+        power_adjustment.set_value(
+            workstep.power / workstep.laser.max_power * 100
         )
         power_scale.set_size_request(300, -1)
         power_scale.connect('value-changed', self.on_power_changed)
@@ -52,36 +56,38 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         group.add(power_row)
 
         # Add a spin row for cut speed
+        cut_speed_adjustment = Gtk.Adjustment(
+            lower=0,
+            upper=config.machine.max_cut_speed,
+            step_increment=1,
+            page_increment=100
+        )
         cut_speed_row = Adw.SpinRow(
             title=_("Cut Speed (mm/min)"),
             subtitle=_("Max: {config.machine.max_cut_speed} mm/min").format(
                 config=config
             ),
-            adjustment=Gtk.Adjustment(
-                value=workstep.cut_speed,
-                lower=0,
-                upper=config.machine.max_cut_speed,
-                step_increment=1,
-                page_increment=100
-            )
+            adjustment=cut_speed_adjustment
         )
+        cut_speed_adjustment.set_value(workstep.cut_speed)
         cut_speed_row.connect('changed', self.on_cut_speed_changed)
         group.add(cut_speed_row)
 
         # Add a spin row for travel speed
+        travel_speed_adjustment = Gtk.Adjustment(
+            lower=0,
+            upper=config.machine.max_travel_speed,
+            step_increment=1,
+            page_increment=100
+        )
         travel_speed_row = Adw.SpinRow(
             title=_("Travel Speed (mm/min)"),
             subtitle=_("Max: {config.machine.max_travel_speed} mm/min").format(
                 config=config
             ),
-            adjustment=Gtk.Adjustment(
-                value=workstep.travel_speed,
-                lower=0,
-                upper=config.machine.max_travel_speed,
-                step_increment=1,
-                page_increment=100
-            )
+            adjustment=travel_speed_adjustment
         )
+        travel_speed_adjustment.set_value(workstep.travel_speed)
         travel_speed_row.connect('changed', self.on_travel_speed_changed)
         group.add(travel_speed_row)
 

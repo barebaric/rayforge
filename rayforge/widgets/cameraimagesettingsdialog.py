@@ -52,9 +52,6 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         preferences_group.add(self.auto_white_balance_switch)
 
         self.wb_adjustment = Gtk.Adjustment(
-            value=self.camera.white_balance
-            if self.camera.white_balance is not None
-            else 4000,  # Default value when switching from auto
             lower=2500,
             upper=10000,
             step_increment=10,
@@ -62,6 +59,11 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         )
         self.white_balance_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.wb_adjustment
+        )
+        self.wb_adjustment.set_value(
+            self.camera.white_balance
+            if self.camera.white_balance is not None
+            else 4000
         )
         self.white_balance_scale.set_size_request(300, -1)
         self.white_balance_scale.set_digits(0)  # White balance in Kelvin
@@ -80,7 +82,6 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
 
         # Contrast
         self.contrast_adjustment = Gtk.Adjustment(
-            value=self.camera.contrast,
             lower=0.0,
             upper=100.0,
             step_increment=0.01,
@@ -89,6 +90,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.contrast_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.contrast_adjustment
         )
+        self.contrast_adjustment.set_value(self.camera.contrast)
         self.contrast_scale.set_size_request(300, -1)
         self.contrast_scale.set_digits(2)  # Contrast can have two decimals
         self.contrast_scale.set_value_pos(Gtk.PositionType.RIGHT)
@@ -99,7 +101,6 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
 
         # Brightness
         self.brightness_adjustment = Gtk.Adjustment(
-            value=self.camera.brightness,
             lower=-100.0,
             upper=100.0,
             step_increment=0.01,
@@ -108,6 +109,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.brightness_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.brightness_adjustment
         )
+        self.brightness_adjustment.set_value(self.camera.brightness)
         self.brightness_scale.set_size_request(300, -1)
         self.brightness_scale.set_digits(2)
         self.brightness_scale.set_value_pos(Gtk.PositionType.RIGHT)
@@ -120,7 +122,6 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
 
         # Transparency
         self.transparency_adjustment = Gtk.Adjustment(
-            value=self.camera.transparency,
             lower=0.0,
             upper=1.0,
             step_increment=0.01,
@@ -129,6 +130,7 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         self.transparency_scale = Gtk.Scale.new(
             Gtk.Orientation.HORIZONTAL, self.transparency_adjustment
         )
+        self.transparency_adjustment.set_value(self.camera.transparency)
         self.transparency_scale.set_size_request(300, -1)
         self.transparency_scale.set_digits(2)
         self.transparency_scale.set_value_pos(Gtk.PositionType.RIGHT)

@@ -10,7 +10,7 @@ from ..util.resources import get_icon
 from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
 from ..opsencoder.gcode import GcodeEncoder
-from ..render import renderers, renderer_by_mime_type
+from ..render import renderers, renderer_by_mime_type, renderer_by_extension
 from .workplanview import WorkPlanView
 from .workbench.surface import WorkSurface
 from .statusview import ConnectionStatusMonitor, \
@@ -625,7 +625,20 @@ class MainWindow(Adw.ApplicationWindow):
             print(_(f"Error opening file: {e.message}"))
 
     def load_file(self, filename, mime_type):
-        renderer = renderer_by_mime_type[mime_type]
+        try:
+            renderer = renderer_by_mime_type[mime_type]
+        except KeyError:
+            # On Windows, the file dialog returns not the mime type,
+            # but the file extension instead.
+            try:
+                renderer = renderer_by_extension[mime_type.lower()]
+            except KeyError:
+                logger.error(
+                    f"No renderer found for {mime_type}. "
+                    f"MIME types: {renderer_by_mime_type.keys()} "
+                    f"Extensions: {renderer_by_extension.keys()} "
+                )
+                return
         wp = WorkPiece.from_file(filename, renderer)
         self.doc.add_workpiece(wp)
         self.surface.update_from_doc(self.doc)

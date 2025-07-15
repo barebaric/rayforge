@@ -1,7 +1,7 @@
 # Rayforge
 
-Rayforge is a software for laser cutters and engravers. It runs on Linux and
-maybe on Windows, though the latter is pretty much untested.
+Rayforge is a software for laser cutters and engravers. It supports Linux, and
+since release 0.15.1 also Windows is tested.
 
 It supports direct communication with GRBL based machines (network or serial).
 
@@ -17,7 +17,7 @@ It supports direct communication with GRBL based machines (network or serial).
 | High quality path generation     | Interpolation based on spot size, path optimization        |
 | Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
 | Open development                 | Easily [add support for your own laser](docs/driver.md)    |
-| Cross-platform                   | Support for Linux and (experimental) support for Windows   |
+| Cross-platform                   | Support for Linux and Windows                              |
 | Camera support                   | Live camera feed, de-distortion, alignment                 |
 | Multi-language support           | English, Portuguese and German are supported               |
 | Much more                        | Framing, support for air assist, control buttons, ...      |

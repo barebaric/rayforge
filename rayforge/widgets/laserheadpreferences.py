@@ -42,18 +42,19 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         self.add(self.laserhead_config_group)
 
         max_power_adjustment = Gtk.Adjustment(
-            value=0, lower=0, upper=10000, step_increment=1, page_increment=10
+            lower=0, upper=10000, step_increment=1, page_increment=10
         )
         self.max_power_row = Adw.SpinRow(
             title=_("Max Power"),
             subtitle=_("Maximum power value in GCode"),
             adjustment=max_power_adjustment,
         )
+        max_power_adjustment.set_value(0)
         self.max_power_row.connect("changed", self.on_max_power_changed)
         self.laserhead_config_group.add(self.max_power_row)
 
         frame_power_adjustment = Gtk.Adjustment(
-            value=0, lower=0, upper=100, step_increment=1, page_increment=10
+            lower=0, upper=100, step_increment=1, page_increment=10
         )
         self.frame_power_row = Adw.SpinRow(
             title=_("Frame Power"),
@@ -62,11 +63,11 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             ),
             adjustment=frame_power_adjustment,
         )
+        frame_power_adjustment.set_value(0)
         self.frame_power_row.connect("changed", self.on_frame_power_changed)
         self.laserhead_config_group.add(self.frame_power_row)
 
         spot_size_x_adjustment = Gtk.Adjustment(
-            value=0.1,
             lower=0.01,
             upper=0.2,
             step_increment=0.01,
@@ -78,11 +79,11 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             digits=3,
             adjustment=spot_size_x_adjustment,
         )
+        spot_size_x_adjustment.set_value(0.1)
         self.spot_size_x_row.connect("changed", self.on_spot_size_changed)
         self.laserhead_config_group.add(self.spot_size_x_row)
 
         spot_size_y_adjustment = Gtk.Adjustment(
-            value=0.1,
             lower=0.01,
             upper=0.2,
             step_increment=0.01,
@@ -94,6 +95,7 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
             digits=3,
             adjustment=spot_size_y_adjustment,
         )
+        spot_size_y_adjustment.set_value(0.1)
         self.spot_size_y_row.connect("changed", self.on_spot_size_changed)
         self.laserhead_config_group.add(self.spot_size_y_row)
 
