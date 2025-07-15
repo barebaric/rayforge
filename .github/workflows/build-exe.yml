@@ -196,6 +196,7 @@ jobs:
         with:
           name: rayforge-v${{ steps.set-version.outputs.version }}.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+          compression-level: 9
 
   test-exe:
     name: Test Executable
