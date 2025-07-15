@@ -183,8 +183,17 @@ class DXFRenderer(SVGRenderer):
         start_y = center[1] + r * math.sin(start_angle)
         end_x = center[0] + r * math.cos(end_angle)
         end_y = center[1] + r * math.sin(end_angle)
-        arc = 1 if (end_angle-start_angle) % (2*math.pi) > math.pi else 0
-        d = f"M {start_x} {start_y} A {r} {r} 0 {arc} 0 {end_x} {end_y}"
+
+        # The large-arc-flag. 1 if arc is > 180 degrees
+        angular_dist = (end_angle - start_angle) % (2 * math.pi)
+        large_arc_flag = 1 if angular_dist > math.pi else 0
+
+        # The sweep-flag. DXF arcs are CCW, so this should be 1.
+        sweep_flag = 1
+
+        d = (f"M {start_x} {start_y} "
+             f"A {r} {r} 0 {large_arc_flag} {sweep_flag} {end_x} {end_y}")
+
         elem = ET.SubElement(parent, 'path')
         elem.set('d', d)
         elem.set('stroke', 'black')
