@@ -107,6 +107,7 @@ jobs:
 
       - name: Verify GI Typelib Files
         shell: msys2 {0}
+        if: false
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
           echo "Listing GI typelib files:"
@@ -114,6 +115,7 @@ jobs:
 
       - name: List MSYS2 packages
         shell: msys2 {0}
+        if: false
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
           pacman --version
@@ -121,6 +123,7 @@ jobs:
 
       - name: Check Cairo DLL Dependencies
         shell: msys2 {0}
+        if: false
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
           $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-2.dll
@@ -185,6 +188,7 @@ jobs:
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
+            --hidden-import gi._gi_cairo \
             rayforge/app.py
 
       - name: Upload Artifact

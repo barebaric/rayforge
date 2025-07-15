@@ -63,6 +63,13 @@ logging.info("Successfully created cairo.Context")
 # Now we should be ready to import the app.
 # --------------------------------------------------------
 import gi
+# Register the standalone 'cairo' module
+# as a foreign type *before* the GObject-introspected cairo is loaded.
+gi.require_foreign('cairo') 
+
+# Now, when gi.repository.cairo is loaded, it will know how to
+# interact with the already-imported standalone module.
+gi.require_version('cairo', '1.0')
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
