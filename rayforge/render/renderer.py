@@ -46,11 +46,11 @@ class Renderer(ABC):
 
     @classmethod
     @abstractmethod
-    def render_workpiece(
-        cls, data, width=None, height=None
-    ) -> cairo.ImageSurface:
+    def render_to_pixels(
+        cls, data: bytes, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
         """
-        Renders to a Cairo surface.
+        Renders the data to a surface of specific pixel dimensions.
         """
         pass
 

@@ -117,7 +117,7 @@ class WorkPieceElement(SurfaceElement):
             logger.debug(f"Cache miss/refresh for element. Requesting new "
                          f"surface at {self.width}x{self.height}px.")
             # Request a new surface from the WorkPiece's generic renderer.
-            self._cached_surface = self.data.renderer.render_workpiece(
+            self._cached_surface = self.data.renderer.render_to_pixels(
                 self.data.data,
                 width=self.width,
                 height=self.height

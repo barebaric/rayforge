@@ -3,6 +3,10 @@ import cairo
 import io
 import math
 import numpy as np
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips  # type: ignore
 from .renderer import Renderer
 
 
@@ -65,14 +69,26 @@ class VipsRenderer(Renderer):
         return width_mm / height_mm
 
     @classmethod
-    def render_workpiece(cls,
-                         data,
-                         width=None,
-                         height=None,
-                         pixels_per_mm=(25, 25)):
-        """Render the full image at the specified size."""
-        image = cls.get_vips_image(data, width, height, pixels_per_mm)
-        buf = image.write_to_buffer('.png')
+    def render_to_pixels(
+        cls, data: bytes, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Default raster implementation. Loads image and scales down to the
+        target pixel size for high-quality output.
+        """
+        try:
+            image = cls.get_vips_loader()(data, **cls.get_vips_loader_args())
+            # Use thumbnail_image for a fast, high-quality downscale.
+            final_image = image.thumbnail_image(
+                width, height=height, no_rotate=True
+            )
+            if not isinstance(final_image, pyvips.Image):
+                return None
+        except pyvips.Error as e:
+            print(f"Error in render_to_pixels: {e}")
+            return None
+
+        buf = final_image.write_to_buffer('.png')
         return cairo.ImageSurface.create_from_png(io.BytesIO(buf))
 
     @classmethod

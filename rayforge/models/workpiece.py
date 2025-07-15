@@ -85,17 +85,26 @@ class WorkPiece:
         size: Optional[Tuple[float, float]] = None
     ) -> Optional[cairo.ImageSurface]:
         """
-        Renders a NEW, high-resolution surface for Ops generation.
-        This method is stateless and does not modify the WorkPiece object.
+        Calculates target pixel dimensions and calls the generic
+        render_to_pixels method on the renderer.
         """
         current_size = self.get_current_size() if size is None else size
         if not current_size:
             return None
 
-        width = int(current_size[0] * pixels_per_mm_x)
-        height = int(current_size[1] * pixels_per_mm_y)
+        width_mm, height_mm = current_size
 
-        return self.renderer.render_workpiece(self.data, width, height)
+        # The model now performs the simple calculation before calling
+        # the renderer.
+        target_width_px = int(width_mm * pixels_per_mm_x)
+        target_height_px = int(height_mm * pixels_per_mm_y)
+
+        # Call the single, unambiguous rendering method.
+        return self.renderer.render_to_pixels(
+            self.data,
+            width=target_width_px,
+            height=target_height_px
+        )
 
     def render_chunk(
             self,

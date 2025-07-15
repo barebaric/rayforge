@@ -1,4 +1,8 @@
 import re
+import io
+from typing import Optional
+import cairo
+import logging
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -6,6 +10,9 @@ with warnings.catch_warnings():
 from xml.etree import ElementTree as ET
 from ..util.unit import to_mm
 from .vips import VipsRenderer
+
+
+logger = logging.Logger(__name__)
 
 
 def parse_length(s):
@@ -50,10 +57,38 @@ class SVGRenderer(VipsRenderer):
         return width_mm, height_mm
 
     @classmethod
+    def render_to_pixels(
+        cls, data: bytes, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Specialized vector implementation that modifies SVG data in-memory
+        to achieve sharp, non-uniform scaling directly to pixel dimensions.
+        """
+        try:
+            root = ET.fromstring(data)
+            root.set('width', f'{width}px')
+            root.set('height', f'{height}px')
+            root.set('preserveAspectRatio', 'none')
+            modified_svg_data = ET.tostring(root, encoding='utf-8')
+
+            final_image = pyvips.Image.svgload_buffer(modified_svg_data)
+            if not isinstance(final_image, pyvips.Image):
+                return None
+
+        except (pyvips.Error, ET.ParseError) as e:
+            logger.error(f"An error occurred during SVG rendering: {e}")
+            return None
+
+        buf = final_image.write_to_buffer('.png')
+        return cairo.ImageSurface.create_from_png(io.BytesIO(buf))
+
+    @classmethod
     def _crop_to_content(cls, data):
         # Load the image with pyvips to get pixel dimensions
         kwargs = cls.get_vips_loader_args()
         vips_image = cls.get_vips_loader()(data, **kwargs)
+        if not vips_image:
+            logging.warning("Failed to load SVG image")
         width_px = vips_image.width
         height_px = vips_image.height
 
