@@ -23,9 +23,9 @@ def parse_length(s):
 
 
 class SVGRenderer(VipsRenderer):
-    label = 'SVG files'
-    mime_types = ('image/svg+xml',)
-    extensions = ('.svg',)
+    label = "SVG files"
+    mime_types = ("image/svg+xml",)
+    extensions = (".svg",)
 
     @classmethod
     def get_vips_loader(cls):
@@ -40,24 +40,33 @@ class SVGRenderer(VipsRenderer):
         measurement_size = 1000.0
         try:
             root_measure = ET.fromstring(data)
-            root_measure.set('width', f'{measurement_size}px')
-            root_measure.set('height', f'{measurement_size}px')
-            root_measure.set('preserveAspectRatio', 'none')
+            root_measure.set("width", f"{measurement_size}px")
+            root_measure.set("height", f"{measurement_size}px")
+            root_measure.set("preserveAspectRatio", "none")
             measure_svg = ET.tostring(root_measure)
 
             measure_image = pyvips.Image.svgload_buffer(measure_svg)
             if measure_image.bands < 4:
                 measure_image = measure_image.bandjoin(255)
 
-            left, top, w, h = measure_image.find_trim()
-            if w == 0 or h == 0:
+            left_px, top_px, width_px, height_px = measure_image.find_trim()
+            if width_px == 0 or height_px == 0:
                 return 0.0, 0.0, 0.0, 0.0
 
+            left_margin_ratio = left_px / measurement_size
+            top_margin_ratio = top_px / measurement_size
+            right_margin_ratio = (
+                measurement_size - (left_px + width_px)
+            ) / measurement_size
+            bottom_margin_ratio = (
+                measurement_size - (top_px + height_px)
+            ) / measurement_size
+
             return (
-                left / measurement_size,
-                top / measurement_size,
-                (measurement_size - (left + w)) / measurement_size,
-                (measurement_size - (top + h)) / measurement_size,
+                left_margin_ratio,
+                top_margin_ratio,
+                right_margin_ratio,
+                bottom_margin_ratio,
             )
         except (pyvips.Error, ET.ParseError):
             return 0.0, 0.0, 0.0, 0.0
@@ -70,40 +79,65 @@ class SVGRenderer(VipsRenderer):
         the base class's no-op implementation.
         """
         try:
-            l, t, r, b = cls._get_margins(data)
-            if all(m == 0.0 for m in (l, t, r, b)):
+            left_margin, top_margin, right_margin, bottom_margin = (
+                cls._get_margins(data)
+            )
+            if all(
+                margin == 0.0
+                for margin in (
+                    left_margin,
+                    top_margin,
+                    right_margin,
+                    bottom_margin,
+                )
+            ):
                 return data
 
             root = ET.fromstring(data)
-            w_attr = root.get("width")
-            h_attr = root.get("height")
-            if not w_attr or not h_attr:
+            width_attr = root.get("width")
+            height_attr = root.get("height")
+            if not width_attr or not height_attr:
                 return data
 
-            w_val, w_unit = parse_length(w_attr)
-            h_val, h_unit = parse_length(h_attr)
-            w_unit = w_unit or "px"
-            h_unit = h_unit or "px"
+            width_val, width_unit = parse_length(width_attr)
+            height_val, height_unit = parse_length(height_attr)
+            width_unit = width_unit or "px"
+            height_unit = height_unit or "px"
 
-            vb_str = root.get("viewBox")
-            if vb_str:
-                vb_x, vb_y, vb_w, vb_h = map(float, vb_str.split())
+            viewbox_str = root.get("viewBox")
+            if viewbox_str:
+                viewbox_x, viewbox_y, viewbox_width, viewbox_height = map(
+                    float, viewbox_str.split()
+                )
             else:
-                vb_x, vb_y, vb_w, vb_h = 0, 0, w_val, h_val
+                viewbox_x, viewbox_y, viewbox_width, viewbox_height = (
+                    0,
+                    0,
+                    width_val,
+                    height_val,
+                )
 
-            new_vb_x = vb_x + (l * vb_w)
-            new_vb_y = vb_y + (t * vb_h)
-            new_vb_w = vb_w * (1 - l - r)
-            new_vb_h = vb_h * (1 - t - b)
+            new_viewbox_x = viewbox_x + (left_margin * viewbox_width)
+            new_viewbox_y = viewbox_y + (top_margin * viewbox_height)
+            new_viewbox_width = viewbox_width * (
+                1 - left_margin - right_margin
+            )
+            new_viewbox_height = viewbox_height * (
+                1 - top_margin - bottom_margin
+            )
 
-            new_w = w_val * (1 - l - r)
-            new_h = h_val * (1 - t - b)
+            new_width = width_val * (1 - left_margin - right_margin)
+            new_height = height_val * (1 - top_margin - bottom_margin)
 
-            root.set("viewBox", f"{new_vb_x} {new_vb_y} {new_vb_w} {new_vb_h}")
-            root.set("width", f"{new_w}{w_unit}")
-            root.set("height", f"{new_h}{h_unit}")
+            root.set(
+                "viewBox",
+                f"{new_viewbox_x} {new_viewbox_y} "
+                f"{new_viewbox_width} {new_viewbox_height}",
+            )
+            root.set("width", f"{new_width}{width_unit}")
+            root.set("height", f"{new_height}{height_unit}")
 
-            return ET.tostring(root, encoding='utf-8')
+            return ET.tostring(root, encoding="utf-8")
 
         except (pyvips.Error, ET.ParseError, ValueError):
             return data
@@ -116,22 +150,24 @@ class SVGRenderer(VipsRenderer):
         """
         try:
             root = ET.fromstring(data)
-            w_attr = root.get("width")
-            h_attr = root.get("height")
-            if not w_attr or not h_attr:
+            width_attr = root.get("width")
+            height_attr = root.get("height")
+            if not width_attr or not height_attr:
                 return None, None
 
-            w_val, w_unit = parse_length(w_attr)
-            h_val, h_unit = parse_length(h_attr)
-            w_mm = to_mm(w_val, w_unit, px_factor=px_factor)
-            h_mm = to_mm(h_val, h_unit, px_factor=px_factor)
+            width_val, width_unit = parse_length(width_attr)
+            height_val, height_unit = parse_length(height_attr)
+            width_mm = to_mm(width_val, width_unit, px_factor=px_factor)
+            height_mm = to_mm(height_val, height_unit, px_factor=px_factor)
         except (ValueError, ET.ParseError):
             return None, None
 
         # Adjust dimensions based on actual content margins
-        l, t, r, b = cls._get_margins(data)
-        content_w_mm = w_mm * (1 - l - r)
-        content_h_mm = h_mm * (1 - t - b)
+        left_margin, top_margin, right_margin, bottom_margin = (
+            cls._get_margins(data)
+        )
+        content_w_mm = width_mm * (1 - left_margin - right_margin)
+        content_h_mm = height_mm * (1 - top_margin - bottom_margin)
 
         return content_w_mm, content_h_mm
 
@@ -143,36 +179,52 @@ class SVGRenderer(VipsRenderer):
         Renders the SVG's true content directly to the target size by
         adjusting its viewBox based on pre-calculated margins.
         """
-        l, t, r, b = cls._get_margins(data)
+        left_margin, top_margin, right_margin, bottom_margin = (
+            cls._get_margins(data)
+        )
 
         try:
             root = ET.fromstring(data)
-            vb_str = root.get("viewBox")
-            if vb_str:
-                vb_x, vb_y, vb_w, vb_h = map(float, vb_str.split())
+            viewbox_str = root.get("viewBox")
+            if viewbox_str:
+                viewbox_x, viewbox_y, viewbox_width, viewbox_height = map(
+                    float, viewbox_str.split()
+                )
             else:
-                w_str = root.get("width")
-                h_str = root.get("height")
-                if not w_str or not h_str:
+                width_str = root.get("width")
+                height_str = root.get("height")
+                if not width_str or not height_str:
                     return None
-                w_val, _ = parse_length(w_str)
-                h_val, _ = parse_length(h_str)
-                vb_x, vb_y, vb_w, vb_h = 0, 0, w_val, h_val
+                width_val, _ = parse_length(width_str)
+                height_val, _ = parse_length(height_str)
+                viewbox_x, viewbox_y, viewbox_width, viewbox_height = (
+                    0,
+                    0,
+                    width_val,
+                    height_val,
+                )
 
             # Calculate new, cropped viewBox
-            new_vb_x = vb_x + (l * vb_w)
-            new_vb_y = vb_y + (t * vb_h)
-            new_vb_w = vb_w * (1 - l - r)
-            new_vb_h = vb_h * (1 - t - b)
+            new_viewbox_x = viewbox_x + (left_margin * viewbox_width)
+            new_viewbox_y = viewbox_y + (top_margin * viewbox_height)
+            new_viewbox_width = viewbox_width * (
+                1 - left_margin - right_margin
+            )
+            new_viewbox_height = viewbox_height * (
+                1 - top_margin - bottom_margin
+            )
 
             # Set attributes for final, direct render
-            root.set("viewBox",
-                     f"{new_vb_x} {new_vb_y} {new_vb_w} {new_vb_h}")
+            root.set(
+                "viewBox",
+                f"{new_viewbox_x} {new_viewbox_y} "
+                f"{new_viewbox_width} {new_viewbox_height}",
+            )
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
             root.set("preserveAspectRatio", "none")
 
-            final_svg = ET.tostring(root, encoding='utf-8')
+            final_svg = ET.tostring(root, encoding="utf-8")
             return pyvips.Image.svgload_buffer(final_svg)
         except (pyvips.Error, ET.ParseError) as e:
             logger.error(f"Final SVG render failed: {e}")
