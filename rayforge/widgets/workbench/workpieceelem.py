@@ -1,8 +1,8 @@
 import logging
+import cairo
 from typing import Optional, TYPE_CHECKING
 from ...models.workpiece import WorkPiece
 from .surfaceelem import SurfaceElement
-from .util import copy_surface
 
 
 if TYPE_CHECKING:
@@ -33,6 +33,7 @@ class WorkPieceElement(SurfaceElement):
         super().__init__(0, 0, 0, 0, data=workpiece, **kwargs)
         workpiece.size_changed.connect(self._on_workpiece_size_changed)
         workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+        self._cached_surface: Optional[cairo.ImageSurface] = None
 
     def _update_workpiece(self):
         """
@@ -90,38 +91,59 @@ class WorkPieceElement(SurfaceElement):
         clip: tuple[int, int, int, int] | None = None,
         force: bool = False,
     ):
-        """
-        Renders the WorkPiece element to the canvas.
-
-        Args:
-            clip: The clipping rectangle, or None for no clipping.
-            force: Whether to force rendering, even if the element is not
-            dirty.
-        """
         if not self.dirty and not force:
             return
-        if not self.canvas or not self.parent or self.surface is None:
-            logger.debug(
-                "WorkPieceElement.render: canvas, parent, or surface is None"
+        if (
+            not self.canvas
+            or self.width <= 0
+            or self.height <= 0
+            or self.surface is None
+        ):
+            return
+
+        # Determin if we need a better quality cache
+        needs_new_cache = False
+        if self._cached_surface is None:
+            needs_new_cache = True
+        else:
+            # Re-render if the element's width OR height is greater than
+            # the corresponding dimension of our cached bitmap.
+            cache_w = self._cached_surface.get_width()
+            cache_h = self._cached_surface.get_height()
+            if self.width > cache_w or self.height > cache_h:
+                needs_new_cache = True
+
+        if needs_new_cache or force:
+            logger.debug(f"Cache miss/refresh for element. Requesting new "
+                         f"surface at {self.width}x{self.height}px.")
+            # Request a new surface from the WorkPiece's generic renderer.
+            self._cached_surface = self.data.renderer.render_workpiece(
+                self.data.data,
+                width=self.width,
+                height=self.height
             )
+
+        # If we still don't have a surface, we can't draw.
+        if self._cached_surface is None:
             return
 
-        surface, changed = self.data.render(
-            self.canvas.pixels_per_mm_x,
-            self.canvas.pixels_per_mm_y,
-            (self.width, self.height),
-        )
-        if not changed or surface is None:
-            return
-
+        # Use fast Cairo scaling to draw the cached surface
+        # into our element's area.
         self.clear_surface(clip or self.rect())
-        self.surface = copy_surface(
-            surface,
-            self.surface,
-            self.width,
-            self.height,
-            clip or (0, 0, self.width, self.height),
-        )
+        ctx = cairo.Context(self.surface)
+        source_w = self._cached_surface.get_width()
+        source_h = self._cached_surface.get_height()
+
+        scale_x = self.width / source_w
+        scale_y = self.height / source_h
+
+        ctx.save()
+        ctx.scale(scale_x, scale_y)
+        ctx.set_source_surface(self._cached_surface, 0, 0)
+        ctx.get_source().set_filter(cairo.FILTER_BEST)
+        ctx.paint()
+        ctx.restore()
+
         self.dirty = False
 
     def set_pos(self, x: int, y: int):

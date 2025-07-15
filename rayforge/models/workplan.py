@@ -186,10 +186,9 @@ class WorkStep(ABC):
 
         if self.can_scale():
             # Vector output, render size doesn't matter much. Use small size.
-            surface, _ = workpiece.render(
+            surface = workpiece.render_for_ops(
                 *self.pixels_per_mm,
-                size=(100, 100),
-                force=True
+                size=(100, 100)
             )
             if not surface:
                 logger.error(

@@ -22,7 +22,6 @@ class WorkPiece:
         self._renderer_ref_for_pyreverse: Renderer
         self.pos: Optional[Tuple[float, float]] = None
         self.size: Optional[Tuple[float, float]] = None  # in mm
-        self.surface: Optional[cairo.ImageSurface] = None
         self.changed: Signal = Signal()
         self.pos_changed: Signal = Signal()
         self.size_changed: Signal = Signal()
@@ -79,29 +78,24 @@ class WorkPiece:
         wp.size = wp.get_default_size()
         return wp
 
-    def render(self,
-               pixels_per_mm_x: float,
-               pixels_per_mm_y: float,
-               size: Optional[Tuple[float, float]] = None,
-               force: bool = False
-               ) -> Tuple[Optional[cairo.ImageSurface], bool]:
-        size = self.get_default_size() if size is None else size
-        if not size:
-            return None, False
+    def render_for_ops(
+        self,
+        pixels_per_mm_x: float,
+        pixels_per_mm_y: float,
+        size: Optional[Tuple[float, float]] = None
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Renders a NEW, high-resolution surface for Ops generation.
+        This method is stateless and does not modify the WorkPiece object.
+        """
+        current_size = self.get_current_size() if size is None else size
+        if not current_size:
+            return None
 
-        width = size[0] * pixels_per_mm_x
-        height = size[1] * pixels_per_mm_y
+        width = int(current_size[0] * pixels_per_mm_x)
+        height = int(current_size[1] * pixels_per_mm_y)
 
-        if self.surface \
-                and self.surface.get_width() == width \
-                and self.surface.get_height() == height \
-                and not force:
-            return self.surface, False
-
-        self.surface = self.renderer.render_workpiece(self.data,
-                                                      width,
-                                                      height)
-        return self.surface, True
+        return self.renderer.render_workpiece(self.data, width, height)
 
     def render_chunk(
             self,
@@ -117,14 +111,8 @@ class WorkPiece:
         if not size:
             return
 
-        width = size[0] * pixels_per_mm_x
-        height = size[1] * pixels_per_mm_y
-
-        if self.surface \
-                and self.surface.get_width() == width \
-                and self.surface.get_height() == height \
-                and not force:
-            yield self.surface, (0, 0)
+        width = int(size[0] * pixels_per_mm_x)
+        height = int(size[1] * pixels_per_mm_y)
 
         for chunk in self.renderer.render_chunk(self.data, width, height):
             yield chunk
