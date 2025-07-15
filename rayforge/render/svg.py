@@ -1,7 +1,5 @@
 import re
-import io
-from typing import Optional
-import cairo
+from typing import Optional, cast
 import logging
 import warnings
 with warnings.catch_warnings():
@@ -57,9 +55,9 @@ class SVGRenderer(VipsRenderer):
         return width_mm, height_mm
 
     @classmethod
-    def render_to_pixels(
+    def _render_to_vips_image(
         cls, data: bytes, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> Optional[pyvips.Image]:
         """
         Specialized vector implementation that modifies SVG data in-memory
         to achieve sharp, non-uniform scaling directly to pixel dimensions.
@@ -70,27 +68,21 @@ class SVGRenderer(VipsRenderer):
             root.set('height', f'{height}px')
             root.set('preserveAspectRatio', 'none')
             modified_svg_data = ET.tostring(root, encoding='utf-8')
-
-            final_image = pyvips.Image.svgload_buffer(modified_svg_data)
-            if not isinstance(final_image, pyvips.Image):
-                return None
-
+            return pyvips.Image.svgload_buffer(modified_svg_data)
         except (pyvips.Error, ET.ParseError) as e:
             logger.error(f"An error occurred during SVG rendering: {e}")
             return None
 
-        buf = final_image.write_to_buffer('.png')
-        return cairo.ImageSurface.create_from_png(io.BytesIO(buf))
-
     @classmethod
-    def _crop_to_content(cls, data):
+    def _crop_to_content(cls, data: bytes) -> bytes:
         # Load the image with pyvips to get pixel dimensions
         kwargs = cls.get_vips_loader_args()
         vips_image = cls.get_vips_loader()(data, **kwargs)
-        if not vips_image:
-            logging.warning("Failed to load SVG image")
-        width_px = vips_image.width
-        height_px = vips_image.height
+        if not isinstance(vips_image, pyvips.Image):
+            logger.warning("Failed to load SVG image for cropping")
+            return data
+        width_px = cast(int, vips_image.width)
+        height_px = cast(int, vips_image.height)
 
         # Get content margins as percentages
         left_pct, top_pct, right_pct, bottom_pct = cls._get_margins(data)

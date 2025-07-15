@@ -16,55 +16,6 @@ class PNGRenderer(VipsRenderer):
         return {"access": pyvips.Access.RANDOM}  # Stream-friendly mode
 
     @classmethod
-    def get_vips_image(cls,
-                       data,
-                       width_px=None,
-                       height_px=None,
-                       pixels_per_mm=None):
-        try:
-            image = cls.get_vips_loader()(data, **cls.get_vips_loader_args())
-        except pyvips.error.Error as e:
-            raise ValueError(f"Failed to load PNG: {e}")
-
-        # 1. Calculate target dimensions
-        target_width, target_height = cls._calculate_target_size(
-            image, width_px, height_px, pixels_per_mm
-        )
-
-        # 2. Apply scaling with pyramid reduction for large images
-        if image.width > target_width or image.height > target_height:
-            image = image.thumbnail_image(
-                min(target_width, target_height),
-                height=target_height,
-                size=pyvips.Size.DOWN  # Prevent upscaling
-            )
-
-        # 3. Add alpha channel if needed
-        if image.bands == 3:
-            image = image.bandjoin(255)
-
-        return image
-
-    @classmethod
-    def _calculate_target_size(cls, image, width_px, height_px, pixels_per_mm):
-        """Calculate safe target dimensions with multiple fallbacks"""
-        # Priority 1: Explicit pixel dimensions
-        if width_px or height_px:
-            return width_px or image.width, height_px or image.height
-
-        # Priority 2: Pixels-per-mm calculation
-        if pixels_per_mm and None not in pixels_per_mm:
-            nat_width_mm, nat_height_mm = cls.get_natural_size(image)
-            if nat_width_mm and nat_height_mm:
-                return (
-                    int(nat_width_mm * pixels_per_mm[0]),
-                    int(nat_height_mm * pixels_per_mm[1])
-                )
-
-        # Fallback: Original dimensions
-        return image.width, image.height
-
-    @classmethod
     def get_natural_size(cls, data, px_factor=0):
         image = cls.get_vips_loader()(data, **cls.get_vips_loader_args())
 

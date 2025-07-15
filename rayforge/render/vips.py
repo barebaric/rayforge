@@ -1,13 +1,17 @@
-from typing import Generator, Optional, Tuple
+from typing import Generator, Optional, Tuple, cast
 import cairo
 import io
 import math
 import numpy as np
+import logging
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips  # type: ignore
 from .renderer import Renderer
+
+
+logger = logging.Logger(__name__)
 
 
 # Base class for rendering with pyvips
@@ -27,38 +31,46 @@ class VipsRenderer(Renderer):
         return {}
 
     @classmethod
-    def get_vips_image(cls,
-                       data,
-                       width_px=None,
-                       height_px=None,
-                       pixels_per_mm: Optional[Tuple[float, float]] = None):
+    def _render_to_vips_image(
+        cls, data: bytes, width: int, height: int
+    ) -> Optional[pyvips.Image]:
         """
-        Return the pyvips image by using the loader function for the
-        specific format.
+        Internal helper. Default raster implementation that loads an image
+        and resizes it to the exact pixel dimensions, stretching if necessary.
         """
-        if pixels_per_mm is None or None in pixels_per_mm:
-            assert width_px and height_px, \
-                   "Need either width/height or pixels_per_mm"
-            natsize = cls.get_natural_size(data, px_factor=.1)
-            pixels_per_mm = width_px/natsize[0], height_px/natsize[1]
+        try:
+            image = cls.get_vips_loader()(data, **cls.get_vips_loader_args())
+            if (
+                not isinstance(image, pyvips.Image)
+                or image.width == 0
+                or image.height == 0
+            ):
+                return None
 
-        dpi = max(*pixels_per_mm) * 25.4
-        kwargs = cls.get_vips_loader_args()
-        image = cls.get_vips_loader()(data, dpi=dpi, **kwargs)
+            # Calculate separate horizontal and vertical scale factors and
+            # use .resize() to force a non-uniform scale.
+            h_scale = width / image.width
+            v_scale = height / image.height
+            return image.resize(h_scale, vscale=v_scale)
 
-        if width_px or height_px:
-            hscale = 1.0 if width_px is None else width_px / image.width
-            vscale = 1.0 if height_px is None else height_px / image.height
-            image = image.resize(hscale, vscale=vscale)
-
-        return image
+        except pyvips.Error as e:
+            logger.error(f"Failed to render to vips image: {e}")
+            return None
 
     @classmethod
-    def prepare(cls, data):
+    def prepare(cls, data: bytes) -> bytes:
+        """
+        Prepare the input data for rendering.
+        This default implementation crops the content.
+        """
         return cls._crop_to_content(data)
 
     @classmethod
-    def _crop_to_content(cls, data):
+    def _crop_to_content(cls, data: bytes) -> bytes:
+        """
+        Crop the content of the given data.
+        This default implementation returns the data unchanged.
+        """
         return data
 
     @classmethod
@@ -73,92 +85,88 @@ class VipsRenderer(Renderer):
         cls, data: bytes, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """
-        Default raster implementation. Loads image and scales down to the
-        target pixel size for high-quality output.
+        Public method that uses the internal helper to get a vips image
+        and converts it to a Cairo surface.
         """
-        try:
-            image = cls.get_vips_loader()(data, **cls.get_vips_loader_args())
-            # Use thumbnail_image for a fast, high-quality downscale.
-            final_image = image.thumbnail_image(
-                width, height=height, no_rotate=True
-            )
-            if not isinstance(final_image, pyvips.Image):
-                return None
-        except pyvips.Error as e:
-            print(f"Error in render_to_pixels: {e}")
+        final_image = cls._render_to_vips_image(data, width, height)
+        if not isinstance(final_image, pyvips.Image):
             return None
 
-        buf = final_image.write_to_buffer('.png')
+        buf: bytes = final_image.write_to_buffer('.png')  # type: ignore
         return cairo.ImageSurface.create_from_png(io.BytesIO(buf))
 
     @classmethod
     def render_chunk(
         cls,
-        data,
-        width_px,
-        height_px,
-        chunk_width=10000,
-        chunk_height=20,
-        overlap_x=1,
-        overlap_y=0,
+        data: bytes,
+        width_px: int,
+        height_px: int,
+        chunk_width: int = 10000,
+        chunk_height: int = 20,
+        overlap_x: int = 1,
+        overlap_y: int = 0,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
-        vips_image = cls.get_vips_image(data, width_px, height_px)
+        # Use the robust internal helper instead of the old, buggy
+        # get_vips_image.
+        vips_image = cls._render_to_vips_image(data, width_px, height_px)
 
-        # Resize to exact target dimensions
-        hscale = width_px / vips_image.width
-        vscale = height_px / vips_image.height
-        vips_image = vips_image.resize(hscale, vscale=vscale)
+        if not isinstance(vips_image, pyvips.Image):
+            logger.warning("Failed to load image for chunking.")
+            return
 
-        # Calculate number of chunks needed
-        cols = math.ceil(vips_image.width / chunk_width)
-        rows = math.ceil(vips_image.height / chunk_height)
+        # The rest of the chunking logic can now proceed, confident that
+        # vips_image has the exact, correct dimensions.
+        real_width = cast(int, vips_image.width)
+        real_height = cast(int, vips_image.height)
+        cols = math.ceil(real_width / chunk_width)
+        rows = math.ceil(real_height / chunk_height)
 
         for row in range(rows):
             for col in range(cols):
-                # Calculate chunk boundaries
                 left = col * chunk_width
                 top = row * chunk_height
-                width = min(chunk_width+overlap_x, vips_image.width - left)
-                height = min(chunk_height+overlap_y, vips_image.height - top)
+                width = min(chunk_width + overlap_x, real_width - left)
+                height = min(chunk_height + overlap_y, real_height - top)
+                chunk: pyvips.Image = vips_image.crop(left, top, width, height)
 
-                # Extract chunk
-                chunk = vips_image.crop(left, top, width, height)
-
-                # Ensure chunk has 4 bands (RGBA)
                 if chunk.bands == 3:
-                    chunk_rgba = chunk.bandjoin(255)  # Add opaque alpha
-                elif chunk.bands == 4:
-                    chunk_rgba = chunk  # Use existing alpha
-                else:
-                    raise ValueError(
-                        f"Unexpected number of bands: {chunk.bands}"
-                    )
+                    chunk = chunk.bandjoin(255)
 
-                # Create Cairo surface for the chunk
-                buf = chunk_rgba.write_to_memory()
+                buf: bytes = chunk.write_to_memory()
                 surface = cairo.ImageSurface.create_for_data(
                     buf,
                     cairo.FORMAT_ARGB32,
                     chunk.width,
                     chunk.height,
-                    chunk_rgba.width*4  # Stride for RGBA
+                    chunk.width * 4,
                 )
-
-                # Yield surface + position metadata
                 yield surface, (left, top)
 
     @classmethod
-    def _get_margins(cls, data):
+    def _get_margins(
+        cls, data: bytes
+    ) -> Tuple[float, float, float, float]:
+        """
+        Calculate the content margins of an image as percentages.
+        Assumes the image has an alpha channel.
+        """
         # Load the image using the class's VIPS loader
         kwargs = cls.get_vips_loader_args()
         vips_image = cls.get_vips_loader()(data, **kwargs)
+        if not isinstance(vips_image, pyvips.Image):
+            logger.error("Failed to load image for cropping")
+            return 0, 0, 0, 0
 
         # Ensure the image has an alpha channel (band 3)
-        if vips_image.bands < 4:
+        if cast(int, vips_image.bands) < 4:
             vips_image = vips_image.bandjoin(255)  # Add alpha if missing
+        if not isinstance(vips_image, pyvips.Image):
+            logger.error("Failed to add alpha channel to image for cropping")
+            return 0, 0, 0, 0
 
         # Extract the alpha channel and get dimensions
         alpha = vips_image[3]
+        assert alpha, "Unexpected alpha channel type"
         width = alpha.width
         height = alpha.height
 
@@ -187,7 +195,7 @@ class VipsRenderer(Renderer):
 
         # Handle case where there is no content
         if left >= width or right < 0 or top >= height or bottom < 0:
-            return (0, 0, 0, 0)
+            return 0, 0, 0, 0
 
         # Calculate margins as percentages
         left_pct = left / width

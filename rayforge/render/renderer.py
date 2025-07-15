@@ -71,5 +71,8 @@ class Renderer(ABC):
 
         Yields one chunk per iteration, as a tuple:
             ImageSurface, (x_pos, y_pos)
+
+        This method is optional. If a renderer can provide a more
+        optimized chunking implementation, it can override this.
         """
         raise NotImplementedError
