@@ -101,17 +101,14 @@ class TestPDFRenderer:
         ratio = PDFRenderer.get_aspect_ratio(basic_pdf)
         assert ratio == pytest.approx(2.0, abs=0.01)  # 100pt / 50pt = 2.0
 
-    def test_render_workpiece(self, basic_pdf):
+    def test_render_to_pixels(self, basic_pdf):
         """
-        Test rendering to a Cairo surface at default pixels_per_mm (1 mm = 25px).
-        1 mm = 1 pt * 25.4 / 72
+        Test rendering to a Cairo surface at a spcified size
         """
-        surface = PDFRenderer.render_workpiece(basic_pdf)
-        x_mm = 100 * 25.4 / 72
-        y_mm = 50 * 25.4 / 72
+        surface = PDFRenderer.render_to_pixels(basic_pdf, 100, 50)
         assert isinstance(surface, cairo.ImageSurface)
-        assert surface.get_width() == pytest.approx(x_mm * 25, abs=0.1)
-        assert surface.get_height() == pytest.approx(y_mm * 25, abs=0.1)
+        assert surface.get_width() == pytest.approx(100, abs=0.1)
+        assert surface.get_height() == pytest.approx(50, abs=0.1)
 
     def test_get_margins(self, transparent_pdf):
         """Test margin calculation for a PDF with content in the center."""

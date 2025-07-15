@@ -1,5 +1,5 @@
 import re
-from typing import Optional, cast
+from typing import Optional
 import logging
 import warnings
 with warnings.catch_warnings():
@@ -14,6 +14,8 @@ logger = logging.Logger(__name__)
 
 
 def parse_length(s):
+    if not s:
+        return 0.0, "px"
     m = re.match(r"([0-9.]+)\s*([a-z%]*)", s)
     if m:
         return float(m.group(1)), m.group(2) or "px"
@@ -30,119 +32,148 @@ class SVGRenderer(VipsRenderer):
         return pyvips.Image.svgload_buffer
 
     @classmethod
-    def get_natural_size(cls, data, px_factor=0):
-        # Parse the SVG from the bytestring
-        root = ET.fromstring(data)
-
-        # Extract width and height attributes
-        width_attr = root.get("width")
-        height_attr = root.get("height")
-
-        if not width_attr or not height_attr:
-            # SVG does not have width or height attributes.
-            return None, None
-
-        width, width_unit = parse_length(width_attr)
-        height, height_unit = parse_length(height_attr)
-
-        # Convert to millimeters
+    def _get_margins(cls, data: bytes) -> tuple[float, float, float, float]:
+        """
+        Calculates content margins by rendering the SVG on a fixed-size
+        canvas and finding the bounding box of non-transparent pixels.
+        """
+        measurement_size = 1000.0
         try:
-            width_mm = to_mm(width, width_unit, px_factor=px_factor)
-            height_mm = to_mm(height, height_unit, px_factor=px_factor)
-        except ValueError:
+            root_measure = ET.fromstring(data)
+            root_measure.set('width', f'{measurement_size}px')
+            root_measure.set('height', f'{measurement_size}px')
+            root_measure.set('preserveAspectRatio', 'none')
+            measure_svg = ET.tostring(root_measure)
+
+            measure_image = pyvips.Image.svgload_buffer(measure_svg)
+            if measure_image.bands < 4:
+                measure_image = measure_image.bandjoin(255)
+
+            left, top, w, h = measure_image.find_trim()
+            if w == 0 or h == 0:
+                return 0.0, 0.0, 0.0, 0.0
+
+            return (
+                left / measurement_size,
+                top / measurement_size,
+                (measurement_size - (left + w)) / measurement_size,
+                (measurement_size - (top + h)) / measurement_size,
+            )
+        except (pyvips.Error, ET.ParseError):
+            return 0.0, 0.0, 0.0, 0.0
+
+    @classmethod
+    def _crop_to_content(cls, data: bytes) -> bytes:
+        """
+        Crops the SVG to its content by calculating the content margins
+        and adjusting the viewBox and dimensions accordingly. This overrides
+        the base class's no-op implementation.
+        """
+        try:
+            l, t, r, b = cls._get_margins(data)
+            if all(m == 0.0 for m in (l, t, r, b)):
+                return data
+
+            root = ET.fromstring(data)
+            w_attr = root.get("width")
+            h_attr = root.get("height")
+            if not w_attr or not h_attr:
+                return data
+
+            w_val, w_unit = parse_length(w_attr)
+            h_val, h_unit = parse_length(h_attr)
+            w_unit = w_unit or "px"
+            h_unit = h_unit or "px"
+
+            vb_str = root.get("viewBox")
+            if vb_str:
+                vb_x, vb_y, vb_w, vb_h = map(float, vb_str.split())
+            else:
+                vb_x, vb_y, vb_w, vb_h = 0, 0, w_val, h_val
+
+            new_vb_x = vb_x + (l * vb_w)
+            new_vb_y = vb_y + (t * vb_h)
+            new_vb_w = vb_w * (1 - l - r)
+            new_vb_h = vb_h * (1 - t - b)
+
+            new_w = w_val * (1 - l - r)
+            new_h = h_val * (1 - t - b)
+
+            root.set("viewBox", f"{new_vb_x} {new_vb_y} {new_vb_w} {new_vb_h}")
+            root.set("width", f"{new_w}{w_unit}")
+            root.set("height", f"{new_h}{h_unit}")
+
+            return ET.tostring(root, encoding='utf-8')
+
+        except (pyvips.Error, ET.ParseError, ValueError):
+            return data
+
+    @classmethod
+    def get_natural_size(cls, data, px_factor=0):
+        """
+        Calculates the natural size of the SVG's actual content by
+        reading its declared dimensions and then adjusting for any margins.
+        """
+        try:
+            root = ET.fromstring(data)
+            w_attr = root.get("width")
+            h_attr = root.get("height")
+            if not w_attr or not h_attr:
+                return None, None
+
+            w_val, w_unit = parse_length(w_attr)
+            h_val, h_unit = parse_length(h_attr)
+            w_mm = to_mm(w_val, w_unit, px_factor=px_factor)
+            h_mm = to_mm(h_val, h_unit, px_factor=px_factor)
+        except (ValueError, ET.ParseError):
             return None, None
 
-        return width_mm, height_mm
+        # Adjust dimensions based on actual content margins
+        l, t, r, b = cls._get_margins(data)
+        content_w_mm = w_mm * (1 - l - r)
+        content_h_mm = h_mm * (1 - t - b)
+
+        return content_w_mm, content_h_mm
 
     @classmethod
     def _render_to_vips_image(
         cls, data: bytes, width: int, height: int
     ) -> Optional[pyvips.Image]:
         """
-        Specialized vector implementation that modifies SVG data in-memory
-        to achieve sharp, non-uniform scaling directly to pixel dimensions.
+        Renders the SVG's true content directly to the target size by
+        adjusting its viewBox based on pre-calculated margins.
         """
+        l, t, r, b = cls._get_margins(data)
+
         try:
             root = ET.fromstring(data)
-            root.set('width', f'{width}px')
-            root.set('height', f'{height}px')
-            root.set('preserveAspectRatio', 'none')
-            modified_svg_data = ET.tostring(root, encoding='utf-8')
-            return pyvips.Image.svgload_buffer(modified_svg_data)
-        except (pyvips.Error, ET.ParseError) as e:
-            logger.error(f"An error occurred during SVG rendering: {e}")
-            return None
-
-    @classmethod
-    def _crop_to_content(cls, data: bytes) -> bytes:
-        # Load the image with pyvips to get pixel dimensions
-        kwargs = cls.get_vips_loader_args()
-        vips_image = cls.get_vips_loader()(data, **kwargs)
-        if not isinstance(vips_image, pyvips.Image):
-            logger.warning("Failed to load SVG image for cropping")
-            return data
-        width_px = cast(int, vips_image.width)
-        height_px = cast(int, vips_image.height)
-
-        # Get content margins as percentages
-        left_pct, top_pct, right_pct, bottom_pct = cls._get_margins(data)
-
-        root = ET.fromstring(data)
-
-        # Adjust viewBox by applying the margin percentages
-        viewbox_str = root.get("viewBox")
-        if not viewbox_str:
-            # If no viewBox, use width and height as fallback
-            width_str = root.get("width")
-            height_str = root.get("height")
-            if width_str and height_str:
-                width = float(width_str)
-                height = float(height_str)
-                viewbox_str = f"0 0 {width} {height}"
-                root.set("viewBox", viewbox_str)
+            vb_str = root.get("viewBox")
+            if vb_str:
+                vb_x, vb_y, vb_w, vb_h = map(float, vb_str.split())
             else:
-                return data  # Cannot crop without dimensions
+                w_str = root.get("width")
+                h_str = root.get("height")
+                if not w_str or not h_str:
+                    return None
+                w_val, _ = parse_length(w_str)
+                h_val, _ = parse_length(h_str)
+                vb_x, vb_y, vb_w, vb_h = 0, 0, w_val, h_val
 
-        vb_x, vb_y, vb_w, vb_h = map(float, viewbox_str.split())
+            # Calculate new, cropped viewBox
+            new_vb_x = vb_x + (l * vb_w)
+            new_vb_y = vb_y + (t * vb_h)
+            new_vb_w = vb_w * (1 - l - r)
+            new_vb_h = vb_h * (1 - t - b)
 
-        # Calculate the percentage equivalent of a 1-pixel margin
-        margin_px = 1
-        margin_left_pct = margin_px / width_px if width_px > 0 else 0
-        margin_top_pct = margin_px / height_px if height_px > 0 else 0
-        margin_right_pct = margin_px / width_px if width_px > 0 else 0
-        margin_bottom_pct = margin_px / height_px if height_px > 0 else 0
+            # Set attributes for final, direct render
+            root.set("viewBox",
+                     f"{new_vb_x} {new_vb_y} {new_vb_w} {new_vb_h}")
+            root.set("width", f"{width}px")
+            root.set("height", f"{height}px")
+            root.set("preserveAspectRatio", "none")
 
-        # Adjust the content margin percentages
-        adjusted_left_pct = max(0, left_pct - margin_left_pct)
-        adjusted_top_pct = max(0, top_pct - margin_top_pct)
-        adjusted_right_pct = max(0, right_pct - margin_right_pct)
-        adjusted_bottom_pct = max(0, bottom_pct - margin_bottom_pct)
-
-        # Calculate new viewBox dimensions using adjusted percentages
-        new_x = vb_x + adjusted_left_pct * vb_w
-        new_y = vb_y + adjusted_top_pct * vb_h
-        new_w = vb_w * (1 - adjusted_left_pct - adjusted_right_pct)
-        new_h = vb_h * (1 - adjusted_top_pct - adjusted_bottom_pct)
-
-        # Ensure new dimensions are not negative
-        new_w = max(0, new_w)
-        new_h = max(0, new_h)
-
-        root.set("viewBox", f"{new_x} {new_y} {new_w} {new_h}")
-
-        # Adjust width and height attributes based on the new viewBox size
-        width_str = root.get("width")
-        if width_str:
-            width_val, unit = parse_length(width_str)
-            # Scale the original width by the ratio of new_w to vb_w
-            new_width_val = width_val * (new_w / vb_w) if vb_w > 0 else new_w
-            root.set("width", f"{new_width_val}{unit}")
-
-        height_str = root.get("height")
-        if height_str:
-            height_val, unit = parse_length(height_str)
-            # Scale the original height by the ratio of new_h to vb_h
-            new_height_val = height_val * (new_h / vb_h) if vb_h > 0 else new_h
-            root.set("height", f"{new_height_val}{unit}")
-
-        return ET.tostring(root, encoding="unicode").encode('utf-8')
+            final_svg = ET.tostring(root, encoding='utf-8')
+            return pyvips.Image.svgload_buffer(final_svg)
+        except (pyvips.Error, ET.ParseError) as e:
+            logger.error(f"Final SVG render failed: {e}")
+            return None

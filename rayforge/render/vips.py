@@ -90,7 +90,7 @@ class VipsRenderer(Renderer):
         """
         final_image = cls._render_to_vips_image(data, width, height)
         if not isinstance(final_image, pyvips.Image):
-            return None
+            raise RuntimeError('failed to render image')
 
         buf: bytes = final_image.write_to_buffer('.png')  # type: ignore
         return cairo.ImageSurface.create_from_png(io.BytesIO(buf))

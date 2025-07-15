@@ -132,7 +132,7 @@ class TestDXFRenderer:
 
     def test_render_workpiece(self, basic_line_dxf):
         data = DXFRenderer.prepare(basic_line_dxf)
-        surface = DXFRenderer.render_workpiece(data, width=500, height=250)
+        surface = DXFRenderer.render_to_pixels(data, width=500, height=250)
         assert surface.get_width() == 500
         assert surface.get_height() == 250
 
@@ -157,7 +157,7 @@ class TestDXFRenderer:
     def test_invalid_dxf_handling(self):
         invalid_dxf = b"invalid dxf content"
         with pytest.raises(Exception):
-            DXFRenderer.render_workpiece(invalid_dxf)
+            DXFRenderer.render_to_pixels(invalid_dxf, 10, 10)
 
     def test_edge_cases(self):
         # DXF with no modelspace entities
