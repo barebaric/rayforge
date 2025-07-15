@@ -225,7 +225,7 @@ class CanvasElement:
         clip: x, y, w, h. the region to render
         """
         if self.surface is None:
-            return  # Cannot render if surface doesn't exist
+            return
         if not self.dirty and not force:
             return
 
@@ -240,9 +240,9 @@ class CanvasElement:
         # Paint children
         for child in self.children:
             if child.dirty:
-                child_clip = self._rect_to_child_coords_px(child, clip) \
-                             if clip else None
-                child.render(clip=child_clip, force=False)
+                # The child should always do a full render to its own surface.
+                # Clipping is handled by this parent's context when painting.
+                child.render(force=False)
                 child.dirty = False
             if child.visible and child.surface:
                 ctx.set_source_surface(child.surface, *child.pos())

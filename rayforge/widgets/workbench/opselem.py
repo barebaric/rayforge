@@ -51,9 +51,16 @@ class WorkPieceOpsElement(SurfaceElement):
         width_px = round(width_mm * self.canvas.pixels_per_mm_x)
         height_px = round(height_mm * self.canvas.pixels_per_mm_y)
 
+        new_width = width_px + 2 * OPS_MARGIN_PX
+        new_height = height_px + 2 * OPS_MARGIN_PX
+
+        size_changed = self.width != new_width or self.height != new_height
+        if not size_changed and not force:
+            return
+
         # Adjust the element size by the margin
-        self.width = width_px + 2 * OPS_MARGIN_PX
-        self.height = height_px + 2 * OPS_MARGIN_PX
+        self.width = new_width
+        self.height = new_height
 
         # Adjust the element's position to center the content.
         # We need to shift the element's top-left corner up and left by

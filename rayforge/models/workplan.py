@@ -342,8 +342,6 @@ class WorkStep(ABC):
         for workpiece in self.workpiece_to_ops.keys():
             self.update_workpiece(workpiece)
 
-    # _on_ops_created is removed as signals now handle completion/updates
-
     def get_ops(self, workpiece):
         """
         Returns Ops for the given workpiece, scaled to the size of

@@ -66,9 +66,7 @@ class WorkPieceElement(SurfaceElement):
             force: Whether to force allocation, even if the position and size
                 have not changed.
         """
-        if not self.canvas:
-            return
-        if self._in_update:
+        if not self.canvas or self._in_update:
             return
 
         # Get the position and size in mm from the WorkPiece.
@@ -101,16 +99,18 @@ class WorkPieceElement(SurfaceElement):
         ):
             return
 
-        # Determin if we need a better quality cache
+        # Determine if we need a better quality cache
         needs_new_cache = False
         if self._cached_surface is None:
             needs_new_cache = True
         else:
-            # Re-render if the element's width OR height is greater than
-            # the corresponding dimension of our cached bitmap.
+            # Re-render if the element's size has changed by more than
+            # a 5px threshold. This avoids frequent re-renders on minor
+            # zoom changes but ensures the cache is updated when the size
+            # difference becomes significant.
             cache_w = self._cached_surface.get_width()
             cache_h = self._cached_surface.get_height()
-            if self.width > cache_w or self.height > cache_h:
+            if abs(self.width - cache_w) > 5 or abs(self.height - cache_h) > 5:
                 needs_new_cache = True
 
         if needs_new_cache or force:
@@ -127,15 +127,18 @@ class WorkPieceElement(SurfaceElement):
         if self._cached_surface is None:
             return
 
-        # Use fast Cairo scaling to draw the cached surface
-        # into our element's area.
-        self.clear_surface(clip or self.rect())
+        # Always clear the entire surface to start fresh.
+        self.clear_surface()
         ctx = cairo.Context(self.surface)
+        if clip:
+            ctx.rectangle(*clip)
+            ctx.clip()
+
         source_w = self._cached_surface.get_width()
         source_h = self._cached_surface.get_height()
 
-        scale_x = self.width / source_w
-        scale_y = self.height / source_h
+        scale_x = self.width / source_w if source_w > 0 else 0
+        scale_y = self.height / source_h if source_h > 0 else 0
 
         ctx.save()
         ctx.scale(scale_x, scale_y)
