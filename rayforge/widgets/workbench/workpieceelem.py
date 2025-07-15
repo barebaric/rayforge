@@ -35,36 +35,10 @@ class WorkPieceElement(SurfaceElement):
         workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
         self._cached_surface: Optional[cairo.ImageSurface] = None
 
-    def _update_workpiece(self):
-        """
-        Updates the WorkPiece data with the element's current position and
-        size.
-        """
-        if not self.canvas:
-            return
-
-        # Get the element's position and size in pixels.
-        x, y, width, height = self.rect()
-
-        # Convert the pixel values to mm values.
-        x_mm, y_mm = self.pixel_to_mm(x, y)
-        width_mm = width / self.canvas.pixels_per_mm_x
-        height_mm = height / self.canvas.pixels_per_mm_y
-
-        self._in_update = True
-        try:
-            self.data.set_pos(x_mm, y_mm)
-            self.data.set_size(width_mm, height_mm)
-        finally:
-            self._in_update = False
-
     def allocate(self, force: bool = False):
         """
         Allocates the element's position and size based on the WorkPiece data.
-
-        Args:
-            force: Whether to force allocation, even if the position and size
-                have not changed.
+        This is the "model to view" update path.
         """
         if not self.canvas or self._in_update:
             return
@@ -77,8 +51,9 @@ class WorkPieceElement(SurfaceElement):
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
-        # Update the element's position and size.
-        self.set_pos_mm(x_mm, y_mm+height_mm)
+        # Update the element's position and size. The data model's Y is the
+        # bottom edge, so we add height to get the top edge for positioning.
+        self.set_pos_mm(x_mm, y_mm + height_mm)
         self.width, self.height = new_width, new_height
 
         # Create the surface for the new element.
@@ -127,9 +102,10 @@ class WorkPieceElement(SurfaceElement):
         if self._cached_surface is None:
             return
 
-        # Always clear the entire surface to start fresh.
+        # Always clear the entire surface before drawing.
         self.clear_surface()
         ctx = cairo.Context(self.surface)
+
         if clip:
             ctx.rectangle(*clip)
             ctx.clip()
@@ -151,30 +127,59 @@ class WorkPieceElement(SurfaceElement):
 
     def set_pos(self, x: int, y: int):
         """
-        Sets the position of the element in pixels.
-
-        Args:
-            x: The new x-coordinate in pixels.
-            y: The new y-coordinate in pixels.
+        Sets the position of the element in pixels and updates the model.
+        This is the "view to model" update path for position.
         """
         super().set_pos(x, y)
-        self._update_workpiece()
+        if not self.canvas or self._in_update:
+            return
+
+        x_mm, y_mm = self.pixel_to_mm(x, y)
+        self._in_update = True
+        try:
+            # Only update the position, not the size.
+            self.data.set_pos(x_mm, y_mm)
+        finally:
+            self._in_update = False
 
     def set_size(self, width: int, height: int):
         """
-        Sets the size of the element in pixels.
-
-        Args:
-            width: The new width in pixels.
-            height: The new height in pixels.
+        Sets the size of the element in pixels and updates the model,
+        adjusting the model's position to keep the top-left corner fixed.
+        This is the "view to model" update path for size.
         """
         super().set_size(width, height)
-        self._update_workpiece()
+        if not self.canvas or self._in_update:
+            return
+
+        # Get old model state before changes
+        old_x_mm, old_y_mm = self.data.pos or (0, 0)
+        _, old_height_mm = self.data.size or self.data.get_default_size()
+
+        # Calculate new model size from view pixels
+        new_width_mm = width / self.canvas.pixels_per_mm_x
+        new_height_mm = height / self.canvas.pixels_per_mm_y
+
+        # The data model's y-position is its bottom edge. To keep the top
+        # edge stationary during a resize, we must adjust the bottom edge's
+        # position based on the change in height.
+        new_y_mm = (old_y_mm + old_height_mm) - new_height_mm
+
+        self._in_update = True
+        try:
+            # Atomically update both position and size in the model to reflect
+            # the resize operation correctly.
+            self.data.set_pos(old_x_mm, new_y_mm)
+            self.data.set_size(new_width_mm, new_height_mm)
+        finally:
+            self._in_update = False
 
     def _on_workpiece_size_changed(self, workpiece):
         """
-        Handles workpiece size changes and triggers a redraw.
+        Handles workpiece size changes from the model and triggers a redraw.
         """
+        if self._in_update:
+            return
         self.allocate()
         self.mark_dirty()
         if self.canvas:
@@ -182,8 +187,11 @@ class WorkPieceElement(SurfaceElement):
 
     def _on_workpiece_pos_changed(self, workpiece):
         """
-        Handles workpiece position changes and updates the element's position.
+        Handles workpiece position changes from the model and updates the
+        element.
         """
+        if self._in_update:
+            return
         if not self.parent:
             return
         self.allocate()
