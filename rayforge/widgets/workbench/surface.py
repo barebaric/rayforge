@@ -88,7 +88,7 @@ class WorkSurface(Canvas):
 
     def set_zoom(self, zoom_level: float):
         """Sets the zoom level and updates the axis renderer."""
-        self.zoom_level = max(0.5, min(zoom_level, 1.5))
+        self.zoom_level = max(0.4, min(zoom_level, 10))
         self.axis_renderer.set_zoom(self.zoom_level)
         self.root.mark_dirty(recursive=True)
         self.do_size_allocate(self.get_width(), self.get_height(), 0)
