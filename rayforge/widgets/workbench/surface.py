@@ -79,6 +79,46 @@ class WorkSurface(Canvas):
         self.machine.changed.connect(self._on_machine_changed)
         self._on_machine_changed(machine)
 
+    def on_button_press(self, gesture, n_press: int, x: int, y: int):
+        # First, let the parent Canvas handle the event to determine if a
+        # resize is starting and to set self.active_elem and self.resizing.
+        super().on_button_press(gesture, n_press, x, y)
+
+        # If a resize operation has started on a WorkPieceElement, hide the
+        # corresponding ops elements to improve performance.
+        if (
+            self.resizing
+            and self.active_elem
+            and isinstance(self.active_elem.data, WorkPiece)
+        ):
+            workpiece_data = self.active_elem.data
+            for step_elem in self.find_by_type(WorkStepElement):
+                ops_elem = step_elem.find_by_data(workpiece_data)
+                if ops_elem:
+                    ops_elem.set_visible(False)
+
+    def on_button_release(self, gesture, x: float, y: float):
+        # Before the parent class resets the resizing state, check if a resize
+        # was in progress on a WorkPieceElement.
+        workpiece_to_update = None
+        if (
+            self.resizing
+            and self.active_elem
+            and isinstance(self.active_elem.data, WorkPiece)
+        ):
+            workpiece_to_update = self.active_elem.data
+
+        # Let the parent class finish the drag/resize operation.
+        super().on_button_release(gesture, x, y)
+
+        # If a resize has just finished, make the ops visible again and
+        # trigger a re-allocation and re-render to reflect the new size.
+        if workpiece_to_update:
+            for step_elem in self.find_by_type(WorkStepElement):
+                ops_elem = step_elem.find_by_data(workpiece_to_update)
+                if ops_elem:
+                    ops_elem.set_visible(True)
+
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
         self.axis_renderer.set_pan_x_mm(pan_x_mm)
