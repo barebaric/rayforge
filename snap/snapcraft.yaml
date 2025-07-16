@@ -23,7 +23,7 @@ apps:
     environment:
       GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages
-      LD_LIBRARY_PATH: $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy:$SNAP/usr/lib/x86_64-linux-gnu/libvips
+      LD_LIBRARY_PATH: $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy:$SNAP/usr/lib/rayforge-libs
 
 slots:
   rayforge:
@@ -41,26 +41,36 @@ parts:
       - python3-pip
       - python3-setuptools
       - libvips-dev
+      - libagg-dev
+      - libpotrace-dev
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
+      - libagg2t64
+      - libpotrace0
     parse-info: [share/metainfo/com.barebaric.rayforge.metainfo.xml]
     override-build: |
-      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips
-      ln -s ../libvips.so.42 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libvips.so.42
-      ln -s ../libfftw3.so.3 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libfftw3.so.3
-      ln -s ../libcfitsio.so.10 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libcfitsio.so.10
-      ln -s ../libimagequant.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libimagequant.so.0
-      ln -s ../libcgif.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libcgif.so.0
-      ln -s ../libexif.so.12 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libexif.so.12
-      ln -s ../libspng.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libspng.so.0
-      ln -s ../libmatio.so.11 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libmatio.so.11
-      ln -s ../libOpenEXR-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libOpenEXR-3_1.so.30
-      ln -s ../libhwy.so.1 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libhwy.so.1
-      ln -s ../libhdf5_serial.so.103 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libhdf5_serial.so.103
-      ln -s ../libImath-3_1.so.29 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libImath-3_1.so.29
-      ln -s ../libIlmThread-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libIlmThread-3_1.so.30
-      ln -s ../libIex-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libIex-3_1.so.30
-      ln -s ../libsz.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libsz.so.2
-      ln -s ../libaec.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libvips/libaec.so.0
+      # Create a single, generic directory for all our custom-staged libs
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs
+
+      # Symlink ALL required libraries into our new generic directory
+      ln -s ../x86_64-linux-gnu/libpotrace.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libpotrace.so.0
+      ln -s ../x86_64-linux-gnu/libagg.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libagg.so.2
+      ln -s ../x86_64-linux-gnu/libvips.so.42 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libvips.so.42
+      ln -s ../x86_64-linux-gnu/libfftw3.so.3 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libfftw3.so.3
+      ln -s ../x86_64-linux-gnu/libcfitsio.so.10 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libcfitsio.so.10
+      ln -s ../x86_64-linux-gnu/libimagequant.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libimagequant.so.0
+      ln -s ../x86_64-linux-gnu/libcgif.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libcgif.so.0
+      ln -s ../x86_64-linux-gnu/libexif.so.12 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libexif.so.12
+      ln -s ../x86_64-linux-gnu/libspng.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libspng.so.0
+      ln -s ../x86_64-linux-gnu/libmatio.so.11 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libmatio.so.11
+      ln -s ../x86_64-linux-gnu/libOpenEXR-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libOpenEXR-3_1.so.30
+      ln -s ../x86_64-linux-gnu/libhwy.so.1 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libhwy.so.1
+      ln -s ../x86_64-linux-gnu/libhdf5_serial.so.103 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libhdf5_serial.so.103
+      ln -s ../x86_64-linux-gnu/libImath-3_1.so.29 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libImath-3_1.so.29
+      ln -s ../x86_64-linux-gnu/libIlmThread-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libIlmThread-3_1.so.30
+      ln -s ../x86_64-linux-gnu/libIex-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libIex-3_1.so.30
+      ln -s ../x86_64-linux-gnu/libsz.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libsz.so.2
+      ln -s ../x86_64-linux-gnu/libaec.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libaec.so.0
+      
       snapcraftctl build
