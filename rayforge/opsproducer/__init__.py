@@ -1,7 +1,8 @@
 # flake8: noqa:F401
 import inspect
 from .producer import OpsProducer
-from .outline import OutlineTracer, EdgeTracer
+from .outline import OutlineTracer
+from .edge import EdgeTracer
 from .rasterize import Rasterizer
 
 producer_by_name = dict(

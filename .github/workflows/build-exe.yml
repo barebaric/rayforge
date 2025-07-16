@@ -60,6 +60,7 @@ jobs:
             mingw-w64-x86_64-openslide
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-poppler
+            mingw-w64-x86_64-potrace
             mingw-w64-x86_64-pyinstaller
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-aiohttp
@@ -78,6 +79,11 @@ jobs:
             mingw-w64-x86_64-python-websockets
             mingw-w64-x86_64-python-yaml
             mingw-w64-x86_64-toolchain
+            unzip
+            wget
+            autoconf
+            automake
+            libtool
 
       - name: Force update package database
         shell: msys2 {0}
@@ -143,6 +149,45 @@ jobs:
           
           # Verify PyCairo is correct from the base MSYS2 install
           python -c "import cairo; print('PyCairo version:', cairo.version)"
+
+      - name: Build and Install AGG and PyPotrace
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          cd $GITHUB_WORKSPACE
+
+          # Build Anti-Grain Geometry (AGG) from source
+          echo "Downloading and building AGG..."
+          wget http://www.antigrain.com/agg-2.5.zip -O agg-2.5.zip
+          unzip agg-2.5.zip
+          cd agg-2.5
+          ./autogen.sh
+          ./configure
+          make
+          # Rename include directory as required by pypotrace
+          mv include agg2
+          
+          # Build pypotrace from source with custom AGG linkage
+          echo "Cloning and building pypotrace..."
+          cd $GITHUB_WORKSPACE
+          git clone https://github.com/sc/pypotrace.git
+          cd pypotrace
+          
+          NUMPY_INCLUDE=$(python -c "import numpy; print(numpy.get_include())")
+          AGG_SRC_DIR=$GITHUB_WORKSPACE/agg-2.5
+          
+          echo "Using Numpy includes from: $NUMPY_INCLUDE"
+          echo "Using AGG source from: $AGG_SRC_DIR"
+          echo "Using Potrace from MSYS2 prefix: $MSYS2_PATH/mingw64"
+          
+          python setup.py build_ext --inplace \
+            -I"$NUMPY_INCLUDE" \
+            -I"$MSYS2_PATH/mingw64/include" \
+            -I"$AGG_SRC_DIR" \
+            -L"$MSYS2_PATH/mingw64/lib" \
+            -L"$AGG_SRC_DIR/src"
+            
+          python setup.py install
 
       - name: Run pytest
         shell: msys2 {0}
