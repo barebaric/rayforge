@@ -147,11 +147,16 @@ jobs:
           git clone --depth 1 https://github.com/ghaerr/agg-2.6.git
           cd agg-2.6/agg-src
           
-          echo "Compiling AGG using the manual Makefile..."
-          make
+          echo "Compiling AGG source files manually..."
+          cd src
+          g++ -c -O2 -I../include *.cpp
           
+          echo "Creating static library libagg.a..."
+          ar rcs libagg.a *.o
+
           echo "Installing library and headers manually..."
-          cp src/libagg.a ${MSYS2_PATH}/mingw64/lib/
+          cp libagg.a ${MSYS2_PATH}/mingw64/lib/
+          cd ..
           cp -r include ${MSYS2_PATH}/mingw64/include/agg2
 
           echo "Verifying AGG installation..."
