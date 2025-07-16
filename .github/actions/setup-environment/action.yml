@@ -13,6 +13,7 @@ runs:
       run: |
         sudo apt update
         sudo apt install -y libcairo2-dev libgirepository1.0-dev gir1.2-gdkpixbuf-2.0 libvips42t64 gettext
+        sudo apt install -y libpotrace-dev libagg-dev
         python3 -m pip install build --user
 
     - name: Install runtime dependencies
