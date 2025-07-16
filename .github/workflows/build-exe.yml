@@ -158,7 +158,7 @@ jobs:
 
           # Build Anti-Grain Geometry (AGG) from source
           echo "Downloading and building AGG..."
-          wget http://www.antigrain.com/agg-2.5.zip -O agg-2.5.zip
+          wget https://github.com/ghaerr/agg-2.6/raw/master/agg-web/agg-2.5.zip -O agg-2.5.zip
           unzip agg-2.5.zip
           cd agg-2.5
           ./autogen.sh
