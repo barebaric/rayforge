@@ -5,74 +5,65 @@ import cairo
 
 class Renderer(ABC):
     """
-    Reads image data and renders to a Cairo surface.
+    An abstract base class that defines the interface for all renderers.
+
+    Each concrete renderer instance is created for a specific piece of
+    image data and is responsible for managing its own internal state and
+    implementation details.
     """
 
-    label = None
-    mime_types = None
-    extensions = None
+    label: Optional[str] = None
+    mime_types: Optional[Tuple[str, ...]] = None
+    extensions: Optional[Tuple[str, ...]] = None
 
-    @classmethod
-    def prepare(cls, data):
+    @abstractmethod
+    def __init__(self, data: bytes):
         """
-        Called once for every image on import and can be used to preload
-        or prepare the image.
+        The constructor that all subclasses must implement. It is
+        responsible for receiving the raw byte data and preparing it for
+        all subsequent rendering operations.
         """
-        return data
+        pass
 
-    @classmethod
     @abstractmethod
     def get_natural_size(
-        cls, data, px_factor: float = 0.0
+        self, px_factor: float = 0.0
     ) -> Tuple[Optional[float], Optional[float]]:
         """
-        Returns the natural (untransformed) size of the image in mm, if
-        known. Return None, None, otherwise.
+        Returns the natural (untransformed) size of the image in mm.
 
-        If px_factor is given and the document dimensions are in pixels,
-        then the factor is used to convert to millimeters.
-        If the document uses pixel unit and the factor is not given,
-        a tuple of None is returned.
+        If the source document uses pixel units, the px_factor is used
+        to convert those dimensions to millimeters.
         """
-        return None, None
+        pass
 
-    @classmethod
     @abstractmethod
-    def get_aspect_ratio(cls, data: bytes) -> float:
+    def get_aspect_ratio(self) -> float:
         """
         Returns the natural (untransformed) aspect ratio of the image.
         """
         pass
 
-    @classmethod
     @abstractmethod
     def render_to_pixels(
-        cls, data: bytes, width: int, height: int
+        self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """
-        Renders the data to a surface of specific pixel dimensions.
+        Renders the image to a Cairo surface of specific pixel dimensions.
         """
         pass
 
-    @classmethod
+    @abstractmethod
     def render_chunk(
-        cls,
-        data,
-        width_px,
-        height_px,
-        chunk_width=100000,
-        chunk_height=2,
-        overlap_x=1,
-        overlap_y=0,
+        self,
+        width_px: int,
+        height_px: int,
+        chunk_width: int = 100000,
+        chunk_height: int = 20,
+        overlap_x: int = 1,
+        overlap_y: int = 0,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """
-        Generator that renders to a Cairo surface, but in chunks.
-        chunk_width and chunk_height are specified in pixels.
-
-        Yields one chunk per iteration, as a tuple:
-            ImageSurface, (x_pos, y_pos)
-
-        This method is optional. If a renderer can provide a more
-        optimized chunking implementation, it can override this.
+        Renders the image to a Cairo surface in chunks.
         """
-        raise NotImplementedError
+        pass

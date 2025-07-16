@@ -1,122 +1,159 @@
-import re
 import io
-from typing import Optional
+from typing import Generator, Optional, Tuple, Dict
 import warnings
 import logging
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips  # type: ignore
-from pypdf import PdfReader, PdfWriter
+    import pyvips
+from pypdf import PdfReader
 from ..util.unit import to_mm
-from .vips import VipsRenderer
-
+from .renderer import Renderer
+import cairo
+import math
 
 logger = logging.getLogger(__name__)
 
 
-def parse_length(s):
-    m = re.match(r"([0-9.]+)\s*([a-z%]*)", s)
-    if m:
-        return float(m.group(1)), m.group(2) or "pt"
-    return float(s), "pt"
+class PDFRenderer(Renderer):
+    label = "PDF files"
+    mime_types = ("application/pdf",)
+    extensions = (".pdf",)
 
+    def __init__(self, data: bytes):
+        """
+        Initializes the renderer.
+        """
+        self.raw_data = data
+        self._natural_size_cache: Dict[
+            float, Tuple[Optional[float], Optional[float]]
+        ] = {}
+        self._vips_image_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
-class PDFRenderer(VipsRenderer):
-    label = 'PDF files'
-    mime_types = ('application/pdf',)
-    extensions = ('.pdf',)
+    def get_natural_size(
+        self, px_factor: float = 0.0
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculates the natural size from the PDF's media box.
+        The result is cached in an instance dictionary to correctly handle
+        different px_factor arguments and to avoid re-parsing the file.
+        """
+        if px_factor in self._natural_size_cache:
+            return self._natural_size_cache[px_factor]
 
-    @classmethod
-    def get_vips_loader(cls):
-        return pyvips.Image.pdfload_buffer
-
-    @classmethod
-    def get_vips_loader_args(cls):
-        return {'background': (255, 255, 255, 0)}
-
-    @classmethod
-    def get_natural_size(cls, data, px_factor=0):
         try:
-            reader = PdfReader(io.BytesIO(data))
+            reader = PdfReader(io.BytesIO(self.raw_data))
             page = reader.pages[0]
             media_box = page.mediabox
             width_pt = float(media_box.width)
             height_pt = float(media_box.height)
-            return (
+            size = (
                 to_mm(width_pt, "pt", px_factor),
                 to_mm(height_pt, "pt", px_factor),
             )
+            self._natural_size_cache[px_factor] = size
+            return size
         except Exception as e:
             logger.error(f"Failed to get natural size from PDF: {e}")
             return None, None
 
-    @classmethod
-    def _crop_to_content(cls, data):
-        left_pct, top_pct, right_pct, bottom_pct = cls._get_margins(data)
+    def get_aspect_ratio(self) -> float:
+        """
+        Calculates aspect ratio on-the-fly using the cached get_natural_size.
+        """
+        w, h = self.get_natural_size()
+        if w and h and h > 0:
+            return w / h
+        return 1.0
 
-        reader = PdfReader(io.BytesIO(data))
-        writer = PdfWriter()
-
-        for page in reader.pages:
-            media_box = page.mediabox
-            x0 = float(media_box.left)
-            y0 = float(media_box.bottom)
-            x1 = float(media_box.right)
-            y1 = float(media_box.top)
-            width_pt = x1 - x0
-            height_pt = y1 - y0
-
-            new_x0 = x0 + left_pct * width_pt
-            new_x1 = x1 - right_pct * width_pt
-            new_y0 = y0 + bottom_pct * height_pt
-            new_y1 = y1 - top_pct * height_pt
-
-            # Create a new media box with the cropped dimensions
-            page.mediabox.left = new_x0
-            page.mediabox.bottom = new_y0
-            page.mediabox.right = new_x1
-            page.mediabox.top = new_y1
-
-            writer.add_page(page)
-
-        output = io.BytesIO()
-        writer.write(output)
-        return output.getvalue()
-
-    @classmethod
     def _render_to_vips_image(
-        cls, data: bytes, width: int, height: int
+        self, width: int, height: int
     ) -> Optional[pyvips.Image]:
         """
-        Specialized PDF implementation that renders at a high DPI and then
-        resizes to the exact target dimensions, ensuring sharpness and
-        correct non-uniform scaling.
+        Renders the PDF to a vips image, caching the result in an instance
+        dictionary. This is the most expensive operation for this renderer.
         """
+        key = width, height
+        if key in self._vips_image_cache:
+            return self._vips_image_cache[key]
+
         try:
-            nat_w_mm, nat_h_mm = cls.get_natural_size(data)
-            if not nat_w_mm or not nat_h_mm or nat_w_mm <= 0 or nat_h_mm <= 0:
-                return super()._render_to_vips_image(data, width, height)
-
-            nat_w_in = nat_w_mm / 25.4
-            nat_h_in = nat_h_mm / 25.4
-
-            dpi_x = width / nat_w_in
-            dpi_y = height / nat_h_in
-            target_dpi = max(dpi_x, dpi_y)
-
-            image = pyvips.Image.pdfload_buffer(data, dpi=target_dpi)
-            if (
-                not isinstance(image, pyvips.Image)
-                or image.width == 0
-                or image.height == 0
-            ):
+            nat_w_mm, _ = self.get_natural_size()
+            if nat_w_mm and nat_w_mm > 0:
+                nat_w_in = nat_w_mm / 25.4
+                target_dpi = width / nat_w_in
+            else:
+                target_dpi = 300
+            image = pyvips.Image.pdfload_buffer(self.raw_data, dpi=target_dpi)
+            if not isinstance(image, pyvips.Image) or image.width == 0:
                 return None
-
-            # Now, force a resize to the exact final dimensions.
             h_scale = width / image.width
             v_scale = height / image.height
-            return image.resize(h_scale, vscale=v_scale)
+            final_image = image.resize(h_scale, vscale=v_scale)
 
+            self._vips_image_cache[key] = final_image
+            return final_image
         except pyvips.Error as e:
             logger.error(f"Error rendering PDF to vips image: {e}")
             return None
+
+    def render_to_pixels(
+        self, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        final_image = self._render_to_vips_image(width, height)
+        if not isinstance(final_image, pyvips.Image):
+            return None
+        if final_image.bands < 4:
+            final_image = final_image.bandjoin(255)
+        b, g, r, a = (
+            final_image[2],
+            final_image[1],
+            final_image[0],
+            final_image[3],
+        )
+        bgra_image = b.bandjoin([g, r, a])
+        mem_buffer = bgra_image.write_to_memory()
+        return cairo.ImageSurface.create_for_data(
+            mem_buffer,
+            cairo.FORMAT_ARGB32,
+            final_image.width,
+            final_image.height,
+            final_image.width * 4,
+        )
+
+    def render_chunk(
+        self,
+        width_px: int,
+        height_px: int,
+        chunk_width: int = 10000,
+        chunk_height: int = 20,
+        overlap_x: int = 1,
+        overlap_y: int = 0,
+    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
+        vips_image = self._render_to_vips_image(width_px, height_px)
+        if not isinstance(vips_image, pyvips.Image):
+            logger.warning("Failed to load image for chunking.")
+            return
+        real_width = vips_image.width
+        real_height = vips_image.height
+        cols = math.ceil(real_width / chunk_width)
+        rows = math.ceil(real_height / chunk_height)
+        for row in range(rows):
+            for col in range(cols):
+                left = col * chunk_width
+                top = row * chunk_height
+                width = min(chunk_width + overlap_x, real_width - left)
+                height = min(chunk_height + overlap_y, real_height - top)
+                chunk: pyvips.Image = vips_image.crop(left, top, width, height)
+                if chunk.bands == 3:
+                    chunk = chunk.bandjoin(255)
+                b, g, r, a = chunk[2], chunk[1], chunk[0], chunk[3]
+                bgra_chunk = b.bandjoin([g, r, a])
+                buf: bytes = bgra_chunk.write_to_memory()
+                surface = cairo.ImageSurface.create_for_data(
+                    buf,
+                    cairo.FORMAT_ARGB32,
+                    chunk.width,
+                    chunk.height,
+                    chunk.width * 4,
+                )
+                yield surface, (left, top)

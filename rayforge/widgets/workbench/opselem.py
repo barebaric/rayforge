@@ -37,8 +37,12 @@ class WorkPieceOpsElement(SurfaceElement):
 
     def allocate(self, force: bool = False):
         """
-        Updates the element's position and size based on the workpiece,
-        adding a margin to prevent clipping.
+        Updates the element's position and size based on the workpiece.
+
+        This method is optimized to distinguish between cheap position updates
+        and expensive size updates. A size change requires re-allocating the
+        surface and re-rendering the vector graphics, while a position change
+        only requires moving the existing surface.
         """
         if not self.canvas or not self.parent:
             return
@@ -55,24 +59,28 @@ class WorkPieceOpsElement(SurfaceElement):
         new_height = height_px + 2 * OPS_MARGIN_PX
 
         size_changed = self.width != new_width or self.height != new_height
+
+        # Always update the element's position. This is a cheap operation.
+        x_px, y_px = self.mm_to_pixel(x_mm, y_mm + height_mm)
+        self.set_pos(x_px - OPS_MARGIN_PX, y_px - OPS_MARGIN_PX)
+
+        # If the size hasn't changed, we don't need to do the expensive
+        # re-rendering. We just queue a draw to show the new position.
         if not size_changed and not force:
+            self.canvas.queue_draw()
             return
 
-        # Adjust the element size by the margin
+        # --- Expensive Operations ---
+        # If the size HAS changed, we must re-allocate the surface and
+        # mark the element as dirty to trigger a full content re-render.
         self.width = new_width
         self.height = new_height
 
-        # Adjust the element's position to center the content.
-        # We need to shift the element's top-left corner up and left by
-        # the margin.
-        # First, get the pixel position for the workpiece's top-left corner.
-        x_px, y_px = self.mm_to_pixel(x_mm, y_mm + height_mm)
-        # Then, set the element's position, offsetting by the margin.
-        self.set_pos(x_px - OPS_MARGIN_PX, y_px - OPS_MARGIN_PX)
-
         # Allocate the element's surface with the new, larger dimensions.
         super().allocate(force)
+        # Mark dirty to schedule a call to the expensive render() method.
         self.mark_dirty()
+
         self.canvas.queue_draw()
 
     def clear_ops(self):
@@ -95,18 +103,19 @@ class WorkPieceOpsElement(SurfaceElement):
     ):
         """
         Renders the accumulated Ops to the element's surface, translating
-        them to fit within the margin.
+        them to fit within the margin. This is an expensive method and should
+        only be called when the content actually changes.
         """
         if not self.dirty and not force:
             return
         if not self.canvas or not self.parent or self.surface is None:
             return
 
-        # Clear the surface.
-        clip = clip or self.rect()
-        self.clear_surface(clip)
+        # Always clear the entire surface before drawing.
+        self.clear_surface()
 
         if not self._accumulated_ops:
+            self.dirty = False  # Cleared, nothing to draw, so we are clean.
             return
 
         # Get pixels_per_mm from the WorkSurface (self.canvas)
@@ -114,7 +123,6 @@ class WorkPieceOpsElement(SurfaceElement):
         pixels_per_mm_y = self.canvas.pixels_per_mm_y
         pixels_per_mm = (pixels_per_mm_x, pixels_per_mm_y)
 
-        # --- MODIFIED: Translate Ops to draw inside the margin ---
         # Create a temporary copy to avoid modifying the cached Ops.
         render_ops = self._accumulated_ops.copy()
 
@@ -136,3 +144,6 @@ class WorkPieceOpsElement(SurfaceElement):
             pixels_per_mm,
             show_travel_moves=show_travel,
         )
+
+        # Mark the element as clean after rendering.
+        self.dirty = False

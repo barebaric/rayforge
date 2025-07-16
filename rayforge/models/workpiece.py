@@ -11,16 +11,18 @@ logger = logging.getLogger(__name__)
 
 class WorkPiece:
     """
-    A WorkPiece represents a real world work piece, It is usually
-    loaded from an image file and serves as input for all other
-    operations.
+    Represents a real-world workpiece.
+
+    It is defined by its name and a renderer instance, which holds all
+    information about the source image. The WorkPiece itself does not
+    store image data, only its position and size on the canvas.
     """
-    def __init__(self, name: str, data: bytes, renderer: Renderer):
+
+    def __init__(self, name: str, renderer: Renderer):
         self.name = name
-        self.data = data
         self.renderer = renderer
         self._renderer_ref_for_pyreverse: Renderer
-        self.pos: Optional[Tuple[float, float]] = None
+        self.pos: Optional[Tuple[float, float]] = None  # in mm
         self.size: Optional[Tuple[float, float]] = None  # in mm
         self.changed: Signal = Signal()
         self.pos_changed: Signal = Signal()
@@ -28,53 +30,52 @@ class WorkPiece:
 
     def set_pos(self, x_mm: float, y_mm: float):
         if (x_mm, y_mm) == self.pos:
-            return   # avoid triggering event
+            return
         self.pos = float(x_mm), float(y_mm)
         self.changed.send(self)
         self.pos_changed.send(self)
 
     def set_size(self, width_mm: float, height_mm: float):
-        logger.debug(f"Setting size: {width_mm}x{height_mm} for {self.name}")
         if (width_mm, height_mm) == self.size:
-            return   # avoid needless events
+            return
         self.size = float(width_mm), float(height_mm)
         self.changed.send(self)
         self.size_changed.send(self)
 
     def get_default_size(self) -> Tuple[float, float]:
-        size = self.renderer.get_natural_size(self.data)
+        size = self.renderer.get_natural_size()
         if None not in size:
             return cast(Tuple[float, float], size)
 
         aspect = self.get_default_aspect_ratio()
-        width_mm = machine_width_mm = config.machine.dimensions[0]
-        machine_height_mm = config.machine.dimensions[1]
-        height_mm = width_mm/aspect if aspect else machine_height_mm
-        if height_mm > machine_height_mm:
-            height_mm = machine_height_mm
-            width_mm = height_mm*aspect if aspect else machine_width_mm
+        machine_width = config.machine.dimensions[0]
+        machine_height = config.machine.dimensions[1]
+        width_mm = machine_width
+        height_mm = width_mm / aspect if aspect else machine_height
+        if height_mm > machine_height:
+            height_mm = machine_height
+            width_mm = height_mm * aspect if aspect else machine_width
 
         return width_mm, height_mm
 
     def get_current_size(self) -> Optional[Tuple[float, float]]:
-        logger.debug(f"Current size: {self.size}")
-        logger.debug(f"Current default size: {self.get_default_size()}")
         if not self.size:
             return self.get_default_size()
         return self.size
 
     def get_default_aspect_ratio(self):
-        return self.renderer.get_aspect_ratio(self.data)
+        return self.renderer.get_aspect_ratio()
 
     def get_current_aspect_ratio(self) -> Optional[float]:
         return (self.size[0] / self.size[1]
                 if self.size and self.size[1] else None)
 
     @classmethod
-    def from_file(cls, filename, renderer):
+    def from_file(cls, filename: str, renderer_class: type[Renderer]):
         with open(filename, 'rb') as fp:
-            data = renderer.prepare(fp.read())
-        wp = cls(filename, data, renderer)
+            data = fp.read()
+        renderer = renderer_class(data)
+        wp = cls(filename, renderer)
         wp.size = wp.get_default_size()
         return wp
 
@@ -84,36 +85,26 @@ class WorkPiece:
         pixels_per_mm_y: float,
         size: Optional[Tuple[float, float]] = None
     ) -> Optional[cairo.ImageSurface]:
-        """
-        Calculates target pixel dimensions and calls the generic
-        render_to_pixels method on the renderer.
-        """
         current_size = self.get_current_size() if size is None else size
         if not current_size:
             return None
 
         width_mm, height_mm = current_size
 
-        # The model now performs the simple calculation before calling
-        # the renderer.
         target_width_px = int(width_mm * pixels_per_mm_x)
         target_height_px = int(height_mm * pixels_per_mm_y)
 
-        # Call the single, unambiguous rendering method.
         return self.renderer.render_to_pixels(
-            self.data,
-            width=target_width_px,
-            height=target_height_px
+            width=target_width_px, height=target_height_px
         )
 
     def render_chunk(
-            self,
-            pixels_per_mm_x: int,
-            pixels_per_mm_y: int,
-            size: Optional[Tuple[float, float]] = None,
-        ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]],
-                       None,
-                       None]:
+        self,
+        pixels_per_mm_x: int,
+        pixels_per_mm_y: int,
+        size: Optional[Tuple[float, float]] = None,
+        chunk_height: int = 20,
+    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         natsize = self.get_default_size()
         size = natsize if size is None else size
         if not size:
@@ -122,8 +113,10 @@ class WorkPiece:
         width = int(size[0] * pixels_per_mm_x)
         height = int(size[1] * pixels_per_mm_y)
 
-        for chunk in self.renderer.render_chunk(self.data, width, height):
+        for chunk in self.renderer.render_chunk(
+            width, height, chunk_height=chunk_height
+        ):
             yield chunk
 
     def dump(self, indent=0):
-        print("  "*indent, self.name, self.renderer.label)
+        print("  " * indent, self.name, self.renderer.label)

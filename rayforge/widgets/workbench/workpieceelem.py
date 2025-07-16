@@ -1,8 +1,11 @@
 import logging
 import cairo
+import asyncio
 from typing import Optional, TYPE_CHECKING
+from gi.repository import GLib
 from ...models.workpiece import WorkPiece
 from .surfaceelem import SurfaceElement
+from ...task import task_mgr, CancelledError
 
 
 if TYPE_CHECKING:
@@ -17,8 +20,9 @@ class WorkPieceElement(SurfaceElement):
     A CanvasElement that displays a WorkPiece.
 
     It handles position and size updates based on the WorkPiece data,
-    and uses _copy_surface to render the WorkPiece's surface.
+    and uses the workpiece's renderer to create its surface asynchronously.
     """
+
     def __init__(self, workpiece: WorkPiece, **kwargs):
         """
         Initializes a new WorkPieceElement.
@@ -43,6 +47,8 @@ class WorkPieceElement(SurfaceElement):
         if not self.canvas or self._in_update:
             return
 
+        old_width, old_height = self.width, self.height
+
         # Get the position and size in mm from the WorkPiece.
         x_mm, y_mm = self.data.pos or (0, 0)
         width_mm, height_mm = self.data.size or self.data.get_default_size()
@@ -59,6 +65,55 @@ class WorkPieceElement(SurfaceElement):
         # Create the surface for the new element.
         super().allocate(force)
 
+        # If size has changed, schedule an async re-render.
+        size_changed = self.width != old_width or self.height != old_height
+        if force or size_changed:
+            self._schedule_surface_update()
+
+    def _schedule_surface_update(self):
+        """
+        Schedules an asynchronous task to re-render the element's surface.
+        """
+        if not self.canvas or self.width <= 0 or self.height <= 0:
+            return
+
+        key = ('workpiece_render', id(self))
+        # Capture current dimensions for the async task.
+        width = self.width
+        height = self.height
+
+        async def _async_render():
+            logger.debug(f"Starting async render for {self.data.name} "
+                         f"at {width}x{height}px.")
+            try:
+                new_surface = await asyncio.to_thread(
+                    self.data.renderer.render_to_pixels,
+                    width=width,
+                    height=height
+                )
+
+                def _update_on_main_thread():
+                    """This runs in the main thread to safely update the UI."""
+                    self._cached_surface = new_surface
+                    self.mark_dirty()  # Mark dirty to draw the new surface.
+                    if self.canvas:
+                        self.canvas.queue_draw()
+                    logger.debug(
+                        f"Async render finished for {self.data.name}."
+                    )
+
+                GLib.idle_add(_update_on_main_thread)
+
+            except CancelledError:
+                logger.debug(f"Render task for {self.data.name} cancelled.")
+            except Exception as e:
+                logger.error(
+                    f"Error during async render for {self.data.name}: {e}",
+                    exc_info=True,
+                )
+
+        task_mgr.add_coroutine(_async_render(), key=key)
+
     def render(
         self,
         clip: tuple[int, int, int, int] | None = None,
@@ -74,32 +129,10 @@ class WorkPieceElement(SurfaceElement):
         ):
             return
 
-        # Determine if we need a better quality cache
-        needs_new_cache = False
+        # If we have no cached surface, there's nothing to draw.
+        # The async task will trigger a redraw when it's done.
         if self._cached_surface is None:
-            needs_new_cache = True
-        else:
-            # Re-render if the element's size has changed by more than
-            # a 5px threshold. This avoids frequent re-renders on minor
-            # zoom changes but ensures the cache is updated when the size
-            # difference becomes significant.
-            cache_w = self._cached_surface.get_width()
-            cache_h = self._cached_surface.get_height()
-            if abs(self.width - cache_w) > 5 or abs(self.height - cache_h) > 5:
-                needs_new_cache = True
-
-        if needs_new_cache or force:
-            logger.debug(f"Cache miss/refresh for element. Requesting new "
-                         f"surface at {self.width}x{self.height}px.")
-            # Request a new surface from the WorkPiece's generic renderer.
-            self._cached_surface = self.data.renderer.render_to_pixels(
-                self.data.data,
-                width=self.width,
-                height=self.height
-            )
-
-        # If we still don't have a surface, we can't draw.
-        if self._cached_surface is None:
+            self.dirty = False  # Avoid a redraw loop.
             return
 
         # Always clear the entire surface before drawing.
@@ -119,7 +152,8 @@ class WorkPieceElement(SurfaceElement):
         ctx.save()
         ctx.scale(scale_x, scale_y)
         ctx.set_source_surface(self._cached_surface, 0, 0)
-        ctx.get_source().set_filter(cairo.FILTER_BEST)
+        # Use a faster filter for scaling the temporary, stale image.
+        ctx.get_source().set_filter(cairo.FILTER_GOOD)
         ctx.paint()
         ctx.restore()
 

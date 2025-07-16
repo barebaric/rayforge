@@ -1,6 +1,5 @@
 from gi.repository import Gtk
 from blinker import Signal
-from ..models.workpiece import WorkPiece
 from ..models.workplan import WorkStep
 from ..util.resources import get_icon_path
 from .groupbox import GroupBox
@@ -63,30 +62,3 @@ class WorkStepBox(GroupBox):
 
     def on_button_delete_clicked(self, button):
         self.delete_clicked.send(self, workstep=self.workstep)
-
-
-if __name__ == "__main__":
-    from typing import cast
-    from ..opsproducer import OpsProducer
-    from ..render import Renderer
-
-    class TestWindow(Gtk.ApplicationWindow):
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-
-            producer = cast(OpsProducer, object)  # dummy
-            renderer = cast(Renderer, object)  # dummy
-            workstep = WorkStep(producer, 'My test workstep')
-            workstep.add_workpiece(WorkPiece('Item one', b'', renderer))
-
-            box = WorkStepBox(workstep)
-            self.set_child(box)
-            self.set_default_size(300, 200)
-
-    def on_activate(app):
-        win = TestWindow(application=app)
-        win.present()
-
-    app = Gtk.Application(application_id="org.example.groupviewexample")
-    app.connect('activate', on_activate)
-    app.run()

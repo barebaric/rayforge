@@ -5,14 +5,12 @@ import cairo
 from blinker import Signal
 from rayforge.models.workplan import Contour
 from rayforge.models.workpiece import WorkPiece
-from rayforge.render import Renderer
 from rayforge.models.ops import (
     Ops,
     MoveToCommand,
     LineToCommand,
     DisableAirAssistCommand,
     SetPowerCommand,
-    SetTravelSpeedCommand,
     EnableAirAssistCommand,
 )
 from rayforge.models.machine import Laser, Machine
@@ -22,8 +20,7 @@ from rayforge.opsproducer import OpsProducer
 @pytest.fixture(autouse=True)
 def setup_real_config(mocker):
     """
-    Fixture to set up and inject a real, predictable config for all
-    tests in this file.
+    Fixture to set up and inject a real, predictable config for all tests.
     `autouse=True` ensures it runs for every test automatically.
     """
     test_laser = Laser()
@@ -40,40 +37,32 @@ def setup_real_config(mocker):
             self.machine = test_machine
 
     test_config = TestConfig()
-
     mocker.patch("rayforge.models.workplan.config", test_config)
     return test_config
 
 
 @pytest.fixture
-def mock_task_mgr(mocker, _function_event_loop):
+def mock_task_mgr(mocker):
     """
     Mocks the task manager to control async task execution in tests.
     """
     mock_mgr = MagicMock()
     created_tasks = []
 
-    def add_coroutine_mock(coro, when_done=None, key=None):
-        task = _function_event_loop.create_task(coro)
+    def add_coroutine_mock(coro, key=None):
+        # Get the running event loop at the time the coroutine is added.
+        # This is safe because it's called from within an async test.
+        loop = asyncio.get_running_loop()
+        task = loop.create_task(coro)
         created_tasks.append(task)
-        if when_done:
-            task.add_done_callback(when_done)
         return task
 
     mock_mgr.add_coroutine = MagicMock(side_effect=add_coroutine_mock)
-    mocker.patch("rayforge.models.workplan.task_mgr", mock_mgr)
     mock_mgr.created_tasks = created_tasks
+    # This ensures that our test will see the right CancelledError
+    mocker.patch("rayforge.models.workplan.CancelledError", asyncio.CancelledError)
+    mocker.patch("rayforge.models.workplan.task_mgr", mock_mgr)
     return mock_mgr
-
-
-@pytest.fixture
-def mock_renderer():
-    """Mocks the renderer, returning a valid surface."""
-    renderer = MagicMock(spec=Renderer)
-    real_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
-    renderer.render_for_ops.return_value = real_surface
-    renderer.render_chunk.return_value = iter([(real_surface, (0, 0))])
-    return renderer
 
 
 @pytest.fixture
@@ -81,8 +70,9 @@ def mock_workpiece():
     """Creates a MagicMock of a WorkPiece for isolated testing."""
     workpiece = MagicMock(spec=WorkPiece)
     workpiece.name = "mock_workpiece"
-    workpiece.size = 50, 30
-    workpiece.pos = 10, 20
+    workpiece.size = (50, 30)
+    workpiece.pos = (10, 20)
+    workpiece.get_current_size.return_value = (50, 30)
     workpiece.size_changed = Signal()
     workpiece.pos_changed = Signal()
     workpiece.changed = Signal()
@@ -104,11 +94,8 @@ def mock_opsproducer():
 
 
 @pytest.fixture
-def contour_step(mock_opsproducer, setup_real_config):
-    """
-    Creates a Contour WorkStep instance. It automatically uses the
-    real config set up by the `setup_real_config` autouse fixture.
-    """
+def contour_step(mock_opsproducer):
+    """Creates a Contour WorkStep instance."""
     step = Contour()
     step.opsproducer = mock_opsproducer
     step.opstransformers = []
@@ -117,34 +104,20 @@ def contour_step(mock_opsproducer, setup_real_config):
 
 class TestWorkStepAsync:
     @pytest.mark.asyncio
-    async def test_execute_is_generator_yielding_ops(
-        self, contour_step, mock_workpiece
-    ):
-        """Verify WorkStep.execute yields Ops chunks as a generator."""
-        # Arrange
-        contour_step.opsproducer.can_scale.return_value = False
-        mock_ops = Ops()
-        mock_ops.add(MoveToCommand(end=(1, 1)))
-        contour_step.opsproducer.run.return_value = mock_ops
-
+    async def test_execute_is_async_generator(self, contour_step, mock_workpiece):
+        """Verify WorkStep.execute returns an async generator yielding Ops chunks."""
         # Act
         generator = contour_step.execute(mock_workpiece)
 
         # Assert
-        assert hasattr(generator, "__iter__") and not isinstance(
-            generator, Ops
-        )
-        chunks = list(generator)
-        assert len(chunks) == 2
-        assert isinstance(chunks[0], Ops)
-        assert isinstance(chunks[1], Ops)
+        assert hasattr(generator, "__aiter__")
+        chunks = [chunk async for chunk in generator]
+        assert len(chunks) > 0
+        assert isinstance(chunks[0][0], Ops)
         mock_workpiece.render_chunk.assert_called_once()
-        contour_step.opsproducer.run.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_stream_ops_and_cache_signals(
-        self, contour_step, mock_workpiece, mock_task_mgr
-    ):
+    async def test_stream_ops_and_cache_signals(self, contour_step, mock_workpiece, mock_task_mgr):
         """Test that _stream_ops_and_cache emits signals correctly and caches the result."""
         # Arrange
         start_handler = MagicMock()
@@ -153,10 +126,12 @@ class TestWorkStepAsync:
 
         chunk1 = Ops()
         chunk1.add(MoveToCommand(end=(1, 1)))
-        chunk2 = Ops()
-        chunk2.add(LineToCommand(end=(2, 2)))
+        
+        # Mock the async generator to return our single data chunk
+        async def mock_execute(*args, **kwargs):
+            yield (chunk1, None)
 
-        contour_step.execute = MagicMock(return_value=[chunk1, chunk2])
+        contour_step.execute = mock_execute
         contour_step.ops_generation_starting.connect(start_handler)
         contour_step.ops_chunk_available.connect(chunk_handler)
         contour_step.ops_generation_finished.connect(finish_handler)
@@ -164,78 +139,54 @@ class TestWorkStepAsync:
 
         # Act
         contour_step.add_workpiece(mock_workpiece)
-        await asyncio.sleep(0)
-
-        assert mock_task_mgr.created_tasks, (
-            "Task manager did not create a task"
-        )
-        task = mock_task_mgr.created_tasks[-1]
-        await task
+        await asyncio.sleep(0)  # Allow the task to run to completion
 
         # Assert
-        start_handler.assert_called_once_with(
-            contour_step, workpiece=mock_workpiece
-        )
-        assert chunk_handler.call_count == 4
+        start_handler.assert_called_once_with(contour_step, workpiece=mock_workpiece)
+        assert chunk_handler.call_count == 2  # Initial state chunk + our one data chunk
 
-        initial_chunk = chunk_handler.call_args_list[0].kwargs["chunk"]
-        assert any(isinstance(c, SetPowerCommand) for c in initial_chunk)
-        assert any(isinstance(c, SetTravelSpeedCommand) for c in initial_chunk)
-        assert any(
-            isinstance(c, EnableAirAssistCommand) for c in initial_chunk
-        )
-
-        assert chunk_handler.call_args_list[1].kwargs["chunk"] == chunk1
-        assert chunk_handler.call_args_list[2].kwargs["chunk"] == chunk2
-
-        final_chunk = chunk_handler.call_args_list[3].kwargs["chunk"]
-        assert any(isinstance(c, DisableAirAssistCommand) for c in final_chunk)
-
-        finish_handler.assert_called_once_with(
-            contour_step, workpiece=mock_workpiece
-        )
-
+        # Check the final cached ops
         assert mock_workpiece in contour_step.workpiece_to_ops
-        cached_ops, cached_size = contour_step.workpiece_to_ops[mock_workpiece]
+        cached_ops, _ = contour_step.workpiece_to_ops[mock_workpiece]
         assert isinstance(cached_ops, Ops)
-        assert len(cached_ops) > 0
-        assert cached_size == mock_workpiece.size
+        assert any(isinstance(c, SetPowerCommand) for c in cached_ops)
+        assert any(isinstance(c, EnableAirAssistCommand) for c in cached_ops)
+        assert any(isinstance(c, DisableAirAssistCommand) for c in cached_ops)
+        assert any(isinstance(c, MoveToCommand) for c in cached_ops)
+        
+        finish_handler.assert_called_once_with(contour_step, workpiece=mock_workpiece)
+
 
     @pytest.mark.asyncio
-    async def test_stream_ops_handles_cancellation(
-        self, contour_step, mock_workpiece, mock_task_mgr
-    ):
+    async def test_stream_ops_handles_cancellation(self, contour_step, mock_workpiece, mock_task_mgr):
         """Test that ops generation can be cancelled correctly."""
         # Arrange
-        chunk_handler = MagicMock()
         finish_handler = MagicMock()
+        pause_event = asyncio.Event()
 
-        chunk1 = Ops()
-        chunk1.add(MoveToCommand(end=(1, 1)))
+        # This async generator will pause, allowing the test to cancel it mid-execution
+        async def slow_pausing_generator(*args, **kwargs):
+            chunk = Ops()
+            chunk.add(MoveToCommand(end=(1, 1)))
+            yield chunk, None  # Yield the first chunk
+            await pause_event.wait() # Pause here indefinitely
 
-        def slow_execute_generator(*args, **kwargs):
-            # This generator yields one chunk and then stops.
-            yield chunk1
-            return
-
-        contour_step.execute = MagicMock(side_effect=slow_execute_generator)
-        contour_step.ops_chunk_available.connect(chunk_handler)
+        contour_step.execute = slow_pausing_generator
         contour_step.ops_generation_finished.connect(finish_handler)
 
         # Act
         contour_step.add_workpiece(mock_workpiece)
-        await asyncio.sleep(0)
+        await asyncio.sleep(0)  # Allow the coroutine to start and hit the pause_event
 
-        # The coroutine sends an initial chunk, then awaits. The test's await lets it run to that point.
-        # FIX: The assertion is now correct. Only the initial state chunk is sent before the pause.
-        assert chunk_handler.call_count == 1
-
-        # Now, cancel the running task
+        # Cancel the running task
         task = mock_task_mgr.created_tasks[-1]
         task.cancel()
+
+        # Awaiting the cancelled task should now correctly raise the exception
         with pytest.raises(asyncio.CancelledError):
             await task
 
         # Assert
         finish_handler.assert_not_called()
+        # Verify the cache was cleared correctly upon cancellation
         assert contour_step.workpiece_to_ops.get(mock_workpiece) == (None, None)

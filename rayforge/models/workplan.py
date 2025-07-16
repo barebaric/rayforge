@@ -4,6 +4,7 @@ import asyncio
 from abc import ABC
 from typing import List, Dict, AsyncIterator, Tuple, Optional
 from copy import deepcopy
+from gi.repository import GLib
 from ..task import task_mgr, CancelledError
 from ..config import config, getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
@@ -21,19 +22,22 @@ DEBUG_OPTIMIZE = getflag("DEBUG_OPTIMIZE")
 DEBUG_SMOOTH = getflag("DEBUG_SMOOTH")
 DEBUG_ARCWELD = getflag("DEBUG_ARCWELD")
 
+DEBOUNCE_DELAY_MS = 100  # Delay in milliseconds for ops regeneration
+
 
 class WorkStep(ABC):
     """
-    A WorkStep is a set of Modifiers that operate on a set of
-    WorkPieces. It normally generates a Ops in the end, but
-    may also include modifiers that manipulate the input image.
+    A set of modifiers and an OpsProducer that operate on WorkPieces.
+
+    A WorkStep generates laser operations (Ops) based on its configuration
+    and the WorkPieces assigned to it.
     """
 
-    typelabel = None
+    typelabel: str
 
-    def __init__(self, opsproducer: OpsProducer, name=None):
+    def __init__(self, opsproducer: OpsProducer, name: Optional[str] = None):
         if not self.typelabel:
-            raise AttributeError("BUG: subclass must set typelabel attribute")
+            raise AttributeError("Subclass must set a typelabel attribute.")
 
         self.workplan: Optional[WorkPlan] = None
         self.name: str = name or self.typelabel
@@ -54,6 +58,9 @@ class WorkStep(ABC):
         self._workpiece_ref_for_pyreverse: WorkPiece
         self._ops_ref_for_pyreverse: Ops
 
+        # A dictionary to hold debounce timers
+        self._workpiece_update_timers: Dict[WorkPiece, int] = {}
+
         self.passes: int = 1
         self.pixels_per_mm = 50, 50
 
@@ -61,6 +68,7 @@ class WorkStep(ABC):
         self.ops_generation_starting = Signal()
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
+
         self.laser: Laser = Laser()
         self.set_laser(config.machine.heads[0])
 
@@ -76,16 +84,16 @@ class WorkStep(ABC):
         if DEBUG_ARCWELD:
             self.opstransformers.append(ArcWeld())
 
-    def set_passes(self, passes=True):
+    def set_passes(self, passes: bool = True):
         self.passes = int(passes)
         self.update_all_workpieces()
         self.changed.send(self)
 
-    def set_visible(self, visible=True):
+    def set_visible(self, visible: bool = True):
         self.visible = visible
         self.changed.send(self)
 
-    def set_laser(self, laser):
+    def set_laser(self, laser: Laser):
         if laser == self.laser:
             return
         if self.laser:
@@ -99,18 +107,18 @@ class WorkStep(ABC):
         self.update_all_workpieces()
         self.changed.send(self)
 
-    def set_power(self, power):
+    def set_power(self, power: int):
         self.power = power
         self.update_all_workpieces()
         self.changed.send(self)
 
-    def set_cut_speed(self, speed):
+    def set_cut_speed(self, speed: int):
         """Sets the cut speed and triggers regeneration."""
         self.cut_speed = int(speed)
         self.update_all_workpieces()
         self.changed.send(self)
 
-    def set_travel_speed(self, speed):
+    def set_travel_speed(self, speed: int):
         """Sets the travel speed and triggers regeneration."""
         self.travel_speed = int(speed)
         self.update_all_workpieces()
@@ -126,6 +134,11 @@ class WorkStep(ABC):
         for workpiece in list(self.workpiece_to_ops.keys()):
             if workpiece in workpieces:
                 continue
+            # Ensure timer is cleaned up
+            if workpiece in self._workpiece_update_timers:
+                GLib.source_remove(
+                    self._workpiece_update_timers.pop(workpiece)
+                )
             workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
             del self.workpiece_to_ops[workpiece]
         for workpiece in workpieces:
@@ -141,35 +154,51 @@ class WorkStep(ABC):
         self.changed.send(self)
 
     def remove_workpiece(self, workpiece: WorkPiece):
+        # Ensure timer is cleaned up on removal
+        if workpiece in self._workpiece_update_timers:
+            GLib.source_remove(self._workpiece_update_timers.pop(workpiece))
         workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
         del self.workpiece_to_ops[workpiece]
         self.changed.send(self)
 
-    def _on_workpiece_size_changed(self, workpiece):
-        logger.debug(
-            f"WorkStep '{self.name}' size change for {workpiece.name}"
-        )
-        # Always update when workpiece size changes.
-        # Scalable steps re-run execute() for the new scale factor.
-        # Non-scalable steps (like raster) regenerate for the new size.
-        self.update_workpiece(workpiece)
+    def _on_workpiece_size_changed(self, workpiece: WorkPiece):
+        # If a timer is already running for this workpiece, cancel it.
+        if workpiece in self._workpiece_update_timers:
+            GLib.source_remove(self._workpiece_update_timers[workpiece])
 
-    def workpieces(self):
-        return self.workpiece_to_ops.keys()
+        def _update_callback():
+            """This function will be called after the delay."""
+            logger.debug(
+                f"Debounced update triggered for {workpiece.name}"
+            )
+            # Check if workpiece still exists before updating
+            if workpiece in self.workpiece_to_ops:
+                self.update_workpiece(workpiece)
+            # Remove the timer ID from the dictionary
+            if workpiece in self._workpiece_update_timers:
+                del self._workpiece_update_timers[workpiece]
+            return GLib.SOURCE_REMOVE  # Ensures the timer runs only once
+
+        # Schedule the update to run after a short delay.
+        timer_id = GLib.timeout_add(DEBOUNCE_DELAY_MS, _update_callback)
+        self._workpiece_update_timers[workpiece] = timer_id
+
+    def workpieces(self) -> List[WorkPiece]:
+        return list(self.workpiece_to_ops.keys())
 
     async def execute(
         self, workpiece: WorkPiece
     ) -> AsyncIterator[Tuple[Ops, Optional[Tuple[int, int]]]]:
         """
-        Asynchronously generates Ops chunks. For scalable ops, it yields a
-        single un-scaled geometry chunk along with the pixel dimensions of
-        the surface it was traced from. For non-scalable, it yields scaled
-        chunks and no dimensions.
+        Asynchronously generates Ops chunks for a given WorkPiece.
+
+        For scalable ops, it yields a single un-scaled geometry chunk along
+        with the pixel dimensions of the surface it was traced from. For
+        non-scalable ops (e.g., raster), it yields scaled chunks with no
+        pixel dimensions.
         """
         if not workpiece.size:
-            logger.error(
-                f"failed to render workpiece {workpiece.name}: missing size"
-            )
+            logger.error(f"Cannot render {workpiece.name}: missing size.")
             return
 
         def _blocking_trace_and_modify(surface, scaler):
@@ -196,7 +225,6 @@ class WorkStep(ABC):
 
             surface = await asyncio.to_thread(
                 workpiece.renderer.render_to_pixels,
-                workpiece.data,
                 width=target_width,
                 height=target_height,
             )
@@ -218,7 +246,7 @@ class WorkStep(ABC):
         else:  # Raster
             size = workpiece.size
             for surface, (x_offset_px, y_offset_px) in workpiece.render_chunk(
-                *self.pixels_per_mm, size=size
+                *self.pixels_per_mm, size=size, chunk_height=20
             ):
                 chunk_ops = await asyncio.to_thread(
                     _blocking_trace_and_modify, surface, self.pixels_per_mm
@@ -258,25 +286,28 @@ class WorkStep(ABC):
 
             final_ops += initial_ops
 
-            async for geometry_chunk, pixel_size in self.execute(workpiece):
-                if pixel_size:
-                    cached_pixel_size = pixel_size
+            async for chunk, px_size in self.execute(workpiece):
+                if px_size:
+                    cached_pixel_size = px_size
 
                 if self.can_scale() and cached_pixel_size:
-                    display_ops = deepcopy(geometry_chunk)
+                    display_ops = deepcopy(chunk)
                     final_mm = workpiece.get_current_size()
-                    scale_x = final_mm[0] / cached_pixel_size[0]
-                    scale_y = final_mm[1] / cached_pixel_size[1]
+                    if final_mm is not None and None not in final_mm:
+                        scale_x = final_mm[0] / cached_pixel_size[0]
+                        scale_y = final_mm[1] / cached_pixel_size[1]
+                    else:
+                        scale_x = 1
+                        scale_y = 1
                     display_ops.scale(scale_x, scale_y)
                     self.ops_chunk_available.send(
                         self, workpiece=workpiece, chunk=display_ops
                     )
                 else:
                     self.ops_chunk_available.send(
-                        self, workpiece=workpiece, chunk=geometry_chunk
+                        self, workpiece=workpiece, chunk=chunk
                     )
-
-                final_ops += geometry_chunk
+                final_ops += chunk
 
             for transformer in self.opstransformers:
                 transformer.run(final_ops)
@@ -307,7 +338,7 @@ class WorkStep(ABC):
                 self.workpiece_to_ops[workpiece] = None, None
             return
 
-    def update_workpiece(self, workpiece):
+    def update_workpiece(self, workpiece: WorkPiece):
         """Triggers the asynchronous generation and caching for a workpiece."""
         key = id(self), id(workpiece)
         logger.debug(
@@ -320,11 +351,9 @@ class WorkStep(ABC):
         for workpiece in self.workpiece_to_ops.keys():
             self.update_workpiece(workpiece)
 
-    def get_ops(self, workpiece):
+    def get_ops(self, workpiece: WorkPiece) -> Optional[Ops]:
         """
-        Returns Ops for the given workpiece, scaled to the size of
-        the workpiece.
-        Returns None if no Ops were made yet.
+        Returns final, scaled Ops for a workpiece from the cache.
         """
         if not workpiece.size:
             logger.error(
@@ -351,15 +380,15 @@ class WorkStep(ABC):
 
         return ops
 
-    def get_summary(self):
+    def get_summary(self) -> str:
         power = int(self.power / self.laser.max_power * 100)
         speed = int(self.cut_speed)
         return f"{power}% power, {speed} mm/min"
 
-    def can_scale(self):
+    def can_scale(self) -> bool:
         return self.opsproducer.can_scale()
 
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0):
         print("  " * indent, self.name)
         for workpiece in self.workpieces():
             workpiece.dump(1)
@@ -388,10 +417,10 @@ class Rasterize(WorkStep):
 
 class WorkPlan:
     """
-    Represents a sequence of worksteps.
+    Represents a sequence of worksteps that define a laser job.
     """
 
-    def __init__(self, doc, name):
+    def __init__(self, doc, name: str):
         self.doc = doc
         self.name: str = name
         self.worksteps: List[WorkStep] = []
@@ -402,22 +431,22 @@ class WorkPlan:
     def __iter__(self):
         return iter(self.worksteps)
 
-    def set_workpieces(self, workpieces):
+    def set_workpieces(self, workpieces: List[WorkPiece]):
         for step in self.worksteps:
             step.set_workpieces(workpieces)
 
-    def add_workstep(self, step):
+    def add_workstep(self, step: WorkStep):
         step.workplan = self
         self.worksteps.append(step)
         step.set_workpieces(self.doc.workpieces)
         self.changed.send(self)
 
-    def remove_workstep(self, workstep):
+    def remove_workstep(self, workstep: WorkStep):
         self.worksteps.remove(workstep)
         workstep.workplan = None
         self.changed.send(self)
 
-    def set_worksteps(self, worksteps):
+    def set_worksteps(self, worksteps: List[WorkStep]):
         """
         Replace all worksteps.
         """
@@ -426,10 +455,10 @@ class WorkPlan:
             step.workplan = self
         self.changed.send(self)
 
-    def has_steps(self):
+    def has_steps(self) -> bool:
         return len(self.worksteps) > 0
 
-    def execute(self, optimize=True) -> Ops:
+    def execute(self, optimize: bool = True) -> Ops:
         """
         Executes all visible worksteps and returns the final, combined Ops.
 
@@ -453,16 +482,13 @@ class WorkPlan:
                 if not workpiece.pos or not workpiece.size:
                     continue  # workpiece is not added to canvas
 
-                step_ops_for_workpiece = step.get_ops(workpiece)
-
-                if step_ops_for_workpiece:
-                    step_ops_for_workpiece.translate(*workpiece.pos)
-
+                step_ops = step.get_ops(workpiece)
+                if step_ops:
+                    step_ops.translate(*workpiece.pos)
                     # Apply optimization if enabled, after collecting and
                     # translating
                     if optimizer:
-                        optimizer.run(step_ops_for_workpiece)
-
-                    final_ops += step_ops_for_workpiece * step.passes
+                        optimizer.run(step_ops)
+                    final_ops += step_ops * step.passes
 
         return final_ops

@@ -141,11 +141,24 @@ class WorkStepElement(CanvasElement):
     def _on_ops_generation_finished(
         self, sender: WorkStep, workpiece: WorkPiece
     ):
-        """Called when ops generation is finished for a workpiece."""
-        # Final redraw is triggered by the last _on_ops_chunk_available call's
-        # queue_draw. No extra action needed here unless we add UI
-        # indicators for processing state (e.g., hide a spinner).
+        """
+        Called when ops generation is finished. This handler ensures a final,
+        guaranteed redraw of the element's complete state, fixing race
+        conditions where the last chunk might not be displayed.
+        """
         assert (
             self.canvas
         ), "Received ops_finished, but element was not added to canvas"
-        GLib.idle_add(self.canvas.queue_draw)
+
+        elem = self.find_by_data(workpiece)
+        if not elem:
+            return
+
+        # Calling allocate(force=True) is a robust way to ensure the element
+        # is marked dirty and a redraw is queued, displaying the final
+        # accumulated state from all the `add_ops` calls.
+        def final_update():
+            if elem.canvas:  # Check if element is still on canvas
+                elem.allocate(force=True)
+
+        GLib.idle_add(final_update)
