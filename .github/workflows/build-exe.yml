@@ -45,6 +45,7 @@ jobs:
             git
             mingw-w64-x86_64-adwaita-icon-theme
             mingw-w64-x86_64-cairo
+            mingw-w64-x86_64-cython
             mingw-w64-x86_64-gettext
             mingw-w64-x86_64-gobject-introspection
             mingw-w64-x86_64-gobject-introspection-runtime
@@ -72,6 +73,7 @@ jobs:
             mingw-w64-x86_64-python-opencv
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-platformdirs
+            mingw-w64-x86_64-python-poetry-core
             mingw-w64-x86_64-python-pytest-asyncio
             mingw-w64-x86_64-python-pytest-cov
             mingw-w64-x86_64-python-pytest-mock
@@ -239,6 +241,7 @@ jobs:
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
+            --collect-submodules potrace \
             --hidden-import gi._gi_cairo \
             rayforge/app.py
 
