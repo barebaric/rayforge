@@ -34,7 +34,7 @@ class WorkPieceElement(SurfaceElement):
         self.canvas: Optional["WorkSurface"]
         self.data: WorkPiece = workpiece
         self._in_update = False
-        super().__init__(0, 0, 0, 0, data=workpiece, **kwargs)
+        super().__init__(0, 0, 0, 0, data=workpiece, clip=False, **kwargs)
         workpiece.size_changed.connect(self._on_workpiece_size_changed)
         workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
         self._cached_surface: Optional[cairo.ImageSurface] = None
@@ -119,8 +119,10 @@ class WorkPieceElement(SurfaceElement):
         clip: tuple[int, int, int, int] | None = None,
         force: bool = False,
     ):
-        if not self.dirty and not force:
-            return
+        # First, call the parent's render to handle the dirty flag and clear
+        # the surface with the background color.
+        super().render(clip=clip, force=force)
+
         if (
             not self.canvas
             or self.width <= 0
@@ -135,13 +137,8 @@ class WorkPieceElement(SurfaceElement):
             self.dirty = False  # Avoid a redraw loop.
             return
 
-        # Always clear the entire surface before drawing.
-        self.clear_surface()
+        # The parent `render` call already cleared the surface.
         ctx = cairo.Context(self.surface)
-
-        if clip:
-            ctx.rectangle(*clip)
-            ctx.clip()
 
         source_w = self._cached_surface.get_width()
         source_h = self._cached_surface.get_height()

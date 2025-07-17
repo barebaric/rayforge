@@ -22,7 +22,8 @@ class CanvasElement:
                  background: Tuple[float, float, float, float] = (0, 0, 0, 0),
                  canvas: Canvas | None = None,
                  parent: Canvas | CanvasElement | None = None,
-                 data: object = None):
+                 data: object = None,
+                 clip: bool = True):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
             f"height={height}"
@@ -42,6 +43,7 @@ class CanvasElement:
         self.background: Tuple[float, float, float, float] = background
         self.data: Any = data
         self.dirty: bool = True
+        self.clip: bool = clip
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
         self.dirty = True
@@ -229,31 +231,21 @@ class CanvasElement:
         force: bool = False
     ):
         """
-        clip: x, y, w, h. the region to render
+        Renders the element's own content (e.g., background) to its
+        surface. This method no longer composites children.
         """
         if self.surface is None:
             return
         if not self.dirty and not force:
             return
 
-        # Apply clip, if any.
-        if clip is None:
-            clip = 0, 0, *self.size()
-        self.clear_surface(clip)
-        ctx = cairo.Context(self.surface)
-        ctx.rectangle(*clip)
-        ctx.clip()
+        # The element's background is its only content by default.
+        self.clear_surface()
 
-        # Paint children
-        for child in self.children:
-            if child.dirty:
-                # The child should always do a full render to its own surface.
-                # Clipping is handled by this parent's context when painting.
-                child.render(force=False)
-                child.dirty = False
-            if child.visible and child.surface:
-                ctx.set_source_surface(child.surface, *child.pos())
-                ctx.paint()
+        # Subclasses will override this to draw their specific content.
+        # This method no longer composites children; that is handled by the
+        # main render loop in the Canvas.
+        self.dirty = False
 
     def has_dirty_children(self) -> bool:
         if self.dirty:
@@ -402,16 +394,49 @@ class Canvas(Gtk.DrawingArea):
         self.root.set_size(width, height)
         self.root.allocate()
 
+    def _render_element(self, ctx: cairo.Context, elem: CanvasElement):
+        """
+        Recursively renders an element and its children directly to the
+        context.
+        """
+        if not elem.visible:
+            return
+
+        # Ensure the element's own surface is up-to-date with its content.
+        # We pass force=True to ensure async elements redraw if needed, but
+        # the element's own render method will check its dirty flag.
+        elem.render(force=True)
+
+        # Get absolute position for drawing.
+        abs_x, abs_y = elem.pos_abs()
+
+        # Composite the element's own surface onto the main context.
+        if elem.surface:
+            ctx.set_source_surface(elem.surface, abs_x, abs_y)
+            ctx.paint()
+
+        # Now, recursively render the children, applying clipping if necessary.
+        ctx.save()
+        if elem.clip:
+            # If the parent clips, apply a clipping region before drawing
+            # children.
+            ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
+            ctx.clip()
+
+        for child in elem.children:
+            self._render_element(ctx, child)
+
+        ctx.restore()
+
     def do_snapshot(self, snapshot):
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)
-
-        self.root.render()
         ctx = snapshot.append_cairo(bounds)
-        if self.root.surface:
-            ctx.set_source_surface(self.root.surface, *self.root.pos())
-            ctx.paint()
 
+        # Start the recursive rendering process.
+        self._render_element(ctx, self.root)
+
+        # Draw selection handles on top of everything.
         self._render_selection(ctx, self.root)
 
     def _render_selection(self, ctx, elem: CanvasElement):

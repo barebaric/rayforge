@@ -78,10 +78,13 @@ class WorkStep(ABC):
         self.air_assist: bool = False
 
         if DEBUG_OPTIMIZE:
+            logger.info("Travel time optimization debugging enabled")
             self.opstransformers.append(Optimize())
         if DEBUG_SMOOTH:
+            logger.info("Smoothing enabled")
             self.opstransformers.append(Smooth())
         if DEBUG_ARCWELD:
+            logger.info("Arcweld enabled")
             self.opstransformers.append(ArcWeld())
 
     def set_passes(self, passes: bool = True):
@@ -310,6 +313,8 @@ class WorkStep(ABC):
                 final_ops += chunk
 
             for transformer in self.opstransformers:
+                name = transformer.__class__.__name__
+                logger.debug(f"Running transformer {name}")
                 transformer.run(final_ops)
 
             if self.air_assist:
@@ -473,6 +478,8 @@ class WorkPlan:
         """
         final_ops = Ops()
         optimizer = Optimize() if optimize else None
+        machine_width, machine_height = config.machine.dimensions
+        clip_rect = 0, 0, machine_width, machine_height
 
         for step in self.worksteps:
             if not step.visible:
@@ -485,10 +492,13 @@ class WorkPlan:
                 step_ops = step.get_ops(workpiece)
                 if step_ops:
                     step_ops.translate(*workpiece.pos)
+                    # Clip the translated ops to the machine's work area.
+                    clipped_ops = step_ops.clip(clip_rect)
+
                     # Apply optimization if enabled, after collecting and
-                    # translating
+                    # clipping
                     if optimizer:
-                        optimizer.run(step_ops)
-                    final_ops += step_ops * step.passes
+                        optimizer.run(clipped_ops)
+                    final_ops += clipped_ops * step.passes
 
         return final_ops

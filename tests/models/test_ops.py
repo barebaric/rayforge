@@ -1,7 +1,7 @@
 import pytest
 import math
 from rayforge.models.ops import (
-    Ops, Command, MoveToCommand, LineToCommand,
+    Ops, MoveToCommand, LineToCommand,
     ArcToCommand, SetPowerCommand, SetCutSpeedCommand,
     SetTravelSpeedCommand, EnableAirAssistCommand,
     DisableAirAssistCommand, State
@@ -272,3 +272,84 @@ def test_arc_scaling():
     # Offset scaled
     assert ops.commands[1].center_offset == (10, 15)
     # Implicit center: (20 + 10, 30 + 15) = (30, 45)
+
+# --- Tests for Ops.clip() ---
+
+@pytest.fixture
+def clip_rect():
+    return (0.0, 0.0, 100.0, 100.0)
+
+def test_clip_fully_inside(clip_rect):
+    ops = Ops()
+    ops.move_to(10, 10)
+    ops.line_to(90, 90)
+    clipped_ops = ops.clip(clip_rect)
+    assert len(clipped_ops.commands) == 2
+    assert isinstance(clipped_ops.commands[0], MoveToCommand)
+    assert isinstance(clipped_ops.commands[1], LineToCommand)
+
+def test_clip_fully_outside(clip_rect):
+    ops = Ops()
+    ops.move_to(110, 110)
+    ops.line_to(120, 120)
+    clipped_ops = ops.clip(clip_rect)
+    assert len(clipped_ops.commands) == 0
+
+def test_clip_line_crossing_one_boundary(clip_rect):
+    ops = Ops()
+    ops.move_to(50, 50)
+    ops.line_to(150, 50) # Exits right
+    clipped_ops = ops.clip(clip_rect)
+    assert len(clipped_ops.commands) == 2
+    assert clipped_ops.commands[1].end == (100.0, 50.0)
+
+def test_clip_line_crossing_two_boundaries(clip_rect):
+    ops = Ops()
+    ops.move_to(-50, 50) # Starts left
+    ops.line_to(150, 50) # Exits right
+    clipped_ops = ops.clip(clip_rect)
+    assert len(clipped_ops.commands) == 2
+    assert clipped_ops.commands[0].end == (0.0, 50.0)
+    assert clipped_ops.commands[1].end == (100.0, 50.0)
+
+def test_clip_arc_partially_inside(clip_rect):
+    ops = Ops()
+    ops.move_to(100, 50) # Start on right edge
+    ops.arc_to(50, 100, i=-50, j=0) # Arc to top edge
+    clipped_ops = ops.clip(clip_rect)
+    # Result will be a series of line segments
+    assert len(clipped_ops.commands) > 2
+    assert all(c.end[0] <= 100.1 and c.end[1] <= 100.1 for c in clipped_ops.commands)
+
+def test_clip_preserves_state_commands(clip_rect):
+    ops = Ops()
+    ops.set_power(500)
+    ops.move_to(-10, 50)
+    ops.line_to(110, 50)
+    ops.set_cut_speed(1000)
+    clipped_ops = ops.clip(clip_rect)
+    state_cmds = [c for c in clipped_ops.commands if c.is_state_command()]
+    assert len(state_cmds) == 2
+    assert isinstance(state_cmds[0], SetPowerCommand)
+    assert isinstance(state_cmds[1], SetCutSpeedCommand)
+
+def test_clip_arc_reentering_visible_area(clip_rect):
+    ops = Ops()
+    # This arc starts at (10, 90), bulges up past y=100,
+    # and re-enters to end at (90, 90).
+    # Center is at (50, 70), radius is sqrt(2000) ~= 44.7
+    # Max y is at 70 + 44.7 = 114.7, so it goes outside the clip rect (y_max=100)
+    ops.move_to(10, 90)
+    ops.arc_to(90, 90, i=40, j=-20, clockwise=True)
+    clipped_ops = ops.clip(clip_rect)
+
+    # Expected: two separate move_to/line_to sequences
+    move_tos = [c for c in clipped_ops.commands if isinstance(c, MoveToCommand)]
+    assert len(move_tos) == 2
+
+    # All points must be within the bounds
+    for cmd in clipped_ops.commands:
+        if not cmd.is_state_command():
+            assert 0 <= cmd.end[0] <= 100
+            # Use a small tolerance for floating point inaccuracies at the boundary
+            assert 0 <= cmd.end[1] <= 100.000001

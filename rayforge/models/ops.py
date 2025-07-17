@@ -1,8 +1,20 @@
 from __future__ import annotations
 import math
+import logging
 from copy import copy, deepcopy
-from typing import List
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
+
+
+logger = logging.getLogger(__name__)
+
+
+# Cohen-Sutherland outcodes
+_INSIDE = 0  # 0000
+_LEFT = 1  # 0001
+_RIGHT = 2  # 0010
+_BOTTOM = 4  # 0100
+_TOP = 8  # 1000
 
 
 @dataclass
@@ -30,6 +42,7 @@ class Command:
     filled during the pre-processing stage, where state commands are
     removed.
     """
+
     def __init__(self, end=None, state=None):
         self.end: tuple = end  # x, y of end position, None for state command
         self.state: State = state  # Intended state during execution
@@ -131,6 +144,7 @@ class Ops:
     are used for making gcode, but also to generate vector graphics
     for display.
     """
+
     def __init__(self):
         self.commands: List[Command] = []
         self._commands_ref_for_pyreverse: Command
@@ -146,7 +160,7 @@ class Ops:
 
     def __mul__(self, count):
         result = Ops()
-        result.commands = count*self.commands
+        result.commands = count * self.commands
         return result
 
     def __len__(self):
@@ -165,9 +179,6 @@ class Ops:
         state of the machine. The state is useful for some post-processors
         that need to re-order commands without changing the intended
         state during each command.
-
-        Returns a list of Command objects. Any state commands are wipe out,
-        as the state is now included in every operation.
         """
         state = State()
         for cmd in self.commands:
@@ -203,9 +214,11 @@ class Ops:
         Adds an arc command with specified endpoint, center offsets,
         and direction (cw/ccw).
         """
-        self.commands.append(ArcToCommand(
-            (float(x), float(y)), (float(i), float(j)), bool(clockwise)
-        ))
+        self.commands.append(
+            ArcToCommand(
+                (float(x), float(y)), (float(i), float(j)), bool(clockwise)
+            )
+        )
 
     def set_power(self, power: float):
         """Laser power (0-1000 for GRBL)"""
@@ -242,7 +255,8 @@ class Ops:
             if cmd.is_travel_command():
                 last_point = cmd.end
             elif cmd.is_cutting_command():
-                occupied_points.append(last_point)
+                if last_point is not None:
+                    occupied_points.append(last_point)
                 occupied_points.append(cmd.end)
                 last_point = cmd.end
 
@@ -367,6 +381,197 @@ class Ops:
         last_x, last_y = self.last_move_to
         self.last_move_to = last_x * sx, last_y * sy
         return self
+
+    def _compute_outcode(self, x, y, rect):
+        x_min, y_min, x_max, y_max = rect
+        code = _INSIDE
+        if x < x_min:
+            code |= _LEFT
+        elif x > x_max:
+            code |= _RIGHT
+        if y < y_min:
+            code |= _BOTTOM
+        elif y > y_max:
+            code |= _TOP
+        return code
+
+    def _clip_segment(
+        self,
+        p1: tuple[float, float],
+        p2: tuple[float, float],
+        rect: tuple[float, float, float, float],
+    ) -> Optional[tuple[tuple[float, float], tuple[float, float]]]:
+        """
+        Clips a line segment to a rectangle using Cohen-Sutherland.
+        Returns the clipped segment or None if it's outside.
+        """
+        x_min, y_min, x_max, y_max = rect
+        x1, y1 = p1
+        x2, y2 = p2
+        outcode1 = self._compute_outcode(x1, y1, rect)
+        outcode2 = self._compute_outcode(x2, y2, rect)
+
+        while True:
+            if not (outcode1 | outcode2):  # Trivial accept
+                return (x1, y1), (x2, y2)
+            if outcode1 & outcode2:  # Trivial reject
+                return None
+
+            outcode_out = outcode1 if outcode1 else outcode2
+            x, y = 0.0, 0.0
+
+            # Calculate intersection points, handling
+            # horizontal and vertical cases.
+            if outcode_out & _TOP:
+                y = y_max
+                if y1 != y2:
+                    x = x1 + (x2 - x1) * (y_max - y1) / (y2 - y1)
+                else:
+                    x = x1
+            elif outcode_out & _BOTTOM:
+                y = y_min
+                if y1 != y2:
+                    x = x1 + (x2 - x1) * (y_min - y1) / (y2 - y1)
+                else:
+                    x = x1
+            elif outcode_out & _RIGHT:
+                x = x_max
+                if x1 != x2:
+                    y = y1 + (y2 - y1) * (x_max - x1) / (x2 - x1)
+                else:
+                    y = y1
+            elif outcode_out & _LEFT:
+                x = x_min
+                if x1 != x2:
+                    y = y1 + (y2 - y1) * (x_min - x1) / (x2 - x1)
+                else:
+                    y = y1
+
+            if outcode_out == outcode1:
+                x1, y1 = x, y
+                outcode1 = self._compute_outcode(x1, y1, rect)
+            else:
+                x2, y2 = x, y
+                outcode2 = self._compute_outcode(x2, y2, rect)
+
+    def _linearize_arc(
+        self, arc_cmd: ArcToCommand, start_point: tuple[float, float]
+    ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
+        """Converts an ArcToCommand into a list of line segments."""
+        segments = []
+        p0 = start_point
+        p1 = arc_cmd.end
+        center = (
+            p0[0] + arc_cmd.center_offset[0],
+            p0[1] + arc_cmd.center_offset[1],
+        )
+        radius = math.dist(p0, center)
+        if radius == 0:
+            return []
+
+        start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
+        end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
+
+        # Robust angle normalization to handle atan2 wrap-around
+        angle_range = end_angle - start_angle
+        if arc_cmd.clockwise:
+            if angle_range > 0:
+                angle_range -= 2 * math.pi
+        else:  # Counter-clockwise
+            if angle_range < 0:
+                angle_range += 2 * math.pi
+
+        arc_len = abs(angle_range * radius)
+        # Use ~0.5mm segments for linearization
+        num_segments = max(2, int(arc_len / 0.5))
+
+        prev_pt = p0
+        for i in range(1, num_segments + 1):
+            angle = start_angle + angle_range * (i / num_segments)
+            next_pt = (
+                center[0] + radius * math.cos(angle),
+                center[1] + radius * math.sin(angle),
+            )
+            segments.append((prev_pt, next_pt))
+            prev_pt = next_pt
+        return segments
+
+    def _add_clipped_segment_to_ops(
+        self,
+        segment: Optional[tuple],
+        new_ops: "Ops",
+        current_pen_pos: Optional[tuple],
+    ) -> Optional[tuple]:
+        """
+        Processes a single clipped segment, adding MoveTo/LineTo commands
+        to the new_ops object as needed.
+
+        Returns the updated pen position.
+        """
+        if segment:
+            p1_clipped, p2_clipped = segment
+
+            # A new move is needed if the pen is up (None) or if there's a gap.
+            dist_to_start = (
+                math.dist(current_pen_pos, p1_clipped)
+                if current_pen_pos
+                else float("inf")
+            )
+
+            # Use a small tolerance for floating point comparisons
+            if dist_to_start > 1e-6:
+                new_ops.move_to(p1_clipped[0], p1_clipped[1])
+
+            new_ops.line_to(p2_clipped[0], p2_clipped[1])
+            # The new pen position is the end of the clipped segment
+            return p2_clipped
+        else:
+            # The segment was fully clipped, so the pen is now "up"
+            return None
+
+    def clip(self, rect: tuple[float, float, float, float]) -> "Ops":
+        """
+        Clips the Ops to the given rectangle.
+        Returns a new, clipped Ops object.
+        """
+        new_ops = Ops()
+        if not self.commands:
+            return new_ops
+
+        last_point = (0.0, 0.0)
+        # Tracks the last known position of the pen *within the clipped area*.
+        # None means the pen is "up" or outside the clip rect.
+        clipped_pen_pos = None
+
+        for cmd in self.commands:
+            if cmd.is_state_command():
+                new_ops.add(deepcopy(cmd))
+                continue
+
+            if cmd.is_travel_command():
+                last_point = cmd.end
+                clipped_pen_pos = None  # A travel move always lifts the pen
+                continue
+
+            # Linearize the command into one or more line segments
+            segments_to_clip = []
+            if isinstance(cmd, LineToCommand):
+                segments_to_clip.append((last_point, cmd.end))
+            elif isinstance(cmd, ArcToCommand):
+                segments_to_clip.extend(self._linearize_arc(cmd, last_point))
+
+            # Process each linearized segment
+            for p1, p2 in segments_to_clip:
+                clipped_segment = self._clip_segment(p1, p2, rect)
+                clipped_pen_pos = self._add_clipped_segment_to_ops(
+                    clipped_segment, new_ops, clipped_pen_pos
+                )
+
+            # The next command starts where the original unclipped command
+            # ended
+            last_point = cmd.end
+
+        return new_ops
 
     def dump(self):
         for segment in self.segments():

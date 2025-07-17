@@ -34,6 +34,10 @@ class WorkSurface(Canvas):
         self.pixels_per_mm_y = 0.0
         self.cam_visibie = cam_visibie
 
+        # The root element itself should not clip, allowing its children
+        # (like workpiece_elements) to draw outside its bounds.
+        self.root.clip = False
+
         self.axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
@@ -41,8 +45,10 @@ class WorkSurface(Canvas):
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
 
-        # These elements will be sized and positioned in pixels by WorkSurface
-        self.workpiece_elements = CanvasElement(0, 0, 0, 0, selectable=False)
+        # This container for workpieces should not clip its children.
+        self.workpiece_elements = CanvasElement(
+            0, 0, 0, 0, selectable=False, clip=False
+        )
         self.root.add(self.workpiece_elements)
 
         # DotElement size will be set in pixels by WorkSurface
@@ -448,10 +454,11 @@ class WorkSurface(Canvas):
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
 
-        # Draw grid, axis, and labels
+        # Draw grid, axis, and labels first, so they are in the background.
         self.axis_renderer.draw_grid(ctx)
         self.axis_renderer.draw_axes_and_labels(ctx)
 
+        # Use the parent Canvas's recursive rendering.
         super().do_snapshot(snapshot)
 
     def on_key_pressed(
