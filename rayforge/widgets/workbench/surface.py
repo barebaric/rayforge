@@ -175,17 +175,26 @@ class WorkSurface(Canvas):
         """Handles the scroll event for zoom."""
         zoom_speed = 0.1
 
-        # Adjust zoom level
+        # Calculate potential new zoom level
         if dy > 0:  # Scroll down - zoom out
-            new_zoom = self.zoom_level * (1 - zoom_speed)
+            new_zoom_unclamped = self.zoom_level * (1 - zoom_speed)
         else:  # Scroll up - zoom in
-            new_zoom = self.zoom_level * (1 + zoom_speed)
+            new_zoom_unclamped = self.zoom_level * (1 + zoom_speed)
 
-        # Get current mouse position in mm
+        # Clamp to the allowed range defined in set_zoom
+        clamped_zoom = max(0.4, min(new_zoom_unclamped, 10.0))
+
+        # If the zoom level is already at its limit and won't change, do
+        # nothing.
+        if clamped_zoom == self.zoom_level:
+            return
+
+        # Get current mouse position in mm to keep it stationary during zoom
         mouse_x_px, mouse_y_px = self.mouse_pos
         focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
 
-        # Calculate new content size and scaling
+        # To calculate the new pan, we first need to determine the new
+        # pixels_per_mm ratio based on the clamped zoom level.
         width, height_pixels = self.get_width(), self.get_height()
         y_axis_pixels = self.axis_renderer.get_y_axis_width()
         x_axis_height = self.axis_renderer.get_x_axis_height()
@@ -193,29 +202,31 @@ class WorkSurface(Canvas):
         top_margin = math.ceil(x_axis_height / 2)
         content_width_px = width - y_axis_pixels - right_margin
         content_height_px = height_pixels - x_axis_height - top_margin
+
         new_pixels_per_mm_x = (
-            content_width_px / self.width_mm * new_zoom
-            if self.width_mm > 0
-            else 0
+            content_width_px / self.width_mm * clamped_zoom
+            if self.width_mm > 0 else 0
         )
         new_pixels_per_mm_y = (
-            content_height_px / self.height_mm * new_zoom
-            if self.height_mm > 0
-            else 0
+            content_height_px / self.height_mm * clamped_zoom
+            if self.height_mm > 0 else 0
         )
 
-        # Adjust pan to keep focus point under cursor
-        new_pan_x_mm = (
-            focus_x_mm - (mouse_x_px - y_axis_pixels) / new_pixels_per_mm_x
-        )
-        new_pan_y_mm = (
-            focus_y_mm
-            - (height_pixels - mouse_y_px - top_margin) / new_pixels_per_mm_y
-        )
+        # If scaling is valid, calculate and set the new pan position first.
+        if new_pixels_per_mm_x > 0 and new_pixels_per_mm_y > 0:
+            new_pan_x_mm = (
+                focus_x_mm - (mouse_x_px - y_axis_pixels) / new_pixels_per_mm_x
+            )
+            new_pan_y_mm = (
+                focus_y_mm
+                - (height_pixels - mouse_y_px - top_margin)
+                / new_pixels_per_mm_y
+            )
+            self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
-        # Update rendering
-        self.set_zoom(new_zoom)
-        self.set_pan(new_pan_x_mm, new_pan_y_mm)
+        # Now, apply the new zoom level. This will trigger the final
+        # recalculation and redraw with the correct pan and zoom.
+        self.set_zoom(clamped_zoom)
 
     def _recalculate_sizes(self):
         origin_x, origin_y = self.axis_renderer.get_origin()
