@@ -1,6 +1,5 @@
-from typing import Generator, Optional, Tuple
+from typing import Optional, Tuple
 import cairo
-import math
 import logging
 import warnings
 with warnings.catch_warnings():
@@ -46,7 +45,7 @@ class PNGRenderer(Renderer):
             return 1.0
         return self.vips_image.width / self.vips_image.height
 
-    def _get_resized_vips_image(
+    def _render_to_vips_image(
         self, width: int, height: int
     ) -> pyvips.Image:
         h_scale = width / self.vips_image.width
@@ -56,7 +55,7 @@ class PNGRenderer(Renderer):
     def render_to_pixels(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        final_image = self._get_resized_vips_image(width, height)
+        final_image = self._render_to_vips_image(width, height)
         if not isinstance(final_image, pyvips.Image):
             return None
 
@@ -79,47 +78,3 @@ class PNGRenderer(Renderer):
             final_image.height,
             final_image.width * 4
         )
-
-    def render_chunk(
-        self,
-        width_px: int,
-        height_px: int,
-        chunk_width: int = 10000,
-        chunk_height: int = 20,
-        overlap_x: int = 1,
-        overlap_y: int = 0,
-    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
-        vips_image = self._get_resized_vips_image(width_px, height_px)
-        if not isinstance(vips_image, pyvips.Image):
-            logger.warning("Failed to load image for chunking.")
-            return
-
-        real_width = vips_image.width
-        real_height = vips_image.height
-        cols = math.ceil(real_width / chunk_width)
-        rows = math.ceil(real_height / chunk_height)
-
-        for row in range(rows):
-            for col in range(cols):
-                left = col * chunk_width
-                top = row * chunk_height
-                width = min(chunk_width + overlap_x, real_width - left)
-                height = min(chunk_height + overlap_y, real_height - top)
-                chunk: pyvips.Image = vips_image.crop(
-                    left, top, width, height
-                )
-
-                if chunk.bands == 3:
-                    chunk = chunk.bandjoin(255)
-
-                b, g, r, a = chunk[2], chunk[1], chunk[0], chunk[3]
-                bgra_chunk = b.bandjoin([g, r, a])
-                buf: bytes = bgra_chunk.write_to_memory()
-                surface = cairo.ImageSurface.create_for_data(
-                    buf,
-                    cairo.FORMAT_ARGB32,
-                    chunk.width,
-                    chunk.height,
-                    chunk.width * 4,
-                )
-                yield surface, (left, top)

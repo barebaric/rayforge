@@ -103,7 +103,9 @@ class WorkPiece:
         pixels_per_mm_x: int,
         pixels_per_mm_y: int,
         size: Optional[Tuple[float, float]] = None,
-        chunk_height: int = 20,
+        max_chunk_width: Optional[int] = None,
+        max_chunk_height: Optional[int] = None,
+        max_memory_size: Optional[int] = None,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         natsize = self.get_default_size()
         size = natsize if size is None else size
@@ -114,7 +116,11 @@ class WorkPiece:
         height = int(size[1] * pixels_per_mm_y)
 
         for chunk in self.renderer.render_chunk(
-            width, height, chunk_height=chunk_height
+            width,
+            height,
+            max_chunk_width=max_chunk_width,
+            max_chunk_height=max_chunk_height,
+            max_memory_size=max_memory_size,
         ):
             yield chunk
 

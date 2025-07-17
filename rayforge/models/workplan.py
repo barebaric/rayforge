@@ -249,7 +249,7 @@ class WorkStep(ABC):
         else:  # Raster
             size = workpiece.size
             for surface, (x_offset_px, y_offset_px) in workpiece.render_chunk(
-                *self.pixels_per_mm, size=size, chunk_height=20
+                *self.pixels_per_mm, size=size, max_memory_size=10*1024*1024
             ):
                 chunk_ops = await asyncio.to_thread(
                     _blocking_trace_and_modify, surface, self.pixels_per_mm

@@ -2,6 +2,10 @@ import io
 import math
 import ezdxf
 from ezdxf import bbox
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 import xml.etree.ElementTree as ET
 from typing import Generator, Optional, Tuple
 import cairo
@@ -51,20 +55,27 @@ class DXFRenderer(Renderer):
     ) -> Optional[cairo.ImageSurface]:
         return self._svg_renderer.render_to_pixels(width, height)
 
+    def _render_to_vips_image(
+        self, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        return self._svg_renderer._render_to_vips_image(width, height)
+
     def render_chunk(
         self,
         width_px: int,
         height_px: int,
-        chunk_width: int = 100000,
-        chunk_height: int = 20,
+        max_chunk_width: Optional[int] = None,
+        max_chunk_height: Optional[int] = None,
+        max_memory_size: Optional[int] = None,
         overlap_x: int = 1,
         overlap_y: int = 0,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         return self._svg_renderer.render_chunk(
             width_px,
             height_px,
-            chunk_width,
-            chunk_height,
+            max_chunk_width,
+            max_chunk_height,
+            max_memory_size,
             overlap_x,
             overlap_y,
         )
