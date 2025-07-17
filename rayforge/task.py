@@ -4,9 +4,99 @@ from blinker import Signal
 import logging
 from typing import Optional, Callable, Coroutine
 import threading
+from gi.repository import GLib
 from .util.glib import idle_add
 
 logger = logging.getLogger(__name__)
+
+
+class ExecutionContext:
+    """
+    An object that holds the execution context for a task,
+    including callbacks for progress reporting and cancellation checking.
+    This class debounces progress and status updates using the GLib
+    event loop to avoid flooding listeners and ensure thread safety.
+    """
+    def __init__(
+        self,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        check_cancelled: Callable[[], bool] = lambda: False,
+        status_callback: Optional[Callable[[str], None]] = None,
+        debounce_interval_ms: int = 100
+    ):
+        self._progress_callback = progress_callback
+        self._check_cancelled = check_cancelled
+        self._status_callback = status_callback
+        self._debounce_interval_ms = debounce_interval_ms
+
+        # Debouncing attributes using GLib timers
+        self._progress_timer_id: Optional[int] = None
+        self._status_timer_id: Optional[int] = None
+        self._pending_progress: Optional[float] = None
+        self._pending_status: Optional[str] = None
+
+    def _flush_progress(self) -> bool:
+        """Executes the progress callback and clears the timer."""
+        if self._pending_progress is not None and self._progress_callback:
+            if not self.is_cancelled():
+                self._progress_callback(self._pending_progress)
+        self._progress_timer_id = None
+        self._pending_progress = None
+        return GLib.SOURCE_REMOVE  # Ensures the timer runs only once
+
+    def _flush_status(self) -> bool:
+        """Executes the status callback and clears the timer."""
+        if self._pending_status is not None and self._status_callback:
+            if not self.is_cancelled():
+                self._status_callback(self._pending_status)
+        self._status_timer_id = None
+        self._pending_status = None
+        return GLib.SOURCE_REMOVE
+
+    def set_progress(self, progress: float):
+        """
+        Sets the progress of the operation.
+        Calls are debounced using the GLib event loop.
+        """
+        if self._progress_timer_id:
+            GLib.source_remove(self._progress_timer_id)
+
+        self._pending_progress = progress
+        self._progress_timer_id = GLib.timeout_add(
+            self._debounce_interval_ms, self._flush_progress
+        )
+
+    def is_cancelled(self) -> bool:
+        """Checks if the operation has been cancelled."""
+        if self._check_cancelled:
+            return self._check_cancelled()
+        return False
+
+    def set_status(self, status: str):
+        """
+        Sets a descriptive status for the current operation.
+        Calls are debounced.
+        """
+        if self._status_timer_id:
+            GLib.source_remove(self._status_timer_id)
+
+        self._pending_status = status
+        self._status_timer_id = GLib.timeout_add(
+            self._debounce_interval_ms, self._flush_status
+        )
+
+    def flush(self):
+        """
+        Cancels any pending debounced calls and immediately sends the
+        last known values. Should be called when the task is finished
+        to ensure final updates are not lost.
+        """
+        if self._progress_timer_id:
+            GLib.source_remove(self._progress_timer_id)
+            self._flush_progress()
+        if self._status_timer_id:
+            GLib.source_remove(self._status_timer_id)
+            self._flush_status()
 
 
 class Task:
@@ -68,8 +158,8 @@ class Task:
         except Exception:
             logger.exception(f"Task {self.key}: Coro failed with exception.")
             self._status = "failed"
-            # Optionally propagate? Depends on desired behavior for _run_task
-            # For now, we just log and set status. The finally block runs.
+            # Re-raise so the TaskManager can see and log it.
+            raise
         finally:
             # --- Cleanup ---
             logger.debug(
@@ -140,6 +230,7 @@ class Task:
 class TaskManager:
     def __init__(self):
         self._tasks = {}
+        self._progress_map = {}  # Stores progress of all current tasks
         self.overall_progress_changed = Signal()
         self.running_tasks_changed = Signal()
         self._loop = asyncio.new_event_loop()
@@ -157,6 +248,10 @@ class TaskManager:
 
     def add_task(self, task: Task, when_done: Optional[Callable] = None):
         """Add a task to the manager."""
+        # If the manager was idle, this is a new batch of work.
+        if not self._tasks:
+            self._progress_map.clear()
+
         old_task = self._tasks.get(task.key)
         if old_task:
             logger.info(
@@ -166,7 +261,9 @@ class TaskManager:
             old_task.cancel()
         else:
             logger.info(f"TaskManager: Adding new task key '{task.key}'.")
+
         self._tasks[task.key] = task
+        self._progress_map[task.key] = 0.0  # Register new task in the batch
         task.status_changed.connect(self._on_task_status_changed)
         task.progress_changed.connect(self._on_task_progress_changed)
 
@@ -201,6 +298,12 @@ class TaskManager:
         # The finally block will still execute for cleanup.
         try:
             await task.run()
+        except Exception:
+            # This is the master error handler for all background tasks.
+            logger.error(
+                f"Unhandled exception in managed task '{task.key}':",
+                exc_info=True,
+            )
         finally:
             self._cleanup_task(task)
             self._emit_overall_progress_changed()
@@ -210,10 +313,7 @@ class TaskManager:
 
     def _cleanup_task(self, task: Task):
         """
-        Clean up a completed task. Only remove the task from the dictionary
-        if it is the *same object* currently associated with the key.
-        This prevents a cancelled task from inadvertently removing a newer
-        task that replaced it due to rapid additions.
+        Clean up a completed task.
         """
         current_task_in_dict = self._tasks.get(task.key)
         if current_task_in_dict is task:  # Check object identity
@@ -239,6 +339,8 @@ class TaskManager:
 
     def _on_task_progress_changed(self, task):
         """Handle task progress changes."""
+        if task.key in self._progress_map:
+            self._progress_map[task.key] = task.get_progress()
         self._emit_overall_progress_changed()
 
     def _emit_overall_progress_changed(self):
@@ -260,18 +362,18 @@ class TaskManager:
 
     def get_overall_progress(self):
         """Calculate the overall progress of all tasks."""
-        if not self._tasks:
+        if not self._progress_map:
             return 1.0
-        total_progress = sum(
-            task.get_progress() for task in self._tasks.values()
-        )
-        return total_progress / len(self._tasks)
+
+        total_progress = sum(self._progress_map.values())
+        return total_progress / len(self._progress_map)
 
     def shutdown(self):
         """Cancel all tasks and stop the event loop."""
         for task in self._tasks.values():
             task.cancel()
         self._tasks.clear()
+        self._progress_map.clear()
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
 

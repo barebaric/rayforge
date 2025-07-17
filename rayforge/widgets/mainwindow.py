@@ -365,6 +365,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._try_driver_setup()
         config.changed.connect(self.on_config_changed)
         driver_mgr.changed.connect(self.on_driver_changed)
+        task_mgr.running_tasks_changed.connect(self.on_running_tasks_changed)
         self.needs_homing = config.machine.home_on_start
 
     def _try_driver_setup(self):
@@ -422,17 +423,38 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc(self.doc)
         self.update_state()
 
+    def on_running_tasks_changed(self, sender, tasks):
+        self.update_state()
+
     def update_state(self):
         device_status = self.machine_status.get_status()
+        are_tasks_running = len(task_mgr._tasks) > 0
 
-        # Update button states
-        self.export_button.set_sensitive(self.doc.has_workpiece())
+        # Export button
+        can_export = self.doc.has_workpiece() and not are_tasks_running
+        self.export_button.set_sensitive(can_export)
+        if are_tasks_running:
+            tooltip = _("Cannot export while operations are being generated")
+        else:
+            tooltip = _("Generate GCode")
+        self.export_button.set_tooltip_text(tooltip)
+
+        # Home button
         self.home_button.set_sensitive(device_status == DeviceStatus.IDLE)
 
         # Frame button
         can_frame = config.machine.can_frame() and self.doc.has_result()
         can_frame = can_frame and device_status == DeviceStatus.IDLE
+        can_frame = can_frame and not are_tasks_running
         self.frame_button.set_sensitive(can_frame)
+        if are_tasks_running:
+            self.frame_button.set_tooltip_text(
+                _("Cannot frame while operations are being generated")
+            )
+        else:
+            self.frame_button.set_tooltip_text(
+                _("Cycle laser head around the occupied area")
+            )
 
         # Send button
         conn_status = self.connection_status.get_status()
@@ -441,6 +463,9 @@ class MainWindow(Adw.ApplicationWindow):
             sensitive = False
         elif conn_status != TransportStatus.CONNECTED:
             text = _("Send to machine (connect to enable)")
+            sensitive = False
+        elif are_tasks_running:
+            text = _("Send to machine (wait for calculations to finish)")
             sensitive = False
         else:
             text = _("Send to machine")

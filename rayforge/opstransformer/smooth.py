@@ -1,20 +1,32 @@
 import math
+from typing import Optional
 from ..models.ops import Ops, LineToCommand, MoveToCommand
 from .transformer import OpsTransformer
+from ..task import ExecutionContext
 from .arcwelder.points import remove_duplicates
 
 
 class Smooth(OpsTransformer):
     """Smooths Ops points with a moving average, keeping sharp corners."""
+
     def __init__(self, smooth_window=7, corner_angle_threshold=45):
         """Initialize with window size and corner angle threshold."""
         self.smooth_window = max(1, smooth_window)
         self.corner_threshold = math.radians(corner_angle_threshold)
 
-    def run(self, ops: Ops):
+    def run(
+        self,
+        ops: Ops,
+        context: Optional[ExecutionContext] = None,
+    ):
         segments = list(ops.segments())
         ops.clear()
-        for segment in segments:
+
+        total_segments = len(segments)
+        for i, segment in enumerate(segments):
+            if context and context.is_cancelled():
+                return  # Abort if cancelled
+
             if self._is_line_only_segment(segment):
                 points = [cmd.end for cmd in segment]
                 smoothed = self._smooth_segment(points)
@@ -25,21 +37,22 @@ class Smooth(OpsTransformer):
                 for command in segment:
                     ops.add(command)
 
+            if context and total_segments > 0:
+                context.set_progress((i + 1) / total_segments)
+
     def _is_line_only_segment(self, segment):
-        """Check if segment is MoveTo followed by LineToCommands only."""
         if len(segment) <= 1 or not isinstance(segment[0], MoveToCommand):
             return False
         return all(isinstance(cmd, LineToCommand) for cmd in segment[1:])
 
     def _smooth_segment(self, points):
-        """Smooth points, preserving sharp corners."""
         if len(points) < 3 or self.smooth_window <= 1:
             return remove_duplicates(points)
         half_window = (self.smooth_window - 1) // 2
         smoothed = []
         is_corner = [False] * len(points)
         for i in range(1, len(points) - 1):
-            p0, p1, p2 = points[i-1], points[i], points[i+1]
+            p0, p1, p2 = points[i - 1], points[i], points[i + 1]
             angle = self._angle_between(p0, p1, p2)
             if abs(math.pi - angle) > self.corner_threshold:
                 is_corner[i] = True
@@ -48,14 +61,20 @@ class Smooth(OpsTransformer):
                 smoothed.append(points[i])
             else:
                 start = i
-                while (start > 0 and i - start < half_window and
-                       not is_corner[start]):
+                while (
+                    start > 0
+                    and i - start < half_window
+                    and not is_corner[start]
+                ):
                     start -= 1
                 if is_corner[start]:
                     start += 1
                 end = i
-                while (end < len(points) - 1 and end - i < half_window and
-                       not is_corner[end]):
+                while (
+                    end < len(points) - 1
+                    and end - i < half_window
+                    and not is_corner[end]
+                ):
                     end += 1
                 if end < len(points) and is_corner[end]:
                     end -= 1
