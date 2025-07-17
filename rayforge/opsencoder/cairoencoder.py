@@ -49,7 +49,7 @@ class CairoEncoder(OpsEncoder):
                         # Ops.segments() ensures that each travel move opens
                         # a new segment.
                         if show_travel_moves:
-                            ctx.set_source_rgb(.8, .8, .8)
+                            ctx.set_source_rgb(.9, .9, .9)
                             ctx.move_to(*prev_point)
                             ctx.line_to(x, adjusted_y)
                             ctx.stroke()

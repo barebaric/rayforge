@@ -259,7 +259,7 @@ class WorkSurface(Canvas):
             self.show_travel_moves = show
             # Mark elements dirty that depend on this setting
             for elem in self.find_by_type(WorkStepElement):
-                elem.mark_dirty()
+                elem.mark_dirty(recursive=True)
             self.queue_draw()
 
     def _on_elem_removed(self, sender, child):
