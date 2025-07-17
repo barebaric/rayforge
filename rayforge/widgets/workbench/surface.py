@@ -427,7 +427,7 @@ class WorkSurface(Canvas):
             if camera not in current_camera_elements:
                 camera_image_elem = CameraImageElement(camera)
                 camera_image_elem.set_visible(self.cam_visibie)
-                self.add(camera_image_elem)
+                self.root.insert(0, camera_image_elem)
                 logger.debug(
                     f"Added CameraImageElement for camera {camera.name}"
                 )

@@ -61,6 +61,13 @@ class CanvasElement:
         elem.allocate()
         self.mark_dirty()
 
+    def insert(self, index: int, elem: CanvasElement):
+        self.children.insert(index, elem)
+        elem.canvas = self.canvas
+        elem.parent = self
+        elem.allocate()
+        self.mark_dirty()
+
     def set_visible(self, visible: bool = True):
         self.visible = visible
         self.mark_dirty()
