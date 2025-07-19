@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+from typing import Optional, Tuple
 import cairo
 import cv2
 from rayforge.widgets.canvas import CanvasElement
@@ -39,7 +40,7 @@ class CameraImageElement(CanvasElement):
 
     def render(
         self,
-        clip: tuple[int, int, int, int] | None = None,
+        clip: Optional[Tuple[int, int, int, int]] = None,
         force: bool = False,
     ):
         # Call super's render to handle dirty flags and children

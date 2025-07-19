@@ -1,5 +1,6 @@
 import math
 import logging
+from typing import Optional, Tuple
 import cairo
 from .surfaceelem import SurfaceElement
 
@@ -35,7 +36,7 @@ class DotElement(SurfaceElement):
 
     def render(
         self,
-        clip: tuple[float, float, float, float] | None = None,
+        clip: Optional[Tuple[int, int, int, int]] = None,
         force: bool = False,
     ):
         """Renders the dot to the element's surface."""

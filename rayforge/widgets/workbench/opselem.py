@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, Tuple
 from ...config import config
 from ...opsencoder.cairoencoder import CairoEncoder
 from ...models.ops import Ops
@@ -98,7 +99,7 @@ class WorkPieceOpsElement(SurfaceElement):
 
     def render(
         self,
-        clip: tuple[float, float, float, float] | None = None,
+        clip: Optional[Tuple[int, int, int, int]] = None,
         force: bool = False,
     ):
         """

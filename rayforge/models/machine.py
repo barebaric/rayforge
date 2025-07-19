@@ -1,7 +1,7 @@
 import yaml
 import uuid
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 from blinker import Signal
 from rayforge.models.camera import Camera
@@ -14,7 +14,7 @@ class Laser:
     def __init__(self):
         self.max_power: int = 1000  # Max power (0-1000 for GRBL)
         self.frame_power: int = 0  # 0 = framing not supported
-        self.spot_size_mm: tuple[float, float] = 0.1, 0.1  # millimeters
+        self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
         self.changed = Signal()
 
     def set_max_power(self, power):
@@ -63,7 +63,7 @@ class Machine:
         self._cameras_ref_for_pyreverse: Camera
         self.max_travel_speed: int = 3000   # in mm/min
         self.max_cut_speed: int = 1000   # in mm/min
-        self.dimensions: tuple[int, int] = 200, 200
+        self.dimensions: Tuple[int, int] = 200, 200
         self.changed = Signal()
         self.add_head(Laser())
 

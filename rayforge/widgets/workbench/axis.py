@@ -1,5 +1,6 @@
 import math
 import logging
+from typing import Tuple, Generator
 import cairo
 
 
@@ -31,7 +32,7 @@ class AxisRenderer:
         self.pan_y_mm: float = pan_y_mm
         self.zoom_level: float = zoom_level
 
-    def get_content_size(self) -> tuple[int, int]:
+    def get_content_size(self) -> Tuple[int, int]:
         """
         Calculates the content area dimensions and margins.
 
@@ -58,7 +59,7 @@ class AxisRenderer:
             content_height_px * self.zoom_level
         )
 
-    def get_pixels_per_mm(self) -> tuple[float, float]:
+    def get_pixels_per_mm(self) -> Tuple[float, float]:
         """
         Calculates the pixel resolution, taking into account the current
         pan and zoom levels.
@@ -93,7 +94,7 @@ class AxisRenderer:
         )
         return pixels_per_mm_x, pixels_per_mm_y
 
-    def get_origin(self) -> tuple[int, int]:
+    def get_origin(self) -> Tuple[int, int]:
         """
         Calculates the pixel position of the origin (0,0) in the content area,
         taking into account the current pan and zoom levels.
@@ -114,7 +115,7 @@ class AxisRenderer:
 
         return round(x_px), round(y_px)
 
-    def _x_axis_intervals(self):
+    def _x_axis_intervals(self) -> Generator[Tuple[float, float], None, None]:
         """
         Yields (x_mm, x_px) tuples for grid lines within
         [0, self.width_mm] that are visible.
@@ -140,7 +141,7 @@ class AxisRenderer:
             x_px = y_axis_width + (x_mm - self.pan_x_mm) * pixels_per_mm_x
             yield x_mm, x_px
 
-    def _y_axis_intervals(self):
+    def _y_axis_intervals(self) -> Generator[Tuple[float, float], None, None]:
         """
         Yields (y_mm, y_px) tuples for grid lines within
         [0, self.height_mm] that are visible.

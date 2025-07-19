@@ -1,4 +1,5 @@
 import math
+from typing import Tuple
 import cairo
 import logging
 from ..models.ops import Ops, MoveToCommand, LineToCommand, ArcToCommand
@@ -18,7 +19,7 @@ class CairoEncoder(OpsEncoder):
                ops: Ops,
                machine: Machine,
                surface: cairo.ImageSurface,
-               scale: tuple[float, float],
+               scale: Tuple[float, float],
                show_travel_moves: bool = False) -> None:
         # Set up Cairo context and scaling
         ctx = cairo.Context(surface)

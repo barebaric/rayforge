@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import Any, Generator, Tuple, Optional
+from typing import Any, Generator, List, Tuple, Optional, Union
 import cairo
 from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from copy import deepcopy
@@ -20,9 +20,9 @@ class CanvasElement:
                  selectable: bool = True,
                  visible: bool = True,
                  background: Tuple[float, float, float, float] = (0, 0, 0, 0),
-                 canvas: Canvas | None = None,
-                 parent: Canvas | CanvasElement | None = None,
-                 data: object = None,
+                 canvas: Optional[Canvas] = None,
+                 parent: Optional[Union[Canvas, CanvasElement]] = None,
+                 data: Any = None,
                  clip: bool = True):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -36,10 +36,10 @@ class CanvasElement:
         self.selected: bool = selected
         self.selectable: bool = selectable
         self.visible: bool = visible
-        self.surface: cairo.ImageSurface | None = None
-        self.canvas: Canvas | None = canvas
-        self.parent: Canvas | CanvasElement | None = parent
-        self.children: list[CanvasElement] = []
+        self.surface: Optional[cairo.ImageSurface] = None
+        self.canvas: Optional[Canvas] = canvas
+        self.parent: Optional[Union[Canvas, CanvasElement]] = parent
+        self.children: List[CanvasElement] = []
         self.background: Tuple[float, float, float, float] = background
         self.data: Any = data
         self.dirty: bool = True
@@ -74,7 +74,7 @@ class CanvasElement:
         self.visible = visible
         self.mark_dirty()
 
-    def find_by_data(self, data: object) -> CanvasElement | None:
+    def find_by_data(self, data: Any) -> Optional[CanvasElement]:
         if data == self.data:
             return self
         for child in self.children:
@@ -83,7 +83,9 @@ class CanvasElement:
                 return result
         return None
 
-    def find_by_type(self, thetype):
+    def find_by_type(
+        self, thetype: Any
+    ) -> Generator[CanvasElement, None, None]:
         # Searches itself and children recursively
         if isinstance(self, thetype):
             yield self
@@ -92,14 +94,14 @@ class CanvasElement:
             for elem in result:
                 yield elem
 
-    def data_by_type(self, thetype):
+    def data_by_type(self, thetype: Any) -> Generator[Any, None, None]:
         for elem in self.find_by_type(thetype):
             yield elem.data
 
     def clear(self):
         children = self.children
         self.children = []
-        if self.canvas:
+        if self.canvas is not None:
             for child in children:
                 self.canvas.elem_removed.send(self, child=child)
         self.mark_dirty()
@@ -153,30 +155,32 @@ class CanvasElement:
             if isinstance(self.parent, CanvasElement):
                 self.parent.mark_dirty()
 
-    def pos(self) -> tuple[int, int]:
+    def pos(self) -> Tuple[int, int]:
         return self.x, self.y
 
-    def pos_abs(self) -> tuple[int, int]:
+    def pos_abs(self) -> Tuple[int, int]:
         parent_x, parent_y = 0, 0
         if isinstance(self.parent, CanvasElement):
             parent_x, parent_y = self.parent.pos_abs()
         return self.x+parent_x, self.y+parent_y
 
-    def size(self) -> tuple[int, int]:
+    def size(self) -> Tuple[int, int]:
         return self.width, self.height
 
     def set_size(self, width: int, height: int):
+        width = int(width)
+        height = int(height)
         if width != self.width or height != self.height:
             self.width, self.height = width, height
             self.mark_dirty()
             if self.canvas:
                 self.canvas.queue_draw()
 
-    def rect(self) -> tuple[int, int, int, int]:
+    def rect(self) -> Tuple[int, int, int, int]:
         """returns x, y, width, height"""
         return self.x, self.y, self.width, self.height
 
-    def rect_abs(self) -> tuple[int, int, int, int]:
+    def rect_abs(self) -> Tuple[int, int, int, int]:
         x, y = self.pos_abs()
         return x, y, self.width, self.height
 
@@ -202,14 +206,15 @@ class CanvasElement:
             self.surface = None  # Cannot create surface with zero size
 
     def _rect_to_child_coords_px(
-        self, child: CanvasElement, rect: tuple[int, int, int, int]
-    ) -> tuple[int, int, int, int]:
+        self, child: CanvasElement, rect: Tuple[int, int, int, int]
+    ) -> Tuple[int, int, int, int]:
         x, y, w, h = rect
         child_x, child_y, child_w, child_h = child.rect()
         return x-child_x, y-child_y, w, h
 
-    def clear_surface(self,
-                      clip: tuple[int, int, int, int] | None = None):
+    def clear_surface(
+        self, clip: Optional[Tuple[int, int, int, int]] = None,
+    ):
         if self.surface is None:
             return  # Cannot clear surface if it doesn't exist
 
@@ -227,7 +232,7 @@ class CanvasElement:
 
     def render(
         self,
-        clip: tuple[int, int, int, int] | None = None,
+        clip: Optional[Tuple[int, int, int, int]] = None,
         force: bool = False
     ):
         """
@@ -257,7 +262,7 @@ class CanvasElement:
 
     def get_elem_hit(
         self, x: float, y: float, selectable: bool = False
-    ) -> CanvasElement | None:
+    ) -> Optional[CanvasElement]:
         """
         Check if the point (x, y) hits this elem or any of its children.
         If selectable is True, only selectable elems are considered.
@@ -282,8 +287,8 @@ class CanvasElement:
         return None
 
     def get_position_in_ancestor(
-        self, ancestor: Canvas | CanvasElement
-    ) -> tuple[float, float]:
+        self, ancestor: Union[Canvas, CanvasElement]
+    ) -> Tuple[float, float]:
         """
         Calculates and returns the (x, y) pixel position of the current element
         relative to the top-left corner of the specified ancestor.
@@ -335,8 +340,8 @@ class Canvas(Gtk.DrawingArea):
             parent=self,
         )
         self.handle_size: int = 12   # Resize handle size
-        self.active_elem: CanvasElement | None = None
-        self.active_origin: tuple[int, int, int, int] | None = None
+        self.active_elem: Optional[CanvasElement] = None
+        self.active_origin: Optional[Tuple[int, int, int, int]] = None
         self.active_element_changed = Signal()
         self._setup_interactions()
 
@@ -347,21 +352,22 @@ class Canvas(Gtk.DrawingArea):
         # The root element's remove method handles removing from its children
         self.root.remove_child(elem)
 
-    def find_by_data(self, data: object) -> Optional[CanvasElement]:
+    def find_by_data(self, data: Any) -> Optional[CanvasElement]:
         """
         Returns the CanvasElement with the given data, or None if none
         was found.
         """
         return self.root.find_by_data(data)
 
-    def find_by_type(self, thetype: object) -> Generator[CanvasElement]:
+    def find_by_type(
+        self, thetype: Any
+    ) -> Generator[CanvasElement, None, None]:
         """
-        Returns the CanvasElements with the given type, or None if none
-        was found.
+        Returns the CanvasElements with the given type.
         """
         return self.root.find_by_type(thetype)
 
-    def size(self) -> tuple[int, int]:
+    def size(self) -> Tuple[int, int]:
         return self.root.size()
 
     def _setup_interactions(self):
@@ -478,7 +484,7 @@ class Canvas(Gtk.DrawingArea):
         x: float,
         y: float,
         selectable: bool = True,
-    ) -> CanvasElement | None:
+    ) -> Optional[CanvasElement]:
         """
         Check if the point (x, y) hits the resize handle of this elem or
         any of its children.
@@ -577,7 +583,7 @@ class Canvas(Gtk.DrawingArea):
         self.set_cursor(cursor)
 
     def on_mouse_drag(self, gesture, x: int, y: int):
-        if not self.active_elem or not self.active_origin:
+        if self.active_elem is None or self.active_origin is None:
             return
 
         start_x, start_y, start_w, start_h = self.active_origin
@@ -634,10 +640,10 @@ class Canvas(Gtk.DrawingArea):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = False
 
-    def get_active_element(self) -> CanvasElement | None:
+    def get_active_element(self) -> Optional[CanvasElement]:
         return self.active_elem
 
-    def get_selected_elements(self) -> list[CanvasElement]:
+    def get_selected_elements(self) -> List[CanvasElement]:
         return list(self.root.get_selected())
 
 

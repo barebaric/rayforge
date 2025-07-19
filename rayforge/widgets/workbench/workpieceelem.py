@@ -1,7 +1,7 @@
 import logging
 import cairo
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 from gi.repository import GLib
 from ...models.workpiece import WorkPiece
 from .surfaceelem import SurfaceElement
@@ -116,7 +116,7 @@ class WorkPieceElement(SurfaceElement):
 
     def render(
         self,
-        clip: tuple[int, int, int, int] | None = None,
+        clip: Optional[Tuple[int, int, int, int]] = None,
         force: bool = False,
     ):
         # First, call the parent's render to handle the dirty flag and clear

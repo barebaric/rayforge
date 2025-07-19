@@ -397,10 +397,10 @@ class Ops:
 
     def _clip_segment(
         self,
-        p1: tuple[float, float],
-        p2: tuple[float, float],
-        rect: tuple[float, float, float, float],
-    ) -> Optional[tuple[tuple[float, float], tuple[float, float]]]:
+        p1: Tuple[float, float],
+        p2: Tuple[float, float],
+        rect: Tuple[float, float, float, float],
+    ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
         """
         Clips a line segment to a rectangle using Cohen-Sutherland.
         Returns the clipped segment or None if it's outside.
@@ -455,7 +455,7 @@ class Ops:
                 outcode2 = self._compute_outcode(x2, y2, rect)
 
     def _linearize_arc(
-        self, arc_cmd: ArcToCommand, start_point: tuple[float, float]
+        self, arc_cmd: ArcToCommand, start_point: Tuple[float, float]
     ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
         """Converts an ArcToCommand into a list of line segments."""
         segments = []
@@ -529,7 +529,7 @@ class Ops:
             # The segment was fully clipped, so the pen is now "up"
             return None
 
-    def clip(self, rect: tuple[float, float, float, float]) -> "Ops":
+    def clip(self, rect: Tuple[float, float, float, float]) -> "Ops":
         """
         Clips the Ops to the given rectangle.
         Returns a new, clipped Ops object.
