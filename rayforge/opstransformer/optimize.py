@@ -26,13 +26,14 @@ def split_long_segments(operations: List[Command]) -> List[List[Command]]:
 
     segments = [[operations[0]]]
     last_state = operations[0].state
-    for op in operations:
+    for op in operations[1:]:
         if last_state.allow_rapid_change(op.state):
             segments[-1].append(op)
         else:
             # If rapid state change is not allowed, add
             # it to a new long segment.
             segments.append([op])
+            last_state = op.state
     return segments
 
 
