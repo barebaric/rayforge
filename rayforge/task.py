@@ -4,7 +4,6 @@ from blinker import Signal
 import logging
 from typing import Optional, Callable, Coroutine
 import threading
-from gi.repository import GLib
 from .util.glib import idle_add
 
 logger = logging.getLogger(__name__)
@@ -12,91 +11,113 @@ logger = logging.getLogger(__name__)
 
 class ExecutionContext:
     """
-    An object that holds the execution context for a task,
-    including callbacks for progress reporting and cancellation checking.
-    This class debounces progress and status updates using the GLib
-    event loop to avoid flooding listeners and ensure thread safety.
+    An object that holds the execution context for a task.
+    It is thread-safe and performs debouncing in a background
+    thread using threading.Timer, minimizing load on the GLib main loop.
     """
+
     def __init__(
         self,
         progress_callback: Optional[Callable[[float], None]] = None,
         check_cancelled: Callable[[], bool] = lambda: False,
         status_callback: Optional[Callable[[str], None]] = None,
-        debounce_interval_ms: int = 100
+        debounce_interval_ms: int = 100,
     ):
         self._progress_callback = progress_callback
         self._check_cancelled = check_cancelled
         self._status_callback = status_callback
-        self._debounce_interval_ms = debounce_interval_ms
+        self._debounce_interval_sec = debounce_interval_ms / 1000.0
 
-        # Debouncing attributes using GLib timers
-        self._progress_timer_id: Optional[int] = None
-        self._status_timer_id: Optional[int] = None
+        # These timers are for debouncing.
+        self._progress_timer: Optional[threading.Timer] = None
+        self._status_timer: Optional[threading.Timer] = None
+
         self._pending_progress: Optional[float] = None
         self._pending_status: Optional[str] = None
+        self._lock = threading.Lock()
 
-    def _flush_progress(self) -> bool:
-        """Executes the progress callback and clears the timer."""
-        if self._pending_progress is not None and self._progress_callback:
-            if not self.is_cancelled():
-                self._progress_callback(self._pending_progress)
-        self._progress_timer_id = None
-        self._pending_progress = None
-        return GLib.SOURCE_REMOVE  # Ensures the timer runs only once
+    def _fire_progress(self):
+        """
+        Called by the threading.Timer in a background thread.
+        Schedules the actual UI update on the main loop.
+        """
+        with self._lock:
+            if self._pending_progress is not None and self._progress_callback:
+                if not self.is_cancelled():
+                    # The ONLY interaction with the main loop.
+                    idle_add(self._progress_callback, self._pending_progress)
+            self._pending_progress = None
+            self._progress_timer = None
 
-    def _flush_status(self) -> bool:
-        """Executes the status callback and clears the timer."""
-        if self._pending_status is not None and self._status_callback:
-            if not self.is_cancelled():
-                self._status_callback(self._pending_status)
-        self._status_timer_id = None
-        self._pending_status = None
-        return GLib.SOURCE_REMOVE
+    def _fire_status(self):
+        """
+        Called by the threading.Timer in a background thread.
+        Schedules the actual UI update on the main loop.
+        """
+        with self._lock:
+            if self._pending_status is not None and self._status_callback:
+                if not self.is_cancelled():
+                    # The ONLY interaction with the main loop.
+                    idle_add(self._status_callback, self._pending_status)
+            self._pending_status = None
+            self._status_timer = None
 
     def set_progress(self, progress: float):
         """
-        Sets the progress of the operation.
-        Calls are debounced using the GLib event loop.
+        Sets the progress. All debouncing logic happens in background threads.
         """
-        if self._progress_timer_id:
-            GLib.source_remove(self._progress_timer_id)
+        with self._lock:
+            if self._progress_timer:
+                self._progress_timer.cancel()
 
-        self._pending_progress = progress
-        self._progress_timer_id = GLib.timeout_add(
-            self._debounce_interval_ms, self._flush_progress
-        )
+            self._pending_progress = progress
+            self._progress_timer = threading.Timer(
+                self._debounce_interval_sec, self._fire_progress
+            )
+            self._progress_timer.start()
 
     def is_cancelled(self) -> bool:
         """Checks if the operation has been cancelled."""
-        if self._check_cancelled:
-            return self._check_cancelled()
-        return False
+        return self._check_cancelled()
 
     def set_status(self, status: str):
         """
-        Sets a descriptive status for the current operation.
-        Calls are debounced.
+        Sets a descriptive status. All debouncing logic happens in
+        background threads.
         """
-        if self._status_timer_id:
-            GLib.source_remove(self._status_timer_id)
+        with self._lock:
+            if self._status_timer:
+                self._status_timer.cancel()
 
-        self._pending_status = status
-        self._status_timer_id = GLib.timeout_add(
-            self._debounce_interval_ms, self._flush_status
-        )
+            self._pending_status = status
+            self._status_timer = threading.Timer(
+                self._debounce_interval_sec, self._fire_status
+            )
+            self._status_timer.start()
 
     def flush(self):
         """
         Cancels any pending debounced calls and immediately sends the
-        last known values. Should be called when the task is finished
-        to ensure final updates are not lost.
+        last known values to the main loop for UI update.
         """
-        if self._progress_timer_id:
-            GLib.source_remove(self._progress_timer_id)
-            self._flush_progress()
-        if self._status_timer_id:
-            GLib.source_remove(self._status_timer_id)
-            self._flush_status()
+        with self._lock:
+            # Flush progress
+            if self._progress_timer:
+                self._progress_timer.cancel()
+                self._progress_timer = None
+            if self._pending_progress is not None and self._progress_callback:
+                if not self.is_cancelled():
+                    idle_add(self._progress_callback, self._pending_progress)
+            self._pending_progress = None
+
+            # Flush status
+            if self._status_timer:
+                self._status_timer.cancel()
+                self._status_timer = None
+            if self._pending_status is not None and self._status_callback:
+                if not self.is_cancelled():
+                    idle_add(self._status_callback, self._pending_status)
+            self._pending_status = None
 
 
 class Task:
@@ -281,7 +302,7 @@ class TaskManager:
         coro: Coroutine,
         key=None,
         monitor_callback=None,
-        when_done: Optional[Callable] = None
+        when_done: Optional[Callable] = None,
     ):
         """
         Add a raw coroutine to the manager.
@@ -357,7 +378,7 @@ class TaskManager:
         idle_add(
             self.running_tasks_changed.send,
             self,
-            tasks=list(self._tasks.values())
+            tasks=list(self._tasks.values()),
         )
 
     def get_overall_progress(self):
