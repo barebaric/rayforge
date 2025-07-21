@@ -949,15 +949,18 @@ class Canvas(Gtk.DrawingArea):
 
     def on_key_pressed(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
-    ):
+    ) -> bool:
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = True
+            return True
         elif keyval == Gdk.KEY_Delete:
             self.root.remove_selected()
             self.active_elem = None
             self.active_origin = None
             self.queue_draw()
             self.active_element_changed.send(self, element=None)
+            return True
+        return False
 
     def on_key_released(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType

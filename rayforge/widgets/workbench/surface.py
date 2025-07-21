@@ -475,7 +475,48 @@ class WorkSurface(Canvas):
 
     def on_key_pressed(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
-    ):
+    ) -> bool:
+        # Reset pan and zoom with '1'
+        if keyval == Gdk.KEY_1:
+            self.set_pan(0.0, 0.0)
+            self.set_zoom(1.0)
+            return True  # Event handled
+
+        # Handle arrow key movement for selected workpieces
+        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        pixels_per_mm_x = self.pixels_per_mm_x or 1
+        pixels_per_mm_y = self.pixels_per_mm_y or 1
+
+        move_amount_mm = 1.0
+        if is_shift:
+            move_amount_mm *= 10
+        elif is_ctrl:
+            move_amount_mm *= 0.1
+
+        move_amount_x = round(move_amount_mm * pixels_per_mm_x)
+        move_amount_y = round(move_amount_mm * pixels_per_mm_y)
+        dx = 0
+        dy = 0
+
+        if keyval == Gdk.KEY_Up:
+            dy = -move_amount_y
+        elif keyval == Gdk.KEY_Down:
+            dy = move_amount_y
+        elif keyval == Gdk.KEY_Left:
+            dx = -move_amount_x
+        elif keyval == Gdk.KEY_Right:
+            dx = move_amount_x
+
+        if dx != 0 or dy != 0:
+            for elem in self.get_selected_elements():
+                if not isinstance(elem, WorkPieceElement):
+                    continue
+                current_x, current_y = elem.pos()
+                elem.set_pos(current_x + dx, current_y + dy)
+                self.queue_draw()
+            return True  # Consume arrow key events even if nothing is selected
+
         if keyval == Gdk.KEY_Delete:
             selected = [
                 e
@@ -489,6 +530,9 @@ class WorkSurface(Canvas):
                         continue
                     ops_elem.remove()
                     del ops_elem  # to ensure signals disconnect
+
+        # Propagate to parent Canvas for default behavior (like deleting
+        # elements).
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x, y):
