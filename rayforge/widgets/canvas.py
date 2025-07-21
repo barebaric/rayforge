@@ -7,27 +7,43 @@ from copy import deepcopy
 from blinker import Signal
 import asyncio
 from ..task import task_mgr, CancelledError
+from enum import Enum, auto
 
 
 logger = logging.getLogger(__name__)
 
 
+class ElementRegion(Enum):
+    NONE = auto()
+    BODY = auto()
+    TOP_LEFT = auto()
+    TOP_MIDDLE = auto()
+    TOP_RIGHT = auto()
+    MIDDLE_LEFT = auto()
+    MIDDLE_RIGHT = auto()
+    BOTTOM_LEFT = auto()
+    BOTTOM_MIDDLE = auto()
+    BOTTOM_RIGHT = auto()
+
+
 class CanvasElement:
-    def __init__(self,
-                 x: int,
-                 y: int,
-                 width: int,
-                 height: int,
-                 selected: bool = False,
-                 selectable: bool = True,
-                 visible: bool = True,
-                 background: Tuple[float, float, float, float] = (0, 0, 0, 0),
-                 canvas: Optional[Canvas] = None,
-                 parent: Optional[Union[Canvas, CanvasElement]] = None,
-                 data: Any = None,
-                 clip: bool = True,
-                 buffered: bool = False,
-                 debounce_ms: int = 50):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        selected: bool = False,
+        selectable: bool = True,
+        visible: bool = True,
+        background: Tuple[float, float, float, float] = (0, 0, 0, 0),
+        canvas: Optional[Canvas] = None,
+        parent: Optional[Union[Canvas, CanvasElement]] = None,
+        data: Any = None,
+        clip: bool = True,
+        buffered: bool = False,
+        debounce_ms: int = 50,
+    ):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
             f"height={height}"
@@ -52,6 +68,71 @@ class CanvasElement:
         self.debounce_ms: int = debounce_ms
         self._debounce_timer_id: Optional[int] = None
         self._update_task: Optional[asyncio.Task] = None
+
+        # UI interaction state
+        self.hovered: bool = False
+        self.handle_size: int = 30
+
+    def get_region_rect(
+        self, region: ElementRegion
+    ) -> Tuple[int, int, int, int]:
+        """
+        Returns the rectangle (x, y, w, h) for a given region in
+        local coordinates.
+        """
+        w, h = self.width, self.height
+        hs = self.handle_size
+
+        # Corner regions are hs x hs squares
+        if region == ElementRegion.TOP_LEFT:
+            return 0, 0, hs, hs
+        if region == ElementRegion.TOP_RIGHT:
+            return w - hs, 0, hs, hs
+        if region == ElementRegion.BOTTOM_LEFT:
+            return 0, h - hs, hs, hs
+        if region == ElementRegion.BOTTOM_RIGHT:
+            return w - hs, h - hs, hs, hs
+
+        # Edge regions are between the corners
+        if region == ElementRegion.TOP_MIDDLE:
+            return hs, 0, w - 2 * hs, hs
+        if region == ElementRegion.BOTTOM_MIDDLE:
+            return hs, h - hs, w - 2 * hs, hs
+        if region == ElementRegion.MIDDLE_LEFT:
+            return 0, hs, hs, h - 2 * hs
+        if region == ElementRegion.MIDDLE_RIGHT:
+            return w - hs, hs, hs, h - 2 * hs
+
+        if region == ElementRegion.BODY:
+            return 0, 0, w, h
+
+        return 0, 0, 0, 0  # For NONE or other cases
+
+    def check_region_hit(self, x: int, y: int) -> ElementRegion:
+        """Checks which region is hit at local coordinates (x, y)."""
+        # Check handles first as they are on top of the body
+        regions_to_check = [
+            ElementRegion.TOP_LEFT,
+            ElementRegion.TOP_RIGHT,
+            ElementRegion.BOTTOM_LEFT,
+            ElementRegion.BOTTOM_RIGHT,
+            ElementRegion.TOP_MIDDLE,
+            ElementRegion.BOTTOM_MIDDLE,
+            ElementRegion.MIDDLE_LEFT,
+            ElementRegion.MIDDLE_RIGHT,
+        ]
+        for region in regions_to_check:
+            rx, ry, rw, rh = self.get_region_rect(region)
+            # Make sure handle regions are not negative in size
+            if rw > 0 and rh > 0 and rx <= x <= rx + rw and ry <= y < ry + rh:
+                return region
+
+        # If no handle is hit, check the body
+        bx, by, bw, bh = self.get_region_rect(ElementRegion.BODY)
+        if bx <= x < bx + bw and by <= y < by + bh:
+            return ElementRegion.BODY
+
+        return ElementRegion.NONE
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
         self.dirty = True
@@ -161,8 +242,9 @@ class CanvasElement:
     def unselect_all(self):
         for child in self.children:
             child.unselect_all()
-        self.selected = False
-        self.mark_dirty()
+        if self.selected:
+            self.selected = False
+            self.mark_dirty()
 
     def set_pos(self, x: int, y: int):
         if self.x != x or self.y != y:
@@ -177,7 +259,7 @@ class CanvasElement:
         parent_x, parent_y = 0, 0
         if isinstance(self.parent, CanvasElement):
             parent_x, parent_y = self.parent.pos_abs()
-        return self.x+parent_x, self.y+parent_y
+        return self.x + parent_x, self.y + parent_y
 
     def size(self) -> Tuple[int, int]:
         return self.width, self.height
@@ -216,9 +298,12 @@ class CanvasElement:
             return
 
         # If the size didn't change, do nothing.
-        if self.surface is not None and not force and \
-                self.surface.get_width() == self.width and \
-                self.surface.get_height() == self.height:
+        if (
+            self.surface is not None
+            and not force
+            and self.surface.get_width() == self.width
+            and self.surface.get_height() == self.height
+        ):
             return
 
         if self.width > 0 and self.height > 0:
@@ -354,7 +439,7 @@ class CanvasElement:
         except Exception as e:
             logger.error(
                 f"Error during update for {self.__class__.__name__}: {e}",
-                exc_info=True
+                exc_info=True,
             )
 
     def render_to_surface(
@@ -426,7 +511,8 @@ class CanvasElement:
             pos_y += current.y
             if not isinstance(current.parent, CanvasElement):
                 raise ValueError(
-                    "Ancestor is not in the element's parent chain")
+                    "Ancestor is not in the element's parent chain"
+                )
             current = current.parent
 
         if current.parent != ancestor:
@@ -440,19 +526,19 @@ class CanvasElement:
         return pos_x, pos_y
 
     def dump(self, indent: int = 0):
-        print("  "*indent + self.__class__.__name__ + ':')
-        print("  "*(indent+1) + "Visible:", self.visible)
-        print("  "*(indent+1) + "Dirty:", self.dirty)
-        print("  "*(indent+1) + "Dirty (recurs.):", self.has_dirty_children())
-        print("  "*(indent+1) + "Size:", self.rect())
+        print("  " * indent + self.__class__.__name__ + ":")
+        print("  " * (indent + 1) + "Visible:", self.visible)
+        print("  " * (indent + 1) + "Dirty:", self.dirty)
+        print(
+            "  " * (indent + 1) + "Dirty (recurs.):", self.has_dirty_children()
+        )
+        print("  " * (indent + 1) + "Size:", self.rect())
         for child in self.children:
-            child.dump(indent+1)
+            child.dump(indent + 1)
 
 
 class Canvas(Gtk.DrawingArea):
-    def __init__(
-        self, width_mm: float = 100, height_mm: float = 100, **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.root = CanvasElement(
             0,
@@ -462,11 +548,15 @@ class Canvas(Gtk.DrawingArea):
             canvas=self,
             parent=self,
         )
-        self.handle_size: int = 12   # Resize handle size
         self.active_elem: Optional[CanvasElement] = None
         self.active_origin: Optional[Tuple[int, int, int, int]] = None
         self.active_element_changed = Signal()
         self._setup_interactions()
+
+        # Interaction state
+        self.hovered_elem: Optional[CanvasElement] = None
+        self.hovered_region: ElementRegion = ElementRegion.NONE
+        self.active_region: ElementRegion = ElementRegion.NONE
 
     def add(self, elem: CanvasElement):
         self.root.add(elem)
@@ -544,179 +634,322 @@ class Canvas(Gtk.DrawingArea):
         if elem.selected:
             abs_x, abs_y = elem.pos_abs()
             ctx.save()
-            ctx.set_source_rgb(.4, .4, .4)
+
+            # Draw dashed selection rectangle
+            ctx.set_source_rgb(0.4, 0.4, 0.4)
             ctx.set_dash((5, 5))
+            ctx.set_line_width(1)
             ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
             ctx.stroke()
-            ctx.restore()
 
-        # Draw resize handle
-        if elem == self.active_elem:
-            abs_x, abs_y = elem.pos_abs()
-            ctx.save()
-            ctx.set_source_rgb(.4, .4, .4)
-            ctx.set_line_width(1)
-            handle_x = abs_x + elem.width
-            handle_y = abs_y + elem.height
-            ctx.rectangle(handle_x - self.handle_size / 2,
-                          handle_y - self.handle_size / 2,
-                          self.handle_size,
-                          self.handle_size)
-            ctx.stroke()
+            # Prepare to draw handles
+            ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)  # A nice blue
+            ctx.set_dash([])  # Solid line for handles
+
+            # Corner handles are visible on hover of the whole element
+            if elem.hovered:
+                corner_regions = [
+                    ElementRegion.TOP_LEFT,
+                    ElementRegion.TOP_RIGHT,
+                    ElementRegion.BOTTOM_LEFT,
+                    ElementRegion.BOTTOM_RIGHT,
+                ]
+                for region in corner_regions:
+                    rx, ry, rw, rh = elem.get_region_rect(region)
+                    if rw > 0 and rh > 0:
+                        ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
+                        ctx.fill()
+
+            # Edge handles are only visible when hovering that specific region
+            edge_regions = [
+                ElementRegion.TOP_MIDDLE,
+                ElementRegion.BOTTOM_MIDDLE,
+                ElementRegion.MIDDLE_LEFT,
+                ElementRegion.MIDDLE_RIGHT,
+            ]
+            if (
+                self.hovered_elem == elem
+                and self.hovered_region in edge_regions
+            ):
+                rx, ry, rw, rh = elem.get_region_rect(self.hovered_region)
+                if rw > 0 and rh > 0:
+                    ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
+                    ctx.fill()
+
             ctx.restore()
 
         # Recursively render children
         for child in elem.children:
             self._render_selection(ctx, child)
 
-    def get_elem_handle_hit(
-        self,
-        elem: CanvasElement,
-        x: float,
-        y: float,
-        selectable: bool = True,
-    ) -> Optional[CanvasElement]:
-        """
-        Check if the point (x, y) hits the resize handle of this elem or
-        any of its children.
-        Coordinates are relative to the canvas's top-left.
-        """
-        # Translate the hit coordinates to the element's local coordinate
-        # system
-        elem_x, elem_y = elem.get_position_in_ancestor(self)
-        local_x = x - elem_x
-        local_y = y - elem_y
+    def _update_hover_state(self, x: int, y: int) -> bool:
+        """Updates hover state and returns True if a redraw is needed."""
+        needs_redraw = False
 
-        for child in elem.children:
-            # Pass the hit coordinates relative to the current element
-            hit = self.get_elem_handle_hit(child,
-                                           x,
-                                           y,
-                                           selectable=True)
-            if hit:
-                return hit
+        # Find element under cursor, but ignore the root element
+        hit_elem = self.root.get_elem_hit(
+            x - self.root.x, y - self.root.y, selectable=True
+        )
+        if hit_elem is self.root:
+            hit_elem = None
 
-        if selectable and not elem.selectable:
-            return None
-        if not elem.selected:
-            return None
+        # Check for change in hovered element
+        if self.hovered_elem != hit_elem:
+            if self.hovered_elem:
+                self.hovered_elem.hovered = False
+            self.hovered_elem = hit_elem
+            if self.hovered_elem:
+                self.hovered_elem.hovered = True
+            needs_redraw = True
 
-        # Check if the point is within the elem's handle bounds (in local
-        # coordinates)
-        handle_x1 = elem.width - self.handle_size / 2
-        handle_x2 = handle_x1 + self.handle_size
-        handle_y1 = elem.height - self.handle_size/2
-        handle_y2 = handle_y1 + self.handle_size
+        # Check for change in hovered region on the current hovered element
+        new_hovered_region = ElementRegion.NONE
+        if self.hovered_elem and self.hovered_elem.selected:
+            elem_x, elem_y = self.hovered_elem.pos_abs()
+            local_x, local_y = x - elem_x, y - elem_y
+            new_hovered_region = self.hovered_elem.check_region_hit(
+                local_x, local_y
+            )
 
-        if (
-            handle_x1 <= local_x <= handle_x2
-            and handle_y1 <= local_y <= handle_y2
-        ):
-            return elem
-        return None
+        if self.hovered_region != new_hovered_region:
+            self.hovered_region = new_hovered_region
+            needs_redraw = True
+
+        return needs_redraw
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         self.grab_focus()
-        # Check whether the resize handle was clicked.
-        # x and y are in canvas pixel coordinates
-        hit = self.get_elem_handle_hit(self.root, x, y, selectable=True)
+        hit = self.root.get_elem_hit(
+            x - self.root.x, y - self.root.y, selectable=True
+        )
+
+        # Before changing selection state, check if the hit element
+        # was already selected.
+        was_already_selected = hit.selected if hit else False
+
         self.root.unselect_all()
 
         if hit and hit != self.root:
             hit.selected = True
-            self.resizing = True
-            self.moving = False  # Ensure moving is false when resizing
-            self.active_elem = hit
-            self.active_origin = hit.rect()
-            self.queue_draw()
-            self.active_element_changed.send(self, element=self.active_elem)
-            return
-
-        # Check whether the element body was clicked.
-        # Translate the hit coordinates to the root element's local
-        # coordinate system (which is the canvas's)
-        hit = self.root.get_elem_hit(
-            x - self.root.x, y - self.root.y, selectable=True)
-        if hit and hit != self.root:
-            hit.selected = True
-            self.moving = True
-            self.resizing = False  # Ensure resizing is false when moving
             self.active_elem = hit
             self.active_origin = hit.rect()
 
-            # Move the hit element to the end of its parent's children list
-            if hit.parent and isinstance(hit.parent, CanvasElement):
-                parent_children = hit.parent.children
-                if hit in parent_children:
-                    parent_children.remove(hit)
-                    parent_children.append(hit)
-                    hit.parent.mark_dirty()  # Mark parent dirty as child
-                    # order changed
+            # If the element was not selected before this click, the action
+            # should always be a "move", regardless of the hit region.
+            # Otherwise, if it was already selected, check for resize handles.
+            if was_already_selected:
+                elem_x, elem_y = hit.pos_abs()
+                local_x, local_y = x - elem_x, y - elem_y
+                self.active_region = hit.check_region_hit(local_x, local_y)
+            else:
+                self.active_region = ElementRegion.BODY
 
-            self.queue_draw()
-            self.active_element_changed.send(self, element=self.active_elem)
-            return
+            if self.active_region == ElementRegion.BODY:
+                self.moving = True
+                self.resizing = False
+                # Bring to front logic
+                if hit.parent and isinstance(hit.parent, CanvasElement):
+                    parent_children = hit.parent.children
+                    if hit in parent_children:
+                        parent_children.remove(hit)
+                        parent_children.append(hit)
+                        hit.parent.mark_dirty()
+            elif self.active_region != ElementRegion.NONE:
+                self.resizing = True
+                self.moving = False
+            else:
+                self.active_elem = None
 
-        self.active_elem = None
-        self.resizing = False
-        self.moving = False
+        else:
+            self.active_elem = None
+            self.resizing = False
+            self.moving = False
+            self.active_region = ElementRegion.NONE
+
+        self._update_hover_state(x, y)
         self.queue_draw()
-        self.active_element_changed.send(self, element=None)
+        self.active_element_changed.send(self, element=self.active_elem)
 
     def on_motion(self, gesture, x: int, y: int):
-        # x and y are already in canvas pixel coordinates
-        hit = self.get_elem_handle_hit(self.root, x, y, selectable=True)
-        if hit:
-            cursor_name = "se-resize"
-        else:
-            cursor_name = "default"
+        if self._update_hover_state(x, y):
+            self.queue_draw()
+
+        cursor_map = {
+            ElementRegion.TOP_LEFT: "nw-resize",
+            ElementRegion.BOTTOM_RIGHT: "se-resize",
+            ElementRegion.TOP_RIGHT: "ne-resize",
+            ElementRegion.BOTTOM_LEFT: "sw-resize",
+            ElementRegion.TOP_MIDDLE: "n-resize",
+            ElementRegion.BOTTOM_MIDDLE: "s-resize",
+            ElementRegion.MIDDLE_LEFT: "w-resize",
+            ElementRegion.MIDDLE_RIGHT: "e-resize",
+            ElementRegion.BODY: "move",
+            ElementRegion.NONE: "default",
+        }
+        cursor_name = cursor_map.get(self.hovered_region, "default")
         cursor = Gdk.Cursor.new_from_name(cursor_name)
         self.set_cursor(cursor)
 
     def on_mouse_drag(self, gesture, x: int, y: int):
-        if self.active_elem is None or self.active_origin is None:
+        if not self.active_elem or not self.active_origin:
+            return
+
+        delta_x, delta_y = x, y
+
+        if self.moving:
+            start_x, start_y, _, _ = self.active_origin
+            self.active_elem.set_pos(start_x + delta_x, start_y + delta_y)
+            self.queue_draw()
+        elif self.resizing:
+            self._resize_active_element(delta_x, delta_y)
+
+    def _resize_active_element(self, delta_x: int, delta_y: int):
+        """Handles the logic for resizing an element based on drag delta."""
+        if not self.active_elem or not self.active_origin:
             return
 
         start_x, start_y, start_w, start_h = self.active_origin
-        # x and y are the delta from the press point
-        delta_x = x
-        delta_y = y
+        min_size = self.active_elem.handle_size * 2
 
-        if self.moving:
-            self.active_elem.set_pos(start_x + delta_x,
-                                     start_y + delta_y)
+        # Determine which edges are being dragged
+        is_left = self.active_region in {
+            ElementRegion.TOP_LEFT,
+            ElementRegion.MIDDLE_LEFT,
+            ElementRegion.BOTTOM_LEFT,
+        }
+        is_right = self.active_region in {
+            ElementRegion.TOP_RIGHT,
+            ElementRegion.MIDDLE_RIGHT,
+            ElementRegion.BOTTOM_RIGHT,
+        }
+        is_top = self.active_region in {
+            ElementRegion.TOP_LEFT,
+            ElementRegion.TOP_MIDDLE,
+            ElementRegion.TOP_RIGHT,
+        }
+        is_bottom = self.active_region in {
+            ElementRegion.BOTTOM_LEFT,
+            ElementRegion.BOTTOM_MIDDLE,
+            ElementRegion.BOTTOM_RIGHT,
+        }
 
-        if self.resizing:
-            new_w = max(self.handle_size, start_w + delta_x)
-            # Ensure the new size does not exceed the parent's bounds
-            if isinstance(self.active_elem.parent, CanvasElement):
-                new_w = min(
-                    new_w, self.active_elem.parent.width - self.active_elem.x)
+        # 1. Calculate new rect based on the dragged handle
+        new_x, new_y, new_w, new_h = (
+            float(start_x),
+            float(start_y),
+            float(start_w),
+            float(start_h),
+        )
+        if is_left:
+            new_w, new_x = start_w - delta_x, start_x + delta_x
+        elif is_right:
+            new_w = start_w + delta_x
 
-            if self.shift_pressed:
-                aspect = start_w / start_h if start_h != 0 else 1
-                new_h = round(new_w / aspect)
+        if is_top:
+            new_h, new_y = start_h - delta_y, start_y + delta_y
+        elif is_bottom:
+            new_h = start_h + delta_y
+
+        # 2. Enforce minimum size
+        if new_w < min_size:
+            if is_left:
+                new_x = start_x + start_w - min_size
+            new_w = min_size
+        if new_h < min_size:
+            if is_top:
+                new_y = start_y + start_h - min_size
+            new_h = min_size
+
+        # 3. Handle aspect ratio
+        if self.shift_pressed and start_w > 0 and start_h > 0:
+            aspect = start_w / start_h
+            rect = new_x, new_y, new_w, new_h
+            start_rect = start_x, start_y, start_w, start_h
+            delta = delta_x, delta_y
+            new_x, new_y, new_w, new_h = self._constrain_to_aspect_ratio(
+                rect, start_rect, delta, aspect
+            )
+
+        # 4. Apply changes
+        self.active_elem.set_pos(round(new_x), round(new_y))
+        self.active_elem.set_size(round(new_w), round(new_h))
+
+    def _constrain_to_aspect_ratio(
+        self,
+        rect: Tuple[float, float, float, float],
+        start_rect: Tuple[int, int, int, int],
+        delta: Tuple[int, int],
+        aspect: float,
+    ) -> Tuple[float, float, float, float]:
+        """Adjusts rectangle to maintain aspect ratio during resize."""
+        new_x, new_y, new_w, new_h = rect
+        start_x, start_y, start_w, start_h = start_rect
+        delta_x, delta_y = delta
+
+        # Determine resize type
+        is_corner = self.active_region in {
+            ElementRegion.TOP_LEFT,
+            ElementRegion.TOP_RIGHT,
+            ElementRegion.BOTTOM_LEFT,
+            ElementRegion.BOTTOM_RIGHT,
+        }
+        is_horiz_edge = self.active_region in {
+            ElementRegion.MIDDLE_LEFT,
+            ElementRegion.MIDDLE_RIGHT,
+        }
+        is_vert_edge = self.active_region in {
+            ElementRegion.TOP_MIDDLE,
+            ElementRegion.BOTTOM_MIDDLE,
+        }
+
+        # Adjust dimensions based on the dominant mouse movement for corners
+        if is_corner:
+            if abs(delta_x) > abs(delta_y):
+                new_h = new_w / aspect
             else:
-                new_h = max(self.handle_size, start_h + delta_y)
-                # Ensure the new size does not exceed the parent's
-                # bounds
-                if isinstance(self.active_elem.parent, CanvasElement):
-                    new_h = min(
-                        new_h,
-                        self.active_elem.parent.height - self.active_elem.y,
-                    )
+                new_w = new_h * aspect
+        elif is_horiz_edge:
+            new_h = new_w / aspect
+        elif is_vert_edge:
+            new_w = new_h * aspect
 
-            self.active_elem.set_size(new_w, new_h)
-            self.active_elem.allocate()  # Reallocate surface for new size
+        # Recalculate position based on new size and which handles are dragged
+        is_left = self.active_region in {
+            ElementRegion.TOP_LEFT,
+            ElementRegion.MIDDLE_LEFT,
+            ElementRegion.BOTTOM_LEFT,
+        }
+        is_top = self.active_region in {
+            ElementRegion.TOP_LEFT,
+            ElementRegion.TOP_MIDDLE,
+            ElementRegion.TOP_RIGHT,
+        }
 
-        self.queue_draw()
+        if is_left:
+            new_x = start_x + start_w - new_w
+        if is_top:
+            new_y = start_y + start_h - new_h
+
+        # Center the resize for edge drags
+        if is_horiz_edge:
+            new_y = start_y + (start_h - new_h) / 2
+        if is_vert_edge:
+            new_x = start_x + (start_w - new_w) / 2
+
+        return new_x, new_y, new_w, new_h
 
     def on_button_release(self, gesture, x: float, y: float):
+        if self.active_elem and self.resizing:
+            # Trigger a final high-quality render after resize is complete
+            self.active_elem.trigger_update()
+
         self.resizing = False
         self.moving = False
+        self.active_region = ElementRegion.NONE
 
-    def on_key_pressed(self, controller, keyval: int, keycode: int,
-                       state: Gdk.ModifierType):
+    def on_key_pressed(
+        self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
+    ):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = True
         elif keyval == Gdk.KEY_Delete:
@@ -726,8 +959,9 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
             self.active_element_changed.send(self, element=None)
 
-    def on_key_released(self, controller, keyval: int, keycode: int,
-                        state: Gdk.ModifierType):
+    def on_key_released(
+        self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
+    ):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = False
 
@@ -746,10 +980,10 @@ if __name__ == "__main__":
         def do_activate(self):
             win = Gtk.ApplicationWindow(application=self)
             win.set_default_size(800, 800)
-            # Canvas size is now in pixels
-            canvas = Canvas(800, 800)
+
+            canvas = Canvas()
             win.set_child(canvas)
-            # Element sizes and positions are now in pixels
+
             group = CanvasElement(50, 50, 400, 300,
                                   background=(0, 1, 1, 1))
             group.add(CanvasElement(50, 50, 200, 150,
