@@ -16,7 +16,17 @@ class WorkStepElement(CanvasElement):
     WorkStepElements display the result of a WorkStep on the
     WorkSurface. The output represents the laser path.
     """
-    def __init__(self, workstep, x, y, width, height, **kwargs):
+
+    def __init__(
+        self,
+        workstep,
+        x,
+        y,
+        width,
+        height,
+        show_travel_moves: bool = False,
+        **kwargs,
+    ):
         """
         Initializes a WorkStepElement with pixel dimensions.
 
@@ -28,13 +38,10 @@ class WorkStepElement(CanvasElement):
             height: The height (pixel).
             **kwargs: Additional keyword arguments for CanvasElement.
         """
-        super().__init__(x,
-                         y,
-                         width,
-                         height,
-                         data=workstep,
-                         selectable=False,
-                         **kwargs)
+        super().__init__(
+            x, y, width, height, data=workstep, selectable=False, **kwargs
+        )
+        self.show_travel_moves = show_travel_moves
         workstep.changed.connect(self._on_workstep_changed)
         # Connect to the actual signals from WorkStep's async pipeline
         workstep.ops_generation_starting.connect(
@@ -42,9 +49,7 @@ class WorkStepElement(CanvasElement):
         )
         # Note: There is no explicit 'cleared' signal in the async pipeline,
         # starting implies clearing for the UI representation.
-        workstep.ops_chunk_available.connect(
-            self._on_ops_chunk_available
-        )
+        workstep.ops_chunk_available.connect(self._on_ops_chunk_available)
         workstep.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
@@ -60,11 +65,23 @@ class WorkStepElement(CanvasElement):
             elem.mark_dirty()
             return cast(WorkPieceOpsElement, elem)
 
-        elem = WorkPieceOpsElement(workpiece,
-                                   canvas=self.canvas,
-                                   parent=self)
+        elem = WorkPieceOpsElement(
+            workpiece,
+            show_travel_moves=self.show_travel_moves,
+            canvas=self.canvas,
+            parent=self,
+        )
         self.add(elem)
         return elem
+
+    def set_show_travel_moves(self, show: bool):
+        """Sets travel move visibility for all child Ops elements."""
+        if self.show_travel_moves == show:
+            return
+        self.show_travel_moves = show
+        for child in self.children:
+            if isinstance(child, WorkPieceOpsElement):
+                child.set_show_travel_moves(show)
 
     def _on_workstep_changed(self, step: WorkStep):
         # This signal is for changes to the WorkStep itself (e.g., visibility)
@@ -72,9 +89,9 @@ class WorkStepElement(CanvasElement):
         # Workpiece additions/removals are handled by the ops generation
         # signals.
         # We just need to update visibility and redraw.
-        assert (
-            self.canvas
-        ), "Received ops_start, but element was not added to canvas"
+        assert self.canvas, (
+            "Received ops_start, but element was not added to canvas"
+        )
         self.set_visible(step.visible)
         if self.canvas:
             self.canvas.queue_draw()
@@ -91,17 +108,17 @@ class WorkStepElement(CanvasElement):
             elem = self.add_workpiece(workpiece)
         return elem
 
-    def _on_ops_generation_starting(self,
-                                    sender: WorkStep,
-                                    workpiece: WorkPiece):
+    def _on_ops_generation_starting(
+        self, sender: WorkStep, workpiece: WorkPiece
+    ):
         """Called before ops generation starts for a workpiece."""
         logger.debug(
             f"WorkStepElem '{sender.name}': Received ops_generation_starting "
             f"for {workpiece.name}"
         )
-        assert (
-            self.canvas
-        ), "Received ops_start, but element was not added to canvas"
+        assert self.canvas, (
+            "Received ops_start, but element was not added to canvas"
+        )
 
         # If the workpiece is no longer part of the workstep, remove its
         # ops element.
@@ -115,16 +132,17 @@ class WorkStepElement(CanvasElement):
         elem.clear_ops()
         GLib.idle_add(self.canvas.queue_draw)
 
-    def _on_ops_chunk_available(self, sender: WorkStep, workpiece: WorkPiece,
-                                chunk: Ops):
+    def _on_ops_chunk_available(
+        self, sender: WorkStep, workpiece: WorkPiece, chunk: Ops
+    ):
         """Called when a chunk of ops is available for a workpiece."""
         logger.debug(
             f"WorkStepElem '{sender.name}': Received ops_chunk_available for "
             f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
         )
-        assert (
-            self.canvas
-        ), "Received update, but element was not added to canvas"
+        assert self.canvas, (
+            "Received update, but element was not added to canvas"
+        )
 
         # If the workpiece is no longer part of the workstep, remove its
         # ops element.
@@ -146,9 +164,9 @@ class WorkStepElement(CanvasElement):
         guaranteed redraw of the element's complete state, fixing race
         conditions where the last chunk might not be displayed.
         """
-        assert (
-            self.canvas
-        ), "Received ops_finished, but element was not added to canvas"
+        assert self.canvas, (
+            "Received ops_finished, but element was not added to canvas"
+        )
 
         elem = self.find_by_data(workpiece)
         if not elem:

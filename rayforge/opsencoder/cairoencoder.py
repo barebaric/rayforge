@@ -18,11 +18,10 @@ class CairoEncoder(OpsEncoder):
     def encode(self,
                ops: Ops,
                machine: Machine,
-               surface: cairo.ImageSurface,
+               ctx: cairo.Context,
                scale: Tuple[float, float],
                show_travel_moves: bool = False) -> None:
         # Set up Cairo context and scaling
-        ctx = cairo.Context(surface)
         ctx.set_source_rgb(1, 0, 1)
 
         # Calculate scaling factors from surface and machine dimensions
@@ -31,7 +30,7 @@ class CairoEncoder(OpsEncoder):
         # Since Cairo coordinates put the zero point at the top left, we must
         # subtract Y from the machine's Y axis maximum.
         scale_x, scale_y = scale
-        ymax = surface.get_height()/scale_y  # For Y-axis inversion
+        ymax = ctx.get_target().get_height()/scale_y  # For Y-axis inversion
 
         # Apply coordinate scaling and line width
         ctx.scale(scale_x, scale_y)

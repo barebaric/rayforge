@@ -546,7 +546,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(is_active)
 
     def on_clear_clicked(self, button):
-        self.surface.clear()
+        self.surface.remove_all()
 
     def on_export_clicked(self, button):
         # Create a file chooser dialog for saving the file

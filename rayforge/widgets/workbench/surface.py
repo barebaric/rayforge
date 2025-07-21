@@ -271,13 +271,13 @@ class WorkSurface(Canvas):
         self.root.allocate()
 
     def set_show_travel_moves(self, show: bool):
-        """Sets whether to display travel moves and triggers a redraw."""
+        """Sets whether to display travel moves and triggers re-rendering."""
         if self.show_travel_moves != show:
             self.show_travel_moves = show
-            # Mark elements dirty that depend on this setting
+            # Propagate the change to all existing WorkStepElements
             for elem in self.find_by_type(WorkStepElement):
-                elem.mark_dirty(recursive=True)
-            self.queue_draw()
+                elem = cast(WorkStepElement, elem)
+                elem.set_show_travel_moves(show)
 
     def _on_elem_removed(self, sender, child):
         if not self.doc or not isinstance(child.data, WorkPiece):
@@ -320,6 +320,7 @@ class WorkSurface(Canvas):
                 self.root.height,  # height_px
                 canvas=self,
                 parent=self.root,
+                show_travel_moves=self.show_travel_moves,
             )
             self.add(elem)
             workstep.changed.connect(self.on_workstep_changed)
@@ -397,11 +398,11 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def clear_workpieces(self):
-        self.workpiece_elements.clear()
+        self.workpiece_elements.remove_all()
         self.queue_draw()
         self.active_element_changed.send(self, element=None)
 
-    def clear(self):
+    def remove_all(self):
         # Clear all children except the fixed ones
         # (workpiece_elements, laser_dot)
         children_to_remove = [
@@ -412,7 +413,7 @@ class WorkSurface(Canvas):
         for child in children_to_remove:
             child.remove()
         # Clear children of workpiece_elements
-        self.workpiece_elements.clear()
+        self.workpiece_elements.remove_all()
         self.queue_draw()
 
     def find_by_type(self, thetype):

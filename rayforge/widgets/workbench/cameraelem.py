@@ -1,6 +1,5 @@
 from __future__ import annotations
 import logging
-from typing import Optional, Tuple
 import cairo
 import cv2
 from rayforge.widgets.canvas import CanvasElement
@@ -38,19 +37,10 @@ class CameraImageElement(CanvasElement):
             self.height = self.parent.height
         return super().allocate(force)
 
-    def render(
-        self,
-        clip: Optional[Tuple[int, int, int, int]] = None,
-        force: bool = False,
-    ):
-        # Call super's render to handle dirty flags and children
-        super().render(clip=clip, force=force)
-
-        if not self.visible or self.surface is None or self.canvas is None:
-            logger.debug(
-                "Render skipped: not visible, no surface, or no canvas"
-            )
-            return
+    def draw(self, ctx: cairo.Context):
+        assert self.canvas, "Canvas must be set before drawing"
+        # Call super's draw to handle background
+        super().draw(ctx)
 
         image_data = self.camera.image_data
         if image_data is None:
@@ -99,7 +89,10 @@ class CameraImageElement(CanvasElement):
 
         height, width, _ = cairo_data.shape
 
-        # Create cairo.ImageSurface from NumPy array
+        # Create a cairo.ImageSurface by wrapping the NumPy array's memory.
+        # This is a zero-copy operation; it does not duplicate the image data.
+        # It simply creates a Cairo object that knows how to read the pixels
+        # from the NumPy buffer, making it a valid source for drawing.
         try:
             image_surface = cairo.ImageSurface.create_for_data(
                 cairo_data, cairo.FORMAT_ARGB32, width, height
@@ -108,8 +101,8 @@ class CameraImageElement(CanvasElement):
             logger.error(f"Failed to create Cairo surface: {e}")
             return
 
-        # Draw the transformed image onto this element's Cairo context
-        ctx = cairo.Context(self.surface)
+        # Draw the wrapped image onto this element's context. This is where
+        # the actual pixel-copying (blitting) operation occurs.
         ctx.save()
         ctx.set_source_surface(image_surface, 0, 0)
         ctx.paint_with_alpha(self.camera.transparency)

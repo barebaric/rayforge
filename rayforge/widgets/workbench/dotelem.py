@@ -1,6 +1,5 @@
 import math
 import logging
-from typing import Optional, Tuple
 import cairo
 from .surfaceelem import SurfaceElement
 
@@ -34,23 +33,14 @@ class DotElement(SurfaceElement):
                          selectable=False,
                          **kwargs)
 
-    def render(
-        self,
-        clip: Optional[Tuple[int, int, int, int]] = None,
-        force: bool = False,
-    ):
-        """Renders the dot to the element's surface."""
-        if not self.dirty and not force:
-            return
-        if not self.canvas or not self.parent or self.surface is None:
-            return
+    def draw(self, ctx: cairo.Context):
+        assert self.canvas, "Canvas must be set before drawing"
 
-        # Clear the surface.
-        clip = clip or self.rect()
-        self.clear_surface(clip)
+        """Renders the dot to the element's surface."""
+        # Clear the surface with the background color.
+        super().draw(ctx)
 
         # Prepare the context.
-        ctx = cairo.Context(self.surface)
         ctx.set_hairline(True)
         ctx.set_source_rgb(.9, 0, 0)
 

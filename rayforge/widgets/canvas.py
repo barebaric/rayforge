@@ -2,9 +2,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Generator, List, Tuple, Optional, Union
 import cairo
-from gi.repository import Gtk, Gdk, Graphene  # type: ignore
+from gi.repository import Gtk, Gdk, Graphene, GLib  # type: ignore
 from copy import deepcopy
 from blinker import Signal
+import asyncio
+from ..task import task_mgr, CancelledError
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,9 @@ class CanvasElement:
                  canvas: Optional[Canvas] = None,
                  parent: Optional[Union[Canvas, CanvasElement]] = None,
                  data: Any = None,
-                 clip: bool = True):
+                 clip: bool = True,
+                 buffered: bool = False,
+                 debounce_ms: int = 50):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
             f"height={height}"
@@ -44,6 +48,10 @@ class CanvasElement:
         self.data: Any = data
         self.dirty: bool = True
         self.clip: bool = clip
+        self.buffered: bool = buffered
+        self.debounce_ms: int = debounce_ms
+        self._debounce_timer_id: Optional[int] = None
+        self._update_task: Optional[asyncio.Task] = None
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
         self.dirty = True
@@ -62,6 +70,8 @@ class CanvasElement:
         elem.parent = self
         elem.allocate()
         self.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def insert(self, index: int, elem: CanvasElement):
         self.children.insert(index, elem)
@@ -69,10 +79,14 @@ class CanvasElement:
         elem.parent = self
         elem.allocate()
         self.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def set_visible(self, visible: bool = True):
         self.visible = visible
         self.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def find_by_data(self, data: Any) -> Optional[CanvasElement]:
         if data == self.data:
@@ -98,7 +112,8 @@ class CanvasElement:
         for elem in self.find_by_type(thetype):
             yield elem.data
 
-    def clear(self):
+    def remove_all(self):
+        """Removes all children"""
         children = self.children
         self.children = []
         if self.canvas is not None:
@@ -172,7 +187,9 @@ class CanvasElement:
         height = int(height)
         if width != self.width or height != self.height:
             self.width, self.height = width, height
+            self.allocate()
             self.mark_dirty()
+            self.trigger_update()
             if self.canvas:
                 self.canvas.queue_draw()
 
@@ -193,6 +210,11 @@ class CanvasElement:
         for child in self.children:
             child.allocate(force)
 
+        # If not buffered, there is no surface to allocate.
+        if not self.buffered:
+            self.surface = None
+            return
+
         # If the size didn't change, do nothing.
         if self.surface is not None and not force and \
                 self.surface.get_width() == self.width and \
@@ -200,57 +222,158 @@ class CanvasElement:
             return
 
         if self.width > 0 and self.height > 0:
-            self.surface = cairo.ImageSurface(
-                cairo.FORMAT_ARGB32, self.width, self.height)
+            # The surface is now created by the update process.
+            # We can trigger an update here to generate it.
+            self.trigger_update()
         else:
             self.surface = None  # Cannot create surface with zero size
 
-    def _rect_to_child_coords_px(
-        self, child: CanvasElement, rect: Tuple[int, int, int, int]
-    ) -> Tuple[int, int, int, int]:
-        x, y, w, h = rect
-        child_x, child_y, child_w, child_h = child.rect()
-        return x-child_x, y-child_y, w, h
+    def render(self, ctx: cairo.Context):
+        """
+        Renders the element and its children to the given Cairo context.
+        This method handles visibility, transformation, clipping, and
+        recursive rendering of children.
+        """
+        if not self.visible:
+            return
 
-    def clear_surface(
-        self, clip: Optional[Tuple[int, int, int, int]] = None,
-    ):
-        if self.surface is None:
-            return  # Cannot clear surface if it doesn't exist
+        ctx.save()
+        # Translate to the element's local coordinates
+        ctx.translate(self.x, self.y)
 
-        # Apply clip, if any.
-        if clip is None:
-            clip = 0, 0, *self.size()
-        ctx = cairo.Context(self.surface)
-        ctx.rectangle(*clip)
-        ctx.clip()
+        # Apply clipping if enabled
+        if self.clip:
+            ctx.rectangle(0, 0, self.width, self.height)
+            ctx.clip()
 
-        # Paint background
+        # Draw the element's own content (background, buffered surface, etc.)
+        self.draw(ctx)
+
+        # Recursively render children
+        for child in self.children:
+            child.render(ctx)
+
+        ctx.restore()
+
+    def draw(self, ctx: cairo.Context):
+        """
+        Draws the element's content to the given context. For buffered
+        elements, it paints the internal surface. For unbuffered elements,
+        it just paints the background. Subclasses should override this
+        for unbuffered custom drawing.
+        """
+        if not self.buffered or not self.surface:
+            # Unbuffered: just draw the background. Subclasses will draw
+            # on top.
+            ctx.set_source_rgba(*self.background)
+            ctx.rectangle(0, 0, self.width, self.height)
+            ctx.fill()
+            return
+
+        # Draw the element by scaling its current surface. This is fast and
+        # provides responsive feedback.
+        source_w, source_h = (
+            self.surface.get_width(),
+            self.surface.get_height(),
+        )
+        if source_w <= 0 or source_h <= 0:
+            return
+
+        scale_x, scale_y = self.width / source_w, self.height / source_h
+
+        ctx.save()
+        ctx.scale(scale_x, scale_y)
+        ctx.set_source_surface(self.surface, 0, 0)
+        ctx.get_source().set_filter(cairo.FILTER_GOOD)
+        ctx.paint()
+        ctx.restore()
+
+    def clear_surface(self):
+        """
+        Clears the internal surface, if it exists. This is useful for
+        buffered elements to reset their content.
+        """
+        if self.surface:
+            ctx = cairo.Context(self.surface)
+            ctx.set_source_rgba(*self.background)
+            ctx.set_operator(cairo.OPERATOR_SOURCE)
+            ctx.paint()
+            self.mark_dirty()
+
+    def trigger_update(self):
+        """
+        Schedules the async update() method to be run, with debouncing.
+        """
+        if not self.buffered:
+            return
+
+        # If a debouncer is already scheduled, cancel it to restart the timer.
+        if self._debounce_timer_id is not None:
+            GLib.source_remove(self._debounce_timer_id)
+            self._debounce_timer_id = None
+
+        if self.debounce_ms <= 0:
+            self._start_update_task()
+        else:
+            self._debounce_timer_id = GLib.timeout_add(
+                self.debounce_ms, self._start_update_task
+            )
+
+    def _start_update_task(self) -> bool:
+        """Starts the asyncio update task. This is called by the debouncer."""
+        self._debounce_timer_id = None
+
+        if self._update_task and not self._update_task.done():
+            self._update_task.cancel()
+
+        key = (f"element_update_{self.__class__.__name__}", id(self))
+        self._update_task = task_mgr.add_coroutine(self.update(), key=key)
+
+        return False  # For GLib.timeout_add, run only once
+
+    async def update(self):
+        """
+        The core async orchestrator for rendering a buffered element. It runs
+        `render_to_surface` in a thread and applies the result on the main
+        GTK thread. Subclasses should override `render_to_surface`, not this.
+        """
+        render_width, render_height = self.width, self.height
+        if render_width <= 0 or render_height <= 0:
+            return
+
+        try:
+            new_surface = await asyncio.to_thread(
+                self.render_to_surface, render_width, render_height
+            )
+            self.surface = new_surface
+            self.mark_dirty(ancestors=True)
+            if self.canvas:
+                self.canvas.queue_draw()
+        except CancelledError:
+            logger.debug(f"Update for {self.__class__.__name__} cancelled.")
+        except Exception as e:
+            logger.error(
+                f"Error during update for {self.__class__.__name__}: {e}",
+                exc_info=True
+            )
+
+    def render_to_surface(
+        self, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Performs the rendering to a new surface. This method is run in a
+        background thread and should be overridden by subclasses for custom,
+        long-running drawing logic.
+        """
+        if width <= 0 or height <= 0:
+            return None
+
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(surface)
         ctx.set_source_rgba(*self.background)
         ctx.set_operator(cairo.OPERATOR_SOURCE)
         ctx.paint()
-
-    def render(
-        self,
-        clip: Optional[Tuple[int, int, int, int]] = None,
-        force: bool = False
-    ):
-        """
-        Renders the element's own content (e.g., background) to its
-        surface. This method no longer composites children.
-        """
-        if self.surface is None:
-            return
-        if not self.dirty and not force:
-            return
-
-        # The element's background is its only content by default.
-        self.clear_surface()
-
-        # Subclasses will override this to draw their specific content.
-        # This method no longer composites children; that is handled by the
-        # main render loop in the Canvas.
-        self.dirty = False
+        return surface
 
     def has_dirty_children(self) -> bool:
         if self.dirty:
@@ -400,75 +523,43 @@ class Canvas(Gtk.DrawingArea):
         self.root.set_size(width, height)
         self.root.allocate()
 
-    def _render_element(self, ctx: cairo.Context, elem: CanvasElement):
+    def render(self, ctx: cairo.Context):
         """
-        Recursively renders an element and its children directly to the
-        context.
+        Renders the canvas content onto a given cairo context.
+        This is the main drawing logic, separated for extensibility.
         """
-        if not elem.visible:
-            return
+        # Start the recursive rendering process from the root element.
+        self.root.render(ctx)
 
-        # Ensure the element's own surface is up-to-date with its content.
-        # We pass force=True to ensure async elements redraw if needed, but
-        # the element's own render method will check its dirty flag.
-        elem.render(force=True)
-
-        # Get absolute position for drawing.
-        abs_x, abs_y = elem.pos_abs()
-
-        # Composite the element's own surface onto the main context.
-        if elem.surface:
-            ctx.set_source_surface(elem.surface, abs_x, abs_y)
-            ctx.paint()
-
-        # Now, recursively render the children, applying clipping if necessary.
-        ctx.save()
-        if elem.clip:
-            # If the parent clips, apply a clipping region before drawing
-            # children.
-            ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
-            ctx.clip()
-
-        for child in elem.children:
-            self._render_element(ctx, child)
-
-        ctx.restore()
+        # Draw selection handles on top of everything.
+        self._render_selection(ctx, self.root)
 
     def do_snapshot(self, snapshot):
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
-
-        # Start the recursive rendering process.
-        self._render_element(ctx, self.root)
-
-        # Draw selection handles on top of everything.
-        self._render_selection(ctx, self.root)
+        self.render(ctx)
 
     def _render_selection(self, ctx, elem: CanvasElement):
-        # Calculate absolute position of the elem using the new method
-        elem_x, elem_y = elem.get_position_in_ancestor(self)
-        target_width = elem.width
-        target_height = elem.height
-
-        # Draw rectangle around selected elems
         if elem.selected:
+            abs_x, abs_y = elem.pos_abs()
             ctx.save()
             ctx.set_source_rgb(.4, .4, .4)
             ctx.set_dash((5, 5))
-            ctx.rectangle(elem_x, elem_y, target_width, target_height)
+            ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
             ctx.stroke()
             ctx.restore()
 
         # Draw resize handle
         if elem == self.active_elem:
+            abs_x, abs_y = elem.pos_abs()
             ctx.save()
             ctx.set_source_rgb(.4, .4, .4)
             ctx.set_line_width(1)
-            handle_x = elem_x + target_width
-            handle_y = elem_y + target_height
-            ctx.rectangle(handle_x-self.handle_size/2,
-                          handle_y-self.handle_size/2,
+            handle_x = abs_x + elem.width
+            handle_y = abs_y + elem.height
+            ctx.rectangle(handle_x - self.handle_size / 2,
+                          handle_y - self.handle_size / 2,
                           self.handle_size,
                           self.handle_size)
             ctx.stroke()
