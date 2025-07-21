@@ -1,6 +1,5 @@
 import logging
 from typing import Optional, cast
-from gi.repository import GLib  # type: ignore
 from ...models.workpiece import WorkPiece
 from ...models.workplan import WorkStep
 from ...models.ops import Ops
@@ -130,7 +129,6 @@ class WorkStepElement(CanvasElement):
 
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.clear_ops()
-        GLib.idle_add(self.canvas.queue_draw)
 
     def _on_ops_chunk_available(
         self, sender: WorkStep, workpiece: WorkPiece, chunk: Ops
@@ -154,7 +152,6 @@ class WorkStepElement(CanvasElement):
 
         elem = self._find_or_add_workpiece_elem(workpiece)
         elem.add_ops(chunk)
-        GLib.idle_add(self.canvas.queue_draw)
 
     def _on_ops_generation_finished(
         self, sender: WorkStep, workpiece: WorkPiece
@@ -169,14 +166,8 @@ class WorkStepElement(CanvasElement):
         )
 
         elem = self.find_by_data(workpiece)
+        elem = cast(Optional[WorkPieceOpsElement], elem)
         if not elem:
             return
-
-        # Calling allocate(force=True) is a robust way to ensure the element
-        # is marked dirty and a redraw is queued, displaying the final
-        # accumulated state from all the `add_ops` calls.
-        def final_update():
-            if elem.canvas:  # Check if element is still on canvas
-                elem.allocate(force=True)
-
-        GLib.idle_add(final_update)
+        final_ops = sender.get_ops(workpiece)
+        elem.set_ops(final_ops)

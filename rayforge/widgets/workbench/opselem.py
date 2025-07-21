@@ -84,6 +84,11 @@ class WorkPieceOpsElement(SurfaceElement):
         self.clear_surface()
         self.trigger_update()
 
+    def set_ops(self, ops: Optional[Ops]):
+        """Replaces all current ops with the provided ops and redraws."""
+        self._accumulated_ops = ops or Ops()
+        self.trigger_update()
+
     def add_ops(self, ops_chunk: Ops):
         if not ops_chunk:
             return
