@@ -50,7 +50,17 @@ class WorkPieceElement(SurfaceElement):
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
-        self.set_pos_mm(x_mm, y_mm + height_mm)
+        # The element's position is its top-left corner. The model's `pos` is
+        # its bottom-left corner in a Y-up coordinate system. To find the
+        # element's position on the canvas (Y-down), we first find the
+        # model's top-left corner in mm and then convert it to pixels.
+        top_left_y_mm = y_mm + height_mm
+        x_px, y_px = self.mm_to_pixel(x_mm, top_left_y_mm)
+
+        # We call super().set_pos() to bypass the model update logic in this
+        # class's set_pos(), as we are updating the view from the model.
+        super().set_pos(x_px, y_px)
+
         size_changed = self.width != new_width or self.height != new_height
 
         if not size_changed and not force:
@@ -63,7 +73,10 @@ class WorkPieceElement(SurfaceElement):
         super().set_pos(x, y)
         if not self.canvas or self._in_update:
             return
-        x_mm, y_mm = self.pixel_to_mm(x, y)
+        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
+        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
+        x_mm = x / px_per_mm_x
+        y_mm = (self.canvas.root.height - self.height - y) / px_per_mm_y
         self._in_update = True
         try:
             self.data.set_pos(x_mm, y_mm)

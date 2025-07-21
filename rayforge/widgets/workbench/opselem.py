@@ -39,26 +39,8 @@ class WorkPieceOpsElement(SurfaceElement):
         self.show_travel_moves = show_travel_moves
 
         # Connect to specific signals instead of the generic 'changed' signal.
-        workpiece.pos_changed.connect(self._on_pos_changed)
-        workpiece.size_changed.connect(self._on_size_changed)
-
-    def _on_pos_changed(self, workpiece: WorkPiece):
-        """Handles cheap position-only updates. Does not re-render."""
-        if not self.canvas or not self.parent:
-            return
-
-        # Only update the position, which is fast.
-        x_mm, y_mm = self.data.pos or (0, 0)
-        _, height_mm = self.data.size or self.data.get_default_size()
-        x_px, y_px = self.mm_to_pixel(x_mm, y_mm + height_mm)
-        self.set_pos(x_px - OPS_MARGIN_PX, y_px - OPS_MARGIN_PX)
-
-        # Mark the parent dirty to ensure the moved element is redrawn.
-        self.parent.mark_dirty()
-        self.canvas.queue_draw()
-
-    def _on_size_changed(self, workpiece: WorkPiece):
-        self.allocate()
+        workpiece.pos_changed.connect(self.allocate)
+        workpiece.size_changed.connect(self.allocate)
 
     def allocate(self, force: bool = False):
         """
@@ -80,8 +62,16 @@ class WorkPieceOpsElement(SurfaceElement):
         new_height = height_px + 2 * OPS_MARGIN_PX
         size_changed = self.width != new_width or self.height != new_height
 
-        x_px, y_px = self.mm_to_pixel(x_mm, y_mm + height_mm)
-        self.set_pos(x_px - OPS_MARGIN_PX, y_px - OPS_MARGIN_PX)
+        x_mm_tl, y_mm_tl = x_mm, y_mm + height_mm
+
+        # Convert mm (machine coords, origin bottom-left) to canvas-relative
+        # pixel coordinates (origin top-left).
+        content_height_px = self.canvas.root.height
+
+        x_px = x_mm_tl * px_per_mm_x
+        y_px = content_height_px - y_mm_tl * px_per_mm_y
+
+        self.set_pos(round(x_px) - OPS_MARGIN_PX, round(y_px) - OPS_MARGIN_PX)
 
         if not size_changed and not force:
             return
