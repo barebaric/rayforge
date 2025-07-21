@@ -8,6 +8,10 @@ import os
 import gettext
 from pathlib import Path
 
+
+logger = logging.getLogger(__name__)
+
+
 # Suppress NumPy longdouble UserWarning when run under mingw on Windows
 warnings.filterwarnings(
     "ignore",
@@ -34,7 +38,7 @@ else:
 
 # Make "_" available in all modules
 locale_dir = base_dir / 'rayforge' / 'locale'
-logging.info(f"Loading locales from {locale_dir}")
+logger.info(f"Loading locales from {locale_dir}")
 gettext.install("rayforge", locale_dir)
 
 # --------------------------------------------------------
@@ -44,20 +48,20 @@ gettext.install("rayforge", locale_dir)
 # environment variable to point to the bundled typelib files.
 if hasattr(sys, '_MEIPASS'):
     typelib_path = base_dir / 'gi' / 'repository'
-    logging.info(f"GI_TYPELIB_PATH is {typelib_path}")
+    logger.info(f"GI_TYPELIB_PATH is {typelib_path}")
     os.environ['GI_TYPELIB_PATH'] = str(typelib_path)
     files = [p.name for p in typelib_path.iterdir()]
-    logging.info(f"Files in typelib path: {files}")
+    logger.info(f"Files in typelib path: {files}")
 
 # --------------------------------------------------------
 # Test PyCairo functionality
 # --------------------------------------------------------
 import cairo
-logging.info(f"PyCairo version: {cairo.version}")
+logger.info(f"PyCairo version: {cairo.version}")
 # Create a dummy surface to test PyCairo
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
 ctx = cairo.Context(surface)
-logging.info("Successfully created cairo.Context")
+logger.info("Successfully created cairo.Context")
 
 # --------------------------------------------------------
 # Now we should be ready to import the app.
