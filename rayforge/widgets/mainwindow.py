@@ -1,7 +1,8 @@
+import asyncio
 import logging
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
-from ..task import task_mgr
+from ..task import task_mgr, ExecutionContext
 from ..config import config
 from ..driver import get_driver_cls
 from ..driver.driver import driver_mgr, DeviceStatus
@@ -578,26 +579,67 @@ class MainWindow(Adw.ApplicationWindow):
     def on_frame_clicked(self, button):
         if not driver_mgr.driver:
             return
-        try:
-            head = config.machine.heads[0]
-        except IndexError:
-            return
-        if not head.frame_power:
-            return
 
-        ops = self.doc.workplan.execute()
-        frame = ops.get_frame(
-            power=head.frame_power,
-            speed=config.machine.max_travel_speed
+        progress_state = {'value': 0.0}
+
+        def monitor_callback(task):
+            return progress_state['value']
+
+        async def frame_coro():
+            context = ExecutionContext(
+                progress_callback=lambda p: progress_state.update(value=p)
+            )
+            try:
+                head = config.machine.heads[0]
+                if not head.frame_power:
+                    return
+
+                ops = await self.doc.workplan.execute(context)
+                frame = ops.get_frame(
+                    power=head.frame_power,
+                    speed=config.machine.max_travel_speed
+                )
+                frame *= 20  # cycle 20 times
+                if not driver_mgr.driver:
+                    raise RuntimeError(_("No driver configured for framing."))
+                await driver_mgr.driver.run(frame, config.machine)
+            except Exception:
+                logger.error("Failed to execute framing job", exc_info=True)
+                raise
+
+        task_mgr.add_coroutine(
+            frame_coro(),
+            key="frame-job",
+            monitor_callback=monitor_callback
         )
-        frame *= 20  # cycle 20 times
-        task_mgr.add_coroutine(driver_mgr.driver.run(frame, config.machine))
 
     def on_send_clicked(self, button):
         if not driver_mgr.driver:
             return
-        ops = self.doc.workplan.execute()
-        task_mgr.add_coroutine(driver_mgr.driver.run(ops, config.machine))
+
+        progress_state = {'value': 0.0}
+
+        def monitor_callback(task):
+            return progress_state['value']
+
+        async def send_coro():
+            context = ExecutionContext(
+                progress_callback=lambda p: progress_state.update(value=p)
+            )
+            try:
+                ops = await self.doc.workplan.execute(context)
+                if not driver_mgr.driver:
+                    raise RuntimeError(_("No driver configured for framing."))
+                await driver_mgr.driver.run(ops, config.machine)
+            except Exception:
+                logger.error("Failed to send job to machine", exc_info=True)
+                raise
+
+        task_mgr.add_coroutine(
+            send_coro(),
+            key="send-job",
+            monitor_callback=monitor_callback
+        )
 
     def on_hold_clicked(self, button):
         if not driver_mgr.driver:
@@ -620,17 +662,53 @@ class MainWindow(Adw.ApplicationWindow):
             if not file:
                 return
             file_path = file.get_path()
-
-            # Serialize the G-code
-            encoder = GcodeEncoder()
-            ops = self.doc.workplan.execute()
-            gcode = encoder.encode(ops, config.machine)
-
-            # Write the G-code to the file
-            with open(file_path, 'w') as f:
-                f.write(gcode)
         except GLib.Error as e:
-            print(_(f"Error saving file: {e.message}"))
+            logger.error(f"Error saving file: {e.message}")
+            return
+
+        # Use a dict for mutable progress state
+        progress_state = {'value': 0.0, 'status': ''}
+
+        def monitor_callback(task):
+            return progress_state['value']
+
+        def write_gcode_sync(path, gcode):
+            """Blocking I/O function to be run in a thread."""
+            with open(path, 'w') as f:
+                f.write(gcode)
+
+        async def export_coro():
+            context = ExecutionContext(
+                progress_callback=lambda p: progress_state.update(value=p),
+                status_callback=lambda s: progress_state.update(status=s),
+            )
+            try:
+                # 1. Generate Ops (async, reports progress)
+                ops = await self.doc.workplan.execute(context)
+
+                # 2. Encode G-code (sync, but usually fast)
+                context.set_status("Encoding G-code...")
+                encoder = GcodeEncoder()
+                gcode = encoder.encode(ops, config.machine)
+
+                # 3. Write to file (sync, potentially slow, run in thread)
+                context.set_status(f"Saving to {file_path}...")
+                await asyncio.to_thread(write_gcode_sync, file_path, gcode)
+
+                context.set_status("Export complete!")
+                context.set_progress(1.0)
+                context.flush()
+
+            except Exception:
+                logger.error("Failed to export G-code", exc_info=True)
+                raise  # Re-raise to be caught by the task manager
+
+        # Add the coroutine to the task manager
+        task_mgr.add_coroutine(
+            export_coro(),
+            key="export-gcode",
+            monitor_callback=monitor_callback
+        )
 
     def on_file_dialog_response(self, dialog, result):
         try:

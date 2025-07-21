@@ -620,42 +620,55 @@ class WorkPlan:
     def has_steps(self) -> bool:
         return len(self.worksteps) > 0
 
-    def execute(self, optimize: bool = True) -> Ops:
+    async def execute(self, context: Optional[ExecutionContext] = None) -> Ops:
         """
         Executes all visible worksteps and returns the final, combined Ops.
 
-        This method synchronously generates, collects, transforms, and
+        This method asynchronously collects, transforms, and
         optimizes operations from all steps for all workpieces.
-
-        Args:
-            optimize: Whether to apply path optimization.
 
         Returns:
             A single Ops object containing the fully processed operations.
         """
         final_ops = Ops()
-        optimizer = Optimize() if optimize else None
         machine_width, machine_height = config.machine.dimensions
         clip_rect = 0, 0, machine_width, machine_height
 
+        work_items = []
         for step in self.worksteps:
             if not step.visible:
                 continue
-
             for workpiece in step.workpieces():
                 if not workpiece.pos or not workpiece.size:
                     continue  # workpiece is not added to canvas
+                work_items.append((step, workpiece))
 
-                step_ops = step.get_ops(workpiece)
-                if step_ops:
-                    step_ops.translate(*workpiece.pos)
-                    # Clip the translated ops to the machine's work area.
-                    clipped_ops = step_ops.clip(clip_rect)
+        if not work_items:
+            return final_ops
 
-                    # Apply optimization if enabled, after collecting and
-                    # clipping
-                    if optimizer:
-                        optimizer.run(clipped_ops)
-                    final_ops += clipped_ops * step.passes
+        total_items = len(work_items)
+        for i, (step, workpiece) in enumerate(work_items):
+            if context:
+                if context.is_cancelled():
+                    raise CancelledError("Operation cancelled")
+                context.set_progress(i / total_items)
+                context.set_status(
+                    f"Processing '{workpiece.name}' in '{step.name}'"
+                )
+                await asyncio.sleep(0)
 
+            step_ops = await asyncio.to_thread(step.get_ops, workpiece)
+            if step_ops:
+                step_ops.translate(*workpiece.pos)
+                # Clip the translated ops to the machine's work area.
+                clipped_ops = step_ops.clip(clip_rect)
+
+                # Apply transformers after clipping.
+                for transformer in step.opstransformers:
+                    await asyncio.to_thread(transformer.run, clipped_ops)
+                final_ops += clipped_ops * step.passes
+
+        if context:
+            context.set_progress(1.0)
+            context.flush()
         return final_ops
