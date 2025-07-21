@@ -49,7 +49,7 @@ def mock_task_mgr(mocker):
     mock_mgr = MagicMock()
     created_tasks = []
 
-    def add_coroutine_mock(coro, key=None):
+    def add_coroutine_mock(coro, key=None, monitor_callback=None):
         # Get the running event loop at the time the coroutine is added.
         # This is safe because it's called from within an async test.
         loop = asyncio.get_running_loop()
@@ -107,7 +107,7 @@ class TestWorkStepAsync:
     async def test_execute_is_async_generator(self, contour_step, mock_workpiece):
         """Verify WorkStep.execute returns an async generator yielding Ops chunks."""
         # Act
-        generator = contour_step.execute(mock_workpiece)
+        generator = contour_step.execute(mock_workpiece, check_cancelled=lambda: False)
 
         # Assert
         assert hasattr(generator, "__aiter__")
@@ -126,10 +126,10 @@ class TestWorkStepAsync:
 
         chunk1 = Ops()
         chunk1.add(MoveToCommand(end=(1, 1)))
-        
+
         # Mock the async generator to return our single data chunk
         async def mock_execute(*args, **kwargs):
-            yield (chunk1, None)
+            yield (chunk1, None, 1.0)
 
         contour_step.execute = mock_execute
         contour_step.ops_generation_starting.connect(start_handler)
@@ -137,9 +137,9 @@ class TestWorkStepAsync:
         contour_step.ops_generation_finished.connect(finish_handler)
         contour_step.air_assist = True
 
-        # Act
+        # Wait for the task created by add_workpiece to complete
         contour_step.add_workpiece(mock_workpiece)
-        await asyncio.sleep(0)  # Allow the task to run to completion
+        await asyncio.gather(*mock_task_mgr.created_tasks)
 
         # Assert
         start_handler.assert_called_once_with(contour_step, workpiece=mock_workpiece)
@@ -153,7 +153,7 @@ class TestWorkStepAsync:
         assert any(isinstance(c, EnableAirAssistCommand) for c in cached_ops)
         assert any(isinstance(c, DisableAirAssistCommand) for c in cached_ops)
         assert any(isinstance(c, MoveToCommand) for c in cached_ops)
-        
+
         finish_handler.assert_called_once_with(contour_step, workpiece=mock_workpiece)
 
 
@@ -168,17 +168,18 @@ class TestWorkStepAsync:
         async def slow_pausing_generator(*args, **kwargs):
             chunk = Ops()
             chunk.add(MoveToCommand(end=(1, 1)))
-            yield chunk, None  # Yield the first chunk
+            yield chunk, None, 0.5  # Yield the first chunk
             await pause_event.wait() # Pause here indefinitely
 
         contour_step.execute = slow_pausing_generator
         contour_step.ops_generation_finished.connect(finish_handler)
 
-        # Act
+        # This will schedule the coroutine, which will run and hit the pause_event
         contour_step.add_workpiece(mock_workpiece)
         await asyncio.sleep(0)  # Allow the coroutine to start and hit the pause_event
 
         # Cancel the running task
+        assert len(mock_task_mgr.created_tasks) == 1
         task = mock_task_mgr.created_tasks[-1]
         task.cancel()
 

@@ -1,8 +1,6 @@
 import pytest
 import io
 import cairo
-from pypdf import PdfReader, PageObject
-from pypdf.errors import PdfReadError
 from rayforge.render.pdf import PDFRenderer
 
 # Helper functions to create sample PDFs using cairo
@@ -67,7 +65,7 @@ class TestPDFRenderer:
         """Test chunk rendering without overlap."""
         chunks = list(large_pdf_renderer.render_chunk(
             width_px=1000, height_px=500,
-            chunk_width=300, chunk_height=200, overlap_x=0, overlap_y=0
+            max_chunk_width=300, max_chunk_height=200, overlap_x=0, overlap_y=0
         ))
         # Page: 1000px x 500px
         # Chunks: 4 cols (1000/300) x 3 rows (500/200) = 12 chunks
@@ -82,7 +80,7 @@ class TestPDFRenderer:
         """Test chunk rendering with overlap."""
         chunks = list(basic_pdf_renderer.render_chunk(
             width_px=100, height_px=50,
-            chunk_width=40, chunk_height=30, overlap_x=2, overlap_y=2
+            max_chunk_width=40, max_chunk_height=30, overlap_x=2, overlap_y=2
         ))
         # Page: 100px x 50px
         # Chunks: 3 cols (100/40) x 2 rows (50/30) = 6 chunks
@@ -109,5 +107,5 @@ class TestPDFRenderer:
         assert renderer.render_to_pixels(100, 100) is None
 
         # The chunk renderer should be an empty generator.
-        chunks = list(renderer.render_chunk(100, 100))
+        chunks = list(renderer.render_chunk(100, 100, max_chunk_width=100))
         assert len(chunks) == 0
