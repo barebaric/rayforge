@@ -292,28 +292,20 @@ class Optimize(OpsTransformer):
     def run(
         self, ops: Ops, context: Optional[ExecutionContext] = None
     ) -> None:
-        # 1. Preprocess such that each operation has a state.
-        # This also causes all state commands to be dropped - we
-        # need to re-add them later.
         if context is None:
             context = ExecutionContext()
 
+        context.set_message(_("Preprocessing for optimization..."))
         ops.preload_state()
         if context.is_cancelled():
             return
         commands = [c for c in ops if not c.is_state_command()]
         logger.debug(f"Command count {len(commands)}")
 
-        # 2. Split the operations into long segments where
-        # the state stays more or less the same, i.e. no switching
-        # of states that we should be careful with, such as toggling
-        # air assist.
         long_segments = split_long_segments(commands)
         if context.is_cancelled():
             return
 
-        # 3. Split the long segments into small, re-orderable
-        # segments.
         result = []
         total_long_segments = len(long_segments) if long_segments else 1
 
@@ -321,7 +313,11 @@ class Optimize(OpsTransformer):
             if context.is_cancelled():
                 return
 
-            # 4. Reorder to minimize the distance.
+            context.set_message(
+                _("Optimizing segment {i}/{total}...").format(
+                    i=i + 1, total=total_long_segments
+                )
+            )
             segments = split_segments(long_segment)
             logger.debug(f"Optimizing segment with len {len(segments)}")
 
@@ -349,7 +345,7 @@ class Optimize(OpsTransformer):
         if context.is_cancelled():
             return
 
-        # 5. Reassemble the ops, reintroducing state change commands.
+        context.set_message(_("Reassembling optimized paths..."))
         ops.commands = []
         prev_state = State()
         logger.debug(f"Reassembling {len(result)} segments")
@@ -357,10 +353,8 @@ class Optimize(OpsTransformer):
             if not segment:
                 continue
 
-            if total_long_segments > 0:
-                # Use len(result) for a more accurate progress update during
-                # reassembly
-                progress = (i + 1) / len(result) if len(result) > 0 else 1.0
+            if len(result) > 0:
+                progress = (i + 1) / len(result)
                 context.set_progress(progress)
 
             for cmd in segment:
@@ -383,7 +377,6 @@ class Optimize(OpsTransformer):
                     raise ValueError(f"unexpected command {cmd}")
 
         logger.debug("Optimization finished")
+        context.set_message(_("Optimization complete"))
         context.set_progress(1.0)
-        # Flush any pending debounced calls to ensure the final status/progress
-        # is sent.
         context.flush()

@@ -373,16 +373,17 @@ class MainWindow(Adw.ApplicationWindow):
         # Reconfigure, because params may have changed.
         driver_name = config.machine.driver
         if driver_name is None:
-            logger.warning(_("No driver configured."))
+            logger.warning("No driver configured.")
             return
         driver_cls = get_driver_cls(driver_name)
         try:
-            task_mgr.add_coroutine(driver_mgr.select_by_cls(
+            task_mgr.add_coroutine(
+                driver_mgr.select_by_cls,
                 driver_cls,
                 **config.machine.driver_args
-            ))
+            )
         except Exception as e:
-            print(_("Failed to set up driver:"), e)
+            logger.error(f"Failed to set up driver: {e}")
             return
 
     def on_driver_changed(self, sender, driver):
@@ -395,7 +396,7 @@ class MainWindow(Adw.ApplicationWindow):
             device_status = self.machine_status.get_status()
             if device_status == DeviceStatus.IDLE:
                 self.needs_homing = False
-                task_mgr.add_coroutine(driver_mgr.driver.home())
+                task_mgr.add_coroutine(driver_mgr.driver.home)
 
         self.update_state()
 
@@ -574,21 +575,13 @@ class MainWindow(Adw.ApplicationWindow):
     def on_home_clicked(self, button):
         if not driver_mgr.driver:
             return
-        task_mgr.add_coroutine(driver_mgr.driver.home())
+        task_mgr.add_coroutine(driver_mgr.driver.home)
 
     def on_frame_clicked(self, button):
         if not driver_mgr.driver:
             return
 
-        progress_state = {'value': 0.0}
-
-        def monitor_callback(task):
-            return progress_state['value']
-
-        async def frame_coro():
-            context = ExecutionContext(
-                progress_callback=lambda p: progress_state.update(value=p)
-            )
+        async def frame_coro(context: ExecutionContext):
             try:
                 head = config.machine.heads[0]
                 if not head.frame_power:
@@ -601,60 +594,50 @@ class MainWindow(Adw.ApplicationWindow):
                 )
                 frame *= 20  # cycle 20 times
                 if not driver_mgr.driver:
-                    raise RuntimeError(_("No driver configured for framing."))
+                    raise RuntimeError("No driver configured for framing.")
                 await driver_mgr.driver.run(frame, config.machine)
             except Exception:
                 logger.error("Failed to execute framing job", exc_info=True)
                 raise
 
         task_mgr.add_coroutine(
-            frame_coro(),
+            frame_coro,
             key="frame-job",
-            monitor_callback=monitor_callback
         )
 
     def on_send_clicked(self, button):
         if not driver_mgr.driver:
             return
 
-        progress_state = {'value': 0.0}
-
-        def monitor_callback(task):
-            return progress_state['value']
-
-        async def send_coro():
-            context = ExecutionContext(
-                progress_callback=lambda p: progress_state.update(value=p)
-            )
+        async def send_coro(context: ExecutionContext):
             try:
                 ops = await self.doc.workplan.execute(context)
                 if not driver_mgr.driver:
-                    raise RuntimeError(_("No driver configured for framing."))
+                    raise RuntimeError("No driver configured to send job.")
                 await driver_mgr.driver.run(ops, config.machine)
             except Exception:
                 logger.error("Failed to send job to machine", exc_info=True)
                 raise
 
         task_mgr.add_coroutine(
-            send_coro(),
+            send_coro,
             key="send-job",
-            monitor_callback=monitor_callback
         )
 
     def on_hold_clicked(self, button):
         if not driver_mgr.driver:
             return
         if button.get_active():
-            task_mgr.add_coroutine(driver_mgr.driver.set_hold())
+            task_mgr.add_coroutine(driver_mgr.driver.set_hold)
             button.set_child(self.hold_on_icon)
         else:
-            task_mgr.add_coroutine(driver_mgr.driver.set_hold(False))
+            task_mgr.add_coroutine(driver_mgr.driver.set_hold, False)
             button.set_child(self.hold_off_icon)
 
     def on_cancel_clicked(self, button):
         if not driver_mgr.driver:
             return
-        task_mgr.add_coroutine(driver_mgr.driver.cancel())
+        task_mgr.add_coroutine(driver_mgr.driver.cancel)
 
     def on_save_dialog_response(self, dialog, result):
         try:
@@ -666,36 +649,26 @@ class MainWindow(Adw.ApplicationWindow):
             logger.error(f"Error saving file: {e.message}")
             return
 
-        # Use a dict for mutable progress state
-        progress_state = {'value': 0.0, 'status': ''}
-
-        def monitor_callback(task):
-            return progress_state['value']
-
         def write_gcode_sync(path, gcode):
             """Blocking I/O function to be run in a thread."""
             with open(path, 'w') as f:
                 f.write(gcode)
 
-        async def export_coro():
-            context = ExecutionContext(
-                progress_callback=lambda p: progress_state.update(value=p),
-                status_callback=lambda s: progress_state.update(status=s),
-            )
+        async def export_coro(context: ExecutionContext):
             try:
                 # 1. Generate Ops (async, reports progress)
                 ops = await self.doc.workplan.execute(context)
 
                 # 2. Encode G-code (sync, but usually fast)
-                context.set_status("Encoding G-code...")
+                context.set_message("Encoding G-code...")
                 encoder = GcodeEncoder()
                 gcode = encoder.encode(ops, config.machine)
 
                 # 3. Write to file (sync, potentially slow, run in thread)
-                context.set_status(f"Saving to {file_path}...")
+                context.set_message(f"Saving to {file_path}...")
                 await asyncio.to_thread(write_gcode_sync, file_path, gcode)
 
-                context.set_status("Export complete!")
+                context.set_message("Export complete!")
                 context.set_progress(1.0)
                 context.flush()
 
@@ -705,9 +678,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Add the coroutine to the task manager
         task_mgr.add_coroutine(
-            export_coro(),
+            export_coro,
             key="export-gcode",
-            monitor_callback=monitor_callback
         )
 
     def on_file_dialog_response(self, dialog, result):
@@ -725,7 +697,7 @@ class MainWindow(Adw.ApplicationWindow):
                 mime_type = file_info.get_content_type()
                 self.load_file(file_path, mime_type)
         except GLib.Error as e:
-            print(_(f"Error opening file: {e.message}"))
+            logger.error(f"Error opening file: {e.message}")
 
     def load_file(self, filename, mime_type):
         try:
@@ -770,5 +742,5 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.connect("closed", self._on_settings_dialog_closed)
 
     def _on_settings_dialog_closed(self, dialog):
-        logger.debug(_("Settings closed"))
+        logger.debug("Settings closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts

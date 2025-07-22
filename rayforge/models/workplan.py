@@ -61,9 +61,6 @@ class WorkStep(ABC):
         # A dictionary to hold debounce timers
         self._workpiece_update_timers: Dict[WorkPiece, int] = {}
 
-        # A dictionary to hold progress for each workpiece generation
-        self._workpiece_progress: Dict[WorkPiece, float] = {}
-
         self._generation_id = 0  # Cancellation token
 
         self.passes: int = 1
@@ -147,8 +144,6 @@ class WorkStep(ABC):
                 GLib.source_remove(
                     self._workpiece_update_timers.pop(workpiece)
                 )
-            if workpiece in self._workpiece_progress:
-                del self._workpiece_progress[workpiece]
             workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
             del self.workpiece_to_ops[workpiece]
         for workpiece in workpieces:
@@ -167,8 +162,6 @@ class WorkStep(ABC):
         # Ensure timer is cleaned up on removal
         if workpiece in self._workpiece_update_timers:
             GLib.source_remove(self._workpiece_update_timers.pop(workpiece))
-        if workpiece in self._workpiece_progress:
-            del self._workpiece_progress[workpiece]
         workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
         del self.workpiece_to_ops[workpiece]
         self.changed.send(self)
@@ -355,38 +348,49 @@ class WorkStep(ABC):
 
     async def _apply_transformer(
         self,
-        workpiece: WorkPiece,
         transformer: OpsTransformer,
         ops: Ops,
         base_progress: float,
         progress_step: float,
         check_cancelled: Callable[[], bool],
+        main_context: ExecutionContext,
     ):
         """
         Applies the given transformer to the Ops with progress reporting.
         """
 
         def transformer_progress_reporter(transformer_progress: float):
+            """
+            Reports progress from the transformer, scaled to the overall
+            task progress, to the main execution context.
+            """
             if check_cancelled():
                 return
             overall_progress = base_progress + (
                 transformer_progress * progress_step
             )
-            self._workpiece_progress[workpiece] = overall_progress
+            main_context.set_progress(overall_progress)
 
+        # This context is for the transformer.run call.
+        # Its progress and message callbacks funnel updates to the main
+        # context.
         context = ExecutionContext(
             progress_callback=transformer_progress_reporter,
             check_cancelled=check_cancelled,
+            message_callback=main_context.set_message,
         )
 
         await asyncio.to_thread(transformer.run, ops, context=context)
 
     async def _stream_ops_and_cache(
-        self, workpiece: WorkPiece, generation_id: int
+        self,
+        context: ExecutionContext,
+        workpiece: WorkPiece,
+        generation_id: int,
     ):
         """
         Internal coroutine to run generation, emit signals, and cache
-        the final result.
+        the final result. Progress is reported via the context.
         """
         self.ops_generation_starting.send(self, workpiece=workpiece)
         final_ops = Ops()
@@ -400,9 +404,16 @@ class WorkStep(ABC):
         )
 
         def check_cancelled():
-            return self._generation_id != generation_id
+            # Stop if a new generation was requested or if the task was
+            # cancelled from the TaskManager.
+            return (
+                self._generation_id != generation_id or context.is_cancelled()
+            )
 
         try:
+            context.set_message(
+                _("Generating path for '{name}'").format(name=workpiece.name)
+            )
             # Initial ops setup
             initial_ops = self._create_initial_ops()
             if initial_ops.commands:
@@ -417,9 +428,7 @@ class WorkStep(ABC):
             ):
                 if check_cancelled():
                     raise CancelledError()
-                self._workpiece_progress[workpiece] = (
-                    execute_progress * execute_weight
-                )
+                context.set_progress(execute_progress * execute_weight)
                 if px_size:
                     cached_pixel_size = px_size
                 display_ops = self._get_display_ops(chunk, px_size, workpiece)
@@ -428,7 +437,7 @@ class WorkStep(ABC):
                 )
                 final_ops += chunk
 
-            self._workpiece_progress[workpiece] = execute_weight
+            context.set_progress(execute_weight)
 
             # Transform Phase
             if self.opstransformers:
@@ -440,16 +449,23 @@ class WorkStep(ABC):
                 for i, transformer in enumerate(self.opstransformers):
                     if check_cancelled():
                         raise CancelledError()
+
+                    context.set_message(
+                        _("Applying '{transformer}' on '{workpiece}'").format(
+                            transformer=transformer.__class__.__name__,
+                            workpiece=workpiece.name,
+                        )
+                    )
                     base_progress = execute_weight + (
                         i * transform_progress_per_step
                     )
                     await self._apply_transformer(
-                        workpiece,
                         transformer,
                         final_ops,
                         base_progress,
                         transform_progress_per_step,
                         check_cancelled,
+                        context,
                     )
 
             if check_cancelled():
@@ -458,7 +474,10 @@ class WorkStep(ABC):
             if self.air_assist:
                 final_ops.add(DisableAirAssistCommand())
 
-            self._workpiece_progress[workpiece] = 1.0
+            context.set_message(
+                _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
+            )
+            context.set_progress(1.0)
             self.workpiece_to_ops[workpiece] = final_ops, cached_pixel_size
             self.ops_generation_finished.send(self, workpiece=workpiece)
         except CancelledError:
@@ -471,8 +490,6 @@ class WorkStep(ABC):
                 and workpiece in self.workpiece_to_ops
             ):
                 self.workpiece_to_ops[workpiece] = None, None
-            if workpiece in self._workpiece_progress:
-                self._workpiece_progress[workpiece] = 0.0
             raise
         except Exception as e:
             logger.error(
@@ -481,8 +498,6 @@ class WorkStep(ABC):
             )
             if workpiece in self.workpiece_to_ops:
                 self.workpiece_to_ops[workpiece] = None, None
-            if workpiece in self._workpiece_progress:
-                self._workpiece_progress[workpiece] = 0.0
             return
 
     def update_workpiece(self, workpiece: WorkPiece):
@@ -490,20 +505,17 @@ class WorkStep(ABC):
         self._generation_id += 1
         current_generation_id = self._generation_id
 
-        def monitor_callback(task):
-            return self._workpiece_progress.get(workpiece, 0.0)
-
         key = id(self), id(workpiece)
         logger.debug(
             f"WorkStep '{self.name}': Scheduling coroutine for "
             f"{workpiece.name} with gen_id {current_generation_id}"
         )
-        self._workpiece_progress[workpiece] = 0.0
-
-        coro = self._stream_ops_and_cache(workpiece, current_generation_id)
 
         task_mgr.add_coroutine(
-            coro, key=key, monitor_callback=monitor_callback
+            self._stream_ops_and_cache,
+            workpiece,
+            current_generation_id,
+            key=key,
         )
 
     def update_all_workpieces(self):
@@ -652,8 +664,10 @@ class WorkPlan:
                 if context.is_cancelled():
                     raise CancelledError("Operation cancelled")
                 context.set_progress(i / total_items)
-                context.set_status(
-                    f"Processing '{workpiece.name}' in '{step.name}'"
+                context.set_message(
+                    _("Processing '{workpiece}' in '{step}'").format(
+                        workpiece=workpiece.name, step=step.name
+                    )
                 )
                 await asyncio.sleep(0)
 

@@ -48,10 +48,10 @@ class TaskProgressBar(Gtk.Box):
     def _on_running_tasks_changed(self, sender, tasks):
         """
         Update the status text with the oldest task's
-        status and a count of others.
+        message or status and a count of others.
         """
         if not tasks:
-            # self.label.set_text("No tasks running")
+            self.label.set_text("")
             self.set_opacity(0)  # Hide when no tasks are running
             return
 
@@ -60,11 +60,14 @@ class TaskProgressBar(Gtk.Box):
 
         # Find the oldest task (first in the list)
         oldest_task = tasks[0]
-        status_text = oldest_task.get_status()
+        message = oldest_task.get_message()
+        status_text = message if message is not None else ""
 
         # Add (+N more) if there are additional tasks
-        if len(tasks) > 1:
-            status_text += f" (+{len(tasks) - 1} more)"
+        if status_text and len(tasks) > 1:
+            status_text += _(" (+{tasks} more)").format(tasks=len(tasks) - 1)
+        elif len(tasks) > 1:
+            status_text = _("{tasks} tasks").format(tasks=len(tasks))
 
         # Update the label text
-        # TODO: self.label.set_text(status_text)
+        self.label.set_text(status_text)

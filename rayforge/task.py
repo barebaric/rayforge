@@ -20,20 +20,20 @@ class ExecutionContext:
         self,
         progress_callback: Optional[Callable[[float], None]] = None,
         check_cancelled: Callable[[], bool] = lambda: False,
-        status_callback: Optional[Callable[[str], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
         debounce_interval_ms: int = 100,
     ):
         self._progress_callback = progress_callback
         self._check_cancelled = check_cancelled
-        self._status_callback = status_callback
+        self._message_callback = message_callback
         self._debounce_interval_sec = debounce_interval_ms / 1000.0
 
         # These timers are for debouncing.
         self._progress_timer: Optional[threading.Timer] = None
-        self._status_timer: Optional[threading.Timer] = None
+        self._message_timer: Optional[threading.Timer] = None
 
         self._pending_progress: Optional[float] = None
-        self._pending_status: Optional[str] = None
+        self._pending_message: Optional[str] = None
         self._lock = threading.Lock()
 
     def _fire_progress(self):
@@ -49,18 +49,18 @@ class ExecutionContext:
             self._pending_progress = None
             self._progress_timer = None
 
-    def _fire_status(self):
+    def _fire_message(self):
         """
         Called by the threading.Timer in a background thread.
         Schedules the actual UI update on the main loop.
         """
         with self._lock:
-            if self._pending_status is not None and self._status_callback:
+            if self._pending_message is not None and self._message_callback:
                 if not self.is_cancelled():
                     # The ONLY interaction with the main loop.
-                    idle_add(self._status_callback, self._pending_status)
-            self._pending_status = None
-            self._status_timer = None
+                    idle_add(self._message_callback, self._pending_message)
+            self._pending_message = None
+            self._message_timer = None
 
     def set_progress(self, progress: float):
         """
@@ -80,20 +80,20 @@ class ExecutionContext:
         """Checks if the operation has been cancelled."""
         return self._check_cancelled()
 
-    def set_status(self, status: str):
+    def set_message(self, message: str):
         """
-        Sets a descriptive status. All debouncing logic happens in
+        Sets a descriptive message. All debouncing logic happens in
         background threads.
         """
         with self._lock:
-            if self._status_timer:
-                self._status_timer.cancel()
+            if self._message_timer:
+                self._message_timer.cancel()
 
-            self._pending_status = status
-            self._status_timer = threading.Timer(
-                self._debounce_interval_sec, self._fire_status
+            self._pending_message = message
+            self._message_timer = threading.Timer(
+                self._debounce_interval_sec, self._fire_message
             )
-            self._status_timer.start()
+            self._message_timer.start()
 
     def flush(self):
         """
@@ -110,30 +110,37 @@ class ExecutionContext:
                     idle_add(self._progress_callback, self._pending_progress)
             self._pending_progress = None
 
-            # Flush status
-            if self._status_timer:
-                self._status_timer.cancel()
-                self._status_timer = None
-            if self._pending_status is not None and self._status_callback:
+            # Flush message
+            if self._message_timer:
+                self._message_timer.cancel()
+                self._message_timer = None
+            if self._pending_message is not None and self._message_callback:
                 if not self.is_cancelled():
-                    idle_add(self._status_callback, self._pending_status)
-            self._pending_status = None
+                    idle_add(self._message_callback, self._pending_message)
+            self._pending_message = None
 
 
 class Task:
-    def __init__(self, coro, key=None, monitor_callback=None):
+    def __init__(
+        self, coro: Callable[..., Coroutine], *args, key=None, **kwargs
+    ):
         self.coro = coro
+        self.args = args
+        self.kwargs = kwargs
         self.key = key if key is not None else id(self)
-        self.monitor_callback = monitor_callback
         self._task = None  # The asyncio.Task executing self.coro
         self._status = "pending"
         self._progress = 0.0
+        self._message: Optional[str] = None
         self._cancel_requested = False  # Flag for early cancellation
         self.status_changed = Signal()
         self.progress_changed = Signal()
 
-    async def run(self):
-        """Run the task and update its status and progress."""
+    async def run(self, context: ExecutionContext):
+        """
+        Run the task and update its status. The wrapped coroutine is
+        responsible for reporting progress via the provided context.
+        """
         logger.debug(f"Task {self.key}: Entering run method.")
 
         # --- Early Cancellation Check ---
@@ -147,20 +154,19 @@ class Task:
             self._emit_progress_changed()  # Ensure progress update
             raise CancelledError("Task cancelled before coro execution")
 
-        # --- Start Execution ---
+        # Start execution
         self._status = "running"
         self._emit_status_changed()  # Emit running status
         logger.debug(
             f"Task {self.key}: Creating internal asyncio.Task for coro."
         )
-        self._task = asyncio.create_task(self.coro)
 
-        # --- Start Progress Monitor (if applicable) ---
-        monitor_task = None
-        if self.monitor_callback:
-            monitor_task = asyncio.create_task(self._monitor_progress())
+        # Wrap the coroutine in a Task.
+        self._task = asyncio.create_task(
+            self.coro(context, *self.args, **self.kwargs)
+        )
 
-        # --- Await Coroutine Completion ---
+        # Await Coroutine Completion
         try:
             logger.debug(f"Task {self.key}: Awaiting internal asyncio.Task.")
             await self._task
@@ -182,25 +188,13 @@ class Task:
             # Re-raise so the TaskManager can see and log it.
             raise
         finally:
-            # --- Cleanup ---
             logger.debug(
                 f"Task {self.key}: Run method finished "
                 f"with status '{self._status}'."
             )
-            # Ensure progress monitor is stopped if it was started
-            if monitor_task and not monitor_task.done():
-                monitor_task.cancel()
             # Emit final status and progress
             self._emit_status_changed()
             self._emit_progress_changed()
-
-    async def _monitor_progress(self):
-        """Monitor progress using the provided callback."""
-        while not self._task.done():
-            if self.monitor_callback:
-                self._progress = self.monitor_callback(self)
-                self._emit_progress_changed()
-            await asyncio.sleep(0.1)
 
     def _emit_status_changed(self):
         """Emit status_changed signal from the main thread."""
@@ -210,13 +204,27 @@ class Task:
         """Emit progress_changed signal from the main thread."""
         self.progress_changed.send(self)
 
-    def get_status(self):
-        """Get the current status of the task."""
-        return self._status
+    def set_progress(self, progress: float):
+        """Sets the progress of the task and emits a signal."""
+        self._progress = progress
+        self._emit_progress_changed()
 
     def get_progress(self):
         """Get the current progress of the task."""
         return self._progress
+
+    def get_status(self):
+        """Get the current lifecycle status of the task."""
+        return self._status
+
+    def set_message(self, message: str):
+        """Sets the user-facing message and emits the status_changed signal."""
+        self._message = message
+        self._emit_status_changed()
+
+    def get_message(self) -> Optional[str]:
+        """Get the current user-facing message for the task."""
+        return self._message
 
     def result(self):
         return self._task.result()
@@ -246,6 +254,10 @@ class Task:
                 f"Task {self.key}: Internal asyncio.Task not yet "
                 f"created, flag set."
             )
+
+    def is_cancelled(self) -> bool:
+        """Checks if cancellation has been requested for this task."""
+        return self._cancel_requested
 
 
 class TaskManager:
@@ -299,26 +311,30 @@ class TaskManager:
 
     def add_coroutine(
         self,
-        coro: Coroutine,
+        coro: Callable[..., Coroutine],
+        *args,
         key=None,
-        monitor_callback=None,
         when_done: Optional[Callable] = None,
+        **kwargs,
     ):
         """
         Add a raw coroutine to the manager.
         The coroutine will be wrapped in a Task object internally.
+        It is expected that the coroutine accepts an ExecutionContext
+        as its first argument, followed by any other *args and **kwargs.
         """
-        task = Task(coro, key=key, monitor_callback=monitor_callback)
+        task = Task(coro, *args, key=key, **kwargs)
         self.add_task(task, when_done)
 
     async def _run_task(self, task: Task, when_done: Optional[Callable]):
         """Run the task and clean up when done."""
-        # If task.run() raises CancelledError
-        # (because task._task was cancelled),
-        # that exception will propagate and cancel this _run_task coroutine.
-        # The finally block will still execute for cleanup.
+        context = ExecutionContext(
+            progress_callback=task.set_progress,
+            check_cancelled=task.is_cancelled,
+            message_callback=task.set_message,
+        )
         try:
-            await task.run()
+            await task.run(context)
         except Exception:
             # This is the master error handler for all background tasks.
             logger.error(
@@ -326,6 +342,7 @@ class TaskManager:
                 exc_info=True,
             )
         finally:
+            context.flush()
             self._cleanup_task(task)
             self._emit_overall_progress_changed()
             self._emit_running_tasks_changed()
