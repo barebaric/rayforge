@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import logging
+import math
 from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Optional, Union
 import cairo
 from gi.repository import GLib  # type: ignore
@@ -30,6 +31,7 @@ class ElementRegion(Enum):
     BOTTOM_LEFT = auto()
     BOTTOM_MIDDLE = auto()
     BOTTOM_RIGHT = auto()
+    ROTATION_HANDLE = auto()
 
 
 class CanvasElement:
@@ -54,6 +56,7 @@ class CanvasElement:
         clip: bool = True,
         buffered: bool = False,
         debounce_ms: int = 50,
+        angle: float = 0.0,
     ):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -79,6 +82,7 @@ class CanvasElement:
         self.debounce_ms: int = debounce_ms
         self._debounce_timer_id: Optional[int] = None
         self._update_future: Optional[Future] = None
+        self.angle: float = angle
 
         # UI interaction state
         self.hovered: bool = False
@@ -182,6 +186,11 @@ class CanvasElement:
         w, h = self.width, self.height
         hs = self.handle_size
 
+        if region == ElementRegion.ROTATION_HANDLE:
+            handle_dist = 20
+            cx = w / 2
+            return int(cx - hs / 2), -handle_dist - hs, hs, hs
+
         # Corner regions are hs x hs squares
         if region == ElementRegion.TOP_LEFT:
             return 0, 0, hs, hs
@@ -211,6 +220,7 @@ class CanvasElement:
         """Checks which region is hit at local coordinates (x, y)."""
         # Check handles first as they are on top of the body
         regions_to_check = [
+            ElementRegion.ROTATION_HANDLE,
             ElementRegion.TOP_LEFT,
             ElementRegion.TOP_RIGHT,
             ElementRegion.BOTTOM_LEFT,
@@ -387,6 +397,18 @@ class CanvasElement:
             return 0.0  # Avoid division by zero
         return self.width / self.height
 
+    def set_angle(self, angle: float):
+        """Sets the rotation angle in degrees."""
+        if self.angle == angle:
+            return
+        self.angle = angle % 360
+        if isinstance(self.parent, CanvasElement):
+            self.parent.mark_dirty()
+
+    def get_angle(self) -> float:
+        """Gets the rotation angle in degrees."""
+        return self.angle
+
     def allocate(self, force: bool = False):
         for child in self.children:
             child.allocate(force)
@@ -424,6 +446,12 @@ class CanvasElement:
         ctx.save()
         # Translate to the element's local coordinates
         ctx.translate(self.x, self.y)
+
+        # Rotate around the center of the element
+        if self.angle != 0:
+            ctx.translate(self.width / 2, self.height / 2)
+            ctx.rotate(math.radians(self.angle))
+            ctx.translate(-self.width / 2, -self.height / 2)
 
         # Apply clipping if enabled
         if self.clip:
@@ -497,7 +525,6 @@ class CanvasElement:
     ) -> Optional[CanvasElement]:
         """
         Check if the point (x, y) hits this elem or any of its children.
-        If selectable is True, only selectable elems are considered.
         Coordinates are relative to the current element's top-left.
         """
         # Check children (child-to-parent order)
@@ -509,11 +536,21 @@ class CanvasElement:
             if hit:
                 return hit
 
+        # Check self. 'x' and 'y' are already local coordinates.
+        if self.angle != 0:
+            cx, cy = self.width / 2, self.height / 2
+            rad = math.radians(-self.angle)
+            cos_a, sin_a = math.cos(rad), math.sin(rad)
+            unrotated_x = cx + (x - cx) * cos_a - (y - cy) * sin_a
+            unrotated_y = cy + (x - cx) * sin_a + (y - cy) * cos_a
+        else:
+            unrotated_x, unrotated_y = x, y
+
         if selectable and not self.selectable:
             return None
 
         # Check if the point is within the elem's bounds
-        if 0 <= x <= self.width and 0 <= y <= self.height:
+        if 0 <= unrotated_x <= self.width and 0 <= unrotated_y <= self.height:
             return self
 
         return None

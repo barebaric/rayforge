@@ -76,7 +76,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.natural_size_row.add_suffix(self.natural_size_label)
         self.add(self.natural_size_row)
 
-        # Reset Button
+        # Reset Size Button
         self.reset_row = Adw.ActionRow(title=_("Reset to Natural Size"))
         self.reset_button = Gtk.Button(label=_("Reset"))
         self.reset_button.set_halign(Gtk.Align.END)
@@ -86,9 +86,35 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.reset_row.activatable_widget = self.reset_button
         self.add(self.reset_row)
 
+        # Angle Entry
+        self.angle_row = Adw.SpinRow(
+            title=_("Angle"),
+            # FIX: The 6th argument (page_size) was missing. Added it here.
+            adjustment=Gtk.Adjustment.new(0, -360, 360, 1, 10, 0),
+            digits=2,
+        )
+        self.angle_row.connect("notify::value", self._on_angle_changed)
+        self.add(self.angle_row)
+
+        # Reset Angle Button
+        self.reset_angle_row = Adw.ActionRow(title=_("Reset Rotation"))
+        self.reset_angle_button = Gtk.Button(label=_("Reset"))
+        self.reset_angle_button.set_halign(Gtk.Align.END)
+        self.reset_angle_button.set_valign(Gtk.Align.CENTER)
+        self.reset_angle_button.connect(
+            "clicked", self._on_reset_angle_clicked
+        )
+        self.reset_angle_row.add_suffix(self.reset_angle_button)
+        self.reset_angle_row.activatable_widget = self.reset_angle_button
+        self.add(self.reset_angle_row)
+
         if self.workpiece:
             self.workpiece.size_changed.connect(
                 self._on_workpiece_size_changed
+            )
+            self.workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+            self.workpiece.angle_changed.connect(
+                self._on_workpiece_angle_changed
             )
         self._update_ui_from_workpiece()
 
@@ -98,7 +124,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
     def _on_width_changed(self, spin_row, GParamSpec):
@@ -125,6 +151,24 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     self.width_row.set_value(new_width)
 
             if new_width is not None and new_height is not None:
+                old_pos = self.workpiece.pos or (0, 0)
+                old_size = (
+                    self.workpiece.get_current_size()
+                    or self.workpiece.get_default_size()
+                )
+                old_x, old_y = old_pos
+                old_w, old_h = old_size
+
+                if self.workpiece.angle == 0:
+                    # Resize from top-left for un-rotated
+                    new_x = old_x
+                    new_y = old_y + old_h - new_height
+                else:
+                    # Resize from center for rotated
+                    new_x = old_x + (old_w - new_width) / 2
+                    new_y = old_y + (old_h - new_height) / 2
+
+                self.workpiece.set_pos(new_x, new_y)
                 self.workpiece.set_size(new_width, new_height)
         finally:
             self._in_update = False
@@ -153,6 +197,24 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     self.height_row.set_value(new_height)
 
             if new_width is not None and new_height is not None:
+                old_pos = self.workpiece.pos or (0, 0)
+                old_size = (
+                    self.workpiece.get_current_size()
+                    or self.workpiece.get_default_size()
+                )
+                old_x, old_y = old_pos
+                old_w, old_h = old_size
+
+                if self.workpiece.angle == 0:
+                    # Resize from top-left for un-rotated
+                    new_x = old_x
+                    new_y = old_y + old_h - new_height
+                else:
+                    # Resize from center for rotated
+                    new_x = old_x + (old_w - new_width) / 2
+                    new_y = old_y + (old_h - new_height) / 2
+
+                self.workpiece.set_pos(new_x, new_y)
                 self.workpiece.set_size(new_width, new_height)
         finally:
             self._in_update = False
@@ -189,6 +251,15 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         finally:
             self._in_update = False
 
+    def _on_angle_changed(self, spin_row, GParamSpec):
+        if self._in_update or not self.workpiece:
+            return
+        self._in_update = True
+        try:
+            self.workpiece.set_angle(spin_row.get_value())
+        finally:
+            self._in_update = False
+
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
         if self._in_update:
@@ -208,6 +279,24 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     new_height = new_width / aspect_ratio
                     self.height_row.set_value(new_height)
                     if new_width is not None and new_height is not None:
+                        # Also need to adjust position here
+                        old_pos = self.workpiece.pos or (0, 0)
+                        old_size = (
+                            self.workpiece.get_current_size()
+                            or self.workpiece.get_default_size()
+                        )
+                        old_x, old_y = old_pos
+                        old_w, old_h = old_size
+
+                        if self.workpiece.angle == 0:
+                            new_x, new_y = old_x, old_y + old_h - new_height
+                        else:
+                            new_x, new_y = (
+                                old_x + (old_w - new_width) / 2,
+                                old_y + (old_h - new_height) / 2,
+                            )
+
+                        self.workpiece.set_pos(new_x, new_y)
                         self.workpiece.set_size(new_width, new_height)
         finally:
             self._in_update = False
@@ -221,6 +310,15 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.workpiece.set_size(natural_width, natural_height)
         self._in_update = False
         self._update_ui_from_workpiece()
+
+    def _on_reset_angle_clicked(self, button):
+        if self._in_update or not self.workpiece:
+            return
+        self._in_update = True
+        try:
+            self.workpiece.set_angle(0.0)
+        finally:
+            self._in_update = False
 
     def _on_workpiece_size_changed(self, workpiece):
         if self._in_update:
@@ -237,12 +335,18 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             self.workpiece.pos_changed.disconnect(
                 self._on_workpiece_pos_changed
             )
+            self.workpiece.angle_changed.disconnect(
+                self._on_workpiece_angle_changed
+            )
         self.workpiece = workpiece
         if self.workpiece:
             self.workpiece.size_changed.connect(
                 self._on_workpiece_size_changed
             )
             self.workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+            self.workpiece.angle_changed.connect(
+                self._on_workpiece_angle_changed
+            )
         self._in_update = False
         self._update_ui_from_workpiece()
 
@@ -252,6 +356,12 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         logger.debug(f"Workpiece position changed: {workpiece.pos}")
         self._update_ui_from_workpiece()
 
+    def _on_workpiece_angle_changed(self, workpiece):
+        if self._in_update:
+            return
+        logger.debug(f"Workpiece angle changed: {workpiece.angle}")
+        self._update_ui_from_workpiece()
+
     def _update_ui_from_workpiece(self):
         logger.debug(f"Updating UI for workpiece: {self.workpiece}")
         if not self.workpiece:
@@ -259,6 +369,8 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self._in_update = True
         size = self.workpiece.get_current_size()
         pos = self.workpiece.pos
+        angle = self.workpiece.angle
+
         if size:
             width, height = size
             logger.debug(f"Updating UI: width={width}, height={height}")
@@ -275,4 +387,8 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             logger.debug(f"Updating UI: x={x}, y={y}")
             self.x_row.set_value(x)
             self.y_row.set_value(y)
+
+        logger.debug(f"Updating UI: angle={angle}")
+        self.angle_row.set_value(angle)
+
         self._in_update = False

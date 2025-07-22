@@ -32,6 +32,7 @@ class WorkPieceElement(SurfaceElement):
         )
         workpiece.size_changed.connect(self._on_workpiece_size_changed)
         workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+        workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
 
     def render_to_surface(
         self, width: int, height: int
@@ -60,6 +61,7 @@ class WorkPieceElement(SurfaceElement):
         # We call super().set_pos() to bypass the model update logic in this
         # class's set_pos(), as we are updating the view from the model.
         super().set_pos(x_px, y_px)
+        self.set_angle(self.data.angle)  # Sync angle from model
 
         size_changed = self.width != new_width or self.height != new_height
 
@@ -109,6 +111,16 @@ class WorkPieceElement(SurfaceElement):
         finally:
             self._in_update = False
 
+    def set_angle(self, angle: float):
+        super().set_angle(angle)
+        if self._in_update:
+            return
+        self._in_update = True
+        try:
+            self.data.set_angle(angle)
+        finally:
+            self._in_update = False
+
     def _on_workpiece_size_changed(self, workpiece):
         if self._in_update:
             return
@@ -119,6 +131,15 @@ class WorkPieceElement(SurfaceElement):
             return
         # This is a cheap operation, no re-render needed.
         self.allocate()
+        if self.parent:
+            self.parent.mark_dirty()
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def _on_workpiece_angle_changed(self, workpiece):
+        if self._in_update:
+            return
+        self.set_angle(workpiece.angle)
         if self.parent:
             self.parent.mark_dirty()
         if self.canvas:

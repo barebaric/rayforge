@@ -1,8 +1,9 @@
 from __future__ import annotations
 import logging
+import math
 from typing import Any, Generator, List, Tuple, Optional
 import cairo
-from gi.repository import Gtk, Gdk, Graphene  # type: ignore
+from gi.repository import Gtk, Gdk, Graphene, GLib  # type: ignore
 from blinker import Signal
 from .canvaselem import CanvasElement, ElementRegion
 
@@ -27,6 +28,13 @@ class Canvas(Gtk.DrawingArea):
         self.hovered_elem: Optional[CanvasElement] = None
         self.hovered_region: ElementRegion = ElementRegion.NONE
         self.active_region: ElementRegion = ElementRegion.NONE
+
+        # Rotation state
+        self.original_elem_angle: float = 0.0
+        self.drag_start_angle: float = 0.0
+
+        # Cache for custom-rendered cursors to avoid recreating them
+        self._cursor_cache: dict[int, Gdk.Cursor] = {}
 
     def add(self, elem: CanvasElement):
         self.root.add(elem)
@@ -69,6 +77,7 @@ class Canvas(Gtk.DrawingArea):
         self.add_controller(self.drag_gesture)
         self.resizing: bool = False
         self.moving: bool = False
+        self.rotating: bool = False
 
         self.key_controller = Gtk.EventControllerKey.new()
         self.key_controller.connect("key-pressed", self.on_key_pressed)
@@ -106,6 +115,14 @@ class Canvas(Gtk.DrawingArea):
             abs_x, abs_y = elem.pos_abs()
             ctx.save()
 
+            # Apply rotation transform for the selection handles
+            if elem.get_angle() != 0:
+                ctx.translate(abs_x + elem.width / 2, abs_y + elem.height / 2)
+                ctx.rotate(math.radians(elem.get_angle()))
+                ctx.translate(
+                    -(abs_x + elem.width / 2), -(abs_y + elem.height / 2)
+                )
+
             # Draw dashed selection rectangle
             ctx.set_source_rgb(0.4, 0.4, 0.4)
             ctx.set_dash((5, 5))
@@ -114,13 +131,29 @@ class Canvas(Gtk.DrawingArea):
             ctx.stroke()
 
             # Don't draw hover/resize handles while moving an element.
-            if self.moving:
+            if self.moving or self.resizing or self.rotating:
                 ctx.restore()
                 return
 
             # Prepare to draw handles
             ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)  # A nice blue
             ctx.set_dash([])  # Solid line for handles
+
+            # Rotation handle is visible on hover
+            if elem.hovered:
+                rx, ry, rw, rh = elem.get_region_rect(
+                    ElementRegion.ROTATION_HANDLE
+                )
+                if rw > 0 and rh > 0:
+                    ctx.save()
+                    ctx.set_source_rgba(0.4, 0.4, 0.4, 0.9)
+                    ctx.set_line_width(1)
+                    ctx.move_to(abs_x + elem.width / 2, abs_y + ry + rh)
+                    ctx.line_to(abs_x + elem.width / 2, abs_y)
+                    ctx.stroke()
+                    ctx.restore()
+                    ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
+                    ctx.fill()
 
             # Corner handles are visible on hover of the whole element
             if elem.hovered:
@@ -162,31 +195,65 @@ class Canvas(Gtk.DrawingArea):
         """Updates hover state and returns True if a redraw is needed."""
         needs_redraw = False
 
-        # Find element under cursor, but ignore the root element
-        hit_elem = self.root.get_elem_hit(
-            x - self.root.x, y - self.root.y, selectable=True
-        )
-        if hit_elem is self.root:
-            hit_elem = None
+        # Priority 1: Check for handle hits on the selected element.
+        # This allows grabbing handles that are outside the element's body.
+        final_hovered_elem = None
+        new_hovered_region = ElementRegion.NONE
 
-        # Check for change in hovered element
-        if self.hovered_elem != hit_elem:
+        selected_elem = self.active_elem
+        if selected_elem and selected_elem.selected:
+            elem_x, elem_y = selected_elem.pos_abs()
+            local_x, local_y = x - elem_x, y - elem_y
+
+            # Un-rotate the hover point to check against un-rotated handles
+            if selected_elem.get_angle() != 0:
+                angle_rad = math.radians(-selected_elem.get_angle())
+                center_x, center_y = (
+                    selected_elem.width / 2,
+                    selected_elem.height / 2,
+                )
+                cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+                rot_x = (
+                    center_x
+                    + (local_x - center_x) * cos_a
+                    - (local_y - center_y) * sin_a
+                )
+                rot_y = (
+                    center_y
+                    + (local_x - center_x) * sin_a
+                    + (local_y - center_y) * cos_a
+                )
+                local_x, local_y = rot_x, rot_y
+
+            region = selected_elem.check_region_hit(local_x, local_y)
+
+            # If a handle is hit, it takes priority
+            if region not in [ElementRegion.NONE, ElementRegion.BODY]:
+                new_hovered_region = region
+                final_hovered_elem = selected_elem
+
+        # Priority 2: If no handle was hit, check for body hits on any element.
+        if not final_hovered_elem:
+            body_hit_elem = self.root.get_elem_hit(
+                x - self.root.x, y - self.root.y, selectable=True
+            )
+            if body_hit_elem is self.root:
+                body_hit_elem = None
+
+            if body_hit_elem:
+                final_hovered_elem = body_hit_elem
+                new_hovered_region = ElementRegion.BODY
+
+        # Update the visual hover state on the element
+        if self.hovered_elem != final_hovered_elem:
             if self.hovered_elem:
                 self.hovered_elem.hovered = False
-            self.hovered_elem = hit_elem
+            self.hovered_elem = final_hovered_elem
             if self.hovered_elem:
                 self.hovered_elem.hovered = True
             needs_redraw = True
 
-        # Check for change in hovered region on the current hovered element
-        new_hovered_region = ElementRegion.NONE
-        if self.hovered_elem and self.hovered_elem.selected:
-            elem_x, elem_y = self.hovered_elem.pos_abs()
-            local_x, local_y = x - elem_x, y - elem_y
-            new_hovered_region = self.hovered_elem.check_region_hit(
-                local_x, local_y
-            )
-
+        # Update the hovered region for cursor changes and drag state
         if self.hovered_region != new_hovered_region:
             self.hovered_region = new_hovered_region
             needs_redraw = True
@@ -195,34 +262,33 @@ class Canvas(Gtk.DrawingArea):
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         self.grab_focus()
-        hit = self.root.get_elem_hit(
-            x - self.root.x, y - self.root.y, selectable=True
-        )
+        # The hover state now correctly identifies handle-hovers
+        self._update_hover_state(x, y)
+        hit = self.hovered_elem
 
         # Before changing selection state, check if the hit element
         # was already selected.
         was_already_selected = hit.selected if hit else False
 
-        self.root.unselect_all()
+        # If we didn't hit an already-selected element, unselect all
+        if not (hit and was_already_selected):
+            self.root.unselect_all()
 
         if hit and hit != self.root:
             hit.selected = True
             self.active_elem = hit
             self.active_origin = hit.rect()
 
-            # If the element was not selected before this click, the action
-            # should always be a "move", regardless of the hit region.
-            # Otherwise, if it was already selected, check for resize handles.
+            # The hovered_region is now reliable for determining the action
             if was_already_selected:
-                elem_x, elem_y = hit.pos_abs()
-                local_x, local_y = x - elem_x, y - elem_y
-                self.active_region = hit.check_region_hit(local_x, local_y)
+                self.active_region = self.hovered_region
             else:
                 self.active_region = ElementRegion.BODY
 
             if self.active_region == ElementRegion.BODY:
                 self.moving = True
                 self.resizing = False
+                self.rotating = False
                 # Bring to front logic
                 if hit.parent and isinstance(hit.parent, CanvasElement):
                     parent_children = hit.parent.children
@@ -230,9 +296,15 @@ class Canvas(Gtk.DrawingArea):
                         parent_children.remove(hit)
                         parent_children.append(hit)
                         hit.parent.mark_dirty()
+            elif self.active_region == ElementRegion.ROTATION_HANDLE:
+                self.resizing = False
+                self.moving = False
+                self.rotating = True
+                self._start_rotation(hit, x, y)
             elif self.active_region != ElementRegion.NONE:
                 self.resizing = True
                 self.moving = False
+                self.rotating = False
             else:
                 self.active_elem = None
 
@@ -240,30 +312,102 @@ class Canvas(Gtk.DrawingArea):
             self.active_elem = None
             self.resizing = False
             self.moving = False
+            self.rotating = False
             self.active_region = ElementRegion.NONE
 
-        self._update_hover_state(x, y)
         self.queue_draw()
         self.active_element_changed.send(self, element=self.active_elem)
+
+    def _create_rotated_cursor(self, angle_deg: float) -> Gdk.Cursor:
+        """
+        Creates a custom two-headed arrow cursor rotated to the given angle.
+        Results are cached for performance.
+        """
+        # Round angle to nearest degree for effective caching
+        angle_key = round(angle_deg)
+        if angle_key in self._cursor_cache:
+            return self._cursor_cache[angle_key]
+
+        size = 32
+        hotspot = size // 2
+
+        # 1. Draw the cursor using Cairo
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+        ctx = cairo.Context(surface)
+        ctx.translate(hotspot, hotspot)
+        ctx.rotate(-math.radians(angle_deg))
+
+        # Draw a white arrow with a black outline for visibility
+        ctx.set_line_width(2)
+        ctx.set_source_rgb(0, 0, 0)  # Black outline
+
+        # Main line
+        ctx.move_to(-10, 0)
+        ctx.line_to(10, 0)
+
+        # Arrowhead 1
+        ctx.move_to(10, 0)
+        ctx.line_to(6, -4)
+        ctx.move_to(10, 0)
+        ctx.line_to(6, 4)
+
+        # Arrowhead 2
+        ctx.move_to(-10, 0)
+        ctx.line_to(-6, -4)
+        ctx.move_to(-10, 0)
+        ctx.line_to(-6, 4)
+        ctx.stroke_preserve()  # Keep path for white fill
+
+        # White inner fill
+        ctx.set_source_rgb(1, 1, 1)  # White
+        ctx.set_line_width(1)
+        ctx.stroke()
+
+        # 2. Convert Cairo surface to Gdk.Texture (GTK4 method)
+        data = surface.get_data()
+        bytes_data = GLib.Bytes.new(data)
+        texture = Gdk.MemoryTexture.new(
+            size,
+            size,
+            Gdk.MemoryFormat.B8G8R8A8_PREMULTIPLIED,
+            bytes_data,
+            surface.get_stride(),
+        )
+
+        # 3. Create Gdk.Cursor from the texture
+        cursor = Gdk.Cursor.new_from_texture(texture, hotspot, hotspot)
+        self._cursor_cache[angle_key] = cursor
+        return cursor
 
     def on_motion(self, gesture, x: int, y: int):
         if self._update_hover_state(x, y):
             self.queue_draw()
 
-        cursor_map = {
-            ElementRegion.TOP_LEFT: "nw-resize",
-            ElementRegion.BOTTOM_RIGHT: "se-resize",
-            ElementRegion.TOP_RIGHT: "ne-resize",
-            ElementRegion.BOTTOM_LEFT: "sw-resize",
-            ElementRegion.TOP_MIDDLE: "n-resize",
-            ElementRegion.BOTTOM_MIDDLE: "s-resize",
-            ElementRegion.MIDDLE_LEFT: "w-resize",
-            ElementRegion.MIDDLE_RIGHT: "e-resize",
-            ElementRegion.BODY: "move",
-            ElementRegion.NONE: "default",
-        }
-        cursor_name = cursor_map.get(self.hovered_region, "default")
-        cursor = Gdk.Cursor.new_from_name(cursor_name)
+        cursor = None
+        if self.hovered_region == ElementRegion.BODY:
+            cursor = Gdk.Cursor.new_from_name("move")
+        elif self.hovered_region == ElementRegion.ROTATION_HANDLE:
+            cursor = Gdk.Cursor.new_from_name("crosshair")
+        elif self.hovered_region != ElementRegion.NONE and self.hovered_elem:
+            # For resize handles, create a custom rotated cursor
+            region_angles = {
+                ElementRegion.MIDDLE_RIGHT: 0,
+                ElementRegion.TOP_RIGHT: 45,
+                ElementRegion.TOP_MIDDLE: 90,
+                ElementRegion.TOP_LEFT: 135,
+                ElementRegion.MIDDLE_LEFT: 180,
+                ElementRegion.BOTTOM_LEFT: 225,
+                ElementRegion.BOTTOM_MIDDLE: 270,
+                ElementRegion.BOTTOM_RIGHT: 315,
+            }
+            # The direction of scaling is perpendicular to the handle's angle
+            base_angle = region_angles.get(self.hovered_region, 0)
+            elem_angle = self.hovered_elem.get_angle()
+            cursor_angle = base_angle - elem_angle
+            cursor = self._create_rotated_cursor(cursor_angle)
+        else:
+            cursor = Gdk.Cursor.new_from_name("default")
+
         self.set_cursor(cursor)
 
     def on_motion_leave(self, controller):
@@ -299,14 +443,58 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
         elif self.resizing:
             self._resize_active_element(delta_x, delta_y)
+        elif self.rotating:
+            self._rotate_active_element(delta_x, delta_y)
+
+    def _start_rotation(self, elem: CanvasElement, x: int, y: int):
+        """Stores initial state for a rotation operation."""
+        self.original_elem_angle = elem.get_angle()
+        abs_x, abs_y = elem.pos_abs()
+        center_x = abs_x + elem.width / 2
+        center_y = abs_y + elem.height / 2
+        self.drag_start_angle = math.degrees(
+            math.atan2(y - center_y, x - center_x)
+        )
+
+    def _rotate_active_element(self, delta_x: int, delta_y: int):
+        """Handles the logic for rotating an element based on drag delta."""
+        if not self.active_elem:
+            return
+
+        ok, start_x, start_y = self.drag_gesture.get_start_point()
+        if not ok:
+            return
+
+        current_x, current_y = start_x + delta_x, start_y + delta_y
+
+        abs_x, abs_y = self.active_elem.pos_abs()
+        center_x = abs_x + self.active_elem.width / 2
+        center_y = abs_y + self.active_elem.height / 2
+
+        current_angle = math.degrees(
+            math.atan2(current_y - center_y, current_x - center_x)
+        )
+
+        angle_diff = current_angle - self.drag_start_angle
+        new_angle = self.original_elem_angle + angle_diff
+
+        self.active_elem.set_angle(new_angle)
+        self.queue_draw()
 
     def _resize_active_element(self, delta_x: int, delta_y: int):
-        """Handles the logic for resizing an element based on drag delta."""
+        """Handles the logic for resizing a (potentially rotated) element."""
         if not self.active_elem or not self.active_origin:
             return
 
         start_x, start_y, start_w, start_h = self.active_origin
         min_size = self.active_elem.handle_size * 2
+        angle_deg = self.active_elem.get_angle()
+
+        # 1. Transform drag delta into the element's local coordinate system
+        angle_rad = math.radians(-angle_deg)
+        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+        local_delta_x = delta_x * cos_a - delta_y * sin_a
+        local_delta_y = delta_x * sin_a + delta_y * cos_a
 
         # Determine which edges are being dragged
         is_left = self.active_region in {
@@ -330,44 +518,68 @@ class Canvas(Gtk.DrawingArea):
             ElementRegion.BOTTOM_RIGHT,
         }
 
-        # 1. Calculate new rect based on the dragged handle
-        new_x, new_y, new_w, new_h = (
-            float(start_x),
-            float(start_y),
-            float(start_w),
-            float(start_h),
-        )
+        # 2. Calculate new width and height based on local deltas
+        new_w, new_h = float(start_w), float(start_h)
         if is_left:
-            new_w, new_x = start_w - delta_x, start_x + delta_x
+            new_w -= local_delta_x
         elif is_right:
-            new_w = start_w + delta_x
+            new_w += local_delta_x
 
         if is_top:
-            new_h, new_y = start_h - delta_y, start_y + delta_y
+            new_h -= local_delta_y
         elif is_bottom:
-            new_h = start_h + delta_y
+            new_h += local_delta_y
 
-        # 2. Enforce minimum size
-        if new_w < min_size:
-            if is_left:
-                new_x = start_x + start_w - min_size
-            new_w = min_size
-        if new_h < min_size:
-            if is_top:
-                new_y = start_y + start_h - min_size
-            new_h = min_size
-
-        # 3. Handle aspect ratio
+        # Handle aspect ratio constraint if needed
         if self.shift_pressed and start_w > 0 and start_h > 0:
-            aspect = start_w / start_h
-            rect = new_x, new_y, new_w, new_h
-            start_rect = start_x, start_y, start_w, start_h
-            delta = delta_x, delta_y
-            new_x, new_y, new_w, new_h = self._constrain_to_aspect_ratio(
-                rect, start_rect, delta, aspect
-            )
+            # This part can be simplified since local deltas are used
+            # For now, let's just make it work for corners
+            is_corner = is_left or is_right or is_top or is_bottom
+            if is_corner:
+                aspect = start_w / start_h
+                if abs(local_delta_x) > abs(local_delta_y):
+                    new_h = new_w / aspect
+                else:
+                    new_w = new_h * aspect
 
-        # 4. Apply changes
+        # Enforce minimum size
+        new_w = max(new_w, min_size)
+        new_h = max(new_h, min_size)
+
+        # 3. Calculate how the center of the element shifts due to the resize
+        dw = new_w - start_w
+        dh = new_h - start_h
+
+        center_dx_local, center_dy_local = 0.0, 0.0
+        if is_left:
+            center_dx_local = -dw / 2
+        elif is_right:
+            center_dx_local = dw / 2
+
+        if is_top:
+            center_dy_local = -dh / 2
+        elif is_bottom:
+            center_dy_local = dh / 2
+
+        # 4. Transform the center shift back to the canvas coordinate system
+        angle_rad_fwd = math.radians(angle_deg)
+        cos_a_fwd, sin_a_fwd = math.cos(angle_rad_fwd), math.sin(angle_rad_fwd)
+        center_dx_canvas = (
+            center_dx_local * cos_a_fwd - center_dy_local * sin_a_fwd
+        )
+        center_dy_canvas = (
+            center_dx_local * sin_a_fwd + center_dy_local * cos_a_fwd
+        )
+
+        # 5. Calculate the new top-left position
+        old_center_x = start_x + start_w / 2
+        old_center_y = start_y + start_h / 2
+        new_center_x = old_center_x + center_dx_canvas
+        new_center_y = old_center_y + center_dy_canvas
+        new_x = new_center_x - new_w / 2
+        new_y = new_center_y - new_h / 2
+
+        # 6. Apply changes
         self.active_elem.set_pos(round(new_x), round(new_y))
         self.active_elem.set_size(round(new_w), round(new_h))
 
@@ -440,8 +652,12 @@ class Canvas(Gtk.DrawingArea):
             # Trigger a final high-quality render after resize is complete
             self.active_elem.trigger_update()
 
+        if self.active_elem:
+            self.active_origin = self.active_elem.rect()
+
         self.resizing = False
         self.moving = False
+        self.rotating = False
         self.active_region = ElementRegion.NONE
 
     def on_key_pressed(

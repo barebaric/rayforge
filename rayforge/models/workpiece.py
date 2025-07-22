@@ -24,9 +24,11 @@ class WorkPiece:
         self._renderer_ref_for_pyreverse: Renderer
         self.pos: Optional[Tuple[float, float]] = None  # in mm
         self.size: Optional[Tuple[float, float]] = None  # in mm
+        self.angle: float = 0.0  # in degrees
         self.changed: Signal = Signal()
         self.pos_changed: Signal = Signal()
         self.size_changed: Signal = Signal()
+        self.angle_changed: Signal = Signal()
 
     def set_pos(self, x_mm: float, y_mm: float):
         if (x_mm, y_mm) == self.pos:
@@ -41,6 +43,13 @@ class WorkPiece:
         self.size = float(width_mm), float(height_mm)
         self.changed.send(self)
         self.size_changed.send(self)
+
+    def set_angle(self, angle: float):
+        if angle == self.angle:
+            return
+        self.angle = float(angle % 360)
+        self.changed.send(self)
+        self.angle_changed.send(self)
 
     def get_default_size(self) -> Tuple[float, float]:
         size = self.renderer.get_natural_size()

@@ -382,6 +382,40 @@ class Ops:
         self.last_move_to = last_x * sx, last_y * sy
         return self
 
+    def rotate(self, angle_deg: float, cx: float, cy: float) -> "Ops":
+        """Rotates all points around a center (cx, cy)."""
+        angle_rad = math.radians(angle_deg)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+
+        def _rotate_point(p: Tuple[float, float]) -> Tuple[float, float]:
+            x, y = p
+            # Translate point to origin
+            translated_x = x - cx
+            translated_y = y - cy
+            # Rotate
+            rotated_x = translated_x * cos_a - translated_y * sin_a
+            rotated_y = translated_x * sin_a + translated_y * cos_a
+            # Translate back
+            return rotated_x + cx, rotated_y + cy
+
+        def _rotate_vector(v: Tuple[float, float]) -> Tuple[float, float]:
+            x, y = v
+            # Rotate vector (no translation)
+            rotated_x = x * cos_a - y * sin_a
+            rotated_y = x * sin_a + y * cos_a
+            return rotated_x, rotated_y
+
+        for cmd in self.commands:
+            if cmd.end is not None:
+                cmd.end = _rotate_point(cmd.end)
+
+            if isinstance(cmd, ArcToCommand):
+                cmd.center_offset = _rotate_vector(cmd.center_offset)
+
+        self.last_move_to = _rotate_point(self.last_move_to)
+        return self
+
     def _compute_outcode(self, x, y, rect):
         x_min, y_min, x_max, y_max = rect
         code = _INSIDE

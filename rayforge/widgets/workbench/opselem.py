@@ -41,6 +41,7 @@ class WorkPieceOpsElement(SurfaceElement):
         # Connect to specific signals instead of the generic 'changed' signal.
         workpiece.pos_changed.connect(self.allocate)
         workpiece.size_changed.connect(self.allocate)
+        workpiece.angle_changed.connect(self.allocate)
 
     def allocate(self, force: bool = False):
         """
@@ -72,6 +73,7 @@ class WorkPieceOpsElement(SurfaceElement):
         y_px = content_height_px - y_mm_tl * px_per_mm_y
 
         self.set_pos(round(x_px) - OPS_MARGIN_PX, round(y_px) - OPS_MARGIN_PX)
+        self.set_angle(self.data.angle)
 
         if not size_changed and not force:
             return

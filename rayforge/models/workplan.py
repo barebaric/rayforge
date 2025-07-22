@@ -333,18 +333,14 @@ class WorkStep(ABC):
         workpiece: WorkPiece,
     ) -> Ops:
         """Returns a scaled version of the ops for display."""
+        display_ops = deepcopy(chunk)
         if self.can_scale() and pixel_size:
-            display_ops = deepcopy(chunk)
             final_mm = workpiece.get_current_size()
             if final_mm is not None and None not in final_mm:
                 scale_x = final_mm[0] / pixel_size[0]
                 scale_y = final_mm[1] / pixel_size[1]
-            else:
-                scale_x = 1
-                scale_y = 1
-            display_ops.scale(scale_x, scale_y)
-            return display_ops
-        return chunk
+                display_ops.scale(scale_x, scale_y)
+        return display_ops
 
     async def _stream_ops_and_cache(
         self,
@@ -508,6 +504,7 @@ class WorkStep(ABC):
         if raw_ops is None:
             return None
 
+        # Return a copy to prevent modification of the cached original
         ops = deepcopy(raw_ops)
 
         if pixel_size:
@@ -643,16 +640,28 @@ class WorkPlan:
                 )
                 await asyncio.sleep(0)
 
+            # Get the pre-scaled ops
             step_ops = await asyncio.to_thread(step.get_ops, workpiece)
-            if step_ops:
-                step_ops.translate(*workpiece.pos)
-                # Clip the translated ops to the machine's work area.
-                clipped_ops = step_ops.clip(clip_rect)
+            if not step_ops:
+                continue
 
-                # Apply transformers after clipping.
-                for transformer in step.opstransformers:
-                    await asyncio.to_thread(transformer.run, clipped_ops)
-                final_ops += clipped_ops * step.passes
+            # 1. Rotate the ops around its local center.
+            # We negate the angle to convert from view coordinates (Y-down, cw)
+            # to model/g-code coordinates (Y-up, ccw).
+            wp_angle = workpiece.angle
+            if wp_angle != 0:
+                wp_w, wp_h = workpiece.size
+                cx, cy = wp_w / 2, wp_h / 2
+                step_ops.rotate(-wp_angle, cx, cy)
+
+            # 2. Translate to final position on the work area
+            step_ops.translate(*workpiece.pos)
+
+            # 3. Clip to machine boundaries and apply post-transformers
+            clipped_ops = step_ops.clip(clip_rect)
+            for transformer in step.opstransformers:
+                await asyncio.to_thread(transformer.run, clipped_ops)
+            final_ops += clipped_ops * step.passes
 
         if context:
             context.set_progress(1.0)
