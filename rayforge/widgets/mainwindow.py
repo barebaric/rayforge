@@ -366,7 +366,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._try_driver_setup()
         config.changed.connect(self.on_config_changed)
         driver_mgr.changed.connect(self.on_driver_changed)
-        task_mgr.running_tasks_changed.connect(self.on_running_tasks_changed)
+        task_mgr.tasks_updated.connect(self.on_running_tasks_changed)
         self.needs_homing = config.machine.home_on_start
 
     def _try_driver_setup(self):
@@ -377,9 +377,18 @@ class MainWindow(Adw.ApplicationWindow):
             return
         driver_cls = get_driver_cls(driver_name)
         try:
+            # This wrapper coroutine adapts the call to the TaskManager's
+            # expectation that all tasks accept an ExecutionContext.
+            async def setup_driver_coro(
+                context: ExecutionContext, cls, **kwargs
+            ):
+                # The context is accepted but not used for this simple task.
+                await driver_mgr.select_by_cls(cls, **kwargs)
+
             task_mgr.add_coroutine(
-                driver_mgr.select_by_cls,
+                setup_driver_coro,
                 driver_cls,
+                key="driver-setup",
                 **config.machine.driver_args
             )
         except Exception as e:
@@ -425,7 +434,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc(self.doc)
         self.update_state()
 
-    def on_running_tasks_changed(self, sender, tasks):
+    def on_running_tasks_changed(self, sender, tasks, progress):
         self.update_state()
 
     def update_state(self):

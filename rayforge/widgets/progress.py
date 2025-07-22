@@ -33,23 +33,17 @@ class TaskProgressBar(Gtk.Box):
         self.set_opacity(0)  # Initially hidden
 
     def _connect_signals(self):
-        """Connect to TaskManager signals."""
-        self.task_manager.overall_progress_changed.connect(
-            self._on_overall_progress_changed
-        )
-        self.task_manager.running_tasks_changed.connect(
-            self._on_running_tasks_changed
+        """Connect to the single, consolidated TaskManager signal."""
+        self.task_manager.tasks_updated.connect(
+            self._on_tasks_updated
         )
 
-    def _on_overall_progress_changed(self, task_mgr, progress):
-        """Update the progress bar."""
+    def _on_tasks_updated(self, sender, tasks, progress):
+        """
+        Update the progress bar and status text from a single event.
+        """
         self.progress_bar.set_fraction(progress)
 
-    def _on_running_tasks_changed(self, sender, tasks):
-        """
-        Update the status text with the oldest task's
-        message or status and a count of others.
-        """
         if not tasks:
             self.label.set_text("")
             self.set_opacity(0)  # Hide when no tasks are running

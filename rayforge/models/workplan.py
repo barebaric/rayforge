@@ -346,42 +346,6 @@ class WorkStep(ABC):
             return display_ops
         return chunk
 
-    async def _apply_transformer(
-        self,
-        transformer: OpsTransformer,
-        ops: Ops,
-        base_progress: float,
-        progress_step: float,
-        check_cancelled: Callable[[], bool],
-        main_context: ExecutionContext,
-    ):
-        """
-        Applies the given transformer to the Ops with progress reporting.
-        """
-
-        def transformer_progress_reporter(transformer_progress: float):
-            """
-            Reports progress from the transformer, scaled to the overall
-            task progress, to the main execution context.
-            """
-            if check_cancelled():
-                return
-            overall_progress = base_progress + (
-                transformer_progress * progress_step
-            )
-            main_context.set_progress(overall_progress)
-
-        # This context is for the transformer.run call.
-        # Its progress and message callbacks funnel updates to the main
-        # context.
-        context = ExecutionContext(
-            progress_callback=transformer_progress_reporter,
-            check_cancelled=check_cancelled,
-            message_callback=main_context.set_message,
-        )
-
-        await asyncio.to_thread(transformer.run, ops, context=context)
-
     async def _stream_ops_and_cache(
         self,
         context: ExecutionContext,
@@ -396,39 +360,38 @@ class WorkStep(ABC):
         final_ops = Ops()
         cached_pixel_size = None
 
-        # The 'execute' phase (tracing/rasterizing) is usually fast.
-        # The 'transform' phase (optimization) is slow.
-        execute_weight = 0.1
-        transform_weight = (
-            1.0 - execute_weight if self.opstransformers else 0.0
-        )
+        execute_weight = 0.20
+        transform_weight = 1.0 - execute_weight
 
         def check_cancelled():
-            # Stop if a new generation was requested or if the task was
-            # cancelled from the TaskManager.
             return (
                 self._generation_id != generation_id or context.is_cancelled()
             )
 
         try:
+            # The root context's total is 1.0 by default.
             context.set_message(
                 _("Generating path for '{name}'").format(name=workpiece.name)
             )
-            # Initial ops setup
             initial_ops = self._create_initial_ops()
-            if initial_ops.commands:
-                self.ops_chunk_available.send(
-                    self, workpiece=workpiece, chunk=initial_ops
-                )
             final_ops += initial_ops
 
-            # Execute Phase
+            # Execute Phase (0% -> 20% of total progress)
+            # Create a sub-context for just this phase.
+            execute_ctx = context.sub_context(
+                base_progress=0.0,
+                progress_range=execute_weight,
+                check_cancelled=check_cancelled,
+            )
+
             async for chunk, px_size, execute_progress in self.execute(
                 workpiece, check_cancelled
             ):
                 if check_cancelled():
                     raise CancelledError()
-                context.set_progress(execute_progress * execute_weight)
+                # execute_progress is 0.0-1.0, and execute_ctx.total is 1.0,
+                # so this works perfectly.
+                execute_ctx.set_progress(execute_progress)
                 if px_size:
                     cached_pixel_size = px_size
                 display_ops = self._get_display_ops(chunk, px_size, workpiece)
@@ -437,13 +400,17 @@ class WorkStep(ABC):
                 )
                 final_ops += chunk
 
-            context.set_progress(execute_weight)
-
-            # Transform Phase
+            # Transform Phase (20% -> 100% of total progress)
             if self.opstransformers:
                 num_transformers = len(self.opstransformers)
-                transform_progress_per_step = (
-                    transform_weight / num_transformers
+
+                # Create a single sub-context for the entire transformation
+                # block, giving it the total number of steps directly.
+                transform_context = context.sub_context(
+                    base_progress=execute_weight,
+                    progress_range=transform_weight,
+                    total=num_transformers,
+                    check_cancelled=check_cancelled,
                 )
 
                 for i, transformer in enumerate(self.opstransformers):
@@ -456,17 +423,22 @@ class WorkStep(ABC):
                             workpiece=workpiece.name,
                         )
                     )
-                    base_progress = execute_weight + (
-                        i * transform_progress_per_step
+
+                    # Create a context for the transformer's own internal
+                    # progress.
+                    # Its slice is one "step" of the parent transform_context.
+                    transformer_run_ctx = transform_context.sub_context(
+                        base_progress=i,  # Raw step number
+                        progress_range=1,  # This slice is 1 step wide
+                        check_cancelled=check_cancelled,
                     )
-                    await self._apply_transformer(
-                        transformer,
-                        final_ops,
-                        base_progress,
-                        transform_progress_per_step,
-                        check_cancelled,
-                        context,
+
+                    await asyncio.to_thread(
+                        transformer.run, final_ops, context=transformer_run_ctx
                     )
+
+                    # Mark the step as complete in the transform_context.
+                    transform_context.set_progress(i + 1)
 
             if check_cancelled():
                 raise CancelledError()

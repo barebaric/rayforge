@@ -3,6 +3,7 @@ import asyncio
 from unittest.mock import MagicMock
 import cairo
 from blinker import Signal
+from rayforge.task import ExecutionContext
 from rayforge.models.workplan import Contour
 from rayforge.models.workpiece import WorkPiece
 from rayforge.models.ops import (
@@ -49,17 +50,16 @@ def mock_task_mgr(mocker):
     mock_mgr = MagicMock()
     created_tasks = []
 
-    def add_coroutine_mock(coro, key=None, monitor_callback=None):
-        # Get the running event loop at the time the coroutine is added.
-        # This is safe because it's called from within an async test.
+    def add_coroutine_mock(coro_func, *args, key=None, when_done=None):
+        mock_context = ExecutionContext()
+        coro_obj = coro_func(mock_context, *args)
         loop = asyncio.get_running_loop()
-        task = loop.create_task(coro)
+        task = loop.create_task(coro_obj)
         created_tasks.append(task)
         return task
 
     mock_mgr.add_coroutine = MagicMock(side_effect=add_coroutine_mock)
     mock_mgr.created_tasks = created_tasks
-    # This ensures that our test will see the right CancelledError
     mocker.patch("rayforge.models.workplan.CancelledError", asyncio.CancelledError)
     mocker.patch("rayforge.models.workplan.task_mgr", mock_mgr)
     return mock_mgr
@@ -143,9 +143,9 @@ class TestWorkStepAsync:
 
         # Assert
         start_handler.assert_called_once_with(contour_step, workpiece=mock_workpiece)
-        assert chunk_handler.call_count == 2  # Initial state chunk + our one data chunk
+        assert chunk_handler.call_count == 1
 
-        # Check the final cached ops
+        # Check the final cached ops to ensure initial state was still applied
         assert mock_workpiece in contour_step.workpiece_to_ops
         cached_ops, _ = contour_step.workpiece_to_ops[mock_workpiece]
         assert isinstance(cached_ops, Ops)

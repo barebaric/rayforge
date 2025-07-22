@@ -2,7 +2,7 @@ import numpy as np
 import math
 import logging
 from copy import copy
-from typing import Optional, List, Callable, cast
+from typing import Optional, List, cast
 from ..models.ops import Ops, State, ArcToCommand, Command
 from .transformer import OpsTransformer
 from ..task import ExecutionContext
@@ -121,7 +121,6 @@ def flip_segment(segment: List[Command]) -> List[Command]:
 def greedy_order_segments(
     context: ExecutionContext,
     segments: List[List[Command]],
-    progress_callback: Optional[Callable[[float], None]] = None,
 ) -> List[List[Command]]:
     """
     Greedy ordering using vectorized math.dist computations.
@@ -135,23 +134,17 @@ def greedy_order_segments(
     if not segments:
         return []
 
+    context.set_total(len(segments))
     ordered: List[List[Command]] = []
     current_seg = segments[0]
     ordered.append(current_seg)
     current_pos = np.array(current_seg[-1].end)
     remaining = segments[1:]
-
-    total_segments = len(segments)
+    context.set_progress(1)
 
     while remaining:
-        # Report progress based on how many segments have been ordered
         if context.is_cancelled():
             return ordered
-
-        if progress_callback:
-            progress_callback(
-                (total_segments - len(remaining)) / total_segments
-            )
 
         # Find the index of the best next path to take, i.e. the
         # Command that adds the smalles amount of travel distance.
@@ -175,9 +168,8 @@ def greedy_order_segments(
 
         ordered.append(best_seg)
         current_pos = np.array(best_seg[-1].end)
+        context.set_progress(len(ordered))
 
-    if progress_callback:
-        progress_callback(1.0)
     return ordered
 
 
@@ -227,9 +219,12 @@ def two_opt(
         return ordered
     iter_count = 0
     improved = True
+    context.set_total(max_iter)
+
     while improved and iter_count < max_iter:
         if context.is_cancelled():
             return ordered
+        context.set_progress(iter_count)
         improved = False
         for i in range(n - 2):
             for j in range(i + 2, n):
@@ -255,6 +250,8 @@ def two_opt(
                     ordered[i + 1:j + 1] = sub[::-1]
                     improved = True
         iter_count += 1
+
+    context.set_progress(max_iter)
     return ordered
 
 
@@ -295,6 +292,7 @@ class Optimize(OpsTransformer):
         if context is None:
             context = ExecutionContext()
 
+        # Step 1: Preprocessing
         context.set_message(_("Preprocessing for optimization..."))
         ops.preload_state()
         if context.is_cancelled():
@@ -302,13 +300,18 @@ class Optimize(OpsTransformer):
         commands = [c for c in ops if not c.is_state_command()]
         logger.debug(f"Command count {len(commands)}")
 
+        # Step 2: Splitting long segments
         long_segments = split_long_segments(commands)
         if context.is_cancelled():
             return
 
         result = []
         total_long_segments = len(long_segments) if long_segments else 1
-
+        optimize_ctx = context.sub_context(
+            base_progress=0,
+            progress_range=0.8,
+            total=total_long_segments,
+        )
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
                 return
@@ -318,44 +321,60 @@ class Optimize(OpsTransformer):
                     i=i + 1, total=total_long_segments
                 )
             )
-            segments = split_segments(long_segment)
-            logger.debug(f"Optimizing segment with len {len(segments)}")
 
-            def greedy_progress_reporter(greedy_progress: float):
-                overall_progress = (i + greedy_progress) / total_long_segments
-                context.set_progress(overall_progress)
-
-            segments = greedy_order_segments(
-                context, segments, progress_callback=greedy_progress_reporter
+            # This sub-context manages the 4 optimization steps for one segment
+            segment_ctx = optimize_ctx.sub_context(
+                base_progress=i, progress_range=1, total=4
             )
+
+            # Step 3: Split long segments into short segments
+            segments = split_segments(long_segment)
+            segment_ctx.set_progress(1)
             if context.is_cancelled():
                 return
-            logger.debug("Optimizing by flipping ordered segments")
 
-            segments = flip_segments(context, segments)
+            # Step 4: Re-order segments
+            # First, order them using a greedy algorithm
+            greedy_ctx = segment_ctx.sub_context(
+                base_progress=1, progress_range=1
+            )
+            segments = greedy_order_segments(greedy_ctx, segments)
+            segment_ctx.set_progress(2)
             if context.is_cancelled():
                 return
-            logger.debug("Applying two-opt algorithm")
 
-            result += two_opt(context, segments, 1000)
+            # Second, flip segments to shorten distance (fast, no detailed
+            # progress needed)
+            flip_ctx = segment_ctx.sub_context(
+                base_progress=2, progress_range=1
+            )
+            segments = flip_segments(flip_ctx, segments)
+            segment_ctx.set_progress(3)
             if context.is_cancelled():
                 return
-            logger.debug("Long segment optimization done")
 
-        if context.is_cancelled():
-            return
+            # Apply 2-opt algorithm (has detailed progress)
+            two_opt_ctx = segment_ctx.sub_context(
+                base_progress=3, progress_range=1
+            )
+            result += two_opt(two_opt_ctx, segments, 1000)
+            segment_ctx.set_progress(4)
+            if context.is_cancelled():
+                return
 
+        # Step 5: Re-assemble the Ops object.
         context.set_message(_("Reassembling optimized paths..."))
+        total_reassemble_segments = len(result) if result else 1
+        reassemble_ctx = context.sub_context(
+            base_progress=0.8,
+            progress_range=0.2,
+            total=total_reassemble_segments,
+        )
         ops.commands = []
         prev_state = State()
-        logger.debug(f"Reassembling {len(result)} segments")
         for i, segment in enumerate(result):
             if not segment:
                 continue
-
-            if len(result) > 0:
-                progress = (i + 1) / len(result)
-                context.set_progress(progress)
 
             for cmd in segment:
                 if cmd.state.air_assist != prev_state.air_assist:
@@ -375,6 +394,7 @@ class Optimize(OpsTransformer):
                     ops.add(cmd)
                 else:
                     raise ValueError(f"unexpected command {cmd}")
+            reassemble_ctx.set_progress(i + 1)
 
         logger.debug("Optimization finished")
         context.set_message(_("Optimization complete"))

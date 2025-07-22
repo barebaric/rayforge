@@ -13,111 +13,198 @@ class ExecutionContext:
     """
     An object that holds the execution context for a task.
     It is thread-safe and performs debouncing in a background
-    thread using threading.Timer, minimizing load on the GLib main loop.
+    thread using a single threading.Timer, minimizing load on the
+    GLib main loop.
+    It supports sub-contexts for cleanly managing nested operations.
     """
 
     def __init__(
         self,
-        progress_callback: Optional[Callable[[float], None]] = None,
-        check_cancelled: Callable[[], bool] = lambda: False,
-        message_callback: Optional[Callable[[str], None]] = None,
+        update_callback: Optional[
+            Callable[[Optional[float], Optional[str]], None]
+        ] = None,
+        check_cancelled: Optional[Callable[[], bool]] = None,
         debounce_interval_ms: int = 100,
+
+        # Internal args for sub-contexting
+        _parent_context: Optional["ExecutionContext"] = None,
+        _base_progress: float = 0.0,
+        _progress_range: float = 1.0,
+        _total: float = 1.0,
     ):
-        self._progress_callback = progress_callback
-        self._check_cancelled = check_cancelled
-        self._message_callback = message_callback
-        self._debounce_interval_sec = debounce_interval_ms / 1000.0
+        self._parent_context = _parent_context
+        # Use the provided total, ensuring it's valid.
+        self._total = float(_total) if _total > 0 else 1.0
 
-        # These timers are for debouncing.
-        self._progress_timer: Optional[threading.Timer] = None
-        self._message_timer: Optional[threading.Timer] = None
-
-        self._pending_progress: Optional[float] = None
-        self._pending_message: Optional[str] = None
-        self._lock = threading.Lock()
-
-    def _fire_progress(self):
-        """
-        Called by the threading.Timer in a background thread.
-        Schedules the actual UI update on the main loop.
-        """
-        with self._lock:
-            if self._pending_progress is not None and self._progress_callback:
-                if not self.is_cancelled():
-                    # The ONLY interaction with the main loop.
-                    idle_add(self._progress_callback, self._pending_progress)
+        if self._parent_context:
+            # This is a sub-context. It doesn't own any resources.
+            # It just delegates to the parent.
+            self._update_callback = None
+            self._check_cancelled = (
+                check_cancelled or self._parent_context.is_cancelled
+            )
+            self._debounce_interval_sec = 0  # not used
+            self._update_timer = None
             self._pending_progress = None
-            self._progress_timer = None
-
-    def _fire_message(self):
-        """
-        Called by the threading.Timer in a background thread.
-        Schedules the actual UI update on the main loop.
-        """
-        with self._lock:
-            if self._pending_message is not None and self._message_callback:
-                if not self.is_cancelled():
-                    # The ONLY interaction with the main loop.
-                    idle_add(self._message_callback, self._pending_message)
             self._pending_message = None
-            self._message_timer = None
+            self._lock = None  # not needed
+            self._base_progress = _base_progress
+            self._progress_range = _progress_range
+        else:
+            # This is a root context. Initialize as before.
+            self._update_callback = update_callback
+            self._check_cancelled = check_cancelled or (lambda: False)
+            self._debounce_interval_sec = debounce_interval_ms / 1000.0
+            self._update_timer: Optional[threading.Timer] = None
+            self._pending_progress: Optional[float] = None
+            self._pending_message: Optional[str] = None
+            self._lock = threading.Lock()
+            # Root context spans the full range by definition.
+            self._base_progress = 0.0
+            self._progress_range = 1.0
+
+    def _fire_update(self):
+        """(Internal) Called by the timer to schedule a UI update."""
+        assert self._lock is not None, (
+            "_fire_update() called on a non-root context"
+        )
+        with self._lock:
+            if self._update_timer is None:
+                return
+            progress = self._pending_progress
+            message = self._pending_message
+            self._pending_progress = None
+            self._pending_message = None
+            self._update_timer = None
+
+        if self._update_callback and not self.is_cancelled():
+            idle_add(self._update_callback, progress, message)
+
+    def _schedule_update(self):
+        """(Internal) (Re)schedules the update timer."""
+        if self._update_timer:
+            self._update_timer.cancel()
+        self._update_timer = threading.Timer(
+            self._debounce_interval_sec, self._fire_update
+        )
+        self._update_timer.start()
+
+    def _report_normalized_progress(self, normalized_progress: float):
+        """
+        (Internal) The core logic for handling 0.0-1.0 progress values.
+        This is how sub-contexts communicate with their parents.
+        """
+        # Clamp to a valid range.
+        normalized_progress = max(0.0, min(1.0, normalized_progress))
+
+        if self._parent_context:
+            # This is a sub-context. Calculate progress in parent's scale
+            # and delegate the call up the chain.
+            parent_progress = (
+                self._base_progress
+                + normalized_progress * self._progress_range
+            )
+            self._parent_context._report_normalized_progress(parent_progress)
+        else:
+            # This is the root context. Schedule the debounced UI update.
+            assert self._lock is not None, (
+                "_report_normalized_progress called on a non-root context"
+            )
+            with self._lock:
+                self._pending_progress = normalized_progress
+                self._schedule_update()
+
+    def set_total(self, total: float):
+        """
+        Sets or updates the total value for this context's progress
+        calculations.
+        Useful for the root context after it has been created.
+        """
+        if total <= 0:
+            self._total = 1.0
+        else:
+            self._total = float(total)
 
     def set_progress(self, progress: float):
         """
-        Sets the progress. All debouncing logic happens in background threads.
+        Sets the progress as an absolute value. This value is automatically
+        normalized against the context's total.
+        Example: If total=200, set_progress(20) reports 0.1 progress.
         """
-        with self._lock:
-            if self._progress_timer:
-                self._progress_timer.cancel()
-
-            self._pending_progress = progress
-            self._progress_timer = threading.Timer(
-                self._debounce_interval_sec, self._fire_progress
-            )
-            self._progress_timer.start()
+        normalized_progress = progress / self._total
+        self._report_normalized_progress(normalized_progress)
 
     def is_cancelled(self) -> bool:
         """Checks if the operation has been cancelled."""
         return self._check_cancelled()
 
     def set_message(self, message: str):
-        """
-        Sets a descriptive message. All debouncing logic happens in
-        background threads.
-        """
-        with self._lock:
-            if self._message_timer:
-                self._message_timer.cancel()
+        """Sets a descriptive message."""
+        if self._parent_context:
+            # Delegate message setting up to the root context.
+            self._parent_context.set_message(message)
+            return
 
+        assert self._lock is not None, (
+            "set_message() called on a non-root context"
+        )
+        with self._lock:
             self._pending_message = message
-            self._message_timer = threading.Timer(
-                self._debounce_interval_sec, self._fire_message
-            )
-            self._message_timer.start()
+            self._schedule_update()
 
     def flush(self):
-        """
-        Cancels any pending debounced calls and immediately sends the
-        last known values to the main loop for UI update.
-        """
-        with self._lock:
-            # Flush progress
-            if self._progress_timer:
-                self._progress_timer.cancel()
-                self._progress_timer = None
-            if self._pending_progress is not None and self._progress_callback:
-                if not self.is_cancelled():
-                    idle_add(self._progress_callback, self._pending_progress)
-            self._pending_progress = None
+        """Immediately sends the last known values to the UI."""
+        if self._parent_context:
+            self._parent_context.flush()
+            return
 
-            # Flush message
-            if self._message_timer:
-                self._message_timer.cancel()
-                self._message_timer = None
-            if self._pending_message is not None and self._message_callback:
-                if not self.is_cancelled():
-                    idle_add(self._message_callback, self._pending_message)
+        assert self._lock is not None, "flush() called on a non-root context"
+        with self._lock:
+            if self._update_timer:
+                self._update_timer.cancel()
+                self._update_timer = None
+            progress = self._pending_progress
+            message = self._pending_message
+            self._pending_progress = None
             self._pending_message = None
+
+        if (
+            self._update_callback
+            and not self.is_cancelled()
+            and (progress is not None or message is not None)
+        ):
+            idle_add(self._update_callback, progress, message)
+
+    def sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float = 1.0,
+        check_cancelled: Optional[Callable[[], bool]] = None,
+    ) -> "ExecutionContext":
+        """
+        Creates a sub-context that reports progress within a specified
+        range of this context's progress.
+
+        Args:
+            base_progress: The normalized (0.0-1.0) progress in the parent
+                           when the sub-task begins.
+            progress_range: The fraction (0.0-1.0) of the parent's progress
+                            that this sub-task represents.
+            total: The total number of steps for the new sub-context.
+                   Defaults to 1.0, treating progress as already normalized.
+            check_cancelled: An optional, more specific cancellation check.
+
+        Returns:
+            A new ExecutionContext instance configured as a sub-context.
+        """
+        return ExecutionContext(
+            _parent_context=self,
+            _base_progress=base_progress,
+            _progress_range=progress_range,
+            _total=total,
+            check_cancelled=check_cancelled,
+        )
 
 
 class Task:
@@ -134,7 +221,25 @@ class Task:
         self._message: Optional[str] = None
         self._cancel_requested = False  # Flag for early cancellation
         self.status_changed = Signal()
-        self.progress_changed = Signal()
+
+    def update(
+        self, progress: Optional[float] = None, message: Optional[str] = None
+    ):
+        """
+        Updates task progress and/or message. This method is designed to be
+        called from the main thread (e.g., via idle_add) and emits a
+        single signal for any change.
+        """
+        updated = False
+        if progress is not None and self._progress != progress:
+            self._progress = progress
+            updated = True
+        if message is not None and self._message != message:
+            self._message = message
+            updated = True
+
+        if updated:
+            self._emit_status_changed()
 
     async def run(self, context: ExecutionContext):
         """
@@ -143,15 +248,13 @@ class Task:
         """
         logger.debug(f"Task {self.key}: Entering run method.")
 
-        # --- Early Cancellation Check ---
+        # Early cancellation check
         if self._cancel_requested:
             logger.debug(
                 f"Task {self.key}: Cancellation requested before coro start."
             )
             self._status = "canceled"
             self._emit_status_changed()
-            # Ensure status update even if cancelled early
-            self._emit_progress_changed()  # Ensure progress update
             raise CancelledError("Task cancelled before coro execution")
 
         # Start execution
@@ -194,20 +297,10 @@ class Task:
             )
             # Emit final status and progress
             self._emit_status_changed()
-            self._emit_progress_changed()
 
     def _emit_status_changed(self):
         """Emit status_changed signal from the main thread."""
         self.status_changed.send(self)
-
-    def _emit_progress_changed(self):
-        """Emit progress_changed signal from the main thread."""
-        self.progress_changed.send(self)
-
-    def set_progress(self, progress: float):
-        """Sets the progress of the task and emits a signal."""
-        self._progress = progress
-        self._emit_progress_changed()
 
     def get_progress(self):
         """Get the current progress of the task."""
@@ -216,11 +309,6 @@ class Task:
     def get_status(self):
         """Get the current lifecycle status of the task."""
         return self._status
-
-    def set_message(self, message: str):
-        """Sets the user-facing message and emits the status_changed signal."""
-        self._message = message
-        self._emit_status_changed()
 
     def get_message(self) -> Optional[str]:
         """Get the current user-facing message for the task."""
@@ -264,13 +352,10 @@ class TaskManager:
     def __init__(self):
         self._tasks = {}
         self._progress_map = {}  # Stores progress of all current tasks
-        self.overall_progress_changed = Signal()
-        self.running_tasks_changed = Signal()
+        self.tasks_updated = Signal()
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(
-            target=self._run_event_loop,
-            args=(self._loop,),
-            daemon=True
+            target=self._run_event_loop, args=(self._loop,), daemon=True
         )
         self._thread.start()
 
@@ -297,16 +382,13 @@ class TaskManager:
 
         self._tasks[task.key] = task
         self._progress_map[task.key] = 0.0  # Register new task in the batch
-        task.status_changed.connect(self._on_task_status_changed)
-        task.progress_changed.connect(self._on_task_progress_changed)
+        task.status_changed.connect(self._on_task_updated)
 
-        # Emit signals immediately when a new task is added
-        self._emit_overall_progress_changed()
-        self._emit_running_tasks_changed()
+        # Emit signal immediately when a new task is added
+        self._emit_tasks_updated()
 
         asyncio.run_coroutine_threadsafe(
-            self._run_task(task, when_done),
-            self._loop
+            self._run_task(task, when_done), self._loop
         )
 
     def add_coroutine(
@@ -329,9 +411,8 @@ class TaskManager:
     async def _run_task(self, task: Task, when_done: Optional[Callable]):
         """Run the task and clean up when done."""
         context = ExecutionContext(
-            progress_callback=task.set_progress,
+            update_callback=task.update,
             check_cancelled=task.is_cancelled,
-            message_callback=task.set_message,
         )
         try:
             await task.run(context)
@@ -344,8 +425,7 @@ class TaskManager:
         finally:
             context.flush()
             self._cleanup_task(task)
-            self._emit_overall_progress_changed()
-            self._emit_running_tasks_changed()
+            self._emit_tasks_updated()
             if when_done:
                 idle_add(when_done, task)
 
@@ -370,32 +450,21 @@ class TaskManager:
                 f"already replaced in the manager."
             )
 
-    def _on_task_status_changed(self, task):
-        """Handle task status changes."""
-        self._emit_overall_progress_changed()
-        self._emit_running_tasks_changed()
-
-    def _on_task_progress_changed(self, task):
-        """Handle task progress changes."""
+    def _on_task_updated(self, task):
+        """Handle task status or progress changes."""
         if task.key in self._progress_map:
             self._progress_map[task.key] = task.get_progress()
-        self._emit_overall_progress_changed()
+        self._emit_tasks_updated()
 
-    def _emit_overall_progress_changed(self):
-        """Emit overall_progress_changed signal from the main thread."""
+    def _emit_tasks_updated(self):
+        """Emit a single consolidated signal from the main thread."""
         progress = self.get_overall_progress()
+        tasks = list(self._tasks.values())
         idle_add(
-            self.overall_progress_changed.send,
+            self.tasks_updated.send,
             self,
+            tasks=tasks,
             progress=progress
-        )
-
-    def _emit_running_tasks_changed(self):
-        """Emit running_tasks_changed signal from the main thread."""
-        idle_add(
-            self.running_tasks_changed.send,
-            self,
-            tasks=list(self._tasks.values()),
         )
 
     def get_overall_progress(self):
