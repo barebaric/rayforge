@@ -11,6 +11,10 @@ with warnings.catch_warnings():
 
 logger = logging.getLogger(__name__)
 
+# Cairo has a hard limit on surface dimensions, often 32767.
+# We use a slightly more conservative value to be safe.
+CAIRO_MAX_DIMENSION = 16384
+
 
 class Renderer(ABC):
     """
@@ -46,37 +50,58 @@ class Renderer(ABC):
         Calculates the optimal chunk dimensions and grid layout.
 
         It determines the chunk width and height based on the provided
-        constraints and returns the dimensions along with the number of
-        columns and rows required to cover the entire image.
+        constraints, ensuring no dimension exceeds Cairo's internal limit.
+        The contract is that returned chunks will not EXCEED the maximums,
+        not that they will meet them.
         """
-        # Determine chunk width and number of columns.
-        if max_chunk_width is None or max_chunk_width >= real_width:
-            chunk_width = real_width
-            cols = 1
-        else:
-            chunk_width = max_chunk_width
-            cols = math.ceil(real_width / chunk_width)
+        bytes_per_pixel = 4  # cairo.FORMAT_ARGB32
 
-        # Determine chunk height and number of rows.
+        # 1. Determine the absolute maximum width allowed.
+        # This is the lesser of the user's request and Cairo's hard limit.
+        # If the user provides no limit, we still must respect Cairo's limit.
+        effective_max_width = min(
+            max_chunk_width
+            if max_chunk_width is not None
+            else CAIRO_MAX_DIMENSION,
+            CAIRO_MAX_DIMENSION,
+        )
+
+        # 2. Determine the chunk_width for our tiling plan.
+        # It cannot be larger than the image itself or the effective max
+        # width.
+        chunk_width = min(real_width, effective_max_width)
+
+        # 3. Determine the absolute maximum height allowed from all
+        # constraints.
         possible_heights = []
-        if max_chunk_height is not None:
-            possible_heights.append(max_chunk_height)
 
+        # Constraint from max_chunk_height parameter and Cairo limit
+        effective_max_height = min(
+            max_chunk_height
+            if max_chunk_height is not None
+            else CAIRO_MAX_DIMENSION,
+            CAIRO_MAX_DIMENSION,
+        )
+        possible_heights.append(effective_max_height)
+
+        # Constraint from max_memory_size parameter
         if max_memory_size is not None and chunk_width > 0:
-            bytes_per_pixel = 4  # cairo.FORMAT_ARGB32
             height_from_mem = math.floor(
                 max_memory_size / (chunk_width * bytes_per_pixel)
             )
             possible_heights.append(height_from_mem)
 
-        if not possible_heights:
-            # This case is prevented by the caller's validation.
-            # As a fallback, use a default small height.
-            chunk_height = 20
-        else:
-            chunk_height = min(possible_heights)
+        # 4. The final chunk_height is the most restrictive of all
+        # possibilities.
+        # It also cannot be larger than the image's real height.
+        chunk_height = min(real_height, *possible_heights)
 
+        # 5. Ensure dimensions are at least 1 pixel.
+        chunk_width = max(1, chunk_width)
         chunk_height = max(1, chunk_height)
+
+        # 6. Calculate the number of rows and columns for the tiling loop.
+        cols = math.ceil(real_width / chunk_width)
         rows = math.ceil(real_height / chunk_height)
 
         return chunk_width, cols, chunk_height, rows
