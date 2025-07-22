@@ -84,6 +84,7 @@ class Canvas(Gtk.DrawingArea):
         self.key_controller.connect("key-released", self.on_key_released)
         self.add_controller(self.key_controller)
         self.shift_pressed: bool = False
+        self.ctrl_pressed: bool = False
         self.set_focusable(True)
         self.grab_focus()
 
@@ -482,7 +483,10 @@ class Canvas(Gtk.DrawingArea):
         self.queue_draw()
 
     def _resize_active_element(self, delta_x: int, delta_y: int):
-        """Handles the logic for resizing a (potentially rotated) element."""
+        """
+        Handles the logic for resizing a (potentially rotated) element,
+        supporting aspect ratio lock (Shift) and resize-from-center (Ctrl).
+        """
         if not self.active_elem or not self.active_origin:
             return
 
@@ -496,7 +500,7 @@ class Canvas(Gtk.DrawingArea):
         local_delta_x = delta_x * cos_a - delta_y * sin_a
         local_delta_y = delta_x * sin_a + delta_y * cos_a
 
-        # Determine which edges are being dragged
+        # 2. Determine which edges/corners are being dragged
         is_left = self.active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
@@ -518,50 +522,68 @@ class Canvas(Gtk.DrawingArea):
             ElementRegion.BOTTOM_RIGHT,
         }
 
-        # 2. Calculate new width and height based on local deltas
-        new_w, new_h = float(start_w), float(start_h)
+        # 3. Calculate initial change in width/height (dw, dh)
+        dw, dh = 0.0, 0.0
         if is_left:
-            new_w -= local_delta_x
+            dw = -local_delta_x
         elif is_right:
-            new_w += local_delta_x
-
+            dw = local_delta_x
         if is_top:
-            new_h -= local_delta_y
+            dh = -local_delta_y
         elif is_bottom:
-            new_h += local_delta_y
+            dh = local_delta_y
 
-        # Handle aspect ratio constraint if needed
+        # If Ctrl is pressed, resize from the center by doubling the change
+        if self.ctrl_pressed:
+            dw *= 2.0
+            dh *= 2.0
+
+        # 4. Handle aspect ratio constraint if Shift is pressed
         if self.shift_pressed and start_w > 0 and start_h > 0:
-            # This part can be simplified since local deltas are used
-            # For now, let's just make it work for corners
-            is_corner = is_left or is_right or is_top or is_bottom
+            aspect = start_w / start_h
+            is_corner = (is_left or is_right) and (is_top or is_bottom)
+
             if is_corner:
-                aspect = start_w / start_h
+                # For corners, use the larger delta's axis to drive the resize
                 if abs(local_delta_x) > abs(local_delta_y):
-                    new_h = new_w / aspect
+                    dh = dw / aspect
                 else:
-                    new_w = new_h * aspect
+                    dw = dh * aspect
+            elif is_left or is_right:  # Horizontal edge drag
+                dh = dw / aspect
+            elif is_top or is_bottom:  # Vertical edge drag
+                dw = dh * aspect
 
-        # Enforce minimum size
-        new_w = max(new_w, min_size)
-        new_h = max(new_h, min_size)
+        # 5. Calculate new size, enforce minimums, and re-check aspect ratio
+        new_w, new_h = float(start_w) + dw, float(start_h) + dh
 
-        # 3. Calculate how the center of the element shifts due to the resize
+        clamped_w, clamped_h = max(new_w, min_size), max(new_h, min_size)
+        if self.shift_pressed and start_w > 0 and start_h > 0:
+            aspect = start_w / start_h
+            if clamped_w != new_w:  # Width was clamped
+                clamped_h = clamped_w / aspect
+            if clamped_h != new_h:  # Height was clamped (takes precedence)
+                clamped_w = clamped_h * aspect
+        new_w, new_h = clamped_w, clamped_h
+
+        # 6. Calculate final change in size and how the center shifts
         dw = new_w - start_w
         dh = new_h - start_h
-
         center_dx_local, center_dy_local = 0.0, 0.0
-        if is_left:
-            center_dx_local = -dw / 2
-        elif is_right:
-            center_dx_local = dw / 2
 
-        if is_top:
-            center_dy_local = -dh / 2
-        elif is_bottom:
-            center_dy_local = dh / 2
+        # If Ctrl is NOT pressed, shift center to keep opposite side anchored.
+        # If Ctrl IS pressed, center does not shift (remains 0).
+        if not self.ctrl_pressed:
+            if is_left:
+                center_dx_local = -dw / 2
+            elif is_right:
+                center_dx_local = dw / 2
+            if is_top:
+                center_dy_local = -dh / 2
+            elif is_bottom:
+                center_dy_local = dh / 2
 
-        # 4. Transform the center shift back to the canvas coordinate system
+        # 7. Transform the center shift back to the canvas coordinate system
         angle_rad_fwd = math.radians(angle_deg)
         cos_a_fwd, sin_a_fwd = math.cos(angle_rad_fwd), math.sin(angle_rad_fwd)
         center_dx_canvas = (
@@ -571,7 +593,7 @@ class Canvas(Gtk.DrawingArea):
             center_dx_local * sin_a_fwd + center_dy_local * cos_a_fwd
         )
 
-        # 5. Calculate the new top-left position
+        # 8. Calculate new top-left position based on the (shifted) center
         old_center_x = start_x + start_w / 2
         old_center_y = start_y + start_h / 2
         new_center_x = old_center_x + center_dx_canvas
@@ -579,73 +601,9 @@ class Canvas(Gtk.DrawingArea):
         new_x = new_center_x - new_w / 2
         new_y = new_center_y - new_h / 2
 
-        # 6. Apply changes
+        # 9. Apply changes
         self.active_elem.set_pos(round(new_x), round(new_y))
         self.active_elem.set_size(round(new_w), round(new_h))
-
-    def _constrain_to_aspect_ratio(
-        self,
-        rect: Tuple[float, float, float, float],
-        start_rect: Tuple[int, int, int, int],
-        delta: Tuple[int, int],
-        aspect: float,
-    ) -> Tuple[float, float, float, float]:
-        """Adjusts rectangle to maintain aspect ratio during resize."""
-        new_x, new_y, new_w, new_h = rect
-        start_x, start_y, start_w, start_h = start_rect
-        delta_x, delta_y = delta
-
-        # Determine resize type
-        is_corner = self.active_region in {
-            ElementRegion.TOP_LEFT,
-            ElementRegion.TOP_RIGHT,
-            ElementRegion.BOTTOM_LEFT,
-            ElementRegion.BOTTOM_RIGHT,
-        }
-        is_horiz_edge = self.active_region in {
-            ElementRegion.MIDDLE_LEFT,
-            ElementRegion.MIDDLE_RIGHT,
-        }
-        is_vert_edge = self.active_region in {
-            ElementRegion.TOP_MIDDLE,
-            ElementRegion.BOTTOM_MIDDLE,
-        }
-
-        # Adjust dimensions based on the dominant mouse movement for corners
-        if is_corner:
-            if abs(delta_x) > abs(delta_y):
-                new_h = new_w / aspect
-            else:
-                new_w = new_h * aspect
-        elif is_horiz_edge:
-            new_h = new_w / aspect
-        elif is_vert_edge:
-            new_w = new_h * aspect
-
-        # Recalculate position based on new size and which handles are dragged
-        is_left = self.active_region in {
-            ElementRegion.TOP_LEFT,
-            ElementRegion.MIDDLE_LEFT,
-            ElementRegion.BOTTOM_LEFT,
-        }
-        is_top = self.active_region in {
-            ElementRegion.TOP_LEFT,
-            ElementRegion.TOP_MIDDLE,
-            ElementRegion.TOP_RIGHT,
-        }
-
-        if is_left:
-            new_x = start_x + start_w - new_w
-        if is_top:
-            new_y = start_y + start_h - new_h
-
-        # Center the resize for edge drags
-        if is_horiz_edge:
-            new_y = start_y + (start_h - new_h) / 2
-        if is_vert_edge:
-            new_x = start_x + (start_w - new_w) / 2
-
-        return new_x, new_y, new_w, new_h
 
     def on_button_release(self, gesture, x: float, y: float):
         if self.active_elem and self.resizing:
@@ -666,6 +624,9 @@ class Canvas(Gtk.DrawingArea):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = True
             return True
+        elif keyval == Gdk.KEY_Control_L or keyval == Gdk.KEY_Control_R:
+            self.ctrl_pressed = True
+            return True
         elif keyval == Gdk.KEY_Delete:
             self.root.remove_selected()
             self.active_elem = None
@@ -680,6 +641,8 @@ class Canvas(Gtk.DrawingArea):
     ):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
             self.shift_pressed = False
+        elif keyval == Gdk.KEY_Control_L or keyval == Gdk.KEY_Control_R:
+            self.ctrl_pressed = False
 
     def get_active_element(self) -> Optional[CanvasElement]:
         return self.active_elem
