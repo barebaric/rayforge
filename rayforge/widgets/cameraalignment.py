@@ -35,8 +35,8 @@ class CameraAlignmentDialog(Adw.Window):
         header_bar = Adw.HeaderBar()
         header_bar.set_title_widget(
             Adw.WindowTitle(
-                title=_("{camera.name} – Image Alignment").format(
-                    camera=camera
+                title=_("{camera_name} – Image Alignment").format(
+                    camera_name=camera.name
                 ),
                 subtitle="",
             )

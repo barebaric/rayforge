@@ -8,7 +8,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
     def __init__(self, workstep, **kwargs):
         super().__init__(**kwargs)
         self.workstep = workstep
-        self.set_title(_("{workstep.name} Settings").format(workstep=workstep))
+        self.set_title(_("{name} Settings").format(name=workstep.name))
 
         # Create a preferences page
         page = Adw.PreferencesPage()
@@ -64,8 +64,8 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         )
         cut_speed_row = Adw.SpinRow(
             title=_("Cut Speed (mm/min)"),
-            subtitle=_("Max: {config.machine.max_cut_speed} mm/min").format(
-                config=config
+            subtitle=_("Max: {max_cut_speed} mm/min").format(
+                max_cut_speed=config.machine.max_cut_speed
             ),
             adjustment=cut_speed_adjustment
         )
@@ -82,8 +82,8 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         )
         travel_speed_row = Adw.SpinRow(
             title=_("Travel Speed (mm/min)"),
-            subtitle=_("Max: {config.machine.max_travel_speed} mm/min").format(
-                config=config
+            subtitle=_("Max: {max_travel_speed} mm/min").format(
+                max_travel_speed=config.machine.max_travel_speed
             ),
             adjustment=travel_speed_adjustment
         )

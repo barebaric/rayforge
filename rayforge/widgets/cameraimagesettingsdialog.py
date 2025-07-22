@@ -12,8 +12,8 @@ class CameraImageSettingsDialog(Adw.MessageDialog):
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading=_("{camera.name} - Camera Image Settings").format(
-                camera=camera
+            heading=_("{camera_name} - Camera Image Settings").format(
+                camera_name=camera.name
             ),
             close_response="cancel",
             **kwargs,

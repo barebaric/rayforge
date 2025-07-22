@@ -47,7 +47,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         """Populate the list of Cameras."""
         for camera in self.machine.cameras:
             row = Adw.ActionRow(
-                title=_("Camera: {camera.name}").format(camera=camera)
+                title=_("Camera: {name}").format(name=camera.name)
             )
             row.set_margin_top(5)
             row.set_margin_bottom(5)
@@ -79,8 +79,8 @@ class CameraPreferencesPage(Adw.PreferencesPage):
                 new_camera.enabled = True
                 self.machine.add_camera(new_camera)
                 row = Adw.ActionRow(
-                    title=_("Camera: {new_camera.name}").format(
-                        new_camera=new_camera
+                    title=_("Camera: {camera_name}").format(
+                        camera_name=new_camera.name
                     )
                 )
                 row.set_margin_top(5)

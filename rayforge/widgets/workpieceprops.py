@@ -77,7 +77,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.add(self.natural_size_row)
 
         # Reset Size Button
-        self.reset_row = Adw.ActionRow(title=_("Reset to Natural Size"))
+        self.reset_row = Adw.ActionRow(title=_("Reset Size"))
         self.reset_button = Gtk.Button(label=_("Reset"))
         self.reset_button.set_halign(Gtk.Align.END)
         self.reset_button.set_valign(Gtk.Align.CENTER)
@@ -97,7 +97,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.add(self.angle_row)
 
         # Reset Angle Button
-        self.reset_angle_row = Adw.ActionRow(title=_("Reset Rotation"))
+        self.reset_angle_row = Adw.ActionRow(title=_("Reset Angle"))
         self.reset_angle_button = Gtk.Button(label=_("Reset"))
         self.reset_angle_button.set_halign(Gtk.Align.END)
         self.reset_angle_button.set_valign(Gtk.Align.CENTER)
