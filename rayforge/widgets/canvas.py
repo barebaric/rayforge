@@ -60,6 +60,7 @@ class Canvas(Gtk.DrawingArea):
 
         self.motion_controller = Gtk.EventControllerMotion()
         self.motion_controller.connect("motion", self.on_motion)
+        self.motion_controller.connect("leave", self.on_motion_leave)
         self.add_controller(self.motion_controller)
 
         self.drag_gesture = Gtk.GestureDrag()
@@ -111,6 +112,11 @@ class Canvas(Gtk.DrawingArea):
             ctx.set_line_width(1)
             ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
             ctx.stroke()
+
+            # Don't draw hover/resize handles while moving an element.
+            if self.moving:
+                ctx.restore()
+                return
 
             # Prepare to draw handles
             ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)  # A nice blue
@@ -258,6 +264,27 @@ class Canvas(Gtk.DrawingArea):
         }
         cursor_name = cursor_map.get(self.hovered_region, "default")
         cursor = Gdk.Cursor.new_from_name(cursor_name)
+        self.set_cursor(cursor)
+
+    def on_motion_leave(self, controller):
+        """
+        Called when the pointer leaves the canvas. Resets hover state to
+        prevent sticky hover effects.
+        """
+        # If nothing is hovered, there's nothing to do.
+        if not self.hovered_elem and self.hovered_region == ElementRegion.NONE:
+            return
+
+        if self.hovered_elem:
+            self.hovered_elem.hovered = False
+            self.hovered_elem = None
+
+        self.hovered_region = ElementRegion.NONE
+
+        self.queue_draw()
+
+        # Reset the cursor to the default.
+        cursor = Gdk.Cursor.new_from_name("default")
         self.set_cursor(cursor)
 
     def on_mouse_drag(self, gesture, x: int, y: int):
