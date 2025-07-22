@@ -23,6 +23,7 @@ DEBUG_SMOOTH = getflag("DEBUG_SMOOTH")
 DEBUG_ARCWELD = getflag("DEBUG_ARCWELD")
 
 DEBOUNCE_DELAY_MS = 100  # Delay in milliseconds for ops regeneration
+MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
 
 class WorkStep(ABC):
@@ -200,20 +201,41 @@ class WorkStep(ABC):
     async def _execute_vector(
         self, workpiece: WorkPiece, check_cancelled: Callable[[], bool]
     ):
-        """Handles Ops generation for scalable (vector) operations."""
-        TRACE_RESOLUTION_PX = 2400
-        aspect_ratio = workpiece.get_current_aspect_ratio() or 1.0
+        """
+        Handles Ops generation for scalable (vector) operations by rendering
+        the workpiece at a resolution appropriate for its physical size.
+        """
+        size_mm = workpiece.get_current_size()
+        if not size_mm or None in size_mm:
+            logger.warning(
+                f"Cannot generate vector ops for '{workpiece.name}' "
+                "without a defined size."
+            )
+            return
 
-        target_width = (
-            TRACE_RESOLUTION_PX
-            if aspect_ratio >= 1
-            else int(TRACE_RESOLUTION_PX * aspect_ratio)
-        )
-        target_height = (
-            int(TRACE_RESOLUTION_PX / aspect_ratio)
-            if aspect_ratio > 1
-            else TRACE_RESOLUTION_PX
-        )
+        px_per_mm_x, px_per_mm_y = self.pixels_per_mm
+        target_width = int(size_mm[0] * px_per_mm_x)
+        target_height = int(size_mm[1] * px_per_mm_y)
+
+        if target_width <= 0 or target_height <= 0:
+            logger.warning(
+                f"Cannot generate vector ops for '{workpiece.name}' with "
+                "non-positive pixel dimensions: "
+                f"{target_width}x{target_height}"
+            )
+            return
+
+        # Cap the resolution to avoid excessive memory usage.
+        num_pixels = target_width * target_height
+        if num_pixels > MAX_VECTOR_TRACE_PIXELS:
+            scale_factor = (MAX_VECTOR_TRACE_PIXELS / num_pixels) ** 0.5
+            logger.warning(
+                f"Trace resolution for workpiece '{workpiece.name}' is too "
+                f"high ({target_width}x{target_height}). Scaling down to "
+                "avoid excessive memory usage."
+            )
+            target_width = int(target_width * scale_factor)
+            target_height = int(target_height * scale_factor)
 
         if check_cancelled():
             return
@@ -232,7 +254,10 @@ class WorkStep(ABC):
         if check_cancelled():
             return
 
-        pixel_scaler = (1.0, 1.0)
+        # The opsproducer works in the pixel-space of the rendered surface.
+        # The resulting ops will be scaled to final mm dimensions later in
+        # get_ops.
+        pixel_scaler = 1.0, 1.0
         geometry_ops = await asyncio.to_thread(
             self._trace_and_modify_surface, surface, pixel_scaler
         )
