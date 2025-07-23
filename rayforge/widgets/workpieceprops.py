@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Gtk, Adw, Gdk
 from typing import Optional
+from ..config import config
 from ..models.workpiece import WorkPiece
 from ..util.adwfix import get_spinrow_float
 
@@ -151,13 +152,13 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     self.width_row.set_value(new_width)
 
             if new_width is not None and new_height is not None:
+                bounds = config.machine.dimensions
                 old_pos = self.workpiece.pos or (0, 0)
-                old_size = (
+                old_w, old_h = (
                     self.workpiece.get_current_size()
-                    or self.workpiece.get_default_size()
+                    or self.workpiece.get_default_size(*bounds)
                 )
                 old_x, old_y = old_pos
-                old_w, old_h = old_size
 
                 if self.workpiece.angle == 0:
                     # Resize from top-left for un-rotated
@@ -197,13 +198,13 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     self.height_row.set_value(new_height)
 
             if new_width is not None and new_height is not None:
+                bounds = config.machine.dimensions
                 old_pos = self.workpiece.pos or (0, 0)
-                old_size = (
+                old_w, old_h = (
                     self.workpiece.get_current_size()
-                    or self.workpiece.get_default_size()
+                    or self.workpiece.get_default_size(*bounds)
                 )
                 old_x, old_y = old_pos
-                old_w, old_h = old_size
 
                 if self.workpiece.angle == 0:
                     # Resize from top-left for un-rotated
@@ -280,13 +281,13 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                     self.height_row.set_value(new_height)
                     if new_width is not None and new_height is not None:
                         # Also need to adjust position here
+                        bounds = config.machine.dimensions
                         old_pos = self.workpiece.pos or (0, 0)
-                        old_size = (
+                        old_w, old_h = (
                             self.workpiece.get_current_size()
-                            or self.workpiece.get_default_size()
+                            or self.workpiece.get_default_size(*bounds)
                         )
                         old_x, old_y = old_pos
-                        old_w, old_h = old_size
 
                         if self.workpiece.angle == 0:
                             new_x, new_y = old_x, old_y + old_h - new_height
@@ -306,7 +307,10 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         if not self.workpiece:
             return
         self._in_update = True
-        natural_width, natural_height = self.workpiece.get_default_size()
+        bounds = config.machine.dimensions
+        natural_width, natural_height = self.workpiece.get_default_size(
+            *bounds
+        )
         self.workpiece.set_size(natural_width, natural_height)
         self._in_update = False
         self._update_ui_from_workpiece()
@@ -367,7 +371,11 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         if not self.workpiece:
             return
         self._in_update = True
-        size = self.workpiece.get_current_size()
+        bounds = config.machine.dimensions
+        size = (
+            self.workpiece.get_current_size()
+            or self.workpiece.get_default_size(*bounds)
+        )
         pos = self.workpiece.pos
         angle = self.workpiece.angle
 
@@ -376,7 +384,9 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             logger.debug(f"Updating UI: width={width}, height={height}")
             self.width_row.set_value(width)
             self.height_row.set_value(height)
-            natural_width, natural_height = self.workpiece.get_default_size()
+            natural_width, natural_height = self.workpiece.get_default_size(
+                *bounds
+            )
             self.natural_size_label.set_label(
                 f"{natural_width:.2f}x{natural_height:.2f}"
             )

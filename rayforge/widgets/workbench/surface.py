@@ -151,6 +151,10 @@ class WorkSurface(Canvas):
         self.axis_renderer.set_height_mm(self.height_mm)
         self.queue_draw()
 
+    def get_size(self) -> Tuple[float, float]:
+        """Returns the size of the work surface in mm."""
+        return self.width_mm, self.height_mm
+
     def on_motion(self, gesture, x: int, y: int):
         self.mouse_pos = x, y
         return super().on_motion(gesture, x, y)
@@ -361,7 +365,9 @@ class WorkSurface(Canvas):
             self.queue_draw()
             return
         # Get workpiece natural size and work surface size
-        wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size()
+        wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size(
+            *self.get_size()
+        )
         ws_width_mm = self.width_mm
         ws_height_mm = self.height_mm
 

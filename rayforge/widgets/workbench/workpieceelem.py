@@ -47,7 +47,10 @@ class WorkPieceElement(SurfaceElement):
             return
 
         x_mm, y_mm = self.data.pos or (0, 0)
-        width_mm, height_mm = self.data.size or self.data.get_default_size()
+        width_mm, height_mm = (
+            self.data.size
+            or self.data.get_default_size(*self.canvas.get_size())
+        )
         new_width = round(width_mm * self.canvas.pixels_per_mm_x)
         new_height = round(height_mm * self.canvas.pixels_per_mm_y)
 
@@ -96,8 +99,12 @@ class WorkPieceElement(SurfaceElement):
         # Update the model.
         if not self.canvas or self._in_update:
             return
+
         old_x_mm, old_y_mm = self.data.pos or (0, 0)
-        _, old_height_mm = self.data.size or self.data.get_default_size()
+        _, old_height_mm = self.data.size or self.data.get_default_size(
+            *self.canvas.get_size()
+        )
+
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1
         new_width_mm = width / px_per_mm_x

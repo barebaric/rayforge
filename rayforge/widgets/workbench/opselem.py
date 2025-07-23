@@ -52,7 +52,10 @@ class WorkPieceOpsElement(SurfaceElement):
             return
 
         x_mm, y_mm = self.data.pos or (0, 0)
-        width_mm, height_mm = self.data.size or self.data.get_default_size()
+        width_mm, height_mm = (
+            self.data.get_current_size()
+            or self.data.get_default_size(*self.canvas.get_size())
+        )
 
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1

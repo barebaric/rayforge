@@ -2,7 +2,6 @@ import logging
 import cairo
 from typing import Generator, Optional, Tuple, cast, Dict, Any, Type
 from blinker import Signal
-from ..config import config
 from ..render import Renderer
 import importlib
 
@@ -94,25 +93,26 @@ class WorkPiece:
         self.changed.send(self)
         self.angle_changed.send(self)
 
-    def get_default_size(self) -> Tuple[float, float]:
+    def get_default_size(
+        self, bounds_width: float, bounds_height: float
+    ) -> Tuple[float, float]:
+        """Calculates a sensible default size based on the content's aspect
+        ratio and the provided container bounds."""
         size = self.renderer.get_natural_size()
         if None not in size:
             return cast(Tuple[float, float], size)
 
         aspect = self.get_default_aspect_ratio()
-        machine_width = config.machine.dimensions[0]
-        machine_height = config.machine.dimensions[1]
-        width_mm = machine_width
-        height_mm = width_mm / aspect if aspect else machine_height
-        if height_mm > machine_height:
-            height_mm = machine_height
-            width_mm = height_mm * aspect if aspect else machine_width
+        width_mm = bounds_width
+        height_mm = width_mm / aspect if aspect else bounds_height
+        if height_mm > bounds_height:
+            height_mm = bounds_height
+            width_mm = height_mm * aspect if aspect else bounds_width
 
         return width_mm, height_mm
 
     def get_current_size(self) -> Optional[Tuple[float, float]]:
-        if not self.size:
-            return self.get_default_size()
+        """Returns the currently set size (in mm), or None if not set."""
         return self.size
 
     def get_default_aspect_ratio(self):
@@ -135,6 +135,8 @@ class WorkPiece:
         pixels_per_mm_y: float,
         size: Optional[Tuple[float, float]] = None
     ) -> Optional[cairo.ImageSurface]:
+        """Renders to a pixel surface at the workpiece's current size, or a
+        provided override size. Returns None if no size is available."""
         current_size = self.get_current_size() if size is None else size
         if not current_size:
             return None
@@ -157,13 +159,14 @@ class WorkPiece:
         max_chunk_height: Optional[int] = None,
         max_memory_size: Optional[int] = None,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
-        natsize = self.get_default_size()
-        size = natsize if size is None else size
-        if not size:
+        """Renders in chunks at the workpiece's current size, or a provided
+        override size. Yields nothing if no size is available."""
+        current_size = self.get_current_size() if size is None else size
+        if not current_size:
             return
 
-        width = int(size[0] * pixels_per_mm_x)
-        height = int(size[1] * pixels_per_mm_y)
+        width = int(current_size[0] * pixels_per_mm_x)
+        height = int(current_size[1] * pixels_per_mm_y)
 
         for chunk in self.renderer.render_chunk(
             width,
