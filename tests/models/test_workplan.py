@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import cairo
 from blinker import Signal
 from rayforge.task import ExecutionContext
-from rayforge.models.workplan import Contour
+from rayforge.models.workstep import Contour
 from rayforge.models.workpiece import WorkPiece
 from rayforge.models.ops import (
     Ops,
@@ -61,7 +61,7 @@ def mock_task_mgr(mocker):
     mock_mgr.add_coroutine = MagicMock(side_effect=add_coroutine_mock)
     mock_mgr.created_tasks = created_tasks
     mocker.patch("rayforge.models.workplan.CancelledError", asyncio.CancelledError)
-    mocker.patch("rayforge.models.workplan.task_mgr", mock_mgr)
+    mocker.patch("rayforge.models.workstep.task_mgr", mock_mgr)
     return mock_mgr
 
 
