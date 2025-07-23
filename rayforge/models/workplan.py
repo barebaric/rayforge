@@ -11,7 +11,7 @@ from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth, ArcWeld
 from .workpiece import WorkPiece
-from .machine import Laser
+from .laser import Laser
 from .ops import Ops, DisableAirAssistCommand
 from blinker import Signal
 

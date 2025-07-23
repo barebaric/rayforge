@@ -1,5 +1,5 @@
 from gi.repository import Gtk, Adw
-from ..models.machine import Laser
+from ..models.laser import Laser
 from ..util.adwfix import get_spinrow_int, get_spinrow_float
 
 
