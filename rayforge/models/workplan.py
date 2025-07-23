@@ -24,10 +24,19 @@ class WorkPlan:
         self.worksteps: List[WorkStep] = []
         self._workstep_ref_for_pyreverse: WorkStep
         self.changed = Signal()
-        self.add_workstep(Outline())
+        self.add_workstep(self.create_workstep(Outline))
 
     def __iter__(self):
         return iter(self.worksteps)
+
+    def create_workstep(self, workstep_cls, name=None) -> WorkStep:
+        """Factory method to create a new workstep with correct config."""
+        return workstep_cls(
+            laser=config.machine.heads[0],
+            max_cut_speed=config.machine.max_cut_speed,
+            max_travel_speed=config.machine.max_travel_speed,
+            name=name,
+        )
 
     def set_workpieces(self, workpieces: List[WorkPiece]):
         for step in self.worksteps:

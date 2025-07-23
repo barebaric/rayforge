@@ -7,7 +7,7 @@ from copy import deepcopy
 from blinker import Signal
 from gi.repository import GLib
 from ..task import task_mgr, CancelledError, ExecutionContext
-from ..config import config, getflag
+from ..config import getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth, ArcWeld
@@ -36,18 +36,25 @@ class WorkStep(ABC):
 
     typelabel: str
 
-    def __init__(self, opsproducer: OpsProducer, name: Optional[str] = None):
+    def __init__(
+        self,
+        opsproducer: OpsProducer,
+        laser: Laser,
+        max_cut_speed: int,
+        max_travel_speed: int,
+        name: Optional[str] = None,
+    ):
         if not self.typelabel:
             raise AttributeError("Subclass must set a typelabel attribute.")
 
-        self.name: str = name or self.typelabel
-        self.visible: bool = True
-        self.modifiers: List[Modifier] = [
+        self.name = name or self.typelabel
+        self.visible = True
+        self.modifiers = [
             MakeTransparent(),
             ToGrayscale(),
         ]
         self._modifier_ref_for_pyreverse: Modifier
-        self.opsproducer: OpsProducer = opsproducer
+        self.opsproducer = opsproducer
         self.opstransformers: List[OpsTransformer] = []
         self._opstransformer_ref_for_pyreverse: OpsTransformer
 
@@ -71,13 +78,13 @@ class WorkStep(ABC):
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
 
-        self.laser: Laser = Laser()
-        self.set_laser(config.machine.heads[0])
+        self.laser = laser
+        self.set_laser(laser)
 
-        self.power: int = self.laser.max_power
-        self.cut_speed: int = config.machine.max_cut_speed
-        self.travel_speed: int = config.machine.max_travel_speed
-        self.air_assist: bool = False
+        self.power = self.laser.max_power
+        self.cut_speed = max_cut_speed
+        self.travel_speed = max_travel_speed
+        self.air_assist = False
 
         if DEBUG_OPTIMIZE:
             logger.info("Travel time optimization debugging enabled")

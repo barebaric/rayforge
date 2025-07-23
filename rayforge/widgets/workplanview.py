@@ -68,7 +68,9 @@ class WorkPlanView(Gtk.ScrolledWindow):
 
     def on_add_dialog_response(self, popup):
         if popup.selected:
-            self.workplan.add_workstep(popup.selected())
+            workstep_cls = popup.selected
+            new_step = self.workplan.create_workstep(workstep_cls)
+            self.workplan.add_workstep(new_step)
 
     def on_button_delete_clicked(self, sender, workstep, **kwargs):
         self.workplan.remove_workstep(workstep)

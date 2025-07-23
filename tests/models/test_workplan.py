@@ -94,11 +94,16 @@ def mock_opsproducer():
 
 
 @pytest.fixture
-def contour_step(mock_opsproducer):
+def contour_step(mock_opsproducer, setup_real_config):
     """Creates a Contour WorkStep instance."""
-    step = Contour()
+    config = setup_real_config
+    step = Contour(
+        laser=config.machine.heads[0],
+        max_cut_speed=config.machine.max_cut_speed,
+        max_travel_speed=config.machine.max_travel_speed,
+    )
     step.opsproducer = mock_opsproducer
-    step.opstransformers = []
+    step.opstransformers = []  # Clear transformers to isolate testing
     return step
 
 
