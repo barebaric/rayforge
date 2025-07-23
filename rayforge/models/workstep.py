@@ -193,9 +193,7 @@ class WorkStep(ABC):
         """Applies modifiers and runs the OpsProducer on a surface."""
         for modifier in self.modifiers:
             modifier.run(surface)
-        return self.opsproducer.run(
-            config.machine, self.laser, surface, scaler
-        )
+        return self.opsproducer.run(self.laser, surface, scaler)
 
     async def _execute_vector(
         self, workpiece: WorkPiece, check_cancelled: Callable[[], bool]

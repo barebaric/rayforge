@@ -11,7 +11,7 @@ class OpsProducer(ABC):
     - Reading vector data from an image to turn it into Ops.
     """
     @abstractmethod
-    def run(self, machine, laser, surface, pixels_per_mm) -> Ops:
+    def run(self, laser, surface, pixels_per_mm) -> Ops:
         pass
 
     def can_scale(self) -> bool:

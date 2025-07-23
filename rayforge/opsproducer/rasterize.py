@@ -116,7 +116,7 @@ class Rasterizer(OpsProducer):
     Generates rastered movements (using only straight lines)
     across filled pixels in the surface.
     """
-    def run(self, machine, laser, surface, pixels_per_mm):
+    def run(self, laser, surface, pixels_per_mm):
         width = surface.get_width()
         height = surface.get_height()
         logging.debug(f"Rasterizer received surface: {width}x{height} pixels")

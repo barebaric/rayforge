@@ -56,7 +56,6 @@ class PotraceProducer(OpsProducer, ABC):
 
     def run(
         self,
-        machine,
         laser,
         surface: cairo.ImageSurface,
         pixels_per_mm: Tuple[float, float],
