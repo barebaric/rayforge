@@ -1,9 +1,10 @@
 import logging
 import cairo
-from typing import Generator, Optional, Tuple, cast
+from typing import Generator, Optional, Tuple, cast, Dict, Any, Type
 from blinker import Signal
 from ..config import config
 from ..render import Renderer
+import importlib
 
 
 logger = logging.getLogger(__name__)
@@ -13,15 +14,20 @@ class WorkPiece:
     """
     Represents a real-world workpiece.
 
-    It is defined by its name and a renderer instance, which holds all
-    information about the source image. The WorkPiece itself does not
-    store image data, only its position and size on the canvas.
+    It holds the raw source data (e.g., for an SVG or image) and manages
+    a live renderer instance for operations. It also stores its position
+    and size on the canvas.
     """
 
-    def __init__(self, name: str, renderer: Renderer):
+    def __init__(self, name: str, data: bytes, renderer_class: Type[Renderer]):
         self.name = name
-        self.renderer = renderer
+        self._data = data
+        self.renderer_class = renderer_class
+
+        # The renderer is a live instance created from the raw data.
+        self.renderer: Renderer = self.renderer_class(self._data)
         self._renderer_ref_for_pyreverse: Renderer
+
         self.pos: Optional[Tuple[float, float]] = None  # in mm
         self.size: Optional[Tuple[float, float]] = None  # in mm
         self.angle: float = 0.0  # in degrees
@@ -29,6 +35,43 @@ class WorkPiece:
         self.pos_changed: Signal = Signal()
         self.size_changed: Signal = Signal()
         self.angle_changed: Signal = Signal()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Serializes the WorkPiece state to a pickleable dictionary.
+        The live renderer instance is not serialized; instead, the raw data
+        and renderer class path are stored for reconstruction.
+        """
+        rclass = self.renderer_class
+        return {
+            "name": self.name,
+            "pos": self.pos,
+            "size": self.size,
+            "angle": self.angle,
+            "data": self._data,
+            "renderer": f"{rclass.__module__}.{rclass.__name__}",
+        }
+
+    @classmethod
+    def from_dict(cls, data_dict: Dict[str, Any]) -> "WorkPiece":
+        """
+        Deserializes a WorkPiece from a dictionary by reconstructing it
+        from its raw data and renderer class.
+        """
+        # Dynamically import the renderer class from its path
+        module_path, class_name = data_dict['renderer'].rsplit('.', 1)
+        module = importlib.import_module(module_path)
+        renderer_class = getattr(module, class_name)
+
+        # Create the WorkPiece instance using the main constructor
+        wp = cls(data_dict['name'], data_dict['data'], renderer_class)
+
+        # Restore state
+        wp.pos = data_dict.get('pos')
+        wp.size = data_dict.get('size')
+        wp.angle = data_dict.get('angle', 0.0)
+
+        return wp
 
     def set_pos(self, x_mm: float, y_mm: float):
         if (x_mm, y_mm) == self.pos:
@@ -83,9 +126,7 @@ class WorkPiece:
     def from_file(cls, filename: str, renderer_class: type[Renderer]):
         with open(filename, 'rb') as fp:
             data = fp.read()
-        renderer = renderer_class(data)
-        wp = cls(filename, renderer)
-        wp.size = wp.get_default_size()
+        wp = cls(filename, data, renderer_class)
         return wp
 
     def render_for_ops(
