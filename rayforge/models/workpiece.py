@@ -35,11 +35,65 @@ class WorkPiece:
         self.size_changed: Signal = Signal()
         self.angle_changed: Signal = Signal()
 
+    def __getstate__(self) -> Dict[str, Any]:
+        """
+        Prepares the object's state for pickling.
+
+        This method removes live, unpickleable objects like the renderer
+        instance and blinker signals. It also converts the renderer class
+        type into a serializable string path for reconstruction.
+        """
+        state = self.__dict__.copy()
+
+        # Remove live objects that cannot or should not be pickled.
+        # Using .pop() with a default value is safe even if the key doesn't
+        # exist.
+        state.pop("renderer", None)
+        state.pop("_renderer_ref_for_pyreverse", None)
+        state.pop("changed", None)
+        state.pop("pos_changed", None)
+        state.pop("size_changed", None)
+        state.pop("angle_changed", None)
+
+        # Convert the renderer class type to a serializable string path.
+        # The type object itself can be tricky to pickle directly.
+        rclass = self.renderer_class
+        state["_renderer_class_path"] = (
+            f"{rclass.__module__}.{rclass.__name__}"
+        )
+        state.pop("renderer_class", None)
+
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]):
+        """
+        Restores the object's state from the pickled state.
+
+        This method re-imports the renderer class, re-creates the live
+        renderer instance, and re-initializes the blinker signals.
+        """
+        # Restore the renderer class from its stored path.
+        renderer_class_path = state.pop("_renderer_class_path")
+        module_path, class_name = renderer_class_path.rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        self.renderer_class = getattr(module, class_name)
+
+        # Restore the rest of the pickled attributes.
+        self.__dict__.update(state)
+
+        # Re-create the live objects that were not included in the pickled
+        # state.
+        self.renderer = self.renderer_class(self._data)
+        self.changed = Signal()
+        self.pos_changed = Signal()
+        self.size_changed = Signal()
+        self.angle_changed = Signal()
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Serializes the WorkPiece state to a pickleable dictionary.
-        The live renderer instance is not serialized; instead, the raw data
-        and renderer class path are stored for reconstruction.
+        The live renderer instance is not serialized; instead, the raw
+        data and renderer class path are stored for reconstruction.
         """
         rclass = self.renderer_class
         return {

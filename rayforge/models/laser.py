@@ -35,3 +35,16 @@ class Laser:
         lh.frame_power = data.get("frame_power", lh.frame_power)
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
         return lh
+
+    def __getstate__(self):
+        """Prepare the object for pickling. Removes unpickleable Signal."""
+        state = self.__dict__.copy()
+        # The 'changed' signal is not pickleable, so we remove it.
+        state.pop("changed", None)
+        return state
+
+    def __setstate__(self, state):
+        """Restore the object after unpickling. Recreates the Signal."""
+        self.__dict__.update(state)
+        # Re-create the 'changed' signal that was removed during pickling.
+        self.changed = Signal()
