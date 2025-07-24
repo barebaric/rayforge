@@ -159,16 +159,12 @@ def _execute_workstep_in_subprocess(
     execute_ctx.set_progress(1.0)
 
     # --- Transform phase ---
-    if opstransformers:
-        enabled_transformers = [t for t in opstransformers if t.enabled]
-        num_transformers = len(enabled_transformers)
-
-        if num_transformers > 0:
-            transform_context = proxy.sub_context(
-                base_progress=execute_weight, progress_range=transform_weight
-            )
-        else:
-            transform_context = None
+    enabled_transformers = [t for t in opstransformers if t.enabled]
+    num_transformers = len(enabled_transformers)
+    if num_transformers > 0:
+        transform_context = proxy.sub_context(
+            base_progress=execute_weight, progress_range=transform_weight
+        )
 
         for i, transformer in enumerate(enabled_transformers):
             proxy.set_message(
