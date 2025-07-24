@@ -57,14 +57,14 @@ class TaskProgressBar(Gtk.Box):
     def _apply_css(self):
         """Applies custom CSS to style the widget."""
         css_provider = Gtk.CssProvider()
-        css_data = b"""
+        css = """
         progressbar.thin-progress-bar {
             min-height: 5px;
             /* Add a transition for a smooth fade in/out effect */
             transition: opacity 0.25s;
         }
         """
-        css_provider.load_from_data(css_data)
+        css_provider.load_from_string(css)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             css_provider,
