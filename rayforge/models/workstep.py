@@ -26,13 +26,19 @@ DEBOUNCE_DELAY_MS = 250  # Delay in milliseconds for ops regeneration
 def _execute_workstep_in_subprocess(
     proxy: ExecutionContextProxy,
     # Pass all required state. Assume these are pickleable.
-    workpiece: WorkPiece,
+    workpiece_dict: dict[str, Any],
     opsproducer: OpsProducer,
     modifiers: List[Modifier],
     opstransformers: List[OpsTransformer],
-    laser: Laser,
+    laser_dict: dict[str, Any],
     settings: dict,
 ):
+    logger.debug(
+        f"Starting workstep execution with settings: {settings}"
+    )
+    laser = Laser.from_dict(laser_dict)
+    workpiece = WorkPiece.from_dict(workpiece_dict)
+
     # Helper functions
     def _trace_and_modify_surface(surface, scaler):
         """Applies modifiers and runs the OpsProducer on a surface."""
@@ -283,15 +289,11 @@ class WorkStep(ABC):
 
         try:
             (
-                workpiece_copy,
-                laser_copy,
                 opsproducer_copy,
                 modifiers_copy,
                 opstransformers_copy,
             ) = deepcopy(
                 (
-                    workpiece,
-                    self.laser,
                     self.opsproducer,
                     self.modifiers,
                     self.opstransformers,
@@ -311,11 +313,11 @@ class WorkStep(ABC):
 
         task_mgr.run_process(
             _execute_workstep_in_subprocess,
-            workpiece_copy,
+            workpiece.to_dict(),
             opsproducer_copy,
             modifiers_copy,
             opstransformers_copy,
-            laser_copy,
+            self.laser.to_dict(),
             settings,
             key=key,
             when_done=when_done_callback,

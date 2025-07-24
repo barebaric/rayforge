@@ -143,8 +143,8 @@ class TestWorkStepGeneration:
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args.args
         assert call_args[0] == _execute_workstep_in_subprocess
-        assert isinstance(call_args[1], WorkPiece)
-        assert call_args[1].uid == real_workpiece.uid
+        assert isinstance(call_args[1], dict)
+        assert call_args[1]["uid"] == real_workpiece.uid
 
     @pytest.mark.asyncio
     async def test_generation_success_emits_signals_and_caches_result(self, contour_step, real_workpiece, mock_task_mgr):

@@ -99,6 +99,7 @@ class WorkPiece:
         """
         rclass = self.renderer_class
         return {
+            "uid": self.uid,
             "name": self.name,
             "pos": self.pos,
             "size": self.size,
@@ -122,6 +123,7 @@ class WorkPiece:
         wp = cls(data_dict['name'], data_dict['data'], renderer_class)
 
         # Restore state
+        wp.uid = data_dict.get('uid', uuid.uuid4())
         wp.pos = data_dict.get('pos')
         wp.size = data_dict.get('size')
         wp.angle = data_dict.get('angle', 0.0)
