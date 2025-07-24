@@ -118,6 +118,17 @@ def main():
     logging.getLogger().setLevel(log_level)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
+    # When running on Windows, spawned subprocesses do not
+    # know where to find the necessary DLLs (for cairo, rsvg, etc.).
+    # We must explicitly add the executable's directory (_MEIPASS) to the
+    # DLL search path *before* any subprocesses are created.
+    # This must be done inside the main() guard.
+    if sys.platform == "win32":
+        logger.info(
+            f"Windows build detected. Adding '{base_dir}' to DLL search path."
+        )
+        os.add_dll_directory(str(base_dir))
+
     # Print PyCairo version
     import cairo
     logger.info(f"PyCairo version: {cairo.version}")
@@ -133,7 +144,7 @@ def main():
     gi.require_version('GdkPixbuf', '2.0')
 
     # Import modules that depend on GTK or manage global state
-    from rayforge.task import task_mgr
+    from rayforge.tasker import task_mgr
     import rayforge.config
 
     # Explicitly initialize the configuration managers. This ensures that
