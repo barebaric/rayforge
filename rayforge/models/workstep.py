@@ -5,7 +5,7 @@ from typing import Any, List, Dict, Tuple, Optional, Iterator
 from copy import deepcopy
 from blinker import Signal
 from gi.repository import GLib
-from ..task import task_mgr, Task, ExecutionContextProxy
+from ..tasker import task_mgr, Task, ExecutionContextProxy
 from ..config import getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
@@ -335,7 +335,7 @@ class WorkStep(ABC):
         )
 
     def _on_generation_complete(
-        self, task: Task, uid: any, task_generation_id: int
+        self, task: Task, uid: Any, task_generation_id: int
     ):
         if (
             uid not in self._generation_id_map

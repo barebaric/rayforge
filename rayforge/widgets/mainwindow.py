@@ -2,7 +2,7 @@ import asyncio
 import logging
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
-from ..task import task_mgr, ExecutionContext
+from ..tasker import task_mgr, ExecutionContext
 from ..config import config
 from ..driver import get_driver_cls
 from ..driver.driver import driver_mgr, DeviceStatus

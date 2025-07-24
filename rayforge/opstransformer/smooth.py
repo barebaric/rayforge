@@ -2,7 +2,7 @@ import math
 from typing import Optional
 from ..models.ops import Ops, LineToCommand, MoveToCommand
 from .transformer import OpsTransformer
-from ..task import ExecutionContext
+from ..tasker import ExecutionContext
 from .arcwelder.points import remove_duplicates
 
 

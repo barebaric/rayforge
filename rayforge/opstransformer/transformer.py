@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 from ..models.ops import Ops
-from ..task import ExecutionContextProxy
+from ..tasker import ExecutionContextProxy
 
 
 class OpsTransformer(ABC):

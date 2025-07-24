@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import asyncio
 from typing import List, Optional
-from ..task import CancelledError, ExecutionContext
+from ..tasker import CancelledError, ExecutionContext
 from ..config import config
 from .workpiece import WorkPiece
 from .workstep import WorkStep, Outline
