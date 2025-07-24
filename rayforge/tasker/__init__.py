@@ -9,8 +9,6 @@ from .context import (
 )
 from .task import Task, CancelledError
 
-task_mgr = TaskManager()
-
 __all__ = [
     "TaskManager",
     "BaseExecutionContext",

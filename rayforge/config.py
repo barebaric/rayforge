@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 from platformdirs import user_config_dir
+from .tasker import TaskManager
 from .models.machine import MachineManager
 from .models.config import ConfigManager
 import logging
@@ -21,6 +22,10 @@ def getflag(name, default=False):
     default = 'true' if default else 'false'
     return os.environ.get(name, default).lower() in ('true', '1')
 
+
+# Initialize the task manager. This is a singleton that manages all tasks.
+# It is initialized here to ensure it is available globally.
+task_mgr = TaskManager()
 
 # Load all machines. If none exist, create a default machine.
 # These are initialized to None to prevent automatic setup in subprocesses.

@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 def _process_target_wrapper(
     # The type of queue object will be determined by the multiprocessing
     # context.
-    queue: Queue[tuple[str, Any]],
+    queue: Queue[Any],
     user_func: Callable[..., Any],
     user_args: tuple[Any, ...],
     user_kwargs: dict[str, Any],
@@ -62,6 +62,7 @@ def _process_target_wrapper(
 
 class TaskManager:
     def __init__(self) -> None:
+        logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
         self._progress_map: Dict[
             Any, float
@@ -183,16 +184,19 @@ class TaskManager:
             context.set_message(value)
         elif msg_type == "done":
             state["result"] = value
-            logger.debug(
-                "Task %s: Received 'done' from subprocess.", context.task.key
-            )
+            if context.task:
+                logger.debug(
+                    "Task %s: Received 'done' from subprocess.",
+                    context.task.key
+                )
         elif msg_type == "error":
             state["error"] = value
-            logger.error(
-                "Task %s: 'error' from subprocess:\n%s",
-                context.task.key,
-                value,
-            )
+            if context.task:
+                logger.error(
+                    "Task %s: 'error' from subprocess:\n%s",
+                    context.task.key,
+                    value,
+                )
 
     def _drain_process_queue(
         self,
@@ -224,6 +228,7 @@ class TaskManager:
             context: The ExecutionContext for progress reporting.
             state: A mutable dictionary to check for early error exit.
         """
+        assert context.task is not None
         task_key = context.task.key
         while process.is_alive():
             self._drain_process_queue(queue, context, state)
@@ -314,10 +319,11 @@ class TaskManager:
         it via a queue to report progress, messages, results, and errors.
         It handles normal completion, failure, and cancellation.
         """
+        assert context.task is not None
         task_key = context.task.key
         queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
         process_args = (queue, user_func, user_args, user_kwargs)
-        process: Process = self._mp_context.Process(
+        process: Process = self._mp_context.Process(  # type: ignore
             target=_process_target_wrapper, args=process_args, daemon=True
         )
         # State dict to share status between helper methods.
