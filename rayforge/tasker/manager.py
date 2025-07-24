@@ -6,11 +6,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading  # Keep this import
-import traceback
 from multiprocessing import get_context, Process
 from multiprocessing.context import BaseContext
 from multiprocessing.queues import Queue
-from queue import Empty, Full
+from queue import Empty
 from typing import (
     Any,
     Callable,
@@ -19,45 +18,14 @@ from typing import (
     List,
     Optional,
 )
-
 from blinker import Signal
-
 from ..util.glib import idle_add
 from .context import ExecutionContext
+from .process import process_target_wrapper
 from .task import Task
 
 
 logger = logging.getLogger(__name__)
-
-
-# This wrapper needs to be a top-level function to be pickleable by
-# multiprocessing
-def _process_target_wrapper(
-    # The type of queue object will be determined by the multiprocessing
-    # context.
-    queue: Queue[Any],
-    user_func: Callable[..., Any],
-    user_args: tuple[Any, ...],
-    user_kwargs: dict[str, Any],
-) -> None:
-    """
-    A wrapper that runs in the subprocess, calling the user's function
-    and communicating status/results back to the parent via a queue.
-    """
-    from .proxy import ExecutionContextProxy
-
-    proxy = ExecutionContextProxy(queue)
-    try:
-        result = user_func(proxy, *user_args, **user_kwargs)
-        queue.put_nowait(("done", result))
-    except Exception:
-        error_info = traceback.format_exc()
-        try:
-            queue.put(("error", error_info), block=True, timeout=1.0)
-        except Full:
-            logger.error(
-                f"Could not report exception to parent process:\n{error_info}"
-            )
 
 
 class TaskManager:
@@ -324,7 +292,7 @@ class TaskManager:
         queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
         process_args = (queue, user_func, user_args, user_kwargs)
         process: Process = self._mp_context.Process(  # type: ignore
-            target=_process_target_wrapper, args=process_args, daemon=True
+            target=process_target_wrapper, args=process_args, daemon=True
         )
         # State dict to share status between helper methods.
         state: Dict[str, Any] = {"result": None, "error": None}

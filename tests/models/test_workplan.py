@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock
 from rayforge.tasker.proxy import ExecutionContextProxy
-from rayforge.models.workstep import Contour, _execute_workstep_in_subprocess
+from rayforge.models.workstep import Contour, run_workstep_in_subprocess
 from rayforge.models.workpiece import WorkPiece
 from rayforge.render import SVGRenderer
 from rayforge.models.ops import (
@@ -142,7 +142,7 @@ class TestWorkStepGeneration:
         # Assert
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args.args
-        assert call_args[0] == _execute_workstep_in_subprocess
+        assert call_args[0] == run_workstep_in_subprocess
         assert isinstance(call_args[1], dict)
         assert call_args[1]["uid"] == real_workpiece.uid
 
