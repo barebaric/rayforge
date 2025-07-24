@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-22 23:12+0200\n"
-"PO-Revision-Date: 2025-07-13 13:07+0200\n"
+"POT-Creation-Date: 2025-07-24 22:05+0200\n"
+"PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
 "Language: de\n"
@@ -17,22 +17,62 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: rayforge/opstransformer/optimize.py:296
+#: rayforge/opstransformer/optimize.py:291
+msgid "Optimize Path"
+msgstr "Pfad optimieren"
+
+#: rayforge/opstransformer/optimize.py:295
+msgid "Minimizes travel distance by reordering segments"
+msgstr "Minimiert die Verfahrstrecke durch Neuordnung der Segmente"
+
+#: rayforge/opstransformer/optimize.py:304
 msgid "Preprocessing for optimization..."
 msgstr "Vorbereitung für Optimierung..."
 
-#: rayforge/opstransformer/optimize.py:320
+#: rayforge/opstransformer/optimize.py:335
 #, python-brace-format
 msgid "Optimizing segment {i}/{total}..."
 msgstr "Optimiere Segment {i}/{total}..."
 
-#: rayforge/opstransformer/optimize.py:366
+#: rayforge/opstransformer/optimize.py:356
+msgid "Finding reorderable paths..."
+msgstr "Suche nach neu anordenbaren Pfaden..."
+
+#: rayforge/opstransformer/optimize.py:367
+msgid "Ordering paths..."
+msgstr "Pfade anordnen..."
+
+#: rayforge/opstransformer/optimize.py:378
+msgid "Flipping segments for improvement..."
+msgstr "Segmente umdrehen zur Verbesserung..."
+
+#: rayforge/opstransformer/optimize.py:387
+msgid "Applying 2-opt refinement..."
+msgstr "2-opt-Verfeinerung anwenden..."
+
+#: rayforge/opstransformer/optimize.py:399
 msgid "Reassembling optimized paths..."
 msgstr "Zusammenfügen optimierter Pfade..."
 
-#: rayforge/opstransformer/optimize.py:400
+#: rayforge/opstransformer/optimize.py:436
 msgid "Optimization complete"
 msgstr "Optimierung abgeschlossen"
+
+#: rayforge/opstransformer/arcwelder/arcwelder.py:97
+msgid "Arc Weld Path"
+msgstr "Pfad zu Bögen schweißen"
+
+#: rayforge/opstransformer/arcwelder/arcwelder.py:101
+msgid "Welds lines into arcs for smoother paths"
+msgstr "Verbindet Linien zu Bögen für glattere Pfade"
+
+#: rayforge/opstransformer/smooth.py:79
+msgid "Smooth Path"
+msgstr "Pfad glätten"
+
+#: rayforge/opstransformer/smooth.py:83
+msgid "Smooths the path by applying a Gaussian filter"
+msgstr "Glättet den Pfad durch Anwendung eines Gauß-Filters"
 
 #: rayforge/widgets/gcodepreferences.py:7
 msgid "GCode"
@@ -47,7 +87,7 @@ msgid "Postscript"
 msgstr "Postskript"
 
 #: rayforge/widgets/gcodepreferences.py:40
-#: rayforge/widgets/workstepsettings.py:96
+#: rayforge/widgets/workstepsettings.py:98
 msgid "Air Assist"
 msgstr "Air Assist"
 
@@ -57,7 +97,8 @@ msgstr "GCode für Air Assist aktivieren (leer lassen, falls nicht unterstützt)
 
 #: rayforge/widgets/gcodepreferences.py:59
 msgid "Air Assist Disable GCode (blank if unsupported)"
-msgstr "GCode für Air Assist deaktivieren (leer lassen, falls nicht unterstützt)"
+msgstr ""
+"GCode für Air Assist deaktivieren (leer lassen, falls nicht unterstützt)"
 
 #: rayforge/widgets/cameraproperties.py:18
 msgid "Camera Properties"
@@ -147,7 +188,7 @@ msgid "Dimensions"
 msgstr "Abmessungen"
 
 #: rayforge/widgets/generalpreferences.py:107
-#: rayforge/widgets/workpieceprops.py:48
+#: rayforge/widgets/workpieceprops.py:49
 msgid "Width"
 msgstr "Breite"
 
@@ -156,7 +197,7 @@ msgid "Width of the machine in mm"
 msgstr "Breite der Maschine in mm"
 
 #: rayforge/widgets/generalpreferences.py:122
-#: rayforge/widgets/workpieceprops.py:57
+#: rayforge/widgets/workpieceprops.py:58
 msgid "Height"
 msgstr "Höhe"
 
@@ -295,7 +336,9 @@ msgstr "Rahmenleistung"
 
 #: rayforge/widgets/laserheadpreferences.py:62
 msgid "Power value in Gcode to use when framing. 0 to disable"
-msgstr "Leistungswert im GCode, der beim Rahmen verwendet werden soll. 0 zum Deaktivieren"
+msgstr ""
+"Leistungswert im GCode, der beim Rahmen verwendet werden soll. 0 zum "
+"Deaktivieren"
 
 #: rayforge/widgets/laserheadpreferences.py:77
 msgid "Spot Size X"
@@ -323,182 +366,206 @@ msgstr "Laser (Max. Leistung: {head.max_power})"
 msgid "Delete this point"
 msgstr "Diesen Punkt löschen"
 
-#: rayforge/widgets/workstepsettings.py:11
+#: rayforge/widgets/workstepsettings.py:13
 #, python-brace-format
 msgid "{name} Settings"
 msgstr "{name} Einstellungen"
 
-#: rayforge/widgets/workstepsettings.py:29
+#: rayforge/widgets/workstepsettings.py:20
+msgid "General Settings"
+msgstr "Allgemeine Einstellungen"
+
+#: rayforge/widgets/workstepsettings.py:31
 msgid "Number of Passes"
 msgstr "Anzahl der Durchgänge"
 
-#: rayforge/widgets/workstepsettings.py:30
+#: rayforge/widgets/workstepsettings.py:32
 msgid "How often to repeat this workstep"
 msgstr "Wie oft dieser Arbeitsschritt wiederholt werden soll"
 
-#: rayforge/widgets/workstepsettings.py:38
+#: rayforge/widgets/workstepsettings.py:40
 msgid "Power (%)"
 msgstr "Leistung (%)"
 
-#: rayforge/widgets/workstepsettings.py:66
+#: rayforge/widgets/workstepsettings.py:68
 msgid "Cut Speed (mm/min)"
 msgstr "Schnittgeschwindigkeit (mm/min)"
 
-#: rayforge/widgets/workstepsettings.py:67
+#: rayforge/widgets/workstepsettings.py:69
 #, python-brace-format
 msgid "Max: {max_cut_speed} mm/min"
 msgstr "Max: {max_cut_speed} mm/min"
 
-#: rayforge/widgets/workstepsettings.py:84
+#: rayforge/widgets/workstepsettings.py:86
 msgid "Travel Speed (mm/min)"
 msgstr "Verfahrgeschwindigkeit (mm/min)"
 
-#: rayforge/widgets/workstepsettings.py:85
+#: rayforge/widgets/workstepsettings.py:87
 #, python-brace-format
 msgid "Max: {max_travel_speed} mm/min"
 msgstr "Max: {max_travel_speed} mm/min"
 
-#: rayforge/widgets/mainwindow.py:67
+#: rayforge/widgets/workstepsettings.py:106
+msgid "Path Post-Processing"
+msgstr "Pfad-Nachbearbeitung"
+
+#: rayforge/widgets/workstepsettings.py:108
+msgid "These steps are applied after path generation and can improve quality or reduce job time."
+msgstr "Diese Schritte werden nach der Pfadgenerierung angewendet und können die Qualität verbessern oder die Auftragszeit verkürzen."
+
+#: rayforge/widgets/workstepsettings.py:126
+msgid "Smoothness"
+msgstr "Glättung"
+
+#: rayforge/widgets/workstepsettings.py:146
+msgid "Corner Angle Threshold"
+msgstr "Eckenwinkel-Schwelle"
+
+#: rayforge/widgets/workstepsettings.py:148
+msgid "Angles sharper than this are kept as corners (degrees)"
+msgstr "Winkel, die schärfer sind als dieses Limit, bleiben als Ecken erhalten (Grad)"
+
+#: rayforge/widgets/mainwindow.py:52
 msgid "Rayforge"
 msgstr "Rayforge"
 
-#: rayforge/widgets/mainwindow.py:114
+#: rayforge/widgets/mainwindow.py:99
 msgid "About"
 msgstr "Über"
 
-#: rayforge/widgets/mainwindow.py:115
+#: rayforge/widgets/mainwindow.py:100
 msgid "Preferences"
 msgstr "Einstellungen"
 
-#: rayforge/widgets/mainwindow.py:140
+#: rayforge/widgets/mainwindow.py:125
 msgid "Import image"
 msgstr "Bild importieren"
 
-#: rayforge/widgets/mainwindow.py:146 rayforge/widgets/mainwindow.py:450
+#: rayforge/widgets/mainwindow.py:131 rayforge/widgets/mainwindow.py:416
 msgid "Generate GCode"
 msgstr "GCode generieren"
 
-#: rayforge/widgets/mainwindow.py:156
+#: rayforge/widgets/mainwindow.py:141
 msgid "Remove all workpieces"
 msgstr "Alle Werkstücke entfernen"
 
-#: rayforge/widgets/mainwindow.py:165
+#: rayforge/widgets/mainwindow.py:150
 msgid "Toggle workpiece visibility"
 msgstr "Werkstück-Sichtbarkeit umschalten"
 
-#: rayforge/widgets/mainwindow.py:176
+#: rayforge/widgets/mainwindow.py:161
 msgid "Toggle camera image visibility"
 msgstr "Kamerabild-Sichtbarkeit umschalten"
 
-#: rayforge/widgets/mainwindow.py:188
+#: rayforge/widgets/mainwindow.py:173
 msgid "Toggle travel move visibility"
 msgstr "Sichtbarkeit der Verfahrwege umschalten"
 
-#: rayforge/widgets/mainwindow.py:201
+#: rayforge/widgets/mainwindow.py:186
 msgid "Home the machine"
 msgstr "Maschine referenzieren"
 
-#: rayforge/widgets/mainwindow.py:208 rayforge/widgets/mainwindow.py:467
+#: rayforge/widgets/mainwindow.py:193 rayforge/widgets/mainwindow.py:433
 msgid "Cycle laser head around the occupied area"
 msgstr "Laserkopf um den belegten Bereich fahren"
 
-#: rayforge/widgets/mainwindow.py:215 rayforge/widgets/mainwindow.py:482
+#: rayforge/widgets/mainwindow.py:200 rayforge/widgets/mainwindow.py:448
 msgid "Send to machine"
 msgstr "An Maschine senden"
 
-#: rayforge/widgets/mainwindow.py:223
+#: rayforge/widgets/mainwindow.py:208
 msgid "Pause machine"
 msgstr "Maschine pausieren"
 
-#: rayforge/widgets/mainwindow.py:229
+#: rayforge/widgets/mainwindow.py:214
 msgid "Cancel running job"
 msgstr "Laufenden Auftrag abbrechen"
 
-#: rayforge/widgets/mainwindow.py:339
+#: rayforge/widgets/mainwindow.py:305
 msgid "<b>Machine status:</b>"
 msgstr "<b>Maschinenstatus:</b>"
 
-#: rayforge/widgets/mainwindow.py:350
+#: rayforge/widgets/mainwindow.py:316
 msgid "<b>Connection status:</b>"
 msgstr "<b>Verbindungsstatus:</b>"
 
-#: rayforge/widgets/mainwindow.py:448
+#: rayforge/widgets/mainwindow.py:414
 msgid "Cannot export while operations are being generated"
 msgstr "Export nicht möglich, während Operationen generiert werden"
 
-#: rayforge/widgets/mainwindow.py:463
+#: rayforge/widgets/mainwindow.py:429
 msgid "Cannot frame while operations are being generated"
 msgstr "Rahmen nicht möglich, während Operationen generiert werden"
 
-#: rayforge/widgets/mainwindow.py:473
+#: rayforge/widgets/mainwindow.py:439
 msgid "Send to machine (select driver to enable)"
 msgstr "An Maschine senden (Treiber auswählen zum Aktivieren)"
 
-#: rayforge/widgets/mainwindow.py:476
+#: rayforge/widgets/mainwindow.py:442
 msgid "Send to machine (connect to enable)"
 msgstr "An Maschine senden (verbinden zum Aktivieren)"
 
-#: rayforge/widgets/mainwindow.py:479
+#: rayforge/widgets/mainwindow.py:445
 msgid "Send to machine (wait for calculations to finish)"
 msgstr "An Maschine senden (auf Abschluss der Berechnungen warten)"
 
-#: rayforge/widgets/mainwindow.py:518
+#: rayforge/widgets/mainwindow.py:484
 msgid "Open SVG File"
 msgstr "SVG-Datei öffnen"
 
-#: rayforge/widgets/mainwindow.py:523
+#: rayforge/widgets/mainwindow.py:489
 msgid "All supported"
 msgstr "Alle unterstützten"
 
-#: rayforge/widgets/mainwindow.py:565
+#: rayforge/widgets/mainwindow.py:531
 msgid "Save G-code File"
 msgstr "G-Code-Datei speichern"
 
-#: rayforge/widgets/mainwindow.py:573
+#: rayforge/widgets/mainwindow.py:539
 msgid "G-code files"
 msgstr "G-Code-Dateien"
 
-#: rayforge/widgets/mainwindow.py:739
+#: rayforge/widgets/mainwindow.py:705
 msgid "unknown"
 msgstr "unbekannt"
 
-#: rayforge/widgets/workpieceprops.py:26
+#: rayforge/widgets/workpieceprops.py:27
 msgid "Workpiece Properties"
 msgstr "Werkstück-Eigenschaften"
 
-#: rayforge/widgets/workpieceprops.py:30
+#: rayforge/widgets/workpieceprops.py:31
 msgid "X Position"
 msgstr "X-Position"
 
-#: rayforge/widgets/workpieceprops.py:39
+#: rayforge/widgets/workpieceprops.py:40
 msgid "Y Position"
 msgstr "Y-Position"
 
-#: rayforge/widgets/workpieceprops.py:66
+#: rayforge/widgets/workpieceprops.py:67
 msgid "Fixed Ratio"
 msgstr "Festes Verhältnis"
 
-#: rayforge/widgets/workpieceprops.py:74
+#: rayforge/widgets/workpieceprops.py:75
 msgid "Natural Size"
 msgstr "Natürliche Größe"
 
-#: rayforge/widgets/workpieceprops.py:75
+#: rayforge/widgets/workpieceprops.py:76
 msgid "N/A"
 msgstr "N/A"
 
-#: rayforge/widgets/workpieceprops.py:80
+#: rayforge/widgets/workpieceprops.py:81
 msgid "Reset Size"
 msgstr "Größe zurücksetzen"
 
-#: rayforge/widgets/workpieceprops.py:81 rayforge/widgets/workpieceprops.py:101
+#: rayforge/widgets/workpieceprops.py:82 rayforge/widgets/workpieceprops.py:102
 msgid "Reset"
 msgstr "Zurücksetzen"
 
-#: rayforge/widgets/workpieceprops.py:91
+#: rayforge/widgets/workpieceprops.py:92
 msgid "Angle"
 msgstr "Winkel"
 
-#: rayforge/widgets/workpieceprops.py:100
+#: rayforge/widgets/workpieceprops.py:101
 msgid "Reset Angle"
 msgstr "Winkel zurücksetzen"
 
@@ -524,64 +591,64 @@ msgstr "Fehler beim Laden des Bildes für Geräte-ID: {device_id}"
 msgid "Device ID: {device_id}"
 msgstr "Geräte-ID: {device_id}"
 
-#: rayforge/widgets/progress.py:62
+#: rayforge/widgets/progress.py:101
 #, python-brace-format
 msgid " (+{tasks} more)"
 msgstr " (+{tasks} weitere)"
 
-#: rayforge/widgets/progress.py:64
+#: rayforge/widgets/progress.py:103
 #, python-brace-format
 msgid "{tasks} tasks"
 msgstr "{tasks} Aufgaben"
 
-#: rayforge/models/machine.py:51
-msgid "Default Machine"
-msgstr "Standardmaschine"
-
-#: rayforge/models/workplan.py:395
+#: rayforge/models/workstep.py:135
 #, python-brace-format
 msgid "Generating path for '{name}'"
 msgstr "Pfad für '{name}' generieren"
 
-#: rayforge/models/workplan.py:442
+#: rayforge/models/workstep.py:174
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "'{transformer}' auf '{workpiece}' anwenden"
 
-#: rayforge/models/workplan.py:471
+#: rayforge/models/workstep.py:198
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "'{workpiece}' wird fertiggestellt"
 
-#: rayforge/models/workplan.py:566
+#: rayforge/models/workstep.py:508
 msgid "External Outline"
 msgstr "Externe Kontur"
 
-#: rayforge/models/workplan.py:573
+#: rayforge/models/workstep.py:519
 msgid "Contour"
 msgstr "Kontur"
 
-#: rayforge/models/workplan.py:580
+#: rayforge/models/workstep.py:530
 msgid "Raster Engrave"
 msgstr "Rastergravur"
 
-#: rayforge/models/workplan.py:662
+#: rayforge/models/machine.py:17
+msgid "Default Machine"
+msgstr "Standardmaschine"
+
+#: rayforge/models/workplan.py:97
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
 msgstr "'{workpiece}' in '{step}' verarbeiten"
 
-#: rayforge/app.py:105
+#: rayforge/app.py:94
 msgid "A GCode generator for laser cutters."
 msgstr "Ein GCode-Generator für Laserschneider."
 
-#: rayforge/app.py:109
+#: rayforge/app.py:98
 msgid "Path to the input SVG or image file."
 msgstr "Pfad zur Eingabe-SVG- oder Bilddatei."
 
-#: rayforge/app.py:115
+#: rayforge/app.py:104
 msgid "Stores the work surface (no paths) as a PNG image."
 msgstr "Speichert die Arbeitsfläche (keine Pfade) als PNG-Bild."
 
-#: rayforge/app.py:122
+#: rayforge/app.py:111
 msgid "Set the logging level (default: INFO)"
-msgstr "Setzt den Logging-Level (Standard: INFO)"
+msgstr "Logging-Level setzen (Standard: INFO)"
