@@ -1,41 +1,48 @@
 """
 ExecutionContext module for managing task execution context.
 """
+
+import abc
 import logging
 import threading
 from typing import Optional, Callable
-from queue import Full
+from queue import Full, Queue
 from ..util.glib import idle_add
 
 
 logger = logging.getLogger(__name__)
 
 
-class ExecutionContextProxy:
+class BaseExecutionContext(abc.ABC):
     """
-    A pickleable proxy for reporting progress from a subprocess via a queue.
+    Abstract base class for execution contexts.
+
+    Provides common functionality for progress reporting, including
+    normalization and sub-contexting. Subclasses must implement the
+    specific reporting mechanism (e.g., via a queue or a debounced
+    callback).
     """
 
-    def __init__(self, progress_queue, base_progress=0.0, progress_range=1.0):
-        self._queue = progress_queue
+    def __init__(
+        self,
+        base_progress: float = 0.0,
+        progress_range: float = 1.0,
+        total: float = 1.0,
+    ):
         self._base = base_progress
         self._range = progress_range
         self._total = 1.0  # Default total for normalization
+        self.set_total(total)
         self.task = None  # Add task attribute
 
+    @abc.abstractmethod
     def _report_normalized_progress(self, progress: float):
         """
-        (Internal) Reports a 0.0-1.0 progress value, scaled to the proxy's
-        range.
+        Abstract method for handling a 0.0-1.0 progress value.
+        Subclasses must implement this to either send the progress to a
+        queue or schedule a debounced update.
         """
-
-        # Clamp to a valid range before scaling
-        progress = max(0.0, min(1.0, progress))
-        scaled_progress = self._base + (progress * self._range)
-        try:
-            self._queue.put_nowait(("progress", scaled_progress))
-        except Full:
-            pass  # If the queue is full, we drop the update.
+        pass
 
     def set_total(self, total: float):
         """
@@ -59,22 +66,110 @@ class ExecutionContextProxy:
         normalized_progress = progress / self._total
         self._report_normalized_progress(normalized_progress)
 
+    @abc.abstractmethod
+    def set_message(self, message: str):
+        """Sets a descriptive message."""
+        pass
+
+    def sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float = 1.0,
+        **kwargs,
+    ) -> "BaseExecutionContext":
+        """
+        Creates a sub-context that reports progress within a specified
+        range of this context's progress.
+
+        Args:
+            base_progress: The normalized (0.0-1.0) progress in the parent
+                           when the sub-task begins.
+            progress_range: The fraction (0.0-1.0) of the parent's progress
+                           that this sub-task represents.
+            total: The total number of steps for the new sub-context.
+                   Defaults to 1.0, treating progress as already normalized.
+            **kwargs: Additional arguments for specific subclass constructors
+                      (e.g., `check_cancelled` for ExecutionContext).
+
+        Returns:
+            A new execution context instance configured as a sub-context.
+        """
+        new_base = self._base + (base_progress * self._range)
+        new_range = self._range * progress_range
+        return self._create_sub_context(new_base, new_range, total, **kwargs)
+
+    @abc.abstractmethod
+    def _create_sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+        **kwargs,
+    ) -> "BaseExecutionContext":
+        """
+        Abstract factory method for creating a sub-context of the
+        correct type.
+        """
+        pass
+
+    @abc.abstractmethod
+    def is_cancelled(self) -> bool:
+        """Checks if the operation has been cancelled."""
+        pass
+
+    @abc.abstractmethod
+    def flush(self):
+        """
+        Immediately sends any pending updates.
+        """
+        pass
+
+
+class ExecutionContextProxy(BaseExecutionContext):
+    """
+    A pickleable proxy for reporting progress from a subprocess via a queue.
+    """
+
+    def __init__(
+        self, progress_queue: Queue, base_progress=0.0, progress_range=1.0
+    ):
+        super().__init__(base_progress, progress_range, total=1.0)
+        self._queue = progress_queue
+
+    def _report_normalized_progress(self, progress: float):
+        """
+        Reports a 0.0-1.0 progress value, scaled to the proxy's
+        range.
+        """
+        # Clamp to a valid range before scaling
+        progress = max(0.0, min(1.0, progress))
+        scaled_progress = self._base + (progress * self._range)
+        try:
+            self._queue.put_nowait(("progress", scaled_progress))
+        except Full:
+            pass  # If the queue is full, we drop the update.
+
     def set_message(self, message: str):
         try:
             self._queue.put_nowait(("message", message))
         except Full:
             pass
 
-    def sub_context(
-        self, base_progress, progress_range, total: float = 1.0, **kwargs
+    def _create_sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+        **kwargs,
     ) -> "ExecutionContextProxy":
         """
         Creates a sub-context that reports progress within a specified range.
         """
-        new_base = self._base + (base_progress * self._range)
-        new_range = self._range * progress_range
         # The new proxy gets its own total for its own progress calculations
-        new_proxy = ExecutionContextProxy(self._queue, new_base, new_range)
+        new_proxy = ExecutionContextProxy(
+            self._queue, base_progress, progress_range
+        )
         new_proxy.set_total(total)
         return new_proxy
 
@@ -93,7 +188,7 @@ class ExecutionContextProxy:
         pass
 
 
-class ExecutionContext:
+class ExecutionContext(BaseExecutionContext):
     def __init__(
         self,
         update_callback: Optional[
@@ -107,26 +202,25 @@ class ExecutionContext:
         _progress_range: float = 1.0,
         _total: float = 1.0,
     ):
+        super().__init__(_base_progress, _progress_range, _total)
         self._parent_context = _parent_context
-        self._total = float(_total) if _total > 0 else 1.0
-        self.task = None  # Add task attribute
 
         if self._parent_context:
-            # This is a sub-context. It doesn't own any resources.
-            # It just delegates to the parent.
-            self._update_callback = None
+            # This is a sub-context. It doesn't own resources.
+            self._root_context = self._parent_context._get_root()
             self._check_cancelled = (
-                check_cancelled or self._parent_context.is_cancelled
+                check_cancelled or self._root_context.is_cancelled
             )
-            self._debounce_interval_sec = 0  # not used
+            # These are only used by the root context
+            self._update_callback = None
+            self._debounce_interval_sec = 0
             self._update_timer = None
             self._pending_progress = None
             self._pending_message = None
-            self._lock = None  # not needed
-            self._base_progress = _base_progress
-            self._progress_range = _progress_range
+            self._lock = None
         else:
-            # This is a root context. Initialize as before.
+            # This is a root context. Initialize resources.
+            self._root_context = self
             self._update_callback = update_callback
             self._check_cancelled = check_cancelled or (lambda: False)
             self._debounce_interval_sec = debounce_interval_ms / 1000.0
@@ -134,12 +228,13 @@ class ExecutionContext:
             self._pending_progress: Optional[float] = None
             self._pending_message: Optional[str] = None
             self._lock = threading.Lock()
-            # Root context spans the full range by definition.
-            self._base_progress = 0.0
-            self._progress_range = 1.0
+
+    def _get_root(self) -> "ExecutionContext":
+        """Returns the root context in the chain."""
+        return self._root_context
 
     def _fire_update(self):
-        """(Internal) Called by the timer to schedule a UI update."""
+        """Called by the timer to schedule a UI update."""
         assert self._lock is not None, (
             "_fire_update() called on a non-root context"
         )
@@ -156,60 +251,40 @@ class ExecutionContext:
             idle_add(self._update_callback, progress, message)
 
     def _schedule_update(self):
-        """(Internal) (Re)schedules the update timer."""
-        # Only schedule an update if a timer is not already running.
-        # This ensures updates go out roughly every `_debounce_interval_sec`
-        # instead of being perpetually postponed.
+        """(Re)schedules the update timer for the root context."""
+        assert self._lock is not None, (
+            "_schedule_update() called on a non-root context"
+        )
         if self._update_timer is None:
             self._update_timer = threading.Timer(
                 self._debounce_interval_sec, self._fire_update
             )
             self._update_timer.start()
 
-    def _report_normalized_progress(self, normalized_progress: float):
+    def _update_root_state(
+        self, progress: Optional[float] = None, message: Optional[str] = None
+    ):
         """
-        (Internal) The core logic for handling 0.0-1.0 progress values.
-        This is how sub-contexts communicate with their parents.
+        Sets pending state on the root and schedules an update.
         """
-        # Clamp to a valid range.
-        normalized_progress = max(0.0, min(1.0, normalized_progress))
+        assert self._lock is not None, (
+            "_update_root_state() called on a non-root context"
+        )
+        with self._lock:
+            if progress is not None:
+                self._pending_progress = progress
+            if message is not None:
+                self._pending_message = message
+            self._schedule_update()
 
-        if self._parent_context:
-            # This is a sub-context. Calculate progress in parent's scale
-            # and delegate the call up the chain.
-            parent_progress = (
-                self._base_progress
-                + normalized_progress * self._progress_range
-            )
-            self._parent_context._report_normalized_progress(parent_progress)
-        else:
-            # This is the root context. Schedule the debounced UI update.
-            assert self._lock is not None, (
-                "_report_normalized_progress called on a non-root context"
-            )
-            with self._lock:
-                self._pending_progress = normalized_progress
-                self._schedule_update()
-
-    def set_total(self, total: float):
+    def _report_normalized_progress(self, progress: float):
         """
-        Sets or updates the total value for this context's progress
-        calculations.
-        Useful for the root context after it has been created.
+        The core logic for handling 0.0-1.0 progress values.
+        This calculates the final global progress and reports it to the root.
         """
-        if total <= 0:
-            self._total = 1.0
-        else:
-            self._total = float(total)
-
-    def set_progress(self, progress: float):
-        """
-        Sets the progress as an absolute value. This value is automatically
-        normalized against the context's total.
-        Example: If total=200, set_progress(20) reports 0.1 progress.
-        """
-        normalized_progress = progress / self._total
-        self._report_normalized_progress(normalized_progress)
+        progress = max(0.0, min(1.0, progress))
+        global_progress = self._base + (progress * self._range)
+        self._get_root()._update_root_state(progress=global_progress)
 
     def is_cancelled(self) -> bool:
         """Checks if the operation has been cancelled."""
@@ -217,22 +292,13 @@ class ExecutionContext:
 
     def set_message(self, message: str):
         """Sets a descriptive message."""
-        if self._parent_context:
-            # Delegate message setting up to the root context.
-            self._parent_context.set_message(message)
-            return
-
-        assert self._lock is not None, (
-            "set_message() called on a non-root context"
-        )
-        with self._lock:
-            self._pending_message = message
-            self._schedule_update()
+        self._get_root()._update_root_state(message=message)
 
     def flush(self):
         """Immediately sends the last known values to the UI."""
-        if self._parent_context:
-            self._parent_context.flush()
+        root = self._get_root()
+        if self is not root:
+            root.flush()
             return
 
         assert self._lock is not None, "flush() called on a non-root context"
@@ -252,33 +318,21 @@ class ExecutionContext:
         ):
             idle_add(self._update_callback, progress, message)
 
-    def sub_context(
+    def _create_sub_context(
         self,
         base_progress: float,
         progress_range: float,
-        total: float = 1.0,
-        check_cancelled: Optional[Callable[[], bool]] = None,
+        total: float,
+        **kwargs,
     ) -> "ExecutionContext":
         """
         Creates a sub-context that reports progress within a specified
         range of this context's progress.
-
-        Args:
-            base_progress: The normalized (0.0-1.0) progress in the parent
-                           when the sub-task begins.
-            progress_range: The fraction (0.0-1.0) of the parent's progress
-                           that this sub-task represents.
-            total: The total number of steps for the new sub-context.
-                   Defaults to 1.0, treating progress as already normalized.
-            check_cancelled: An optional, more specific cancellation check.
-
-        Returns:
-            A new ExecutionContext instance configured as a sub-context.
         """
         return ExecutionContext(
             _parent_context=self,
             _base_progress=base_progress,
             _progress_range=progress_range,
             _total=total,
-            check_cancelled=check_cancelled,
+            check_cancelled=kwargs.get("check_cancelled"),
         )

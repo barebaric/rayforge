@@ -5,7 +5,7 @@ from copy import copy
 from typing import Optional, List, cast
 from ..models.ops import Ops, State, ArcToCommand, Command
 from .transformer import OpsTransformer
-from ..tasker import ExecutionContext
+from ..tasker import BaseExecutionContext, ExecutionContext
 
 
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ def flip_segment(segment: List[Command]) -> List[Command]:
 
 
 def greedy_order_segments(
-    context: ExecutionContext,
+    context: BaseExecutionContext,
     segments: List[List[Command]],
 ) -> List[List[Command]]:
     """
@@ -174,7 +174,7 @@ def greedy_order_segments(
 
 
 def flip_segments(
-    context: ExecutionContext, ordered: List[List[Command]]
+    context: BaseExecutionContext, ordered: List[List[Command]]
 ) -> List[List[Command]]:
     improved = True
     context.set_total(1)  # Simple task, just needs cancellation check
@@ -208,7 +208,7 @@ def flip_segments(
 
 
 def two_opt(
-    context: ExecutionContext,
+    context: BaseExecutionContext,
     ordered: List[List[Command]],
     max_iter: int,
 ) -> List[List[Command]]:
@@ -288,7 +288,7 @@ class Optimize(OpsTransformer):
     """
 
     def run(
-        self, ops: Ops, context: Optional[ExecutionContext] = None
+        self, ops: Ops, context: Optional[BaseExecutionContext] = None
     ) -> None:
         if context is None:
             context = ExecutionContext()

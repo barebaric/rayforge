@@ -2,7 +2,7 @@ import math
 from typing import Optional
 from ..models.ops import Ops, LineToCommand, MoveToCommand
 from .transformer import OpsTransformer
-from ..tasker import ExecutionContext
+from ..tasker import BaseExecutionContext
 from .arcwelder.points import remove_duplicates
 
 
@@ -17,7 +17,7 @@ class Smooth(OpsTransformer):
     def run(
         self,
         ops: Ops,
-        context: Optional[ExecutionContext] = None,
+        context: Optional[BaseExecutionContext] = None,
     ):
         segments = list(ops.segments())
         ops.clear()

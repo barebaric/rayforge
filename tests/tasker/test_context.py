@@ -130,6 +130,7 @@ class TestExecutionContextProxy:
             base_progress=0.5, progress_range=0.25, total=50
         )
 
+        assert isinstance(child, ExecutionContextProxy)
         assert child._queue is mock_queue
         # Expected base: parent_base + (sub_base * parent_range) = 0.1 + (0.5 * 0.8) = 0.5
         assert child._base == pytest.approx(0.5)
@@ -152,10 +153,9 @@ class TestExecutionContextProxy:
 
         # Child normalized progress = 0.5
         # Child's contribution to overall progress:
-        # child_base + (child_normalized * child_range)
         # child_base = parent_base + (sub_base * parent_range) = 0.1 + (0.5 * 0.8) = 0.5
         # child_range = parent_range * sub_range = 0.8 * 0.5 = 0.4
-        # final_progress = 0.5 + (0.5 * 0.4) = 0.5 + 0.2 = 0.7
+        # final_progress = child_base + (child_normalized * child_range) = 0.5 + (0.5 * 0.4) = 0.5 + 0.2 = 0.7
 
         assert mock_queue.get_nowait() == ("progress", pytest.approx(0.7))
 
@@ -186,8 +186,8 @@ class TestExecutionContext:
         assert ctx._check_cancelled is cancel_cb
         assert ctx._debounce_interval_sec == 0.05
         assert ctx._lock is not None
-        assert ctx._base_progress == 0.0
-        assert ctx._progress_range == 1.0
+        assert ctx._base == 0.0
+        assert ctx._range == 1.0
         assert ctx._total == 1.0
         assert ctx.task is None
 
@@ -277,11 +277,13 @@ class TestExecutionContext:
         root = ExecutionContext()
         sub = root.sub_context(0.2, 0.5, total=10)
 
+        assert isinstance(sub, ExecutionContext)
         assert sub._parent_context is root
+        assert sub._get_root() is root
         assert sub._update_callback is None  # Delegates to parent
         assert sub._lock is None  # Not needed
-        assert sub._base_progress == 0.2
-        assert sub._progress_range == 0.5
+        assert sub._base == 0.2
+        assert sub._range == 0.5
         assert sub._total == 10.0
         # Inherits cancellation check
         assert sub.is_cancelled() is root.is_cancelled()
@@ -312,10 +314,12 @@ class TestExecutionContext:
         sub2.set_progress(8)
 
         # Calculation:
-        # sub2 normalized = 0.8
-        # Progress within sub1 = sub1_base + (sub2_norm * sub1_range) = 0.5 + (0.8 * 0.25) = 0.5 + 0.2 = 0.7
-        # Progress within root = root_base + (sub1_result * root_range) = 0.1 + (0.7 * 0.8) = 0.1 + 0.56 = 0.66
-
+        # sub2's contribution to the global progress
+        # sub2's base is 0.1 (from sub1) + 0.5 * 0.8 (from sub1) = 0.5
+        # sub2's range is 0.8 (from sub1) * 0.25 = 0.2
+        # sub2's normalized progress is 0.8
+        # Final global progress = sub2_base + (sub2_norm * sub2_range)
+        # = 0.5 + (0.8 * 0.2) = 0.5 + 0.16 = 0.66
         assert root._pending_progress == pytest.approx(0.66)
         assert len(mock_timer_factory) == 1
         assert mock_timer_factory[0].is_started
@@ -370,5 +374,7 @@ class TestExecutionContext:
         sub.flush()  # Should delegate to root
 
         assert timer.is_cancelled
+        # sub has base=0, range=1. progress=0.5 is normalized.
+        # global progress = 0 + (0.5*1) = 0.5
         mock_idle_add.assert_called_once_with(update_cb, 0.5, None)
         assert root._pending_progress is None
