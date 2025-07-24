@@ -157,12 +157,14 @@ class ExecutionContext:
 
     def _schedule_update(self):
         """(Internal) (Re)schedules the update timer."""
-        if self._update_timer:
-            self._update_timer.cancel()
-        self._update_timer = threading.Timer(
-            self._debounce_interval_sec, self._fire_update
-        )
-        self._update_timer.start()
+        # Only schedule an update if a timer is not already running.
+        # This ensures updates go out roughly every `_debounce_interval_sec`
+        # instead of being perpetually postponed.
+        if self._update_timer is None:
+            self._update_timer = threading.Timer(
+                self._debounce_interval_sec, self._fire_update
+            )
+            self._update_timer.start()
 
     def _report_normalized_progress(self, normalized_progress: float):
         """

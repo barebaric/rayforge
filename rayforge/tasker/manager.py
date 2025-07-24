@@ -5,7 +5,7 @@ TaskManager module for managing task execution.
 from __future__ import annotations
 import asyncio
 import logging
-import threading
+import threading  # Keep this import
 import traceback
 from multiprocessing import get_context, Process
 from multiprocessing.context import BaseContext
@@ -66,6 +66,7 @@ class TaskManager:
         self._progress_map: Dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
+        self._lock = threading.RLock()
         self.tasks_updated: Signal = Signal()
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread: threading.Thread = threading.Thread(
@@ -84,26 +85,27 @@ class TaskManager:
         self, task: Task, when_done: Optional[Callable[[Task], None]] = None
     ) -> None:
         """Add a task to the manager."""
-        # If the manager was idle, this is a new batch of work.
-        if not self._tasks:
-            self._progress_map.clear()
+        with self._lock:
+            # If the manager was idle, this is a new batch of work.
+            if not self._tasks:
+                self._progress_map.clear()
 
-        old_task = self._tasks.get(task.key)
-        if old_task:
-            logger.info(
-                f"TaskManager: Found existing task key '{task.key}'. "
-                f"Attempting cancellation."
-            )
-            old_task.cancel()
-        else:
-            logger.info(f"TaskManager: Adding new task key '{task.key}'.")
+            old_task = self._tasks.get(task.key)
+            if old_task:
+                logger.info(
+                    f"TaskManager: Found existing task key '{task.key}'. "
+                    f"Attempting cancellation."
+                )
+                old_task.cancel()
+            else:
+                logger.info(f"TaskManager: Adding new task key '{task.key}'.")
 
-        self._tasks[task.key] = task
-        self._progress_map[task.key] = 0.0
-        task.status_changed.connect(self._on_task_updated)
+            self._tasks[task.key] = task
+            self._progress_map[task.key] = 0.0
+            task.status_changed.connect(self._on_task_updated)
 
-        # Emit signal immediately when a new task is added
-        self._emit_tasks_updated()
+            # Emit signal immediately when a new task is added
+            self._emit_tasks_updated()
 
         asyncio.run_coroutine_threadsafe(
             self._run_task(task, when_done), self._loop
@@ -157,7 +159,6 @@ class TaskManager:
         finally:
             context.flush()
             self._cleanup_task(task)
-            self._emit_tasks_updated()
             if when_done:
                 idle_add(when_done, task)
 
@@ -355,48 +356,59 @@ class TaskManager:
         """
         Clean up a completed task.
         """
-        current_task_in_dict = self._tasks.get(task.key)
-        if current_task_in_dict is task:
-            logger.debug(
-                f"TaskManager: Cleaning up task '{task.key}' "
-                f"(status: {task.get_status()})."
-            )
-            del self._tasks[task.key]
-        else:
-            # This task finished, but it's no longer the active one
-            # for this key in the dictionary (it was replaced).
-            # Don't remove the newer task.
-            logger.debug(
-                f"TaskManager: Skipping cleanup for finished task "
-                f"'{task.key}' (status: {task.get_status()}) as it was "
-                f"already replaced in the manager."
-            )
+        with self._lock:
+            current_task_in_dict = self._tasks.get(task.key)
+            if current_task_in_dict is task:
+                logger.debug(
+                    f"TaskManager: Cleaning up task '{task.key}' "
+                    f"(status: {task.get_status()})."
+                )
+                del self._tasks[task.key]
+                # DO NOT delete from _progress_map. The final progress
+                # value (usually 1.0) must be kept for accurate
+                # overall progress calculation until the next batch starts.
+                # The map is cleared in add_task() when a new batch begins.
+            else:
+                # This task finished, but it's no longer the active one
+                # for this key in the dictionary (it was replaced).
+                # Don't remove the newer task.
+                logger.debug(
+                    f"TaskManager: Skipping cleanup for finished task "
+                    f"'{task.key}' (status: {task.get_status()}) as it was "
+                    f"already replaced in the manager."
+                )
+            self._emit_tasks_updated()
 
     def _on_task_updated(self, task: Task) -> None:
         """Handle task status or progress changes."""
-        if task.key in self._progress_map:
-            self._progress_map[task.key] = task.get_progress()
-        self._emit_tasks_updated()
+        with self._lock:  # <-- FIX: Protect shared state
+            if task.key in self._progress_map:
+                self._progress_map[task.key] = task.get_progress()
+            self._emit_tasks_updated()
 
     def _emit_tasks_updated(self) -> None:
-        """Emit a single consolidated signal from the main thread."""
-        progress = self.get_overall_progress()
+        """Emit a single consolidated signal. Assumes lock is already held."""
+        # This method is now always called from a block that holds the lock
+        progress = self.get_overall_progress()  # This will acquire the lock
         tasks: List[Task] = list(self._tasks.values())
+        # Release the lock before calling idle_add
         idle_add(self.tasks_updated.send, self, tasks=tasks, progress=progress)
 
     def get_overall_progress(self) -> float:
         """Calculate the overall progress of all tasks."""
-        if not self._progress_map:
-            return 1.0
+        with self._lock:  # <-- FIX: Protect shared state
+            if not self._progress_map:
+                return 1.0
 
-        total_progress = sum(self._progress_map.values())
-        return total_progress / len(self._progress_map)
+            total_progress = sum(self._progress_map.values())
+            return total_progress / len(self._progress_map)
 
     def shutdown(self) -> None:
         """Cancel all tasks and stop the event loop."""
-        for task in self._tasks.values():
-            task.cancel()
-        self._tasks.clear()
-        self._progress_map.clear()
+        with self._lock:  # <-- FIX: Protect shared state
+            for task in self._tasks.values():
+                task.cancel()
+            self._tasks.clear()
+            self._progress_map.clear()
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
