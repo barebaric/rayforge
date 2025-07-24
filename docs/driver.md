@@ -14,8 +14,9 @@ A driver:
 - **Runs asynchronously** to avoid blocking the main thread.
 
 Rayforge simplifies driver implementation by providing modules for most common
-tasks. A typical driver uses `Transport` and `OpsEncoder` classes to handle
-connectivity and command translation.
+tasks. A typical driver uses specific transport implementations (like HttpTransport,
+WebSocketTransport) and OpsEncoder instances to handle connectivity and command
+translation.
 
 ```mermaid
 graph TD;
@@ -136,10 +137,11 @@ All drivers MUST provide the following methods:
 
     - Any arguments in the definition of the method are used to
       auto-generate a user interface. For example, if the setup()
-      method ist defined as `setup(self, hostname: str)`, then
+      method is defined as `setup(self, hostname: str)`, then
       Rayforge will use the type hint to offer the user a UI
       for entering a hostname.
-      **Only `str`, `int`, and `bool` types are supported.**
+      **Any Python type can be used, but only `str`, `int`, and `bool`
+      types will generate a UI element.**
 
     - `setup()` is invoked after the user has configured the
        driver in the UI.
@@ -160,10 +162,11 @@ All drivers MUST provide the following methods:
 - `cleanup()`: Closes all connections and frees resources.
 - `connect()`: Opens and maintains a persistent connection until cleanup()
    is called.
-- `run(ops: Ops)`: Called to execute the given operations on the
-   connected device.
+- `run(ops: Ops, machine: Machine)`: Called to execute the given operations on the
+   connected device. The `machine` parameter provides machine-specific settings
+   that may affect the execution.
 - `home()`: Homes the device.
-- `hold(hold: bool = True)`: Pause/unpause the running program.
+- `set_hold(hold: bool = True)`: Pause/unpause the running program.
 - `cancel()`: Cancels the running program.
 - `move_to(x: float, y: float)`: Move the laser to the given position.
    Positions are passed in millimeters.
@@ -200,6 +203,11 @@ This ensures that the signals are sent in a GLib-safe manner.
 - Assume hardware retains state between commands (e.g., laser power)
 - Re-send critical states after reconnections
 
+
+## Enums
+
+- `DeviceStatus`: Represents the device status (e.g., IDLE, RUN, ALARM)
+- `TransportStatus`: Represents the transport connection status (e.g., CONNECTED, ERROR, SLEEPING)
 
 ## Any questions?
 

@@ -15,6 +15,7 @@ It supports direct communication with GRBL based machines (network or serial).
 | Multi step operations            | For example, first engrave, then cut                       |
 | Multiple operation types         | Contour, External Outline, Raster Engraving                |
 | High quality path generation     | Interpolation based on spot size, path optimization        |
+| Path post processing             | Travel time optimization and path smoothing                |
 | Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
 | Open development                 | Easily [add support for your own laser](docs/driver.md)    |
 | Cross-platform                   | Support for Linux and Windows                              |
