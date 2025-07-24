@@ -1,4 +1,5 @@
 import logging
+import uuid
 import cairo
 from typing import Generator, Optional, Tuple, cast, Dict, Any, Type
 from blinker import Signal
@@ -20,6 +21,7 @@ class WorkPiece:
 
     def __init__(self, name: str, data: bytes, renderer_class: Type[Renderer]):
         self.name = name
+        self.uid = uuid.uuid4()
         self._data = data
         self.renderer_class = renderer_class
 

@@ -1,12 +1,11 @@
 from __future__ import annotations
 import logging
-import asyncio
 from abc import ABC
-from typing import List, Dict, AsyncIterator, Tuple, Optional, Callable
+from typing import Any, List, Dict, Tuple, Optional, Iterator
 from copy import deepcopy
 from blinker import Signal
 from gi.repository import GLib
-from ..task import task_mgr, CancelledError, ExecutionContext
+from ..task import task_mgr, Task, ExecutionContextProxy
 from ..config import getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
@@ -22,8 +21,186 @@ DEBUG_OPTIMIZE = getflag("DEBUG_OPTIMIZE")
 DEBUG_SMOOTH = getflag("DEBUG_SMOOTH")
 DEBUG_ARCWELD = getflag("DEBUG_ARCWELD")
 
-DEBOUNCE_DELAY_MS = 100  # Delay in milliseconds for ops regeneration
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
+DEBOUNCE_DELAY_MS = 250  # Delay in milliseconds for ops regeneration
+
+
+# This top-level function contains the core logic for generating Ops.
+# It is designed to be run in a separate process by the TaskManager.
+def _execute_workstep_in_subprocess(
+    proxy: ExecutionContextProxy,
+    # Pass all required state. Assume these are pickleable.
+    workpiece: WorkPiece,
+    opsproducer: OpsProducer,
+    modifiers: List[Modifier],
+    opstransformers: List[OpsTransformer],
+    laser: Laser,
+    settings: dict,
+):
+    # Helper functions
+    def _trace_and_modify_surface(surface, scaler):
+        """Applies modifiers and runs the OpsProducer on a surface."""
+        for modifier in modifiers:
+            modifier.run(surface)
+        return opsproducer.run(laser, surface, scaler)
+
+    def _execute_vector() -> Iterator[Tuple[Ops, Tuple[int, int], float]]:
+        """
+        Handles Ops generation for scalable (vector) operations.
+        This is a synchronous version of the original async method.
+        """
+        size_mm = workpiece.get_current_size()
+
+        if not size_mm or None in size_mm:
+            logger.warning(
+                f"Cannot generate vector ops for '{workpiece.name}' "
+                "without a defined size. Skipping."
+            )
+            return
+
+        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+        target_width = int(size_mm[0] * px_per_mm_x)
+        target_height = int(size_mm[1] * px_per_mm_y)
+
+        # Cap resolution
+        num_pixels = target_width * target_height
+        if num_pixels > MAX_VECTOR_TRACE_PIXELS:
+            scale_factor = (MAX_VECTOR_TRACE_PIXELS / num_pixels) ** 0.5
+            target_width = int(target_width * scale_factor)
+            target_height = int(target_height * scale_factor)
+
+        # This is now a blocking call, which is fine in a subprocess.
+        surface = workpiece.renderer.render_to_pixels(
+            width=target_width, height=target_height
+        )
+        if not surface:
+            return
+
+        pixel_scaler = 1.0, 1.0
+        geometry_ops = _trace_and_modify_surface(surface, pixel_scaler)
+        yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
+        surface.flush()
+
+    def _execute_raster() -> Iterator[Tuple[Ops, None, float]]:
+        """
+        Handles Ops generation for non-scalable (raster) operations.
+        This is a synchronous version of the original async method.
+        """
+        size = workpiece.get_current_size()
+
+        if not size or None in size:
+            logger.warning(
+                f"Cannot generate raster ops for '{workpiece.name}' "
+                "without a defined size. Skipping."
+            )
+            return
+
+        total_height_px = size[1] * settings["pixels_per_mm"][1]
+        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+
+        # This iterator is now synchronous.
+        chunk_iter = workpiece.render_chunk(
+            px_per_mm_x,
+            px_per_mm_y,
+            size=size,
+            max_memory_size=10 * 1024 * 1024,
+        )
+
+        for surface, (x_offset_px, y_offset_px) in chunk_iter:
+            progress = 0.0
+            if total_height_px > 0:
+                processed_height_px = y_offset_px + surface.get_height()
+                progress = min(1.0, processed_height_px / total_height_px)
+
+            chunk_ops = _trace_and_modify_surface(
+                surface, (px_per_mm_x, px_per_mm_y)
+            )
+
+            y_offset_mm = (
+                size[1] * px_per_mm_y - (surface.get_height() + y_offset_px)
+            ) / px_per_mm_y
+            x_offset_mm = x_offset_px / px_per_mm_x
+            chunk_ops.translate(x_offset_mm, y_offset_mm)
+
+            yield chunk_ops, None, progress
+            surface.flush()
+
+    def _create_initial_ops():
+        """Creates and new_configsures the initial Ops object."""
+        initial_ops = Ops()
+        initial_ops.set_power(settings["power"])
+        initial_ops.set_cut_speed(settings["cut_speed"])
+        initial_ops.set_travel_speed(settings["travel_speed"])
+        initial_ops.enable_air_assist(settings["air_assist"])
+        return initial_ops
+
+    # === Main execution logic for the subprocess ===
+
+    proxy.set_message(
+        _("Generating path for '{name}'").format(name=workpiece.name)
+    )
+    final_ops = _create_initial_ops()
+    cached_pixel_size = None
+
+    execute_weight = 0.20
+    transform_weight = 1.0 - execute_weight
+
+    # --- Path generation phase ---
+    execute_ctx = proxy.sub_context(
+        base_progress=0.0, progress_range=execute_weight
+    )
+    execute_iterator = (
+        _execute_vector() if opsproducer.can_scale() else _execute_raster()
+    )
+
+    for chunk, px_size, execute_progress in execute_iterator:
+        execute_ctx.set_progress(execute_progress)
+        if px_size:
+            cached_pixel_size = px_size
+        final_ops += chunk
+
+    # Ensure path generation is marked as 100% complete before continuing.
+    execute_ctx.set_progress(1.0)
+
+    # --- Transform phase ---
+    if opstransformers:
+        num_transformers = len(opstransformers)
+        transform_context = proxy.sub_context(
+            base_progress=execute_weight, progress_range=transform_weight
+        )
+
+        for i, transformer in enumerate(opstransformers):
+            proxy.set_message(
+                _("Applying '{transformer}' on '{workpiece}'").format(
+                    transformer=transformer.__class__.__name__,
+                    workpiece=workpiece.name,
+                )
+            )
+            # Create a proxy for this transformer's slice of the progress bar
+            transformer_run_proxy = transform_context.sub_context(
+                base_progress=(i / num_transformers),
+                progress_range=(1 / num_transformers),
+            )
+            # transformer.run now runs synchronously and may use the proxy
+            # to report its own fine-grained progress.
+            transformer.run(final_ops, context=transformer_run_proxy)
+
+            # Ensure this step's progress is marked as 100% complete before
+            # moving to the next one. This prevents progress from appearing
+            # to jump or stall if a transformer doesn't report its own
+            # completion.
+            transformer_run_proxy.set_progress(1.0)
+
+    if settings["air_assist"]:
+        final_ops.add(DisableAirAssistCommand())
+
+    proxy.set_message(
+        _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
+    )
+    proxy.set_progress(1.0)
+
+    # The final result is returned and sent back by the _process_target_wrapper
+    return final_ops, cached_pixel_size
 
 
 class WorkStep(ABC):
@@ -56,19 +233,15 @@ class WorkStep(ABC):
         self._modifier_ref_for_pyreverse: Modifier
         self.opsproducer = opsproducer
         self.opstransformers: List[OpsTransformer] = []
-        self._opstransformer_ref_for_pyreverse: OpsTransformer
 
-        # Map WorkPieces to Ops and size
-        self.workpiece_to_ops: Dict[
-            WorkPiece, Tuple[Optional[Ops], Optional[Tuple[float, float]]]
+        # Maps UID to workpiece.
+        self._workpieces: Dict[Any, WorkPiece] = {}
+        self._ops_cache: Dict[
+            Any, Tuple[Optional[Ops], Optional[Tuple[float, float]]]
         ] = {}
-        self._workpiece_ref_for_pyreverse: WorkPiece
-        self._ops_ref_for_pyreverse: Ops
+        self._workpiece_update_timers: Dict[Any, int] = {}
 
-        # A dictionary to hold debounce timers
-        self._workpiece_update_timers: Dict[WorkPiece, int] = {}
-
-        self._generation_id = 0  # Cancellation token
+        self._generation_id_map: Dict[Any, int] = {}
 
         self.passes: int = 1
         self.pixels_per_mm = 50, 50
@@ -95,6 +268,134 @@ class WorkStep(ABC):
         if DEBUG_ARCWELD:
             logger.info("Arcweld enabled")
             self.opstransformers.append(ArcWeld())
+
+    def update_workpiece(self, workpiece: WorkPiece):
+        uid = workpiece.uid
+        size = workpiece.get_current_size()
+        if not size or None in size:
+            logger.debug(
+                f"Skipping update for '{workpiece.name}'; "
+                "size is not yet available."
+            )
+            return
+
+        self._generation_id_map[uid] = self._generation_id_map.get(uid, 0) + 1
+        current_generation_id = self._generation_id_map[uid]
+        key = (id(self), uid)
+
+        self.ops_generation_starting.send(self, workpiece=workpiece)
+        self._ops_cache[uid] = (None, None)
+
+        settings = {
+            "power": self.power,
+            "cut_speed": self.cut_speed,
+            "travel_speed": self.travel_speed,
+            "air_assist": self.air_assist,
+            "pixels_per_mm": self.pixels_per_mm,
+        }
+
+        try:
+            (
+                workpiece_copy,
+                laser_copy,
+                opsproducer_copy,
+                modifiers_copy,
+                opstransformers_copy,
+            ) = deepcopy(
+                (
+                    workpiece,
+                    self.laser,
+                    self.opsproducer,
+                    self.modifiers,
+                    self.opstransformers,
+                )
+            )
+        except Exception as e:
+            logger.error(
+                f"Could not prepare data for subprocess: {e}", exc_info=True
+            )
+            self.ops_generation_finished.send(self, workpiece=workpiece)
+            return
+
+        def when_done_callback(task: Task):
+            self._on_generation_complete(
+                task, uid, current_generation_id
+            )
+
+        task_mgr.run_process(
+            _execute_workstep_in_subprocess,
+            workpiece_copy,
+            opsproducer_copy,
+            modifiers_copy,
+            opstransformers_copy,
+            laser_copy,
+            settings,
+            key=key,
+            when_done=when_done_callback,
+        )
+
+    def _on_generation_complete(
+        self, task: Task, uid: any, task_generation_id: int
+    ):
+        if (
+            uid not in self._generation_id_map
+            or self._generation_id_map[uid] != task_generation_id
+        ):
+            return
+        if uid not in self._workpieces:
+            return
+
+        workpiece = self._workpieces[uid]
+        status = task.get_status()
+        if status == "completed":
+            try:
+                result = task.result()
+                if result is None:
+                    self._ops_cache[uid] = (None, None)
+                else:
+                    self._ops_cache[uid] = result
+                    logger.info(
+                        f"WorkStep {self.name}: Successfully generated "
+                        f"ops for {workpiece.name}."
+                    )
+            except Exception as e:
+                logger.error(
+                    f"WorkStep {self.name}: Error generating ops for "
+                    f"{workpiece.name}: {e}",
+                    exc_info=True,
+                )
+                self._ops_cache[uid] = (None, None)
+        else:
+            self._ops_cache[uid] = (None, None)
+
+        self.ops_generation_finished.send(self, workpiece=workpiece)
+        self.changed.send(self)
+
+    def get_ops(self, workpiece: WorkPiece) -> Optional[Ops]:
+        uid = workpiece.uid
+        if not workpiece.size:
+            return None
+
+        raw_ops, pixel_size = self._ops_cache.get(uid, (None, None))
+        if raw_ops is None:
+            return None
+
+        ops = deepcopy(raw_ops)
+        if pixel_size:
+            traced_width_px, traced_height_px = pixel_size
+            size = workpiece.get_current_size() or (0, 0)
+            final_width_mm, final_height_mm = size
+            if (
+                final_width_mm is not None
+                and final_height_mm is not None
+                and traced_width_px > 0
+                and traced_height_px > 0
+            ):
+                ops.scale(
+                    final_width_mm / traced_width_px,
+                    final_height_mm / traced_height_px,
+                )
+        return ops
 
     def set_passes(self, passes: bool = True):
         self.passes = int(passes)
@@ -143,414 +444,61 @@ class WorkStep(ABC):
         self.changed.send(self)
 
     def set_workpieces(self, workpieces: List[WorkPiece]):
-        for workpiece in list(self.workpiece_to_ops.keys()):
-            if workpiece in workpieces:
-                continue
-            # Ensure timer is cleaned up
-            if workpiece in self._workpiece_update_timers:
-                GLib.source_remove(
-                    self._workpiece_update_timers.pop(workpiece)
-                )
-            workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
-            del self.workpiece_to_ops[workpiece]
+        current_uids = {wp.uid for wp in workpieces}
+        existing_uids = set(self._workpieces.keys())
+        for uid in existing_uids - current_uids:
+            self._cleanup_workpiece(uid)
         for workpiece in workpieces:
             self.add_workpiece(workpiece)
         self.changed.send(self)
 
     def add_workpiece(self, workpiece: WorkPiece):
-        if workpiece in self.workpiece_to_ops:
+        uid = workpiece.uid
+        if uid in self._workpieces:
             return
-        self.workpiece_to_ops[workpiece] = None, None
-        workpiece.size_changed.connect(self._on_workpiece_size_changed)
+        self._workpieces[uid] = workpiece
+        self._ops_cache[uid] = (None, None)
+        self._generation_id_map[uid] = 0
+        workpiece.size_changed.connect(self._request_workpiece_update)
         self.update_workpiece(workpiece)
         self.changed.send(self)
 
     def remove_workpiece(self, workpiece: WorkPiece):
-        # Ensure timer is cleaned up on removal
-        if workpiece in self._workpiece_update_timers:
-            GLib.source_remove(self._workpiece_update_timers.pop(workpiece))
-        workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
-        del self.workpiece_to_ops[workpiece]
+        self._cleanup_workpiece(workpiece.uid)
         self.changed.send(self)
 
-    def _on_workpiece_size_changed(self, workpiece: WorkPiece):
-        # If a timer is already running for this workpiece, cancel it.
-        if workpiece in self._workpiece_update_timers:
-            GLib.source_remove(self._workpiece_update_timers[workpiece])
+    def _cleanup_workpiece(self, uid: Any):
+        if uid in self._workpiece_update_timers:
+            GLib.source_remove(self._workpiece_update_timers.pop(uid))
+        if uid in self._workpieces:
+            workpiece = self._workpieces.pop(uid)
+            workpiece.size_changed.disconnect(self._request_workpiece_update)
+        if uid in self._ops_cache:
+            del self._ops_cache[uid]
+        if uid in self._generation_id_map:
+            del self._generation_id_map[uid]
+
+    def _request_workpiece_update(self, workpiece: WorkPiece):
+        uid = workpiece.uid
+        if uid in self._workpiece_update_timers:
+            GLib.source_remove(self._workpiece_update_timers[uid])
 
         def _update_callback():
-            """This function will be called after the delay."""
-            logger.debug(f"Debounced update triggered for {workpiece.name}")
-            # Check if workpiece still exists before updating
-            if workpiece in self.workpiece_to_ops:
-                self.update_workpiece(workpiece)
-            # Remove the timer ID from the dictionary
-            if workpiece in self._workpiece_update_timers:
-                del self._workpiece_update_timers[workpiece]
-            return GLib.SOURCE_REMOVE  # Ensures the timer runs only once
+            if uid in self._workpieces:
+                self.update_workpiece(self._workpieces[uid])
+            if uid in self._workpiece_update_timers:
+                del self._workpiece_update_timers[uid]
+            return GLib.SOURCE_REMOVE
 
-        # Schedule the update to run after a short delay.
         timer_id = GLib.timeout_add(DEBOUNCE_DELAY_MS, _update_callback)
-        self._workpiece_update_timers[workpiece] = timer_id
+        self._workpiece_update_timers[uid] = timer_id
 
     def workpieces(self) -> List[WorkPiece]:
-        return list(self.workpiece_to_ops.keys())
-
-    def _trace_and_modify_surface(self, surface, scaler):
-        """Applies modifiers and runs the OpsProducer on a surface."""
-        for modifier in self.modifiers:
-            modifier.run(surface)
-        return self.opsproducer.run(self.laser, surface, scaler)
-
-    async def _execute_vector(
-        self, workpiece: WorkPiece, check_cancelled: Callable[[], bool]
-    ):
-        """
-        Handles Ops generation for scalable (vector) operations by rendering
-        the workpiece at a resolution appropriate for its physical size.
-        """
-        size_mm = workpiece.get_current_size()
-        if not size_mm or None in size_mm:
-            logger.warning(
-                f"Cannot generate vector ops for '{workpiece.name}' "
-                "without a defined size."
-            )
-            return
-
-        px_per_mm_x, px_per_mm_y = self.pixels_per_mm
-        target_width = int(size_mm[0] * px_per_mm_x)
-        target_height = int(size_mm[1] * px_per_mm_y)
-
-        if target_width <= 0 or target_height <= 0:
-            logger.warning(
-                f"Cannot generate vector ops for '{workpiece.name}' with "
-                "non-positive pixel dimensions: "
-                f"{target_width}x{target_height}"
-            )
-            return
-
-        # Cap the resolution to avoid excessive memory usage.
-        num_pixels = target_width * target_height
-        if num_pixels > MAX_VECTOR_TRACE_PIXELS:
-            scale_factor = (MAX_VECTOR_TRACE_PIXELS / num_pixels) ** 0.5
-            logger.warning(
-                f"Trace resolution for workpiece '{workpiece.name}' is too "
-                f"high ({target_width}x{target_height}). Scaling down to "
-                "avoid excessive memory usage."
-            )
-            target_width = int(target_width * scale_factor)
-            target_height = int(target_height * scale_factor)
-
-        if check_cancelled():
-            return
-        surface = await asyncio.to_thread(
-            workpiece.renderer.render_to_pixels,
-            width=target_width,
-            height=target_height,
-        )
-
-        if not surface:
-            logger.error(
-                f"failed to render workpiece {workpiece.name} to surface"
-            )
-            return
-
-        if check_cancelled():
-            return
-
-        # The opsproducer works in the pixel-space of the rendered surface.
-        # The resulting ops will be scaled to final mm dimensions later in
-        # get_ops.
-        pixel_scaler = 1.0, 1.0
-        geometry_ops = await asyncio.to_thread(
-            self._trace_and_modify_surface, surface, pixel_scaler
-        )
-
-        yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
-        surface.flush()
-
-    async def _execute_raster(
-        self, workpiece: WorkPiece, check_cancelled: Callable[[], bool]
-    ):
-        """Handles Ops generation for non-scalable (raster) operations."""
-        size = workpiece.get_current_size()
-        if not size:
-            return
-        total_height_px = size[1] * self.pixels_per_mm[1]
-
-        chunk_iter = iter(
-            workpiece.render_chunk(
-                *self.pixels_per_mm,
-                size=size,
-                max_memory_size=10 * 1024 * 1024,
-            )
-        )
-
-        def get_next_chunk():
-            try:
-                return next(chunk_iter)
-            except StopIteration:
-                return None
-
-        if check_cancelled():
-            return
-        render_task = asyncio.to_thread(get_next_chunk)
-
-        while True:
-            if check_cancelled():
-                return
-            current_chunk_data = await render_task
-            if current_chunk_data is None:
-                break
-
-            render_task = asyncio.to_thread(get_next_chunk)
-
-            surface, (x_offset_px, y_offset_px) = current_chunk_data
-
-            progress = 0.0
-            if total_height_px > 0:
-                processed_height_px = y_offset_px + surface.get_height()
-                progress = min(1.0, processed_height_px / total_height_px)
-
-            if check_cancelled():
-                return
-            chunk_ops = await asyncio.to_thread(
-                self._trace_and_modify_surface, surface, self.pixels_per_mm
-            )
-
-            y_offset_mm = (
-                size[1] * self.pixels_per_mm[1]
-                - (surface.get_height() + y_offset_px)
-            ) / self.pixels_per_mm[1]
-            x_offset_mm = x_offset_px / self.pixels_per_mm[0]
-            chunk_ops.translate(x_offset_mm, y_offset_mm)
-
-            yield chunk_ops, None, progress
-            surface.flush()
-
-    async def execute(
-        self, workpiece: WorkPiece, check_cancelled: Callable[[], bool]
-    ) -> AsyncIterator[Tuple[Ops, Optional[Tuple[int, int]], float]]:
-        """
-        Asynchronously generates Ops chunks for a given WorkPiece by
-        dispatching to the appropriate vector or raster method.
-        """
-        if not workpiece.size:
-            logger.error(f"Cannot render {workpiece.name}: missing size.")
-            return
-
-        if self.can_scale():
-            async for item in self._execute_vector(workpiece, check_cancelled):
-                yield item
-        else:
-            async for item in self._execute_raster(workpiece, check_cancelled):
-                yield item
-
-    def _create_initial_ops(self):
-        """Creates and configures the initial Ops object."""
-        initial_ops = Ops()
-        initial_ops.set_power(self.power)
-        initial_ops.set_cut_speed(self.cut_speed)
-        initial_ops.set_travel_speed(self.travel_speed)
-        initial_ops.enable_air_assist(self.air_assist)
-        return initial_ops
-
-    def _get_display_ops(
-        self,
-        chunk: Ops,
-        pixel_size: Optional[Tuple[int, int]],
-        workpiece: WorkPiece,
-    ) -> Ops:
-        """Returns a scaled version of the ops for display."""
-        display_ops = deepcopy(chunk)
-        if self.can_scale() and pixel_size:
-            final_mm = workpiece.get_current_size()
-            if final_mm is not None and None not in final_mm:
-                scale_x = final_mm[0] / pixel_size[0]
-                scale_y = final_mm[1] / pixel_size[1]
-                display_ops.scale(scale_x, scale_y)
-        return display_ops
-
-    async def _stream_ops_and_cache(
-        self,
-        context: ExecutionContext,
-        workpiece: WorkPiece,
-        generation_id: int,
-    ):
-        """
-        Internal coroutine to run generation, emit signals, and cache
-        the final result. Progress is reported via the context.
-        """
-        self.ops_generation_starting.send(self, workpiece=workpiece)
-        final_ops = Ops()
-        cached_pixel_size = None
-
-        execute_weight = 0.20
-        transform_weight = 1.0 - execute_weight
-
-        def check_cancelled():
-            return (
-                self._generation_id != generation_id or context.is_cancelled()
-            )
-
-        try:
-            # The root context's total is 1.0 by default.
-            context.set_message(
-                _("Generating path for '{name}'").format(name=workpiece.name)
-            )
-            initial_ops = self._create_initial_ops()
-            final_ops += initial_ops
-
-            # Execute Phase (0% -> 20% of total progress)
-            # Create a sub-context for just this phase.
-            execute_ctx = context.sub_context(
-                base_progress=0.0,
-                progress_range=execute_weight,
-                check_cancelled=check_cancelled,
-            )
-
-            async for chunk, px_size, execute_progress in self.execute(
-                workpiece, check_cancelled
-            ):
-                if check_cancelled():
-                    raise CancelledError()
-                # execute_progress is 0.0-1.0, and execute_ctx.total is 1.0,
-                # so this works perfectly.
-                execute_ctx.set_progress(execute_progress)
-                if px_size:
-                    cached_pixel_size = px_size
-                display_ops = self._get_display_ops(chunk, px_size, workpiece)
-                self.ops_chunk_available.send(
-                    self, workpiece=workpiece, chunk=display_ops
-                )
-                final_ops += chunk
-
-            # Transform Phase (20% -> 100% of total progress)
-            if self.opstransformers:
-                num_transformers = len(self.opstransformers)
-
-                # Create a single sub-context for the entire transformation
-                # block, giving it the total number of steps directly.
-                transform_context = context.sub_context(
-                    base_progress=execute_weight,
-                    progress_range=transform_weight,
-                    total=num_transformers,
-                    check_cancelled=check_cancelled,
-                )
-
-                for i, transformer in enumerate(self.opstransformers):
-                    if check_cancelled():
-                        raise CancelledError()
-
-                    context.set_message(
-                        _("Applying '{transformer}' on '{workpiece}'").format(
-                            transformer=transformer.__class__.__name__,
-                            workpiece=workpiece.name,
-                        )
-                    )
-
-                    # Create a context for the transformer's own internal
-                    # progress.
-                    # Its slice is one "step" of the parent transform_context.
-                    transformer_run_ctx = transform_context.sub_context(
-                        base_progress=i,  # Raw step number
-                        progress_range=1,  # This slice is 1 step wide
-                        check_cancelled=check_cancelled,
-                    )
-
-                    await asyncio.to_thread(
-                        transformer.run, final_ops, context=transformer_run_ctx
-                    )
-
-                    # Mark the step as complete in the transform_context.
-                    transform_context.set_progress(i + 1)
-
-            if check_cancelled():
-                raise CancelledError()
-
-            if self.air_assist:
-                final_ops.add(DisableAirAssistCommand())
-
-            context.set_message(
-                _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
-            )
-            context.set_progress(1.0)
-            self.workpiece_to_ops[workpiece] = final_ops, cached_pixel_size
-            self.ops_generation_finished.send(self, workpiece=workpiece)
-        except CancelledError:
-            logger.info(
-                f"Workstep {self.name}: Ops generation for {workpiece.name} "
-                f"(gen {generation_id}) cancelled."
-            )
-            if (
-                self._generation_id == generation_id
-                and workpiece in self.workpiece_to_ops
-            ):
-                self.workpiece_to_ops[workpiece] = None, None
-            raise
-        except Exception as e:
-            logger.error(
-                f"Error during Ops generation for {workpiece}: {e}",
-                exc_info=True,
-            )
-            if workpiece in self.workpiece_to_ops:
-                self.workpiece_to_ops[workpiece] = None, None
-            return
-
-    def update_workpiece(self, workpiece: WorkPiece):
-        """Triggers the asynchronous generation and caching for a workpiece."""
-        self._generation_id += 1
-        current_generation_id = self._generation_id
-
-        key = id(self), id(workpiece)
-        logger.debug(
-            f"WorkStep '{self.name}': Scheduling coroutine for "
-            f"{workpiece.name} with gen_id {current_generation_id}"
-        )
-
-        task_mgr.add_coroutine(
-            self._stream_ops_and_cache,
-            workpiece,
-            current_generation_id,
-            key=key,
-        )
+        return list(self._workpieces.values())
 
     def update_all_workpieces(self):
-        for workpiece in self.workpiece_to_ops.keys():
+        for workpiece in self._workpieces.values():
             self.update_workpiece(workpiece)
-
-    def get_ops(self, workpiece: WorkPiece) -> Optional[Ops]:
-        """
-        Returns final, scaled Ops for a workpiece from the cache.
-        """
-        if not workpiece.size:
-            logger.error(f"missing size for workpiece {workpiece.name}")
-            return None
-
-        raw_ops, pixel_size = self.workpiece_to_ops.get(
-            workpiece, (None, None)
-        )
-        if raw_ops is None:
-            return None
-
-        # Return a copy to prevent modification of the cached original
-        ops = deepcopy(raw_ops)
-
-        if pixel_size:
-            traced_width_px, traced_height_px = pixel_size
-            size = workpiece.get_current_size() or (0, 0)
-            final_width_mm, final_height_mm = size
-            if (
-                final_width_mm is not None
-                and final_height_mm is not None
-                and traced_width_px > 0
-                and traced_height_px > 0
-            ):
-                scale_x = final_width_mm / traced_width_px
-                scale_y = final_height_mm / traced_height_px
-                ops.scale(scale_x, scale_y)
-
-        return ops
 
     def get_summary(self) -> str:
         power = int(self.power / self.laser.max_power * 100)

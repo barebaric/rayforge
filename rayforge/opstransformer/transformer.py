@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 from ..models.ops import Ops
-from ..task import ExecutionContext
+from ..task import ExecutionContextProxy
 
 
 class OpsTransformer(ABC):
@@ -17,7 +17,7 @@ class OpsTransformer(ABC):
     def run(
         self,
         ops: Ops,
-        context: Optional[ExecutionContext] = None
+        context: Optional[ExecutionContextProxy] = None
     ) -> None:
         """
         Runs the transformation.

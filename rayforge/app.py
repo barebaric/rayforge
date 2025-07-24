@@ -8,7 +8,16 @@ import os
 import gettext
 from pathlib import Path
 
+# ===================================================================
+# SECTION 1: SAFE, MODULE-LEVEL SETUP
+# This code will run for the main app AND all subprocesses.
+# ===================================================================
 
+# Configure basic logging first.
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 
@@ -19,15 +28,9 @@ warnings.filterwarnings(
     " match any known type",
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-# --------------------------------------------------------
-# Gettext MUST be initialized before importing app modules
-# --------------------------------------------------------
+# Gettext MUST be initialized before importing app modules.
+# This MUST run at the module level so that the `_` function is
+# available to any module (in any process) that gets imported.
 if hasattr(sys, '_MEIPASS'):
     # In a PyInstaller bundle, the project root is in a temporary
     # directory stored in sys._MEIPASS.
@@ -53,35 +56,15 @@ if hasattr(sys, '_MEIPASS'):
     files = [p.name for p in typelib_path.iterdir()]
     logger.info(f"Files in typelib path: {files}")
 
-# --------------------------------------------------------
-# Test PyCairo functionality
-# --------------------------------------------------------
-import cairo
-logger.info(f"PyCairo version: {cairo.version}")
-# Create a dummy surface to test PyCairo
-surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
-ctx = cairo.Context(surface)
-logger.info("Successfully created cairo.Context")
+# ===================================================================
+# SECTION 2: CLASS/FUNCTION DEFINITIONS
+# These are safe as they are just definitions.
+# ===================================================================
 
-# --------------------------------------------------------
-# Now we should be ready to import the app.
-# --------------------------------------------------------
+# We need Adw for the class definition, so this one import is okay here.
 import gi
-# Register the standalone 'cairo' module
-# as a foreign type *before* the GObject-introspected cairo is loaded.
-gi.require_foreign('cairo') 
-
-# Now, when gi.repository.cairo is loaded, it will know how to
-# interact with the already-imported standalone module.
-gi.require_version('cairo', '1.0')
 gi.require_version('Adw', '1')
-gi.require_version('Gtk', '4.0')
-gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Adw
-from rayforge.widgets.mainwindow import MainWindow
-from rayforge.task import task_mgr
-from rayforge.config import config_mgr
-
 
 class App(Adw.Application):
     def __init__(self, args):
@@ -90,15 +73,21 @@ class App(Adw.Application):
         self.args = args
 
     def do_activate(self):
+        # Import the window here to avoid module-level side-effects
+        from rayforge.widgets.mainwindow import MainWindow
         win = MainWindow(application=self)
         if self.args.filename:
             mime_type, _ = mimetypes.guess_type(self.args.filename)
             win.load_file(self.args.filename, mime_type)
         if self.args.dumpsurface:
             win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
-
         win.present()
 
+# ===================================================================
+# SECTION 3: MAIN APPLICATION ENTRY POINT
+# This function contains all logic that should ONLY run in the
+# main process.
+# ===================================================================
 
 def main():
     parser = argparse.ArgumentParser(
@@ -127,14 +116,41 @@ def main():
     # Set logging level based on the command-line argument
     log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
     logging.getLogger().setLevel(log_level)
-    logger = logging.getLogger(__name__)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
-    app = App(args)
-    app.run(None)
-    task_mgr.shutdown()
-    config_mgr.save()
+    # Print PyCairo version
+    import cairo
+    logger.info(f"PyCairo version: {cairo.version}")
 
+    # Register the standalone 'cairo' module
+    # as a foreign type *before* the GObject-introspected cairo is loaded.
+    gi.require_foreign('cairo')
+
+    # Now, when gi.repository.cairo is loaded, it will know how to
+    # interact with the already-imported standalone module.
+    gi.require_version('cairo', '1.0')
+    gi.require_version('Gtk', '4.0')
+    gi.require_version('GdkPixbuf', '2.0')
+
+    # Import modules that depend on GTK or manage global state
+    from rayforge.task import task_mgr
+    import rayforge.config
+
+    # Explicitly initialize the configuration managers. This ensures that
+    # this expensive, stateful setup only runs in the main process, not
+    # in any subprocesses spawned by the TaskManager.
+    rayforge.config.initialize_managers()
+
+    # Run application
+    app = App(args)
+    exit_code = app.run(None)
+    
+    # Shutdown
+    task_mgr.shutdown()
+    if rayforge.config.config_mgr:
+        rayforge.config.config_mgr.save()
+
+    return exit_code
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

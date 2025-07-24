@@ -177,6 +177,7 @@ def flip_segments(
     context: ExecutionContext, ordered: List[List[Command]]
 ) -> List[List[Command]]:
     improved = True
+    context.set_total(1)  # Simple task, just needs cancellation check
     while improved:
         if context.is_cancelled():
             return ordered
@@ -202,7 +203,7 @@ def flip_segments(
             if flipped_cost < cost:
                 ordered[i] = flipped
                 improved = True
-
+    context.set_progress(1)
     return ordered
 
 
@@ -305,13 +306,20 @@ class Optimize(OpsTransformer):
         if context.is_cancelled():
             return
 
-        result = []
-        total_long_segments = len(long_segments) if long_segments else 1
+        # Define weights for the progress reporting of the main
+        # optimization loop vs final reassembly.
+        optimize_weight = 0.9
+        reassemble_weight = 0.1
+
+        # This context covers the main optimization loop over all
+        # long_segments.
         optimize_ctx = context.sub_context(
-            base_progress=0,
-            progress_range=0.8,
-            total=total_long_segments,
+            base_progress=0.0,
+            progress_range=optimize_weight
         )
+
+        result = []
+        total_long_segments = len(long_segments)
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
                 return
@@ -322,57 +330,78 @@ class Optimize(OpsTransformer):
                 )
             )
 
-            # This sub-context manages the 4 optimization steps for one segment
+            # This sub-context manages all optimization steps for ONE
+            # long_segment. Its progress is a slice of the parent
+            # optimize_ctx's progress.
             segment_ctx = optimize_ctx.sub_context(
-                base_progress=i, progress_range=1, total=4
+                base_progress=i / total_long_segments,
+                progress_range=1 / total_long_segments,
             )
 
+            # Define weights for the internal stages of optimizing one
+            # segment.
+            split_sub_weight = 0.05
+            greedy_weight = 0.4
+            flip_weight = 0.2
+            two_opt_weight = 0.15
+
             # Step 3: Split long segments into short segments
+            context.set_message(_("Finding reorderable paths..."))
             segments = split_segments(long_segment)
-            segment_ctx.set_progress(1)
-            if context.is_cancelled():
-                return
+            # Mark this small stage as complete.
+            segment_ctx.set_progress(split_sub_weight)
+            if not segments:
+                continue
+
+            current_base = split_sub_weight
 
             # Step 4: Re-order segments
             # First, order them using a greedy algorithm
+            context.set_message(_("Ordering paths..."))
             greedy_ctx = segment_ctx.sub_context(
-                base_progress=1, progress_range=1
+                base_progress=current_base,
+                progress_range=greedy_weight
             )
             segments = greedy_order_segments(greedy_ctx, segments)
-            segment_ctx.set_progress(2)
-            if context.is_cancelled():
-                return
+            current_base += greedy_weight
+            segment_ctx.set_progress(current_base)
 
             # Second, flip segments to shorten distance (fast, no detailed
             # progress needed)
+            context.set_message(_("Flipping segments for improvement..."))
             flip_ctx = segment_ctx.sub_context(
-                base_progress=2, progress_range=1
+                base_progress=current_base, progress_range=flip_weight
             )
             segments = flip_segments(flip_ctx, segments)
-            segment_ctx.set_progress(3)
-            if context.is_cancelled():
-                return
+            current_base += flip_weight
+            segment_ctx.set_progress(current_base)
 
             # Apply 2-opt algorithm (has detailed progress)
+            context.set_message(_("Applying 2-opt refinement..."))
             two_opt_ctx = segment_ctx.sub_context(
-                base_progress=3, progress_range=1
+                base_progress=current_base, progress_range=two_opt_weight
             )
-            result += two_opt(two_opt_ctx, segments, 1000)
-            segment_ctx.set_progress(4)
-            if context.is_cancelled():
-                return
+            segments = two_opt(two_opt_ctx, segments, 1000)
+
+            result.append(segments)
+
+        # Ensure the optimization part reports full completion.
+        optimize_ctx.set_progress(1.0)
 
         # Step 5: Re-assemble the Ops object.
         context.set_message(_("Reassembling optimized paths..."))
-        total_reassemble_segments = len(result) if result else 1
         reassemble_ctx = context.sub_context(
-            base_progress=0.8,
-            progress_range=0.2,
-            total=total_reassemble_segments,
+            base_progress=optimize_weight,
+            progress_range=reassemble_weight
         )
+
+        flat_result = [item for sublist in result for item in sublist]
+        total_reassemble_segments = len(flat_result)
+        reassemble_ctx.set_total(total_reassemble_segments)
+
         ops.commands = []
         prev_state = State()
-        for i, segment in enumerate(result):
+        for i, segment in enumerate(flat_result):
             if not segment:
                 continue
 

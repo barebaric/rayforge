@@ -4,20 +4,125 @@ from blinker import Signal
 import logging
 from typing import Optional, Callable, Coroutine
 import threading
+import traceback
+from multiprocessing import get_context
+from queue import Empty, Full
 from .util.glib import idle_add
+
 
 logger = logging.getLogger(__name__)
 
 
-class ExecutionContext:
+# This wrapper needs to be a top-level function to be pickleable by
+# multiprocessing
+def _process_target_wrapper(
+    # The type of queue object will be determined by the multiprocessing
+    # context.
+    queue,
+    user_func: Callable,
+    user_args: tuple,
+    user_kwargs: dict,
+):
     """
-    An object that holds the execution context for a task.
-    It is thread-safe and performs debouncing in a background
-    thread using a single threading.Timer, minimizing load on the
-    GLib main loop.
-    It supports sub-contexts for cleanly managing nested operations.
+    A wrapper that runs in the subprocess, calling the user's function
+    and communicating status/results back to the parent via a queue.
+    """
+    proxy = ExecutionContextProxy(queue)
+    try:
+        result = user_func(proxy, *user_args, **user_kwargs)
+        queue.put_nowait(("done", result))
+    except Exception:
+        error_info = traceback.format_exc()
+        try:
+            queue.put(("error", error_info), block=True, timeout=1.0)
+        except Full:
+            logger.error(
+                f"Could not report exception to parent process:\n{error_info}"
+            )
+
+
+class ExecutionContextProxy:
+    """
+    A pickleable proxy for reporting progress from a subprocess via a queue.
     """
 
+    def __init__(self, progress_queue, base_progress=0.0, progress_range=1.0):
+        self._queue = progress_queue
+        self._base = base_progress
+        self._range = progress_range
+        self._total = 1.0  # Default total for normalization
+
+    def _report_normalized_progress(self, progress: float):
+        """
+        (Internal) Reports a 0.0-1.0 progress value, scaled to the proxy's
+        range.
+        """
+
+        # Clamp to a valid range before scaling
+        progress = max(0.0, min(1.0, progress))
+        scaled_progress = self._base + (progress * self._range)
+        try:
+            self._queue.put_nowait(("progress", scaled_progress))
+        except Full:
+            pass  # If the queue is full, we drop the update.
+
+    def set_total(self, total: float):
+        """
+        Sets or updates the total value for this context's progress
+        calculations.
+        """
+        if total <= 0:
+            self._total = 1.0
+        else:
+            self._total = float(total)
+
+    def set_progress(self, progress: float):
+        """
+        Sets the progress as an absolute value. This value is automatically
+        normalized against the context's total.
+        Example: If total=200, set_progress(20) reports 0.1 progress.
+        """
+        # The code calling this might already be sending normalized progress
+        # if it doesn't call set_total. In that case, total is 1.0, and this
+        # works.
+        normalized_progress = progress / self._total
+        self._report_normalized_progress(normalized_progress)
+
+    def set_message(self, message: str):
+        try:
+            self._queue.put_nowait(("message", message))
+        except Full:
+            pass
+
+    def sub_context(
+        self, base_progress, progress_range, total: float = 1.0, **kwargs
+    ) -> "ExecutionContextProxy":
+        """
+        Creates a sub-context that reports progress within a specified range.
+        """
+        new_base = self._base + (base_progress * self._range)
+        new_range = self._range * progress_range
+        # The new proxy gets its own total for its own progress calculations
+        new_proxy = ExecutionContextProxy(self._queue, new_base, new_range)
+        new_proxy.set_total(total)
+        return new_proxy
+
+    def is_cancelled(self) -> bool:
+        """
+        Provides a compatible API with ExecutionContext. The parent TaskManager
+        is responsible for terminating the process on cancellation.
+        """
+        return False
+
+    def flush(self):
+        """
+        Provides a compatible API with ExecutionContext. In the proxy,
+        messages are sent immediately, so there is nothing to flush.
+        """
+        pass
+
+
+class ExecutionContext:
     def __init__(
         self,
         update_callback: Optional[
@@ -25,7 +130,6 @@ class ExecutionContext:
         ] = None,
         check_cancelled: Optional[Callable[[], bool]] = None,
         debounce_interval_ms: int = 100,
-
         # Internal args for sub-contexting
         _parent_context: Optional["ExecutionContext"] = None,
         _base_progress: float = 0.0,
@@ -33,7 +137,6 @@ class ExecutionContext:
         _total: float = 1.0,
     ):
         self._parent_context = _parent_context
-        # Use the provided total, ensuring it's valid.
         self._total = float(_total) if _total > 0 else 1.0
 
         if self._parent_context:
@@ -357,6 +460,8 @@ class TaskManager:
         self._thread = threading.Thread(
             target=self._run_event_loop, args=(self._loop,), daemon=True
         )
+        # Get the spawn context for safe subprocess creation
+        self._mp_context = get_context("spawn")
         self._thread.start()
 
     def _run_event_loop(self, loop):
@@ -381,7 +486,7 @@ class TaskManager:
             logger.info(f"TaskManager: Adding new task key '{task.key}'.")
 
         self._tasks[task.key] = task
-        self._progress_map[task.key] = 0.0  # Register new task in the batch
+        self._progress_map[task.key] = 0.0
         task.status_changed.connect(self._on_task_updated)
 
         # Emit signal immediately when a new task is added
@@ -408,12 +513,24 @@ class TaskManager:
         task = Task(coro, *args, key=key, **kwargs)
         self.add_task(task, when_done)
 
+    def run_process(
+        self,
+        func: Callable,
+        *args,
+        key=None,
+        when_done: Optional[Callable] = None,
+        **kwargs,
+    ):
+        task = Task(self._process_runner, func, *args, key=key, **kwargs)
+        self.add_task(task, when_done)
+
     async def _run_task(self, task: Task, when_done: Optional[Callable]):
         """Run the task and clean up when done."""
         context = ExecutionContext(
             update_callback=task.update,
             check_cancelled=task.is_cancelled,
         )
+        context.task = task
         try:
             await task.run(context)
         except Exception:
@@ -429,12 +546,173 @@ class TaskManager:
             if when_done:
                 idle_add(when_done, task)
 
+    def _handle_process_queue_message(self, msg, context, state):
+        """
+        Process a single message from the subprocess queue.
+
+        Args:
+            msg: The (type, value) tuple from the queue.
+            context: The ExecutionContext for progress reporting.
+            state: A mutable dictionary to store 'result' and 'error'.
+        """
+        msg_type, value = msg
+        if msg_type == "progress":
+            context._report_normalized_progress(value)
+        elif msg_type == "message":
+            context.set_message(value)
+        elif msg_type == "done":
+            state["result"] = value
+            logger.debug("Task %s: Received 'done' from subprocess.",
+                         context.task.key)
+        elif msg_type == "error":
+            state["error"] = value
+            logger.error("Task %s: 'error' from subprocess:\n%s",
+                         context.task.key, value)
+
+    def _drain_process_queue(self, queue, context, state):
+        """Drain all pending messages from the subprocess queue."""
+        try:
+            while True:
+                msg = queue.get_nowait()
+                self._handle_process_queue_message(msg, context, state)
+        except Empty:
+            pass
+
+    async def _monitor_and_drain_queue(self, process, queue, context, state):
+        """
+        Monitor a subprocess and drain its queue until it exits.
+
+        Args:
+            process: The multiprocessing.Process to monitor.
+            queue: The queue to drain.
+            context: The ExecutionContext for progress reporting.
+            state: A mutable dictionary to check for early error exit.
+        """
+        task_key = context.task.key
+        while process.is_alive():
+            self._drain_process_queue(queue, context, state)
+            if state["error"]:
+                logger.warning(
+                    "Task %s: Error from subprocess, stopping monitor.",
+                    task_key
+                )
+                break
+            await asyncio.sleep(0.1)
+
+        logger.debug("Task %s: Process %s ended. Final queue drain.",
+                     task_key, process.pid)
+        self._drain_process_queue(queue, context, state)
+
+    def _check_process_result(self, process, state, task_key):
+        """
+        Check for errors after a subprocess has finished.
+
+        Args:
+            process: The completed multiprocessing.Process object.
+            state: A dictionary containing the final 'result' and 'error'.
+            task_key: The key of the task for logging/error messages.
+
+        Raises:
+            Exception: If the subprocess reported an error or exited with a
+                       non-zero status code.
+        """
+        if state["error"]:
+            msg = (
+                f"Subprocess for task '{task_key}' failed.\n"
+                f"--- Subprocess Traceback ---\n{state['error']}"
+            )
+            raise Exception(msg)
+
+        if process.exitcode != 0:
+            msg = (
+                f"Subprocess for task '{task_key}' terminated "
+                f"unexpectedly with exit code {process.exitcode}."
+            )
+            raise Exception(msg)
+
+    def _cleanup_process_resources(self, process, task_key):
+        """
+        Ensure a subprocess is terminated and its resources are closed.
+
+        Args:
+            process: The multiprocessing.Process to clean up.
+            task_key: The key of the task for logging.
+        """
+        if process.is_alive():
+            logger.warning(
+                "Task %s: Terminating subprocess %s.", task_key, process.pid
+            )
+            process.terminate()
+            process.join(timeout=1.0)
+
+            if process.is_alive():
+                logger.error(
+                    "Task %s: Subprocess %s did not die. Killing.",
+                    task_key, process.pid
+                )
+                process.kill()
+                process.join(timeout=1.0)
+
+        process.close()
+        logger.debug("Task %s: Subprocess resources cleaned up.", task_key)
+
+    async def _process_runner(
+        self,
+        context: ExecutionContext,
+        user_func: Callable,
+        *user_args,
+        **user_kwargs,
+    ):
+        """
+        Runs a function in a separate process and monitors it.
+
+        This coroutine creates and manages a subprocess, communicating with
+        it via a queue to report progress, messages, results, and errors.
+        It handles normal completion, failure, and cancellation.
+        """
+        task_key = context.task.key
+        queue = self._mp_context.Queue()
+        process_args = (queue, user_func, user_args, user_kwargs)
+        process = self._mp_context.Process(
+            target=_process_target_wrapper, args=process_args, daemon=True
+        )
+        # State dict to share status between helper methods.
+        state = {"result": None, "error": None}
+
+        try:
+            process.start()
+            logger.debug(
+                "Task %s: Started subprocess with PID %s",
+                task_key, process.pid
+            )
+
+            await self._monitor_and_drain_queue(
+                process, queue, context, state
+            )
+
+            self._check_process_result(process, state, task_key)
+
+            logger.debug(
+                "Task %s: Subprocess %s finished successfully.",
+                task_key, process.pid
+            )
+            return state["result"]
+        except asyncio.CancelledError:
+            logger.warning(
+                "Task %s: Coroutine cancelled, cleaning up subprocess %s.",
+                task_key, process.pid
+            )
+            # The finally block handles the actual termination.
+            raise
+        finally:
+            self._cleanup_process_resources(process, task_key)
+
     def _cleanup_task(self, task: Task):
         """
         Clean up a completed task.
         """
         current_task_in_dict = self._tasks.get(task.key)
-        if current_task_in_dict is task:  # Check object identity
+        if current_task_in_dict is task:
             logger.debug(
                 f"TaskManager: Cleaning up task '{task.key}' "
                 f"(status: {task.get_status()})."
@@ -460,12 +738,7 @@ class TaskManager:
         """Emit a single consolidated signal from the main thread."""
         progress = self.get_overall_progress()
         tasks = list(self._tasks.values())
-        idle_add(
-            self.tasks_updated.send,
-            self,
-            tasks=tasks,
-            progress=progress
-        )
+        idle_add(self.tasks_updated.send, self, tasks=tasks, progress=progress)
 
     def get_overall_progress(self):
         """Calculate the overall progress of all tasks."""
