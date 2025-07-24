@@ -1,56 +1,95 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 
 class TaskProgressBar(Gtk.Box):
+    """
+    A two-row progress widget.
+
+    The top row is a status bar (self.status_box) that contains a message
+    label. Users can append their own widgets to self.status_box.
+
+    The bottom row contains a thin progress bar that shows the overall
+    progress of all running tasks.
+    """
+
     def __init__(self, task_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.task_manager = task_manager
 
-        # Create the progress bar
-        self.progress_bar = Gtk.ProgressBar()
-        self.progress_bar.set_hexpand(True)
-        self.progress_bar.set_halign(Gtk.Align.FILL)
-        self.progress_bar.set_valign(Gtk.Align.CENTER)
+        # --- Top Row: Status Box for Label and other widgets ---
+        # This box is made public so users can add their own widgets to it.
+        self.status_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=3
+        )
 
-        # Create an overlay to place the text on top of the progress bar
-        self.overlay = Gtk.Overlay()
-        self.overlay.set_child(self.progress_bar)
+        # Create the label for the status message
+        self.label = Gtk.Label(
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.CENTER,
+            hexpand=False,
+            ellipsize=3,  # (3 = Pango.EllipsizeMode.END)
+        )
+        self.status_box.append(self.label)
+        self.append(self.status_box)
 
-        # Create the label for text
-        self.label = Gtk.Label()
-        self.label.set_halign(Gtk.Align.CENTER)
-        self.label.set_valign(Gtk.Align.CENTER)
-        self.label.set_ellipsize(3)  # (3 = END)
+        # A spacer widget that will expand and push all subsequent
+        # widgets to the right, ensuring they are always right-aligned.
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        self.status_box.append(spacer)
 
-        # Add the label as an overlay on top of the progress bar
-        self.overlay.add_overlay(self.label)
+        # --- Bottom Row: Progress Bar ---
+        self.progress_bar = Gtk.ProgressBar(
+            hexpand=True,
+            halign=Gtk.Align.FILL,
+            valign=Gtk.Align.CENTER,
+        )
+        self.progress_bar.add_css_class("thin-progress-bar")
+        self.append(self.progress_bar)
 
-        # Add the overlay to the box
-        self.append(self.overlay)
-
-        # Connect to TaskManager signals
+        self._apply_css()
         self._connect_signals()
-        self.set_opacity(0)  # Initially hidden
+
+        self.label.set_visible(False)
+        # CHANGED: Use opacity for the progress bar to reserve its space.
+        self.progress_bar.set_opacity(0)
+
+    def _apply_css(self):
+        """Applies custom CSS to style the widget."""
+        css_provider = Gtk.CssProvider()
+        css_data = b"""
+        progressbar.thin-progress-bar {
+            min-height: 5px;
+            /* Add a transition for a smooth fade in/out effect */
+            transition: opacity 0.25s;
+        }
+        """
+        css_provider.load_from_data(css_data)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
 
     def _connect_signals(self):
         """Connect to the single, consolidated TaskManager signal."""
-        self.task_manager.tasks_updated.connect(
-            self._on_tasks_updated
-        )
+        self.task_manager.tasks_updated.connect(self._on_tasks_updated)
 
     def _on_tasks_updated(self, sender, tasks, progress):
         """
         Update the progress bar and status text from a single event.
         """
-        self.progress_bar.set_fraction(progress)
+        has_tasks = bool(tasks)
 
-        if not tasks:
-            self.label.set_text("")
-            self.set_opacity(0)  # Hide when no tasks are running
+        # Show/hide the text label
+        self.label.set_visible(has_tasks)
+        # CHANGED: Fade the progress bar in or out by changing its opacity.
+        self.progress_bar.set_opacity(1 if has_tasks else 0)
+
+        if not has_tasks:
             return
 
-        # Show the progress bar when tasks are running
-        self.set_opacity(1)
+        self.progress_bar.set_fraction(progress)
 
         # Find the oldest task (first in the list)
         oldest_task = tasks[0]

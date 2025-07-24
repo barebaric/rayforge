@@ -36,27 +36,12 @@ css = """
 
 .statusbar {
     border-radius: 5px;
-    padding: 12px;
+    padding-top: 6px;
 }
 
 .statusbar:hover {
-    background-color: @theme_hover_bg_color;
-}
-
-/* Style for the progress bar */
-.statusbar > progressbar {
+    /* A subtle highlight that works on both light and dark themes. */
     background-color: alpha(@theme_fg_color, 0.1);
-    border-color: alpha(@theme_fg_color, 0.3);
-}
-
-/* Style for the progress bar's trough */
-.statusbar > progressbar > trough {
-    background-color: alpha(@theme_fg_color, 0.2);
-}
-
-/* Style for the progress bar's progress indicator */
-.statusbar > progressbar > trough > progress {
-    background-color: alpha(@theme_fg_color, 0.4);
 }
 """
 
@@ -305,42 +290,23 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_active_workpiece_changed
         )
 
-        # Create a status bar.
-        status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        status_bar.set_hexpand(True)
-        status_bar.set_halign(Gtk.Align.FILL)
-        status_bar.set_margin_end(12)
-        status_bar.get_style_context().add_class("statusbar")
-        vbox.append(status_bar)
+        # Create a two-row progress and status widget.
+        self.progress_widget = TaskProgressBar(task_mgr)
+        self.progress_widget.add_css_class("statusbar")
+        vbox.append(self.progress_widget)
 
-        # Add the TaskProgressBar to the status bar
-        self.progress_bar = TaskProgressBar(task_mgr)
-        status_bar.append(self.progress_bar)
-
-        # Machine and connection status box.
-        status_box_outer = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=6
-        )
-        status_box_outer.set_size_request(500, -1)
-        status_box_outer.set_hexpand(False)
-        status_bar.append(status_box_outer)
-
-        status_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=6
-        )
-        status_box.set_halign(Gtk.Align.END)
-        status_box.set_hexpand(True)
-        status_box_outer.append(status_box)
+        # Get the top row of the widget to add status monitors to it.
+        status_row = self.progress_widget.status_box
+        status_row.set_margin_start(12)
+        status_row.set_margin_end(12)
 
         # Monitor machine status
         label = Gtk.Label()
         label.set_markup(_("<b>Machine status:</b>"))
-        status_box.append(label)
+        status_row.append(label)
 
         self.machine_status = MachineStatusMonitor()
-        status_box.append(self.machine_status)
+        status_row.append(self.machine_status)
         self.machine_status.changed.connect(
             self.on_machine_status_changed
         )
@@ -349,18 +315,18 @@ class MainWindow(Adw.ApplicationWindow):
         label = Gtk.Label()
         label.set_markup(_("<b>Connection status:</b>"))
         label.set_margin_start(12)
-        status_box.append(label)
+        status_row.append(label)
 
         self.connection_status = ConnectionStatusMonitor()
-        status_box.append(self.connection_status)
+        status_row.append(self.connection_status)
         self.connection_status.changed.connect(
             self.on_connection_status_changed
         )
 
-        # Open machine log if status bar is clicked.
+        # Open machine log if the status row is clicked.
         gesture = Gtk.GestureClick()
-        gesture.connect("pressed", self.on_status_bar_clicked, status_bar)
-        status_bar.add_controller(gesture)
+        gesture.connect("pressed", self.on_status_bar_clicked, status_row)
+        status_row.add_controller(gesture)
 
         # Set up driver and config signals.
         self._try_driver_setup()
