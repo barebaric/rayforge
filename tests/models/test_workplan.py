@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock
-from rayforge.tasker import ExecutionContextProxy
+from rayforge.tasker.proxy import ExecutionContextProxy
 from rayforge.models.workstep import Contour, _execute_workstep_in_subprocess
 from rayforge.models.workpiece import WorkPiece
 from rayforge.render import SVGRenderer

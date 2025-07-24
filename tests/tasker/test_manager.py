@@ -7,8 +7,8 @@ from rayforge.tasker import (
     TaskManager,
     Task,
     ExecutionContext,
-    ExecutionContextProxy,
 )
+from rayforge.tasker.proxy import ExecutionContextProxy
 
 
 async def simple_coro(

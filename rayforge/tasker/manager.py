@@ -44,7 +44,7 @@ def _process_target_wrapper(
     A wrapper that runs in the subprocess, calling the user's function
     and communicating status/results back to the parent via a queue.
     """
-    from .context import ExecutionContextProxy
+    from .proxy import ExecutionContextProxy
 
     proxy = ExecutionContextProxy(queue)
     try:
