@@ -5,8 +5,9 @@ ExecutionContext module for managing task execution context.
 import abc
 import logging
 import threading
-from typing import Any, Optional, Callable
-from queue import Full, Queue
+from typing import Optional, Callable
+from queue import Full
+from multiprocessing.queues import Queue
 from ..util.glib import idle_add
 
 
@@ -132,7 +133,7 @@ class ExecutionContextProxy(BaseExecutionContext):
     """
 
     def __init__(
-        self, progress_queue: Queue[Any], base_progress=0.0, progress_range=1.0
+        self, progress_queue: Queue, base_progress=0.0, progress_range=1.0
     ):
         super().__init__(base_progress, progress_range, total=1.0)
         self._queue = progress_queue
