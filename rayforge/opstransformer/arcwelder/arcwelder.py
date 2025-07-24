@@ -1,14 +1,15 @@
 import math
-from ...models.ops import Ops, \
-                          LineToCommand, \
-                          ArcToCommand, \
-                          MoveToCommand
+from typing import Optional
+from ...tasker import BaseExecutionContext
+from ...models.ops import Ops, LineToCommand, ArcToCommand, MoveToCommand
 from ..transformer import OpsTransformer
-from .points import remove_duplicates, \
-                    are_colinear, \
-                    arc_direction, \
-                    fit_circle, \
-                    arc_to_polyline_deviation
+from .points import (
+    remove_duplicates,
+    are_colinear,
+    arc_direction,
+    fit_circle,
+    arc_to_polyline_deviation,
+)
 
 
 def contains_command(segment, cmdcls):
@@ -80,16 +81,28 @@ class ArcWeld(OpsTransformer):
     max_angular_step: Max angle between points on the arc
     """
     def __init__(self,
+                 enabled: bool = True,
                  tolerance=0.049,
                  min_points=6,
                  max_points=15,
                  max_angular_step=75):
+        super().__init__(enabled=enabled)
         self.tolerance = tolerance
         self.min_points = min_points
         self.max_points = max_points
         self.max_step = math.radians(max_angular_step)
 
-    def run(self, ops: Ops):
+    @property
+    def label(self) -> str:
+        return _("Arc Weld Path")
+
+    @property
+    def description(self) -> str:
+        return _("Welds lines into arcs for smoother paths")
+
+    def run(
+        self, ops: Ops, context: Optional[BaseExecutionContext] = None
+    ) -> None:
         segments = split_into_segments(ops.commands)
         ops.clear()
 

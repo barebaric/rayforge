@@ -286,6 +286,13 @@ class Optimize(OpsTransformer):
 
     5. Re-assemble the Ops object.
     """
+    @property
+    def label(self) -> str:
+        return _("Optimize Path")
+
+    @property
+    def description(self) -> str:
+        return _("Minimizes travel distance by reordering segments")
 
     def run(
         self, ops: Ops, context: Optional[BaseExecutionContext] = None

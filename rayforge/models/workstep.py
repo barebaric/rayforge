@@ -6,20 +6,15 @@ from copy import deepcopy
 from blinker import Signal
 from gi.repository import GLib
 from ..tasker import task_mgr, Task, ExecutionContextProxy
-from ..config import getflag
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
-from ..opstransformer import OpsTransformer, Optimize, Smooth, ArcWeld
+from ..opstransformer import OpsTransformer, Optimize, Smooth
 from .workpiece import WorkPiece
 from .laser import Laser
 from .ops import Ops, DisableAirAssistCommand
 
 
 logger = logging.getLogger(__name__)
-
-DEBUG_OPTIMIZE = getflag("DEBUG_OPTIMIZE")
-DEBUG_SMOOTH = getflag("DEBUG_SMOOTH")
-DEBUG_ARCWELD = getflag("DEBUG_ARCWELD")
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 DEBOUNCE_DELAY_MS = 250  # Delay in milliseconds for ops regeneration
@@ -164,12 +159,17 @@ def _execute_workstep_in_subprocess(
 
     # --- Transform phase ---
     if opstransformers:
-        num_transformers = len(opstransformers)
-        transform_context = proxy.sub_context(
-            base_progress=execute_weight, progress_range=transform_weight
-        )
+        enabled_transformers = [t for t in opstransformers if t.enabled]
+        num_transformers = len(enabled_transformers)
 
-        for i, transformer in enumerate(opstransformers):
+        if num_transformers > 0:
+            transform_context = proxy.sub_context(
+                base_progress=execute_weight, progress_range=transform_weight
+            )
+        else:
+            transform_context = None
+
+        for i, transformer in enumerate(enabled_transformers):
             proxy.set_message(
                 _("Applying '{transformer}' on '{workpiece}'").format(
                     transformer=transformer.__class__.__name__,
@@ -237,7 +237,7 @@ class WorkStep(ABC):
         # Maps UID to workpiece.
         self._workpieces: Dict[Any, WorkPiece] = {}
         self._ops_cache: Dict[
-            Any, Tuple[Optional[Ops], Optional[Tuple[float, float]]]
+            Any, Tuple[Optional[Ops], Optional[Tuple[int, int]]]
         ] = {}
         self._workpiece_update_timers: Dict[Any, int] = {}
 
@@ -258,16 +258,6 @@ class WorkStep(ABC):
         self.cut_speed = max_cut_speed
         self.travel_speed = max_travel_speed
         self.air_assist = False
-
-        if DEBUG_OPTIMIZE:
-            logger.info("Travel time optimization debugging enabled")
-            self.opstransformers.append(Optimize())
-        if DEBUG_SMOOTH:
-            logger.info("Smoothing enabled")
-            self.opstransformers.append(Smooth())
-        if DEBUG_ARCWELD:
-            logger.info("Arcweld enabled")
-            self.opstransformers.append(ArcWeld())
 
     def update_workpiece(self, workpiece: WorkPiece):
         uid = workpiece.uid
@@ -519,6 +509,10 @@ class Outline(WorkStep):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(OutlineTracer(), name=name, **kwargs)
+        self.opstransformers = [
+            Smooth(enabled=False, amount=20),
+            Optimize(enabled=True),
+        ]
 
 
 class Contour(WorkStep):
@@ -526,6 +520,10 @@ class Contour(WorkStep):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(EdgeTracer(), name=name, **kwargs)
+        self.opstransformers = [
+            Smooth(enabled=False, amount=20),
+            Optimize(enabled=True),
+        ]
 
 
 class Rasterize(WorkStep):
@@ -533,3 +531,6 @@ class Rasterize(WorkStep):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(Rasterizer(), name=name, **kwargs)
+        self.opstransformers = [
+            Optimize(enabled=True),
+        ]
