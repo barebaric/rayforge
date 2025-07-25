@@ -5,7 +5,8 @@ TaskManager module for managing task execution.
 from __future__ import annotations
 import asyncio
 import logging
-import threading  # Keep this import
+import threading
+import time
 from multiprocessing import get_context, Process
 from multiprocessing.context import BaseContext
 from multiprocessing.queues import Queue
@@ -15,7 +16,6 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
-    List,
     Optional,
 )
 from blinker import Signal
@@ -61,20 +61,20 @@ class TaskManager:
 
             old_task = self._tasks.get(task.key)
             if old_task:
-                logger.info(
+                logger.debug(
                     f"TaskManager: Found existing task key '{task.key}'. "
                     f"Attempting cancellation."
                 )
                 old_task.cancel()
             else:
-                logger.info(f"TaskManager: Adding new task key '{task.key}'.")
+                logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
 
             self._tasks[task.key] = task
             self._progress_map[task.key] = 0.0
             task.status_changed.connect(self._on_task_updated)
 
             # Emit signal immediately when a new task is added
-            self._emit_tasks_updated()
+            self._emit_tasks_updated_unsafe()
 
         asyncio.run_coroutine_threadsafe(
             self._run_task(task, when_done), self._loop
@@ -298,13 +298,16 @@ class TaskManager:
 
         # The queue must be a multiprocessing queue, not an asyncio one.
         queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
-
-        process_args = (queue, user_func, user_args, user_kwargs)
-        process: Process = self._mp_context.Process(  # type: ignore
-            target=process_target_wrapper, args=process_args, daemon=True
-        )
+        process: Optional[Process] = None
 
         try:
+            process_args = queue, user_func, user_args, user_kwargs
+            process = self._mp_context.Process(  # type: ignore
+                target=process_target_wrapper, args=process_args, daemon=True
+            )
+            if not process:
+                raise RuntimeError(f"{task_key} Failed to create subprocess.")
+
             await loop.run_in_executor(None, process.start)
             logger.debug(
                 "Task %s: Started subprocess with PID %s",
@@ -331,7 +334,10 @@ class TaskManager:
             # The finally block handles the actual termination.
             raise
         finally:
-            self._cleanup_process_resources(process, task_key)
+            if process:
+                await loop.run_in_executor(
+                    None, self._cleanup_process_resources, process, task_key
+                )
 
     def _cleanup_task(self, task: Task) -> None:
         """
@@ -358,38 +364,51 @@ class TaskManager:
                     f"'{task.key}' (status: {task.get_status()}) as it was "
                     f"already replaced in the manager."
                 )
-            self._emit_tasks_updated()
+            self._emit_tasks_updated_unsafe()
 
     def _on_task_updated(self, task: Task) -> None:
-        """Handle task status or progress changes."""
-        with self._lock:  # <-- FIX: Protect shared state
+        """Handle task status changes. This method is thread-safe."""
+        with self._lock:
             if task.key in self._progress_map:
                 self._progress_map[task.key] = task.get_progress()
-            self._emit_tasks_updated()
+            self._emit_tasks_updated_unsafe()
 
-    def _emit_tasks_updated(self) -> None:
-        """Emit a single consolidated signal. Assumes lock is already held."""
-        # This method is now always called from a block that holds the lock
-        progress = self.get_overall_progress()  # This will acquire the lock
-        tasks: List[Task] = list(self._tasks.values())
-        # Release the lock before calling idle_add
+    def _emit_tasks_updated_unsafe(self) -> None:
+        """
+        Emit a signal with current state. Must be called with the lock held.
+        """
+        progress = self.get_overall_progress_unsafe()
+        tasks = list(self._tasks.values())
         idle_add(self.tasks_updated.send, self, tasks=tasks, progress=progress)
 
     def get_overall_progress(self) -> float:
-        """Calculate the overall progress of all tasks."""
-        with self._lock:  # <-- FIX: Protect shared state
-            if not self._progress_map:
-                return 1.0
+        """Calculate overall progress. This method is thread-safe."""
+        with self._lock:
+            return self.get_overall_progress_unsafe()
 
-            total_progress = sum(self._progress_map.values())
-            return total_progress / len(self._progress_map)
+    def get_overall_progress_unsafe(self) -> float:
+        """Calculate overall progress. Assumes lock is held."""
+        if not self._progress_map:
+            return 1.0
+        return sum(self._progress_map.values()) / len(self._progress_map)
 
     def shutdown(self) -> None:
-        """Cancel all tasks and stop the event loop."""
-        with self._lock:  # <-- FIX: Protect shared state
-            for task in self._tasks.values():
-                task.cancel()
-            self._tasks.clear()
-            self._progress_map.clear()
+        """
+        Cancel all tasks and stop the event loop.
+        This method is thread-safe.
+        """
+        with self._lock:
+            tasks_to_cancel = list(self._tasks.values())
+
+        logger.debug(f"Shutting down. Cancelling {len(tasks_to_cancel)} tasks")
+        for task in tasks_to_cancel:
+            task.cancel()
+
+        # Wait a moment for cancellations to propagate before stopping the loop
+        # This is not strictly necessary but can help with cleaner shutdown.
+        if tasks_to_cancel:
+            time.sleep(0.1)
+
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
+        logger.debug("TaskManager shutdown complete.")
