@@ -2,11 +2,13 @@ import asyncio
 import threading
 import time
 from unittest.mock import Mock
+from multiprocessing import get_context
 import pytest
 from rayforge.tasker import (
     TaskManager,
     Task,
     ExecutionContext,
+    CancelledError
 )
 from rayforge.tasker.proxy import ExecutionContextProxy
 
@@ -359,7 +361,12 @@ class TestProcessTasks:
         Verify that a running subprocess can be terminated via cancellation.
         """
         completion_event = threading.Event()
-        started_event = manager._mp_context.Event()
+        # START OF MINIMAL CHANGE
+        # Create a context locally for the test, as the manager no longer
+        # holds a shared one.
+        mp_context = get_context("spawn")
+        started_event = mp_context.Event()
+        # END OF MINIMAL CHANGE
         final_task = None
 
         def on_done(task: Task):
@@ -383,7 +390,7 @@ class TestProcessTasks:
         )
         assert final_task is not None
         assert final_task.get_status() == "canceled"
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(CancelledError):
             final_task.result()
         assert not manager._tasks
 

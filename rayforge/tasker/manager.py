@@ -8,7 +8,7 @@ import logging
 import threading
 import time
 from multiprocessing import get_context
-from multiprocessing.context import BaseContext, SpawnProcess
+from multiprocessing.context import SpawnProcess
 from multiprocessing.queues import Queue
 from queue import Empty
 from typing import (
@@ -17,7 +17,7 @@ from typing import (
     Coroutine,
     Dict,
     Optional,
-    cast,
+    cast,  # Import cast for the Pylance fix
 )
 from blinker import Signal
 from ..util.glib import idle_add
@@ -42,8 +42,6 @@ class TaskManager:
         self._thread: threading.Thread = threading.Thread(
             target=self._run_event_loop, args=(self._loop,), daemon=True
         )
-        # Get the spawn context for safe subprocess creation
-        self._mp_context: BaseContext = get_context("spawn")
         self._thread.start()
 
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -112,7 +110,7 @@ class TaskManager:
         # The real function/args are passed for the manager thread to use.
 
         # Define an async placeholder that matches the required type signature.
-        async def _process_placeholder(*args, **kwargs):
+        async def _process_placeholder(*_args, **_kwargs):
             pass
 
         task = Task(_process_placeholder, func, *args, key=key, **kwargs)
@@ -170,7 +168,9 @@ class TaskManager:
         )
 
         process: Optional[SpawnProcess] = None
-        queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
+        # Get a fresh context within this thread.
+        mp_context = get_context("spawn")
+        queue: Queue[tuple[str, Any]] = mp_context.Queue()
         state: Dict[str, Any] = {"result": None, "error": None}
 
         try:
@@ -185,11 +185,8 @@ class TaskManager:
                 user_args,
                 user_kwargs,
             )
-
-            # Cast the context to Any to satisfy Pylance, as BaseContext
-            # does not define Process, but the spawn context we use does.
-            self._mp_context_any = cast(Any, self._mp_context)
-            process = self._mp_context_any.Process(
+            # Use the thread-local context to create the Process
+            process = cast(Any, mp_context).Process(
                 target=process_target_wrapper, args=process_args, daemon=True
             )
             if not process:
