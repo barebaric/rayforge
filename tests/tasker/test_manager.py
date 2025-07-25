@@ -25,6 +25,31 @@ async def simple_coro(
     return result
 
 
+async def controllable_coro(
+    context: ExecutionContext,
+    name: str,
+    steps: int,
+    proceed_events: list[threading.Event],
+    done_events: list[threading.Event],
+):
+    """
+    A coroutine controlled by thread-safe events, allowing deterministic
+    testing across different event loops.
+    """
+    context.set_total(steps)
+    for i in range(steps):
+        # 1. Asynchronously wait for the thread-safe event without blocking
+        # the loop
+        await asyncio.to_thread(proceed_events[i].wait)
+
+        # 2. Perform the work for this step
+        context.set_progress(i + 1)
+        context.set_message(f"{name} step {i+1}")
+
+        # 3. Signal back to the test (this is a thread-safe call)
+        done_events[i].set()
+
+
 async def failing_coro(context: ExecutionContext):
     """A coroutine that intentionally fails."""
     await asyncio.sleep(0.01)
@@ -109,6 +134,46 @@ def patch_idle_add(monkeypatch):
     # Patch in both modules where it is imported
     monkeypatch.setattr("rayforge.tasker.manager.idle_add", mock_idle_add)
     monkeypatch.setattr("rayforge.tasker.context.idle_add", mock_idle_add)
+
+
+class ControllableTimer:
+    """A mock Timer class that can be manually controlled."""
+
+    def __init__(self, interval, function, args=None, kwargs=None):
+        self.interval = interval
+        self.function = function
+        self.args = args or []
+        self.kwargs = kwargs or {}
+        self.is_started = False
+        self.is_cancelled = False
+
+    def start(self):
+        self.is_started = True
+
+    def cancel(self):
+        self.is_cancelled = True
+
+    def fire(self):
+        """Manually trigger the timer's function."""
+        if self.is_started and not self.is_cancelled:
+            self.function(*self.args, **self.kwargs)
+
+
+@pytest.fixture
+def mock_timer_factory(mocker):
+    """
+    Mocks threading.Timer to make the ExecutionContext's debounce
+    mechanism deterministic and controllable.
+    """
+    timers = []
+
+    def factory(*args, **kwargs):
+        timer = ControllableTimer(*args, **kwargs)
+        timers.append(timer)
+        return timer
+
+    mocker.patch("rayforge.tasker.context.threading.Timer", factory)
+    return timers
 
 
 class TestCoroutineTasks:
@@ -349,35 +414,72 @@ class TestProcessTasks:
 class TestTaskManagerGlobals:
     """Tests for the manager's overall state and signals."""
 
-    def test_overall_progress(self, manager: TaskManager):
+    @pytest.mark.asyncio
+    async def test_overall_progress(
+        self, manager: TaskManager, mock_timer_factory
+    ):
         """Verify the calculation of overall progress."""
-        assert manager.get_overall_progress() == 1.0  # Should be 1.0 when idle
+        assert manager.get_overall_progress() == 1.0
 
-        done1 = threading.Event()
-        done2 = threading.Event()
+        steps = 4
+        p_events1, p_events2 = (
+            [threading.Event() for _ in range(steps)] for _ in range(2)
+        )
+        d_events1, d_events2 = (
+            [threading.Event() for _ in range(steps)] for _ in range(2)
+        )
+        done_event1, done_event2 = threading.Event(), threading.Event()
+
         manager.add_coroutine(
-            simple_coro,
-            duration=0.4,
+            controllable_coro,
+            "Task1",
+            steps,
+            p_events1,
+            d_events1,
             key="c1",
-            when_done=lambda t: done1.set(),
+            when_done=lambda t: done_event1.set(),
         )
         manager.add_coroutine(
-            simple_coro,
-            duration=0.4,
+            controllable_coro,
+            "Task2",
+            steps,
+            p_events2,
+            d_events2,
             key="c2",
-            when_done=lambda t: done2.set(),
+            when_done=lambda t: done_event2.set(),
         )
 
-        time.sleep(0.05)  # Let them start
-        assert manager.get_overall_progress() < 0.1
+        await asyncio.sleep(0.02)
+        assert manager.get_overall_progress() == 0.0
 
-        time.sleep(0.2)  # Let them run to about halfway
-        progress = manager.get_overall_progress()
-        assert 0.4 < progress < 0.7, f"Progress was {progress}, expected ~0.5"
+        # --- Step 1: Progress task 1 by one step (25%) ---
+        p_events1[0].set()
+        await asyncio.to_thread(d_events1[0].wait)
+        # Manually fire the debounce timer to force the progress update
+        mock_timer_factory[-1].fire()
+        assert manager.get_overall_progress() == pytest.approx(0.125)
 
-        assert done1.wait(timeout=1) and done2.wait(timeout=1)
-        # Give a moment for final cleanup and signal
-        time.sleep(0.05)
+        # --- Step 2: Progress task 2 by two steps (50%) ---
+        p_events2[0].set()
+        await asyncio.to_thread(d_events2[0].wait)
+        mock_timer_factory[-1].fire()  # Fire after first step
+        p_events2[1].set()
+        await asyncio.to_thread(d_events2[1].wait)
+        mock_timer_factory[-1].fire()  # Fire after second step
+        assert manager.get_overall_progress() == pytest.approx(0.375)
+
+        # --- Step 3: Let both tasks complete ---
+        for i in range(1, steps):
+            p_events1[i].set()
+        for i in range(2, steps):
+            p_events2[i].set()
+
+        await asyncio.gather(
+            asyncio.to_thread(done_event1.wait),
+            asyncio.to_thread(done_event2.wait),
+        )
+
+        await asyncio.sleep(0.02)
         assert manager.get_overall_progress() == 1.0
         assert not manager._tasks
 
