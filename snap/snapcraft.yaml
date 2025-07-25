@@ -20,10 +20,12 @@ apps:
       - wayland
       - opengl
       - camera
+      - shared-memory
     environment:
       GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages
       LD_LIBRARY_PATH: $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy:$SNAP/usr/lib/rayforge-libs
+      LD_PRELOAD: $SNAP/bin/semwraplib.so
 
 slots:
   rayforge:
@@ -32,6 +34,15 @@ slots:
     name: com.barebaric.rayforge
 
 parts:
+  semwraplib:
+    plugin: dump
+    source: snap
+    override-build: |
+      mkdir -p ../install/bin
+      gcc -g -O0 -Wall -Wstrict-prototypes -fPIC -shared semwraplib.c -o ../install/bin/semwraplib.so -ldl
+    build-packages:
+    - build-essential
+
   rayforge:
     plugin: python
     source: .
