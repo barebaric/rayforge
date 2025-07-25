@@ -358,12 +358,11 @@ class TestProcessTasks:
         Verify that a running subprocess can be terminated via cancellation.
         """
         completion_event = threading.Event()
-        # START OF MINIMAL CHANGE
+
         # Create a context locally for the test, as the manager no longer
         # holds a shared one.
         mp_context = get_context("spawn")
         started_event = mp_context.Event()
-        # END OF MINIMAL CHANGE
         final_task = None
 
         def on_done(task: Task):

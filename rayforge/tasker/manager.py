@@ -17,7 +17,7 @@ from typing import (
     Coroutine,
     Dict,
     Optional,
-    cast,  # Import cast for the Pylance fix
+    cast,
 )
 from blinker import Signal
 from ..util.glib import idle_add
@@ -116,14 +116,9 @@ class TaskManager:
         task = Task(_process_placeholder, func, *args, key=key, **kwargs)
         self.add_task(task, when_done)
 
-        # Subprocesses are managed in a simple, dedicated thread to avoid
-        # deadlocks.
-        manager_thread = threading.Thread(
-            target=self._manage_subprocess_lifecycle,
-            args=(task, when_done),
-            daemon=True,
-        )
-        manager_thread.start()
+        # Schedule the creation and start of the process on the main GTK
+        # thread. This is critical to avoid deadlocks on Windows.
+        idle_add(self._start_process_on_main_thread, task, when_done)
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -148,17 +143,17 @@ class TaskManager:
             if when_done:
                 idle_add(when_done, task)
 
-    def _manage_subprocess_lifecycle(
+    def _start_process_on_main_thread(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
     ) -> None:
         """
-        Synchronously manages a subprocess lifecycle in a dedicated thread.
+        Creates and starts the subprocess on the main thread to avoid
+        deadlocks.
+        Then, it launches a simple thread to monitor the process.
         """
-        context = ExecutionContext(
-            update_callback=task.update,
-            check_cancelled=task.is_cancelled,
-        )
-        context.task = task
+        # Get a fresh context on the main thread.
+        mp_context = get_context("spawn")
+        queue: Queue[tuple[str, Any]] = mp_context.Queue()
 
         # Unpack the real function and args from the task object
         user_func, user_args, user_kwargs = (
@@ -167,37 +162,61 @@ class TaskManager:
             task.kwargs,
         )
 
-        process: Optional[SpawnProcess] = None
-        # Get a fresh context within this thread.
-        mp_context = get_context("spawn")
-        queue: Queue[tuple[str, Any]] = mp_context.Queue()
-        state: Dict[str, Any] = {"result": None, "error": None}
+        log_level = logging.getLogger().getEffectiveLevel()
+        process_args = (queue, log_level, user_func, user_args, user_kwargs)
 
         try:
             if task.is_cancelled():
+                # Task was cancelled before we even got a chance to run.
                 raise CancelledError("Task cancelled before process start.")
 
-            log_level = logging.getLogger().getEffectiveLevel()
-            process_args = (
-                queue,
-                log_level,
-                user_func,
-                user_args,
-                user_kwargs,
-            )
-            # Use the thread-local context to create the Process
             process = cast(Any, mp_context).Process(
                 target=process_target_wrapper, args=process_args, daemon=True
             )
             if not process:
                 raise RuntimeError("Failed to create sub-process")
 
-            # This is a simple blocking call, safe in this thread
             process.start()
             logger.debug(
                 f"Task {task.key}: Started subprocess with PID {process.pid}"
             )
 
+            # Now that the process is started, launch the monitor thread.
+            monitor_thread = threading.Thread(
+                target=self._monitor_subprocess_lifecycle,
+                args=(task, when_done, process, queue),
+                daemon=True,
+            )
+            monitor_thread.start()
+
+        except Exception as e:
+            # Handle failures during the startup phase
+            logger.error(
+                f"Task {task.key}: Failed to start process on main thread",
+                exc_info=True,
+            )
+            task._status = "failed"
+            task._task_exception = e
+            task.status_changed.send(task)
+            self._cleanup_task(task)
+            if when_done:
+                idle_add(when_done, task)
+
+    def _monitor_subprocess_lifecycle(
+        self, task: Task, when_done: Optional[Callable[[Task], None]],
+        process: SpawnProcess, queue: Queue[tuple[str, Any]]
+    ) -> None:
+        """
+        Synchronously monitors a subprocess lifecycle in a dedicated thread.
+        """
+        context = ExecutionContext(
+            update_callback=task.update,
+            check_cancelled=task.is_cancelled,
+        )
+        context.task = task
+        state: Dict[str, Any] = {"result": None, "error": None}
+
+        try:
             # Synchronous monitoring loop
             while process.is_alive():
                 self._drain_process_queue(queue, context, state)
@@ -220,14 +239,13 @@ class TaskManager:
             task._task_exception = e
         except Exception as e:
             logger.error(
-                f"Task {task.key}: Process manager thread failed.",
+                f"Task {task.key}: Process monitor thread failed.",
                 exc_info=True,
             )
             task._status = "failed"
             task._task_exception = e
         finally:
-            if process:
-                self._cleanup_process_resources(process, task.key)
+            self._cleanup_process_resources(process, task.key)
             context.flush()
             # Manually trigger final status update, since run() wasn't used
             task.status_changed.send(task)
