@@ -1,5 +1,5 @@
 import math
-from typing import Optional
+from typing import Optional, Dict, Any
 from ...tasker import BaseExecutionContext
 from ...models.ops import Ops, LineToCommand, ArcToCommand, MoveToCommand
 from ..transformer import OpsTransformer
@@ -216,3 +216,30 @@ class ArcWeld(OpsTransformer):
                     return False
             prev_angle = angle
         return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the transformer's configuration to a dictionary."""
+        data = super().to_dict()
+        data.update({
+            'tolerance': self.tolerance,
+            'min_points': self.min_points,
+            'max_points': self.max_points,
+            'max_angular_step': math.degrees(self.max_step),
+        })
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ArcWeld':
+        """Creates an ArcWeld instance from a dictionary."""
+        if data.get('name') != cls.__name__:
+            raise ValueError(
+                f"Mismatched transformer name: expected {cls.__name__},"
+                f" got {data.get('name')}"
+            )
+        return cls(
+            enabled=data.get('enabled', True),
+            tolerance=data.get('tolerance', 0.049),
+            min_points=data.get('min_points', 6),
+            max_points=data.get('max_points', 15),
+            max_angular_step=data.get('max_angular_step', 75),
+        )

@@ -1,5 +1,5 @@
 import math
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 from ..models.ops import Ops, LineToCommand, MoveToCommand
 from ..tasker import BaseExecutionContext
 from .transformer import OpsTransformer
@@ -227,3 +227,28 @@ class Smooth(OpsTransformer):
         cos_theta = min(1.0, max(-1.0, dot / (mag1 * mag2)))
 
         return math.acos(cos_theta)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the transformer's configuration to a dictionary."""
+        data = super().to_dict()
+        data.update(
+            {
+                "amount": self.amount,
+                "corner_angle_threshold": math.degrees(self.corner_threshold),
+            }
+        )
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Smooth":
+        """Creates a Smooth instance from a dictionary."""
+        if data.get("name") != cls.__name__:
+            raise ValueError(
+                f"Mismatched transformer name: expected {cls.__name__},"
+                f" got {data.get('name')}"
+            )
+        return cls(
+            enabled=data.get("enabled", True),
+            amount=data.get("amount", 20),
+            corner_angle_threshold=data.get("corner_angle_threshold", 45),
+        )

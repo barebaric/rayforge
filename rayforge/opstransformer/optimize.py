@@ -2,7 +2,7 @@ import numpy as np
 import math
 import logging
 from copy import copy
-from typing import Optional, List, cast
+from typing import Optional, List, cast, Dict, Any
 from ..models.ops import Ops, State, ArcToCommand, Command
 from .transformer import OpsTransformer
 from ..tasker import BaseExecutionContext, ExecutionContext
@@ -436,3 +436,18 @@ class Optimize(OpsTransformer):
         context.set_message(_("Optimization complete"))
         context.set_progress(1.0)
         context.flush()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the transformer's configuration to a dictionary."""
+        return super().to_dict()
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Optimize':
+        """Creates an Optimize instance from a dictionary."""
+        if data.get('name') != cls.__name__:
+            raise ValueError(
+                f"Mismatched transformer name: expected {cls.__name__},"
+                f" got {data.get('name')}"
+            )
+        # This transformer has no configurable parameters other than 'enabled'
+        return cls(enabled=data.get('enabled', True))

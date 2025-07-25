@@ -38,5 +38,18 @@ class KeepColor(Modifier):
         super().__init__()
         self.color = r, g, b
 
+    def to_dict(self):
+        d = super().to_dict()
+        d.update({
+            'r': self.color[0],
+            'g': self.color[1],
+            'b': self.color[2],
+        })
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(r=d['r'], g=d['g'], b=d['b'])
+
     def run(self, surface):
         make_transparent_except_color(surface, *self.color)

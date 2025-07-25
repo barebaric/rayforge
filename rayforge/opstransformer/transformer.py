@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Dict, Any
 from ..models.ops import Ops
 from ..tasker import BaseExecutionContext
 
@@ -50,3 +50,40 @@ class OpsTransformer(ABC):
             context: Used for progress and cancellation hooks.
         """
         pass
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the transformer's configuration to a dictionary."""
+        return {
+            'name': self.__class__.__name__,
+            'enabled': self.enabled,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'OpsTransformer':
+        """
+        Acts as a factory to create a transformer instance from a dictionary.
+        This method should be called on the base class, e.g.,
+        `OpsTransformer.from_dict(...)`.
+        It determines the correct subclass to instantiate based on the 'name'
+        field.
+        """
+        # If this is called on a subclass, it must be implemented there.
+        # This factory logic is only for when called on the base class.
+        if cls is not OpsTransformer:
+            raise NotImplementedError(
+                f"{cls.__name__} must implement its own from_dict classmethod."
+            )
+
+        # Lazy import to avoid circular dependency
+        from . import transformer_by_name
+
+        name = data.get('name')
+        if not name:
+            raise ValueError("Transformer data is missing 'name' field.")
+
+        target_cls = transformer_by_name.get(name)
+        if not target_cls:
+            raise ValueError(f"Unknown transformer name: '{name}'")
+
+        # Dispatch to the specific class's from_dict method
+        return target_cls.from_dict(data)

@@ -103,25 +103,6 @@ class WorkStep(ABC):
             "pixels_per_mm": self.pixels_per_mm,
         }
 
-        try:
-            (
-                opsproducer_copy,
-                modifiers_copy,
-                opstransformers_copy,
-            ) = deepcopy(
-                (
-                    self.opsproducer,
-                    self.modifiers,
-                    self.opstransformers,
-                )
-            )
-        except Exception as e:
-            logger.error(
-                f"Could not prepare data for subprocess: {e}", exc_info=True
-            )
-            self.ops_generation_finished.send(self, workpiece=workpiece)
-            return
-
         def when_done_callback(task: Task):
             self._on_generation_complete(
                 task, uid, current_generation_id
@@ -130,9 +111,9 @@ class WorkStep(ABC):
         task_mgr.run_process(
             run_workstep_in_subprocess,
             workpiece.to_dict(),
-            opsproducer_copy,
-            modifiers_copy,
-            opstransformers_copy,
+            self.opsproducer.to_dict(),
+            [m.to_dict() for m in self.modifiers],
+            [o.to_dict() for o in self.opstransformers],
             self.laser.to_dict(),
             settings,
             key=key,

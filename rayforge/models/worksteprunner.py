@@ -1,8 +1,5 @@
 from typing import Any, List, Tuple, Iterator
 from ..tasker.proxy import ExecutionContextProxy
-from ..modifier import Modifier
-from ..opsproducer import OpsProducer
-from ..opstransformer import OpsTransformer
 
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
@@ -15,9 +12,9 @@ def run_workstep_in_subprocess(
     proxy: ExecutionContextProxy,
     # Pass all required state. Assume these are pickleable.
     workpiece_dict: dict[str, Any],
-    opsproducer: OpsProducer,
-    modifiers: List[Modifier],
-    opstransformers: List[OpsTransformer],
+    opsproducer_dict: dict[str, Any],
+    modifiers_dict: List[dict],
+    opstransformers_dict: List[dict],
     laser_dict: dict[str, Any],
     settings: dict,
 ):
@@ -26,18 +23,25 @@ def run_workstep_in_subprocess(
     logger = logging.getLogger(
         "rayforge.models.workstep.run_workstep_in_subprocess"
     )
-    logger.debug(
-        f"Starting workstep execution with settings: {settings}"
-    )
+    logger.debug(f"Starting workstep execution with settings: {settings}")
 
+    from ..modifier import Modifier
+    from ..opsproducer import OpsProducer
+    from ..opstransformer import OpsTransformer
     from .workpiece import WorkPiece
     from .laser import Laser
     from .ops import Ops, DisableAirAssistCommand
+
     logger.debug(
         f"Imports completed, workpiece_dict: {workpiece_dict},"
         f" laser_dict: {laser_dict}"
     )
 
+    modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
+    opsproducer = OpsProducer.from_dict(opsproducer_dict)
+    opstransformers = [
+        OpsTransformer.from_dict(m) for m in opstransformers_dict
+    ]
     laser = Laser.from_dict(laser_dict)
     workpiece = WorkPiece.from_dict(workpiece_dict)
 
