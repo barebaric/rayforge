@@ -6,6 +6,52 @@ from rayforge.tasker.task import Task
 from rayforge.tasker.context import ExecutionContext
 
 
+@pytest.fixture
+def mock_idle_add(mocker):
+    """Mocks glib.idle_add to execute callbacks immediately."""
+    def idle_add_immediate(callback, *args, **kwargs):
+        callback(*args, **kwargs)
+        return 0
+    return mocker.patch("rayforge.tasker.context.idle_add", idle_add_immediate)
+
+
+class ControllableTimer:
+    """A mock Timer class that can be manually controlled."""
+    def __init__(self, interval, function, args=None, kwargs=None):
+        self.interval = interval
+        self.function = function
+        self.args = args or []
+        self.kwargs = kwargs or {}
+        self.is_started = False
+        self.is_cancelled = False
+
+    def start(self):
+        self.is_started = True
+
+    def cancel(self):
+        self.is_cancelled = True
+
+    def fire(self):
+        """Manually trigger the timer's function."""
+        if self.is_started and not self.is_cancelled:
+            self.function(*self.args, **self.kwargs)
+
+
+@pytest.fixture
+def mock_timer_factory(mocker):
+    """
+    Mocks threading.Timer with a controllable version and returns a list
+    of all created timer instances.
+    """
+    timers = []
+    def factory(*args, **kwargs):
+        timer = ControllableTimer(*args, **kwargs)
+        timers.append(timer)
+        return timer
+    mocker.patch("rayforge.tasker.context.threading.Timer", factory)
+    return timers
+
+
 class MockExecutionContext(ExecutionContext):
     """
     A mock ExecutionContext that allows test coroutines to update the Task.
@@ -14,13 +60,11 @@ class MockExecutionContext(ExecutionContext):
     """
 
     def __init__(self, task: Task):
+        super().__init__(
+            update_callback=task.update,
+            check_cancelled=task.is_cancelled
+        )
         self._task = task
-
-    def update_task_progress(
-        self, progress: float, message: str | None = None
-    ) -> None:
-        """Simulates the context updating the task's progress and message."""
-        self._task.update(progress=progress, message=message)
 
 
 @pytest.fixture
@@ -45,21 +89,22 @@ def signal_tracker():
     return Tracker()
 
 
-async def successful_coro(context: MockExecutionContext, *args, **kwargs):
+async def successful_coro(context: ExecutionContext, *args, **kwargs):
     """A test coroutine that completes successfully and reports progress."""
-    context.update_task_progress(0.5, "Halfway there")
+    context.set_progress(0.5)
+    context.set_message("Halfway there")
     await asyncio.sleep(0.01)
     return "Success"
 
 
-async def failing_coro(context: MockExecutionContext, *args, **kwargs):
+async def failing_coro(context: ExecutionContext, *args, **kwargs):
     """A test coroutine that raises an exception."""
     await asyncio.sleep(0.01)
     raise ValueError("Something went wrong")
 
 
 async def long_running_coro(
-    context: MockExecutionContext,
+    context: ExecutionContext,
     started_event: asyncio.Event,
     *args,
     **kwargs,
@@ -69,12 +114,12 @@ async def long_running_coro(
     It signals via an event when it has started.
     """
     try:
-        context.update_task_progress(0.1, "Starting...")
+        context.set_message("Starting...")
         # Signal that the coroutine has started and sent its first update
         started_event.set()
         await asyncio.sleep(2)  # Long sleep to allow for cancellation
     except asyncio.CancelledError:
-        context.update_task_progress(0.0, "Cancellation caught in coro")
+        context.set_message("Cancellation caught in coro")
         raise
     return "Should not be reached"
 
@@ -122,7 +167,7 @@ class TestTaskUpdate:
         task.update(progress=0.25)  # Initial state
         task.status_changed.connect(signal_tracker)
 
-        task.update(progress=0.25, message=None)  # No change
+        task.update(progress=0.25, message=None)
 
         assert len(signal_tracker.received) == 0
 
@@ -131,7 +176,7 @@ class TestTaskUpdate:
 class TestTaskExecution:
     """Tests for the complete lifecycle of a Task via the run() method."""
 
-    async def test_run_successful(self, signal_tracker):
+    async def test_run_successful(self, signal_tracker, mock_idle_add, mock_timer_factory):
         """Test a task that runs to completion successfully."""
         task = Task(successful_coro)
         context = MockExecutionContext(task)
@@ -146,19 +191,20 @@ class TestTaskExecution:
         # Post-run state
         assert task.get_status() == "completed"
         assert task.get_progress() == 1.0
-        # FIX: Removed 'await' from synchronous result() call
         assert task.result() == "Success"
 
-        # Check signals
-        assert (
-            len(signal_tracker.received) == 3
-        )  # running, progress update, completed
+        # We expect 3 signals:
+        # 1. 'running'
+        # 2. The flushed intermediate update (progress=0.5, message='...')
+        # 3. The final 'completed' state (progress=1.0)
+        assert len(signal_tracker.received) == 3
         assert signal_tracker.received[0]["status"] == "running"
         assert signal_tracker.received[1]["progress"] == 0.5
         assert signal_tracker.received[1]["message"] == "Halfway there"
         assert signal_tracker.received[2]["status"] == "completed"
+        assert signal_tracker.received[2]["progress"] == 1.0
 
-    async def test_run_failure(self, signal_tracker):
+    async def test_run_failure(self, signal_tracker, mock_idle_add, mock_timer_factory):
         """Test a task that fails with an exception."""
         task = Task(failing_coro)
         context = MockExecutionContext(task)
@@ -169,19 +215,17 @@ class TestTaskExecution:
 
         assert task.get_status() == "failed"
         with pytest.raises(ValueError):
-            # FIX: Removed 'await' from synchronous result() call
             task.result()
 
-        # Check signals
-        assert len(signal_tracker.received) == 2  # running, failed
+        # We expect 2 signals: 'running' and 'failed'.
+        assert len(signal_tracker.received) == 2
         assert signal_tracker.received[0]["status"] == "running"
         assert signal_tracker.received[1]["status"] == "failed"
 
-    async def test_run_and_cancel(self, signal_tracker):
+    async def test_run_and_cancel(self, signal_tracker, mock_idle_add, mock_timer_factory):
         """Test cancelling a task while it is running."""
-        # FIX: Use an asyncio.Event to synchronize the test
         started_event = asyncio.Event()
-        task = Task(long_running_coro, started_event)  # Pass event to coro
+        task = Task(long_running_coro, started_event)
         context = MockExecutionContext(task)
         task.status_changed.connect(signal_tracker)
 
@@ -199,44 +243,47 @@ class TestTaskExecution:
         assert task.is_cancelled()
         assert task.get_status() == "canceled"
         with pytest.raises(asyncio.CancelledError):
-            # FIX: Removed 'await' from synchronous result() call
             task.result()
 
-        # FIX: With synchronization, we can be precise about the number of signals
-        # 1. running, 2. progress 0.1, 3. progress 0.0 (in coro except), 4. canceled (in finally)
-        assert len(signal_tracker.received) == 4
-        assert signal_tracker.received[0]["status"] == "running"
-        assert (
-            signal_tracker.received[1]["status"] == "running"
-            and signal_tracker.received[1]["progress"] == 0.1
-        )
-        assert (
-            signal_tracker.received[2]["status"] == "running"
-            and signal_tracker.received[2]["progress"] == 0.0
-        )
-        assert signal_tracker.received[3]["status"] == "canceled"
+        # We expect 3 signals, because flush() works correctly.
+        # 1. 'running': Sent at the start of run().
+        # 2. Flushed update: Sent from flush(), triggered by the finally block.
+        #    At this point, status is already 'canceled' from the except block.
+        # 3. Final update: Sent by the unconditional _emit_status_changed() at
+        #    the end of the finally block.
+        assert len(signal_tracker.received) == 3
 
-    async def test_run_after_early_cancel(self, signal_tracker):
+        # Signal 1: The task starts running.
+        assert signal_tracker.received[0]["status"] == "running"
+
+        # Signal 2: The flush() call sends the pending message. The status
+        # has already been set to 'canceled' in the except block.
+        assert signal_tracker.received[1]["status"] == "canceled"
+        assert signal_tracker.received[1]["message"] == "Cancellation caught in coro"
+
+        # Signal 3: The final signal confirms the 'canceled' state. The message
+        # from the previous signal persists.
+        assert signal_tracker.received[2]["status"] == "canceled"
+        assert signal_tracker.received[2]["message"] == "Cancellation caught in coro"
+
+    async def test_run_after_early_cancel(self, signal_tracker, mock_idle_add, mock_timer_factory):
         """Test running a task that was cancelled before it started."""
-        # Use an AsyncMock to verify the coroutine is never awaited
         mock_coro = AsyncMock()
         task = Task(mock_coro)
         context = MockExecutionContext(task)
         task.status_changed.connect(signal_tracker)
 
-        task.cancel()  # Cancel before run() is called
+        task.cancel()
 
         assert task.is_cancelled()
-        assert task.get_status() == "pending"  # Status only changes in run()
+        assert task.get_status() == "pending"
 
         with pytest.raises(asyncio.CancelledError):
             await task.run(context)
 
-        # Coroutine should never have been started
         mock_coro.assert_not_called()
         assert task.get_status() == "canceled"
 
-        # Check signals: only one for the 'canceled' state
         assert len(signal_tracker.received) == 1
         assert signal_tracker.received[0]["status"] == "canceled"
 
@@ -257,7 +304,7 @@ class TestTaskCancellationMethod:
         mock_internal_task.cancel.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_cancel_after_run(self):
+    async def test_cancel_after_run(self, mock_idle_add, mock_timer_factory):
         """Test calling cancel() on a completed task."""
         task = Task(successful_coro)
         await task.run(MockExecutionContext(task))
@@ -292,9 +339,8 @@ class TestTaskGettersAndResult:
             task.result()
 
     @pytest.mark.asyncio
-    async def test_result_after_success(self):
+    async def test_result_after_success(self, mock_idle_add, mock_timer_factory):
         """Test result() after successful completion."""
         task = Task(successful_coro)
         await task.run(MockExecutionContext(task))
-        # FIX: Removed 'await' from synchronous result() call
         assert task.result() == "Success"

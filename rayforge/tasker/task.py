@@ -108,7 +108,15 @@ class Task:
                 f"Task {self.key}: Run method finished "
                 f"with status '{self._status}'."
             )
-            # Emit final status and progress
+            # First, flush any pending context updates. This might call
+            # self.update() and set an intermediate state (e.g. final message).
+            context.flush()
+
+            # Now, set the authoritative final state.
+            if self._status == "completed":
+                self._progress = 1.0
+
+            # Emit one final signal with the authoritative state.
             self._emit_status_changed()
 
     def _emit_status_changed(self) -> None:

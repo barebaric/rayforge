@@ -17,7 +17,6 @@ from typing import (
     Coroutine,
     Dict,
     Optional,
-    cast,
 )
 from blinker import Signal
 from ..util.glib import idle_add
@@ -117,7 +116,7 @@ class TaskManager:
         self.add_task(task, when_done)
 
         # Schedule the creation and start of the process on the main GTK
-        # thread. This is critical to avoid deadlocks on Windows.
+        # thread.
         idle_add(self._start_process_on_main_thread, task, when_done)
 
     async def _run_task(
@@ -170,11 +169,9 @@ class TaskManager:
                 # Task was cancelled before we even got a chance to run.
                 raise CancelledError("Task cancelled before process start.")
 
-            process = cast(Any, mp_context).Process(
+            process = mp_context.Process(
                 target=process_target_wrapper, args=process_args, daemon=True
             )
-            if not process:
-                raise RuntimeError("Failed to create sub-process")
 
             process.start()
             logger.debug(

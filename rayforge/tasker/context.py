@@ -137,7 +137,6 @@ class ExecutionContext(BaseExecutionContext):
 
         if (
             self._update_callback
-            and not self.is_cancelled()
             and (progress is not None or message is not None)
         ):
             idle_add(self._update_callback, progress, message)
