@@ -105,6 +105,7 @@ class TaskManager:
         when_done: Optional[Callable[[Task], None]] = None,
         **kwargs: Any,
     ) -> None:
+        logger.debug(f"Creating task for subprocess {key}")
         task = Task(self._process_runner, func, *args, key=key, **kwargs)
         self.add_task(task, when_done)
 
@@ -299,9 +300,13 @@ class TaskManager:
         # The queue must be a multiprocessing queue, not an asyncio one.
         queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
         process: Optional[Process] = None
+        log_level = logger.getEffectiveLevel()
 
         try:
-            process_args = queue, user_func, user_args, user_kwargs
+            logger.debug(
+                f"Task {task_key}: Starting subprocess. Log level {log_level}"
+            )
+            process_args = queue, log_level, user_func, user_args, user_kwargs
             process = self._mp_context.Process(  # type: ignore
                 target=process_target_wrapper, args=process_args, daemon=True
             )
@@ -327,11 +332,16 @@ class TaskManager:
             return state["result"]
         except asyncio.CancelledError:
             logger.warning(
-                "Task %s: Coroutine cancelled, cleaning up subprocess %s.",
-                task_key,
-                process.pid,
+                f"Task {task_key}: Coroutine cancelled, cleaning up"
+                f" subprocess {process.pid}.",
             )
             # The finally block handles the actual termination.
+            raise
+        except Exception as e:
+            logger.error(
+                f"Task {task_key}: Exception in subprocess runner: {e}",
+                exc_info=True,
+            )
             raise
         finally:
             if process:

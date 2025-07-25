@@ -15,6 +15,7 @@ In other words, we cannot use GLib.idle_add or similar.
 """
 
 import abc
+import logging
 from queue import Full
 from multiprocessing.queues import Queue
 
@@ -138,10 +139,15 @@ class ExecutionContextProxy(BaseExecutionContext):
     """
 
     def __init__(
-        self, progress_queue: Queue, base_progress=0.0, progress_range=1.0
+        self,
+        progress_queue: Queue,
+        base_progress=0.0,
+        progress_range=1.0,
+        parent_log_level: int = logging.DEBUG,
     ):
         super().__init__(base_progress, progress_range, total=1.0)
         self._queue = progress_queue
+        self.parent_log_level = parent_log_level
 
     def _report_normalized_progress(self, progress: float):
         """

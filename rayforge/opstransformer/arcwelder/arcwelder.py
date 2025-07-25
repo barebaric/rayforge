@@ -1,6 +1,6 @@
 import math
 from typing import Optional, Dict, Any, List
-from ...tasker import BaseExecutionContext
+from ...tasker.proxy import BaseExecutionContext
 from ...models.ops import (
     Ops,
     Command,

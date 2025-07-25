@@ -23,6 +23,7 @@ def process_target_wrapper(
     # The type of queue object will be determined by the multiprocessing
     # context.
     queue: Queue,
+    log_level: int,
     user_func: Callable[..., Any],
     user_args: tuple[Any, ...],
     user_kwargs: dict[str, Any],
@@ -32,16 +33,19 @@ def process_target_wrapper(
     and communicating status/results back to the parent via a queue.
     """
     import logging
+
+    logger = logging.getLogger("rayforge.tasker.process_target_wrapper")
+    logger.setLevel(log_level)
+    logger.debug(
+        f"Subprocess started with user function {user_func.__name__},"
+        f"log level {log_level}",
+    )
+
     import traceback
     from queue import Full
     from .proxy import ExecutionContextProxy
 
-    logger = logging.getLogger("rayforge.tasker.process_target_wrapper")
-    logger.debug(
-        f"Subprocess started with user function {user_func.__name__},"
-        f" args {user_args}, kwargs {user_kwargs}",
-    )
-    proxy = ExecutionContextProxy(queue)
+    proxy = ExecutionContextProxy(queue, parent_log_level=log_level)
     try:
         result = user_func(proxy, *user_args, **user_kwargs)
         queue.put_nowait(("done", result))

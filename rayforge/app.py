@@ -56,40 +56,36 @@ if hasattr(sys, '_MEIPASS'):
     files = [p.name for p in typelib_path.iterdir()]
     logger.info(f"Files in typelib path: {files}")
 
-# ===================================================================
-# SECTION 2: CLASS/FUNCTION DEFINITIONS
-# These are safe as they are just definitions.
-# ===================================================================
-
-# We need Adw for the class definition, so this one import is okay here.
-import gi
-gi.require_version('Adw', '1')
-from gi.repository import Adw
-
-class App(Adw.Application):
-    def __init__(self, args):
-        super().__init__(application_id='com.barebaric.rayforge')
-        self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
-        self.args = args
-
-    def do_activate(self):
-        # Import the window here to avoid module-level side-effects
-        from rayforge.widgets.mainwindow import MainWindow
-        win = MainWindow(application=self)
-        if self.args.filename:
-            mime_type, _ = mimetypes.guess_type(self.args.filename)
-            win.load_file(self.args.filename, mime_type)
-        if self.args.dumpsurface:
-            win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
-        win.present()
-
-# ===================================================================
-# SECTION 3: MAIN APPLICATION ENTRY POINT
-# This function contains all logic that should ONLY run in the
-# main process.
-# ===================================================================
 
 def main():
+    # ===================================================================
+    # SECTION 2: MAIN APPLICATION ENTRY POINT
+    # This function contains all logic that should ONLY run in the
+    # main process.
+    # ===================================================================
+
+    # We need Adw for the class definition, so this one import is okay here.
+    import gi
+    gi.require_version('Adw', '1')
+    from gi.repository import Adw
+
+    class App(Adw.Application):
+        def __init__(self, args):
+            super().__init__(application_id='com.barebaric.rayforge')
+            self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
+            self.args = args
+
+        def do_activate(self):
+            # Import the window here to avoid module-level side-effects
+            from rayforge.widgets.mainwindow import MainWindow
+            win = MainWindow(application=self)
+            if self.args.filename:
+                mime_type, _ = mimetypes.guess_type(self.args.filename)
+                win.load_file(self.args.filename, mime_type)
+            if self.args.dumpsurface:
+                win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
+            win.present()
+
     parser = argparse.ArgumentParser(
         description=_("A GCode generator for laser cutters.")
     )
