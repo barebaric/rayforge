@@ -46,48 +46,56 @@ class WorkPieceOpsElement(SurfaceElement):
 
     def allocate(self, force: bool = False):
         """
-        Updates position and size. Triggers a re-render. If the size
-        changes, the current ops are cleared immediately to prevent
-        displaying a stale, distorted path.
+        Updates position and size. Triggers a re-render. If the workpiece's
+        size in millimeters changes, the current ops are cleared. A simple
+        canvas zoom will not clear the ops.
         """
         if not self.canvas or not self.parent:
             return
 
         x_mm, y_mm = self.data.pos or (0, 0)
-        width_mm, height_mm = (
-            self.data.get_current_size()
-            or self.data.get_default_size(*self.canvas.get_size())
-        )
+        current_mm_size = self.data.get_current_size()
+
+        if not current_mm_size:
+            self.width, self.height = 0, 0
+            self.width_mm, self.height_mm = 0.0, 0.0
+            self.clear_ops()
+            return
+
+        # Check if the fundamental size in mm has changed by comparing against
+        # the values stored in the parent class.
+        mm_size_changed = (self.width_mm, self.height_mm) != current_mm_size
 
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-        width_px = round(width_mm * px_per_mm_x)
-        height_px = round(height_mm * px_per_mm_y)
+        width_px = round(current_mm_size[0] * px_per_mm_x)
+        height_px = round(current_mm_size[1] * px_per_mm_y)
 
         new_width = width_px + 2 * OPS_MARGIN_PX
         new_height = height_px + 2 * OPS_MARGIN_PX
-        size_changed = self.width != new_width or self.height != new_height
+        pixel_size_changed = (
+            self.width != new_width or self.height != new_height
+        )
 
-        x_mm_tl, y_mm_tl = x_mm, y_mm + height_mm
+        x_mm_tl, y_mm_tl = x_mm, y_mm + current_mm_size[1]
 
-        # Convert mm (machine coords, origin bottom-left) to canvas-relative
-        # pixel coordinates (origin top-left).
         content_height_px = self.canvas.root.height
-
         x_px = x_mm_tl * px_per_mm_x
         y_px = content_height_px - y_mm_tl * px_per_mm_y
 
         self.set_pos(round(x_px) - OPS_MARGIN_PX, round(y_px) - OPS_MARGIN_PX)
         self.set_angle(self.data.angle)
 
-        if not size_changed and not force:
+        if not pixel_size_changed and not force:
             return
 
-        # If the size changed, the existing ops are invalid for the new
-        # dimensions. We clear them immediately.
-        if size_changed:
+        # If the workpiece's actual mm size changed, the existing ops are
+        # invalid and must be cleared. This will NOT trigger on a canvas zoom.
+        if mm_size_changed:
             self.clear_ops()
 
+        # Update the state in the parent class.
+        self.width_mm, self.height_mm = current_mm_size
         self.width, self.height = new_width, new_height
         super().allocate(force)
 
