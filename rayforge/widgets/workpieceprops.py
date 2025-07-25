@@ -316,13 +316,8 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self._update_ui_from_workpiece()
 
     def _on_reset_angle_clicked(self, button):
-        if self._in_update or not self.workpiece:
-            return
-        self._in_update = True
-        try:
+        if self.workpiece:
             self.workpiece.set_angle(0.0)
-        finally:
-            self._in_update = False
 
     def _on_workpiece_size_changed(self, workpiece):
         if self._in_update:
