@@ -27,6 +27,8 @@ class Task:
         self.kwargs = kwargs
         self.key: Any = key if key is not None else id(self)
         self._task: Optional[asyncio.Task[Any]] = None
+        self._task_result: Any = None
+        self._task_exception: Optional[BaseException] = None
         self._status: str = "pending"
         self._progress: float = 0.0
         self._message: Optional[str] = None
@@ -126,9 +128,26 @@ class Task:
         return self._message
 
     def result(self) -> Any:
-        if self._task is None or not self._task.done():
-            raise asyncio.InvalidStateError("result is not yet available")
-        return self._task.result()
+        if self._task:  # It's an asyncio-managed task
+            if not self._task.done():
+                raise asyncio.InvalidStateError("result is not yet available")
+            return self._task.result()
+
+        # It's a synchronously-managed (process) task
+        if self._status == "completed":
+            return self._task_result
+        if self._status == "failed":
+            if self._task_exception:
+                raise self._task_exception
+            raise asyncio.InvalidStateError(
+                "Task failed but no exception was captured."
+            )
+        if self._status == "canceled":
+            raise CancelledError("Task was cancelled.")
+
+        raise asyncio.InvalidStateError(
+            f"result is not available for task in state '{self._status}'"
+        )
 
     def cancel(self) -> None:
         """

@@ -7,8 +7,8 @@ import asyncio
 import logging
 import threading
 import time
-from multiprocessing import get_context, Process
-from multiprocessing.context import BaseContext
+from multiprocessing import get_context
+from multiprocessing.context import BaseContext, SpawnProcess
 from multiprocessing.queues import Queue
 from queue import Empty
 from typing import (
@@ -17,12 +17,13 @@ from typing import (
     Coroutine,
     Dict,
     Optional,
+    cast,
 )
 from blinker import Signal
 from ..util.glib import idle_add
 from .context import ExecutionContext
 from .process import process_target_wrapper
-from .task import Task
+from .task import Task, CancelledError
 
 
 logger = logging.getLogger(__name__)
@@ -76,10 +77,6 @@ class TaskManager:
             # Emit signal immediately when a new task is added
             self._emit_tasks_updated_unsafe()
 
-        asyncio.run_coroutine_threadsafe(
-            self._run_task(task, when_done), self._loop
-        )
-
     def add_coroutine(
         self,
         coro: Callable[..., Coroutine[Any, Any, Any]],
@@ -97,6 +94,11 @@ class TaskManager:
         task = Task(coro, *args, key=key, **kwargs)
         self.add_task(task, when_done)
 
+        # Coroutines use the asyncio event loop
+        asyncio.run_coroutine_threadsafe(
+            self._run_task(task, when_done), self._loop
+        )
+
     def run_process(
         self,
         func: Callable[..., Any],
@@ -106,8 +108,24 @@ class TaskManager:
         **kwargs: Any,
     ) -> None:
         logger.debug(f"Creating task for subprocess {key}")
-        task = Task(self._process_runner, func, *args, key=key, **kwargs)
+        # Create a task, but use a placeholder for the coro.
+        # The real function/args are passed for the manager thread to use.
+
+        # Define an async placeholder that matches the required type signature.
+        async def _process_placeholder(*args, **kwargs):
+            pass
+
+        task = Task(_process_placeholder, func, *args, key=key, **kwargs)
         self.add_task(task, when_done)
+
+        # Subprocesses are managed in a simple, dedicated thread to avoid
+        # deadlocks.
+        manager_thread = threading.Thread(
+            target=self._manage_subprocess_lifecycle,
+            args=(task, when_done),
+            daemon=True,
+        )
+        manager_thread.start()
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -128,6 +146,94 @@ class TaskManager:
             )
         finally:
             context.flush()
+            self._cleanup_task(task)
+            if when_done:
+                idle_add(when_done, task)
+
+    def _manage_subprocess_lifecycle(
+        self, task: Task, when_done: Optional[Callable[[Task], None]]
+    ) -> None:
+        """
+        Synchronously manages a subprocess lifecycle in a dedicated thread.
+        """
+        context = ExecutionContext(
+            update_callback=task.update,
+            check_cancelled=task.is_cancelled,
+        )
+        context.task = task
+
+        # Unpack the real function and args from the task object
+        user_func, user_args, user_kwargs = (
+            task.args[0],
+            task.args[1:],
+            task.kwargs,
+        )
+
+        process: Optional[SpawnProcess] = None
+        queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
+        state: Dict[str, Any] = {"result": None, "error": None}
+
+        try:
+            if task.is_cancelled():
+                raise CancelledError("Task cancelled before process start.")
+
+            log_level = logging.getLogger().getEffectiveLevel()
+            process_args = (
+                queue,
+                log_level,
+                user_func,
+                user_args,
+                user_kwargs,
+            )
+
+            # Cast the context to Any to satisfy Pylance, as BaseContext
+            # does not define Process, but the spawn context we use does.
+            self._mp_context_any = cast(Any, self._mp_context)
+            process = self._mp_context_any.Process(
+                target=process_target_wrapper, args=process_args, daemon=True
+            )
+            if not process:
+                raise RuntimeError("Failed to create sub-process")
+
+            # This is a simple blocking call, safe in this thread
+            process.start()
+            logger.debug(
+                f"Task {task.key}: Started subprocess with PID {process.pid}"
+            )
+
+            # Synchronous monitoring loop
+            while process.is_alive():
+                self._drain_process_queue(queue, context, state)
+                if state.get("error"):
+                    break  # Error reported by child
+                if task.is_cancelled():
+                    raise CancelledError("Task cancelled by parent.")
+                time.sleep(0.1)
+
+            self._drain_process_queue(queue, context, state)  # Final drain
+            self._check_process_result(process, state, task.key)
+
+            task._status = "completed"
+            task._progress = 1.0
+            task._task_result = state.get("result")
+
+        except CancelledError as e:
+            logger.warning(f"Task {task.key}: Process task was cancelled: {e}")
+            task._status = "canceled"
+            task._task_exception = e
+        except Exception as e:
+            logger.error(
+                f"Task {task.key}: Process manager thread failed.",
+                exc_info=True,
+            )
+            task._status = "failed"
+            task._task_exception = e
+        finally:
+            if process:
+                self._cleanup_process_resources(process, task.key)
+            context.flush()
+            # Manually trigger final status update, since run() wasn't used
+            task.status_changed.send(task)
             self._cleanup_task(task)
             if when_done:
                 idle_add(when_done, task)
@@ -154,17 +260,13 @@ class TaskManager:
         elif msg_type == "done":
             state["result"] = value
             if context.task:
-                logger.debug(
-                    "Task %s: Received 'done' from subprocess.",
-                    context.task.key
-                )
+                logger.debug(f"Task {context.task.key}: Received 'done'.")
         elif msg_type == "error":
             state["error"] = value
             if context.task:
                 logger.error(
-                    "Task %s: 'error' from subprocess:\n%s",
-                    context.task.key,
-                    value,
+                    f"Task {context.task.key}: 'error' from subprocess:"
+                    f"\n{value}"
                 )
 
     def _drain_process_queue(
@@ -181,43 +283,8 @@ class TaskManager:
         except Empty:
             pass
 
-    async def _monitor_and_drain_queue(
-        self,
-        process: Process,
-        queue: Queue[tuple[str, Any]],
-        context: ExecutionContext,
-        state: Dict[str, Any],
-    ) -> None:
-        """
-        Monitor a subprocess and drain its queue until it exits.
-
-        Args:
-            process: The multiprocessing.Process to monitor.
-            queue: The queue to drain.
-            context: The ExecutionContext for progress reporting.
-            state: A mutable dictionary to check for early error exit.
-        """
-        assert context.task is not None
-        task_key = context.task.key
-        while process.is_alive():
-            self._drain_process_queue(queue, context, state)
-            if state["error"]:
-                logger.warning(
-                    "Task %s: Error from subprocess, stopping monitor.",
-                    task_key,
-                )
-                break
-            await asyncio.sleep(0.1)
-
-        logger.debug(
-            "Task %s: Process %s ended. Final queue drain.",
-            task_key,
-            process.pid,
-        )
-        self._drain_process_queue(queue, context, state)
-
     def _check_process_result(
-        self, process: Process, state: Dict[str, Any], task_key: Any
+        self, process: SpawnProcess, state: Dict[str, Any], task_key: Any
     ) -> None:
         """
         Check for errors after a subprocess has finished.
@@ -246,7 +313,7 @@ class TaskManager:
             raise Exception(msg)
 
     def _cleanup_process_resources(
-        self, process: Process, task_key: Any
+        self, process: SpawnProcess, task_key: Any
     ) -> None:
         """
         Ensure a subprocess is terminated and its resources are closed.
@@ -273,81 +340,6 @@ class TaskManager:
 
         process.close()
         logger.debug("Task %s: Subprocess resources cleaned up.", task_key)
-
-    async def _process_runner(
-        self,
-        context: ExecutionContext,
-        user_func: Callable[..., Any],
-        *user_args: Any,
-        **user_kwargs: Any,
-    ) -> Any:
-        """
-        Runs a function in a separate process and monitors it.
-
-        This coroutine creates and manages a subprocess, communicating with
-        it via a queue to report progress, messages, results, and errors.
-        It handles normal completion, failure, and cancellation.
-        """
-        assert context.task is not None
-        task_key = context.task.key
-
-        # Get the current running loop to schedule the executor
-        loop = asyncio.get_running_loop()
-
-        # State dict to share status between helper methods.
-        state: Dict[str, Any] = {"result": None, "error": None}
-
-        # The queue must be a multiprocessing queue, not an asyncio one.
-        queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
-        process: Optional[Process] = None
-        log_level = logger.getEffectiveLevel()
-
-        try:
-            logger.debug(
-                f"Task {task_key}: Starting subprocess. Log level {log_level}"
-            )
-            process_args = queue, log_level, user_func, user_args, user_kwargs
-            process = self._mp_context.Process(  # type: ignore
-                target=process_target_wrapper, args=process_args, daemon=True
-            )
-            if not process:
-                raise RuntimeError(f"{task_key} Failed to create subprocess.")
-
-            await loop.run_in_executor(None, process.start)
-            logger.debug(
-                "Task %s: Started subprocess with PID %s",
-                task_key,
-                process.pid,
-            )
-
-            await self._monitor_and_drain_queue(process, queue, context, state)
-
-            self._check_process_result(process, state, task_key)
-
-            logger.debug(
-                "Task %s: Subprocess %s finished successfully.",
-                task_key,
-                process.pid,
-            )
-            return state["result"]
-        except asyncio.CancelledError:
-            logger.warning(
-                f"Task {task_key}: Coroutine cancelled, cleaning up"
-                f" subprocess {process.pid}.",
-            )
-            # The finally block handles the actual termination.
-            raise
-        except Exception as e:
-            logger.error(
-                f"Task {task_key}: Exception in subprocess runner: {e}",
-                exc_info=True,
-            )
-            raise
-        finally:
-            if process:
-                await loop.run_in_executor(
-                    None, self._cleanup_process_resources, process, task_key
-                )
 
     def _cleanup_task(self, task: Task) -> None:
         """
@@ -417,7 +409,7 @@ class TaskManager:
         # Wait a moment for cancellations to propagate before stopping the loop
         # This is not strictly necessary but can help with cleaner shutdown.
         if tasks_to_cancel:
-            time.sleep(0.1)
+            time.sleep(0.2)  # Give threads time to see cancellation
 
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
