@@ -1,9 +1,7 @@
 # Rayforge
 
-Rayforge is a software for laser cutters and engravers. It supports Linux, and
-since release 0.15.1 also Windows is tested.
-
-It supports direct communication with GRBL based machines (network or serial).
+Rayforge is a software for laser cutters and engravers.
+It supports Linux and Windows.
 
 ![Screenshot](docs/ss-main.png)
 
