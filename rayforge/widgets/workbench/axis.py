@@ -34,7 +34,8 @@ class AxisRenderer:
 
     def get_content_size(self) -> Tuple[int, int]:
         """
-        Calculates the content area dimensions and margins.
+        Calculates the content area dimensions in pixels. This size is
+        independent of the zoom level.
 
         Returns:
             Tuple of (content_width_px, content_height_px).

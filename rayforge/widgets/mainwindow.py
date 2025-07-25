@@ -233,11 +233,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a work area to display the image and paths
         width_mm, height_mm = config.machine.dimensions
         ratio = width_mm/height_mm
-        self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=True)
+        self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=False)
         self.frame.set_margin_start(12)
         self.frame.set_margin_end(12)
         self.frame.set_hexpand(True)
-        self.frame.set_vexpand(True)
         self.paned.set_start_child(self.frame)
 
         self.surface = WorkSurface(
