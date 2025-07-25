@@ -184,32 +184,59 @@ class CanvasElement:
         local coordinates.
         """
         w, h = self.width, self.height
-        hs = self.handle_size
+
+        # Dynamically calculate handle size to prevent overlap on small
+        # elements. It is clamped to be no more than 1/3 of the element's
+        # width or height.
+        # If the element is very small, this can result in a size of 0, which
+        # correctly hides the handles.
+        effective_hs = int(min(self.handle_size, w / 3, h / 3))
 
         if region == ElementRegion.ROTATION_HANDLE:
             handle_dist = 20
             cx = w / 2
-            return int(cx - hs / 2), -handle_dist - hs, hs, hs
+            # The rotation handle also uses the effective size to scale down.
+            return (
+                int(cx - effective_hs / 2),
+                -handle_dist - effective_hs,
+                effective_hs,
+                effective_hs,
+            )
 
-        # Corner regions are hs x hs squares
+        # Corner regions are effective_hs x effective_hs squares
         if region == ElementRegion.TOP_LEFT:
-            return 0, 0, hs, hs
+            return 0, 0, effective_hs, effective_hs
         if region == ElementRegion.TOP_RIGHT:
-            return w - hs, 0, hs, hs
+            return w - effective_hs, 0, effective_hs, effective_hs
         if region == ElementRegion.BOTTOM_LEFT:
-            return 0, h - hs, hs, hs
+            return 0, h - effective_hs, effective_hs, effective_hs
         if region == ElementRegion.BOTTOM_RIGHT:
-            return w - hs, h - hs, hs, hs
+            return (
+                w - effective_hs,
+                h - effective_hs,
+                effective_hs,
+                effective_hs,
+            )
 
         # Edge regions are between the corners
         if region == ElementRegion.TOP_MIDDLE:
-            return hs, 0, w - 2 * hs, hs
+            return effective_hs, 0, w - 2 * effective_hs, effective_hs
         if region == ElementRegion.BOTTOM_MIDDLE:
-            return hs, h - hs, w - 2 * hs, hs
+            return (
+                effective_hs,
+                h - effective_hs,
+                w - 2 * effective_hs,
+                effective_hs,
+            )
         if region == ElementRegion.MIDDLE_LEFT:
-            return 0, hs, hs, h - 2 * hs
+            return 0, effective_hs, effective_hs, h - 2 * effective_hs
         if region == ElementRegion.MIDDLE_RIGHT:
-            return w - hs, hs, hs, h - 2 * hs
+            return (
+                w - effective_hs,
+                effective_hs,
+                effective_hs,
+                h - 2 * effective_hs,
+            )
 
         if region == ElementRegion.BODY:
             return 0, 0, w, h

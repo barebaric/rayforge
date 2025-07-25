@@ -491,7 +491,7 @@ class Canvas(Gtk.DrawingArea):
             return
 
         start_x, start_y, start_w, start_h = self.active_origin
-        min_size = self.active_elem.handle_size * 2
+        min_size = 20
         angle_deg = self.active_elem.get_angle()
 
         # 1. Transform drag delta into the element's local coordinate system
