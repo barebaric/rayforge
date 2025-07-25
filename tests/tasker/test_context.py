@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from rayforge.tasker import ExecutionContext
+from rayforge.tasker.context import ExecutionContext
 
 
 @pytest.fixture

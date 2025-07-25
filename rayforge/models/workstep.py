@@ -6,7 +6,7 @@ from copy import deepcopy
 from blinker import Signal
 from gi.repository import GLib
 from ..config import task_mgr
-from ..tasker import Task
+from ..tasker.task import Task
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth

@@ -1,7 +1,7 @@
 import math
 from typing import Optional, List, Tuple, Dict, Any
 from ..models.ops import Ops, LineToCommand, MoveToCommand
-from ..tasker import BaseExecutionContext
+from ..tasker.proxy import BaseExecutionContext
 from .transformer import OpsTransformer
 
 

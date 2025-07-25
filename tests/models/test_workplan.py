@@ -1,11 +1,11 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock
-from rayforge.tasker import Task
+from rayforge.tasker.task import Task
 from rayforge.tasker.proxy import ExecutionContextProxy
+from rayforge.render import SVGRenderer
 from rayforge.models.workstep import Contour, run_workstep_in_subprocess
 from rayforge.models.workpiece import WorkPiece
-from rayforge.render import SVGRenderer
 from rayforge.models.ops import Ops
 from rayforge.models.machine import Laser, Machine
 

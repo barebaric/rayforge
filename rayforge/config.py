@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 from platformdirs import user_config_dir
-from .tasker import TaskManager
+from .tasker.manager import TaskManager
 from .models.machine import MachineManager
 from .models.config import ConfigManager
 import logging

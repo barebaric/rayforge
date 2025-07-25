@@ -4,12 +4,9 @@ import time
 from unittest.mock import Mock
 from multiprocessing import get_context
 import pytest
-from rayforge.tasker import (
-    TaskManager,
-    Task,
-    ExecutionContext,
-    CancelledError
-)
+from rayforge.tasker.manager import TaskManager, CancelledError
+from rayforge.tasker.task import Task
+from rayforge.tasker.context import ExecutionContext
 from rayforge.tasker.proxy import ExecutionContextProxy
 
 
