@@ -159,4 +159,6 @@ def main():
     return exit_code
 
 if __name__ == "__main__":
+    from multiprocessing import freeze_support
+    freeze_support()  # needed to use multiprocessing in PyInstaller bundles
     sys.exit(main())
