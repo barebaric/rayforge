@@ -22,6 +22,13 @@ class WorkSurface(Canvas):
     The WorkSurface displays a grid area with WorkPieces and
     WorkPieceOpsElements according to real world dimensions.
     """
+    # The minimum allowed zoom level, relative to the "fit-to-view" size
+    # (zoom=1.0). 0.1 means you can zoom out until the view is 10% of its
+    # "fit" size.
+    MIN_ZOOM_FACTOR = 0.1
+
+    # The maximum allowed pixel density when zooming in.
+    MAX_PIXELS_PER_MM = 100.0
 
     def __init__(self, machine: Machine, cam_visibie: bool = False, **kwargs):
         logger.debug("WorkSurface.__init__ called")
@@ -132,9 +139,33 @@ class WorkSurface(Canvas):
         self._recalculate_sizes()
         self.queue_draw()
 
+    def _get_base_pixels_per_mm(self) -> Tuple[float, float]:
+        """Calculates the pixels/mm for a zoom level of 1.0 (fit-to-view)."""
+        width, height_pixels = self.get_width(), self.get_height()
+        if not all([width, height_pixels, self.width_mm, self.height_mm]):
+            return 1.0, 1.0  # Avoid division by zero at startup
+
+        y_axis_pixels = self.axis_renderer.get_y_axis_width()
+        x_axis_height = self.axis_renderer.get_x_axis_height()
+        right_margin = math.ceil(y_axis_pixels / 2)
+        top_margin = math.ceil(x_axis_height / 2)
+        content_width_px = width - y_axis_pixels - right_margin
+        content_height_px = height_pixels - x_axis_height - top_margin
+
+        base_ppm_x = (
+            content_width_px / self.width_mm if self.width_mm > 0 else 0
+        )
+        base_ppm_y = (
+            content_height_px / self.height_mm if self.height_mm > 0 else 0
+        )
+        return base_ppm_x, base_ppm_y
+
     def set_zoom(self, zoom_level: float):
-        """Sets the zoom level and updates the axis renderer."""
-        self.zoom_level = max(0.4, min(zoom_level, 10))
+        """
+        Sets the zoom level and updates the axis renderer.
+        The caller is responsible for ensuring the zoom_level is clamped.
+        """
+        self.zoom_level = zoom_level
         self.axis_renderer.set_zoom(self.zoom_level)
         self.root.mark_dirty(recursive=True)
         self.do_size_allocate(self.get_width(), self.get_height(), 0)
@@ -179,44 +210,50 @@ class WorkSurface(Canvas):
         """Handles the scroll event for zoom."""
         zoom_speed = 0.1
 
-        # Calculate potential new zoom level
+        # 1. Calculate a desired new zoom level based on scroll direction
         if dy > 0:  # Scroll down - zoom out
-            new_zoom_unclamped = self.zoom_level * (1 - zoom_speed)
+            desired_zoom = self.zoom_level * (1 - zoom_speed)
         else:  # Scroll up - zoom in
-            new_zoom_unclamped = self.zoom_level * (1 + zoom_speed)
+            desired_zoom = self.zoom_level * (1 + zoom_speed)
 
-        # Clamp to the allowed range defined in set_zoom
-        clamped_zoom = max(0.4, min(new_zoom_unclamped, 10.0))
+        # 2. Get the base "fit-to-view" pixel density (for zoom = 1.0)
+        base_ppm_x, base_ppm_y = self._get_base_pixels_per_mm()
+        if base_ppm_x <= 0 or base_ppm_y <= 0:
+            return  # Cannot calculate zoom limits yet (e.g., at startup)
+
+        # Use the smaller base density for consistent limit calculations
+        base_ppm = min(base_ppm_x, base_ppm_y)
+
+        # 3. Calculate the pixel density limits
+        # The minimum density is based on our zoom factor.
+        min_ppm = base_ppm * self.MIN_ZOOM_FACTOR
+        # The maximum density is a fixed constant.
+        max_ppm = self.MAX_PIXELS_PER_MM
+
+        # 4. Calculate the target density and clamp it within our limits
+        target_ppm = base_ppm * desired_zoom
+        clamped_ppm = max(min_ppm, min(target_ppm, max_ppm))
+
+        # 5. Convert the valid, clamped density back into a final zoom level
+        final_zoom = clamped_ppm / base_ppm
 
         # If the zoom level is already at its limit and won't change, do
         # nothing.
-        if clamped_zoom == self.zoom_level:
+        if abs(final_zoom - self.zoom_level) < 1e-9:
             return
 
-        # Get current mouse position in mm to keep it stationary during zoom
+        # 6. Calculate pan adjustment to zoom around the mouse cursor
         mouse_x_px, mouse_y_px = self.mouse_pos
         focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
 
-        # To calculate the new pan, we first need to determine the new
-        # pixels_per_mm ratio based on the clamped zoom level.
-        width, height_pixels = self.get_width(), self.get_height()
+        new_pixels_per_mm_x = base_ppm_x * final_zoom
+        new_pixels_per_mm_y = base_ppm_y * final_zoom
+
+        height_pixels = self.get_height()
         y_axis_pixels = self.axis_renderer.get_y_axis_width()
         x_axis_height = self.axis_renderer.get_x_axis_height()
-        right_margin = math.ceil(y_axis_pixels / 2)
         top_margin = math.ceil(x_axis_height / 2)
-        content_width_px = width - y_axis_pixels - right_margin
-        content_height_px = height_pixels - x_axis_height - top_margin
 
-        new_pixels_per_mm_x = (
-            content_width_px / self.width_mm * clamped_zoom
-            if self.width_mm > 0 else 0
-        )
-        new_pixels_per_mm_y = (
-            content_height_px / self.height_mm * clamped_zoom
-            if self.height_mm > 0 else 0
-        )
-
-        # If scaling is valid, calculate and set the new pan position first.
         if new_pixels_per_mm_x > 0 and new_pixels_per_mm_y > 0:
             new_pan_x_mm = (
                 focus_x_mm - (mouse_x_px - y_axis_pixels) / new_pixels_per_mm_x
@@ -228,9 +265,8 @@ class WorkSurface(Canvas):
             )
             self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
-        # Now, apply the new zoom level. This will trigger the final
-        # recalculation and redraw with the correct pan and zoom.
-        self.set_zoom(clamped_zoom)
+        # 7. Apply the final, clamped zoom level.
+        self.set_zoom(final_zoom)
 
     def _recalculate_sizes(self):
         origin_x, origin_y = self.axis_renderer.get_origin()
