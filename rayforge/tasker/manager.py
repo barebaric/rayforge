@@ -289,16 +289,23 @@ class TaskManager:
         """
         assert context.task is not None
         task_key = context.task.key
+
+        # Get the current running loop to schedule the executor
+        loop = asyncio.get_running_loop()
+
+        # State dict to share status between helper methods.
+        state: Dict[str, Any] = {"result": None, "error": None}
+
+        # The queue must be a multiprocessing queue, not an asyncio one.
         queue: Queue[tuple[str, Any]] = self._mp_context.Queue()
+
         process_args = (queue, user_func, user_args, user_kwargs)
         process: Process = self._mp_context.Process(  # type: ignore
             target=process_target_wrapper, args=process_args, daemon=True
         )
-        # State dict to share status between helper methods.
-        state: Dict[str, Any] = {"result": None, "error": None}
 
         try:
-            process.start()
+            await loop.run_in_executor(None, process.start)
             logger.debug(
                 "Task %s: Started subprocess with PID %s",
                 task_key,
