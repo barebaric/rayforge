@@ -25,6 +25,24 @@ def run_workstep_in_subprocess(
     )
     logger.debug(f"Starting workstep execution with settings: {settings}")
 
+    # Set up gettext for translations in the subprocess.
+    # The spawned child process is a fresh Python interpreter. It must
+    # initialize its own environment, including gettext for translations.
+    import sys
+    import gettext
+    from pathlib import Path
+
+    if hasattr(sys, '_MEIPASS'):
+        # In a PyInstaller bundle
+        base_dir = Path(sys._MEIPASS)  # type: ignore
+    else:
+        # In a development environment, determine path relative to this file.
+        # rayforge/models/work/worksteprunner.py -> rayforge/
+        base_dir = Path(__file__).parent.parent.parent
+
+    locale_dir = base_dir / 'locale'
+    gettext.install("rayforge", locale_dir)  # install the `_` function
+
     from ..modifier import Modifier
     from ..opsproducer import OpsProducer
     from ..opstransformer import OpsTransformer
