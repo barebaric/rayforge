@@ -1,7 +1,13 @@
 import math
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from ...tasker import BaseExecutionContext
-from ...models.ops import Ops, LineToCommand, ArcToCommand, MoveToCommand
+from ...models.ops import (
+    Ops,
+    Command,
+    LineToCommand,
+    ArcToCommand,
+    MoveToCommand,
+)
 from ..transformer import OpsTransformer
 from .points import (
     remove_duplicates,
@@ -23,7 +29,7 @@ def split_into_segments(commands):
     - State commands are standalone segments.
     """
     segments = []
-    current_segment = []
+    current_segment: List[Command] = []
     current_pos = None  # Track current position
 
     for cmd in commands:

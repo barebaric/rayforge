@@ -48,8 +48,8 @@ class KeepColor(Modifier):
         return d
 
     @classmethod
-    def from_dict(cls, d):
-        return cls(r=d['r'], g=d['g'], b=d['b'])
+    def from_dict(cls, data: dict):
+        return cls(r=data['r'], g=data['g'], b=data['b'])
 
     def run(self, surface):
         make_transparent_except_color(surface, *self.color)

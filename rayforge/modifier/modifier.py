@@ -11,8 +11,8 @@ class Modifier:
         """
         return {'name': self.__class__.__name__}
 
-    @staticmethod
-    def from_dict(data: dict):
+    @classmethod
+    def from_dict(cls, data: dict):
         """
         Factory to create a modifier instance from a dictionary.
 
