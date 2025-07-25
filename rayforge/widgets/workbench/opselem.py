@@ -36,6 +36,7 @@ class WorkPieceOpsElement(SurfaceElement):
             **kwargs,
         )
         self._accumulated_ops = Ops()
+        self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
         # Connect to specific signals instead of the generic 'changed' signal.
@@ -45,8 +46,9 @@ class WorkPieceOpsElement(SurfaceElement):
 
     def allocate(self, force: bool = False):
         """
-        Updates position and size. Triggers a re-render ONLY if the size
-        has changed or if `force=True`.
+        Updates position and size. Triggers a re-render. If the size
+        changes, the current ops are cleared immediately to prevent
+        displaying a stale, distorted path.
         """
         if not self.canvas or not self.parent:
             return
@@ -81,21 +83,51 @@ class WorkPieceOpsElement(SurfaceElement):
         if not size_changed and not force:
             return
 
+        # If the size changed, the existing ops are invalid for the new
+        # dimensions. We clear them immediately.
+        if size_changed:
+            self.clear_ops()
+
         self.width, self.height = new_width, new_height
         super().allocate(force)
 
-    def clear_ops(self):
+    def clear_ops(self, generation_id: Optional[int] = None):
+        """Clears ops. If a generation_id is provided, it is stored."""
         self._accumulated_ops = Ops()
+        if generation_id is not None:
+            self._ops_generation_id = generation_id
         self.clear_surface()
         self.trigger_update()
 
-    def set_ops(self, ops: Optional[Ops]):
-        """Replaces all current ops with the provided ops and redraws."""
+    def set_ops(self, ops: Optional[Ops], generation_id: Optional[int] = None):
+        """Replaces all current ops, but only if generation_id is current."""
+        if (
+            generation_id is not None
+            and generation_id < self._ops_generation_id
+        ):
+            logger.debug(
+                f"Ignoring stale final ops (gen {generation_id}) for "
+                f"'{self.data.name}', current is {self._ops_generation_id}"
+            )
+            return
+        if generation_id is not None:
+            self._ops_generation_id = generation_id
         self._accumulated_ops = ops or Ops()
         self.trigger_update()
 
-    def add_ops(self, ops_chunk: Ops):
+    def add_ops(self, ops_chunk: Ops, generation_id: Optional[int] = None):
+        """Adds a chunk of ops, but only if the generation_id is not stale."""
         if not ops_chunk:
+            return
+        # Only add chunk if it belongs to the current generation.
+        if (
+            generation_id is not None
+            and generation_id != self._ops_generation_id
+        ):
+            logger.debug(
+                f"Ignoring stale ops chunk (gen {generation_id}) for "
+                f"'{self.data.name}', current is {self._ops_generation_id}"
+            )
             return
         self._accumulated_ops += ops_chunk
         self.trigger_update()

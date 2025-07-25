@@ -108,7 +108,10 @@ class WorkStepElement(CanvasElement):
         return elem
 
     def _on_ops_generation_starting(
-        self, sender: WorkStep, workpiece: WorkPiece
+        self,
+        sender: WorkStep,
+        workpiece: WorkPiece,
+        generation_id: int,
     ):
         """Called before ops generation starts for a workpiece."""
         logger.debug(
@@ -128,10 +131,14 @@ class WorkStepElement(CanvasElement):
             return
 
         elem = self._find_or_add_workpiece_elem(workpiece)
-        elem.clear_ops()
+        elem.clear_ops(generation_id=generation_id)
 
     def _on_ops_chunk_available(
-        self, sender: WorkStep, workpiece: WorkPiece, chunk: Ops
+        self,
+        sender: WorkStep,
+        workpiece: WorkPiece,
+        chunk: Ops,
+        generation_id: int,
     ):
         """Called when a chunk of ops is available for a workpiece."""
         logger.debug(
@@ -151,23 +158,31 @@ class WorkStepElement(CanvasElement):
             return
 
         elem = self._find_or_add_workpiece_elem(workpiece)
-        elem.add_ops(chunk)
+        elem.add_ops(chunk, generation_id=generation_id)
 
     def _on_ops_generation_finished(
-        self, sender: WorkStep, workpiece: WorkPiece
+        self,
+        sender: WorkStep,
+        workpiece: WorkPiece,
+        generation_id: int,
     ):
         """
         Called when ops generation is finished. This handler ensures a final,
-        guaranteed redraw of the element's complete state, fixing race
-        conditions where the last chunk might not be displayed.
+        guaranteed redraw of the element's complete state, ignoring stale
+        results.
         """
         assert self.canvas, (
             "Received ops_finished, but element was not added to canvas"
         )
 
-        elem = self.find_by_data(workpiece)
-        elem = cast(Optional[WorkPieceOpsElement], elem)
-        if not elem:
+        # If the workpiece is no longer part of this workstep, its element
+        # should be removed.
+        if workpiece not in sender.workpieces():
+            elem = self.find_by_data(workpiece)
+            if elem:
+                elem.remove()
             return
+
+        elem = self._find_or_add_workpiece_elem(workpiece)
         final_ops = sender.get_ops(workpiece)
-        elem.set_ops(final_ops)
+        elem.set_ops(final_ops, generation_id=generation_id)

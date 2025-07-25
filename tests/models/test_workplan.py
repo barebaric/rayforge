@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 from rayforge.tasker.task import Task
 from rayforge.tasker.proxy import ExecutionContextProxy
 from rayforge.render import SVGRenderer
@@ -189,7 +189,7 @@ class TestWorkStepGeneration:
 
         # Assert 1: The process has started.
         start_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece
+            contour_step, workpiece=real_workpiece, generation_id=ANY
         )
         mock_task_mgr.run_process.assert_called_once()
         assert captured_when_done is not None, (
@@ -211,7 +211,7 @@ class TestWorkStepGeneration:
 
         # Assert 2: The finish handler has now been called.
         finish_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece
+            contour_step, workpiece=real_workpiece, generation_id=ANY
         )
 
         # Assert 3: The result from our mock task has been correctly cached.
@@ -241,13 +241,15 @@ class TestWorkStepGeneration:
         task = mock_task_mgr.created_tasks[0]
         task.cancel()
 
-        # Run the task. Since it's cancelled, it should do nothing and then call the callback
+        # Run the task. Since it's cancelled, it should do nothing and then
+        # call the callback
         task.run_sync()
 
         # Assert
-        # The 'finished' signal should still be called to notify listeners the attempt is over.
+        # The 'finished' signal should still be called to notify listeners
+        # the attempt is over.
         finish_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece
+            contour_step, workpiece=real_workpiece, generation_id=ANY
         )
         # Verify the cache was set to None upon cancellation/failure.
         assert contour_step._ops_cache.get(real_workpiece.uid) == (None, None)

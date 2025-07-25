@@ -92,7 +92,9 @@ class WorkStep(ABC):
         current_generation_id = self._generation_id_map[uid]
         key = (id(self), uid)
 
-        self.ops_generation_starting.send(self, workpiece=workpiece)
+        self.ops_generation_starting.send(
+            self, workpiece=workpiece, generation_id=current_generation_id
+        )
         self._ops_cache[uid] = (None, None)
 
         settings = {
@@ -154,7 +156,9 @@ class WorkStep(ABC):
         else:
             self._ops_cache[uid] = (None, None)
 
-        self.ops_generation_finished.send(self, workpiece=workpiece)
+        self.ops_generation_finished.send(
+            self, workpiece=workpiece, generation_id=task_generation_id
+        )
         self.changed.send(self)
 
     def get_ops(self, workpiece: WorkPiece) -> Optional[Ops]:
