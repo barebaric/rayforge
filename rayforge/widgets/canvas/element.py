@@ -7,7 +7,7 @@ import cairo
 from gi.repository import GLib  # type: ignore
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
-from .region import ElementRegion, get_region_rect
+from .region import ElementRegion, get_region_rect, check_region_hit
 
 # Forward declaration for type hinting
 if TYPE_CHECKING:
@@ -167,38 +167,33 @@ class CanvasElement:
     ) -> Tuple[int, int, int, int]:
         """
         Returns the rectangle (x, y, w, h) for a given region in
-        local coordinates.
+        local coordinates by calling the generic utility function.
         """
         return get_region_rect(
             region, self.width, self.height, self.handle_size
         )
 
-    def check_region_hit(self, x: int, y: int) -> ElementRegion:
-        """Checks which region is hit at local coordinates (x, y)."""
-        # Check handles first as they are on top of the body
-        regions_to_check = [
-            ElementRegion.ROTATION_HANDLE,
-            ElementRegion.TOP_LEFT,
-            ElementRegion.TOP_RIGHT,
-            ElementRegion.BOTTOM_LEFT,
-            ElementRegion.BOTTOM_RIGHT,
-            ElementRegion.TOP_MIDDLE,
-            ElementRegion.BOTTOM_MIDDLE,
-            ElementRegion.MIDDLE_LEFT,
-            ElementRegion.MIDDLE_RIGHT,
-        ]
-        for region in regions_to_check:
-            rx, ry, rw, rh = self.get_region_rect(region)
-            # Make sure handle regions are not negative in size
-            if rw > 0 and rh > 0 and rx <= x <= rx + rw and ry <= y < ry + rh:
-                return region
+    def check_region_hit(self, x_abs: int, y_abs: int) -> ElementRegion:
+        """
+        Checks which region is hit at absolute canvas coordinates (x, y) by
+        calling the generic utility function.
+        """
+        abs_x, abs_y = self.pos_abs()
+        center_x = abs_x + self.width / 2
+        center_y = abs_y + self.height / 2
 
-        # If no handle is hit, check the body
-        bx, by, bw, bh = self.get_region_rect(ElementRegion.BODY)
-        if bx <= x < bx + bw and by <= y < by + bh:
-            return ElementRegion.BODY
-
-        return ElementRegion.NONE
+        return check_region_hit(
+            x_abs,
+            y_abs,
+            abs_x,
+            abs_y,
+            self.width,
+            self.height,
+            self.get_angle(),
+            center_x,
+            center_y,
+            self.handle_size,
+        )
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
         self.dirty = True
@@ -494,20 +489,21 @@ class CanvasElement:
                 return hit
 
         # Check self. 'x' and 'y' are already local coordinates.
-        if self.angle != 0:
-            cx, cy = self.width / 2, self.height / 2
-            rad = math.radians(-self.angle)
-            cos_a, sin_a = math.cos(rad), math.sin(rad)
-            unrotated_x = cx + (x - cx) * cos_a - (y - cy) * sin_a
-            unrotated_y = cy + (x - cx) * sin_a + (y - cy) * cos_a
-        else:
-            unrotated_x, unrotated_y = x, y
-
         if selectable and not self.selectable:
             return None
 
-        # Check if the point is within the elem's bounds
-        if 0 <= unrotated_x <= self.width and 0 <= unrotated_y <= self.height:
+        # Reconstruct absolute coordinates to use the generic hit check
+        # function
+        abs_self_x, abs_self_y = self.pos_abs()
+        abs_hit_x, abs_hit_y = abs_self_x + x, abs_self_y + y
+
+        # Use the generic function to see if the point hits the element's
+        # bounds
+        hit_region = self.check_region_hit(int(abs_hit_x), int(abs_hit_y))
+
+        # This function should return a hit if the point is anywhere within
+        # the element's visible shape (body), not on external handles.
+        if hit_region == ElementRegion.BODY:
             return self
 
         return None

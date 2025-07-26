@@ -5,8 +5,9 @@ from typing import Any, Generator, List, Tuple, Optional
 import cairo
 from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from blinker import Signal
-from .element import CanvasElement, ElementRegion
-from .cursor import get_rotated_cursor
+from .element import CanvasElement
+from .region import ElementRegion
+from .cursor import get_cursor_for_region
 
 
 class Canvas(Gtk.DrawingArea):
@@ -33,9 +34,6 @@ class Canvas(Gtk.DrawingArea):
         # Rotation state
         self.original_elem_angle: float = 0.0
         self.drag_start_angle: float = 0.0
-
-        # Cache for custom-rendered cursors to avoid recreating them
-        self._cursor_cache: dict[int, Gdk.Cursor] = {}
 
         # Signals for undo/redo integration
         self.move_begin = Signal()
@@ -213,30 +211,7 @@ class Canvas(Gtk.DrawingArea):
 
         selected_elem = self.active_elem
         if selected_elem and selected_elem.selected:
-            elem_x, elem_y = selected_elem.pos_abs()
-            local_x, local_y = x - elem_x, y - elem_y
-
-            # Un-rotate the hover point to check against un-rotated handles
-            if selected_elem.get_angle() != 0:
-                angle_rad = math.radians(-selected_elem.get_angle())
-                center_x, center_y = (
-                    selected_elem.width / 2,
-                    selected_elem.height / 2,
-                )
-                cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-                rot_x = (
-                    center_x
-                    + (local_x - center_x) * cos_a
-                    - (local_y - center_y) * sin_a
-                )
-                rot_y = (
-                    center_y
-                    + (local_x - center_x) * sin_a
-                    + (local_y - center_y) * cos_a
-                )
-                local_x, local_y = rot_x, rot_y
-
-            region = selected_elem.check_region_hit(int(local_x), int(local_y))
+            region = selected_elem.check_region_hit(x, y)
 
             # If a handle is hit, it takes priority
             if region not in [ElementRegion.NONE, ElementRegion.BODY]:
@@ -336,31 +311,9 @@ class Canvas(Gtk.DrawingArea):
         if self._update_hover_state(x, y):
             self.queue_draw()
 
-        cursor = None
-        if self.hovered_region == ElementRegion.BODY:
-            cursor = Gdk.Cursor.new_from_name("move")
-        elif self.hovered_region == ElementRegion.ROTATION_HANDLE:
-            cursor = Gdk.Cursor.new_from_name("crosshair")
-        elif self.hovered_region != ElementRegion.NONE and self.hovered_elem:
-            # For resize handles, create a custom rotated cursor
-            region_angles = {
-                ElementRegion.MIDDLE_RIGHT: 0,
-                ElementRegion.TOP_RIGHT: 45,
-                ElementRegion.TOP_MIDDLE: 90,
-                ElementRegion.TOP_LEFT: 135,
-                ElementRegion.MIDDLE_LEFT: 180,
-                ElementRegion.BOTTOM_LEFT: 225,
-                ElementRegion.BOTTOM_MIDDLE: 270,
-                ElementRegion.BOTTOM_RIGHT: 315,
-            }
-            # The direction of scaling is perpendicular to the handle's angle
-            base_angle = region_angles.get(self.hovered_region, 0)
-            elem_angle = self.hovered_elem.get_angle()
-            cursor_angle = base_angle - elem_angle
-            cursor = get_rotated_cursor(cursor_angle)
-        else:
-            cursor = Gdk.Cursor.new_from_name("default")
-
+        elem = self.hovered_elem
+        elem_angle = elem.get_angle() if elem else 0.0
+        cursor = get_cursor_for_region(self.hovered_region, elem_angle)
         self.set_cursor(cursor)
 
     def on_motion_leave(self, controller):
