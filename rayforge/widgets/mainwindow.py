@@ -895,8 +895,8 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=wp,
-                add_method_name="add_workpiece",
-                remove_method_name="remove_workpiece",
+                add_method_name="remove_workpiece",
+                remove_method_name="add_workpiece",
                 name=cmd_name,
             )
             self.doc.remove_workpiece(wp)
