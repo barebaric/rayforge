@@ -116,10 +116,17 @@ def real_workpiece():
 
 
 @pytest.fixture
-def contour_step(setup_real_config):
+def mock_doc():
+    """Provides a mock document object needed by the WorkStep constructor."""
+    return MagicMock()
+
+
+@pytest.fixture
+def contour_step(setup_real_config, mock_doc):
     """Creates a real Contour WorkStep instance."""
     config = setup_real_config
     step = Contour(
+        doc=mock_doc,  # Provide the required mock document
         laser=config.machine.heads[0],
         max_cut_speed=config.machine.max_cut_speed,
         max_travel_speed=config.machine.max_travel_speed,
@@ -180,6 +187,8 @@ class TestWorkStepGeneration:
         def capture_callback(*args, when_done=None, **kwargs):
             nonlocal captured_when_done
             captured_when_done = when_done
+            # Return a mock task so the caller can interact with it if needed
+            return MagicMock(spec=Task)
 
         mock_task_mgr.run_process.side_effect = capture_callback
 
