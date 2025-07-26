@@ -508,6 +508,64 @@ class CanvasElement:
 
         return None
 
+    def is_pixel_opaque(self, canvas_x: int, canvas_y: int) -> bool:
+        """
+        Checks if the pixel at the given absolute canvas coordinates is opaque
+        on the element's surface. Returns True if opaque, False if transparent.
+        """
+        if not self.buffered or not self.surface:
+            # Cannot perform pixel check on non-buffered elements,
+            # or if surface doesn't exist. Default to treating it as opaque.
+            return True
+
+        # 1. Transform absolute canvas coordinates to local surface coordinates
+        abs_x, abs_y, w, h = self.rect_abs()
+        center_x, center_y = abs_x + w / 2, abs_y + h / 2
+
+        # Un-rotate the point
+        angle_rad = math.radians(-self.get_angle())
+        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+        rot_x = (
+            center_x
+            + (canvas_x - center_x) * cos_a
+            - (canvas_y - center_y) * sin_a
+        )
+        rot_y = (
+            center_y
+            + (canvas_x - center_x) * sin_a
+            + (canvas_y - center_y) * cos_a
+        )
+
+        # Convert to local element coordinates (0,0 at top-left)
+        local_x = rot_x - abs_x
+        local_y = rot_y - abs_y
+
+        # Scale to surface coordinates
+        surface_w, surface_h = (
+            self.surface.get_width(),
+            self.surface.get_height(),
+        )
+        if w <= 0 or h <= 0:
+            return False
+
+        surface_x = int(local_x * (surface_w / w))
+        surface_y = int(local_y * (surface_h / h))
+
+        # 2. Check pixel data
+        if not (0 <= surface_x < surface_w and 0 <= surface_y < surface_h):
+            return False  # Point is outside the surface bounds
+
+        data = self.surface.get_data()
+        stride = self.surface.get_stride()
+
+        # Pixel format is ARGB32, but endianness means it's often read as BGRA.
+        # The alpha channel is the 4th byte in the pixel group.
+        pixel_offset = surface_y * stride + surface_x * 4
+        alpha = data[pixel_offset + 3]
+
+        # Consider any non-zero alpha as opaque for hit-testing purposes.
+        return alpha > 0
+
     def get_position_in_ancestor(
         self, ancestor: Union["Canvas", CanvasElement]
     ) -> Tuple[float, float]:
