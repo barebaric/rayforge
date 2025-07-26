@@ -70,6 +70,8 @@ class WorkPieceElement(SurfaceElement):
         size_changed = self.width != new_width or self.height != new_height
 
         if not size_changed and not force:
+            # If only position or angle changed, we don't need to re-render the
+            # buffer, just return.
             return
 
         self.width, self.height = new_width, new_height

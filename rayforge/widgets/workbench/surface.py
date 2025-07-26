@@ -1,19 +1,19 @@
 import math
 import logging
 from blinker import Signal
-from typing import Optional, Tuple, cast, Dict
+from typing import Optional, Tuple, cast, Dict, List
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.doc import Doc
 from ...models.workpiece import WorkPiece
+from ...models.machine import Machine
+from ...undo import SetterCommand, ListItemCommand
 from ..canvas import Canvas, CanvasElement
+from ..canvas.selection import MultiSelectionGroup
 from .axis import AxisRenderer
 from .dotelem import DotElement
 from .workstepelem import WorkStepElement
 from .workpieceelem import WorkPieceElement
 from .cameraelem import CameraImageElement
-from ...models.machine import Machine
-from typing import List
-from ...undo import SetterCommand, Command
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ class WorkSurface(Canvas):
     The WorkSurface displays a grid area with WorkPieces and
     WorkPieceOpsElements according to real world dimensions.
     """
+
     # The minimum allowed zoom level, relative to the "fit-to-view" size
     # (zoom=1.0). 0.1 means you can zoom out until the view is 10% of its
     # "fit" size.
@@ -112,89 +113,125 @@ class WorkSurface(Canvas):
         self.machine.changed.connect(self._on_machine_changed)
         self._on_machine_changed(machine)
 
-    def _on_any_transform_begin(self, sender, element: CanvasElement):
-        if not isinstance(element.data, WorkPiece):
-            return
-        workpiece: WorkPiece = element.data
-        self._transform_start_states[element] = {
-            "pos": workpiece.pos,
-            "size": workpiece.size,
-            "angle": workpiece.angle,
-        }
+        # Connect to the history manager's changed signal to sync the view
+        # globally, which is necessary for undo/redo actions triggered
+        # outside of this widget.
+        self.doc.history_manager.changed.connect(self._on_history_changed)
 
-    def _on_move_end(self, sender, element: CanvasElement):
-        if (
-            not isinstance(element.data, WorkPiece)
-            or element not in self._transform_start_states
-        ):
-            return
-        workpiece: WorkPiece = element.data
-        start_state = self._transform_start_states.pop(element)
-        if workpiece.pos is None or start_state["pos"] == workpiece.pos:
-            return
+    def _on_history_changed(self, sender, **kwargs):
+        """
+        Called when the undo/redo history changes. This handler acts as a
+        synchronizer to fix state timing issues.
+        """
+        # Rebuild the entire selection state.
+        selected_elements = self.get_selected_elements()
+        self._update_selection_state(selected_elements)
+        self.queue_draw()
 
-        cmd = SetterCommand(
-            workpiece,
-            "set_pos",
-            workpiece.pos,
-            start_state["pos"],
-            name=_("Move the workpiece"),
-        )
-        self.doc.history_manager.add(cmd)
+    def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
+        self._transform_start_states.clear()
+        for element in elements:
+            if not isinstance(element.data, WorkPiece):
+                continue
+            workpiece: WorkPiece = element.data
+            self._transform_start_states[element] = {
+                "pos": workpiece.pos,
+                "size": workpiece.size,
+                "angle": workpiece.angle,
+            }
 
-    def _on_rotate_end(self, sender, element: CanvasElement):
-        if (
-            not isinstance(element.data, WorkPiece)
-            or element not in self._transform_start_states
-        ):
-            return
-        workpiece: WorkPiece = element.data
-        start_state = self._transform_start_states.pop(element)
-        if start_state["angle"] == workpiece.angle:
-            return
-
-        cmd = SetterCommand(
-            workpiece,
-            "set_angle",
-            (workpiece.angle,),
-            (start_state["angle"],),
-            name=_("Rotate the workpiece"),
-        )
-        self.doc.history_manager.add(cmd)
-
-    def _on_resize_end(self, sender, element: CanvasElement):
-        if (
-            not isinstance(element.data, WorkPiece)
-            or element not in self._transform_start_states
-        ):
-            return
-        workpiece: WorkPiece = element.data
-        start_state = self._transform_start_states.pop(element)
-        commands: List[Command] = []
-
-        if workpiece.pos and start_state["pos"] != workpiece.pos:
-            commands.append(
-                SetterCommand(
-                    workpiece, "set_pos", workpiece.pos, start_state["pos"]
-                )
-            )
-
-        if workpiece.size and start_state["size"] != workpiece.size:
-            commands.append(
-                SetterCommand(
-                    workpiece, "set_size", workpiece.size, start_state["size"]
-                )
-            )
-
-        if not commands:
-            return
-
+    def _on_move_end(self, sender, elements: List[CanvasElement]):
         history = self.doc.history_manager
-        history.begin_transaction(_("Resize the workpiece"))
-        for cmd in commands:
-            # Add, don't execute, since the canvas already changed the state
-            history.add(cmd)
-        history.end_transaction()
+        commands = []
+        for element in elements:
+            if (
+                not isinstance(element.data, WorkPiece)
+                or element not in self._transform_start_states
+            ):
+                continue
+            workpiece: WorkPiece = element.data
+            start_state = self._transform_start_states[element]
+            if workpiece.pos and start_state["pos"] != workpiece.pos:
+                commands.append(
+                    SetterCommand(
+                        workpiece,
+                        "set_pos",
+                        workpiece.pos,
+                        start_state["pos"],
+                    )
+                )
+
+        if commands:
+            history.begin_transaction(_("Move workpiece(s)"))
+            for cmd in commands:
+                history.add(cmd)
+            history.end_transaction()
+        self._transform_start_states.clear()
+
+    def _on_rotate_end(self, sender, elements: List[CanvasElement]):
+        history = self.doc.history_manager
+        commands = []
+        for element in elements:
+            if (
+                not isinstance(element.data, WorkPiece)
+                or element not in self._transform_start_states
+            ):
+                continue
+            workpiece: WorkPiece = element.data
+            start_state = self._transform_start_states[element]
+            if start_state["angle"] != workpiece.angle:
+                commands.append(
+                    SetterCommand(
+                        workpiece,
+                        "set_angle",
+                        (workpiece.angle,),
+                        (start_state["angle"],),
+                    )
+                )
+
+        if commands:
+            history.begin_transaction(_("Rotate workpiece(s)"))
+            for cmd in commands:
+                history.add(cmd)
+            history.end_transaction()
+        self._transform_start_states.clear()
+
+    def _on_resize_end(self, sender, elements: List[CanvasElement]):
+        history = self.doc.history_manager
+        commands = []
+        for element in elements:
+            if (
+                not isinstance(element.data, WorkPiece)
+                or element not in self._transform_start_states
+            ):
+                continue
+            workpiece: WorkPiece = element.data
+            start_state = self._transform_start_states[element]
+            if workpiece.pos and start_state["pos"] != workpiece.pos:
+                commands.append(
+                    SetterCommand(
+                        workpiece,
+                        "set_pos",
+                        workpiece.pos,
+                        start_state["pos"],
+                    )
+                )
+            if workpiece.size and start_state["size"] != workpiece.size:
+                commands.append(
+                    SetterCommand(
+                        workpiece,
+                        "set_size",
+                        workpiece.size,
+                        start_state["size"],
+                    )
+                )
+
+        if commands:
+            history.begin_transaction(_("Resize workpiece(s)"))
+            for cmd in commands:
+                history.add(cmd)
+            history.end_transaction()
+        self._transform_start_states.clear()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
         workpieces_to_delete = [
@@ -205,22 +242,15 @@ class WorkSurface(Canvas):
             return
 
         history = self.doc.history_manager
-
-        class RemoveWorkpieceCommand(Command):
-            def __init__(self, doc: Doc, workpiece: WorkPiece):
-                super().__init__(_("Remove the workpiece"))
-                self.doc = doc
-                self.workpiece = workpiece
-
-            def execute(self):
-                self.doc.remove_workpiece(self.workpiece)
-
-            def undo(self):
-                self.doc.add_workpiece(self.workpiece)
-
         history.begin_transaction(_("Delete workpiece(s)"))
         for wp in workpieces_to_delete:
-            cmd = RemoveWorkpieceCommand(self.doc, wp)
+            cmd = ListItemCommand(
+                owner_obj=self.doc,
+                item=wp,
+                add_method_name="remove_workpiece",
+                remove_method_name="add_workpiece",
+                name=_("Delete workpiece"),
+            )
             history.execute(cmd)
         history.end_transaction()
 
@@ -231,38 +261,38 @@ class WorkSurface(Canvas):
 
         # If a resize operation has started on a WorkPieceElement, hide the
         # corresponding ops elements to improve performance.
-        if (
-            self.resizing
-            and self.active_elem
-            and isinstance(self.active_elem.data, WorkPiece)
-        ):
-            workpiece_data = self.active_elem.data
-            for step_elem in self.find_by_type(WorkStepElement):
-                ops_elem = step_elem.find_by_data(workpiece_data)
-                if ops_elem:
-                    ops_elem.set_visible(False)
+        if self.resizing and (self.active_elem or self.selection_group):
+            elements_in_transform = self.get_selected_elements()
+            for element in elements_in_transform:
+                if not isinstance(element.data, WorkPiece):
+                    continue
+                workpiece_data = element.data
+                for step_elem in self.find_by_type(WorkStepElement):
+                    ops_elem = step_elem.find_by_data(workpiece_data)
+                    if ops_elem:
+                        ops_elem.set_visible(False)
 
     def on_button_release(self, gesture, x: float, y: float):
         # Before the parent class resets the resizing state, check if a resize
         # was in progress on a WorkPieceElement.
-        workpiece_to_update = None
-        if (
-            self.resizing
-            and self.active_elem
-            and isinstance(self.active_elem.data, WorkPiece)
-        ):
-            workpiece_to_update = self.active_elem.data
+        workpieces_to_update = []
+        if self.resizing and (self.active_elem or self.selection_group):
+            elements_in_transform = self.get_selected_elements()
+            for element in elements_in_transform:
+                if isinstance(element.data, WorkPiece):
+                    workpieces_to_update.append(element.data)
 
         # Let the parent class finish the drag/resize operation.
         super().on_button_release(gesture, x, y)
 
         # If a resize has just finished, make the ops visible again and
         # trigger a re-allocation and re-render to reflect the new size.
-        if workpiece_to_update:
-            for step_elem in self.find_by_type(WorkStepElement):
-                ops_elem = step_elem.find_by_data(workpiece_to_update)
-                if ops_elem:
-                    ops_elem.set_visible(True)
+        if workpieces_to_update:
+            for workpiece in workpieces_to_update:
+                for step_elem in self.find_by_type(WorkStepElement):
+                    ops_elem = step_elem.find_by_data(workpiece)
+                    if ops_elem:
+                        ops_elem.set_visible(True)
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
@@ -333,8 +363,7 @@ class WorkSurface(Canvas):
         )
         y_mm = (
             self.axis_renderer.pan_y_mm
-            + (height_pixels - y_px - top_margin)
-            / self.pixels_per_mm_y
+            + (height_pixels - y_px - top_margin) / self.pixels_per_mm_y
         )
         return x_mm, y_mm
 
@@ -751,6 +780,25 @@ class WorkSurface(Canvas):
                 selected_workpieces.append(elem.data)
         return selected_workpieces
 
+    def _update_selection_state(
+        self, newly_selected_elements: List[CanvasElement]
+    ):
+        """Helper to unify selection state updates."""
+        if len(newly_selected_elements) > 1:
+            self.active_elem = None
+            self.selection_group = MultiSelectionGroup(
+                newly_selected_elements, self
+            )
+        elif newly_selected_elements:
+            self.active_elem = newly_selected_elements[0]
+            self.selection_group = None
+        else:
+            self.active_elem = None
+            self.selection_group = None
+
+        self.active_element_changed.send(self, element=self.active_elem)
+        self.queue_draw()
+
     def select_workpieces(self, workpieces_to_select: List[WorkPiece]):
         """
         Clears the current selection and selects the canvas elements
@@ -762,18 +810,12 @@ class WorkSurface(Canvas):
 
         # Iterate through the canvas elements to find the ones to select
         for elem in self.find_by_type(WorkPieceElement):
-            if elem.data and hasattr(elem.data, 'uid') and \
-               elem.data.uid in uids_to_select:
+            if (
+                elem.data
+                and hasattr(elem.data, "uid")
+                and elem.data.uid in uids_to_select
+            ):
                 elem.selected = True
                 newly_selected_elements.append(elem)
 
-        # Update the active element, typically the first in the new selection
-        if newly_selected_elements:
-            self.active_elem = newly_selected_elements[0]
-        else:
-            self.active_elem = None
-
-        # Notify listeners that the active element has changed and a redraw is
-        # needed
-        self.active_element_changed.send(self, element=self.active_elem)
-        self.queue_draw()
+        self._update_selection_state(newly_selected_elements)
