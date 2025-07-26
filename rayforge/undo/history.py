@@ -98,6 +98,17 @@ class HistoryManager:
             # Add the composite command to history via the proper channel.
             self._add_to_history(final_command)
 
+    def abort_transaction(self):
+        """
+        Aborts the current transaction, discarding any commands that were
+        added since it began.
+        """
+        if not self.in_transaction:
+            return
+        self.in_transaction = False
+        self.transaction_commands = []
+        self.transaction_name = ""
+
     def _coalesce_commands(self, commands: List[Command]) -> Optional[Command]:
         """
         Internal helper to optimize a list of commands from an explicit
