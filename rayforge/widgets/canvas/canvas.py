@@ -201,59 +201,127 @@ class Canvas(Gtk.DrawingArea):
             self._render_selection(ctx, child)
 
     def _update_hover_state(self, x: int, y: int) -> bool:
-        """Updates hover state and returns True if a redraw is needed."""
+        """
+        Updates the canvas's hover state based on the cursor's position.
+
+        This method is crucial for handling all hover interactions. It must
+        distinguish between two concepts:
+        1. The "visual" hover target: The element whose selection frame
+           should be drawn. This is based on a simple geometric check of
+           the element's bounding box.
+        2. The "interactive" hover target: The element that a click would
+           actually affect. This check respects pixel transparency and is
+           used to determine the cursor icon and click behavior.
+
+        This separation allows a selected element's frame to remain visible
+        even when the cursor is over its transparent areas, while still
+        allowing clicks to pass through those areas.
+
+        Args:
+            x: The absolute x-coordinate of the cursor.
+            y: The absolute y-coordinate of the cursor.
+
+        Returns:
+            True if the hover state changed and a redraw is needed,
+            False otherwise.
+        """
         needs_redraw = False
-
-        # Priority 1: Check for handle hits on the selected element.
-        # This allows grabbing handles that are outside the element's body.
-        final_hovered_elem = None
-        new_hovered_region = ElementRegion.NONE
-
         selected_elem = self.active_elem
+
+        # Part 1: Determine the Interactive Target
+        # This is the "real" element under the cursor that a click or drag
+        # should affect. This check is pixel-perfect where configured.
+        interactive_elem = None
+        interactive_region = ElementRegion.NONE
+
+        # Priority 1: Check for hits on the resize/rotate handles of the
+        # currently selected element. Handles always have interaction priority.
         if selected_elem and selected_elem.selected:
             region = selected_elem.check_region_hit(x, y)
+            is_handle = region not in [ElementRegion.NONE, ElementRegion.BODY]
+            if is_handle:
+                interactive_elem = selected_elem
+                interactive_region = region
 
-            # If a handle is hit, it takes priority
-            if region not in [ElementRegion.NONE, ElementRegion.BODY]:
-                new_hovered_region = region
-                final_hovered_elem = selected_elem
-
-        # Priority 2: If no handle was hit, check for body hits on any element.
-        if not final_hovered_elem:
+        # Priority 2: If no handle was hit, search for an element body.
+        # This call to `get_elem_hit` respects element transparency.
+        if not interactive_elem:
+            # `get_elem_hit` searches recursively from the root element.
             body_hit_elem = self.root.get_elem_hit(
                 x - self.root.x, y - self.root.y, selectable=True
             )
+            # Ignore hits on the root canvas itself.
             if body_hit_elem is self.root:
                 body_hit_elem = None
 
             if body_hit_elem:
-                final_hovered_elem = body_hit_elem
-                new_hovered_region = ElementRegion.BODY
+                interactive_elem = body_hit_elem
+                interactive_region = ElementRegion.BODY
 
-        # Update the visual hover state on the element
-        if self.hovered_elem != final_hovered_elem:
+        # Part 2: Determine the Visual Hover Target
+        # This is the element for which we should draw a selection frame.
+        # It ensures the frame stays visible even over transparent areas.
+        visual_hover_target = None
+        if selected_elem and selected_elem.selected:
+            # If an element is selected, its frame should be "hovered"
+            # as long as the cursor is anywhere within its geometric bounds.
+            if selected_elem.check_region_hit(x, y) != ElementRegion.NONE:
+                visual_hover_target = selected_elem
+
+        if not visual_hover_target:
+            # If the cursor is outside the selected element's bounds, or if
+            # nothing is selected, the visual hover simply matches the
+            # interactive one.
+            visual_hover_target = interactive_elem
+
+        # Part 3: Apply State Changes to the Canvas
+        # Update the element object that is visually hovered. This is used
+        # by the `_render_selection` method.
+        if self.hovered_elem != visual_hover_target:
             if self.hovered_elem:
                 self.hovered_elem.hovered = False
-            self.hovered_elem = final_hovered_elem
+            self.hovered_elem = visual_hover_target
             if self.hovered_elem:
                 self.hovered_elem.hovered = True
             needs_redraw = True
 
-        # Update the hovered region for cursor changes and drag state
-        if self.hovered_region != new_hovered_region:
-            self.hovered_region = new_hovered_region
+        # Update the interactive region state. This is used to set the
+        # mouse cursor icon and determine the action on button press.
+        if self.hovered_region != interactive_region:
+            self.hovered_region = interactive_region
             needs_redraw = True
 
         return needs_redraw
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         self.grab_focus()
-        # The hover state now correctly identifies handle-hovers
-        self._update_hover_state(x, y)
-        hit = self.hovered_elem
 
-        # Before changing selection state, check if the hit element
-        # was already selected.
+        # Update hover state. This sets self.hovered_region correctly.
+        self._update_hover_state(x, y)
+
+        # We need the INTERACTIVE hit, not the visual one (self.hovered_elem).
+        # We can get it from self.hovered_region and self.hovered_elem if a
+        # handle is hit, or we need to re-check for body hits. It's cleaner
+        # to just get it directly.
+
+        # Let's determine the interactive element one more time for the click.
+        # This is slightly redundant but guarantees correctness without
+        # complex state passing.
+        hit = None
+        if (
+            self.hovered_region != ElementRegion.NONE
+            and self.hovered_region != ElementRegion.BODY
+        ):
+            # A handle was hit, the element is the one being visually hovered
+            hit = self.hovered_elem
+        else:
+            # Check for a body hit, which respects pixel-perfect
+            hit = self.root.get_elem_hit(
+                x - self.root.x, y - self.root.y, selectable=True
+            )
+            if hit is self.root:
+                hit = None
+
         was_already_selected = hit.selected if hit else False
 
         # If we didn't hit an already-selected element, unselect all

@@ -43,6 +43,7 @@ class CanvasElement:
         buffered: bool = False,
         debounce_ms: int = 50,
         angle: float = 0.0,
+        pixel_perfect_hit: bool = False,
     ):
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -69,6 +70,12 @@ class CanvasElement:
         self._debounce_timer_id: Optional[int] = None
         self._update_future: Optional[Future] = None
         self.angle: float = angle
+        self.pixel_perfect_hit = pixel_perfect_hit
+
+        if self.pixel_perfect_hit and not self.buffered:
+            raise ValueError(
+                "pixel perfect hit cannot be used on unbuffered elements"
+            )
 
         # UI interaction state
         self.hovered: bool = False
@@ -478,6 +485,7 @@ class CanvasElement:
         """
         Check if the point (x, y) hits this elem or any of its children.
         Coordinates are relative to the current element's top-left.
+        Incorporates pixel-perfect hit detection if enabled for an element.
         """
         # Check children (child-to-parent order)
         for child in reversed(self.children):
@@ -493,20 +501,26 @@ class CanvasElement:
             return None
 
         # Reconstruct absolute coordinates to use the generic hit check
-        # function
+        # function, which is needed for both bbox and pixel checks.
         abs_self_x, abs_self_y = self.pos_abs()
         abs_hit_x, abs_hit_y = abs_self_x + x, abs_self_y + y
 
-        # Use the generic function to see if the point hits the element's
-        # bounds
+        # First, a quick check against the bounding box. This is always needed
+        # to know if we're even in the vicinity of the element.
         hit_region = self.check_region_hit(int(abs_hit_x), int(abs_hit_y))
 
-        # This function should return a hit if the point is anywhere within
-        # the element's visible shape (body), not on external handles.
-        if hit_region == ElementRegion.BODY:
+        if hit_region == ElementRegion.NONE:
+            return None  # Not within the bounding box at all
+        if not self.pixel_perfect_hit:
             return self
 
-        return None
+        # If pixel-perfect checking is enabled, perform the more expensive
+        # check.
+        # NOTE: For this to be effective, the element must be `buffered=True`
+        # and have transparent areas on its surface.
+        if self.is_pixel_opaque(int(abs_hit_x), int(abs_hit_y)):
+            return self  # Hit on an opaque pixel
+        return None  # Inside bounding box, but on a transparent pixel
 
     def is_pixel_opaque(self, canvas_x: int, canvas_y: int) -> bool:
         """

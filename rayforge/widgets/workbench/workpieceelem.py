@@ -28,6 +28,7 @@ class WorkPieceElement(SurfaceElement):
             data=workpiece,
             clip=False,
             buffered=True,
+            pixel_perfect_hit=True,
             **kwargs,
         )
         workpiece.size_changed.connect(self._on_workpiece_size_changed)
