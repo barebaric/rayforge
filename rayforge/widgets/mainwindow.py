@@ -91,6 +91,11 @@ class MainWindow(Adw.ApplicationWindow):
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.set_content(vbox)
 
+        # Add a key controller for global keyboard shortcuts
+        key_controller = Gtk.EventControllerKey.new()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        self.add_controller(key_controller)
+
         # Show the application header bar with hamburger menu
         header_bar = Adw.HeaderBar()
         vbox.append(header_bar)
@@ -754,3 +759,29 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_settings_dialog_closed(self, dialog):
         logger.debug("Settings closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
+
+    def on_key_pressed(
+        self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
+    ) -> bool:
+        """Handles global key press events for shortcuts."""
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+
+        # Handle Undo (Ctrl+Z)
+        if is_ctrl and not is_shift and keyval == Gdk.KEY_z:
+            if self.doc.history_manager.can_undo():
+                self.doc.history_manager.undo()
+            return True  # Event handled
+
+        # Handle Redo (Ctrl+Y or Ctrl+Shift+Z)
+        is_redo_y = is_ctrl and not is_shift and keyval == Gdk.KEY_y
+        is_redo_z_shift = is_ctrl and is_shift and keyval == Gdk.KEY_z
+        if is_redo_y or is_redo_z_shift:
+            if self.doc.history_manager.can_redo():
+                self.doc.history_manager.redo()
+            return True  # Event handled
+
+        # If the key combination was not handled, return False to allow
+        # other handlers (like the one in WorkSurface) to process it.
+        # This allows for event propagation.
+        return False
