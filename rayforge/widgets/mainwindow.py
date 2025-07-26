@@ -919,7 +919,7 @@ class MainWindow(Adw.ApplicationWindow):
             "Paste counter reset."
         )
 
-    def on_paste_requested(self, sender):
+    def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal. Pastes a new set of items
         with a cumulative offset from the original clipboard snapshot.
