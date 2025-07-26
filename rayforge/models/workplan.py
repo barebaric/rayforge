@@ -33,6 +33,7 @@ class WorkPlan:
     def create_workstep(self, workstep_cls, name=None) -> WorkStep:
         """Factory method to create a new workstep with correct config."""
         return workstep_cls(
+            doc=self.doc,
             laser=config.machine.heads[0],
             max_cut_speed=config.machine.max_cut_speed,
             max_travel_speed=config.machine.max_travel_speed,

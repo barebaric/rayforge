@@ -1,10 +1,21 @@
 import logging
 import uuid
 import cairo
-from typing import Generator, Optional, Tuple, cast, Dict, Any, Type
+from typing import (
+    Generator,
+    Optional,
+    Tuple,
+    cast,
+    Dict,
+    Any,
+    Type,
+    TYPE_CHECKING,
+)
 from blinker import Signal
 from ..render import Renderer
 import importlib
+if TYPE_CHECKING:
+    from .doc import Doc
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +31,7 @@ class WorkPiece:
     """
 
     def __init__(self, name: str, data: bytes, renderer_class: Type[Renderer]):
+        self.doc: Optional['Doc'] = None
         self.name = name
         self.uid = uuid.uuid4()
         self._data = data
@@ -48,6 +60,7 @@ class WorkPiece:
         state = self.__dict__.copy()
 
         # Remove live objects that cannot or should not be pickled.
+        state.pop("doc", None)
         # Using .pop() with a default value is safe even if the key doesn't
         # exist.
         state.pop("renderer", None)

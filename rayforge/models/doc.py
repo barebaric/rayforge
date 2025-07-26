@@ -24,6 +24,7 @@ class Doc:
         return iter(self.workpieces)
 
     def add_workpiece(self, workpiece):
+        workpiece.doc = self
         self.workpieces.append(workpiece)
         self.workplan.set_workpieces(self.workpieces)
         self.changed.send(self)
@@ -31,7 +32,20 @@ class Doc:
     def remove_workpiece(self, workpiece):
         if workpiece not in self.workpieces:
             return
+        workpiece.doc = None
         self.workpieces.remove(workpiece)
+        self.workplan.set_workpieces(self.workpieces)
+        self.changed.send(self)
+
+    def set_workpieces(self, workpieces: List[WorkPiece]):
+        """
+        Replaces the entire list of workpieces and notifies listeners.
+        """
+        for wp in self.workpieces:
+            wp.doc = None
+        self.workpieces = workpieces
+        for wp in self.workpieces:
+            wp.doc = self
         self.workplan.set_workpieces(self.workpieces)
         self.changed.send(self)
 

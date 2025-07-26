@@ -1,10 +1,10 @@
 from __future__ import annotations
 import logging
 from abc import ABC
-from typing import Any, List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple, Optional, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
-from gi.repository import GLib
+from gi.repository import GLib  # type:ignore
 from ..config import task_mgr
 from ..tasker.task import Task
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
@@ -14,6 +14,8 @@ from .workpiece import WorkPiece
 from .laser import Laser
 from .ops import Ops
 from .worksteprunner import run_workstep_in_subprocess
+if TYPE_CHECKING:
+    from .doc import Doc
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,8 @@ class WorkStep(ABC):
 
     def __init__(
         self,
+        *,
+        doc: 'Doc',
         opsproducer: OpsProducer,
         laser: Laser,
         max_cut_speed: int,
@@ -43,6 +47,7 @@ class WorkStep(ABC):
         if not self.typelabel:
             raise AttributeError("Subclass must set a typelabel attribute.")
 
+        self.doc = doc
         self.name = name or self.typelabel
         self.visible = True
         self.modifiers = [
@@ -307,8 +312,10 @@ class WorkStep(ABC):
 class Outline(WorkStep):
     typelabel = _("External Outline")
 
-    def __init__(self, name=None, **kwargs):
-        super().__init__(OutlineTracer(), name=name, **kwargs)
+    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+        super().__init__(
+            doc=doc, opsproducer=OutlineTracer(), name=name, **kwargs
+        )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
             Optimize(enabled=True),
@@ -318,8 +325,10 @@ class Outline(WorkStep):
 class Contour(WorkStep):
     typelabel = _("Contour")
 
-    def __init__(self, name=None, **kwargs):
-        super().__init__(EdgeTracer(), name=name, **kwargs)
+    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+        super().__init__(
+            doc=doc, opsproducer=EdgeTracer(), name=name, **kwargs
+        )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
             Optimize(enabled=True),
@@ -329,8 +338,10 @@ class Contour(WorkStep):
 class Rasterize(WorkStep):
     typelabel = _("Raster Engrave")
 
-    def __init__(self, name=None, **kwargs):
-        super().__init__(Rasterizer(), name=name, **kwargs)
+    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+        super().__init__(
+            doc=doc, opsproducer=Rasterizer(), name=name, **kwargs
+        )
         self.opstransformers = [
             Optimize(enabled=True),
         ]
