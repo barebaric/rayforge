@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Optional, Tuple, cast
+from typing import Optional, Tuple, cast, Dict
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.doc import Doc
 from ...models.workpiece import WorkPiece
@@ -12,6 +12,7 @@ from .workpieceelem import WorkPieceElement
 from .cameraelem import CameraImageElement
 from ...models.machine import Machine
 from typing import List
+from ...undo import SetterCommand, Command
 
 
 logger = logging.getLogger(__name__)
@@ -30,9 +31,12 @@ class WorkSurface(Canvas):
     # The maximum allowed pixel density when zooming in.
     MAX_PIXELS_PER_MM = 100.0
 
-    def __init__(self, machine: Machine, cam_visibie: bool = False, **kwargs):
+    def __init__(
+        self, doc: Doc, machine: Machine, cam_visibie: bool = False, **kwargs
+    ):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
+        self.doc = doc
         self.machine = machine
         self.zoom_level = 1.0
         self.show_travel_moves = False
@@ -40,6 +44,7 @@ class WorkSurface(Canvas):
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
         self.cam_visibie = cam_visibie
+        self._transform_start_states: Dict[CanvasElement, dict] = {}
 
         # The root element itself should not clip, allowing its children
         # (like workpiece_elements) to draw outside its bounds.
@@ -85,12 +90,132 @@ class WorkSurface(Canvas):
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
         self.mouse_pos = 0, 0
-        self.doc: Optional[Doc] = None
         self.elem_removed.connect(self._on_elem_removed)
+
+        # Connect to undo/redo signals from the canvas
+        self.move_begin.connect(self._on_any_transform_begin)
+        self.move_end.connect(self._on_move_end)
+        self.resize_begin.connect(self._on_any_transform_begin)
+        self.resize_end.connect(self._on_resize_end)
+        self.rotate_begin.connect(self._on_any_transform_begin)
+        self.rotate_end.connect(self._on_rotate_end)
+        self.elements_deleted.connect(self._on_elements_deleted)
 
         # Add CameraImageElements for each camera
         self.machine.changed.connect(self._on_machine_changed)
         self._on_machine_changed(machine)
+
+    def _on_any_transform_begin(self, sender, element: CanvasElement):
+        if not isinstance(element.data, WorkPiece):
+            return
+        workpiece: WorkPiece = element.data
+        self._transform_start_states[element] = {
+            "pos": workpiece.pos,
+            "size": workpiece.size,
+            "angle": workpiece.angle,
+        }
+
+    def _on_move_end(self, sender, element: CanvasElement):
+        if (
+            not isinstance(element.data, WorkPiece)
+            or element not in self._transform_start_states
+        ):
+            return
+        workpiece: WorkPiece = element.data
+        start_state = self._transform_start_states.pop(element)
+        if workpiece.pos is None or start_state["pos"] == workpiece.pos:
+            return
+
+        cmd = SetterCommand(
+            workpiece,
+            "set_pos",
+            workpiece.pos,
+            start_state["pos"],
+            name=_("Move the workpiece"),
+        )
+        self.doc.history_manager.add(cmd)
+
+    def _on_rotate_end(self, sender, element: CanvasElement):
+        if (
+            not isinstance(element.data, WorkPiece)
+            or element not in self._transform_start_states
+        ):
+            return
+        workpiece: WorkPiece = element.data
+        start_state = self._transform_start_states.pop(element)
+        if start_state["angle"] == workpiece.angle:
+            return
+
+        cmd = SetterCommand(
+            workpiece,
+            "set_angle",
+            (workpiece.angle,),
+            (start_state["angle"],),
+            name=_("Rotate the workpiece"),
+        )
+        self.doc.history_manager.add(cmd)
+
+    def _on_resize_end(self, sender, element: CanvasElement):
+        if (
+            not isinstance(element.data, WorkPiece)
+            or element not in self._transform_start_states
+        ):
+            return
+        workpiece: WorkPiece = element.data
+        start_state = self._transform_start_states.pop(element)
+        commands: List[Command] = []
+
+        if workpiece.pos and start_state["pos"] != workpiece.pos:
+            commands.append(
+                SetterCommand(
+                    workpiece, "set_pos", workpiece.pos, start_state["pos"]
+                )
+            )
+
+        if workpiece.size and start_state["size"] != workpiece.size:
+            commands.append(
+                SetterCommand(
+                    workpiece, "set_size", workpiece.size, start_state["size"]
+                )
+            )
+
+        if not commands:
+            return
+
+        history = self.doc.history_manager
+        history.begin_transaction(_("Resize"))
+        for cmd in commands:
+            # Add, don't execute, since the canvas already changed the state
+            history.add(cmd)
+        history.end_transaction()
+
+    def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
+        workpieces_to_delete = [
+            elem.data for elem in elements if isinstance(elem.data, WorkPiece)
+        ]
+
+        if not workpieces_to_delete:
+            return
+
+        history = self.doc.history_manager
+
+        class RemoveWorkpieceCommand(Command):
+            def __init__(self, doc: Doc, workpiece: WorkPiece):
+                super().__init__(_("Remove Workpiece"))
+                self.doc = doc
+                self.workpiece = workpiece
+
+            def execute(self):
+                self.doc.remove_workpiece(self.workpiece)
+
+            def undo(self):
+                self.doc.add_workpiece(self.workpiece)
+
+        history.begin_transaction(_("Delete Item(s)"))
+        for wp in workpieces_to_delete:
+            cmd = RemoveWorkpieceCommand(self.doc, wp)
+            history.execute(cmd)
+        history.end_transaction()
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         # First, let the parent Canvas handle the event to determine if a
@@ -527,8 +652,6 @@ class WorkSurface(Canvas):
         # Handle arrow key movement for selected workpieces
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
-        pixels_per_mm_x = self.pixels_per_mm_x or 1
-        pixels_per_mm_y = self.pixels_per_mm_y or 1
 
         move_amount_mm = 1.0
         if is_shift:
@@ -536,45 +659,41 @@ class WorkSurface(Canvas):
         elif is_ctrl:
             move_amount_mm *= 0.1
 
-        move_amount_x = round(move_amount_mm * pixels_per_mm_x)
-        move_amount_y = round(move_amount_mm * pixels_per_mm_y)
-        dx = 0
-        dy = 0
+        move_amount_x_mm = 0.0
+        move_amount_y_mm = 0.0
 
         if keyval == Gdk.KEY_Up:
-            dy = -move_amount_y
+            move_amount_y_mm = move_amount_mm
         elif keyval == Gdk.KEY_Down:
-            dy = move_amount_y
+            move_amount_y_mm = -move_amount_mm
         elif keyval == Gdk.KEY_Left:
-            dx = -move_amount_x
+            move_amount_x_mm = -move_amount_mm
         elif keyval == Gdk.KEY_Right:
-            dx = move_amount_x
+            move_amount_x_mm = move_amount_mm
 
-        if dx != 0 or dy != 0:
-            for elem in self.get_selected_elements():
-                if not isinstance(elem, WorkPieceElement):
-                    continue
-                current_x, current_y = elem.pos()
-                elem.set_pos(current_x + dx, current_y + dy)
-                self.queue_draw()
-            return True  # Consume arrow key events even if nothing is selected
+        if move_amount_x_mm != 0 or move_amount_y_mm != 0:
+            selected_wps = self.get_selected_workpieces()
+            if not selected_wps:
+                return True  # Consume event but do nothing
 
-        if keyval == Gdk.KEY_Delete:
-            selected = [
-                e
-                for e in self.root.get_selected_data()
-                if isinstance(e, WorkPiece)
-            ]
-            for workpiece in selected:
-                for step_elem in self.find_by_type(WorkStepElement):
-                    ops_elem = step_elem.find_by_data(workpiece)
-                    if not ops_elem:
-                        continue
-                    ops_elem.remove()
-                    del ops_elem  # to ensure signals disconnect
+            history = self.doc.history_manager
+            history.begin_transaction(_("Move the workpiece"))
+            for wp in selected_wps:
+                old_pos = wp.pos
+                if old_pos:
+                    new_pos = (
+                        old_pos[0] + move_amount_x_mm,
+                        old_pos[1] + move_amount_y_mm,
+                    )
+                    cmd = SetterCommand(
+                        wp, "set_pos", new_args=new_pos, old_args=old_pos
+                    )
+                    history.execute(cmd)
+            history.end_transaction()
+            return True
 
         # Propagate to parent Canvas for default behavior (like deleting
-        # elements).
+        # elements via the new signal mechanism).
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x, y):

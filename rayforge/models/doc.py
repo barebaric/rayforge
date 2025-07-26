@@ -2,6 +2,7 @@ import cairo
 from typing import List
 from blinker import Signal
 from ..config import config
+from ..undo import HistoryManager
 from .workpiece import WorkPiece
 from .workplan import WorkPlan
 
@@ -12,11 +13,13 @@ class Doc:
     """
     workpieces: List[WorkPiece]
     workplan: WorkPlan
+    history_manager: HistoryManager
 
     def __init__(self):
         self.workpieces: List[WorkPiece] = []
         self._workpiece_ref_for_pyreverse: WorkPiece
         self.workplan: WorkPlan = WorkPlan(self, "Default plan")
+        self.history_manager = HistoryManager()
         self.changed = Signal()
         self.workplan.changed.connect(self.changed.send)
 

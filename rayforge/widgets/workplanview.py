@@ -1,5 +1,7 @@
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # type: ignore
+from ..models.doc import Doc
 from ..models.workplan import WorkPlan, WorkStep
+from ..undo.list_cmd import ListItemCommand, ReorderListCommand
 from .draglist import DragListBox
 from .workstepbox import WorkStepBox
 from .stepselector import WorkStepSelector
@@ -17,10 +19,11 @@ css = """
 
 
 class WorkPlanView(Gtk.ScrolledWindow):
-    def __init__(self, workplan: WorkPlan, **kwargs):
+    def __init__(self, doc: Doc, workplan: WorkPlan, **kwargs):
         super().__init__(**kwargs)
         self.add_css_class("workplan")
         self.apply_css()
+        self.doc = doc
         self.workplan = workplan
 
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -54,7 +57,7 @@ class WorkPlanView(Gtk.ScrolledWindow):
             row.data = step
             self.draglist.add_row(row)
             workstepbox = WorkStepBox(
-                step, prefix=_("Step {seq}: ").format(seq=seq)
+                self.doc, step, prefix=_("Step {seq}: ").format(seq=seq)
             )
             workstepbox.delete_clicked.connect(self.on_button_delete_clicked)
             row.set_child(workstepbox)
@@ -70,13 +73,41 @@ class WorkPlanView(Gtk.ScrolledWindow):
         if popup.selected:
             workstep_cls = popup.selected
             new_step = self.workplan.create_workstep(workstep_cls)
-            self.workplan.add_workstep(new_step)
+
+            # Create an undoable command for adding the workstep
+            command = ListItemCommand(
+                owner_obj=self.workplan,
+                item=new_step,
+                add_method_name="add_workstep",
+                remove_method_name="remove_workstep",
+                name=_("Add workstep '{name}'").format(name=new_step.name)
+            )
+            self.doc.history_manager.execute(command)
 
     def on_button_delete_clicked(self, sender, workstep, **kwargs):
-        self.workplan.remove_workstep(workstep)
+        # Create an undoable command for removing the workstep by
+        # creating a new list without the specified step.
+        new_list = [s for s in self.workplan.worksteps if s is not workstep]
+        command = ReorderListCommand(
+            target_obj=self.workplan,
+            list_property_name="worksteps",
+            new_list=new_list,
+            setter_method_name="set_worksteps",
+            name=_("Remove workstep '{name}'").format(name=workstep.name)
+        )
+        self.doc.history_manager.execute(command)
 
     def on_workplan_changed(self, sender, **kwargs):
         self.update()
 
     def on_workplan_reordered(self, sender, **kwargs):
-        self.workplan.set_worksteps([row.data for row in self.draglist])
+        # Create an undoable command for reordering the worksteps
+        new_order = [row.data for row in self.draglist]
+        command = ReorderListCommand(
+            target_obj=self.workplan,
+            list_property_name="worksteps",
+            new_list=new_order,
+            setter_method_name="set_worksteps",
+            name=_("Reorder worksteps")
+        )
+        self.doc.history_manager.execute(command)

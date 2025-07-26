@@ -1,9 +1,13 @@
 import logging
-from gi.repository import Gtk, Adw, Gdk
-from typing import Optional
+from gi.repository import Gtk, Adw, Gdk  # type: ignore
+from typing import Optional, Tuple
 from ..config import config
 from ..models.workpiece import WorkPiece
 from ..util.adwfix import get_spinrow_float
+from ..undo import (
+    ChangePropertyCommand,
+    SetterCommand,
+)
 
 
 css = """
@@ -18,11 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
-    def __init__(self, workpiece: Optional[WorkPiece], *args, **kwargs):
+    def __init__(
+        self,
+        workpiece: Optional[WorkPiece] = None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.add_css_class("workpiece-properties")
         self.apply_css()
-        self.workpiece: Optional[WorkPiece] = workpiece
+        self.workpiece = workpiece
         self._in_update = False
         self.set_title(_("Workpiece Properties"))
 
@@ -90,7 +99,6 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         # Angle Entry
         self.angle_row = Adw.SpinRow(
             title=_("Angle"),
-            # FIX: The 6th argument (page_size) was missing. Added it here.
             adjustment=Gtk.Adjustment.new(0, -360, 360, 1, 10, 0),
             digits=2,
         )
@@ -128,127 +136,193 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
+    def _commit_pos_transaction(self, new_pos: Tuple[float, float]):
+        """Commits workpiece position changes to the history manager."""
+        if not self.workpiece:
+            return
+
+        old_pos = self.workpiece.pos or (0, 0)
+        doc = self.workpiece.doc
+        if not doc:
+            self.workpiece.set_pos(*new_pos)
+            return
+
+        cmd = SetterCommand(
+            self.workpiece,
+            "set_pos",
+            new_args=new_pos,
+            old_args=old_pos,
+            name=_("Move the workpiece"),
+        )
+        doc.history_manager.execute(cmd)
+
+    def _calculate_new_size_with_ratio(
+        self, value: float, changed_dim: str
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """Calculates new width and height maintaining aspect ratio."""
+        if not self.workpiece:
+            return None, None
+        aspect_ratio = self.workpiece.get_current_aspect_ratio()
+        if not aspect_ratio:
+            return None, None
+
+        width_min = self.width_row.get_adjustment().get_lower()
+        height_min = self.height_row.get_adjustment().get_lower()
+
+        if changed_dim == "width":
+            new_width = value
+            new_height = new_width / aspect_ratio
+            if new_height < height_min:
+                new_height = height_min
+                new_width = new_height * aspect_ratio
+        else:  # changed_dim == 'height'
+            new_height = value
+            new_width = new_height * aspect_ratio
+            if new_width < width_min:
+                new_width = width_min
+                new_height = new_width / aspect_ratio
+
+        return new_width, new_height
+
+    def _commit_resize_transaction(self, new_size: Tuple[float, float]):
+        """Calculates new position and commits size/pos changes."""
+        if not self.workpiece:
+            return
+
+        new_width, new_height = new_size
+        bounds = config.machine.dimensions
+        old_pos = self.workpiece.pos or (0, 0)
+        old_size = self.workpiece.size or (0, 0)
+        old_w, old_h = (
+            self.workpiece.get_current_size()
+            or self.workpiece.get_default_size(*bounds)
+        )
+        old_x, old_y = old_pos
+
+        if self.workpiece.angle == 0:
+            # Resize from top-left for un-rotated
+            new_x = old_x
+            new_y = old_y + old_h - new_height
+        else:
+            # Resize from center for rotated
+            new_x = old_x + (old_w - new_width) / 2
+            new_y = old_y + (old_h - new_height) / 2
+
+        doc = self.workpiece.doc
+        if not doc:
+            self.workpiece.set_pos(new_x, new_y)
+            self.workpiece.set_size(new_width, new_height)
+            return
+
+        history = doc.history_manager
+        history.begin_transaction(_("Resize"))
+        try:
+            pos_cmd = SetterCommand(
+                self.workpiece,
+                "set_pos",
+                new_args=(new_x, new_y),
+                old_args=old_pos,
+                name=_("Move the workpiece"),
+            )
+            history.execute(pos_cmd)
+            size_cmd = SetterCommand(
+                self.workpiece,
+                "set_size",
+                new_args=(new_width, new_height),
+                old_args=old_size,
+                name=_("Resize the workpiece"),
+            )
+            history.execute(size_cmd)
+        finally:
+            history.end_transaction()
+
     def _on_width_changed(self, spin_row, GParamSpec):
         logger.debug(f"Width changed to {spin_row.get_value()}")
-        if self._in_update:
-            return
-        if not self.workpiece:
+        if self._in_update or not self.workpiece:
             return
         self._in_update = True
         try:
             new_width = get_spinrow_float(self.width_row)
+            if new_width is None:
+                return
+
             current_size = self.workpiece.size
-            height_min = self.height_row.get_adjustment().get_lower()
-            new_height = current_size[1] if current_size else height_min
+            new_height = (
+                current_size[1]
+                if current_size
+                else self.height_row.get_adjustment().get_lower()
+            )
 
             if self.fixed_ratio_switch.get_active():
-                aspect_ratio = self.workpiece.get_current_aspect_ratio()
-                if aspect_ratio and new_width is not None:
-                    new_height = new_width / aspect_ratio
-                    if new_height < height_min:
-                        new_height = height_min
-                        new_width = new_height * aspect_ratio
+                w, h = self._calculate_new_size_with_ratio(new_width, "width")
+                if w is not None and h is not None:
+                    new_width, new_height = w, h
                     self.height_row.set_value(new_height)
                     self.width_row.set_value(new_width)
 
-            if new_width is not None and new_height is not None:
-                bounds = config.machine.dimensions
-                old_pos = self.workpiece.pos or (0, 0)
-                old_w, old_h = (
-                    self.workpiece.get_current_size()
-                    or self.workpiece.get_default_size(*bounds)
-                )
-                old_x, old_y = old_pos
-
-                if self.workpiece.angle == 0:
-                    # Resize from top-left for un-rotated
-                    new_x = old_x
-                    new_y = old_y + old_h - new_height
-                else:
-                    # Resize from center for rotated
-                    new_x = old_x + (old_w - new_width) / 2
-                    new_y = old_y + (old_h - new_height) / 2
-
-                self.workpiece.set_pos(new_x, new_y)
-                self.workpiece.set_size(new_width, new_height)
+            self._commit_resize_transaction((new_width, new_height))
         finally:
             self._in_update = False
 
     def _on_height_changed(self, spin_row, GParamSpec):
         logger.debug(f"Height changed to {spin_row.get_value()}")
-        if self._in_update:
-            return
-        if not self.workpiece:
+        if self._in_update or not self.workpiece:
             return
         self._in_update = True
         try:
             new_height = get_spinrow_float(self.height_row)
+            if new_height is None:
+                return
+
             current_size = self.workpiece.size
-            width_min = self.width_row.get_adjustment().get_lower()
-            new_width = current_size[0] if current_size else width_min
+            new_width = (
+                current_size[0]
+                if current_size
+                else self.width_row.get_adjustment().get_lower()
+            )
 
             if self.fixed_ratio_switch.get_active():
-                aspect_ratio = self.workpiece.get_current_aspect_ratio()
-                if aspect_ratio and new_height is not None:
-                    new_width = new_height * aspect_ratio
-                    if new_width < width_min:
-                        new_width = width_min
-                        new_height = new_width / aspect_ratio
+                w, h = self._calculate_new_size_with_ratio(
+                    new_height, "height"
+                )
+                if w is not None and h is not None:
+                    new_width, new_height = w, h
                     self.width_row.set_value(new_width)
                     self.height_row.set_value(new_height)
 
-            if new_width is not None and new_height is not None:
-                bounds = config.machine.dimensions
-                old_pos = self.workpiece.pos or (0, 0)
-                old_w, old_h = (
-                    self.workpiece.get_current_size()
-                    or self.workpiece.get_default_size(*bounds)
-                )
-                old_x, old_y = old_pos
-
-                if self.workpiece.angle == 0:
-                    # Resize from top-left for un-rotated
-                    new_x = old_x
-                    new_y = old_y + old_h - new_height
-                else:
-                    # Resize from center for rotated
-                    new_x = old_x + (old_w - new_width) / 2
-                    new_y = old_y + (old_h - new_height) / 2
-
-                self.workpiece.set_pos(new_x, new_y)
-                self.workpiece.set_size(new_width, new_height)
+            self._commit_resize_transaction((new_width, new_height))
         finally:
             self._in_update = False
 
     def _on_x_changed(self, spin_row, GParamSpec):
         logger.debug(f"X position changed to {spin_row.get_value()}")
-        if self._in_update:
-            return
-        if not self.workpiece:
+        if self._in_update or not self.workpiece:
             return
         self._in_update = True
         try:
             new_x = get_spinrow_float(self.x_row)
-            current_pos = self.workpiece.pos
-            new_y = current_pos[1] if current_pos else 0.0
-            if new_x is not None:
-                self.workpiece.set_pos(new_x, new_y)
+            if new_x is None:
+                return
+
+            old_pos = self.workpiece.pos
+            new_y = old_pos[1] if old_pos else 0.0
+            self._commit_pos_transaction((new_x, new_y))
         finally:
             self._in_update = False
 
     def _on_y_changed(self, spin_row, GParamSpec):
         logger.debug(f"Y position changed to {spin_row.get_value()}")
-        if self._in_update:
-            return
-        if not self.workpiece:
+        if self._in_update or not self.workpiece:
             return
         self._in_update = True
         try:
             new_y = get_spinrow_float(self.y_row)
-            current_pos = self.workpiece.pos
-            new_x = current_pos[0] if current_pos else 0.0
-            if new_y is not None:
-                self.workpiece.set_pos(new_x, new_y)
+            if new_y is None:
+                return
+
+            old_pos = self.workpiece.pos
+            new_x = old_pos[0] if old_pos else 0.0
+            self._commit_pos_transaction((new_x, new_y))
         finally:
             self._in_update = False
 
@@ -257,67 +331,74 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             return
         self._in_update = True
         try:
-            self.workpiece.set_angle(spin_row.get_value())
+            doc = self.workpiece.doc
+            if not doc:
+                self.workpiece.set_angle(spin_row.get_value())
+                return
+
+            cmd = ChangePropertyCommand(
+                self.workpiece,
+                "angle",
+                spin_row.get_value(),
+                setter_method_name="set_angle",
+                name=_("Change workpiece angle"),
+            )
+            doc.history_manager.execute(cmd)
         finally:
             self._in_update = False
 
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
+        """
+        This function's only purpose is to allow the user to toggle the
+        switch state. It does not perform any action itself and does not
+        need an undo entry. The width/height change handlers are
+        responsible for reading this switch's state.
+        """
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
-        if self._in_update:
-            return False
-        if not self.workpiece:
-            return False
-        self._in_update = True
-        try:
-            if self.fixed_ratio_switch.get_active():
-                new_width = get_spinrow_float(self.width_row)
-                new_height = get_spinrow_float(self.height_row)
-
-                aspect_ratio = self.workpiece.get_current_aspect_ratio()
-
-                if aspect_ratio and new_width is not None:
-                    # When ratio is toggled, prioritize width for calculation
-                    new_height = new_width / aspect_ratio
-                    self.height_row.set_value(new_height)
-                    if new_width is not None and new_height is not None:
-                        # Also need to adjust position here
-                        bounds = config.machine.dimensions
-                        old_pos = self.workpiece.pos or (0, 0)
-                        old_w, old_h = (
-                            self.workpiece.get_current_size()
-                            or self.workpiece.get_default_size(*bounds)
-                        )
-                        old_x, old_y = old_pos
-
-                        if self.workpiece.angle == 0:
-                            new_x, new_y = old_x, old_y + old_h - new_height
-                        else:
-                            new_x, new_y = (
-                                old_x + (old_w - new_width) / 2,
-                                old_y + (old_h - new_height) / 2,
-                            )
-
-                        self.workpiece.set_pos(new_x, new_y)
-                        self.workpiece.set_size(new_width, new_height)
-        finally:
-            self._in_update = False
-        return False  # Allow the default handler to run
+        # No action is needed here. The event is captured simply to
+        # allow the state of the switch to be changed by user interaction.
+        return False
 
     def _on_reset_clicked(self, button):
         if not self.workpiece:
-            return
-        self._in_update = True
+            return False
+
         bounds = config.machine.dimensions
+        old_size = self.workpiece.size
         natural_width, natural_height = self.workpiece.get_default_size(
             *bounds
         )
-        self.workpiece.set_size(natural_width, natural_height)
-        self._in_update = False
+
+        if not old_size or not self.workpiece.doc:
+            self.workpiece.set_size(natural_width, natural_height)
+            self._update_ui_from_workpiece()
+            return False
+
+        cmd = SetterCommand(
+            self.workpiece,
+            "set_size",
+            new_args=(natural_width, natural_height),
+            old_args=old_size,
+            name=_("Reset workpiece size"),
+        )
+        self.workpiece.doc.history_manager.execute(cmd)
         self._update_ui_from_workpiece()
 
     def _on_reset_angle_clicked(self, button):
-        if self.workpiece:
+        if not self.workpiece:
+            return
+        if not self.workpiece.doc:
             self.workpiece.set_angle(0.0)
+            return
+
+        cmd = ChangePropertyCommand(
+            self.workpiece,
+            "angle",
+            0.0,
+            setter_method_name="set_angle",
+            name=_("Reset workpiece angle"),
+        )
+        self.workpiece.doc.history_manager.execute(cmd)
 
     def _on_workpiece_size_changed(self, workpiece):
         if self._in_update:

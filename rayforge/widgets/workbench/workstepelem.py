@@ -83,15 +83,31 @@ class WorkStepElement(CanvasElement):
                 child.set_show_travel_moves(show)
 
     def _on_workstep_changed(self, step: WorkStep):
-        # This signal is for changes to the WorkStep itself (e.g., visibility)
-        # not changes to its workpieces or ops.
-        # Workpiece additions/removals are handled by the ops generation
-        # signals.
-        # We just need to update visibility and redraw.
+        """
+        Handles changes to the WorkStep model, including visibility and the
+        list of associated workpieces.
+        """
         assert self.canvas, (
-            "Received ops_start, but element was not added to canvas"
+            "Received workstep change, but element was not added to canvas"
         )
+
+        # Sync visibility
         self.set_visible(step.visible)
+
+        # Sync the child ops elements with the model's workpiece list.
+        # This is crucial for handling undo/redo of add/remove workpiece.
+        current_wp_elems = {child.data: child for child in self.children}
+        model_workpieces = set(step.workpieces())
+
+        # Remove ops elements for workpieces that are no longer in the model
+        for wp, elem in current_wp_elems.items():
+            if wp not in model_workpieces:
+                elem.remove()
+
+        # The async pipeline handles adding new elements, so we don't need
+        # to explicitly add them here. We just need to ensure old ones are
+        # gone.
+
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -122,8 +138,6 @@ class WorkStepElement(CanvasElement):
             "Received ops_start, but element was not added to canvas"
         )
 
-        # If the workpiece is no longer part of the workstep, remove its
-        # ops element.
         if workpiece not in sender.workpieces():
             elem = self.find_by_data(workpiece)
             if elem:
@@ -149,8 +163,6 @@ class WorkStepElement(CanvasElement):
             "Received update, but element was not added to canvas"
         )
 
-        # If the workpiece is no longer part of the workstep, remove its
-        # ops element.
         if workpiece not in sender.workpieces():
             elem = self.find_by_data(workpiece)
             if elem:
@@ -168,15 +180,12 @@ class WorkStepElement(CanvasElement):
     ):
         """
         Called when ops generation is finished. This handler ensures a final,
-        guaranteed redraw of the element's complete state, ignoring stale
-        results.
+        guaranteed redraw of the element's complete state.
         """
         assert self.canvas, (
             "Received ops_finished, but element was not added to canvas"
         )
 
-        # If the workpiece is no longer part of this workstep, its element
-        # should be removed.
         if workpiece not in sender.workpieces():
             elem = self.find_by_data(workpiece)
             if elem:

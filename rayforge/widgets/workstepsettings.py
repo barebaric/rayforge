@@ -1,15 +1,21 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw  # type: ignore
 from blinker import Signal
 import math
 from ..config import config
+from ..undo import HistoryManager
+from ..undo.property_cmd import ChangePropertyCommand
 from ..opstransformer import Smooth
 from ..util.adwfix import get_spinrow_int
+from ..models.doc import Doc
+from ..models.workstep import WorkStep
 
 
 class WorkStepSettingsDialog(Adw.PreferencesDialog):
-    def __init__(self, workstep, **kwargs):
+    def __init__(self, doc: Doc, workstep: WorkStep, **kwargs):
         super().__init__(**kwargs)
+        self.doc = doc
         self.workstep = workstep
+        self.history_manager: HistoryManager = doc.history_manager
         self.set_title(_("{name} Settings").format(name=workstep.name))
 
         # Create a preferences page
@@ -22,38 +28,33 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
         # Add a spin row for passes
         passes_adjustment = Gtk.Adjustment(
-            lower=1,
-            upper=100,
-            step_increment=1,
-            page_increment=10
+            lower=1, upper=100, step_increment=1, page_increment=10
         )
         passes_row = Adw.SpinRow(
             title=_("Number of Passes"),
             subtitle=_("How often to repeat this workstep"),
-            adjustment=passes_adjustment
+            adjustment=passes_adjustment,
         )
         passes_adjustment.set_value(workstep.passes)
-        passes_row.connect('changed', self.on_passes_changed)
+        passes_row.connect("changed", self.on_passes_changed)
         general_group.add(passes_row)
 
         # Add a slider for power
         power_row = Adw.ActionRow(title=_("Power (%)"))
         power_adjustment = Gtk.Adjustment(
-            upper=100,
-            step_increment=1,
-            page_increment=10
+            upper=100, step_increment=1, page_increment=10
         )
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=power_adjustment,
             digits=0,  # No decimal places
-            draw_value=True  # Show the current value
+            draw_value=True,  # Show the current value
         )
         power_adjustment.set_value(
             workstep.power / workstep.laser.max_power * 100
         )
         power_scale.set_size_request(300, -1)
-        power_scale.connect('value-changed', self.on_power_changed)
+        power_scale.connect("value-changed", self.on_power_changed)
         power_row.add_suffix(power_scale)
         general_group.add(power_row)
 
@@ -62,17 +63,17 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             lower=0,
             upper=config.machine.max_cut_speed,
             step_increment=1,
-            page_increment=100
+            page_increment=100,
         )
         cut_speed_row = Adw.SpinRow(
             title=_("Cut Speed (mm/min)"),
             subtitle=_("Max: {max_cut_speed} mm/min").format(
                 max_cut_speed=config.machine.max_cut_speed
             ),
-            adjustment=cut_speed_adjustment
+            adjustment=cut_speed_adjustment,
         )
         cut_speed_adjustment.set_value(workstep.cut_speed)
-        cut_speed_row.connect('changed', self.on_cut_speed_changed)
+        cut_speed_row.connect("changed", self.on_cut_speed_changed)
         general_group.add(cut_speed_row)
 
         # Add a spin row for travel speed
@@ -80,24 +81,24 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             lower=0,
             upper=config.machine.max_travel_speed,
             step_increment=1,
-            page_increment=100
+            page_increment=100,
         )
         travel_speed_row = Adw.SpinRow(
             title=_("Travel Speed (mm/min)"),
             subtitle=_("Max: {max_travel_speed} mm/min").format(
                 max_travel_speed=config.machine.max_travel_speed
             ),
-            adjustment=travel_speed_adjustment
+            adjustment=travel_speed_adjustment,
         )
         travel_speed_adjustment.set_value(workstep.travel_speed)
-        travel_speed_row.connect('changed', self.on_travel_speed_changed)
+        travel_speed_row.connect("changed", self.on_travel_speed_changed)
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
         air_assist_row = Adw.SwitchRow()
         air_assist_row.set_title(_("Air Assist"))
         air_assist_row.set_active(workstep.air_assist)
-        air_assist_row.connect('notify::active', self.on_air_assist_changed)
+        air_assist_row.connect("notify::active", self.on_air_assist_changed)
         general_group.add(air_assist_row)
 
         # Advanced/Optimization Settings
@@ -179,51 +180,120 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         self.changed = Signal()
 
     def on_passes_changed(self, spin_row):
-        self.workstep.set_passes(get_spinrow_int(spin_row))
+        new_value = get_spinrow_int(spin_row)
+        if new_value == self.workstep.passes:
+            return
+        command = ChangePropertyCommand(
+            target=self.workstep,
+            property_name="passes",
+            new_value=new_value,
+            setter_method_name="set_passes",
+            name=_("Change number of passes"),
+        )
+        self.history_manager.execute(command)
         self.changed.send(self)
 
     def on_power_changed(self, scale):
         max_power = self.workstep.laser.max_power
-        self.workstep.set_power(max_power / 100 * scale.get_value())
+        new_value = max_power / 100 * scale.get_value()
+        command = ChangePropertyCommand(
+            target=self.workstep,
+            property_name="power",
+            new_value=new_value,
+            setter_method_name="set_power",
+            name=_("Change laser power"),
+        )
+        self.history_manager.execute(command)
         self.changed.send(self)
 
     def on_cut_speed_changed(self, spin_row):
-        self.workstep.set_cut_speed(get_spinrow_int(spin_row))
+        new_value = get_spinrow_int(spin_row)
+        if new_value == self.workstep.cut_speed:
+            return
+        command = ChangePropertyCommand(
+            target=self.workstep,
+            property_name="cut_speed",
+            new_value=new_value,
+            setter_method_name="set_cut_speed",
+            name=_("Change cut speed"),
+        )
+        self.history_manager.execute(command)
         self.changed.send(self)
 
     def on_travel_speed_changed(self, spin_row):
-        self.workstep.set_travel_speed(get_spinrow_int(spin_row))
+        new_value = get_spinrow_int(spin_row)
+        if new_value == self.workstep.travel_speed:
+            return
+        command = ChangePropertyCommand(
+            target=self.workstep,
+            property_name="travel_speed",
+            new_value=new_value,
+            setter_method_name="set_travel_speed",
+            name=_("Change Travel Speed"),
+        )
+        self.history_manager.execute(command)
         self.changed.send(self)
 
-    def on_air_assist_changed(self, row, _):
-        self.workstep.set_air_assist(row.get_active())
+    def on_air_assist_changed(self, row, pspec):
+        new_value = row.get_active()
+        if new_value == self.workstep.air_assist:
+            return
+        command = ChangePropertyCommand(
+            target=self.workstep,
+            property_name="air_assist",
+            new_value=new_value,
+            setter_method_name="set_air_assist",
+            name=_("Toggle air assist"),
+        )
+        self.history_manager.execute(command)
         self.changed.send(self)
 
     def on_smooth_switch_sensitivity_toggled(
-        self, row, _, amount_row, angle_row
+        self, row, pspec, amount_row, angle_row
     ):
         is_active = row.get_active()
         amount_row.set_sensitive(is_active)
         angle_row.set_sensitive(is_active)
 
     def on_smoothness_changed(self, scale, transformer):
-        value = int(scale.get_value())
-        if transformer.amount != value:
-            transformer.amount = value
-            self.workstep.update_all_workpieces()
-            self.changed.send(self)
+        new_value = int(scale.get_value())
+        command = ChangePropertyCommand(
+            target=transformer,
+            property_name="amount",
+            new_value=new_value,
+            on_change_callback=self.workstep.update_all_workpieces,
+            name=_("Change smoothness"),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)
 
     def on_corner_angle_changed(self, spin_row, transformer):
         value_deg = get_spinrow_int(spin_row)
-        value_rad = math.radians(value_deg)
-        if not math.isclose(transformer.corner_threshold, value_rad):
-            transformer.corner_threshold = value_rad
-            self.workstep.update_all_workpieces()
-            self.changed.send(self)
+        new_value_rad = math.radians(value_deg)
+        if math.isclose(transformer.corner_threshold, new_value_rad):
+            return
+        command = ChangePropertyCommand(
+            target=transformer,
+            property_name="corner_threshold",
+            new_value=new_value_rad,
+            on_change_callback=self.workstep.update_all_workpieces,
+            name=_("Change corner angle"),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)
 
-    def on_transformer_toggled(self, row, _, transformer):
-        is_active = row.get_active()
-        if transformer.enabled != is_active:
-            transformer.enabled = is_active
-            self.workstep.update_all_workpieces()
-            self.changed.send(self)
+    def on_transformer_toggled(self, row, pspec, transformer):
+        new_value = row.get_active()
+        if transformer.enabled == new_value:
+            return
+        command = ChangePropertyCommand(
+            target=transformer,
+            property_name="enabled",
+            new_value=new_value,
+            on_change_callback=self.workstep.update_all_workpieces,
+            name=_("Toggle '{label}' visibility").format(
+                label=transformer.label
+            ),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)

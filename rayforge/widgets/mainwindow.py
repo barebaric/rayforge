@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
 from ..tasker.context import ExecutionContext
@@ -12,6 +13,7 @@ from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
 from ..opsencoder.gcode import GcodeEncoder
 from ..render import renderers, renderer_by_mime_type, renderer_by_extension
+from ..undo.list_cmd import ListItemCommand, ReorderListCommand
 from .workplanview import WorkPlanView
 from .workbench.surface import WorkSurface
 from .statusview import ConnectionStatusMonitor, \
@@ -23,6 +25,7 @@ from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
 from .workbench.workpieceelem import WorkPieceElement
+from .undobutton import UndoButton, RedoButton
 
 
 logger = logging.getLogger(__name__)
@@ -132,6 +135,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.export_button.connect("clicked", self.on_export_clicked)
         toolbar.append(self.export_button)
 
+        # Undo/Redo Buttons
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
+
+        self.undo_button = UndoButton()
+        toolbar.append(self.undo_button)
+
+        self.redo_button = RedoButton()
+        toolbar.append(self.redo_button)
+
         # Clear and visibility
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         toolbar.append(sep)
@@ -239,16 +252,21 @@ class MainWindow(Adw.ApplicationWindow):
         self.frame.set_hexpand(True)
         self.paned.set_start_child(self.frame)
 
+        # Make a default document.
+        self.doc = Doc()
+        self.doc.changed.connect(self.on_doc_changed)
+
         self.surface = WorkSurface(
+            self.doc,
             config.machine,
             cam_visibie=self.camera_visibility_button.get_active(),
         )
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
 
-        # Make a default document.
-        self.doc = Doc()
-        self.doc.changed.connect(self.on_doc_changed)
+        # Connect the undo/redo buttons to the document's history manager
+        self.undo_button.set_history_manager(self.doc.history_manager)
+        self.redo_button.set_history_manager(self.doc.history_manager)
 
         # Create a vertical paned for the right pane content
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -259,14 +277,14 @@ class MainWindow(Adw.ApplicationWindow):
         self.paned.set_shrink_end_child(False)
 
         # Show the work plan.
-        self.workplanview = WorkPlanView(self.doc.workplan)
+        self.workplanview = WorkPlanView(self.doc, self.doc.workplan)
         self.workplanview.set_size_request(400, -1)
         self.workplanview.set_vexpand(True)
         self.workplanview.set_margin_start(4)
         right_pane_box.append(self.workplanview)
 
         # Add the WorkpiecePropertiesWidget
-        self.workpiece_props_widget = WorkpiecePropertiesWidget(None)
+        self.workpiece_props_widget = WorkpiecePropertiesWidget()
         workpiece_props_container = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL
         )
@@ -522,7 +540,17 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(is_active)
 
     def on_clear_clicked(self, button):
-        self.surface.remove_all()
+        if not self.doc.workpieces:
+            return
+
+        command = ReorderListCommand(
+            target_obj=self.doc,
+            list_property_name="workpieces",
+            new_list=[],
+            setter_method_name="set_workpieces",
+            name=_("Remove all workpieces")
+        )
+        self.doc.history_manager.execute(command)
 
     def on_export_clicked(self, button):
         # Create a file chooser dialog for saving the file
@@ -688,10 +716,18 @@ class MainWindow(Adw.ApplicationWindow):
                     f"Extensions: {renderer_by_extension.keys()} "
                 )
                 return
+
         wp = WorkPiece.from_file(filename, renderer)
-        self.doc.add_workpiece(wp)
-        self.surface.update_from_doc(self.doc)
-        self.update_state()
+        cmd_name = _("Import {name}").format(name=os.path.basename(filename))
+        command = ListItemCommand(
+            owner_obj=self.doc,
+            item=wp,
+            add_method_name="add_workpiece",
+            remove_method_name="remove_workpiece",
+            name=cmd_name
+        )
+        self.doc.history_manager.execute(command)
+
         # No workpiece is active after loading a new document,
         # so ensure the properties widget is hidden.
         self.workpiece_revealer.set_reveal_child(False)

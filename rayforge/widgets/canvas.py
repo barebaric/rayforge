@@ -36,6 +36,15 @@ class Canvas(Gtk.DrawingArea):
         # Cache for custom-rendered cursors to avoid recreating them
         self._cursor_cache: dict[int, Gdk.Cursor] = {}
 
+        # Signals for undo/redo integration
+        self.move_begin = Signal()
+        self.move_end = Signal()
+        self.resize_begin = Signal()
+        self.resize_end = Signal()
+        self.rotate_begin = Signal()
+        self.rotate_end = Signal()
+        self.elements_deleted = Signal()
+
     def add(self, elem: CanvasElement):
         self.root.add(elem)
 
@@ -226,7 +235,7 @@ class Canvas(Gtk.DrawingArea):
                 )
                 local_x, local_y = rot_x, rot_y
 
-            region = selected_elem.check_region_hit(local_x, local_y)
+            region = selected_elem.check_region_hit(int(local_x), int(local_y))
 
             # If a handle is hit, it takes priority
             if region not in [ElementRegion.NONE, ElementRegion.BODY]:
@@ -290,6 +299,7 @@ class Canvas(Gtk.DrawingArea):
                 self.moving = True
                 self.resizing = False
                 self.rotating = False
+                self.move_begin.send(self, element=hit)
                 # Bring to front logic
                 if hit.parent and isinstance(hit.parent, CanvasElement):
                     parent_children = hit.parent.children
@@ -301,11 +311,13 @@ class Canvas(Gtk.DrawingArea):
                 self.resizing = False
                 self.moving = False
                 self.rotating = True
+                self.rotate_begin.send(self, element=hit)
                 self._start_rotation(hit, x, y)
             elif self.active_region != ElementRegion.NONE:
                 self.resizing = True
                 self.moving = False
                 self.rotating = False
+                self.resize_begin.send(self, element=hit)
             else:
                 self.active_elem = None
 
@@ -606,9 +618,15 @@ class Canvas(Gtk.DrawingArea):
         self.active_elem.set_size(round(new_w), round(new_h))
 
     def on_button_release(self, gesture, x: float, y: float):
-        if self.active_elem and self.resizing:
-            # Trigger a final high-quality render after resize is complete
-            self.active_elem.trigger_update()
+        if self.active_elem:
+            if self.moving:
+                self.move_end.send(self, element=self.active_elem)
+            elif self.resizing:
+                self.resize_end.send(self, element=self.active_elem)
+                # Trigger a final high-quality render after resize is complete
+                self.active_elem.trigger_update()
+            elif self.rotating:
+                self.rotate_end.send(self, element=self.active_elem)
 
         if self.active_elem:
             self.active_origin = self.active_elem.rect()
@@ -628,11 +646,9 @@ class Canvas(Gtk.DrawingArea):
             self.ctrl_pressed = True
             return True
         elif keyval == Gdk.KEY_Delete:
-            self.root.remove_selected()
-            self.active_elem = None
-            self.active_origin = None
-            self.queue_draw()
-            self.active_element_changed.send(self, element=None)
+            selected_elements = list(self.root.get_selected())
+            if selected_elements:
+                self.elements_deleted.send(self, elements=selected_elements)
             return True
         return False
 
