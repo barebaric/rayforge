@@ -704,6 +704,11 @@ class WorkSurface(Canvas):
                         self, workpieces=selected_wps
                     )
                     return True
+            elif keyval == Gdk.KEY_a:
+                # Select all workpieces
+                all_workpieces = self.doc.workpieces
+                if all_workpieces:
+                    self.select_workpieces(all_workpieces)
 
         # Handle arrow key movement for selected workpieces
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
