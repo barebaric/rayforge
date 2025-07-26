@@ -1,6 +1,8 @@
+import os
 import asyncio
 import logging
-import os
+import uuid
+from typing import List, Tuple, Dict
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
 from ..tasker.context import ExecutionContext
@@ -119,6 +121,13 @@ class MainWindow(Adw.ApplicationWindow):
         settings_action.connect("activate", self.show_machine_settings)
         self.add_action(settings_action)
 
+        # Stores a snapshot (list of dicts) of the copied workpieces.
+        self._clipboard_snapshot: List[Dict] = []
+        # Tracks the number of pastes for the current clipboard snapshot.
+        self._paste_counter = 0
+        # The (x, -y) offset to apply for each paste level.
+        self._paste_increment_mm: Tuple[float, float] = (10.0, -10.0)
+
         # Create a toolbar
         toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         toolbar.set_margin_bottom(2)
@@ -136,7 +145,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.export_button = Gtk.Button()
         self.export_button.set_child(get_icon('publish'))
-        self.export_button.set_tooltip_text(_("Generate GCode"))
+        self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.connect("clicked", self.on_export_clicked)
         toolbar.append(self.export_button)
 
@@ -312,6 +321,12 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_active_workpiece_changed
         )
 
+        # Connect signals for clipboard and duplication
+        self.surface.cut_requested.connect(self.on_cut_requested)
+        self.surface.copy_requested.connect(self.on_copy_requested)
+        self.surface.paste_requested.connect(self.on_paste_requested)
+        self.surface.duplicate_requested.connect(self.on_duplicate_requested)
+
         # Create a two-row progress and status widget.
         self.progress_widget = TaskProgressBar(task_mgr)
         self.progress_widget.add_css_class("statusbar")
@@ -435,7 +450,7 @@ class MainWindow(Adw.ApplicationWindow):
         if are_tasks_running:
             tooltip = _("Cannot export while operations are being generated")
         else:
-            tooltip = _("Generate GCode")
+            tooltip = _("Generate G-code")
         self.export_button.set_tooltip_text(tooltip)
 
         # Home button
@@ -503,7 +518,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_open_clicked(self, button):
         # Create a file chooser dialog
         dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Open SVG File"))
+        dialog.set_title(_("Open File"))
 
         # Create a Gio.ListModel for the filters
         filter_list = Gio.ListStore.new(Gtk.FileFilter)
@@ -737,6 +752,110 @@ class MainWindow(Adw.ApplicationWindow):
         # so ensure the properties widget is hidden.
         self.workpiece_revealer.set_reveal_child(False)
 
+    def on_cut_requested(self, sender, workpieces: List[WorkPiece]):
+        """Handles the 'cut-requested' signal from the WorkSurface."""
+        if not workpieces:
+            return
+
+        self.on_copy_requested(sender, workpieces)
+
+        history = self.doc.history_manager
+        history.begin_transaction(_("Cut workpiece(s)"))
+        for wp in workpieces:
+            cmd_name = _("Cut {name}").format(name=wp.name)
+            command = ListItemCommand(
+                owner_obj=self.doc, item=wp,
+                add_method_name="add_workpiece",
+                remove_method_name="remove_workpiece", name=cmd_name
+            )
+            self.doc.remove_workpiece(wp)
+            history.add(command)
+        history.end_transaction()
+
+    def on_copy_requested(self, sender, workpieces: List[WorkPiece]):
+        """
+        Handles the 'copy-requested' signal. This snapshots the current
+        state of the selected workpieces and resets the paste sequence.
+        """
+        if not workpieces:
+            return
+        # Create a snapshot of the current state by serializing to dicts.
+        self._clipboard_snapshot = [wp.to_dict() for wp in workpieces]
+        # Reset the paste counter for a new copy/paste sequence.
+        self._paste_counter = 0
+        logger.debug(f"Copied {len(self._clipboard_snapshot)} workpieces. "
+                     "Paste counter reset.")
+
+    def on_paste_requested(self, sender):
+        """
+        Handles the 'paste-requested' signal. Pastes a new set of items
+        with a cumulative offset from the original clipboard snapshot.
+        """
+        if not self._clipboard_snapshot:
+            return
+
+        self._paste_counter += 1
+        history = self.doc.history_manager
+        history.begin_transaction(_("Paste workpiece(s)"))
+
+        newly_pasted_workpieces = []
+        offset_x = self._paste_increment_mm[0] * self._paste_counter
+        offset_y = self._paste_increment_mm[1] * self._paste_counter
+
+        for wp_dict in self._clipboard_snapshot:
+            new_wp = WorkPiece.from_dict(wp_dict)
+            new_wp.uid = uuid.uuid4()
+            newly_pasted_workpieces.append(new_wp)
+
+            original_pos = wp_dict.get('pos')
+            if original_pos:
+                new_wp.set_pos(original_pos[0] + offset_x,
+                               original_pos[1] + offset_y)
+
+            cmd_name = _("Paste {name}").format(name=new_wp.name)
+            command = ListItemCommand(
+                owner_obj=self.doc, item=new_wp,
+                add_method_name="add_workpiece",
+                remove_method_name="remove_workpiece", name=cmd_name
+            )
+            history.execute(command)
+
+        history.end_transaction()
+
+        if newly_pasted_workpieces:
+            self.surface.select_workpieces(newly_pasted_workpieces)
+
+    def on_duplicate_requested(self, sender, workpieces: List[WorkPiece]):
+        """
+        Handles the 'duplicate-requested' signal. This creates an exact
+        copy of the selected workpieces in the same location.
+        """
+        if not workpieces:
+            return
+
+        history = self.doc.history_manager
+        history.begin_transaction(_("Duplicate workpiece(s)"))
+
+        newly_duplicated_workpieces = []
+        for wp in workpieces:
+            wp_dict = wp.to_dict()
+            new_wp = WorkPiece.from_dict(wp_dict)
+            new_wp.uid = uuid.uuid4()
+            newly_duplicated_workpieces.append(new_wp)
+
+            cmd_name = _("Duplicate {name}").format(name=new_wp.name)
+            command = ListItemCommand(
+                owner_obj=self.doc, item=new_wp,
+                add_method_name="add_workpiece",
+                remove_method_name="remove_workpiece", name=cmd_name
+            )
+            history.execute(command)
+
+        history.end_transaction()
+
+        if newly_duplicated_workpieces:
+            self.surface.select_workpieces(newly_duplicated_workpieces)
+
     def show_about_dialog(self, action, param):
         about_dialog = Adw.AboutDialog(
             application_name="Rayforge",
@@ -781,7 +900,4 @@ class MainWindow(Adw.ApplicationWindow):
                 self.doc.history_manager.redo()
             return True  # Event handled
 
-        # If the key combination was not handled, return False to allow
-        # other handlers (like the one in WorkSurface) to process it.
-        # This allows for event propagation.
         return False

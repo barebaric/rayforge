@@ -1,5 +1,6 @@
 import math
 import logging
+from blinker import Signal
 from typing import Optional, Tuple, cast, Dict
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.doc import Doc
@@ -92,6 +93,12 @@ class WorkSurface(Canvas):
         self.mouse_pos = 0, 0
         self.elem_removed.connect(self._on_elem_removed)
 
+        # Signals for clipboard and duplication operations
+        self.cut_requested = Signal()
+        self.copy_requested = Signal()
+        self.paste_requested = Signal()
+        self.duplicate_requested = Signal()
+
         # Connect to undo/redo signals from the canvas
         self.move_begin.connect(self._on_any_transform_begin)
         self.move_end.connect(self._on_move_end)
@@ -183,7 +190,7 @@ class WorkSurface(Canvas):
             return
 
         history = self.doc.history_manager
-        history.begin_transaction(_("Resize"))
+        history.begin_transaction(_("Resize the workpiece"))
         for cmd in commands:
             # Add, don't execute, since the canvas already changed the state
             history.add(cmd)
@@ -201,7 +208,7 @@ class WorkSurface(Canvas):
 
         class RemoveWorkpieceCommand(Command):
             def __init__(self, doc: Doc, workpiece: WorkPiece):
-                super().__init__(_("Remove Workpiece"))
+                super().__init__(_("Remove the workpiece"))
                 self.doc = doc
                 self.workpiece = workpiece
 
@@ -211,7 +218,7 @@ class WorkSurface(Canvas):
             def undo(self):
                 self.doc.add_workpiece(self.workpiece)
 
-        history.begin_transaction(_("Delete Item(s)"))
+        history.begin_transaction(_("Delete workpiece(s)"))
         for wp in workpieces_to_delete:
             cmd = RemoveWorkpieceCommand(self.doc, wp)
             history.execute(cmd)
@@ -518,46 +525,43 @@ class WorkSurface(Canvas):
         elem.set_visible(workstep.visible)
         self.queue_draw()
 
-    def add_workpiece(self, workpiece):
+    def add_workpiece(self, workpiece: WorkPiece):
         """
-        Adds a workpiece.
+        Adds a workpiece to the canvas.
+        If the workpiece does not have a position and size, it calculates a
+        sensible default (scaled to fit and centered). Otherwise, it uses
+        the existing properties.
         """
         if self.workpiece_elements.find_by_data(workpiece):
             self.queue_draw()
             return
-        # Get workpiece natural size and work surface size
-        wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size(
-            *self.get_size()
-        )
-        ws_width_mm = self.width_mm
-        ws_height_mm = self.height_mm
 
-        # Determine the size to use in mm, scaling down if necessary
-        width_mm = wp_width_nat_mm
-        height_mm = wp_height_nat_mm
-
-        if wp_width_nat_mm > ws_width_mm or wp_height_nat_mm > ws_height_mm:
-            # Calculate scaling factor while maintaining aspect ratio
-            scale_w = (
-                ws_width_mm / wp_width_nat_mm if wp_width_nat_mm > 0 else 1
+        # If the workpiece is new (e.g., from a file import) and has no
+        # position or size, calculate defaults.
+        if workpiece.pos is None or workpiece.size is None:
+            ws_width_mm, ws_height_mm = self.get_size()
+            wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size(
+                ws_width_mm, ws_height_mm
             )
-            scale_h = (
-                ws_height_mm / wp_height_nat_mm if wp_height_nat_mm > 0 else 1
-            )
-            scale = min(scale_w, scale_h)
 
-            width_mm = wp_width_nat_mm * scale
-            height_mm = wp_height_nat_mm * scale
+            # Determine the size to use in mm, scaling down if necessary to fit
+            width_mm = wp_width_nat_mm
+            height_mm = wp_height_nat_mm
+            if width_mm > ws_width_mm or height_mm > ws_height_mm:
+                scale_w = ws_width_mm / width_mm if width_mm > 0 else 1
+                scale_h = ws_height_mm / height_mm if height_mm > 0 else 1
+                scale = min(scale_w, scale_h)
+                width_mm *= scale
+                height_mm *= scale
 
-        # Calculate desired position in mm (centered)
-        x_mm = ws_width_mm / 2 - width_mm / 2
-        y_mm = ws_height_mm / 2 - height_mm / 2
-        workpiece.set_pos(x_mm, y_mm)
+            # Set the workpiece's size and centered position in mm
+            workpiece.set_size(width_mm, height_mm)
+            x_mm = (ws_width_mm - width_mm) / 2
+            y_mm = (ws_height_mm - height_mm) / 2
+            workpiece.set_pos(x_mm, y_mm)
 
-        # Set the workpiece's size in mm
-        workpiece.set_size(width_mm, height_mm)
-
-        # Create and add the workpiece element with pixel dimensions
+        # Now that the workpiece is guaranteed to have a pos and size,
+        # create its canvas element representation.
         elem = WorkPieceElement(
             workpiece, canvas=self, parent=self.workpiece_elements
         )
@@ -643,15 +647,37 @@ class WorkSurface(Canvas):
     def on_key_pressed(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
+        """Handles key press events for the work surface."""
         # Reset pan and zoom with '1'
         if keyval == Gdk.KEY_1:
             self.set_pan(0.0, 0.0)
             self.set_zoom(1.0)
             return True  # Event handled
 
+        # Handle clipboard and duplication
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        if is_ctrl:
+            selected_wps = self.get_selected_workpieces()
+            if keyval == Gdk.KEY_x:
+                if selected_wps:
+                    self.cut_requested.send(self, workpieces=selected_wps)
+                    return True
+            elif keyval == Gdk.KEY_c:
+                if selected_wps:
+                    self.copy_requested.send(self, workpieces=selected_wps)
+                    return True
+            elif keyval == Gdk.KEY_v:
+                self.paste_requested.send(self)
+                return True
+            elif keyval == Gdk.KEY_d:
+                if selected_wps:
+                    self.duplicate_requested.send(
+                        self, workpieces=selected_wps
+                    )
+                    return True
+
         # Handle arrow key movement for selected workpieces
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
-        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 
         move_amount_mm = 1.0
         if is_shift:
@@ -692,8 +718,8 @@ class WorkSurface(Canvas):
             history.end_transaction()
             return True
 
-        # Propagate to parent Canvas for default behavior (like deleting
-        # elements via the new signal mechanism).
+        # Propagate to parent Canvas for its default behavior (e.g., Shift/
+        # Ctrl)
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x, y):
@@ -724,3 +750,30 @@ class WorkSurface(Canvas):
             if isinstance(elem.data, WorkPiece):
                 selected_workpieces.append(elem.data)
         return selected_workpieces
+
+    def select_workpieces(self, workpieces_to_select: List[WorkPiece]):
+        """
+        Clears the current selection and selects the canvas elements
+        corresponding to the given list of WorkPiece objects.
+        """
+        self.root.unselect_all()
+        uids_to_select = {wp.uid for wp in workpieces_to_select}
+        newly_selected_elements = []
+
+        # Iterate through the canvas elements to find the ones to select
+        for elem in self.find_by_type(WorkPieceElement):
+            if elem.data and hasattr(elem.data, 'uid') and \
+               elem.data.uid in uids_to_select:
+                elem.selected = True
+                newly_selected_elements.append(elem)
+
+        # Update the active element, typically the first in the new selection
+        if newly_selected_elements:
+            self.active_elem = newly_selected_elements[0]
+        else:
+            self.active_elem = None
+
+        # Notify listeners that the active element has changed and a redraw is
+        # needed
+        self.active_element_changed.send(self, element=self.active_elem)
+        self.queue_draw()
