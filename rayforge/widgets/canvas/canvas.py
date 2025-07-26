@@ -3,9 +3,10 @@ import logging
 import math
 from typing import Any, Generator, List, Tuple, Optional
 import cairo
-from gi.repository import Gtk, Gdk, Graphene, GLib  # type: ignore
+from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from blinker import Signal
-from .canvaselem import CanvasElement, ElementRegion
+from .element import CanvasElement, ElementRegion
+from .cursor import get_rotated_cursor
 
 
 class Canvas(Gtk.DrawingArea):
@@ -331,67 +332,6 @@ class Canvas(Gtk.DrawingArea):
         self.queue_draw()
         self.active_element_changed.send(self, element=self.active_elem)
 
-    def _create_rotated_cursor(self, angle_deg: float) -> Gdk.Cursor:
-        """
-        Creates a custom two-headed arrow cursor rotated to the given angle.
-        Results are cached for performance.
-        """
-        # Round angle to nearest degree for effective caching
-        angle_key = round(angle_deg)
-        if angle_key in self._cursor_cache:
-            return self._cursor_cache[angle_key]
-
-        size = 32
-        hotspot = size // 2
-
-        # 1. Draw the cursor using Cairo
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
-        ctx = cairo.Context(surface)
-        ctx.translate(hotspot, hotspot)
-        ctx.rotate(-math.radians(angle_deg))
-
-        # Draw a white arrow with a black outline for visibility
-        ctx.set_line_width(2)
-        ctx.set_source_rgb(0, 0, 0)  # Black outline
-
-        # Main line
-        ctx.move_to(-10, 0)
-        ctx.line_to(10, 0)
-
-        # Arrowhead 1
-        ctx.move_to(10, 0)
-        ctx.line_to(6, -4)
-        ctx.move_to(10, 0)
-        ctx.line_to(6, 4)
-
-        # Arrowhead 2
-        ctx.move_to(-10, 0)
-        ctx.line_to(-6, -4)
-        ctx.move_to(-10, 0)
-        ctx.line_to(-6, 4)
-        ctx.stroke_preserve()  # Keep path for white fill
-
-        # White inner fill
-        ctx.set_source_rgb(1, 1, 1)  # White
-        ctx.set_line_width(1)
-        ctx.stroke()
-
-        # 2. Convert Cairo surface to Gdk.Texture (GTK4 method)
-        data = surface.get_data()
-        bytes_data = GLib.Bytes.new(data)
-        texture = Gdk.MemoryTexture.new(
-            size,
-            size,
-            Gdk.MemoryFormat.B8G8R8A8_PREMULTIPLIED,
-            bytes_data,
-            surface.get_stride(),
-        )
-
-        # 3. Create Gdk.Cursor from the texture
-        cursor = Gdk.Cursor.new_from_texture(texture, hotspot, hotspot)
-        self._cursor_cache[angle_key] = cursor
-        return cursor
-
     def on_motion(self, gesture, x: int, y: int):
         if self._update_hover_state(x, y):
             self.queue_draw()
@@ -417,7 +357,7 @@ class Canvas(Gtk.DrawingArea):
             base_angle = region_angles.get(self.hovered_region, 0)
             elem_angle = self.hovered_elem.get_angle()
             cursor_angle = base_angle - elem_angle
-            cursor = self._create_rotated_cursor(cursor_angle)
+            cursor = get_rotated_cursor(cursor_angle)
         else:
             cursor = Gdk.Cursor.new_from_name("default")
 

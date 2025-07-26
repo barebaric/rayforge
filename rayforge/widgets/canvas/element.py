@@ -7,7 +7,7 @@ import cairo
 from gi.repository import GLib  # type: ignore
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
-from enum import Enum, auto
+from .region import ElementRegion, get_region_rect
 
 # Forward declaration for type hinting
 if TYPE_CHECKING:
@@ -18,20 +18,6 @@ logger = logging.getLogger(__name__)
 max_workers = max(
     1, (os.cpu_count() or 1) - 2
 )  # Reserve 2 threads for UI responsiveness
-
-
-class ElementRegion(Enum):
-    NONE = auto()
-    BODY = auto()
-    TOP_LEFT = auto()
-    TOP_MIDDLE = auto()
-    TOP_RIGHT = auto()
-    MIDDLE_LEFT = auto()
-    MIDDLE_RIGHT = auto()
-    BOTTOM_LEFT = auto()
-    BOTTOM_MIDDLE = auto()
-    BOTTOM_RIGHT = auto()
-    ROTATION_HANDLE = auto()
 
 
 class CanvasElement:
@@ -183,65 +169,9 @@ class CanvasElement:
         Returns the rectangle (x, y, w, h) for a given region in
         local coordinates.
         """
-        w, h = self.width, self.height
-
-        # Dynamically calculate handle size to prevent overlap on small
-        # elements. It is clamped to be no more than 1/3 of the element's
-        # width or height.
-        # If the element is very small, this can result in a size of 0, which
-        # correctly hides the handles.
-        effective_hs = int(min(self.handle_size, w / 3, h / 3))
-
-        if region == ElementRegion.ROTATION_HANDLE:
-            handle_dist = 20
-            cx = w / 2
-            # The rotation handle also uses the effective size to scale down.
-            return (
-                int(cx - effective_hs / 2),
-                -handle_dist - effective_hs,
-                effective_hs,
-                effective_hs,
-            )
-
-        # Corner regions are effective_hs x effective_hs squares
-        if region == ElementRegion.TOP_LEFT:
-            return 0, 0, effective_hs, effective_hs
-        if region == ElementRegion.TOP_RIGHT:
-            return w - effective_hs, 0, effective_hs, effective_hs
-        if region == ElementRegion.BOTTOM_LEFT:
-            return 0, h - effective_hs, effective_hs, effective_hs
-        if region == ElementRegion.BOTTOM_RIGHT:
-            return (
-                w - effective_hs,
-                h - effective_hs,
-                effective_hs,
-                effective_hs,
-            )
-
-        # Edge regions are between the corners
-        if region == ElementRegion.TOP_MIDDLE:
-            return effective_hs, 0, w - 2 * effective_hs, effective_hs
-        if region == ElementRegion.BOTTOM_MIDDLE:
-            return (
-                effective_hs,
-                h - effective_hs,
-                w - 2 * effective_hs,
-                effective_hs,
-            )
-        if region == ElementRegion.MIDDLE_LEFT:
-            return 0, effective_hs, effective_hs, h - 2 * effective_hs
-        if region == ElementRegion.MIDDLE_RIGHT:
-            return (
-                w - effective_hs,
-                effective_hs,
-                effective_hs,
-                h - 2 * effective_hs,
-            )
-
-        if region == ElementRegion.BODY:
-            return 0, 0, w, h
-
-        return 0, 0, 0, 0  # For NONE or other cases
+        return get_region_rect(
+            region, self.width, self.height, self.handle_size
+        )
 
     def check_region_hit(self, x: int, y: int) -> ElementRegion:
         """Checks which region is hit at local coordinates (x, y)."""
