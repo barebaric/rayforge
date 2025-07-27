@@ -29,6 +29,7 @@ from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
 from .undobutton import UndoButton, RedoButton
+from .about import AboutDialog
 
 
 logger = logging.getLogger(__name__)
@@ -1039,18 +1040,8 @@ class MainWindow(Adw.ApplicationWindow):
                 t.execute(command)
 
     def show_about_dialog(self, action, param):
-        about_dialog = Adw.AboutDialog(
-            application_name="Rayforge",
-            application_icon="com.barebaric.rayforge",
-            developer_name="Barebaric",
-            version=__version__ or _("unknown"),
-            copyright="© 2025 Samuel Abels",
-            website="https://github.com/barebaric/rayforge",
-            issue_url="https://github.com/barebaric/rayforge/issues",
-            developers=["Samuel Abels"],
-            license_type=Gtk.License.MIT_X11,
-        )
-        about_dialog.present(self)
+        dialog = AboutDialog(transient_for=self)
+        dialog.present()
 
     def show_machine_settings(self, action, param):
         dialog = MachineSettingsDialog(config.machine)
