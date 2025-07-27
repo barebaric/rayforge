@@ -52,6 +52,7 @@ class Canvas(Gtk.DrawingArea):
         self.rotate_begin = Signal()
         self.rotate_end = Signal()
         self.elements_deleted = Signal()
+        self.selection_changed = Signal()
         self.active_element_changed = Signal()
         self.elem_removed = Signal()
 
@@ -357,6 +358,7 @@ class Canvas(Gtk.DrawingArea):
         self._active_region = self._hovered_region
         hit = self._hovered_elem
         self._framing_selection = False
+        selection_changed = False
 
         # Logic for selection change
         if self._active_region in [ElementRegion.NONE, ElementRegion.BODY]:
@@ -369,42 +371,38 @@ class Canvas(Gtk.DrawingArea):
                     )
                 else:
                     # Clear selection for standard framing
+                    if self.get_selected_elements():
+                        selection_changed = True
                     self.root.unselect_all()
                     self._selection_before_framing = set()
-            elif self._shift_pressed and hit:
-                # Add/remove from selection without affecting others
-                hit.selected = not hit.selected
-            elif not (hit and hit.selected):
-                # Standard click: if not clicking an already selected item,
-                # reset selection and select the new one.
-                self.root.unselect_all()
-                if hit:
-                    hit.selected = True
+                self._active_elem = None  # No active element when framing
+            elif hit:  # Clicked an element
+                if not self._shift_pressed:
+                    # If not already the sole selected item, change selection.
+                    if not hit.selected:
+                        self.root.unselect_all()
+                        selection_changed = True
+                        hit.selected = True
+                else:  # Shift-click
+                    hit.selected = not hit.selected
+                    selection_changed = True
+                # The clicked item is the new primary/active item.
+                self._active_elem = hit
 
-        # If framing, we don't start a transform and clear active state.
+        # If framing, we don't start a transform.
         if self._framing_selection:
             self._moving, self._resizing, self._rotating = False, False, False
-            self._active_elem = None
-            self._selection_group = None
             self._active_origin = None
+            if selection_changed:
+                self._finalize_selection_state()
             self.queue_draw()
             return
 
-        # Update active state based on new selection
+        # Update selection state and start transform if needed
+        if selection_changed:
+            self._finalize_selection_state()
+
         selected_elements = self.get_selected_elements()
-        self._active_elem = None
-        if len(selected_elements) > 1:
-            # Avoid re-creating the group if the selection hasn't changed
-            if not self._selection_group or set(
-                self._selection_group.elements
-            ) != set(selected_elements):
-                self._selection_group = MultiSelectionGroup(
-                    selected_elements, self
-                )
-        else:
-            self._selection_group = None
-            if selected_elements:
-                self._active_elem = selected_elements[0]
 
         # Logic for starting a transform action
         if self._active_region == ElementRegion.BODY and hit:
@@ -430,7 +428,6 @@ class Canvas(Gtk.DrawingArea):
             self._active_origin = self._active_elem.rect()
 
         self.queue_draw()
-        self.active_element_changed.send(self, element=self._active_elem)
 
     def on_motion(self, gesture, x: int, y: int):
         self._last_mouse_x = x
@@ -845,17 +842,33 @@ class Canvas(Gtk.DrawingArea):
         This is called after a selection operation is complete.
         """
         selected_elements = self.get_selected_elements()
-        self._active_elem = None
+
+        # If the active element is no longer in the selection, clear it.
+        if self._active_elem and self._active_elem not in selected_elements:
+            self._active_elem = None
+
+        # If there's a selection but no active element (e.g., after framing,
+        # or after deselecting the active element), pick one.
+        if not self._active_elem and selected_elements:
+            self._active_elem = selected_elements[-1]
+
+        # Update the multi-selection group
         if len(selected_elements) > 1:
-            self._selection_group = MultiSelectionGroup(
-                selected_elements, self
-            )
+            # Avoid re-creating group if elements are the same
+            if not self._selection_group or set(
+                self._selection_group.elements
+            ) != set(selected_elements):
+                self._selection_group = MultiSelectionGroup(
+                    selected_elements, self
+                )
         else:
             self._selection_group = None
-            if selected_elements:
-                self._active_elem = selected_elements[0]
 
+        # Emit signals with rich context
         self.active_element_changed.send(self, element=self._active_elem)
+        self.selection_changed.send(
+            self, elements=selected_elements, active_element=self._active_elem
+        )
         self.queue_draw()
 
     def _get_element_world_bbox(self, elem: CanvasElement) -> Graphene.Rect:
@@ -901,6 +914,7 @@ class Canvas(Gtk.DrawingArea):
         selection_rect = Graphene.Rect().init(
             frame_x, frame_y, frame_w, frame_h
         )
+        selection_changed = False
 
         for elem in self.root.get_all_children_recursive():
             if elem.selectable:
@@ -909,9 +923,15 @@ class Canvas(Gtk.DrawingArea):
 
                 # An element is selected if it was selected before
                 # (in shift mode) OR if it currently intersects the frame.
-                elem.selected = (
+                newly_selected = (
                     elem in self._selection_before_framing
                 ) or intersects
+                if elem.selected != newly_selected:
+                    elem.selected = newly_selected
+                    selection_changed = True
+
+        if selection_changed:
+            self._finalize_selection_state()
 
     def on_key_pressed(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType

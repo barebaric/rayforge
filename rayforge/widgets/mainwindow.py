@@ -28,7 +28,6 @@ from .machinesettings import MachineSettingsDialog
 from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
-from .workbench.workpieceelem import WorkPieceElement
 from .undobutton import UndoButton, RedoButton
 
 
@@ -315,9 +314,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.workpiece_props_widget.set_margin_start(4)
 
         # Connect signals for workpiece selection
-        self.surface.active_element_changed.connect(
-            self._on_active_workpiece_changed
-        )
+        self.surface.selection_changed.connect(self._on_selection_changed)
 
         # Connect signals for clipboard and duplication
         self.surface.cut_requested.connect(self.on_cut_requested)
@@ -535,12 +532,32 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc(self.doc)
         self.update_state()
 
-    def _on_active_workpiece_changed(self, sender, element: CanvasElement):
-        workpiece = (
-            element.data if isinstance(element, WorkPieceElement) else None
+    def _on_selection_changed(
+        self,
+        sender,
+        elements: List[CanvasElement],
+        active_element: Optional[CanvasElement],
+    ):
+        """Handles the 'selection-changed' signal from the WorkSurface."""
+        # Get all selected workpieces
+        selected_workpieces = [
+            elem.data for elem in elements if isinstance(elem.data, WorkPiece)
+        ]
+
+        # Get the primary active workpiece from the signal payload
+        active_workpiece = (
+            active_element.data
+            if active_element and isinstance(active_element.data, WorkPiece)
+            else None
         )
-        self.workpiece_props_widget.set_workpiece(workpiece)
-        self.workpiece_revealer.set_reveal_child(workpiece is not None)
+
+        # Reorder the list to put the active one first, if it exists
+        if active_workpiece and active_workpiece in selected_workpieces:
+            selected_workpieces.remove(active_workpiece)
+            selected_workpieces.insert(0, active_workpiece)
+
+        self.workpiece_props_widget.set_workpieces(selected_workpieces)
+        self.workpiece_revealer.set_reveal_child(bool(selected_workpieces))
         self.update_state()
 
     def on_config_changed(self, sender, **kwargs):

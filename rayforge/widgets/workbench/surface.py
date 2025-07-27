@@ -8,7 +8,6 @@ from ...models.workpiece import WorkPiece
 from ...models.machine import Machine
 from ...undo import SetterCommand, ListItemCommand
 from ..canvas import Canvas, CanvasElement
-from ..canvas.selection import MultiSelectionGroup
 from .axis import AxisRenderer
 from .dotelem import DotElement
 from .workstepelem import WorkStepElement
@@ -120,11 +119,10 @@ class WorkSurface(Canvas):
     def _on_history_changed(self, sender, **kwargs):
         """
         Called when the undo/redo history changes. This handler acts as a
-        synchronizer to fix state timing issues.
+        synchronizer to fix state timing issues. It re-commits the current
+        selection state to ensure all listeners are in sync.
         """
-        # Rebuild the entire selection state.
-        selected_elements = self.get_selected_elements()
-        self._update_selection_state(selected_elements)
+        self._finalize_selection_state()
         self.queue_draw()
 
     def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
@@ -573,7 +571,7 @@ class WorkSurface(Canvas):
     def clear_workpieces(self):
         self._workpiece_elements.remove_all()
         self.queue_draw()
-        self.active_element_changed.send(self, element=None)
+        self._finalize_selection_state()
 
     def remove_all(self):
         # Clear all children except the fixed ones
@@ -757,25 +755,6 @@ class WorkSurface(Canvas):
                 selected_workpieces.append(elem.data)
         return selected_workpieces
 
-    def _update_selection_state(
-        self, newly_selected_elements: List[CanvasElement]
-    ):
-        """Helper to unify selection state updates."""
-        if len(newly_selected_elements) > 1:
-            self._active_elem = None
-            self._selection_group = MultiSelectionGroup(
-                newly_selected_elements, self
-            )
-        elif newly_selected_elements:
-            self._active_elem = newly_selected_elements[0]
-            self._selection_group = None
-        else:
-            self._active_elem = None
-            self._selection_group = None
-
-        self.active_element_changed.send(self, element=self._active_elem)
-        self.queue_draw()
-
     def select_workpieces(self, workpieces_to_select: List[WorkPiece]):
         """
         Clears the current selection and selects the canvas elements
@@ -783,7 +762,7 @@ class WorkSurface(Canvas):
         """
         self.root.unselect_all()
         uids_to_select = {wp.uid for wp in workpieces_to_select}
-        newly_selected_elements = []
+        self._active_elem = None
 
         # Iterate through the canvas elements to find the ones to select
         for elem in self.find_by_type(WorkPieceElement):
@@ -793,6 +772,8 @@ class WorkSurface(Canvas):
                 and elem.data.uid in uids_to_select
             ):
                 elem.selected = True
-                newly_selected_elements.append(elem)
+                # The last one in the list becomes the active one
+                self._active_elem = elem
 
-        self._update_selection_state(newly_selected_elements)
+        self._finalize_selection_state()
+        self.queue_draw()

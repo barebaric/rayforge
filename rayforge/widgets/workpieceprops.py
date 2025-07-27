@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw, Gdk  # type: ignore
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from ..config import config
 from ..models.workpiece import WorkPiece
 from ..util.adwfix import get_spinrow_float
@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
     def __init__(
         self,
-        workpiece: Optional[WorkPiece] = None,
+        workpieces: Optional[List[WorkPiece]] = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.add_css_class("workpiece-properties")
         self.apply_css()
-        self.workpiece = workpiece
+        self.workpieces = workpieces or []
         self._in_update = False
         self.set_title(_("Workpiece Properties"))
 
@@ -117,15 +117,15 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.reset_angle_row.activatable_widget = self.reset_angle_button
         self.add(self.reset_angle_row)
 
-        if self.workpiece:
-            self.workpiece.size_changed.connect(
+        for workpiece in self.workpieces:
+            workpiece.size_changed.connect(
                 self._on_workpiece_size_changed
             )
-            self.workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            self.workpiece.angle_changed.connect(
+            workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+            workpiece.angle_changed.connect(
                 self._on_workpiece_angle_changed
             )
-        self._update_ui_from_workpiece()
+        self._update_ui_from_workpieces()
 
     def apply_css(self):
         provider = Gtk.CssProvider()
@@ -136,33 +136,30 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-    def _commit_pos_transaction(self, new_pos: Tuple[float, float]):
+    def _apply_pos_single(
+        self, workpiece: WorkPiece, new_pos: Tuple[float, float]
+    ):
         """Commits workpiece position changes to the history manager."""
-        if not self.workpiece:
+        if not workpiece or not workpiece.doc:
             return
 
-        old_pos = self.workpiece.pos or (0, 0)
-        doc = self.workpiece.doc
-        if not doc:
-            self.workpiece.set_pos(*new_pos)
-            return
-
+        old_pos = workpiece.pos or (0, 0)
         cmd = SetterCommand(
-            self.workpiece,
+            workpiece,
             "set_pos",
             new_args=new_pos,
             old_args=old_pos,
             name=_("Move workpiece"),
         )
-        doc.history_manager.execute(cmd)
+        workpiece.doc.history_manager.execute(cmd)
 
     def _calculate_new_size_with_ratio(
-        self, value: float, changed_dim: str
+        self, workpiece: WorkPiece, value: float, changed_dim: str
     ) -> Tuple[Optional[float], Optional[float]]:
         """Calculates new width and height maintaining aspect ratio."""
-        if not self.workpiece:
+        if not workpiece:
             return None, None
-        aspect_ratio = self.workpiece.get_current_aspect_ratio()
+        aspect_ratio = workpiece.get_current_aspect_ratio()
         if not aspect_ratio:
             return None, None
 
@@ -184,25 +181,20 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
         return new_width, new_height
 
-    def _commit_resize_transaction(self, new_size: Tuple[float, float]):
-        """
-        Creates a transaction to resize the workpiece, adjusting its position
-        to keep it anchored appropriately.
-        """
-        if not self.workpiece:
-            return
-
+    def _calculate_resize_anchor_pos(
+        self, workpiece: WorkPiece, new_size: Tuple[float, float]
+    ) -> Tuple[float, float]:
+        """Calculates new position to keep resize anchored."""
         new_width, new_height = new_size
         bounds = config.machine.dimensions
-        old_pos = self.workpiece.pos or (0, 0)
-        old_size = self.workpiece.size or (0, 0)
+        old_pos = workpiece.pos or (0, 0)
         old_w, old_h = (
-            self.workpiece.get_current_size()
-            or self.workpiece.get_default_size(*bounds)
+            workpiece.get_current_size()
+            or workpiece.get_default_size(*bounds)
         )
         old_x, old_y = old_pos
 
-        if self.workpiece.angle == 0:
+        if workpiece.angle == 0:
             # Resize from top-left for un-rotated objects.
             # Position is bottom-left, so we adjust y.
             new_x = old_x
@@ -211,20 +203,30 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             # Resize from center for rotated objects.
             new_x = old_x + (old_w - new_width) / 2
             new_y = old_y + (old_h - new_height) / 2
+        return new_x, new_y
 
-        doc = self.workpiece.doc
-        if not doc:
-            # If there's no document/history, apply changes directly.
-            self.workpiece.set_pos(new_x, new_y)
-            self.workpiece.set_size(new_width, new_height)
+    def _apply_resize_single(
+        self, workpiece: WorkPiece, new_size: Tuple[float, float]
+    ):
+        """
+        Creates a transaction to resize a single workpiece, adjusting its
+        position to keep it anchored appropriately.
+        """
+        if not workpiece or not workpiece.doc:
             return
 
-        history = doc.history_manager
+        new_width, new_height = new_size
+        old_pos = workpiece.pos or (0, 0)
+        old_size = workpiece.size or (0, 0)
+
+        new_x, new_y = self._calculate_resize_anchor_pos(workpiece, new_size)
+
+        history = workpiece.doc.history_manager
         with history.transaction(_("Resize workpiece")) as t:
             # Only create commands if the values actually changed.
             if (new_x, new_y) != old_pos:
                 pos_cmd = SetterCommand(
-                    self.workpiece,
+                    workpiece,
                     "set_pos",
                     new_args=(new_x, new_y),
                     old_args=old_pos,
@@ -233,7 +235,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
             if (new_width, new_height) != old_size:
                 size_cmd = SetterCommand(
-                    self.workpiece,
+                    workpiece,
                     "set_size",
                     new_args=(new_width, new_height),
                     old_args=old_size,
@@ -242,65 +244,89 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
 
     def _on_width_changed(self, spin_row, GParamSpec):
         logger.debug(f"Width changed to {spin_row.get_value()}")
-        if self._in_update or not self.workpiece:
+        if self._in_update or not self.workpieces:
             return
         self._in_update = True
         try:
-            new_width = get_spinrow_float(self.width_row)
-            if new_width is None:
+            new_width_from_ui = get_spinrow_float(self.width_row)
+            if new_width_from_ui is None:
                 return
 
-            current_size = self.workpiece.size
-            new_height = (
-                current_size[1]
-                if current_size
-                else self.height_row.get_adjustment().get_lower()
-            )
-
+            # Use the first workpiece to update the UI height if ratio is fixed
             if self.fixed_ratio_switch.get_active():
-                w, h = self._calculate_new_size_with_ratio(new_width, "width")
+                first_workpiece = self.workpieces[0]
+                w, h = self._calculate_new_size_with_ratio(
+                    first_workpiece, new_width_from_ui, "width"
+                )
                 if w is not None and h is not None:
-                    new_width, new_height = w, h
-                    self.height_row.set_value(new_height)
-                    self.width_row.set_value(new_width)
+                    self.height_row.set_value(h)
+                    self.width_row.set_value(w)
 
-            self._commit_resize_transaction((new_width, new_height))
+            # Now apply to all workpieces
+            for workpiece in self.workpieces:
+                new_width = new_width_from_ui
+                current_size = workpiece.size
+                new_height = (
+                    current_size[1]
+                    if current_size
+                    else self.height_row.get_adjustment().get_lower()
+                )
+
+                if self.fixed_ratio_switch.get_active():
+                    w, h = self._calculate_new_size_with_ratio(
+                        workpiece, new_width, "width"
+                    )
+                    if w is not None and h is not None:
+                        new_width, new_height = w, h
+
+                self._apply_resize_single(workpiece, (new_width, new_height))
         finally:
             self._in_update = False
 
     def _on_height_changed(self, spin_row, GParamSpec):
         logger.debug(f"Height changed to {spin_row.get_value()}")
-        if self._in_update or not self.workpiece:
+        if self._in_update or not self.workpieces:
             return
         self._in_update = True
         try:
-            new_height = get_spinrow_float(self.height_row)
-            if new_height is None:
+            new_height_from_ui = get_spinrow_float(self.height_row)
+            if new_height_from_ui is None:
                 return
 
-            current_size = self.workpiece.size
-            new_width = (
-                current_size[0]
-                if current_size
-                else self.width_row.get_adjustment().get_lower()
-            )
-
+            # Use the first workpiece to update the UI width if ratio is fixed
             if self.fixed_ratio_switch.get_active():
+                first_workpiece = self.workpieces[0]
                 w, h = self._calculate_new_size_with_ratio(
-                    new_height, "height"
+                    first_workpiece, new_height_from_ui, "height"
                 )
                 if w is not None and h is not None:
-                    new_width, new_height = w, h
-                    self.width_row.set_value(new_width)
-                    self.height_row.set_value(new_height)
+                    self.width_row.set_value(w)
+                    self.height_row.set_value(h)
 
-            self._commit_resize_transaction((new_width, new_height))
+            # Now apply to all workpieces
+            for workpiece in self.workpieces:
+                new_height = new_height_from_ui
+                current_size = workpiece.size
+                new_width = (
+                    current_size[0]
+                    if current_size
+                    else self.width_row.get_adjustment().get_lower()
+                )
+
+                if self.fixed_ratio_switch.get_active():
+                    w, h = self._calculate_new_size_with_ratio(
+                        workpiece, new_height, "height"
+                    )
+                    if w is not None and h is not None:
+                        new_width, new_height = w, h
+
+                self._apply_resize_single(workpiece, (new_width, new_height))
         finally:
             self._in_update = False
 
     def _on_x_changed(self, spin_row, GParamSpec):
         logger.debug(f"X position changed to {spin_row.get_value()}")
-        if self._in_update or not self.workpiece:
+        if self._in_update or not self.workpieces:
             return
         self._in_update = True
         try:
@@ -308,15 +334,16 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             if new_x is None:
                 return
 
-            old_pos = self.workpiece.pos
-            new_y = old_pos[1] if old_pos else 0.0
-            self._commit_pos_transaction((new_x, new_y))
+            for workpiece in self.workpieces:
+                old_pos = workpiece.pos
+                new_y = old_pos[1] if old_pos else 0.0
+                self._apply_pos_single(workpiece, (new_x, new_y))
         finally:
             self._in_update = False
 
     def _on_y_changed(self, spin_row, GParamSpec):
         logger.debug(f"Y position changed to {spin_row.get_value()}")
-        if self._in_update or not self.workpiece:
+        if self._in_update or not self.workpieces:
             return
         self._in_update = True
         try:
@@ -324,30 +351,37 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             if new_y is None:
                 return
 
-            old_pos = self.workpiece.pos
-            new_x = old_pos[0] if old_pos else 0.0
-            self._commit_pos_transaction((new_x, new_y))
+            for workpiece in self.workpieces:
+                old_pos = workpiece.pos
+                new_x = old_pos[0] if old_pos else 0.0
+                self._apply_pos_single(workpiece, (new_x, new_y))
         finally:
             self._in_update = False
 
     def _on_angle_changed(self, spin_row, GParamSpec):
-        if self._in_update or not self.workpiece:
+        if self._in_update or not self.workpieces:
             return
         self._in_update = True
         try:
-            doc = self.workpiece.doc
+            new_angle = spin_row.get_value()
+            doc = self.workpieces[0].doc
             if not doc:
-                self.workpiece.set_angle(spin_row.get_value())
+                for workpiece in self.workpieces:
+                    workpiece.set_angle(new_angle)
                 return
 
-            cmd = ChangePropertyCommand(
-                self.workpiece,
-                "angle",
-                spin_row.get_value(),
-                setter_method_name="set_angle",
-                name=_("Change workpiece angle"),
-            )
-            doc.history_manager.execute(cmd)
+            # Group all angle changes into a single transaction for one undo
+            with doc.history_manager.transaction(
+                _("Change workpiece angle")
+            ) as t:
+                for workpiece in self.workpieces:
+                    cmd = ChangePropertyCommand(
+                        workpiece,
+                        "angle",
+                        new_angle,
+                        setter_method_name="set_angle",
+                    )
+                    t.execute(cmd)
         finally:
             self._in_update = False
 
@@ -364,107 +398,123 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         return False
 
     def _on_reset_clicked(self, button):
-        if not self.workpiece:
+        if not self.workpieces:
             return False
 
-        bounds = config.machine.dimensions
-        old_size = self.workpiece.size
-        natural_width, natural_height = self.workpiece.get_default_size(
-            *bounds
-        )
-
-        if not old_size or not self.workpiece.doc:
-            self.workpiece.set_size(natural_width, natural_height)
-            self._update_ui_from_workpiece()
+        doc = self.workpieces[0].doc
+        if not doc:
+            # No undo history, just set the value
+            for workpiece in self.workpieces:
+                bounds = config.machine.dimensions
+                w, h = workpiece.get_default_size(*bounds)
+                workpiece.set_size(w, h)
+            self._update_ui_from_workpieces()
             return False
 
-        cmd = SetterCommand(
-            self.workpiece,
-            "set_size",
-            new_args=(natural_width, natural_height),
-            old_args=old_size,
-            name=_("Reset workpiece size"),
-        )
-        self.workpiece.doc.history_manager.execute(cmd)
-        self._update_ui_from_workpiece()
+        with doc.history_manager.transaction(_("Reset workpiece size")) as t:
+            for workpiece in self.workpieces:
+                bounds = config.machine.dimensions
+                old_size = workpiece.size
+                natural_width, natural_height = workpiece.get_default_size(
+                    *bounds
+                )
+                cmd = SetterCommand(
+                    workpiece,
+                    "set_size",
+                    new_args=(natural_width, natural_height),
+                    old_args=old_size or (natural_width, natural_height),
+                )
+                t.execute(cmd)
+        self._update_ui_from_workpieces()
 
     def _on_reset_angle_clicked(self, button):
-        if not self.workpiece:
-            return
-        if not self.workpiece.doc:
-            self.workpiece.set_angle(0.0)
+        if not self.workpieces:
             return
 
-        cmd = ChangePropertyCommand(
-            self.workpiece,
-            "angle",
-            0.0,
-            setter_method_name="set_angle",
-            name=_("Reset workpiece angle"),
-        )
-        self.workpiece.doc.history_manager.execute(cmd)
+        doc = self.workpieces[0].doc
+        if not doc:
+            for workpiece in self.workpieces:
+                workpiece.set_angle(0.0)
+            return
+
+        with doc.history_manager.transaction(
+            _("Reset workpiece angle")
+        ) as t:
+            for workpiece in self.workpieces:
+                cmd = ChangePropertyCommand(
+                    workpiece,
+                    "angle",
+                    0.0,
+                    setter_method_name="set_angle",
+                )
+                t.execute(cmd)
 
     def _on_workpiece_size_changed(self, workpiece):
         if self._in_update:
             return
         logger.debug(f"Workpiece size changed: {workpiece.size}")
-        self._update_ui_from_workpiece()
+        self._update_ui_from_workpieces()
 
-    def set_workpiece(self, workpiece: Optional[WorkPiece]):
+    def set_workpieces(self, workpieces: Optional[List[WorkPiece]]):
         self._in_update = True
-        if self.workpiece:
-            self.workpiece.size_changed.disconnect(
+        for workpiece in self.workpieces:
+            workpiece.size_changed.disconnect(
                 self._on_workpiece_size_changed
             )
-            self.workpiece.pos_changed.disconnect(
-                self._on_workpiece_pos_changed
-            )
-            self.workpiece.angle_changed.disconnect(
+            workpiece.pos_changed.disconnect(self._on_workpiece_pos_changed)
+            workpiece.angle_changed.disconnect(
                 self._on_workpiece_angle_changed
             )
-        self.workpiece = workpiece
-        if self.workpiece:
-            self.workpiece.size_changed.connect(
+        self.workpieces = workpieces or []
+        for workpiece in self.workpieces:
+            workpiece.size_changed.connect(
                 self._on_workpiece_size_changed
             )
-            self.workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            self.workpiece.angle_changed.connect(
+            workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
+            workpiece.angle_changed.connect(
                 self._on_workpiece_angle_changed
             )
         self._in_update = False
-        self._update_ui_from_workpiece()
+        self._update_ui_from_workpieces()
 
     def _on_workpiece_pos_changed(self, workpiece):
         if self._in_update:
             return
         logger.debug(f"Workpiece position changed: {workpiece.pos}")
-        self._update_ui_from_workpiece()
+        self._update_ui_from_workpieces()
 
     def _on_workpiece_angle_changed(self, workpiece):
         if self._in_update:
             return
         logger.debug(f"Workpiece angle changed: {workpiece.angle}")
-        self._update_ui_from_workpiece()
+        self._update_ui_from_workpieces()
 
-    def _update_ui_from_workpiece(self):
-        logger.debug(f"Updating UI for workpiece: {self.workpiece}")
-        if not self.workpiece:
+    def _update_ui_from_workpieces(self):
+        logger.debug(f"Updating UI for workpieces: {self.workpieces}")
+        if not self.workpieces:
+            self.set_sensitive(False)
             return
+
+        self.set_sensitive(True)
+        # For now, UI shows values from the first selected workpiece.
+        # A full multi-edit UI would show "mixed" if values differ.
+        workpiece = self.workpieces[0]
+
         self._in_update = True
         bounds = config.machine.dimensions
         size = (
-            self.workpiece.get_current_size()
-            or self.workpiece.get_default_size(*bounds)
+            workpiece.get_current_size()
+            or workpiece.get_default_size(*bounds)
         )
-        pos = self.workpiece.pos
-        angle = self.workpiece.angle
+        pos = workpiece.pos
+        angle = workpiece.angle
 
         if size:
             width, height = size
             logger.debug(f"Updating UI: width={width}, height={height}")
             self.width_row.set_value(width)
             self.height_row.set_value(height)
-            natural_width, natural_height = self.workpiece.get_default_size(
+            natural_width, natural_height = workpiece.get_default_size(
                 *bounds
             )
             self.natural_size_label.set_label(
