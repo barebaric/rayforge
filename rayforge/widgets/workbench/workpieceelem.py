@@ -47,32 +47,22 @@ class WorkPieceElement(CanvasElement):
         if not self.canvas or self._in_update:
             return
 
-        x_mm, y_mm = self.data.pos or (0, 0)
-        width_mm, height_mm = (
+        pos_mm = self.data.pos or (0, 0)
+        size_mm = (
             self.data.size
             or self.data.get_default_size(*self.canvas.get_size())
         )
 
-        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
-        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-        new_width = round(width_mm * px_per_mm_x)
-        new_height = round(height_mm * px_per_mm_y)
-
-        # The element's position is its top-left corner. The model's `pos` is
-        # its bottom-left corner in a Y-up coordinate system.
-        # We convert to the top-left corner in the canvas's root element's
-        # coordinate space (Y-down). Pan is handled by moving the root element,
-        # so we don't account for it here.
-        top_left_y_mm = y_mm + height_mm
-
-        x_px = x_mm * px_per_mm_x
-        y_px = self.canvas.root.height - (top_left_y_mm * px_per_mm_y)
+        new_pos_px, new_size_px = (
+            self.canvas.workpiece_coords_to_element_coords(pos_mm, size_mm)
+        )
 
         # We call super().set_pos() to bypass the model update logic in this
         # class's set_pos(), as we are updating the view from the model.
-        super().set_pos(round(x_px), round(y_px))
+        super().set_pos(*new_pos_px)
         self.set_angle(self.data.angle)  # Sync angle from model
 
+        new_width, new_height = new_size_px
         size_changed = self.width != new_width or self.height != new_height
 
         if not size_changed and not force:
@@ -88,49 +78,51 @@ class WorkPieceElement(CanvasElement):
         if not self.canvas or self._in_update:
             return
 
-        # Convert the element's new top-left pixel coordinate (x, y), which
-        # is relative to the canvas's root element, back to the model's
-        # bottom-left millimeter coordinate.
-        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
-        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-
-        # The model's origin (pos) is its bottom-left corner.
-        x_mm = x / px_per_mm_x
-        y_mm = (self.canvas.root.height - (y + self.height)) / px_per_mm_y
+        # For a pure move operation, the size doesn't change. Convert the new
+        # element pixel position back to the model's mm position.
+        pos_px = x, y
+        size_px = self.width, self.height
+        new_pos_mm, _ = self.canvas.element_coords_to_workpiece_coords(
+            pos_px, size_px
+        )
 
         self._in_update = True
         try:
-            self.data.set_pos(x_mm, y_mm)
+            self.data.set_pos(*new_pos_mm)
         finally:
             self._in_update = False
 
     def set_size(self, width: int, height: int):
         # Update our size for immediate scaled drawing.
+        # During a resize drag, the canvas logic updates the element's x, y,
+        # width, and height. This method is called after set_pos.
         self.width, self.height = int(width), int(height)
         if self.canvas:
             self.canvas.queue_draw()
 
         self.trigger_update()
 
-        # Update the model.
         if not self.canvas or self._in_update:
             return
 
-        old_x_mm, old_y_mm = self.data.pos or (0, 0)
-        _, old_height_mm = self.data.size or self.data.get_default_size(
-            *self.canvas.get_size()
+        # During a resize, both the element's position and size may change.
+        # We use the final element geometry (pos and size) to perform a
+        # single, correct update to the model. This overwrites any
+        # intermediate position set by set_pos during the same drag event,
+        # ensuring the final model state is accurate.
+        pos_px = self.x, self.y
+        size_px = self.width, self.height
+        (
+            new_pos_mm,
+            new_size_mm,
+        ) = self.canvas.element_coords_to_workpiece_coords(
+            pos_px, size_px
         )
-
-        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
-        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-        new_width_mm = width / px_per_mm_x
-        new_height_mm = height / px_per_mm_y
-        new_y_mm = (old_y_mm + old_height_mm) - new_height_mm
 
         self._in_update = True
         try:
-            self.data.set_pos(old_x_mm, new_y_mm)
-            self.data.set_size(new_width_mm, new_height_mm)
+            self.data.set_pos(*new_pos_mm)
+            self.data.set_size(*new_size_mm)
         finally:
             self._in_update = False
 

@@ -329,65 +329,92 @@ class WorkSurface(Canvas):
         self._mouse_pos = x, y
         return super().on_motion(gesture, x, y)
 
-    def pixel_to_mm(self, x_px: float, y_px: float) -> Tuple[float, float]:
-        """Converts pixel coordinates to real-world mm."""
-        height_pixels = self.get_height()
-        y_axis_pixels = self._axis_renderer.get_y_axis_width()
-        x_axis_height = self._axis_renderer.get_x_axis_height()
-        top_margin = math.ceil(x_axis_height / 2)
-        x_mm = self._axis_renderer.pan_x_mm + (
-            (x_px - y_axis_pixels) / self.pixels_per_mm_x
-        )
-        y_mm = (
-            self._axis_renderer.pan_y_mm
-            + (height_pixels - y_px - top_margin) / self.pixels_per_mm_y
-        )
+    def _abs_mm_to_content_px(
+        self, x_mm: float, y_mm: float
+    ) -> Tuple[float, float]:
+        """
+        Core: Converts an absolute mm coordinate to a pixel coordinate
+        relative to the content area's origin, without considering pan.
+        This is for positioning children within the root element.
+        """
+        x_px = x_mm * self.pixels_per_mm_x
+        # Invert Y axis: in mm, Y is up; in pixels, Y is down.
+        y_px = self.root.height - (y_mm * self.pixels_per_mm_y)
+        return x_px, y_px
+
+    def _content_px_to_abs_mm(
+        self, x_px: float, y_px: float
+    ) -> Tuple[float, float]:
+        """
+        Core: Converts a pixel coordinate relative to the content area's
+        origin to an absolute mm coordinate, without considering pan.
+        """
+        ppm_x = self.pixels_per_mm_x or 1
+        ppm_y = self.pixels_per_mm_y or 1
+        x_mm = x_px / ppm_x
+        # Invert Y axis.
+        y_mm = (self.root.height - y_px) / ppm_y
         return x_mm, y_mm
 
-    def mm_to_pixel(self, x_mm: float, y_mm: float) -> Tuple[float, float]:
-        """Converts real-world mm coordinates to canvas pixel coordinates."""
-        height_pixels = self.get_height()
-        y_axis_pixels = self._axis_renderer.get_y_axis_width()
+    def pixel_to_mm(self, x_px: float, y_px: float) -> Tuple[float, float]:
+        """
+        Converts absolute widget pixel coordinates to absolute machine mm.
+        """
+        y_axis_width = self._axis_renderer.get_y_axis_width()
         x_axis_height = self._axis_renderer.get_x_axis_height()
-        top_margin = math.ceil(x_axis_height / 2)
+        height = self.get_height()
+        ppm_x = self.pixels_per_mm_x or 1
+        ppm_y = self.pixels_per_mm_y or 1
 
-        pan_x_mm = self._axis_renderer.pan_x_mm
-        pan_y_mm = self._axis_renderer.pan_y_mm
-        ppm_x = self.pixels_per_mm_x
-        ppm_y = self.pixels_per_mm_y
+        # 1. Convert widget pixels to mm relative to the viewport origin
+        relative_x_mm = (x_px - y_axis_width) / ppm_x
+        relative_y_mm = (height - y_px - x_axis_height) / ppm_y
 
-        if ppm_x <= 0 or ppm_y <= 0:
-            return 0.0, 0.0
+        # 2. Add pan offset to get absolute machine coordinates
+        return (
+            relative_x_mm + self._axis_renderer.pan_x_mm,
+            relative_y_mm + self._axis_renderer.pan_y_mm,
+        )
 
-        x_px = (x_mm - pan_x_mm) * ppm_x + y_axis_pixels
-        # The y-axis is inverted
-        y_px = height_pixels - ((y_mm - pan_y_mm) * ppm_y) - top_margin
+    def mm_to_pixel(self, x_mm: float, y_mm: float) -> Tuple[float, float]:
+        """
+        Converts absolute machine mm coordinates to absolute widget pixels.
+        """
+        y_axis_width = self._axis_renderer.get_y_axis_width()
+        x_axis_height = self._axis_renderer.get_x_axis_height()
+        height = self.get_height()
 
+        # 1. Remove pan to get mm relative to the viewport origin
+        relative_x_mm = x_mm - self._axis_renderer.pan_x_mm
+        relative_y_mm = y_mm - self._axis_renderer.pan_y_mm
+
+        # 2. Convert relative mm to pixels and add axis offsets
+        x_px = relative_x_mm * self.pixels_per_mm_x + y_axis_width
+        y_px = height - (relative_y_mm * self.pixels_per_mm_y) - x_axis_height
         return x_px, y_px
 
     def workpiece_coords_to_element_coords(
         self, pos_mm: Tuple[float, float], size_mm: Tuple[float, float]
     ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
         """
-        Converts a workpiece's model coordinates (bottom-left pos in mm, size
-        in mm) to its corresponding element coordinates (top-left pos in
-        pixels, size in pixels), relative to the content area.
+        Converts workpiece model coords (bottom-left, absolute mm) to element
+        coords (top-left, px) relative to the content area.
         """
-        px_per_mm_x = self.pixels_per_mm_x or 1
-        px_per_mm_y = self.pixels_per_mm_y or 1
-        content_height_px = self.root.height
+        ppm_x = self.pixels_per_mm_x or 1
+        ppm_y = self.pixels_per_mm_y or 1
 
         # Convert size
-        width_px = round(size_mm[0] * px_per_mm_x)
-        height_px = round(size_mm[1] * px_per_mm_y)
+        width_px = round(size_mm[0] * ppm_x)
+        height_px = round(size_mm[1] * ppm_y)
 
-        # Convert position: model is bottom-left (Y-up), element is top-left
-        # (Y-down). We calculate the element's top-left corner in pixels
-        # relative to the content area (self.root).
+        # Get workpiece top-left corner in absolute mm
+        top_left_x_mm = pos_mm[0]
         top_left_y_mm = pos_mm[1] + size_mm[1]
 
-        x_px = pos_mm[0] * px_per_mm_x
-        y_px = content_height_px - (top_left_y_mm * px_per_mm_y)
+        # Convert absolute mm to content-relative pixels
+        x_px, y_px = self._abs_mm_to_content_px(
+            top_left_x_mm, top_left_y_mm
+        )
 
         return (round(x_px), round(y_px)), (width_px, height_px)
 
@@ -395,21 +422,24 @@ class WorkSurface(Canvas):
         self, pos_px: Tuple[float, float], size_px: Tuple[float, float]
     ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         """
-        Converts an element's coordinates (top-left pos in pixels, size in
-        pixels) relative to the content area, to the corresponding workpiece
-        model coordinates (bottom-left pos in mm, size in mm).
+        Converts element coords (top-left, content-relative px) to workpiece
+        model coords (bottom-left, absolute mm).
         """
-        px_per_mm_x = self.pixels_per_mm_x or 1
-        px_per_mm_y = self.pixels_per_mm_y or 1
-        content_height_px = self.root.height
+        ppm_x = self.pixels_per_mm_x or 1
+        ppm_y = self.pixels_per_mm_y or 1
 
         # Convert size
-        width_mm = size_px[0] / px_per_mm_x
-        height_mm = size_px[1] / px_per_mm_y
+        width_mm = size_px[0] / ppm_x
+        height_mm = size_px[1] / ppm_y
 
-        # Convert position: element is top-left, model is bottom-left.
-        x_mm = pos_px[0] / px_per_mm_x
-        y_mm = (content_height_px - (pos_px[1] + size_px[1])) / px_per_mm_y
+        # Convert content-relative top-left pixel to absolute mm
+        abs_tl_x_mm, abs_tl_y_mm = self._content_px_to_abs_mm(
+            pos_px[0], pos_px[1]
+        )
+
+        # Convert absolute top-left mm to absolute bottom-left mm
+        x_mm = abs_tl_x_mm
+        y_mm = abs_tl_y_mm - height_mm
 
         return (x_mm, y_mm), (width_mm, height_mm)
 
@@ -459,7 +489,6 @@ class WorkSurface(Canvas):
         height_pixels = self.get_height()
         y_axis_pixels = self._axis_renderer.get_y_axis_width()
         x_axis_height = self._axis_renderer.get_x_axis_height()
-        top_margin = math.ceil(x_axis_height / 2)
 
         if newpixels_per_mm_x > 0 and newpixels_per_mm_y > 0:
             new_pan_x_mm = (
@@ -467,7 +496,7 @@ class WorkSurface(Canvas):
             )
             new_pan_y_mm = (
                 focus_y_mm
-                - (height_pixels - mouse_y_px - top_margin)
+                - (height_pixels - mouse_y_px - x_axis_height)
                 / newpixels_per_mm_y
             )
             self.set_pan(new_pan_x_mm, new_pan_y_mm)
