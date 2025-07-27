@@ -261,6 +261,16 @@ class CanvasElement:
         for elem in self.find_by_type(thetype):
             yield elem.data
 
+    def get_all_children_recursive(
+        self,
+    ) -> Generator[CanvasElement, None, None]:
+        """
+        Recursively yields all descendant elements.
+        """
+        for child in self.children:
+            yield child
+            yield from child.get_all_children_recursive()
+
     def remove_all(self):
         """Removes all children"""
         children = self.children

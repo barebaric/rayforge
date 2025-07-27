@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import math
-from typing import Any, Generator, List, Tuple, Optional
+from typing import Any, Generator, List, Tuple, Optional, Set
 import cairo
 from gi.repository import Gtk, Gdk, Graphene  # type: ignore
 from blinker import Signal
@@ -32,6 +32,11 @@ class Canvas(Gtk.DrawingArea):
         self.hovered_region: ElementRegion = ElementRegion.NONE
         self.active_region: ElementRegion = ElementRegion.NONE
         self.selection_group: Optional[MultiSelectionGroup] = None
+        self.framing_selection: bool = False
+        self.selection_frame_rect: Optional[
+            Tuple[float, float, float, float]
+        ] = None
+        self._selection_before_framing: Set[CanvasElement] = set()
         self.group_hovered: bool = False
         self.last_mouse_x: float = 0
         self.last_mouse_y: float = 0
@@ -77,6 +82,7 @@ class Canvas(Gtk.DrawingArea):
     def _setup_interactions(self):
         self.click_gesture = Gtk.GestureClick()
         self.click_gesture.connect("pressed", self.on_button_press)
+        self.click_gesture.connect("released", self.on_click_released)
         self.add_controller(self.click_gesture)
 
         self.motion_controller = Gtk.EventControllerMotion()
@@ -114,6 +120,21 @@ class Canvas(Gtk.DrawingArea):
         """
         # Start the recursive rendering process from the root element.
         self.root.render(ctx)
+
+        # Draw the selection frame if we are in framing mode
+        if self.framing_selection and self.selection_frame_rect:
+            ctx.save()
+            x, y, w, h = self.selection_frame_rect
+            # A semi-transparent blue fill
+            ctx.set_source_rgba(0.2, 0.5, 0.8, 0.3)
+            ctx.rectangle(x, y, w, h)
+            ctx.fill_preserve()
+            # A solid blue, dashed border
+            ctx.set_source_rgb(0.2, 0.5, 0.8)
+            ctx.set_line_width(1)
+            ctx.set_dash((4, 4))
+            ctx.stroke()
+            ctx.restore()
 
         # Draw selection handles on top of everything.
         self._render_selection(ctx, self.root)
@@ -336,10 +357,22 @@ class Canvas(Gtk.DrawingArea):
 
         self.active_region = self.hovered_region
         hit = self.hovered_elem
+        self.framing_selection = False
 
         # Logic for selection change
         if self.active_region in [ElementRegion.NONE, ElementRegion.BODY]:
-            if self.shift_pressed and hit:
+            if hit is None:  # Clicked on background, prepare for framing
+                self.framing_selection = True
+                if self.shift_pressed:
+                    # Store existing selection for additive mode
+                    self._selection_before_framing = set(
+                        self.get_selected_elements()
+                    )
+                else:
+                    # Clear selection for standard framing
+                    self.root.unselect_all()
+                    self._selection_before_framing = set()
+            elif self.shift_pressed and hit:
                 # Add/remove from selection without affecting others
                 hit.selected = not hit.selected
             elif not (hit and hit.selected):
@@ -349,11 +382,26 @@ class Canvas(Gtk.DrawingArea):
                 if hit:
                     hit.selected = True
 
+        # If framing, we don't start a transform and clear active state.
+        if self.framing_selection:
+            self.moving, self.resizing, self.rotating = False, False, False
+            self.active_elem = None
+            self.selection_group = None
+            self.active_origin = None
+            self.queue_draw()
+            return
+
         # Update active state based on new selection
         selected_elements = self.get_selected_elements()
         self.active_elem = None
         if len(selected_elements) > 1:
-            self.selection_group = MultiSelectionGroup(selected_elements, self)
+            # Avoid re-creating the group if the selection hasn't changed
+            if not self.selection_group or set(
+                self.selection_group.elements
+            ) != set(selected_elements):
+                self.selection_group = MultiSelectionGroup(
+                    selected_elements, self
+                )
         else:
             self.selection_group = None
             if selected_elements:
@@ -361,7 +409,7 @@ class Canvas(Gtk.DrawingArea):
 
         # Logic for starting a transform action
         if self.active_region == ElementRegion.BODY and hit:
-            self.moving, self.resizing, self.rotating = True, False, False
+            self.moving, self.resizing, self.rotating = (True, False, False)
             self.move_begin.send(self, elements=selected_elements)
         elif self.active_region == ElementRegion.ROTATION_HANDLE:
             self.moving, self.resizing, self.rotating = False, False, True
@@ -427,6 +475,24 @@ class Canvas(Gtk.DrawingArea):
         self.set_cursor(cursor)
 
     def on_mouse_drag(self, gesture, offset_x: int, offset_y: int):
+        if self.framing_selection:
+            ok, start_x, start_y = self.drag_gesture.get_start_point()
+            if not ok:
+                return
+
+            x1, y1 = start_x, start_y
+            x2, y2 = start_x + offset_x, start_y + offset_y
+
+            x = min(x1, x2)
+            y = min(y1, y2)
+            w = abs(x1 - x2)
+            h = abs(y1 - y2)
+
+            self.selection_frame_rect = (x, y, w, h)
+            self._update_framing_selection()  # Update selection live
+            self.queue_draw()
+            return
+
         if not self.active_origin:
             return
 
@@ -728,6 +794,14 @@ class Canvas(Gtk.DrawingArea):
         self.active_elem.set_size(round(new_w), round(new_h))
 
     def on_button_release(self, gesture, x: float, y: float):
+        if self.framing_selection:
+            # The selection is already live, so we just clean up and finalize.
+            self.framing_selection = False
+            self.selection_frame_rect = None
+            self._selection_before_framing.clear()
+            self._finalize_selection_state()
+            return
+
         elements = self.get_selected_elements()
         if not (self.moving or self.resizing or self.rotating):
             return
@@ -751,6 +825,92 @@ class Canvas(Gtk.DrawingArea):
         self.moving = False
         self.rotating = False
         self.active_region = ElementRegion.NONE
+
+    def on_click_released(self, gesture, n_press: int, x: float, y: float):
+        """
+        Called when a click is completed without being turned into a drag.
+        This resets the framing selection state.
+        """
+        if self.framing_selection:
+            self.framing_selection = False
+            self.selection_frame_rect = None
+            self._selection_before_framing.clear()
+            # The selection was already cleared in on_button_press.
+            # We just need to update the final state.
+            self._finalize_selection_state()
+
+    def _finalize_selection_state(self):
+        """
+        Updates active_elem and selection_group based on the current
+        selection, then queues a redraw and emits the changed signal.
+        This is called after a selection operation is complete.
+        """
+        selected_elements = self.get_selected_elements()
+        self.active_elem = None
+        if len(selected_elements) > 1:
+            self.selection_group = MultiSelectionGroup(selected_elements, self)
+        else:
+            self.selection_group = None
+            if selected_elements:
+                self.active_elem = selected_elements[0]
+
+        self.active_element_changed.send(self, element=self.active_elem)
+        self.queue_draw()
+
+    def _get_element_world_bbox(self, elem: CanvasElement) -> Graphene.Rect:
+        """
+        Calculates the axis-aligned bounding box of an element in world
+        coordinates, accounting for its rotation.
+        """
+        abs_x, abs_y, w, h = elem.rect_abs()
+        angle_rad = math.radians(elem.get_angle())
+
+        if angle_rad == 0:
+            return Graphene.Rect().init(abs_x, abs_y, w, h)
+
+        center_x, center_y = abs_x + w / 2, abs_y + h / 2
+        corners_rel = [
+            (-w / 2, -h / 2),
+            (w / 2, -h / 2),
+            (w / 2, h / 2),
+            (-w / 2, h / 2),
+        ]
+        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+
+        min_x, max_x = float("inf"), float("-inf")
+        min_y, max_y = float("inf"), float("-inf")
+
+        for rel_x, rel_y in corners_rel:
+            rot_x = rel_x * cos_a - rel_y * sin_a
+            rot_y = rel_x * sin_a + rel_y * cos_a
+            abs_corner_x, abs_corner_y = center_x + rot_x, center_y + rot_y
+            min_x, min_y = min(min_x, abs_corner_x), min(min_y, abs_corner_y)
+            max_x, max_y = max(max_x, abs_corner_x), max(max_y, abs_corner_y)
+
+        return Graphene.Rect().init(min_x, min_y, max_x - min_x, max_y - min_y)
+
+    def _update_framing_selection(self):
+        """
+        Updates the selection state of all elements based on the current
+        selection frame. Called during a drag operation.
+        """
+        if not self.selection_frame_rect:
+            return
+        frame_x, frame_y, frame_w, frame_h = self.selection_frame_rect
+        selection_rect = Graphene.Rect().init(
+            frame_x, frame_y, frame_w, frame_h
+        )
+
+        for elem in self.root.get_all_children_recursive():
+            if elem.selectable:
+                elem_bbox = self._get_element_world_bbox(elem)
+                intersects = selection_rect.intersection(elem_bbox)[0]
+
+                # An element is selected if it was selected before
+                # (in shift mode) OR if it currently intersects the frame.
+                elem.selected = (
+                    elem in self._selection_before_framing
+                ) or intersects
 
     def on_key_pressed(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
