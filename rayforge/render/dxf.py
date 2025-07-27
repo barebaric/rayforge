@@ -274,22 +274,34 @@ class DXFRenderer(Renderer):
 
     def _add_spline(self, parent, entity, scale):
         """
-        Converts a SPLINE entity to an SVG path.
-        This is a simplified conversion, treating fit points or control
-        points as vertices of a polyline.
+        Converts a SPLINE entity to an SVG path by approximating the
+        B-spline curve.
         """
-        # THE FIX IS HERE: Points are accessed by index, not attribute.
-        if entity.fit_points:
-            points = [(p[0] * scale, p[1] * scale) for p in entity.fit_points]
-        else:
-            points = [
-                (p[0] * scale, p[1] * scale) for p in entity.control_points
-            ]
+        # Use ezdxf's built-in `approximate` method
+        # to generate a visually correct polyline from the curve.
+        try:
+            # Use ezdxf's built-in tool to get an approximated polyline.
+            # 20 segments per span should provide good quality.
+            points = list(entity.approximate(segments=20))
+        except Exception:
+            # Fallback for splines that can't be approximated or if the
+            # ezdxf version is too old. This mimics the old, less accurate
+            # behavior of just connecting the points.
+            if entity.dxf.n_fit_points > 0:
+                points = entity.fit_points
+            else:
+                points = entity.control_points
 
         if not points:
             return
 
-        d = "M " + " L ".join(f"{x},{y}" for x, y in points)
+        scaled_points = [(p[0] * scale, p[1] * scale) for p in points]
+        if not scaled_points:
+            return
+
+        d = "M " + " L ".join(f"{x},{y}" for x, y in scaled_points)
+        if entity.is_closed:
+            d += " Z"
         elem = ET.SubElement(parent, "path")
         elem.set("d", d)
         elem.set("stroke", "black")
