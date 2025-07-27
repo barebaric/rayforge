@@ -316,10 +316,8 @@ class AboutDialog(Adw.Window):
         self.header_bar.pack_end(self.header_copy_button)
 
         self.view_stack = Adw.ViewStack()
-        self.view_stack.add_titled(self._build_main_page(), "main", _("Main"))
-        self.view_stack.add_titled(
-            self._build_sysinfo_page(), "sysinfo", _("System")
-        )
+        self.view_stack.add_named(self._build_main_page(), "main")
+        self.view_stack.add_named(self._build_sysinfo_page(), "sysinfo")
         self.view_stack.connect(
             "notify::visible-child-name", self._on_view_changed
         )

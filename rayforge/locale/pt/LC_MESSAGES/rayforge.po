@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-24 22:05+0200\n"
+"POT-Creation-Date: 2025-07-28 00:02+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
@@ -59,11 +59,11 @@ msgstr "Reunindo caminhos otimizados..."
 msgid "Optimization complete"
 msgstr "Otimização concluída"
 
-#: rayforge/opstransformer/arcwelder/arcwelder.py:97
+#: rayforge/opstransformer/arcwelder/arcwelder.py:103
 msgid "Arc Weld Path"
 msgstr "Caminho de Solda por Arco"
 
-#: rayforge/opstransformer/arcwelder/arcwelder.py:101
+#: rayforge/opstransformer/arcwelder/arcwelder.py:107
 msgid "Welds lines into arcs for smoother paths"
 msgstr "Solda linhas em arcos para caminhos mais suaves"
 
@@ -88,7 +88,7 @@ msgid "Postscript"
 msgstr "Pós-escrito"
 
 #: rayforge/widgets/gcodepreferences.py:40
-#: rayforge/widgets/workstepsettings.py:98
+#: rayforge/widgets/workstepsettings.py:99
 msgid "Air Assist"
 msgstr "Assistência de Ar"
 
@@ -167,41 +167,49 @@ msgstr "Home ao Iniciar"
 msgid "Whether Rayforce will send a homing command when it is started"
 msgstr "Se o Rayforce enviará um comando de home ao ser iniciado"
 
-#: rayforge/widgets/generalpreferences.py:72
+#: rayforge/widgets/generalpreferences.py:66
+msgid "Invert Y Axis Direction"
+msgstr "Inverter Direção do Eixo Y"
+
+#: rayforge/widgets/generalpreferences.py:68
+msgid "Enable if your machine's origin is top-left instead of bottom-left"
+msgstr "Ative se a origem da sua máquina for no canto superior esquerdo em vez do canto inferior esquerdo"
+
+#: rayforge/widgets/generalpreferences.py:84
 msgid "Max Travel Speed"
 msgstr "Velocidade Máxima de Deslocamento"
 
-#: rayforge/widgets/generalpreferences.py:73
+#: rayforge/widgets/generalpreferences.py:85
 msgid "Maximum travel speed in mm/min"
 msgstr "Velocidade máxima de deslocamento em mm/min"
 
-#: rayforge/widgets/generalpreferences.py:88
+#: rayforge/widgets/generalpreferences.py:100
 msgid "Max Cut Speed"
 msgstr "Velocidade Máxima de Corte"
 
-#: rayforge/widgets/generalpreferences.py:89
+#: rayforge/widgets/generalpreferences.py:101
 msgid "Maximum cutting speed in mm/min"
 msgstr "Velocidade máxima de corte em mm/min"
 
-#: rayforge/widgets/generalpreferences.py:97
+#: rayforge/widgets/generalpreferences.py:109
 msgid "Dimensions"
 msgstr "Dimensões"
 
-#: rayforge/widgets/generalpreferences.py:107
-#: rayforge/widgets/workpieceprops.py:49
+#: rayforge/widgets/generalpreferences.py:119
+#: rayforge/widgets/workpieceprops.py:59
 msgid "Width"
 msgstr "Largura"
 
-#: rayforge/widgets/generalpreferences.py:108
+#: rayforge/widgets/generalpreferences.py:120
 msgid "Width of the machine in mm"
 msgstr "Largura da máquina em mm"
 
-#: rayforge/widgets/generalpreferences.py:122
-#: rayforge/widgets/workpieceprops.py:58
+#: rayforge/widgets/generalpreferences.py:134
+#: rayforge/widgets/workpieceprops.py:68
 msgid "Height"
 msgstr "Altura"
 
-#: rayforge/widgets/generalpreferences.py:123
+#: rayforge/widgets/generalpreferences.py:135
 msgid "Height of the machine in mm"
 msgstr "Altura da máquina em mm"
 
@@ -276,10 +284,24 @@ msgstr "Transparência na superfície de trabalho"
 msgid "Close"
 msgstr "Fechar"
 
-#: rayforge/widgets/workplanview.py:57
+#: rayforge/widgets/workplanview.py:61
 #, python-brace-format
 msgid "Step {seq}: "
 msgstr "Passo {seq}: "
+
+#: rayforge/widgets/workplanview.py:84
+#, python-brace-format
+msgid "Add workstep '{name}'"
+msgstr "Adicionar etapa de trabalho '{name}'"
+
+#: rayforge/widgets/workplanview.py:97
+#, python-brace-format
+msgid "Remove workstep '{name}'"
+msgstr "Remover etapa de trabalho '{name}'"
+
+#: rayforge/widgets/workplanview.py:112
+msgid "Reorder worksteps"
+msgstr "Reordenar etapas de trabalho"
 
 #: rayforge/widgets/statusview.py:118
 msgid "No driver selected"
@@ -360,54 +382,94 @@ msgstr "Tamanho do ponto do laser na direção Y"
 msgid "Laser (Max Power: {head.max_power})"
 msgstr "Laser (Potência Máxima: {head.max_power})"
 
+#: rayforge/widgets/workbench/surface.py:143
+msgid "Move workpiece(s)"
+msgstr "Mover peça(s) de trabalho"
+
+#: rayforge/widgets/workbench/surface.py:166
+msgid "Rotate workpiece(s)"
+msgstr "Rotacionar peça(s) de trabalho"
+
+#: rayforge/widgets/workbench/surface.py:189
+msgid "Resize workpiece(s)"
+msgstr "Redimensionar peça(s) de trabalho"
+
+#: rayforge/widgets/workbench/surface.py:228
+msgid "Delete workpiece(s)"
+msgstr "Remover peça(s) de trabalho"
+
+#: rayforge/widgets/workbench/surface.py:235
+msgid "Delete workpiece"
+msgstr "Remover peça de trabalho"
+
+#: rayforge/widgets/workbench/surface.py:821
+msgid "Move the workpiece"
+msgstr "Mover a peça de trabalho"
+
+#: rayforge/widgets/undobutton.py:38
+msgid "Show History"
+msgstr "Mostrar Histórico"
+
+#: rayforge/widgets/undobutton.py:70
+msgid "Unnamed Action"
+msgstr "Ação Sem Nome"
+
+#: rayforge/widgets/undobutton.py:121
+msgid "Undo the last action"
+msgstr "Desfazer a última ação"
+
+#: rayforge/widgets/undobutton.py:151
+msgid "Redo the last action"
+msgstr "Refazer a última ação"
+
 #: rayforge/widgets/pointbubblewidget.py:69
 msgid "Delete this point"
 msgstr "Excluir este ponto"
 
-#: rayforge/widgets/workstepsettings.py:13
+#: rayforge/widgets/workstepsettings.py:19
 #, python-brace-format
 msgid "{name} Settings"
 msgstr "Configurações de {name}"
 
-#: rayforge/widgets/workstepsettings.py:20
+#: rayforge/widgets/workstepsettings.py:26
 msgid "General Settings"
 msgstr "Configurações Gerais"
 
-#: rayforge/widgets/workstepsettings.py:31
+#: rayforge/widgets/workstepsettings.py:34
 msgid "Number of Passes"
 msgstr "Número de Passagens"
 
-#: rayforge/widgets/workstepsettings.py:32
+#: rayforge/widgets/workstepsettings.py:35
 msgid "How often to repeat this workstep"
 msgstr "Quantas vezes repetir esta etapa de trabalho"
 
-#: rayforge/widgets/workstepsettings.py:40
+#: rayforge/widgets/workstepsettings.py:43
 msgid "Power (%)"
 msgstr "Potência (%)"
 
-#: rayforge/widgets/workstepsettings.py:68
+#: rayforge/widgets/workstepsettings.py:69
 msgid "Cut Speed (mm/min)"
 msgstr "Velocidade de Corte (mm/min)"
 
-#: rayforge/widgets/workstepsettings.py:69
+#: rayforge/widgets/workstepsettings.py:70
 #, python-brace-format
 msgid "Max: {max_cut_speed} mm/min"
 msgstr "Máx: {max_cut_speed} mm/min"
 
-#: rayforge/widgets/workstepsettings.py:86
+#: rayforge/widgets/workstepsettings.py:87
 msgid "Travel Speed (mm/min)"
 msgstr "Velocidade de Deslocamento (mm/min)"
 
-#: rayforge/widgets/workstepsettings.py:87
+#: rayforge/widgets/workstepsettings.py:88
 #, python-brace-format
 msgid "Max: {max_travel_speed} mm/min"
 msgstr "Máx: {max_travel_speed} mm/min"
 
-#: rayforge/widgets/workstepsettings.py:106
+#: rayforge/widgets/workstepsettings.py:107
 msgid "Path Post-Processing"
 msgstr "Pós-processamento de Caminho"
 
-#: rayforge/widgets/workstepsettings.py:108
+#: rayforge/widgets/workstepsettings.py:109
 msgid ""
 "These steps are applied after path generation and can improve quality or "
 "reduce job time."
@@ -415,161 +477,316 @@ msgstr ""
 "Essas etapas são aplicadas após a geração do caminho e podem melhorar a "
 "qualidade ou reduzir o tempo do trabalho."
 
-#: rayforge/widgets/workstepsettings.py:126
+#: rayforge/widgets/workstepsettings.py:127
 msgid "Smoothness"
 msgstr "Suavidade"
 
-#: rayforge/widgets/workstepsettings.py:146
+#: rayforge/widgets/workstepsettings.py:147
 msgid "Corner Angle Threshold"
 msgstr "Limiar de Ângulo de Canto"
 
-#: rayforge/widgets/workstepsettings.py:148
+#: rayforge/widgets/workstepsettings.py:149
 msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "Ângulos mais agudos que este são mantidos como cantos (graus)"
 
-#: rayforge/widgets/mainwindow.py:52
+#: rayforge/widgets/workstepsettings.py:191
+msgid "Change number of passes"
+msgstr "Alterar número de passagens"
+
+#: rayforge/widgets/workstepsettings.py:204
+msgid "Change laser power"
+msgstr "Alterar potência do laser"
+
+#: rayforge/widgets/workstepsettings.py:218
+msgid "Change cut speed"
+msgstr "Alterar velocidade de corte"
+
+#: rayforge/widgets/workstepsettings.py:232
+msgid "Change Travel Speed"
+msgstr "Alterar Velocidade de Deslocamento"
+
+#: rayforge/widgets/workstepsettings.py:246
+msgid "Toggle air assist"
+msgstr "Alternar assistência de ar"
+
+#: rayforge/widgets/workstepsettings.py:265
+msgid "Change smoothness"
+msgstr "Alterar suavidade"
+
+#: rayforge/widgets/workstepsettings.py:280
+msgid "Change corner angle"
+msgstr "Alterar ângulo de canto"
+
+#: rayforge/widgets/workstepsettings.py:294
+#, python-brace-format
+msgid "Toggle '{label}' visibility"
+msgstr "Alternar visibilidade de '{label}'"
+
+#: rayforge/widgets/mainwindow.py:75
 msgid "Rayforge"
 msgstr "Rayforge"
 
-#: rayforge/widgets/mainwindow.py:99
-msgid "About"
-msgstr "Sobre"
-
-#: rayforge/widgets/mainwindow.py:100
-msgid "Preferences"
-msgstr "Preferências"
-
-#: rayforge/widgets/mainwindow.py:125
+#: rayforge/widgets/mainwindow.py:148
 msgid "Import image"
 msgstr "Importar imagem"
 
-#: rayforge/widgets/mainwindow.py:131 rayforge/widgets/mainwindow.py:416
-msgid "Generate GCode"
-msgstr "Gerar GCode"
+#: rayforge/widgets/mainwindow.py:154 rayforge/widgets/mainwindow.py:615
+msgid "Generate G-code"
+msgstr "Gerar G-code"
 
-#: rayforge/widgets/mainwindow.py:141
+#: rayforge/widgets/mainwindow.py:174 rayforge/widgets/mainwindow.py:732
 msgid "Remove all workpieces"
 msgstr "Remover todas as peças de trabalho"
 
-#: rayforge/widgets/mainwindow.py:150
+#: rayforge/widgets/mainwindow.py:183
 msgid "Toggle workpiece visibility"
 msgstr "Alternar visibilidade da peça de trabalho"
 
-#: rayforge/widgets/mainwindow.py:161
+#: rayforge/widgets/mainwindow.py:194
 msgid "Toggle camera image visibility"
 msgstr "Alternar visibilidade da imagem da câmera"
 
-#: rayforge/widgets/mainwindow.py:173
+#: rayforge/widgets/mainwindow.py:206
 msgid "Toggle travel move visibility"
 msgstr "Alternar visibilidade do movimento de deslocamento"
 
-#: rayforge/widgets/mainwindow.py:186
+#: rayforge/widgets/mainwindow.py:219
 msgid "Home the machine"
 msgstr "Home da máquina"
 
-#: rayforge/widgets/mainwindow.py:193 rayforge/widgets/mainwindow.py:433
+#: rayforge/widgets/mainwindow.py:226 rayforge/widgets/mainwindow.py:630
 msgid "Cycle laser head around the occupied area"
 msgstr "Ciclar a cabeça do laser pela área ocupada"
 
-#: rayforge/widgets/mainwindow.py:200 rayforge/widgets/mainwindow.py:448
+#: rayforge/widgets/mainwindow.py:233 rayforge/widgets/mainwindow.py:635
 msgid "Send to machine"
 msgstr "Enviar para a máquina"
 
-#: rayforge/widgets/mainwindow.py:208
+#: rayforge/widgets/mainwindow.py:241
 msgid "Pause machine"
 msgstr "Pausar máquina"
 
-#: rayforge/widgets/mainwindow.py:214
+#: rayforge/widgets/mainwindow.py:247
 msgid "Cancel running job"
 msgstr "Cancelar trabalho em execução"
 
-#: rayforge/widgets/mainwindow.py:305
+#: rayforge/widgets/mainwindow.py:345
 msgid "<b>Machine status:</b>"
 msgstr "<b>Status da máquina:</b>"
 
-#: rayforge/widgets/mainwindow.py:316
+#: rayforge/widgets/mainwindow.py:354
 msgid "<b>Connection status:</b>"
 msgstr "<b>Status da conexão:</b>"
 
-#: rayforge/widgets/mainwindow.py:414
+#: rayforge/widgets/mainwindow.py:442
+msgid "Import..."
+msgstr "Importar..."
+
+#: rayforge/widgets/mainwindow.py:443
+msgid "Export G-code..."
+msgstr "Exportar G-code..."
+
+#: rayforge/widgets/mainwindow.py:446
+msgid "Quit"
+msgstr "Sair"
+
+#: rayforge/widgets/mainwindow.py:448
+msgid "_File"
+msgstr "_Arquivo"
+
+#: rayforge/widgets/mainwindow.py:452
+msgid "Undo"
+msgstr "Desfazer"
+
+#: rayforge/widgets/mainwindow.py:453
+msgid "Redo"
+msgstr "Refazer"
+
+#: rayforge/widgets/mainwindow.py:456
+msgid "Cut"
+msgstr "Cortar"
+
+#: rayforge/widgets/mainwindow.py:457
+msgid "Copy"
+msgstr "Copiar"
+
+#: rayforge/widgets/mainwindow.py:458
+msgid "Paste"
+msgstr "Colar"
+
+#: rayforge/widgets/mainwindow.py:459
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: rayforge/widgets/mainwindow.py:460
+msgid "Remove"
+msgstr "Remover"
+
+#: rayforge/widgets/mainwindow.py:464
+msgid "Preferences"
+msgstr "Preferências"
+
+#: rayforge/widgets/mainwindow.py:467
+msgid "_Edit"
+msgstr "_Editar"
+
+#: rayforge/widgets/mainwindow.py:471
+msgid "About"
+msgstr "Sobre"
+
+#: rayforge/widgets/mainwindow.py:472
+msgid "_Help"
+msgstr "_Ajuda"
+
+#: rayforge/widgets/mainwindow.py:613
 msgid "Cannot export while operations are being generated"
 msgstr "Não é possível exportar enquanto operações estão sendo geradas"
 
-#: rayforge/widgets/mainwindow.py:429
+#: rayforge/widgets/mainwindow.py:628
 msgid "Cannot frame while operations are being generated"
 msgstr "Não é possível enquadrar enquanto operações estão sendo geradas"
 
-#: rayforge/widgets/mainwindow.py:439
+#: rayforge/widgets/mainwindow.py:637
 msgid "Send to machine (select driver to enable)"
 msgstr "Enviar para a máquina (selecione o driver para habilitar)"
 
-#: rayforge/widgets/mainwindow.py:442
+#: rayforge/widgets/mainwindow.py:640
 msgid "Send to machine (connect to enable)"
 msgstr "Enviar para a máquina (conectar para habilitar)"
 
-#: rayforge/widgets/mainwindow.py:445
+#: rayforge/widgets/mainwindow.py:644
 msgid "Send to machine (wait for calculations to finish)"
 msgstr "Enviar para a máquina (aguarde a conclusão dos cálculos)"
 
-#: rayforge/widgets/mainwindow.py:484
-msgid "Open SVG File"
-msgstr "Abrir Arquivo SVG"
+#: rayforge/widgets/mainwindow.py:681
+msgid "Open File"
+msgstr "Abrir Arquivo"
 
-#: rayforge/widgets/mainwindow.py:489
+#: rayforge/widgets/mainwindow.py:686
 msgid "All supported"
 msgstr "Todos os suportados"
 
-#: rayforge/widgets/mainwindow.py:531
+#: rayforge/widgets/mainwindow.py:739
 msgid "Save G-code File"
 msgstr "Salvar Arquivo G-code"
 
-#: rayforge/widgets/mainwindow.py:539
+#: rayforge/widgets/mainwindow.py:747
 msgid "G-code files"
 msgstr "Arquivos G-code"
 
-#: rayforge/widgets/mainwindow.py:705
-msgid "unknown"
-msgstr "desconhecido"
+#: rayforge/widgets/mainwindow.py:903
+#, python-brace-format
+msgid "Import {name}"
+msgstr "Importar {name}"
 
-#: rayforge/widgets/workpieceprops.py:27
+#: rayforge/widgets/mainwindow.py:925
+msgid "Cut workpiece(s)"
+msgstr "Cortar peça(s) de trabalho"
+
+#: rayforge/widgets/mainwindow.py:927
+#, python-brace-format
+msgid "Cut {name}"
+msgstr "Cortar {name}"
+
+#: rayforge/widgets/mainwindow.py:965
+msgid "Paste workpiece(s)"
+msgstr "Colar peça(s) de trabalho"
+
+#: rayforge/widgets/mainwindow.py:980
+#, python-brace-format
+msgid "Paste {name}"
+msgstr "Colar {name}"
+
+#: rayforge/widgets/mainwindow.py:1004
+msgid "Duplicate workpiece(s)"
+msgstr "Duplicar peça(s) de trabalho"
+
+#: rayforge/widgets/mainwindow.py:1011
+#, python-brace-format
+msgid "Duplicate {name}"
+msgstr "Duplicar {name}"
+
+#: rayforge/widgets/mainwindow.py:1044
+msgid "Remove workpiece(s)"
+msgstr "Remover peça(s) de trabalho"
+
+#: rayforge/widgets/mainwindow.py:1046
+#, python-brace-format
+msgid "Remove {name}"
+msgstr "Remover {name}"
+
+#: rayforge/widgets/workpieceprops.py:36
 msgid "Workpiece Properties"
 msgstr "Propriedades da Peça de Trabalho"
 
-#: rayforge/widgets/workpieceprops.py:31
+#: rayforge/widgets/workpieceprops.py:40
 msgid "X Position"
 msgstr "Posição X"
 
-#: rayforge/widgets/workpieceprops.py:40
+#: rayforge/widgets/workpieceprops.py:41
+msgid "Zero is on the left side"
+msgstr "O zero fica no lado esquerdo"
+
+#: rayforge/widgets/workpieceprops.py:50
 msgid "Y Position"
 msgstr "Posição Y"
 
-#: rayforge/widgets/workpieceprops.py:67
+#: rayforge/widgets/workpieceprops.py:77
 msgid "Fixed Ratio"
 msgstr "Proporção Fixa"
 
-#: rayforge/widgets/workpieceprops.py:75
+#: rayforge/widgets/workpieceprops.py:85
 msgid "Natural Size"
 msgstr "Tamanho Natural"
 
-#: rayforge/widgets/workpieceprops.py:76
+#: rayforge/widgets/workpieceprops.py:86
 msgid "N/A"
 msgstr "N/A"
 
-#: rayforge/widgets/workpieceprops.py:81
+#: rayforge/widgets/workpieceprops.py:91
 msgid "Reset Size"
 msgstr "Redefinir Tamanho"
 
-#: rayforge/widgets/workpieceprops.py:82 rayforge/widgets/workpieceprops.py:102
+#: rayforge/widgets/workpieceprops.py:92 rayforge/widgets/workpieceprops.py:111
 msgid "Reset"
 msgstr "Redefinir"
 
-#: rayforge/widgets/workpieceprops.py:92
+#: rayforge/widgets/workpieceprops.py:102
 msgid "Angle"
 msgstr "Ângulo"
 
-#: rayforge/widgets/workpieceprops.py:101
+#: rayforge/widgets/workpieceprops.py:110
 msgid "Reset Angle"
 msgstr "Redefinir Ângulo"
+
+#: rayforge/widgets/workpieceprops.py:213
+msgid "Resize workpiece"
+msgstr "Redimensionar peça de trabalho"
+
+#: rayforge/widgets/workpieceprops.py:324
+#: rayforge/widgets/workpieceprops.py:348
+msgid "Move workpiece"
+msgstr "Mover peça de trabalho"
+
+#: rayforge/widgets/workpieceprops.py:373
+msgid "Change workpiece angle"
+msgstr "Alterar ângulo da peça de trabalho"
+
+#: rayforge/widgets/workpieceprops.py:397
+msgid "Reset workpiece size"
+msgstr "Redefinir tamanho da peça de trabalho"
+
+#: rayforge/widgets/workpieceprops.py:421
+msgid "Reset workpiece angle"
+msgstr "Redefinir ângulo da peça de trabalho"
+
+#: rayforge/widgets/workpieceprops.py:492
+msgid "Zero is at the top"
+msgstr "O zero fica na parte superior"
+
+#: rayforge/widgets/workpieceprops.py:494
+msgid "Zero is at the bottom"
+msgstr "O zero fica na parte inferior"
 
 #: rayforge/widgets/cameraselectiondialog.py:11
 msgid "Select Camera"
@@ -593,6 +810,10 @@ msgstr "Falha ao carregar imagem para o ID do Dispositivo: {device_id}"
 msgid "Device ID: {device_id}"
 msgstr "ID do Dispositivo: {device_id}"
 
+#: rayforge/widgets/workstepbox.py:79
+msgid "Toggle workstep visibility"
+msgstr "Alternar visibilidade da etapa de trabalho"
+
 #: rayforge/widgets/progress.py:101
 #, python-brace-format
 msgid " (+{tasks} more)"
@@ -603,30 +824,82 @@ msgstr " (+{tasks} mais)"
 msgid "{tasks} tasks"
 msgstr "{tasks} tarefas"
 
-#: rayforge/models/workstep.py:135
+#: rayforge/widgets/about.py:14
+msgid "Not found"
+msgstr "Não encontrado"
+
+#: rayforge/widgets/about.py:34 rayforge/widgets/about.py:321
+msgid "System"
+msgstr "Sistema"
+
+#: rayforge/widgets/about.py:66
+msgid "UI Toolkit"
+msgstr "Kit de Ferramentas de UI"
+
+#: rayforge/widgets/about.py:107
+msgid "Graphics & Imaging"
+msgstr "Gráficos e Imagens"
+
+#: rayforge/widgets/about.py:122
+msgid "File Formats & Communication"
+msgstr "Formatos de Arquivo e Comunicação"
+
+#: rayforge/widgets/about.py:204
+msgid "Website"
+msgstr "Site"
+
+#: rayforge/widgets/about.py:211
+msgid "Report an Issue"
+msgstr "Reportar um Problema"
+
+#: rayforge/widgets/about.py:223
+msgid "Lead Developer"
+msgstr "Desenvolvedor Principal"
+
+#: rayforge/widgets/about.py:227
+msgid "License"
+msgstr "Licença"
+
+#: rayforge/widgets/about.py:237 rayforge/widgets/about.py:301
+msgid "System Information"
+msgstr "Informações do Sistema"
+
+#: rayforge/widgets/about.py:238
+msgid "Versions of libraries and components"
+msgstr "Versões de bibliotecas e componentes"
+
+#: rayforge/widgets/about.py:247 rayforge/widgets/about.py:314
+msgid "Copy System Information"
+msgstr "Copiar Informações do Sistema"
+
+#: rayforge/widgets/about.py:300
+msgid "About Rayforge"
+msgstr "Sobre o Rayforge"
+
+#: rayforge/models/worksteprunner.py:146
 #, python-brace-format
 msgid "Generating path for '{name}'"
 msgstr "Gerando caminho para '{name}'"
 
-#: rayforge/models/workstep.py:174
+#: rayforge/models/worksteprunner.py:181
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "Aplicando '{transformer}' em '{workpiece}'"
 
-#: rayforge/models/workstep.py:198
+#: rayforge/models/worksteprunner.py:205
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "Finalizando '{workpiece}'"
 
-#: rayforge/models/workstep.py:508
+#: rayforge/models/workstep.py:313
 msgid "External Outline"
 msgstr "Contorno Externo"
 
-#: rayforge/models/workstep.py:519
+#: rayforge/models/workstep.py:326
 msgid "Contour"
 msgstr "Contorno"
 
-#: rayforge/models/workstep.py:530
+#: rayforge/models/workstep.py:339
 msgid "Raster Engrave"
 msgstr "Gravação Raster"
 
@@ -634,23 +907,23 @@ msgstr "Gravação Raster"
 msgid "Default Machine"
 msgstr "Máquina Padrão"
 
-#: rayforge/models/workplan.py:97
+#: rayforge/models/workplan.py:99
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
 msgstr "Processando '{workpiece}' em '{step}'"
 
-#: rayforge/app.py:94
+#: rayforge/app.py:90
 msgid "A GCode generator for laser cutters."
 msgstr "Um gerador de GCode para cortadores a laser."
 
-#: rayforge/app.py:98
+#: rayforge/app.py:94
 msgid "Path to the input SVG or image file."
 msgstr "Caminho para o arquivo SVG ou imagem de entrada."
 
-#: rayforge/app.py:104
+#: rayforge/app.py:100
 msgid "Stores the work surface (no paths) as a PNG image."
 msgstr "Armazena a superfície de trabalho (sem caminhos) como uma imagem PNG."
 
-#: rayforge/app.py:111
+#: rayforge/app.py:107
 msgid "Set the logging level (default: INFO)"
 msgstr "Defina o nível de log (padrão: INFO)"
