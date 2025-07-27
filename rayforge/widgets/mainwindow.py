@@ -59,6 +59,13 @@ css = """
 .in-header-menubar item {
     padding: 6px 12px 6px 12px;
 }
+
+/* This is the new rule to make menu separators visible */
+.menu separator {
+    border-top: 1px solid @borders;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
 """
 
 
@@ -434,22 +441,29 @@ class MainWindow(Adw.ApplicationWindow):
         file_menu = Gio.Menu()
         file_menu.append(_("Import..."), "win.import")
         file_menu.append(_("Export G-code..."), "win.export")
-        file_menu.append_section(None, Gio.Menu())
-        file_menu.append(_("Quit"), "win.quit")
+
+        quit_command = Gio.Menu()
+        quit_command.append(_("Quit"), "win.quit")
+        file_menu.append_section(None, quit_command)
         menu_model.append_submenu(_("_File"), file_menu)
 
         # Edit Menu
         edit_menu = Gio.Menu()
         edit_menu.append(_("Undo"), "win.undo")
         edit_menu.append(_("Redo"), "win.redo")
-        edit_menu.append_section(None, Gio.Menu())
-        edit_menu.append(_("Cut"), "win.cut")
-        edit_menu.append(_("Copy"), "win.copy")
-        edit_menu.append(_("Paste"), "win.paste")
-        edit_menu.append(_("Duplicate"), "win.duplicate")
-        edit_menu.append(_("Remove"), "win.remove")
-        edit_menu.append_section(None, Gio.Menu())
-        edit_menu.append(_("Preferences"), "win.settings")
+
+        clipboard_commands = Gio.Menu()
+        clipboard_commands.append(_("Cut"), "win.cut")
+        clipboard_commands.append(_("Copy"), "win.copy")
+        clipboard_commands.append(_("Paste"), "win.paste")
+        clipboard_commands.append(_("Duplicate"), "win.duplicate")
+        clipboard_commands.append(_("Remove"), "win.remove")
+        edit_menu.append_section(None, clipboard_commands)
+
+        other_edit_commands = Gio.Menu()
+        other_edit_commands.append(_("Preferences"), "win.settings")
+        edit_menu.append_section(None, other_edit_commands)
+
         menu_model.append_submenu(_("_Edit"), edit_menu)
 
         # Help Menu
