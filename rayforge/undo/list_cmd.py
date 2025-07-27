@@ -9,26 +9,26 @@ class ListItemCommand(Command):
         self,
         owner_obj: Any,
         item: Any,
-        add_method_name: str,
-        remove_method_name: str,
+        undo_command: str,
+        redo_command: str,
         on_change_callback: Optional[Callable[[], None]] = None,
         name: Optional[str] = None,
     ):
         super().__init__(name, on_change_callback)
         self.owner_obj = owner_obj
         self.item = item
-        self.add_method = getattr(owner_obj, add_method_name)
-        self.remove_method = getattr(owner_obj, remove_method_name)
+        self.redo_command = getattr(owner_obj, redo_command)
+        self.undo_command = getattr(owner_obj, undo_command)
 
     def execute(self) -> None:
-        """Executes the add action."""
-        self.add_method(self.item)
+        """Executes the redo action."""
+        self.redo_command(self.item)
         if self.on_change_callback:
             self.on_change_callback()
 
     def undo(self) -> None:
-        """Executes the remove action."""
-        self.remove_method(self.item)
+        """Executes the undo action."""
+        self.undo_command(self.item)
         if self.on_change_callback:
             self.on_change_callback()
 

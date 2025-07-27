@@ -871,8 +871,8 @@ class MainWindow(Adw.ApplicationWindow):
         command = ListItemCommand(
             owner_obj=self.doc,
             item=wp,
-            add_method_name="add_workpiece",
-            remove_method_name="remove_workpiece",
+            undo_command="remove_workpiece",
+            redo_command="add_workpiece",
             name=cmd_name,
         )
         self.doc.history_manager.execute(command)
@@ -895,12 +895,11 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=wp,
-                add_method_name="remove_workpiece",
-                remove_method_name="add_workpiece",
+                undo_command="add_workpiece",
+                redo_command="remove_workpiece",
                 name=cmd_name,
             )
-            self.doc.remove_workpiece(wp)
-            history.add(command)
+            history.execute(command)
         history.end_transaction()
 
     def on_copy_requested(self, sender, workpieces: List[WorkPiece]):
@@ -950,8 +949,8 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=new_wp,
-                add_method_name="add_workpiece",
-                remove_method_name="remove_workpiece",
+                undo_command="remove_workpiece",
+                redo_command="add_workpiece",
                 name=cmd_name,
             )
             history.execute(command)
@@ -983,8 +982,8 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=new_wp,
-                add_method_name="add_workpiece",
-                remove_method_name="remove_workpiece",
+                undo_command="remove_workpiece",
+                redo_command="add_workpiece",
                 name=cmd_name,
             )
             history.execute(command)
@@ -1020,8 +1019,8 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=wp,
-                add_method_name="remove_workpiece",
-                remove_method_name="add_workpiece",
+                undo_command="add_workpiece",
+                redo_command="remove_workpiece",
                 name=cmd_name,
             )
             history.execute(command)

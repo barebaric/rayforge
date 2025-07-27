@@ -246,8 +246,8 @@ class WorkSurface(Canvas):
             cmd = ListItemCommand(
                 owner_obj=self.doc,
                 item=wp,
-                add_method_name="remove_workpiece",
-                remove_method_name="add_workpiece",
+                undo_command="add_workpiece",
+                redo_command="remove_workpiece",
                 name=_("Delete workpiece"),
             )
             history.execute(cmd)

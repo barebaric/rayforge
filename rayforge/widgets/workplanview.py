@@ -78,8 +78,8 @@ class WorkPlanView(Gtk.ScrolledWindow):
             command = ListItemCommand(
                 owner_obj=self.workplan,
                 item=new_step,
-                add_method_name="add_workstep",
-                remove_method_name="remove_workstep",
+                undo_command="remove_workstep",
+                redo_command="add_workstep",
                 name=_("Add workstep '{name}'").format(name=new_step.name)
             )
             self.doc.history_manager.execute(command)
