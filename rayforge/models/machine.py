@@ -31,6 +31,7 @@ class Machine:
         self.max_cut_speed: int = 1000   # in mm/min
         self.dimensions: Tuple[int, int] = 200, 200
         self.changed = Signal()
+        self.y_axis_down: bool = False
         self.add_head(Laser())
 
     def set_driver(self, driver_cls: type, args=None):
@@ -74,6 +75,10 @@ class Machine:
         self.dimensions = (width, height)
         self.changed.send(self)
 
+    def set_y_axis_down(self, y_axis_down: bool):
+        self.y_axis_down = y_axis_down
+        self.changed.send(self)
+
     def add_head(self, head: Laser):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)
@@ -114,6 +119,7 @@ class Machine:
                 "driver_args": self.driver_args,
                 "home_on_start": self.home_on_start,
                 "dimensions": list(self.dimensions),
+                "y_axis_down": self.y_axis_down,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "speeds": {
@@ -138,6 +144,7 @@ class Machine:
         ma.driver_args = ma_data.get("driver_args", {})
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
+        ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))

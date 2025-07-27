@@ -47,14 +47,9 @@ class WorkPieceElement(CanvasElement):
         if not self.canvas or self._in_update:
             return
 
-        pos_mm = self.data.pos or (0, 0)
-        size_mm = (
-            self.data.size
-            or self.data.get_default_size(*self.canvas.get_size())
-        )
-
+        # The data object (workpiece) is the source of truth.
         new_pos_px, new_size_px = (
-            self.canvas.workpiece_coords_to_element_coords(pos_mm, size_mm)
+            self.canvas.workpiece_coords_to_element_coords(self.data)
         )
 
         # We call super().set_pos() to bypass the model update logic in this
@@ -112,11 +107,8 @@ class WorkPieceElement(CanvasElement):
         # ensuring the final model state is accurate.
         pos_px = self.x, self.y
         size_px = self.width, self.height
-        (
-            new_pos_mm,
-            new_size_mm,
-        ) = self.canvas.element_coords_to_workpiece_coords(
-            pos_px, size_px
+        new_pos_mm, new_size_mm = (
+            self.canvas.element_coords_to_workpiece_coords(pos_px, size_px)
         )
 
         self._in_update = True

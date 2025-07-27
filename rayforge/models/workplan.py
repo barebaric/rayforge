@@ -102,24 +102,27 @@ class WorkPlan:
                 )
                 await asyncio.sleep(0)
 
-            # Get the pre-scaled ops
+            # Get the pre-scaled ops (still in local, canonical coords)
             step_ops = await asyncio.to_thread(step.get_ops, workpiece)
             if not step_ops:
                 continue
 
-            # 1. Rotate the ops around its local center.
-            # We negate the angle to convert from view coordinates (Y-down, cw)
-            # to model/g-code coordinates (Y-up, ccw).
+            # 1. Rotate the ops around its local center. G-code uses CCW.
             wp_angle = workpiece.angle
             if wp_angle != 0:
                 wp_w, wp_h = workpiece.size
                 cx, cy = wp_w / 2, wp_h / 2
                 step_ops.rotate(-wp_angle, cx, cy)
 
-            # 2. Translate to final position on the work area
+            # 2. Translate to final canonical position on the work area
             step_ops.translate(*workpiece.pos)
 
-            # 3. Clip to machine boundaries and apply post-transformers
+            # 3. Convert from canonical (Y-up) to machine-native coords
+            if config.machine.y_axis_down:
+                step_ops.scale(1, -1)
+                step_ops.translate(0, machine_height)
+
+            # 4. Clip to machine boundaries and apply post-transformers
             clipped_ops = step_ops.clip(clip_rect)
             for transformer in step.opstransformers:
                 await asyncio.to_thread(transformer.run, clipped_ops)

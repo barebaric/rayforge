@@ -145,23 +145,26 @@ class WorkPiece:
         return wp
 
     def set_pos(self, x_mm: float, y_mm: float):
-        if (x_mm, y_mm) == self.pos:
+        new_pos = float(x_mm), float(y_mm)
+        if new_pos == self.pos:
             return
-        self.pos = float(x_mm), float(y_mm)
+        self.pos = new_pos
         self.changed.send(self)
         self.pos_changed.send(self)
 
     def set_size(self, width_mm: float, height_mm: float):
-        if (width_mm, height_mm) == self.size:
+        new_size = float(width_mm), float(height_mm)
+        if new_size == self.size:
             return
-        self.size = float(width_mm), float(height_mm)
+        self.size = new_size
         self.changed.send(self)
         self.size_changed.send(self)
 
     def set_angle(self, angle: float):
-        if angle == self.angle:
+        new_angle = float(angle % 360)
+        if new_angle == self.angle:
             return
-        self.angle = float(angle % 360)
+        self.angle = new_angle
         self.changed.send(self)
         self.angle_changed.send(self)
 
@@ -250,3 +253,53 @@ class WorkPiece:
 
     def dump(self, indent=0):
         print("  " * indent, self.name, self.renderer.label)
+
+    @property
+    def pos_machine(self) -> Optional[Tuple[float, float]]:
+        """
+        Gets the workpiece's anchor position in the machine's native
+        coordinate system.
+        """
+        if self.pos is None or self.size is None:
+            return None
+
+        from ..config import config
+
+        model_x, model_y = self.pos  # Canonical: Y-up, bottom-left
+
+        if config.machine.y_axis_down:
+            # Convert to machine: Y-down, top-left
+            machine_height = config.machine.dimensions[1]
+            model_h = self.size[1]
+            machine_y = machine_height - model_y - model_h
+            return model_x, machine_y
+        else:
+            # Machine is Y-up, same as model
+            return self.pos
+
+    @pos_machine.setter
+    def pos_machine(self, pos: Tuple[float, float]):
+        """
+        Sets the workpiece's position from the machine's native
+        coordinate system.
+        """
+        if pos is None or self.size is None:
+            return
+
+        from ..config import config
+
+        machine_x, machine_y = pos
+        model_pos = (0.0, 0.0)
+
+        if config.machine.y_axis_down:
+            # Convert from machine (Y-down, top-left) to
+            # model (Y-up, bottom-left)
+            machine_height = config.machine.dimensions[1]
+            model_h = self.size[1]
+            model_y = machine_height - machine_y - model_h
+            model_pos = machine_x, model_y
+        else:
+            # Machine is Y-up, same as model
+            model_pos = machine_x, machine_y
+
+        self.set_pos(model_pos[0], model_pos[1])

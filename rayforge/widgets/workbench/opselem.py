@@ -55,7 +55,6 @@ class WorkPieceOpsElement(CanvasElement):
         if not self.canvas or not self.parent:
             return
 
-        current_mm_pos = self.data.pos or (0, 0)
         current_mm_size = self.data.get_current_size()
 
         if not current_mm_size:
@@ -65,7 +64,7 @@ class WorkPieceOpsElement(CanvasElement):
             return
 
         pos_px, size_px = self.canvas.workpiece_coords_to_element_coords(
-            current_mm_pos, current_mm_size
+            self.data
         )
 
         # Check if the fundamental size in mm has changed by comparing against

@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw  # type: ignore
 from ..driver import drivers, get_driver_cls, get_params
 from ..util.adwfix import get_spinrow_int
 from .dynamicprefs import DynamicPreferencesGroup
@@ -60,6 +60,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             "notify::active", self.on_home_on_start_changed
         )
         machine_group.add(home_on_start_row)
+
+        # Y-Axis direction switch
+        y_axis_switch_row = Adw.SwitchRow(
+            title=_("Invert Y Axis Direction"),
+            subtitle=_(
+                "Enable if your machine's origin is top-left"
+                " instead of bottom-left"
+            ),
+        )
+        y_axis_switch_row.set_active(self.machine.y_axis_down)
+        y_axis_switch_row.connect("notify::active", self.on_y_axis_toggled)
+        machine_group.add(y_axis_switch_row)
 
         # Max Travel Speed
         travel_speed_adjustment = Gtk.Adjustment(
@@ -155,6 +167,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
     def on_home_on_start_changed(self, row, _):
         self.machine.set_home_on_start(row.get_active())
+
+    def on_y_axis_toggled(self, row, _):
+        self.machine.set_y_axis_down(row.get_active())
 
     def on_travel_speed_changed(self, spinrow):
         """Update the max travel speed when the value changes."""

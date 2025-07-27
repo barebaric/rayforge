@@ -38,6 +38,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         # X Position Entry
         self.x_row = Adw.SpinRow(
             title=_("X Position"),
+            subtitle=_("Zero is on the left side"),
             adjustment=Gtk.Adjustment.new(0, -10000, 10000, 1.0, 1, 0),
         )
         self.x_row.set_digits(2)
@@ -136,23 +137,6 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-    def _apply_pos_single(
-        self, workpiece: WorkPiece, new_pos: Tuple[float, float]
-    ):
-        """Commits workpiece position changes to the history manager."""
-        if not workpiece or not workpiece.doc:
-            return
-
-        old_pos = workpiece.pos or (0, 0)
-        cmd = SetterCommand(
-            workpiece,
-            "set_pos",
-            new_args=new_pos,
-            old_args=old_pos,
-            name=_("Move workpiece"),
-        )
-        workpiece.doc.history_manager.execute(cmd)
-
     def _calculate_new_size_with_ratio(
         self, workpiece: WorkPiece, value: float, changed_dim: str
     ) -> Tuple[Optional[float], Optional[float]]:
@@ -184,7 +168,10 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
     def _calculate_resize_anchor_pos(
         self, workpiece: WorkPiece, new_size: Tuple[float, float]
     ) -> Tuple[float, float]:
-        """Calculates new position to keep resize anchored."""
+        """
+        Calculates new canonical model position to keep resize anchored.
+        This method operates on canonical Y-up coordinates.
+        """
         new_width, new_height = new_size
         bounds = config.machine.dimensions
         old_pos = workpiece.pos or (0, 0)
@@ -195,8 +182,8 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         old_x, old_y = old_pos
 
         if workpiece.angle == 0:
-            # Resize from top-left for un-rotated objects.
-            # Position is bottom-left, so we adjust y.
+            # Anchor is top-left of the object.
+            # In a Y-up system, pos is bottom-left, so we must adjust Y.
             new_x = old_x
             new_y = old_y + old_h - new_height
         else:
@@ -219,25 +206,22 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         old_pos = workpiece.pos or (0, 0)
         old_size = workpiece.size or (0, 0)
 
-        new_x, new_y = self._calculate_resize_anchor_pos(workpiece, new_size)
+        # Calculate new canonical position based on resize anchor
+        new_pos = self._calculate_resize_anchor_pos(workpiece, new_size)
 
         history = workpiece.doc.history_manager
         with history.transaction(_("Resize workpiece")) as t:
-            # Only create commands if the values actually changed.
-            if (new_x, new_y) != old_pos:
+            if new_pos != old_pos:
                 pos_cmd = SetterCommand(
-                    workpiece,
-                    "set_pos",
-                    new_args=(new_x, new_y),
-                    old_args=old_pos,
+                    workpiece, "set_pos", new_args=new_pos, old_args=old_pos
                 )
                 t.execute(pos_cmd)
 
-            if (new_width, new_height) != old_size:
+            if new_size != old_size:
                 size_cmd = SetterCommand(
                     workpiece,
                     "set_size",
-                    new_args=(new_width, new_height),
+                    new_args=new_size,
                     old_args=old_size,
                 )
                 t.execute(size_cmd)
@@ -333,11 +317,18 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             new_x = get_spinrow_float(self.x_row)
             if new_x is None:
                 return
+            doc = self.workpieces[0].doc
+            if not doc:
+                return
 
-            for workpiece in self.workpieces:
-                old_pos = workpiece.pos
-                new_y = old_pos[1] if old_pos else 0.0
-                self._apply_pos_single(workpiece, (new_x, new_y))
+            with doc.history_manager.transaction(_("Move workpiece")) as t:
+                for workpiece in self.workpieces:
+                    pos_machine = workpiece.pos_machine or (0.0, 0.0)
+                    new_pos = (new_x, pos_machine[1])
+                    cmd = ChangePropertyCommand(
+                        workpiece, "pos_machine", new_pos
+                    )
+                    t.execute(cmd)
         finally:
             self._in_update = False
 
@@ -350,11 +341,18 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             new_y = get_spinrow_float(self.y_row)
             if new_y is None:
                 return
+            doc = self.workpieces[0].doc
+            if not doc:
+                return
 
-            for workpiece in self.workpieces:
-                old_pos = workpiece.pos
-                new_x = old_pos[0] if old_pos else 0.0
-                self._apply_pos_single(workpiece, (new_x, new_y))
+            with doc.history_manager.transaction(_("Move workpiece")) as t:
+                for workpiece in self.workpieces:
+                    pos_machine = workpiece.pos_machine or (0.0, 0.0)
+                    new_pos = (pos_machine[0], new_y)
+                    cmd = ChangePropertyCommand(
+                        workpiece, "pos_machine", new_pos
+                    )
+                    t.execute(cmd)
         finally:
             self._in_update = False
 
@@ -386,29 +384,14 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             self._in_update = False
 
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
-        """
-        This function's only purpose is to allow the user to toggle the
-        switch state. It does not perform any action itself and does not
-        need an undo entry. The width/height change handlers are
-        responsible for reading this switch's state.
-        """
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
-        # No action is needed here. The event is captured simply to
-        # allow the state of the switch to be changed by user interaction.
         return False
 
     def _on_reset_clicked(self, button):
         if not self.workpieces:
             return False
-
         doc = self.workpieces[0].doc
         if not doc:
-            # No undo history, just set the value
-            for workpiece in self.workpieces:
-                bounds = config.machine.dimensions
-                w, h = workpiece.get_default_size(*bounds)
-                workpiece.set_size(w, h)
-            self._update_ui_from_workpieces()
             return False
 
         with doc.history_manager.transaction(_("Reset workpiece size")) as t:
@@ -430,11 +413,8 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
     def _on_reset_angle_clicked(self, button):
         if not self.workpieces:
             return
-
         doc = self.workpieces[0].doc
         if not doc:
-            for workpiece in self.workpieces:
-                workpiece.set_angle(0.0)
             return
 
         with doc.history_manager.transaction(
@@ -496,8 +476,6 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             return
 
         self.set_sensitive(True)
-        # For now, UI shows values from the first selected workpiece.
-        # A full multi-edit UI would show "mixed" if values differ.
         workpiece = self.workpieces[0]
 
         self._in_update = True
@@ -506,8 +484,14 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             workpiece.get_current_size()
             or workpiece.get_default_size(*bounds)
         )
-        pos = workpiece.pos
+        pos = workpiece.pos_machine  # Use machine-native coordinates
         angle = workpiece.angle
+
+        # Update Y-axis label to reflect coordinate system
+        if config.machine.y_axis_down:
+            self.y_row.set_subtitle(_("Zero is at the top"))
+        else:
+            self.y_row.set_title(_("Zero is at the bottom"))
 
         if size:
             width, height = size

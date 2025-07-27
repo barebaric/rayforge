@@ -1,4 +1,4 @@
-from gi.repository import Adw
+from gi.repository import Adw  # type: ignore
 from .generalpreferences import GeneralPreferencesPage
 from .gcodepreferences import GCodePreferencesPage
 from .laserheadpreferences import LaserHeadPreferencesPage
