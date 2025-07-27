@@ -271,7 +271,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface = WorkSurface(
             self.doc,
             config.machine,
-            cam_visibie=self.camera_visibility_button.get_active(),
+            cam_visible=self.camera_visibility_button.get_active(),
         )
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
@@ -1020,8 +1020,8 @@ class MainWindow(Adw.ApplicationWindow):
             command = ListItemCommand(
                 owner_obj=self.doc,
                 item=wp,
-                add_method_name="add_workpiece",
-                remove_method_name="remove_workpiece",
+                add_method_name="remove_workpiece",
+                remove_method_name="add_workpiece",
                 name=cmd_name,
             )
             history.execute(command)
