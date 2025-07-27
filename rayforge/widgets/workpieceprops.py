@@ -152,7 +152,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             "set_pos",
             new_args=new_pos,
             old_args=old_pos,
-            name=_("Move the workpiece"),
+            name=_("Move workpiece"),
         )
         doc.history_manager.execute(cmd)
 
@@ -185,7 +185,10 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         return new_width, new_height
 
     def _commit_resize_transaction(self, new_size: Tuple[float, float]):
-        """Calculates new position and commits size/pos changes."""
+        """
+        Creates a transaction to resize the workpiece, adjusting its position
+        to keep it anchored appropriately.
+        """
         if not self.workpiece:
             return
 
@@ -200,41 +203,42 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         old_x, old_y = old_pos
 
         if self.workpiece.angle == 0:
-            # Resize from top-left for un-rotated
+            # Resize from top-left for un-rotated objects.
+            # Position is bottom-left, so we adjust y.
             new_x = old_x
             new_y = old_y + old_h - new_height
         else:
-            # Resize from center for rotated
+            # Resize from center for rotated objects.
             new_x = old_x + (old_w - new_width) / 2
             new_y = old_y + (old_h - new_height) / 2
 
         doc = self.workpiece.doc
         if not doc:
+            # If there's no document/history, apply changes directly.
             self.workpiece.set_pos(new_x, new_y)
             self.workpiece.set_size(new_width, new_height)
             return
 
         history = doc.history_manager
-        history.begin_transaction(_("Resize"))
-        try:
-            pos_cmd = SetterCommand(
-                self.workpiece,
-                "set_pos",
-                new_args=(new_x, new_y),
-                old_args=old_pos,
-                name=_("Move the workpiece"),
-            )
-            history.execute(pos_cmd)
-            size_cmd = SetterCommand(
-                self.workpiece,
-                "set_size",
-                new_args=(new_width, new_height),
-                old_args=old_size,
-                name=_("Resize the workpiece"),
-            )
-            history.execute(size_cmd)
-        finally:
-            history.end_transaction()
+        with history.transaction(_("Resize workpiece")) as t:
+            # Only create commands if the values actually changed.
+            if (new_x, new_y) != old_pos:
+                pos_cmd = SetterCommand(
+                    self.workpiece,
+                    "set_pos",
+                    new_args=(new_x, new_y),
+                    old_args=old_pos,
+                )
+                t.execute(pos_cmd)
+
+            if (new_width, new_height) != old_size:
+                size_cmd = SetterCommand(
+                    self.workpiece,
+                    "set_size",
+                    new_args=(new_width, new_height),
+                    old_args=old_size,
+                )
+                t.execute(size_cmd)
 
     def _on_width_changed(self, spin_row, GParamSpec):
         logger.debug(f"Width changed to {spin_row.get_value()}")

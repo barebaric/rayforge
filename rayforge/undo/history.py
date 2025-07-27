@@ -1,10 +1,36 @@
-from typing import List, Optional
+from __future__ import annotations
+from typing import List, Optional, Iterator
 from blinker import Signal
+from contextlib import contextmanager
 from .command import Command
 from .composite_cmd import CompositeCommand
 
 # Maximum time in seconds between two commands to be considered for coalescing.
 COALESCE_THRESHOLD = 0.5
+
+
+class _TransactionContextProxy:
+    """
+    A helper object yielded by the HistoryManager's transaction context
+    manager.
+    It proxies execute/add calls to the manager, ensuring they are handled
+    within the current transaction.
+    """
+
+    def __init__(self, manager: HistoryManager):
+        self._manager = manager
+
+    def set_label(self, name: str) -> None:
+        """Sets the display name for the transaction (e.g., for the UI)."""
+        self._manager.transaction_name = name
+
+    def execute(self, command: Command) -> None:
+        """Executes a command and adds it to the transaction."""
+        self._manager.execute(command)
+
+    def add(self, command: Command) -> None:
+        """Adds a command that has already been executed to the transaction."""
+        self._manager.add(command)
 
 
 class HistoryManager:
@@ -65,13 +91,58 @@ class HistoryManager:
         self.redo_stack.clear()
         self.changed.send(self)
 
+    @contextmanager
+    def transaction(
+        self, name: str = "Transaction"
+    ) -> Iterator[_TransactionContextProxy]:
+        """
+        Provides a context manager for grouping commands into a single
+        transaction.
+
+        If the transaction completes successfully, the commands are grouped
+        into a single history entry. If only one command is executed, it is
+        "unwrapped" and added directly. Otherwise, commands are bundled into
+        a CompositeCommand.
+        The transaction's name will be applied to the final command.
+
+        If an exception occurs, all commands executed within the transaction
+        are undone, and the transaction is aborted.
+
+        Usage:
+            with history_manager.transaction("My Changes") as t:
+                # t.set_label("A better name") is also possible
+                t.execute(SetterCommand(...))
+        """
+        self.begin_transaction(name)
+        try:
+            yield _TransactionContextProxy(self)
+            self.end_transaction()
+        except Exception:
+            # An exception occurred. Undo any commands that were executed.
+            for cmd in reversed(self.transaction_commands):
+                try:
+                    cmd.undo()
+                except Exception:
+                    # Best effort: log this secondary error. For now, we
+                    # continue.
+                    pass
+            self.abort_transaction()
+            # The state has changed due to the undos, so we signal.
+            self.changed.send(self)
+            raise  # Re-raise the original exception
+
     def begin_transaction(self, name: str = "Transaction"):
         """
         Starts an explicit transaction. All subsequent commands executed will
         be grouped together until end_transaction() is called.
         """
         if self.in_transaction:
-            self.end_transaction()
+            # Nested transactions are not supported; raise an error to prevent
+            # unexpected behavior.
+            raise RuntimeError(
+                "Cannot start a new transaction while another is already"
+                " active."
+            )
 
         self.in_transaction = True
         self.transaction_commands = []
@@ -89,19 +160,21 @@ class HistoryManager:
         if not self.transaction_commands:
             return
 
-        # The child commands have already been executed. We are just
-        # bundling them for the history.
+        # If only one command is in the transaction, it gets "unwrapped".
+        # Otherwise, they are bundled into a CompositeCommand.
         final_command = self._coalesce_commands(self.transaction_commands)
 
         if final_command:
             final_command.name = self.transaction_name
-            # Add the composite command to history via the proper channel.
+            # Add the composite/unwrapped command to history via the proper
+            # channel.
             self._add_to_history(final_command)
 
     def abort_transaction(self):
         """
         Aborts the current transaction, discarding any commands that were
-        added since it began.
+        added since it began. NOTE: This does not undo the commands itself,
+        as that is handled by the context manager's exception block.
         """
         if not self.in_transaction:
             return
@@ -112,7 +185,8 @@ class HistoryManager:
     def _coalesce_commands(self, commands: List[Command]) -> Optional[Command]:
         """
         Internal helper to optimize a list of commands from an explicit
-        transaction into a more efficient, single command.
+        transaction. If there's only one command, it returns it directly.
+        Otherwise, it wraps them in a CompositeCommand.
         """
         if not commands:
             return None

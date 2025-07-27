@@ -890,18 +890,17 @@ class MainWindow(Adw.ApplicationWindow):
         self.on_copy_requested(sender, workpieces)
 
         history = self.doc.history_manager
-        history.begin_transaction(_("Cut workpiece(s)"))
-        for wp in workpieces:
-            cmd_name = _("Cut {name}").format(name=wp.name)
-            command = ListItemCommand(
-                owner_obj=self.doc,
-                item=wp,
-                undo_command="add_workpiece",
-                redo_command="remove_workpiece",
-                name=cmd_name,
-            )
-            history.execute(command)
-        history.end_transaction()
+        with history.transaction(_("Cut workpiece(s)")) as t:
+            for wp in workpieces:
+                cmd_name = _("Cut {name}").format(name=wp.name)
+                command = ListItemCommand(
+                    owner_obj=self.doc,
+                    item=wp,
+                    undo_command="add_workpiece",
+                    redo_command="remove_workpiece",
+                    name=cmd_name,
+                )
+                t.execute(command)
 
     def on_copy_requested(self, sender, workpieces: List[WorkPiece]):
         """
@@ -929,34 +928,32 @@ class MainWindow(Adw.ApplicationWindow):
 
         self._paste_counter += 1
         history = self.doc.history_manager
-        history.begin_transaction(_("Paste workpiece(s)"))
-
         newly_pasted_workpieces = []
-        offset_x = self._paste_increment_mm[0] * self._paste_counter
-        offset_y = self._paste_increment_mm[1] * self._paste_counter
 
-        for wp_dict in self._clipboard_snapshot:
-            new_wp = WorkPiece.from_dict(wp_dict)
-            new_wp.uid = uuid.uuid4()
-            newly_pasted_workpieces.append(new_wp)
+        with history.transaction(_("Paste workpiece(s)")) as t:
+            offset_x = self._paste_increment_mm[0] * self._paste_counter
+            offset_y = self._paste_increment_mm[1] * self._paste_counter
 
-            original_pos = wp_dict.get("pos")
-            if original_pos:
-                new_wp.set_pos(
-                    original_pos[0] + offset_x, original_pos[1] + offset_y
+            for wp_dict in self._clipboard_snapshot:
+                new_wp = WorkPiece.from_dict(wp_dict)
+                new_wp.uid = uuid.uuid4()
+                newly_pasted_workpieces.append(new_wp)
+
+                original_pos = wp_dict.get("pos")
+                if original_pos:
+                    new_wp.set_pos(
+                        original_pos[0] + offset_x, original_pos[1] + offset_y
+                    )
+
+                cmd_name = _("Paste {name}").format(name=new_wp.name)
+                command = ListItemCommand(
+                    owner_obj=self.doc,
+                    item=new_wp,
+                    undo_command="remove_workpiece",
+                    redo_command="add_workpiece",
+                    name=cmd_name,
                 )
-
-            cmd_name = _("Paste {name}").format(name=new_wp.name)
-            command = ListItemCommand(
-                owner_obj=self.doc,
-                item=new_wp,
-                undo_command="remove_workpiece",
-                redo_command="add_workpiece",
-                name=cmd_name,
-            )
-            history.execute(command)
-
-        history.end_transaction()
+                t.execute(command)
 
         if newly_pasted_workpieces:
             self.surface.select_workpieces(newly_pasted_workpieces)
@@ -970,26 +967,24 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         history = self.doc.history_manager
-        history.begin_transaction(_("Duplicate workpiece(s)"))
-
         newly_duplicated_workpieces = []
-        for wp in workpieces:
-            wp_dict = wp.to_dict()
-            new_wp = WorkPiece.from_dict(wp_dict)
-            new_wp.uid = uuid.uuid4()
-            newly_duplicated_workpieces.append(new_wp)
 
-            cmd_name = _("Duplicate {name}").format(name=new_wp.name)
-            command = ListItemCommand(
-                owner_obj=self.doc,
-                item=new_wp,
-                undo_command="remove_workpiece",
-                redo_command="add_workpiece",
-                name=cmd_name,
-            )
-            history.execute(command)
+        with history.transaction(_("Duplicate workpiece(s)")) as t:
+            for wp in workpieces:
+                wp_dict = wp.to_dict()
+                new_wp = WorkPiece.from_dict(wp_dict)
+                new_wp.uid = uuid.uuid4()
+                newly_duplicated_workpieces.append(new_wp)
 
-        history.end_transaction()
+                cmd_name = _("Duplicate {name}").format(name=new_wp.name)
+                command = ListItemCommand(
+                    owner_obj=self.doc,
+                    item=new_wp,
+                    undo_command="remove_workpiece",
+                    redo_command="add_workpiece",
+                    name=cmd_name,
+                )
+                t.execute(command)
 
         if newly_duplicated_workpieces:
             self.surface.select_workpieces(newly_duplicated_workpieces)
@@ -1014,18 +1009,17 @@ class MainWindow(Adw.ApplicationWindow):
         if not workpieces:
             return
         history = self.doc.history_manager
-        history.begin_transaction(_("Remove workpiece(s)"))
-        for wp in workpieces:
-            cmd_name = _("Remove {name}").format(name=wp.name)
-            command = ListItemCommand(
-                owner_obj=self.doc,
-                item=wp,
-                undo_command="add_workpiece",
-                redo_command="remove_workpiece",
-                name=cmd_name,
-            )
-            history.execute(command)
-        history.end_transaction()
+        with history.transaction(_("Remove workpiece(s)")) as t:
+            for wp in workpieces:
+                cmd_name = _("Remove {name}").format(name=wp.name)
+                command = ListItemCommand(
+                    owner_obj=self.doc,
+                    item=wp,
+                    undo_command="add_workpiece",
+                    redo_command="remove_workpiece",
+                    name=cmd_name,
+                )
+                t.execute(command)
 
     def show_about_dialog(self, action, param):
         about_dialog = Adw.AboutDialog(

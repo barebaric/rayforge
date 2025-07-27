@@ -141,95 +141,76 @@ class WorkSurface(Canvas):
 
     def _on_move_end(self, sender, elements: List[CanvasElement]):
         history = self.doc.history_manager
-        commands = []
-        for element in elements:
-            if (
-                not isinstance(element.data, WorkPiece)
-                or element not in self._transform_start_states
-            ):
-                continue
-            workpiece: WorkPiece = element.data
-            start_state = self._transform_start_states[element]
-            if workpiece.pos and start_state["pos"] != workpiece.pos:
-                commands.append(
-                    SetterCommand(
+        with history.transaction(_("Move workpiece(s)")) as t:
+            for element in elements:
+                if (
+                    not isinstance(element.data, WorkPiece)
+                    or element not in self._transform_start_states
+                ):
+                    continue
+                workpiece: WorkPiece = element.data
+                start_state = self._transform_start_states[element]
+                if workpiece.pos and start_state["pos"] != workpiece.pos:
+                    t.add(SetterCommand(
                         workpiece,
                         "set_pos",
                         workpiece.pos,
                         start_state["pos"],
-                    )
-                )
+                    ))
 
-        if commands:
-            history.begin_transaction(_("Move workpiece(s)"))
-            for cmd in commands:
-                history.add(cmd)
-            history.end_transaction()
         self._transform_start_states.clear()
 
     def _on_rotate_end(self, sender, elements: List[CanvasElement]):
         history = self.doc.history_manager
-        commands = []
-        for element in elements:
-            if (
-                not isinstance(element.data, WorkPiece)
-                or element not in self._transform_start_states
-            ):
-                continue
-            workpiece: WorkPiece = element.data
-            start_state = self._transform_start_states[element]
-            if start_state["angle"] != workpiece.angle:
-                commands.append(
-                    SetterCommand(
+        with history.transaction(_("Rotate workpiece(s)")) as t:
+            for element in elements:
+                if (
+                    not isinstance(element.data, WorkPiece)
+                    or element not in self._transform_start_states
+                ):
+                    continue
+                workpiece: WorkPiece = element.data
+                start_state = self._transform_start_states[element]
+                if start_state["angle"] != workpiece.angle:
+                    t.add(SetterCommand(
                         workpiece,
                         "set_angle",
                         (workpiece.angle,),
                         (start_state["angle"],),
-                    )
-                )
+                    ))
 
-        if commands:
-            history.begin_transaction(_("Rotate workpiece(s)"))
-            for cmd in commands:
-                history.add(cmd)
-            history.end_transaction()
         self._transform_start_states.clear()
 
     def _on_resize_end(self, sender, elements: List[CanvasElement]):
         history = self.doc.history_manager
-        commands = []
-        for element in elements:
-            if (
-                not isinstance(element.data, WorkPiece)
-                or element not in self._transform_start_states
-            ):
-                continue
-            workpiece: WorkPiece = element.data
-            start_state = self._transform_start_states[element]
-            if workpiece.pos and start_state["pos"] != workpiece.pos:
-                commands.append(
-                    SetterCommand(
-                        workpiece,
-                        "set_pos",
-                        workpiece.pos,
-                        start_state["pos"],
+        with history.transaction(_("Resize workpiece(s)")) as t:
+            for element in elements:
+                if (
+                    not isinstance(element.data, WorkPiece)
+                    or element not in self._transform_start_states
+                ):
+                    continue
+                workpiece: WorkPiece = element.data
+                start_state = self._transform_start_states[element]
+                if workpiece.pos and start_state["pos"] != workpiece.pos:
+                    t.add(
+                        SetterCommand(
+                            workpiece,
+                            "set_pos",
+                            workpiece.pos,
+                            start_state["pos"],
+                        )
                     )
-                )
-            if workpiece.size and start_state["size"] != workpiece.size:
-                commands.append(
-                    SetterCommand(
-                        workpiece,
-                        "set_size",
-                        workpiece.size,
-                        start_state["size"],
+                if workpiece.size and start_state["size"] != workpiece.size:
+                    t.add(
+                        SetterCommand(
+                            workpiece,
+                            "set_size",
+                            workpiece.size,
+                            start_state["size"],
+                        )
                     )
-                )
 
-        if commands:
-            history.begin_transaction(_("Resize workpiece(s)"))
-            for cmd in commands:
-                history.add(cmd)
-            history.end_transaction()
         self._transform_start_states.clear()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
@@ -241,17 +222,16 @@ class WorkSurface(Canvas):
             return
 
         history = self.doc.history_manager
-        history.begin_transaction(_("Delete workpiece(s)"))
-        for wp in workpieces_to_delete:
-            cmd = ListItemCommand(
-                owner_obj=self.doc,
-                item=wp,
-                undo_command="add_workpiece",
-                redo_command="remove_workpiece",
-                name=_("Delete workpiece"),
-            )
-            history.execute(cmd)
-        history.end_transaction()
+        with history.transaction(_("Delete workpiece(s)")) as t:
+            for wp in workpieces_to_delete:
+                cmd = ListItemCommand(
+                    owner_obj=self.doc,
+                    item=wp,
+                    undo_command="add_workpiece",
+                    redo_command="remove_workpiece",
+                    name=_("Delete workpiece"),
+                )
+                t.add(cmd)
 
     def on_button_press(self, gesture, n_press: int, x: int, y: int):
         # First, let the parent Canvas handle the event to determine if a
@@ -730,19 +710,18 @@ class WorkSurface(Canvas):
                 return True  # Consume event but do nothing
 
             history = self.doc.history_manager
-            history.begin_transaction(_("Move the workpiece"))
-            for wp in selected_wps:
-                old_pos = wp.pos
-                if old_pos:
-                    new_pos = (
-                        old_pos[0] + move_amount_x_mm,
-                        old_pos[1] + move_amount_y_mm,
-                    )
-                    cmd = SetterCommand(
-                        wp, "set_pos", new_args=new_pos, old_args=old_pos
-                    )
-                    history.execute(cmd)
-            history.end_transaction()
+            with history.transaction(_("Move the workpiece")) as t:
+                for wp in selected_wps:
+                    old_pos = wp.pos
+                    if old_pos:
+                        new_pos = (
+                            old_pos[0] + move_amount_x_mm,
+                            old_pos[1] + move_amount_y_mm,
+                        )
+                        cmd = SetterCommand(
+                            wp, "set_pos", new_args=new_pos, old_args=old_pos
+                        )
+                        t.execute(cmd)
             return True
 
         # Propagate to parent Canvas for its default behavior (e.g., Shift/
