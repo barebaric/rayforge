@@ -29,7 +29,7 @@ class MultiSelectionGroup:
         self._bounding_box: Tuple[float, float, float, float] = (0, 0, 0, 0)
         self._center: Tuple[float, float] = (0, 0)
         self.angle: float = 0.0
-        self.handle_size: int = 30
+        self.handle_size: float = 30.0
         self.initial_states: List[Dict[str, Any]] = []
         self.initial_center: Tuple[float, float] = (0, 0)
 
@@ -104,12 +104,12 @@ class MultiSelectionGroup:
 
     def get_region_rect(
         self, region: ElementRegion
-    ) -> Tuple[int, int, int, int]:
+    ) -> Tuple[float, float, float, float]:
         return get_region_rect(
             region, self.width, self.height, self.handle_size
         )
 
-    def check_region_hit(self, x: int, y: int) -> ElementRegion:
+    def check_region_hit(self, x: float, y: float) -> ElementRegion:
         return check_region_hit(
             x,
             y,
@@ -185,7 +185,7 @@ class MultiSelectionGroup:
             new_angle_rad = math.atan2(new_vec_w[1], new_vec_w[0])
 
             elem.set_angle(math.degrees(new_angle_rad))
-            elem.set_size(round(new_elem_w), round(new_elem_h))
+            elem.set_size(new_elem_w, new_elem_h)
 
             # 5. Calculate new top-left from the new center
             new_abs_x = new_abs_center_x - new_elem_w / 2
@@ -197,8 +197,8 @@ class MultiSelectionGroup:
                 parent_abs_x, parent_abs_y = elem.parent.pos_abs()
 
             elem.set_pos(
-                round(new_abs_x - parent_abs_x),
-                round(new_abs_y - parent_abs_y),
+                new_abs_x - parent_abs_x,
+                new_abs_y - parent_abs_y,
             )
 
     def apply_rotate(self, angle_delta: float):
@@ -238,6 +238,6 @@ class MultiSelectionGroup:
                 parent_abs_x, parent_abs_y = elem.parent.pos_abs()
 
             elem.set_pos(
-                round(new_abs_x - parent_abs_x),
-                round(new_abs_y - parent_abs_y),
+                new_abs_x - parent_abs_x,
+                new_abs_y - parent_abs_y,
             )

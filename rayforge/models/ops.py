@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import logging
 from copy import copy, deepcopy
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple, Generator
 from dataclasses import dataclass
 
 
@@ -21,10 +21,10 @@ _TOP = 8  # 1000
 class State:
     power: int = 0
     air_assist: bool = False
-    cut_speed: int = None
-    travel_speed: int = None
+    cut_speed: Optional[int] = None
+    travel_speed: Optional[int] = None
 
-    def allow_rapid_change(self, target_state):
+    def allow_rapid_change(self, target_state: State) -> bool:
         """
         Returns True if a change to the target state should be allowed
         in a rapid manner, i.e. for each gcode instruction. For example,
@@ -43,98 +43,108 @@ class Command:
     removed.
     """
 
-    def __init__(self, end=None, state=None):
-        self.end: tuple = end  # x, y of end position, None for state command
-        self.state: State = state  # Intended state during execution
+    def __init__(
+        self,
+        end: Optional[Tuple[float, float]] = None,
+        state: Optional[State] = None,
+    ) -> None:
+        # x/y of the end position. Is None for state commands
+        self.end: Optional[Tuple[float, float]] = end
+        self.state: Optional[State] = state  # Intended state during execution
         self._state_ref_for_pyreverse: State
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{super().__repr__()} {self.__dict__}"
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         pass
 
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return False
 
-    def is_cutting_command(self):
+    def is_cutting_command(self) -> bool:
         """Whether it is a cutting movement"""
         return False
 
-    def is_travel_command(self):
+    def is_travel_command(self) -> bool:
         """Whether it is a non-cutting movement"""
         return False
 
 
 class MoveToCommand(Command):
-    def is_travel_command(self):
+    def is_travel_command(self) -> bool:
         return True
 
 
 class LineToCommand(Command):
-    def is_cutting_command(self):
+    def is_cutting_command(self) -> bool:
         return True
 
 
 class ArcToCommand(Command):
-    def __init__(self, end, center_offset, clockwise):
+    def __init__(
+        self,
+        end: Tuple[float, float],
+        center_offset: Tuple[float, float],
+        clockwise: bool,
+    ) -> None:
         super().__init__(end)
         self.center_offset: tuple = center_offset
         self.clockwise: bool = clockwise
 
-    def is_cutting_command(self):
+    def is_cutting_command(self) -> bool:
         return True
 
 
 class SetPowerCommand(Command):
-    def __init__(self, power):
+    def __init__(self, power: int) -> None:
         super().__init__()
         self.power: int = power
 
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return True
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         state.power = self.power
 
 
 class SetCutSpeedCommand(Command):
-    def __init__(self, speed):
+    def __init__(self, speed: int) -> None:
         super().__init__()
         self.speed: int = speed
 
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return True
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         state.cut_speed = self.speed
 
 
 class SetTravelSpeedCommand(Command):
-    def __init__(self, speed):
+    def __init__(self, speed: int) -> None:
         super().__init__()
         self.speed: int = speed
 
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return True
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         state.travel_speed = self.speed
 
 
 class EnableAirAssistCommand(Command):
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return True
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         state.air_assist = True
 
 
 class DisableAirAssistCommand(Command):
-    def is_state_command(self):
+    def is_state_command(self) -> bool:
         return True
 
-    def apply_to_state(self, state):
+    def apply_to_state(self, state: State) -> None:
         state.air_assist = False
 
 
@@ -145,25 +155,25 @@ class Ops:
     for display.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.commands: List[Command] = []
         self._commands_ref_for_pyreverse: Command
-        self.last_move_to = 0.0, 0.0
+        self.last_move_to: Tuple[float, float] = (0.0, 0.0)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)
 
-    def __add__(self, ops):
+    def __add__(self, ops: Ops) -> Ops:
         result = Ops()
         result.commands = self.commands + ops.commands
         return result
 
-    def __mul__(self, count):
+    def __mul__(self, count: int) -> Ops:
         result = Ops()
         result.commands = count * self.commands
         return result
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.commands)
 
     def copy(self) -> Ops:
@@ -173,7 +183,7 @@ class Ops:
         new_ops.last_move_to = self.last_move_to
         return new_ops
 
-    def preload_state(self):
+    def preload_state(self) -> None:
         """
         Walks through all commands, enriching each by the indended
         state of the machine. The state is useful for some post-processors
@@ -187,29 +197,31 @@ class Ops:
             else:
                 cmd.state = copy(state)
 
-    def clear(self):
+    def clear(self) -> None:
         self.commands = []
 
-    def add(self, command):
+    def add(self, command: Command) -> None:
         self.commands.append(command)
 
-    def move_to(self, x, y):
+    def move_to(self, x: float, y: float) -> None:
         self.last_move_to = float(x), float(y)
         cmd = MoveToCommand(self.last_move_to)
         self.commands.append(cmd)
 
-    def line_to(self, x, y):
+    def line_to(self, x: float, y: float) -> None:
         cmd = LineToCommand((float(x), float(y)))
         self.commands.append(cmd)
 
-    def close_path(self):
+    def close_path(self) -> None:
         """
         Convenience method that wraps line_to(). Makes a line to
         the last move_to point.
         """
         self.line_to(*self.last_move_to)
 
-    def arc_to(self, x, y, i, j, clockwise=True):
+    def arc_to(
+        self, x: float, y: float, i: float, j: float, clockwise: bool = True
+    ) -> None:
         """
         Adds an arc command with specified endpoint, center offsets,
         and direction (cw/ccw).
@@ -220,63 +232,69 @@ class Ops:
             )
         )
 
-    def set_power(self, power: float):
+    def set_power(self, power: float) -> None:
         """Laser power (0-1000 for GRBL)"""
-        cmd = SetPowerCommand(float(power))
+        cmd = SetPowerCommand(int(power))
         self.commands.append(cmd)
 
-    def set_cut_speed(self, speed: float):
+    def set_cut_speed(self, speed: float) -> None:
         """Cutting speed (mm/min)"""
-        cmd = SetCutSpeedCommand(float(speed))
+        cmd = SetCutSpeedCommand(int(speed))
         self.commands.append(cmd)
 
-    def set_travel_speed(self, speed: float):
+    def set_travel_speed(self, speed: float) -> None:
         """Rapid movement speed (mm/min)"""
-        cmd = SetTravelSpeedCommand(float(speed))
+        cmd = SetTravelSpeedCommand(int(speed))
         self.commands.append(cmd)
 
-    def enable_air_assist(self, enable=True):
+    def enable_air_assist(self, enable: bool = True) -> None:
         if enable:
             self.commands.append(EnableAirAssistCommand())
         else:
             self.disable_air_assist()
 
-    def disable_air_assist(self):
+    def disable_air_assist(self) -> None:
         self.commands.append(DisableAirAssistCommand())
 
-    def rect(self):
+    def rect(self) -> Tuple[float, float, float, float]:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area.
         """
-        occupied_points = []
-        last_point = None
+        occupied_points: List[Tuple[float, float]] = []
+        last_point: Optional[Tuple[float, float]] = None
         for cmd in self.commands:
-            if cmd.is_travel_command():
+            if cmd.is_travel_command() and cmd.end:
                 last_point = cmd.end
-            elif cmd.is_cutting_command():
+            elif cmd.is_cutting_command() and cmd.end:
                 if last_point is not None:
                     occupied_points.append(last_point)
                 occupied_points.append(cmd.end)
                 last_point = cmd.end
 
         if not occupied_points:
-            return 0, 0, 0, 0
+            return 0.0, 0.0, 0.0, 0.0
 
-        xs = [p[0] for p in occupied_points]
-        ys = [p[1] for p in occupied_points]
+        xs = [p[0] for p in occupied_points if p]
+        ys = [p[1] for p in occupied_points if p]
+        if not xs or not ys:
+            return 0.0, 0.0, 0.0, 0.0
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
         return min_x, min_y, max_x, max_y
 
-    def get_frame(self, power=None, speed=None):
+    def get_frame(
+        self,
+        power: Optional[float] = None,
+        speed: Optional[float] = None,
+    ) -> Ops:
         """
         Returns a new Ops object containing four move_to operations forming
         a frame around the occupied area of the original Ops. The occupied
         area includes all points from line_to and close_path commands.
         """
         min_x, min_y, max_x, max_y = self.rect()
-        if (min_x, min_y, max_x, max_y) == (0, 0, 0, 0):
+        if (min_x, min_y, max_x, max_y) == (0.0, 0.0, 0.0, 0.0):
             return Ops()
 
         frame_ops = Ops()
@@ -291,45 +309,45 @@ class Ops:
         frame_ops.line_to(min_x, min_y)
         return frame_ops
 
-    def distance(self):
+    def distance(self) -> float:
         """
         Calculates the total distance of all moves. Mostly exists to help
         debug the optimize() method.
         """
         total = 0.0
 
-        last = None
+        last: Optional[Tuple[float, float]] = None
         for cmd in self.commands:
             if cmd.is_travel_command():
-                if last is not None:
+                if last is not None and cmd.end is not None:
                     total += math.dist(cmd.end, last)
                 last = cmd.end
             elif cmd.is_cutting_command():
                 # treating arcs as lines is probably good enough
-                if last is not None:
+                if last is not None and cmd.end is not None:
                     total += math.dist(cmd.end, last)
                 last = cmd.end
         return total
 
-    def cut_distance(self):
+    def cut_distance(self) -> float:
         """
         Like distance(), but only counts cut distance.
         """
         total = 0.0
 
-        last = None
+        last: Optional[Tuple[float, float]] = None
         for cmd in self.commands:
             if cmd.is_travel_command():
                 last = cmd.end
             elif cmd.is_cutting_command():
                 # treating arcs as lines is probably good enough
-                if last is not None:
+                if last is not None and cmd.end is not None:
                     total += math.dist(cmd.end, last)
                 last = cmd.end
         return total
 
-    def segments(self):
-        segment = []
+    def segments(self) -> Generator[List[Command], None, None]:
+        segment: List[Command] = []
         for command in self.commands:
             if not segment:
                 segment.append(command)
@@ -382,7 +400,7 @@ class Ops:
         self.last_move_to = last_x * sx, last_y * sy
         return self
 
-    def rotate(self, angle_deg: float, cx: float, cy: float) -> "Ops":
+    def rotate(self, angle_deg: float, cx: float, cy: float) -> Ops:
         """Rotates all points around a center (cx, cy)."""
         angle_rad = math.radians(angle_deg)
         cos_a = math.cos(angle_rad)
@@ -416,7 +434,9 @@ class Ops:
         self.last_move_to = _rotate_point(self.last_move_to)
         return self
 
-    def _compute_outcode(self, x, y, rect):
+    def _compute_outcode(
+        self, x: float, y: float, rect: Tuple[float, float, float, float]
+    ) -> int:
         x_min, y_min, x_max, y_max = rect
         code = _INSIDE
         if x < x_min:
@@ -492,9 +512,11 @@ class Ops:
         self, arc_cmd: ArcToCommand, start_point: Tuple[float, float]
     ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
         """Converts an ArcToCommand into a list of line segments."""
-        segments = []
+        segments: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
         p0 = start_point
         p1 = arc_cmd.end
+        if p1 is None:
+            return []
         center = (
             p0[0] + arc_cmd.center_offset[0],
             p0[1] + arc_cmd.center_offset[1],
@@ -532,10 +554,10 @@ class Ops:
 
     def _add_clipped_segment_to_ops(
         self,
-        segment: Optional[tuple],
-        new_ops: "Ops",
-        current_pen_pos: Optional[tuple],
-    ) -> Optional[tuple]:
+        segment: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
+        new_ops: Ops,
+        current_pen_pos: Optional[Tuple[float, float]],
+    ) -> Optional[Tuple[float, float]]:
         """
         Processes a single clipped segment, adding MoveTo/LineTo commands
         to the new_ops object as needed.
@@ -563,7 +585,7 @@ class Ops:
             # The segment was fully clipped, so the pen is now "up"
             return None
 
-    def clip(self, rect: Tuple[float, float, float, float]) -> "Ops":
+    def clip(self, rect: Tuple[float, float, float, float]) -> Ops:
         """
         Clips the Ops to the given rectangle.
         Returns a new, clipped Ops object.
@@ -572,14 +594,17 @@ class Ops:
         if not self.commands:
             return new_ops
 
-        last_point = (0.0, 0.0)
+        last_point: Tuple[float, float] = (0.0, 0.0)
         # Tracks the last known position of the pen *within the clipped area*.
         # None means the pen is "up" or outside the clip rect.
-        clipped_pen_pos = None
+        clipped_pen_pos: Optional[Tuple[float, float]] = None
 
         for cmd in self.commands:
             if cmd.is_state_command():
                 new_ops.add(deepcopy(cmd))
+                continue
+
+            if cmd.end is None:
                 continue
 
             if cmd.is_travel_command():
@@ -588,7 +613,9 @@ class Ops:
                 continue
 
             # Linearize the command into one or more line segments
-            segments_to_clip = []
+            segments_to_clip: List[
+                Tuple[Tuple[float, float], Tuple[float, float]]
+            ] = []
             if isinstance(cmd, LineToCommand):
                 segments_to_clip.append((last_point, cmd.end))
             elif isinstance(cmd, ArcToCommand):
@@ -607,6 +634,6 @@ class Ops:
 
         return new_ops
 
-    def dump(self):
+    def dump(self) -> None:
         for segment in self.segments():
             print(segment)

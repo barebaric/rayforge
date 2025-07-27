@@ -21,10 +21,10 @@ class WorkPieceElement(CanvasElement):
         self.data: WorkPiece = workpiece
         self._in_update = False
         super().__init__(
-            0,
-            0,
-            0,
-            0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
             data=workpiece,
             clip=False,
             buffered=True,
@@ -73,7 +73,7 @@ class WorkPieceElement(CanvasElement):
         self.width, self.height = new_width, new_height
         super().allocate(force)
 
-    def set_pos(self, x: int, y: int):
+    def set_pos(self, x: float, y: float):
         super().set_pos(x, y)
         if not self.canvas or self._in_update:
             return
@@ -92,11 +92,11 @@ class WorkPieceElement(CanvasElement):
         finally:
             self._in_update = False
 
-    def set_size(self, width: int, height: int):
+    def set_size(self, width: float, height: float):
         # Update our size for immediate scaled drawing.
         # During a resize drag, the canvas logic updates the element's x, y,
         # width, and height. This method is called after set_pos.
-        self.width, self.height = int(width), int(height)
+        self.width, self.height = width, height
         if self.canvas:
             self.canvas.queue_draw()
 

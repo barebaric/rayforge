@@ -10,7 +10,7 @@ from ..canvas import CanvasElement
 
 logger = logging.getLogger(__name__)
 
-OPS_MARGIN_PX = 10
+OPS_MARGIN_PX = 10.0
 
 
 class WorkPieceOpsElement(CanvasElement):
@@ -59,7 +59,7 @@ class WorkPieceOpsElement(CanvasElement):
         current_mm_size = self.data.get_current_size()
 
         if not current_mm_size:
-            self.width, self.height = 0, 0
+            self.width, self.height = 0.0, 0.0
             self.width_mm, self.height_mm = 0.0, 0.0
             self.clear_ops()
             return

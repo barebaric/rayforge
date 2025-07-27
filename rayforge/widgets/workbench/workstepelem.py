@@ -19,10 +19,10 @@ class WorkStepElement(CanvasElement):
     def __init__(
         self,
         workstep,
-        x,
-        y,
-        width,
-        height,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
         show_travel_moves: bool = False,
         **kwargs,
     ):

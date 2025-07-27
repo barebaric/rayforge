@@ -28,10 +28,10 @@ class CanvasElement:
 
     def __init__(
         self,
-        x: int,
-        y: int,
-        width: int,
-        height: int,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
         selected: bool = False,
         selectable: bool = True,
         visible: bool = True,
@@ -50,10 +50,10 @@ class CanvasElement:
             f"height={height}"
         )
 
-        self.x: int = x
-        self.y: int = y
-        self.width: int = width
-        self.height: int = height
+        self.x: float = float(x)
+        self.y: float = float(y)
+        self.width: float = float(width)
+        self.height: float = float(height)
         self.selected: bool = selected
         self.selectable: bool = selectable
         self.visible: bool = visible
@@ -79,7 +79,7 @@ class CanvasElement:
 
         # UI interaction state
         self.hovered: bool = False
-        self.handle_size: int = 15
+        self.handle_size: float = 15.0
 
     def trigger_update(self):
         """Schedules render_to_surface to be run in the thread pool."""
@@ -103,7 +103,7 @@ class CanvasElement:
         if self._update_future and not self._update_future.done():
             self._update_future.cancel()
 
-        render_width, render_height = self.width, self.height
+        render_width, render_height = round(self.width), round(self.height)
         if render_width <= 0 or render_height <= 0:
             return False
 
@@ -171,7 +171,7 @@ class CanvasElement:
 
     def get_region_rect(
         self, region: ElementRegion
-    ) -> Tuple[int, int, int, int]:
+    ) -> Tuple[float, float, float, float]:
         """
         Returns the rectangle (x, y, w, h) for a given region in
         local coordinates by calling the generic utility function.
@@ -180,7 +180,7 @@ class CanvasElement:
             region, self.width, self.height, self.handle_size
         )
 
-    def check_region_hit(self, x_abs: int, y_abs: int) -> ElementRegion:
+    def check_region_hit(self, x_abs: float, y_abs: float) -> ElementRegion:
         """
         Checks which region is hit at absolute canvas coordinates (x, y) by
         calling the generic utility function.
@@ -324,27 +324,27 @@ class CanvasElement:
             self.selected = False
             self.mark_dirty()
 
-    def set_pos(self, x: int, y: int):
+    def set_pos(self, x: float, y: float):
         if self.x != x or self.y != y:
             self.x, self.y = x, y
             if isinstance(self.parent, CanvasElement):
                 self.parent.mark_dirty()
 
-    def pos(self) -> Tuple[int, int]:
+    def pos(self) -> Tuple[float, float]:
         return self.x, self.y
 
-    def pos_abs(self) -> Tuple[int, int]:
-        parent_x, parent_y = 0, 0
+    def pos_abs(self) -> Tuple[float, float]:
+        parent_x, parent_y = 0.0, 0.0
         if isinstance(self.parent, CanvasElement):
             parent_x, parent_y = self.parent.pos_abs()
         return self.x + parent_x, self.y + parent_y
 
-    def size(self) -> Tuple[int, int]:
+    def size(self) -> Tuple[float, float]:
         return self.width, self.height
 
-    def set_size(self, width: int, height: int):
-        width = int(width)
-        height = int(height)
+    def set_size(self, width: float, height: float):
+        width = float(width)
+        height = float(height)
         if width != self.width or height != self.height:
             self.width, self.height = width, height
             self.allocate()
@@ -353,11 +353,11 @@ class CanvasElement:
             if self.canvas:
                 self.canvas.queue_draw()
 
-    def rect(self) -> Tuple[int, int, int, int]:
+    def rect(self) -> Tuple[float, float, float, float]:
         """returns x, y, width, height"""
         return self.x, self.y, self.width, self.height
 
-    def rect_abs(self) -> Tuple[int, int, int, int]:
+    def rect_abs(self) -> Tuple[float, float, float, float]:
         x, y = self.pos_abs()
         return x, y, self.width, self.height
 
@@ -391,8 +391,8 @@ class CanvasElement:
         if (
             self.surface is not None
             and not force
-            and self.surface.get_width() == self.width
-            and self.surface.get_height() == self.height
+            and self.surface.get_width() == round(self.width)
+            and self.surface.get_height() == round(self.height)
         ):
             return
 
@@ -517,7 +517,7 @@ class CanvasElement:
 
         # First, a quick check against the bounding box. This is always needed
         # to know if we're even in the vicinity of the element.
-        hit_region = self.check_region_hit(int(abs_hit_x), int(abs_hit_y))
+        hit_region = self.check_region_hit(abs_hit_x, abs_hit_y)
 
         if hit_region == ElementRegion.NONE:
             return None  # Not within the bounding box at all
@@ -528,11 +528,11 @@ class CanvasElement:
         # check.
         # NOTE: For this to be effective, the element must be `buffered=True`
         # and have transparent areas on its surface.
-        if self.is_pixel_opaque(int(abs_hit_x), int(abs_hit_y)):
+        if self.is_pixel_opaque(abs_hit_x, abs_hit_y):
             return self  # Hit on an opaque pixel
         return None  # Inside bounding box, but on a transparent pixel
 
-    def is_pixel_opaque(self, canvas_x: int, canvas_y: int) -> bool:
+    def is_pixel_opaque(self, canvas_x: float, canvas_y: float) -> bool:
         """
         Checks if the pixel at the given absolute canvas coordinates is opaque
         on the element's surface. Returns True if opaque, False if transparent.

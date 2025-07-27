@@ -47,9 +47,13 @@ class CameraImageElement(CanvasElement):
             logger.warning("No image data available")
             return
 
-        # Use canvas dimensions for output size
-        output_width = self.canvas.root.width if self.canvas else self.width
-        output_height = self.canvas.root.height if self.canvas else self.height
+        # Use canvas dimensions for output size, rounded for image processing
+        output_width = round(
+            self.canvas.root.width if self.canvas else self.width
+        )
+        output_height = round(
+            self.canvas.root.height if self.canvas else self.height
+        )
 
         if output_width <= 0 or output_height <= 0:
             logger.warning(
@@ -82,7 +86,10 @@ class CameraImageElement(CanvasElement):
         # Convert transformed NumPy array (BGR) to BGRA for Cairo's ARGB32
         # format
         try:
-            cairo_data = cv2.cvtColor(image_data, cv2.COLOR_BGR2BGRA)
+            cairo_data = cv2.cvtColor(
+                image_data,  # type: ignore
+                cv2.COLOR_BGR2BGRA
+            )
         except cv2.error as e:
             logger.error(f"Failed to convert image to BGRA: {e}")
             return

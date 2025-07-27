@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import logging
 from blinker import Signal
-from gi.repository import GLib, GdkPixbuf
+from gi.repository import GLib, GdkPixbuf  # type: ignore
 from ..util.glib import idle_add
 
 

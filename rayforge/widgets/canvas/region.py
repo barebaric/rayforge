@@ -21,8 +21,8 @@ class ElementRegion(Enum):
 
 
 def get_region_rect(
-    region: ElementRegion, width: float, height: float, base_handle_size: int
-) -> Tuple[int, int, int, int]:
+    region: ElementRegion, width: float, height: float, base_handle_size: float
+) -> Tuple[float, float, float, float]:
     """
     A generic function to calculate the rectangle (x, y, w, h) for a given
     region, relative to a bounding box of a given width and height.
@@ -40,14 +40,14 @@ def get_region_rect(
     # Dynamically calculate handle size to prevent overlap on small elements.
     # If the element is very small, this can result in a size of 0, which
     # correctly hides the handles.
-    effective_hs = int(min(base_handle_size, w / 3, h / 3))
+    effective_hs = min(base_handle_size, w / 3.0, h / 3.0)
 
     if region == ElementRegion.ROTATION_HANDLE:
-        handle_dist = 20
-        cx = w / 2
+        handle_dist = 20.0
+        cx = w / 2.0
         # The rotation handle also uses the effective size to scale down.
         return (
-            int(cx - effective_hs / 2),
+            cx - effective_hs / 2.0,
             -handle_dist - effective_hs,
             effective_hs,
             effective_hs,
@@ -55,43 +55,43 @@ def get_region_rect(
 
     # Corner regions are effective_hs x effective_hs squares
     if region == ElementRegion.TOP_LEFT:
-        return 0, 0, effective_hs, effective_hs
+        return 0.0, 0.0, effective_hs, effective_hs
     if region == ElementRegion.TOP_RIGHT:
-        return int(w - effective_hs), 0, effective_hs, effective_hs
+        return w - effective_hs, 0.0, effective_hs, effective_hs
     if region == ElementRegion.BOTTOM_LEFT:
-        return 0, int(h - effective_hs), effective_hs, effective_hs
+        return 0.0, h - effective_hs, effective_hs, effective_hs
     if region == ElementRegion.BOTTOM_RIGHT:
         return (
-            int(w - effective_hs),
-            int(h - effective_hs),
+            w - effective_hs,
+            h - effective_hs,
             effective_hs,
             effective_hs,
         )
 
     # Edge regions are between the corners
     if region == ElementRegion.TOP_MIDDLE:
-        return effective_hs, 0, int(w - 2 * effective_hs), effective_hs
+        return effective_hs, 0.0, w - 2.0 * effective_hs, effective_hs
     if region == ElementRegion.BOTTOM_MIDDLE:
         return (
             effective_hs,
-            int(h - effective_hs),
-            int(w - 2 * effective_hs),
+            h - effective_hs,
+            w - 2.0 * effective_hs,
             effective_hs,
         )
     if region == ElementRegion.MIDDLE_LEFT:
-        return 0, effective_hs, effective_hs, int(h - 2 * effective_hs)
+        return 0.0, effective_hs, effective_hs, h - 2.0 * effective_hs
     if region == ElementRegion.MIDDLE_RIGHT:
         return (
-            int(w - effective_hs),
+            w - effective_hs,
             effective_hs,
             effective_hs,
-            int(h - 2 * effective_hs),
+            h - 2.0 * effective_hs,
         )
 
     if region == ElementRegion.BODY:
-        return 0, 0, int(w), int(h)
+        return 0.0, 0.0, w, h
 
-    return 0, 0, 0, 0  # For NONE or other cases
+    return 0.0, 0.0, 0.0, 0.0  # For NONE or other cases
 
 
 def check_region_hit(
@@ -104,7 +104,7 @@ def check_region_hit(
     angle: float,
     center_x: float,
     center_y: float,
-    base_handle_size: int,
+    base_handle_size: float,
 ) -> ElementRegion:
     """
     Generic function to check which interactive region is hit by a point.

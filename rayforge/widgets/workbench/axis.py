@@ -32,7 +32,7 @@ class AxisRenderer:
         self.pan_y_mm: float = pan_y_mm
         self.zoom_level: float = zoom_level
 
-    def get_content_size(self) -> Tuple[int, int]:
+    def get_content_size(self) -> Tuple[float, float]:
         """
         Calculates the content area dimensions in pixels. This size is
         independent of the zoom level.
@@ -45,18 +45,18 @@ class AxisRenderer:
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_width_px = self.width_px - y_axis_width - right_margin
-        content_height_px = self.height_px - x_axis_height - top_margin
+        content_width_px = float(self.width_px - y_axis_width - right_margin)
+        content_height_px = float(self.height_px - x_axis_height - top_margin)
 
         if content_width_px < 0 or content_height_px < 0:
             logger.warning(
                 "Content area dimensions are negative; "
                 "canvas may be too small."
             )
-            content_width_px = max(0, content_width_px)
-            content_height_px = max(0, content_height_px)
+            content_width_px = max(0.0, content_width_px)
+            content_height_px = max(0.0, content_height_px)
 
-        return math.ceil(content_width_px * self.zoom_level), math.ceil(
+        return (content_width_px * self.zoom_level), (
             content_height_px * self.zoom_level
         )
 
@@ -73,48 +73,56 @@ class AxisRenderer:
         right_margin = math.ceil(y_axis_width / 2)
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_width_px = self.width_px - y_axis_width - right_margin
-        content_height_px = self.height_px - x_axis_height - top_margin
+        content_width_px = float(self.width_px - y_axis_width - right_margin)
+        content_height_px = float(
+            self.height_px - x_axis_height - top_margin
+        )
 
         if content_width_px <= 0 or content_height_px <= 0:
             logger.warning(
                 "Content area dimensions are non-positive; "
                 "canvas may be too small."
             )
-            return (0, 0)
+            return (0.0, 0.0)
 
         pixels_per_mm_x = (
             (content_width_px / self.width_mm) * self.zoom_level
             if self.width_mm > 0
-            else 0
+            else 0.0
         )
         pixels_per_mm_y = (
             (content_height_px / self.height_mm) * self.zoom_level
             if self.height_mm > 0
-            else 0
+            else 0.0
         )
         return pixels_per_mm_x, pixels_per_mm_y
 
-    def get_origin(self) -> Tuple[int, int]:
+    def get_origin(self) -> Tuple[float, float]:
         """
         Calculates the pixel position of the origin (0,0) in the content area,
         taking into account the current pan and zoom levels.
 
         Returns:
             Tuple of (x_px, y_px) representing the pixel position of the
-            origin as integers.
+            origin as floats.
         """
         y_axis_width = self.get_y_axis_width()
         x_axis_height = self.get_x_axis_height()
         top_margin = math.ceil(x_axis_height / 2)
 
-        content_height_px = self.height_px - x_axis_height - top_margin
+        content_height_px = float(
+            self.height_px - x_axis_height - top_margin
+        )
 
         pixels_per_mm_x, pixels_per_mm_y = self.get_pixels_per_mm()
-        x_px = y_axis_width - self.pan_x_mm * pixels_per_mm_x
-        y_px = top_margin + content_height_px + self.pan_y_mm * pixels_per_mm_y
+        x_px = float(y_axis_width) - self.pan_x_mm * pixels_per_mm_x
+        y_px = (
+            float(top_margin)
+            + content_height_px
+            + self.pan_y_mm * pixels_per_mm_y
+        )
 
-        return round(x_px), round(y_px)
+        return x_px, y_px
 
     def _x_axis_intervals(self) -> Generator[Tuple[float, float], None, None]:
         """
@@ -123,7 +131,7 @@ class AxisRenderer:
         """
         y_axis_width = self.get_y_axis_width()
         right_margin = math.ceil(y_axis_width / 2)
-        content_width_px = self.width_px - y_axis_width - right_margin
+        content_width_px = float(self.width_px - y_axis_width - right_margin)
         pixels_per_mm_x = content_width_px / self.width_mm * self.zoom_level
         visible_width_mm = self.width_mm / self.zoom_level
 
@@ -139,7 +147,10 @@ class AxisRenderer:
             x_mm = k * self.grid_size_mm
             if x_mm > self.width_mm:
                 break
-            x_px = y_axis_width + (x_mm - self.pan_x_mm) * pixels_per_mm_x
+            x_px = (
+                float(y_axis_width)
+                + (x_mm - self.pan_x_mm) * pixels_per_mm_x
+            )
             yield x_mm, x_px
 
     def _y_axis_intervals(self) -> Generator[Tuple[float, float], None, None]:
@@ -149,7 +160,9 @@ class AxisRenderer:
         """
         x_axis_height = self.get_x_axis_height()
         top_margin = math.ceil(x_axis_height / 2)
-        content_height_px = self.height_px - x_axis_height - top_margin
+        content_height_px = float(
+            self.height_px - x_axis_height - top_margin
+        )
         pixels_per_mm_y = content_height_px / self.height_mm * self.zoom_level
         visible_height_mm = self.height_mm / self.zoom_level
 
@@ -170,7 +183,7 @@ class AxisRenderer:
             y_px = (
                 content_height_px
                 - (y_mm - self.pan_y_mm) * pixels_per_mm_y
-                + top_margin
+                + float(top_margin)
             )
             yield y_mm, y_px
 

@@ -90,7 +90,7 @@ class WorkSurface(Canvas):
         # no access to any mouse position, and there is no easy way to
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
-        self._mouse_pos = 0, 0
+        self._mouse_pos = (0.0, 0.0)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -231,7 +231,7 @@ class WorkSurface(Canvas):
                 )
                 t.add(cmd)
 
-    def on_button_press(self, gesture, n_press: int, x: int, y: int):
+    def on_button_press(self, gesture, n_press: int, x: float, y: float):
         # First, let the parent Canvas handle the event to determine if a
         # resize is starting and to set self._active_elem and self._resizing.
         super().on_button_press(gesture, n_press, x, y)
@@ -288,8 +288,10 @@ class WorkSurface(Canvas):
         x_axis_height = self._axis_renderer.get_x_axis_height()
         right_margin = math.ceil(y_axis_pixels / 2)
         top_margin = math.ceil(x_axis_height / 2)
-        content_width_px = width - y_axis_pixels - right_margin
-        content_height_px = height_pixels - x_axis_height - top_margin
+        content_width_px = float(width - y_axis_pixels - right_margin)
+        content_height_px = float(
+            height_pixels - x_axis_height - top_margin
+        )
 
         base_ppm_x = (
             content_width_px / self.width_mm if self.width_mm > 0 else 0
@@ -325,7 +327,7 @@ class WorkSurface(Canvas):
         """Returns the size of the work surface in mm."""
         return self.width_mm, self.height_mm
 
-    def on_motion(self, gesture, x: int, y: int):
+    def on_motion(self, gesture, x: float, y: float):
         self._mouse_pos = x, y
         return super().on_motion(gesture, x, y)
 
@@ -395,7 +397,7 @@ class WorkSurface(Canvas):
 
     def workpiece_coords_to_element_coords(
         self, pos_mm: Tuple[float, float], size_mm: Tuple[float, float]
-    ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         """
         Converts workpiece model coords (bottom-left, absolute mm) to element
         coords (top-left, px) relative to the content area.
@@ -404,8 +406,8 @@ class WorkSurface(Canvas):
         ppm_y = self.pixels_per_mm_y or 1
 
         # Convert size
-        width_px = round(size_mm[0] * ppm_x)
-        height_px = round(size_mm[1] * ppm_y)
+        width_px = size_mm[0] * ppm_x
+        height_px = size_mm[1] * ppm_y
 
         # Get workpiece top-left corner in absolute mm
         top_left_x_mm = pos_mm[0]
@@ -416,7 +418,7 @@ class WorkSurface(Canvas):
             top_left_x_mm, top_left_y_mm
         )
 
-        return (round(x_px), round(y_px)), (width_px, height_px)
+        return (x_px, y_px), (width_px, height_px)
 
     def element_coords_to_workpiece_coords(
         self, pos_px: Tuple[float, float], size_px: Tuple[float, float]
@@ -530,7 +532,7 @@ class WorkSurface(Canvas):
 
         # Update laser dot size based on new pixel dimensions and its mm radius
         dot_radius_mm = self._laser_dot.radius_mm
-        dot_diameter_px = round(2 * dot_radius_mm * self.pixels_per_mm_x)
+        dot_diameter_px = 2 * dot_radius_mm * self.pixels_per_mm_x
         self._laser_dot.set_size(dot_diameter_px, dot_diameter_px)
 
         # Re-position laser dot based on new pixel dimensions
@@ -584,8 +586,8 @@ class WorkSurface(Canvas):
             # WorkStepElement should cover the entire canvas area in pixels
             elem = WorkStepElement(
                 workstep,
-                0,  # x_px
-                0,  # y_px
+                0.0,  # x_px
+                0.0,  # y_px
                 self.root.width,  # width_px
                 self.root.height,  # height_px
                 canvas=self,
@@ -612,7 +614,7 @@ class WorkSurface(Canvas):
         x_px, y_px = self.mm_to_pixel(x_mm, y_mm)
         dot_width_px = self._laser_dot.width
         self._laser_dot.set_pos(
-            round(x_px - dot_width_px / 2), round(y_px - dot_width_px / 2)
+            x_px - dot_width_px / 2, y_px - dot_width_px / 2
         )
         self.queue_draw()
 

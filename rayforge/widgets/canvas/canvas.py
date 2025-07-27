@@ -15,10 +15,10 @@ class Canvas(Gtk.DrawingArea):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.root = CanvasElement(
-            0,
-            0,
-            0,  # Initial size is 0, set in do_size_allocate
-            0,  # Initial size is 0, set in do_size_allocate
+            0.0,
+            0.0,
+            0.0,  # Initial size is 0, set in do_size_allocate
+            0.0,  # Initial size is 0, set in do_size_allocate
             canvas=self,
             parent=self,
         )
@@ -37,8 +37,8 @@ class Canvas(Gtk.DrawingArea):
         ] = None
         self._selection_before_framing: Set[CanvasElement] = set()
         self._group_hovered: bool = False
-        self._last_mouse_x: float = 0
-        self._last_mouse_y: float = 0
+        self._last_mouse_x: float = 0.0
+        self._last_mouse_y: float = 0.0
 
         # Rotation state
         self._original_elem_angle: float = 0.0
@@ -78,7 +78,7 @@ class Canvas(Gtk.DrawingArea):
         """
         return self.root.find_by_type(thetype)
 
-    def size(self) -> Tuple[int, int]:
+    def size(self) -> Tuple[float, float]:
         return self.root.size()
 
     def _setup_interactions(self):
@@ -110,7 +110,7 @@ class Canvas(Gtk.DrawingArea):
         self.grab_focus()
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
-        self.root.set_size(width, height)
+        self.root.set_size(float(width), float(height))
         self.root.allocate()
 
     def render(self, ctx: cairo.Context):
@@ -191,7 +191,7 @@ class Canvas(Gtk.DrawingArea):
 
         # Draw handles if not currently transforming
         if not (self._moving or self._resizing or self._rotating):
-            x, y = int(self._last_mouse_x), int(self._last_mouse_y)
+            x, y = self._last_mouse_x, self._last_mouse_y
             is_hovered = elem.check_region_hit(x, y) != ElementRegion.NONE
             self._render_selection_handles(
                 ctx,
@@ -288,7 +288,7 @@ class Canvas(Gtk.DrawingArea):
                 ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
                 ctx.fill()
 
-    def _update_hover_state(self, x: int, y: int) -> bool:
+    def _update_hover_state(self, x: float, y: float) -> bool:
         """
         Updates hover state and returns True if a redraw is needed.
         This is the single source of truth for the interactive region.
@@ -351,7 +351,7 @@ class Canvas(Gtk.DrawingArea):
 
         return needs_redraw
 
-    def on_button_press(self, gesture, n_press: int, x: int, y: int):
+    def on_button_press(self, gesture, n_press: int, x: float, y: float):
         self.grab_focus()
         self._update_hover_state(x, y)
 
@@ -429,7 +429,7 @@ class Canvas(Gtk.DrawingArea):
 
         self.queue_draw()
 
-    def on_motion(self, gesture, x: int, y: int):
+    def on_motion(self, gesture, x: float, y: float):
         self._last_mouse_x = x
         self._last_mouse_y = y
         if not (self._moving or self._resizing or self._rotating):
@@ -456,7 +456,7 @@ class Canvas(Gtk.DrawingArea):
         Called when the pointer leaves the canvas. Resets hover state to
         prevent sticky hover effects.
         """
-        self._last_mouse_x, self._last_mouse_y = -1, -1  # Out of bounds
+        self._last_mouse_x, self._last_mouse_y = -1.0, -1.0  # Out of bounds
         if (
             self._hovered_elem is None
             and self._hovered_region == ElementRegion.NONE
@@ -470,7 +470,7 @@ class Canvas(Gtk.DrawingArea):
         cursor = Gdk.Cursor.new_from_name("default")
         self.set_cursor(cursor)
 
-    def on_mouse_drag(self, gesture, offset_x: int, offset_y: int):
+    def on_mouse_drag(self, gesture, offset_x: float, offset_y: float):
         if self._framing_selection:
             ok, start_x, start_y = self._drag_gesture.get_start_point()
             if not ok:
@@ -506,7 +506,7 @@ class Canvas(Gtk.DrawingArea):
             if self._moving:
                 elem_start_x, elem_start_y, _, _ = self._active_origin
                 self._active_elem.set_pos(
-                    int(elem_start_x + offset_x), int(elem_start_y + offset_y)
+                    elem_start_x + offset_x, elem_start_y + offset_y
                 )
                 self.queue_draw()
             elif self._resizing:
@@ -524,7 +524,7 @@ class Canvas(Gtk.DrawingArea):
             return
 
         orig_x, orig_y, orig_w, orig_h = self._active_origin
-        min_size = 20
+        min_size = 20.0
 
         is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
@@ -612,7 +612,7 @@ class Canvas(Gtk.DrawingArea):
         self._selection_group.apply_resize(new_box, self._active_origin)
 
     def _start_rotation(
-        self, target: CanvasElement | MultiSelectionGroup, x: int, y: int
+        self, target: CanvasElement | MultiSelectionGroup, x: float, y: float
     ):
         """Stores initial state for a rotation operation."""
         self._original_elem_angle = (
@@ -630,7 +630,7 @@ class Canvas(Gtk.DrawingArea):
             math.atan2(y - center_y, x - center_x)
         )
 
-    def _rotate_active_element(self, current_x: int, current_y: int):
+    def _rotate_active_element(self, current_x: float, current_y: float):
         """Handles the logic for rotating an element based on drag delta."""
         if not self._active_elem:
             return
@@ -649,7 +649,7 @@ class Canvas(Gtk.DrawingArea):
         self._active_elem.set_angle(new_angle)
         self.queue_draw()
 
-    def _rotate_selection_group(self, offset_x: int, offset_y: int):
+    def _rotate_selection_group(self, offset_x: float, offset_y: float):
         """Handles logic for rotating the entire selection group."""
         if not self._selection_group:
             return
@@ -666,7 +666,7 @@ class Canvas(Gtk.DrawingArea):
         self._selection_group.apply_rotate(angle_diff)
         self.queue_draw()
 
-    def _resize_active_element(self, offset_x: int, offset_y: int):
+    def _resize_active_element(self, offset_x: float, offset_y: float):
         """
         Handles the logic for resizing a (potentially rotated) element,
         supporting aspect ratio lock (Shift) and resize-from-center (Ctrl).
@@ -675,7 +675,7 @@ class Canvas(Gtk.DrawingArea):
             return
 
         start_x, start_y, start_w, start_h = self._active_origin
-        min_size = 20
+        min_size = 20.0
         angle_deg = self._active_elem.get_angle()
 
         # 1. Transform drag delta into the element's local coordinate system
@@ -786,8 +786,8 @@ class Canvas(Gtk.DrawingArea):
         new_y = new_center_y - new_h / 2
 
         # 9. Apply changes
-        self._active_elem.set_pos(round(new_x), round(new_y))
-        self._active_elem.set_size(round(new_w), round(new_h))
+        self._active_elem.set_pos(new_x, new_y)
+        self._active_elem.set_size(new_w, new_h)
 
     def on_button_release(self, gesture, x: float, y: float):
         if self._framing_selection:

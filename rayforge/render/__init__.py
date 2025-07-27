@@ -22,3 +22,10 @@ renderer_by_extension = dict()
 for renderer in renderers:
     for extension in renderer.extensions:
         renderer_by_extension[extension] = renderer
+
+__all__ = [
+    "DXFRenderer",
+    "PDFRenderer",
+    "PNGRenderer",
+    "SVGRenderer",
+]
