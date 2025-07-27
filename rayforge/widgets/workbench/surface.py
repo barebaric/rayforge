@@ -365,6 +365,54 @@ class WorkSurface(Canvas):
 
         return x_px, y_px
 
+    def workpiece_coords_to_element_coords(
+        self, pos_mm: Tuple[float, float], size_mm: Tuple[float, float]
+    ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+        """
+        Converts a workpiece's model coordinates (bottom-left pos in mm, size
+        in mm) to its corresponding element coordinates (top-left pos in
+        pixels, size in pixels), relative to the content area.
+        """
+        px_per_mm_x = self.pixels_per_mm_x or 1
+        px_per_mm_y = self.pixels_per_mm_y or 1
+        content_height_px = self.root.height
+
+        # Convert size
+        width_px = round(size_mm[0] * px_per_mm_x)
+        height_px = round(size_mm[1] * px_per_mm_y)
+
+        # Convert position: model is bottom-left (Y-up), element is top-left
+        # (Y-down). We calculate the element's top-left corner in pixels
+        # relative to the content area (self.root).
+        top_left_y_mm = pos_mm[1] + size_mm[1]
+
+        x_px = pos_mm[0] * px_per_mm_x
+        y_px = content_height_px - (top_left_y_mm * px_per_mm_y)
+
+        return (round(x_px), round(y_px)), (width_px, height_px)
+
+    def element_coords_to_workpiece_coords(
+        self, pos_px: Tuple[float, float], size_px: Tuple[float, float]
+    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        """
+        Converts an element's coordinates (top-left pos in pixels, size in
+        pixels) relative to the content area, to the corresponding workpiece
+        model coordinates (bottom-left pos in mm, size in mm).
+        """
+        px_per_mm_x = self.pixels_per_mm_x or 1
+        px_per_mm_y = self.pixels_per_mm_y or 1
+        content_height_px = self.root.height
+
+        # Convert size
+        width_mm = size_px[0] / px_per_mm_x
+        height_mm = size_px[1] / px_per_mm_y
+
+        # Convert position: element is top-left, model is bottom-left.
+        x_mm = pos_px[0] / px_per_mm_x
+        y_mm = (content_height_px - (pos_px[1] + size_px[1])) / px_per_mm_y
+
+        return (x_mm, y_mm), (width_mm, height_mm)
+
     def on_scroll(self, controller, dx: float, dy: float):
         """Handles the scroll event for zoom."""
         zoom_speed = 0.1

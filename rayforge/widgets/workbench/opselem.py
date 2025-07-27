@@ -55,7 +55,7 @@ class WorkPieceOpsElement(CanvasElement):
         if not self.canvas or not self.parent:
             return
 
-        x_mm, y_mm = self.data.pos or (0, 0)
+        current_mm_pos = self.data.pos or (0, 0)
         current_mm_size = self.data.get_current_size()
 
         if not current_mm_size:
@@ -64,28 +64,25 @@ class WorkPieceOpsElement(CanvasElement):
             self.clear_ops()
             return
 
+        pos_px, size_px = self.canvas.workpiece_coords_to_element_coords(
+            current_mm_pos, current_mm_size
+        )
+
         # Check if the fundamental size in mm has changed by comparing against
         # the values stored in this class.
         mm_size_changed = (self.width_mm, self.height_mm) != current_mm_size
 
-        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
-        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-        width_px = round(current_mm_size[0] * px_per_mm_x)
-        height_px = round(current_mm_size[1] * px_per_mm_y)
-
-        new_width = width_px + 2 * OPS_MARGIN_PX
-        new_height = height_px + 2 * OPS_MARGIN_PX
+        new_width = size_px[0] + 2 * OPS_MARGIN_PX
+        new_height = size_px[1] + 2 * OPS_MARGIN_PX
         pixel_size_changed = (
             self.width != new_width or self.height != new_height
         )
 
-        x_mm_tl, y_mm_tl = x_mm, y_mm + current_mm_size[1]
-
-        content_height_px = self.canvas.root.height
-        x_px = x_mm_tl * px_per_mm_x
-        y_px = content_height_px - y_mm_tl * px_per_mm_y
-
-        self.set_pos(round(x_px) - OPS_MARGIN_PX, round(y_px) - OPS_MARGIN_PX)
+        # The element is positioned at the workpiece's top-left, adjusted
+        # for the margin.
+        self.set_pos(
+            pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX
+        )
         self.set_angle(self.data.angle)
 
         if not pixel_size_changed and not force:
