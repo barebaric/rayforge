@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         self.machine: Machine = Machine()
-        self.paned_position = 60  # in percent
         self.changed = Signal()
 
     def set_machine(self, machine: Machine):
@@ -26,7 +25,6 @@ class Config:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
-            "paned_position": self.paned_position
         }
 
     @classmethod
@@ -45,8 +43,6 @@ class Config:
         if machine:
             config.set_machine(machine)
 
-        config.paned_position = data.get("paned_position",
-                                         config.paned_position)
         return config
 
 
