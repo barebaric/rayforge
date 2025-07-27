@@ -1,5 +1,4 @@
 name: rayforge
-version: git
 adopt-info: rayforge
 confinement: strict
 base: core24
@@ -60,6 +59,9 @@ parts:
       - libagg2t64
       - libpotrace0
     parse-info: [share/metainfo/com.barebaric.rayforge.metainfo.xml]
+    override-pull: |
+      craftctl default
+      craftctl set version="$(git describe --tags)"
     override-build: |
       # Create a single, generic directory for all our custom-staged libs
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs
