@@ -26,6 +26,7 @@ class WorkPlanView(Gtk.ScrolledWindow):
         self.doc = doc
         self.workplan = workplan
 
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.set_child(self.box)
 
