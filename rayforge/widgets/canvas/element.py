@@ -79,7 +79,7 @@ class CanvasElement:
 
         # UI interaction state
         self.hovered: bool = False
-        self.handle_size: int = 30
+        self.handle_size: int = 15
 
     def trigger_update(self):
         """Schedules render_to_surface to be run in the thread pool."""
