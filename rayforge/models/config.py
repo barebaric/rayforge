@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any
 from blinker import Signal
 from .machine import Machine
+from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
@@ -10,22 +11,21 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
-        self.machine: Machine = None
+        self.machine: Machine = Machine()
         self.paned_position = 60  # in percent
         self.changed = Signal()
 
     def set_machine(self, machine: Machine):
         if self.machine == machine:
             return
-        if self.machine:
-            self.machine.changed.disconnect()
+        self.machine.changed.disconnect(self.changed.send)
         self.machine = machine
         self.changed.send(self)
         self.machine.changed.connect(self.changed.send)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "machine": self.machine.id,
+            "machine": self.machine.id if self.machine else None,
             "paned_position": self.paned_position
         }
 
@@ -51,14 +51,16 @@ class Config:
 
 
 class ConfigManager:
-    def __init__(self, filepath, machine_mgr):
+    def __init__(self, filepath: Path, machine_mgr):
         self.filepath = filepath
         self.machine_mgr = machine_mgr
-        self.config: Config = None
+        self.config: Config = Config()
 
         self.load_config()
 
     def save(self):
+        if not self.config:
+            return
         with open(self.filepath, 'w') as f:
             yaml.safe_dump(self.config.to_dict(), f)
 

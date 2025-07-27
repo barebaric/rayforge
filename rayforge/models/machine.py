@@ -157,7 +157,7 @@ class Machine:
 
 
 class MachineManager:
-    def __init__(self, base_dir):
+    def __init__(self, base_dir: Path):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
         self.machines: Dict[str, Machine] = dict()

@@ -67,7 +67,7 @@ def main():
     # We need Adw for the class definition, so this one import is okay here.
     import gi
     gi.require_version('Adw', '1')
-    from gi.repository import Adw
+    from gi.repository import Adw  # type: ignore
 
     class App(Adw.Application):
         def __init__(self, args):
@@ -81,7 +81,7 @@ def main():
             win = MainWindow(application=self)
             if self.args.filename:
                 mime_type, _ = mimetypes.guess_type(self.args.filename)
-                win.load_file(self.args.filename, mime_type)
+                win.load_file(Path(self.args.filename), mime_type)
             if self.args.dumpsurface:
                 win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
             win.present()

@@ -63,8 +63,8 @@ class TestWorkPiece:
     def test_from_file(self, tmp_path: Path, sample_svg_data: bytes):
         p = tmp_path / "sample.svg"
         p.write_bytes(sample_svg_data)
-        wp = WorkPiece.from_file(str(p), SVGRenderer)
-        assert wp.name == str(p)
+        wp = WorkPiece.from_file(p, SVGRenderer)
+        assert wp.name == p.name
         assert wp._data == sample_svg_data
         assert isinstance(wp.renderer, SVGRenderer)
 
@@ -72,7 +72,8 @@ class TestWorkPiece:
         wp = workpiece_instance
         pos_events, size_events, angle_events, changed_events = [], [], [], []
 
-        # Connect signals with weak=False to prevent garbage collection of lambdas
+        # Connect signals with weak=False to prevent garbage collection of
+        # lambdas
         wp.pos_changed.connect(
             lambda sender: pos_events.append(sender), weak=False
         )

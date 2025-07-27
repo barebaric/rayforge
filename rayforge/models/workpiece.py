@@ -12,6 +12,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from blinker import Signal
+from pathlib import Path
 from ..render import Renderer
 import importlib
 if TYPE_CHECKING:
@@ -194,10 +195,9 @@ class WorkPiece:
                 if self.size and self.size[1] else None)
 
     @classmethod
-    def from_file(cls, filename: str, renderer_class: type[Renderer]):
-        with open(filename, 'rb') as fp:
-            data = fp.read()
-        wp = cls(filename, data, renderer_class)
+    def from_file(cls, filename: Path, renderer_class: type[Renderer]):
+        data = filename.read_bytes()
+        wp = cls(filename.name, data, renderer_class)
         return wp
 
     def render_for_ops(

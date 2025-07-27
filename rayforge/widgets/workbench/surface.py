@@ -339,8 +339,8 @@ class WorkSurface(Canvas):
         """
         self.width_mm = width_mm
         self.height_mm = height_mm
-        self._axis_renderer.setwidth_mm(self.width_mm)
-        self._axis_renderer.setheight_mm(self.height_mm)
+        self._axis_renderer.set_width_mm(self.width_mm)
+        self._axis_renderer.set_height_mm(self.height_mm)
         self.queue_draw()
 
     def get_size(self) -> Tuple[float, float]:

@@ -1,6 +1,7 @@
 import cairo
 from typing import List
 from blinker import Signal
+from pathlib import Path
 from ..config import config
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
@@ -84,6 +85,8 @@ class Doc:
 
         return surface
 
-    def save_bitmap(self, filename, pixels_per_mm_x, pixels_per_mm_y):
+    def save_bitmap(
+        self, filename: Path, pixels_per_mm_x: int, pixels_per_mm_y: int
+    ):
         surface = self.render(pixels_per_mm_x, pixels_per_mm_y)
-        surface.write_to_png(filename)
+        surface.write_to_png(str(filename))

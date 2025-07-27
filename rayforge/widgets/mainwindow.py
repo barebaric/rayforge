@@ -1,8 +1,8 @@
-import os
 import asyncio
 import logging
 import uuid
-from typing import List, Tuple, Dict
+from pathlib import Path
+from typing import List, Optional, Tuple, Dict
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from .. import __version__
 from ..tasker.context import ExecutionContext
@@ -795,7 +795,7 @@ class MainWindow(Adw.ApplicationWindow):
             file = dialog.save_finish(result)
             if not file:
                 return
-            file_path = file.get_path()
+            file_path = Path(file.get_path())
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")
             return
@@ -839,7 +839,7 @@ class MainWindow(Adw.ApplicationWindow):
             file = dialog.open_finish(result)
             if file:
                 # Load the SVG file and convert it to a grayscale surface
-                file_path = file.get_path()
+                file_path = Path(file.get_path())
                 file_info = file.query_info(
                     Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
                     Gio.FileQueryInfoFlags.NONE,
@@ -850,14 +850,15 @@ class MainWindow(Adw.ApplicationWindow):
         except GLib.Error as e:
             logger.error(f"Error opening file: {e.message}")
 
-    def load_file(self, filename, mime_type):
+    def load_file(self, filename: Path, mime_type: Optional[str]):
         try:
             renderer = renderer_by_mime_type[mime_type]
         except KeyError:
             # On Windows, the file dialog returns not the mime type,
             # but the file extension instead.
             try:
-                renderer = renderer_by_extension[mime_type.lower()]
+                ext = mime_type.lower() if mime_type else None
+                renderer = renderer_by_extension[ext]
             except KeyError:
                 logger.error(
                     f"No renderer found for {mime_type}. "
@@ -867,7 +868,7 @@ class MainWindow(Adw.ApplicationWindow):
                 return
 
         wp = WorkPiece.from_file(filename, renderer)
-        cmd_name = _("Import {name}").format(name=os.path.basename(filename))
+        cmd_name = _("Import {name}").format(name=filename.name)
         command = ListItemCommand(
             owner_obj=self.doc,
             item=wp,
