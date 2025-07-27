@@ -22,30 +22,29 @@ class Canvas(Gtk.DrawingArea):
             canvas=self,
             parent=self,
         )
-        self.active_elem: Optional[CanvasElement] = None
-        self.active_origin: Optional[Tuple[float, float, float, float]] = None
-        self.active_element_changed = Signal()
+        self._active_elem: Optional[CanvasElement] = None
+        self._active_origin: Optional[Tuple[float, float, float, float]] = None
         self._setup_interactions()
 
         # Interaction state
-        self.hovered_elem: Optional[CanvasElement] = None
-        self.hovered_region: ElementRegion = ElementRegion.NONE
-        self.active_region: ElementRegion = ElementRegion.NONE
-        self.selection_group: Optional[MultiSelectionGroup] = None
-        self.framing_selection: bool = False
-        self.selection_frame_rect: Optional[
+        self._hovered_elem: Optional[CanvasElement] = None
+        self._hovered_region: ElementRegion = ElementRegion.NONE
+        self._active_region: ElementRegion = ElementRegion.NONE
+        self._selection_group: Optional[MultiSelectionGroup] = None
+        self._framing_selection: bool = False
+        self._selection_frame_rect: Optional[
             Tuple[float, float, float, float]
         ] = None
         self._selection_before_framing: Set[CanvasElement] = set()
-        self.group_hovered: bool = False
-        self.last_mouse_x: float = 0
-        self.last_mouse_y: float = 0
+        self._group_hovered: bool = False
+        self._last_mouse_x: float = 0
+        self._last_mouse_y: float = 0
 
         # Rotation state
-        self.original_elem_angle: float = 0.0
-        self.drag_start_angle: float = 0.0
+        self._original_elem_angle: float = 0.0
+        self._drag_start_angle: float = 0.0
 
-        # Signals for undo/redo integration
+        # Signals
         self.move_begin = Signal()
         self.move_end = Signal()
         self.resize_begin = Signal()
@@ -53,6 +52,8 @@ class Canvas(Gtk.DrawingArea):
         self.rotate_begin = Signal()
         self.rotate_end = Signal()
         self.elements_deleted = Signal()
+        self.active_element_changed = Signal()
+        self.elem_removed = Signal()
 
     def add(self, elem: CanvasElement):
         self.root.add(elem)
@@ -80,34 +81,32 @@ class Canvas(Gtk.DrawingArea):
         return self.root.size()
 
     def _setup_interactions(self):
-        self.click_gesture = Gtk.GestureClick()
-        self.click_gesture.connect("pressed", self.on_button_press)
-        self.click_gesture.connect("released", self.on_click_released)
-        self.add_controller(self.click_gesture)
+        self._click_gesture = Gtk.GestureClick()
+        self._click_gesture.connect("pressed", self.on_button_press)
+        self._click_gesture.connect("released", self.on_click_released)
+        self.add_controller(self._click_gesture)
 
-        self.motion_controller = Gtk.EventControllerMotion()
-        self.motion_controller.connect("motion", self.on_motion)
-        self.motion_controller.connect("leave", self.on_motion_leave)
-        self.add_controller(self.motion_controller)
+        self._motion_controller = Gtk.EventControllerMotion()
+        self._motion_controller.connect("motion", self.on_motion)
+        self._motion_controller.connect("leave", self.on_motion_leave)
+        self.add_controller(self._motion_controller)
 
-        self.drag_gesture = Gtk.GestureDrag()
-        self.drag_gesture.connect("drag-update", self.on_mouse_drag)
-        self.drag_gesture.connect("drag-end", self.on_button_release)
-        self.add_controller(self.drag_gesture)
-        self.resizing: bool = False
-        self.moving: bool = False
-        self.rotating: bool = False
+        self._drag_gesture = Gtk.GestureDrag()
+        self._drag_gesture.connect("drag-update", self.on_mouse_drag)
+        self._drag_gesture.connect("drag-end", self.on_button_release)
+        self.add_controller(self._drag_gesture)
+        self._resizing: bool = False
+        self._moving: bool = False
+        self._rotating: bool = False
 
-        self.key_controller = Gtk.EventControllerKey.new()
-        self.key_controller.connect("key-pressed", self.on_key_pressed)
-        self.key_controller.connect("key-released", self.on_key_released)
-        self.add_controller(self.key_controller)
-        self.shift_pressed: bool = False
-        self.ctrl_pressed: bool = False
+        self._key_controller = Gtk.EventControllerKey.new()
+        self._key_controller.connect("key-pressed", self.on_key_pressed)
+        self._key_controller.connect("key-released", self.on_key_released)
+        self.add_controller(self._key_controller)
+        self._shift_pressed: bool = False
+        self._ctrl_pressed: bool = False
         self.set_focusable(True)
         self.grab_focus()
-
-        self.elem_removed = Signal()
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
         self.root.set_size(width, height)
@@ -122,9 +121,9 @@ class Canvas(Gtk.DrawingArea):
         self.root.render(ctx)
 
         # Draw the selection frame if we are in framing mode
-        if self.framing_selection and self.selection_frame_rect:
+        if self._framing_selection and self._selection_frame_rect:
             ctx.save()
-            x, y, w, h = self.selection_frame_rect
+            x, y, w, h = self._selection_frame_rect
             # A semi-transparent blue fill
             ctx.set_source_rgba(0.2, 0.5, 0.8, 0.3)
             ctx.rectangle(x, y, w, h)
@@ -150,7 +149,7 @@ class Canvas(Gtk.DrawingArea):
         Renders selection frames and handles by dispatching to specialized
         helpers.
         """
-        is_multi_select = self.selection_group is not None
+        is_multi_select = self._selection_group is not None
 
         # 1. Draw selection for a single, selected element
         if elem.selected and not is_multi_select:
@@ -161,8 +160,8 @@ class Canvas(Gtk.DrawingArea):
             self._render_selection(ctx, child)
 
         # 3. Draw the multi-selection group frame (only at the root level)
-        if elem is self.root and self.selection_group:
-            self._render_multi_selection(ctx, self.selection_group)
+        if elem is self.root and self._selection_group:
+            self._render_multi_selection(ctx, self._selection_group)
 
     def _render_single_selection(
         self, ctx: cairo.Context, elem: CanvasElement
@@ -190,8 +189,8 @@ class Canvas(Gtk.DrawingArea):
         ctx.set_dash([])
 
         # Draw handles if not currently transforming
-        if not (self.moving or self.resizing or self.rotating):
-            x, y = int(self.last_mouse_x), int(self.last_mouse_y)
+        if not (self._moving or self._resizing or self._rotating):
+            x, y = int(self._last_mouse_x), int(self._last_mouse_y)
             is_hovered = elem.check_region_hit(x, y) != ElementRegion.NONE
             self._render_selection_handles(
                 ctx,
@@ -199,7 +198,7 @@ class Canvas(Gtk.DrawingArea):
                 abs_x=abs_x,
                 abs_y=abs_y,
                 is_fully_hovered=is_hovered,
-                specific_hovered_region=self.hovered_region,
+                specific_hovered_region=self._hovered_region,
             )
         ctx.restore()
 
@@ -223,14 +222,14 @@ class Canvas(Gtk.DrawingArea):
         ctx.set_dash([])
 
         # Draw handles if not currently transforming
-        if not (self.moving or self.resizing or self.rotating):
+        if not (self._moving or self._resizing or self._rotating):
             self._render_selection_handles(
                 ctx,
                 target=group,
                 abs_x=abs_x,
                 abs_y=abs_y,
-                is_fully_hovered=self.group_hovered,
-                specific_hovered_region=self.hovered_region,
+                is_fully_hovered=self._group_hovered,
+                specific_hovered_region=self._hovered_region,
             )
         ctx.restore()
 
@@ -302,8 +301,8 @@ class Canvas(Gtk.DrawingArea):
 
         # Priority 1: Check for handle hits on the current selection.
         if is_multi_select:
-            if self.selection_group:
-                region = self.selection_group.check_region_hit(x, y)
+            if self._selection_group:
+                region = self._selection_group.check_region_hit(x, y)
                 if region not in [ElementRegion.NONE, ElementRegion.BODY]:
                     new_hovered_region = region
                     # For multi-select, there's no single hovered element.
@@ -328,25 +327,25 @@ class Canvas(Gtk.DrawingArea):
         # Now, compare the new state with the old and determine if a redraw is
         # needed.
         needs_redraw = False
-        if self.hovered_region != new_hovered_region:
-            self.hovered_region = new_hovered_region
+        if self._hovered_region != new_hovered_region:
+            self._hovered_region = new_hovered_region
             needs_redraw = True
 
-        if self.hovered_elem is not new_hovered_elem:
-            self.hovered_elem = new_hovered_elem
+        if self._hovered_elem is not new_hovered_elem:
+            self._hovered_elem = new_hovered_elem
             needs_redraw = True
 
         # Finally, update the group hover flag.
         new_group_hovered = False
-        if self.selection_group:
+        if self._selection_group:
             if (
-                self.selection_group.check_region_hit(x, y)
+                self._selection_group.check_region_hit(x, y)
                 != ElementRegion.NONE
             ):
                 new_group_hovered = True
 
-        if self.group_hovered != new_group_hovered:
-            self.group_hovered = new_group_hovered
+        if self._group_hovered != new_group_hovered:
+            self._group_hovered = new_group_hovered
             needs_redraw = True
 
         return needs_redraw
@@ -355,15 +354,15 @@ class Canvas(Gtk.DrawingArea):
         self.grab_focus()
         self._update_hover_state(x, y)
 
-        self.active_region = self.hovered_region
-        hit = self.hovered_elem
-        self.framing_selection = False
+        self._active_region = self._hovered_region
+        hit = self._hovered_elem
+        self._framing_selection = False
 
         # Logic for selection change
-        if self.active_region in [ElementRegion.NONE, ElementRegion.BODY]:
+        if self._active_region in [ElementRegion.NONE, ElementRegion.BODY]:
             if hit is None:  # Clicked on background, prepare for framing
-                self.framing_selection = True
-                if self.shift_pressed:
+                self._framing_selection = True
+                if self._shift_pressed:
                     # Store existing selection for additive mode
                     self._selection_before_framing = set(
                         self.get_selected_elements()
@@ -372,7 +371,7 @@ class Canvas(Gtk.DrawingArea):
                     # Clear selection for standard framing
                     self.root.unselect_all()
                     self._selection_before_framing = set()
-            elif self.shift_pressed and hit:
+            elif self._shift_pressed and hit:
                 # Add/remove from selection without affecting others
                 hit.selected = not hit.selected
             elif not (hit and hit.selected):
@@ -383,76 +382,76 @@ class Canvas(Gtk.DrawingArea):
                     hit.selected = True
 
         # If framing, we don't start a transform and clear active state.
-        if self.framing_selection:
-            self.moving, self.resizing, self.rotating = False, False, False
-            self.active_elem = None
-            self.selection_group = None
-            self.active_origin = None
+        if self._framing_selection:
+            self._moving, self._resizing, self._rotating = False, False, False
+            self._active_elem = None
+            self._selection_group = None
+            self._active_origin = None
             self.queue_draw()
             return
 
         # Update active state based on new selection
         selected_elements = self.get_selected_elements()
-        self.active_elem = None
+        self._active_elem = None
         if len(selected_elements) > 1:
             # Avoid re-creating the group if the selection hasn't changed
-            if not self.selection_group or set(
-                self.selection_group.elements
+            if not self._selection_group or set(
+                self._selection_group.elements
             ) != set(selected_elements):
-                self.selection_group = MultiSelectionGroup(
+                self._selection_group = MultiSelectionGroup(
                     selected_elements, self
                 )
         else:
-            self.selection_group = None
+            self._selection_group = None
             if selected_elements:
-                self.active_elem = selected_elements[0]
+                self._active_elem = selected_elements[0]
 
         # Logic for starting a transform action
-        if self.active_region == ElementRegion.BODY and hit:
-            self.moving, self.resizing, self.rotating = (True, False, False)
+        if self._active_region == ElementRegion.BODY and hit:
+            self._moving, self._resizing, self._rotating = (True, False, False)
             self.move_begin.send(self, elements=selected_elements)
-        elif self.active_region == ElementRegion.ROTATION_HANDLE:
-            self.moving, self.resizing, self.rotating = False, False, True
+        elif self._active_region == ElementRegion.ROTATION_HANDLE:
+            self._moving, self._resizing, self._rotating = False, False, True
             self.rotate_begin.send(self, elements=selected_elements)
-            target = self.selection_group or self.active_elem
+            target = self._selection_group or self._active_elem
             if target:
                 self._start_rotation(target, x, y)
-        elif self.active_region not in [
+        elif self._active_region not in [
             ElementRegion.NONE,
             ElementRegion.BODY,
         ]:
-            self.moving, self.resizing, self.rotating = False, True, False
+            self._moving, self._resizing, self._rotating = False, True, False
             self.resize_begin.send(self, elements=selected_elements)
 
-        if self.selection_group:
-            self.active_origin = self.selection_group._bounding_box
-            self.selection_group.store_initial_states()
-        elif self.active_elem:
-            self.active_origin = self.active_elem.rect()
+        if self._selection_group:
+            self._active_origin = self._selection_group._bounding_box
+            self._selection_group.store_initial_states()
+        elif self._active_elem:
+            self._active_origin = self._active_elem.rect()
 
         self.queue_draw()
-        self.active_element_changed.send(self, element=self.active_elem)
+        self.active_element_changed.send(self, element=self._active_elem)
 
     def on_motion(self, gesture, x: int, y: int):
-        self.last_mouse_x = x
-        self.last_mouse_y = y
-        if not (self.moving or self.resizing or self.rotating):
+        self._last_mouse_x = x
+        self._last_mouse_y = y
+        if not (self._moving or self._resizing or self._rotating):
             if self._update_hover_state(x, y):
                 self.queue_draw()
 
-        if self.moving:
+        if self._moving:
             self.set_cursor(Gdk.Cursor.new_from_name("move"))
             return
 
         cursor_angle = 0.0
         selected_elems = self.get_selected_elements()
-        if self.selection_group:
-            cursor_angle = self.selection_group.angle
+        if self._selection_group:
+            cursor_angle = self._selection_group.angle
         elif selected_elems:
             # Use the single selected element for cursor angle
             cursor_angle = selected_elems[0].get_angle()
 
-        cursor = get_cursor_for_region(self.hovered_region, cursor_angle)
+        cursor = get_cursor_for_region(self._hovered_region, cursor_angle)
         self.set_cursor(cursor)
 
     def on_motion_leave(self, controller):
@@ -460,23 +459,23 @@ class Canvas(Gtk.DrawingArea):
         Called when the pointer leaves the canvas. Resets hover state to
         prevent sticky hover effects.
         """
-        self.last_mouse_x, self.last_mouse_y = -1, -1  # Out of bounds
+        self._last_mouse_x, self._last_mouse_y = -1, -1  # Out of bounds
         if (
-            self.hovered_elem is None
-            and self.hovered_region == ElementRegion.NONE
+            self._hovered_elem is None
+            and self._hovered_region == ElementRegion.NONE
         ):
             return
 
-        self.hovered_elem = None
-        self.group_hovered = False
-        self.hovered_region = ElementRegion.NONE
+        self._hovered_elem = None
+        self._group_hovered = False
+        self._hovered_region = ElementRegion.NONE
         self.queue_draw()
         cursor = Gdk.Cursor.new_from_name("default")
         self.set_cursor(cursor)
 
     def on_mouse_drag(self, gesture, offset_x: int, offset_y: int):
-        if self.framing_selection:
-            ok, start_x, start_y = self.drag_gesture.get_start_point()
+        if self._framing_selection:
+            ok, start_x, start_y = self._drag_gesture.get_start_point()
             if not ok:
                 return
 
@@ -488,35 +487,35 @@ class Canvas(Gtk.DrawingArea):
             w = abs(x1 - x2)
             h = abs(y1 - y2)
 
-            self.selection_frame_rect = (x, y, w, h)
+            self._selection_frame_rect = (x, y, w, h)
             self._update_framing_selection()  # Update selection live
             self.queue_draw()
             return
 
-        if not self.active_origin:
+        if not self._active_origin:
             return
 
-        if self.selection_group:
-            if self.moving:
-                self.selection_group.apply_move(offset_x, offset_y)
+        if self._selection_group:
+            if self._moving:
+                self._selection_group.apply_move(offset_x, offset_y)
                 self.queue_draw()
-            elif self.resizing:
+            elif self._resizing:
                 self._apply_group_resize(offset_x, offset_y)
                 self.queue_draw()
-            elif self.rotating:
+            elif self._rotating:
                 self._rotate_selection_group(offset_x, offset_y)
                 self.queue_draw()
-        elif self.active_elem:
-            if self.moving:
-                elem_start_x, elem_start_y, _, _ = self.active_origin
-                self.active_elem.set_pos(
+        elif self._active_elem:
+            if self._moving:
+                elem_start_x, elem_start_y, _, _ = self._active_origin
+                self._active_elem.set_pos(
                     int(elem_start_x + offset_x), int(elem_start_y + offset_y)
                 )
                 self.queue_draw()
-            elif self.resizing:
+            elif self._resizing:
                 self._resize_active_element(offset_x, offset_y)
-            elif self.rotating:
-                ok, start_x, start_y = self.drag_gesture.get_start_point()
+            elif self._rotating:
+                ok, start_x, start_y = self._drag_gesture.get_start_point()
                 if not ok:
                     return
                 current_x, current_y = start_x + offset_x, start_y + offset_y
@@ -524,34 +523,34 @@ class Canvas(Gtk.DrawingArea):
 
     def _apply_group_resize(self, offset_x: float, offset_y: float):
         """Calculates new group bbox based on the drag offset."""
-        if not self.selection_group or not self.active_origin:
+        if not self._selection_group or not self._active_origin:
             return
 
-        orig_x, orig_y, orig_w, orig_h = self.active_origin
+        orig_x, orig_y, orig_w, orig_h = self._active_origin
         min_size = 20
 
-        is_left = self.active_region in {
+        is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
             ElementRegion.BOTTOM_LEFT,
         }
-        is_right = self.active_region in {
+        is_right = self._active_region in {
             ElementRegion.TOP_RIGHT,
             ElementRegion.MIDDLE_RIGHT,
             ElementRegion.BOTTOM_RIGHT,
         }
-        is_top = self.active_region in {
+        is_top = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.TOP_MIDDLE,
             ElementRegion.TOP_RIGHT,
         }
-        is_bottom = self.active_region in {
+        is_bottom = self._active_region in {
             ElementRegion.BOTTOM_LEFT,
             ElementRegion.BOTTOM_MIDDLE,
             ElementRegion.BOTTOM_RIGHT,
         }
 
-        if self.ctrl_pressed:
+        if self._ctrl_pressed:
             dw, dh = 0.0, 0.0
             if is_left:
                 dw = -offset_x
@@ -565,7 +564,7 @@ class Canvas(Gtk.DrawingArea):
             dw *= 2
             dh *= 2
 
-            if self.shift_pressed and orig_w > 0 and orig_h > 0:
+            if self._shift_pressed and orig_w > 0 and orig_h > 0:
                 aspect = orig_w / orig_h
                 is_corner = (is_left or is_right) and (is_top or is_bottom)
                 if is_corner and abs(offset_x) > abs(offset_y):
@@ -594,7 +593,7 @@ class Canvas(Gtk.DrawingArea):
             elif is_bottom:
                 new_h = orig_h + offset_y
 
-            if self.shift_pressed and orig_w > 0 and orig_h > 0:
+            if self._shift_pressed and orig_w > 0 and orig_h > 0:
                 aspect = orig_w / orig_h
                 dw, dh = new_w - orig_w, new_h - orig_h
                 is_corner = (is_left or is_right) and (is_top or is_bottom)
@@ -613,13 +612,13 @@ class Canvas(Gtk.DrawingArea):
 
         new_w, new_h = max(new_w, min_size), max(new_h, min_size)
         new_box = (new_x, new_y, new_w, new_h)
-        self.selection_group.apply_resize(new_box, self.active_origin)
+        self._selection_group.apply_resize(new_box, self._active_origin)
 
     def _start_rotation(
         self, target: CanvasElement | MultiSelectionGroup, x: int, y: int
     ):
         """Stores initial state for a rotation operation."""
-        self.original_elem_angle = (
+        self._original_elem_angle = (
             target.angle
             if isinstance(target, MultiSelectionGroup)
             else target.get_angle()
@@ -630,44 +629,44 @@ class Canvas(Gtk.DrawingArea):
             abs_x, abs_y = target.pos_abs()
             center_x = abs_x + target.width / 2
             center_y = abs_y + target.height / 2
-        self.drag_start_angle = math.degrees(
+        self._drag_start_angle = math.degrees(
             math.atan2(y - center_y, x - center_x)
         )
 
     def _rotate_active_element(self, current_x: int, current_y: int):
         """Handles the logic for rotating an element based on drag delta."""
-        if not self.active_elem:
+        if not self._active_elem:
             return
 
-        abs_x, abs_y = self.active_elem.pos_abs()
-        center_x = abs_x + self.active_elem.width / 2
-        center_y = abs_y + self.active_elem.height / 2
+        abs_x, abs_y = self._active_elem.pos_abs()
+        center_x = abs_x + self._active_elem.width / 2
+        center_y = abs_y + self._active_elem.height / 2
 
         current_angle = math.degrees(
             math.atan2(current_y - center_y, current_x - center_x)
         )
 
-        angle_diff = current_angle - self.drag_start_angle
-        new_angle = self.original_elem_angle + angle_diff
+        angle_diff = current_angle - self._drag_start_angle
+        new_angle = self._original_elem_angle + angle_diff
 
-        self.active_elem.set_angle(new_angle)
+        self._active_elem.set_angle(new_angle)
         self.queue_draw()
 
     def _rotate_selection_group(self, offset_x: int, offset_y: int):
         """Handles logic for rotating the entire selection group."""
-        if not self.selection_group:
+        if not self._selection_group:
             return
-        ok, start_x, start_y = self.drag_gesture.get_start_point()
+        ok, start_x, start_y = self._drag_gesture.get_start_point()
         if not ok:
             return
 
         current_x, current_y = start_x + offset_x, start_y + offset_y
-        center_x, center_y = self.selection_group.initial_center
+        center_x, center_y = self._selection_group.initial_center
         current_angle = math.degrees(
             math.atan2(current_y - center_y, current_x - center_x)
         )
-        angle_diff = current_angle - self.drag_start_angle
-        self.selection_group.apply_rotate(angle_diff)
+        angle_diff = current_angle - self._drag_start_angle
+        self._selection_group.apply_rotate(angle_diff)
         self.queue_draw()
 
     def _resize_active_element(self, offset_x: int, offset_y: int):
@@ -675,12 +674,12 @@ class Canvas(Gtk.DrawingArea):
         Handles the logic for resizing a (potentially rotated) element,
         supporting aspect ratio lock (Shift) and resize-from-center (Ctrl).
         """
-        if not self.active_elem or not self.active_origin:
+        if not self._active_elem or not self._active_origin:
             return
 
-        start_x, start_y, start_w, start_h = self.active_origin
+        start_x, start_y, start_w, start_h = self._active_origin
         min_size = 20
-        angle_deg = self.active_elem.get_angle()
+        angle_deg = self._active_elem.get_angle()
 
         # 1. Transform drag delta into the element's local coordinate system
         angle_rad = math.radians(-angle_deg)
@@ -689,22 +688,22 @@ class Canvas(Gtk.DrawingArea):
         local_delta_y = offset_x * sin_a + offset_y * cos_a
 
         # 2. Determine which edges/corners are being dragged
-        is_left = self.active_region in {
+        is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
             ElementRegion.BOTTOM_LEFT,
         }
-        is_right = self.active_region in {
+        is_right = self._active_region in {
             ElementRegion.TOP_RIGHT,
             ElementRegion.MIDDLE_RIGHT,
             ElementRegion.BOTTOM_RIGHT,
         }
-        is_top = self.active_region in {
+        is_top = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.TOP_MIDDLE,
             ElementRegion.TOP_RIGHT,
         }
-        is_bottom = self.active_region in {
+        is_bottom = self._active_region in {
             ElementRegion.BOTTOM_LEFT,
             ElementRegion.BOTTOM_MIDDLE,
             ElementRegion.BOTTOM_RIGHT,
@@ -722,12 +721,12 @@ class Canvas(Gtk.DrawingArea):
             dh = local_delta_y
 
         # If Ctrl is pressed, resize from the center by doubling the change
-        if self.ctrl_pressed:
+        if self._ctrl_pressed:
             dw *= 2.0
             dh *= 2.0
 
         # 4. Handle aspect ratio constraint if Shift is pressed
-        if self.shift_pressed and start_w > 0 and start_h > 0:
+        if self._shift_pressed and start_w > 0 and start_h > 0:
             aspect = start_w / start_h
             is_corner = (is_left or is_right) and (is_top or is_bottom)
 
@@ -746,7 +745,7 @@ class Canvas(Gtk.DrawingArea):
         new_w, new_h = float(start_w) + dw, float(start_h) + dh
 
         clamped_w, clamped_h = max(new_w, min_size), max(new_h, min_size)
-        if self.shift_pressed and start_w > 0 and start_h > 0:
+        if self._shift_pressed and start_w > 0 and start_h > 0:
             aspect = start_w / start_h
             if clamped_w != new_w:  # Width was clamped
                 clamped_h = clamped_w / aspect
@@ -761,7 +760,7 @@ class Canvas(Gtk.DrawingArea):
 
         # If Ctrl is NOT pressed, shift center to keep opposite side anchored.
         # If Ctrl IS pressed, center does not shift (remains 0).
-        if not self.ctrl_pressed:
+        if not self._ctrl_pressed:
             if is_left:
                 center_dx_local = -dw / 2
             elif is_right:
@@ -790,50 +789,50 @@ class Canvas(Gtk.DrawingArea):
         new_y = new_center_y - new_h / 2
 
         # 9. Apply changes
-        self.active_elem.set_pos(round(new_x), round(new_y))
-        self.active_elem.set_size(round(new_w), round(new_h))
+        self._active_elem.set_pos(round(new_x), round(new_y))
+        self._active_elem.set_size(round(new_w), round(new_h))
 
     def on_button_release(self, gesture, x: float, y: float):
-        if self.framing_selection:
+        if self._framing_selection:
             # The selection is already live, so we just clean up and finalize.
-            self.framing_selection = False
-            self.selection_frame_rect = None
+            self._framing_selection = False
+            self._selection_frame_rect = None
             self._selection_before_framing.clear()
             self._finalize_selection_state()
             return
 
         elements = self.get_selected_elements()
-        if not (self.moving or self.resizing or self.rotating):
+        if not (self._moving or self._resizing or self._rotating):
             return
 
-        if self.moving:
+        if self._moving:
             self.move_end.send(self, elements=elements)
-        elif self.resizing:
+        elif self._resizing:
             self.resize_end.send(self, elements=elements)
             for elem in elements:
                 elem.trigger_update()
-        elif self.rotating:
+        elif self._rotating:
             self.rotate_end.send(self, elements=elements)
 
-        if self.active_elem:
-            self.active_origin = self.active_elem.rect()
-        elif self.selection_group:
-            self.selection_group._calculate_bounding_box()
-            self.active_origin = self.selection_group._bounding_box
+        if self._active_elem:
+            self._active_origin = self._active_elem.rect()
+        elif self._selection_group:
+            self._selection_group._calculate_bounding_box()
+            self._active_origin = self._selection_group._bounding_box
 
-        self.resizing = False
-        self.moving = False
-        self.rotating = False
-        self.active_region = ElementRegion.NONE
+        self._resizing = False
+        self._moving = False
+        self._rotating = False
+        self._active_region = ElementRegion.NONE
 
     def on_click_released(self, gesture, n_press: int, x: float, y: float):
         """
         Called when a click is completed without being turned into a drag.
         This resets the framing selection state.
         """
-        if self.framing_selection:
-            self.framing_selection = False
-            self.selection_frame_rect = None
+        if self._framing_selection:
+            self._framing_selection = False
+            self._selection_frame_rect = None
             self._selection_before_framing.clear()
             # The selection was already cleared in on_button_press.
             # We just need to update the final state.
@@ -841,20 +840,22 @@ class Canvas(Gtk.DrawingArea):
 
     def _finalize_selection_state(self):
         """
-        Updates active_elem and selection_group based on the current
+        Updates _active_elem and _selection_group based on the current
         selection, then queues a redraw and emits the changed signal.
         This is called after a selection operation is complete.
         """
         selected_elements = self.get_selected_elements()
-        self.active_elem = None
+        self._active_elem = None
         if len(selected_elements) > 1:
-            self.selection_group = MultiSelectionGroup(selected_elements, self)
+            self._selection_group = MultiSelectionGroup(
+                selected_elements, self
+            )
         else:
-            self.selection_group = None
+            self._selection_group = None
             if selected_elements:
-                self.active_elem = selected_elements[0]
+                self._active_elem = selected_elements[0]
 
-        self.active_element_changed.send(self, element=self.active_elem)
+        self.active_element_changed.send(self, element=self._active_elem)
         self.queue_draw()
 
     def _get_element_world_bbox(self, elem: CanvasElement) -> Graphene.Rect:
@@ -894,9 +895,9 @@ class Canvas(Gtk.DrawingArea):
         Updates the selection state of all elements based on the current
         selection frame. Called during a drag operation.
         """
-        if not self.selection_frame_rect:
+        if not self._selection_frame_rect:
             return
-        frame_x, frame_y, frame_w, frame_h = self.selection_frame_rect
+        frame_x, frame_y, frame_w, frame_h = self._selection_frame_rect
         selection_rect = Graphene.Rect().init(
             frame_x, frame_y, frame_w, frame_h
         )
@@ -916,10 +917,10 @@ class Canvas(Gtk.DrawingArea):
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
-            self.shift_pressed = True
+            self._shift_pressed = True
             return True
         elif keyval == Gdk.KEY_Control_L or keyval == Gdk.KEY_Control_R:
-            self.ctrl_pressed = True
+            self._ctrl_pressed = True
             return True
         elif keyval == Gdk.KEY_Delete:
             selected_elements = list(self.root.get_selected())
@@ -932,12 +933,12 @@ class Canvas(Gtk.DrawingArea):
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ):
         if keyval == Gdk.KEY_Shift_L or keyval == Gdk.KEY_Shift_R:
-            self.shift_pressed = False
+            self._shift_pressed = False
         elif keyval == Gdk.KEY_Control_L or keyval == Gdk.KEY_Control_R:
-            self.ctrl_pressed = False
+            self._ctrl_pressed = False
 
     def get_active_element(self) -> Optional[CanvasElement]:
-        return self.active_elem
+        return self._active_elem
 
     def get_selected_elements(self) -> List[CanvasElement]:
         return list(self.root.get_selected())
