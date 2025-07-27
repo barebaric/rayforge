@@ -910,7 +910,15 @@ class Canvas(Gtk.DrawingArea):
         """
         if not self._selection_frame_rect:
             return
+
         frame_x, frame_y, frame_w, frame_h = self._selection_frame_rect
+
+        # FIX: Do not perform selection for a zero-area frame, which happens
+        # on the initial click before a drag starts. This prevents the
+        # immediate re-selection of a just-deselected element.
+        if frame_w < 2 and frame_h < 2:
+            return
+
         selection_rect = Graphene.Rect().init(
             frame_x, frame_y, frame_w, frame_h
         )
