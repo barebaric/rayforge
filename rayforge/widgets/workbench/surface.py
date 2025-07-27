@@ -344,6 +344,27 @@ class WorkSurface(Canvas):
         )
         return x_mm, y_mm
 
+    def mm_to_pixel(self, x_mm: float, y_mm: float) -> Tuple[float, float]:
+        """Converts real-world mm coordinates to canvas pixel coordinates."""
+        height_pixels = self.get_height()
+        y_axis_pixels = self._axis_renderer.get_y_axis_width()
+        x_axis_height = self._axis_renderer.get_x_axis_height()
+        top_margin = math.ceil(x_axis_height / 2)
+
+        pan_x_mm = self._axis_renderer.pan_x_mm
+        pan_y_mm = self._axis_renderer.pan_y_mm
+        ppm_x = self.pixels_per_mm_x
+        ppm_y = self.pixels_per_mm_y
+
+        if ppm_x <= 0 or ppm_y <= 0:
+            return 0.0, 0.0
+
+        x_px = (x_mm - pan_x_mm) * ppm_x + y_axis_pixels
+        # The y-axis is inverted
+        y_px = height_pixels - ((y_mm - pan_y_mm) * ppm_y) - top_margin
+
+        return x_px, y_px
+
     def on_scroll(self, controller, dx: float, dy: float):
         """Handles the scroll event for zoom."""
         zoom_speed = 0.1
@@ -437,7 +458,7 @@ class WorkSurface(Canvas):
 
         # Re-position laser dot based on new pixel dimensions
         current_dot_pos_px = self._laser_dot.pos_abs()
-        current_dot_pos_mm = self._laser_dot.pixel_to_mm(*current_dot_pos_px)
+        current_dot_pos_mm = self.pixel_to_mm(*current_dot_pos_px)
         self.set_laser_dot_position(*current_dot_pos_mm)
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
@@ -511,7 +532,7 @@ class WorkSurface(Canvas):
         # LaserDotElement is sized to represent the dot diameter in pixels.
         # Its position should be the top-left corner of its bounding box.
         # We want the center of the dot to be at (x_px, y_px).
-        x_px, y_px = self._laser_dot.mm_to_pixel(x_mm, y_mm)
+        x_px, y_px = self.mm_to_pixel(x_mm, y_mm)
         dot_width_px = self._laser_dot.width
         self._laser_dot.set_pos(
             round(x_px - dot_width_px / 2), round(y_px - dot_width_px / 2)

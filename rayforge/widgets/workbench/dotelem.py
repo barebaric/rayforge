@@ -1,13 +1,13 @@
 import math
 import logging
 import cairo
-from .surfaceelem import SurfaceElement
+from ..canvas import CanvasElement
 
 
 logger = logging.getLogger(__name__)
 
 
-class DotElement(SurfaceElement):
+class DotElement(CanvasElement):
     """
     Draws a simple red dot.
     """

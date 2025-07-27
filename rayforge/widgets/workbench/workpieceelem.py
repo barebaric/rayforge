@@ -2,7 +2,7 @@ import logging
 import cairo
 from typing import Optional, TYPE_CHECKING
 from ...models.workpiece import WorkPiece
-from .surfaceelem import SurfaceElement
+from ..canvas import CanvasElement
 
 if TYPE_CHECKING:
     from .surface import WorkSurface
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class WorkPieceElement(SurfaceElement):
+class WorkPieceElement(CanvasElement):
     """
     A CanvasElement that displays a WorkPiece.
     """
@@ -52,19 +52,25 @@ class WorkPieceElement(SurfaceElement):
             self.data.size
             or self.data.get_default_size(*self.canvas.get_size())
         )
-        new_width = round(width_mm * self.canvas.pixels_per_mm_x)
-        new_height = round(height_mm * self.canvas.pixels_per_mm_y)
+
+        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
+        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
+        new_width = round(width_mm * px_per_mm_x)
+        new_height = round(height_mm * px_per_mm_y)
 
         # The element's position is its top-left corner. The model's `pos` is
-        # its bottom-left corner in a Y-up coordinate system. To find the
-        # element's position on the canvas (Y-down), we first find the
-        # model's top-left corner in mm and then convert it to pixels.
+        # its bottom-left corner in a Y-up coordinate system.
+        # We convert to the top-left corner in the canvas's root element's
+        # coordinate space (Y-down). Pan is handled by moving the root element,
+        # so we don't account for it here.
         top_left_y_mm = y_mm + height_mm
-        x_px, y_px = self.mm_to_pixel(x_mm, top_left_y_mm)
+
+        x_px = x_mm * px_per_mm_x
+        y_px = self.canvas.root.height - (top_left_y_mm * px_per_mm_y)
 
         # We call super().set_pos() to bypass the model update logic in this
         # class's set_pos(), as we are updating the view from the model.
-        super().set_pos(x_px, y_px)
+        super().set_pos(round(x_px), round(y_px))
         self.set_angle(self.data.angle)  # Sync angle from model
 
         size_changed = self.width != new_width or self.height != new_height
@@ -81,10 +87,17 @@ class WorkPieceElement(SurfaceElement):
         super().set_pos(x, y)
         if not self.canvas or self._in_update:
             return
+
+        # Convert the element's new top-left pixel coordinate (x, y), which
+        # is relative to the canvas's root element, back to the model's
+        # bottom-left millimeter coordinate.
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1
+
+        # The model's origin (pos) is its bottom-left corner.
         x_mm = x / px_per_mm_x
-        y_mm = (self.canvas.root.height - self.height - y) / px_per_mm_y
+        y_mm = (self.canvas.root.height - (y + self.height)) / px_per_mm_y
+
         self._in_update = True
         try:
             self.data.set_pos(x_mm, y_mm)

@@ -5,7 +5,7 @@ from ...config import config
 from ...opsencoder.cairoencoder import CairoEncoder
 from ...models.ops import Ops
 from ...models.workpiece import WorkPiece
-from .surfaceelem import SurfaceElement
+from ..canvas import CanvasElement
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 OPS_MARGIN_PX = 10
 
 
-class WorkPieceOpsElement(SurfaceElement):
+class WorkPieceOpsElement(CanvasElement):
     """
     Displays the generated Ops for a single WorkPiece.
     """
@@ -35,6 +35,8 @@ class WorkPieceOpsElement(SurfaceElement):
             buffered=True,
             **kwargs,
         )
+        self.width_mm = 0.0
+        self.height_mm = 0.0
         self._accumulated_ops = Ops()
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
@@ -63,7 +65,7 @@ class WorkPieceOpsElement(SurfaceElement):
             return
 
         # Check if the fundamental size in mm has changed by comparing against
-        # the values stored in the parent class.
+        # the values stored in this class.
         mm_size_changed = (self.width_mm, self.height_mm) != current_mm_size
 
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
@@ -94,7 +96,7 @@ class WorkPieceOpsElement(SurfaceElement):
         if mm_size_changed:
             self.clear_ops()
 
-        # Update the state in the parent class.
+        # Update the state in this class.
         self.width_mm, self.height_mm = current_mm_size
         self.width, self.height = new_width, new_height
         super().allocate(force)
