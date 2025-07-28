@@ -491,7 +491,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         if config.machine.y_axis_down:
             self.y_row.set_subtitle(_("Zero is at the top"))
         else:
-            self.y_row.set_title(_("Zero is at the bottom"))
+            self.y_row.set_subtitle(_("Zero is at the bottom"))
 
         if size:
             width, height = size
