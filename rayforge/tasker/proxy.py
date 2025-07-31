@@ -168,6 +168,13 @@ class ExecutionContextProxy(BaseExecutionContext):
         except Full:
             pass
 
+    def send_event(self, name: str, data: dict):
+        """Sends a named event with a data payload to the parent."""
+        try:
+            self._queue.put_nowait(("event", (name, data)))
+        except Full:
+            pass
+
     def _create_sub_context(
         self,
         base_progress: float,

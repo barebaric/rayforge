@@ -34,6 +34,7 @@ class Task:
         self._message: Optional[str] = None
         self._cancel_requested: bool = False  # Flag for early cancellation
         self.status_changed: Signal = Signal()
+        self.event_received: Signal = Signal()
 
     def update(
         self, progress: Optional[float] = None, message: Optional[str] = None

@@ -102,22 +102,33 @@ class TaskManager:
         *args: Any,
         key: Optional[Any] = None,
         when_done: Optional[Callable[[Task], None]] = None,
+        when_event: Optional[Callable[[Task, str, dict], None]] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Task:
+        """
+        Creates, configures, and schedules a task to run in a separate
+        process.
+        """
         logger.debug(f"Creating task for subprocess {key}")
-        # Create a task, but use a placeholder for the coro.
-        # The real function/args are passed for the manager thread to use.
 
         # Define an async placeholder that matches the required type signature.
         async def _process_placeholder(*_args, **_kwargs):
             pass
 
         task = Task(_process_placeholder, func, *args, key=key, **kwargs)
+
+        # Connect the event handler BEFORE scheduling the task. This is the
+        # key to ensuring stability. The handler itself is never pickled.
+        if when_event:
+            task.event_received.connect(when_event)
+
         self.add_task(task, when_done)
 
         # Schedule the creation and start of the process on the main GTK
-        # thread.
+        # thread. This will execute after the current call stack unwinds.
         idle_add(self._start_process_on_main_thread, task, when_done)
+
+        return task
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -200,8 +211,11 @@ class TaskManager:
                 idle_add(when_done, task)
 
     def _monitor_subprocess_lifecycle(
-        self, task: Task, when_done: Optional[Callable[[Task], None]],
-        process: SpawnProcess, queue: Queue[tuple[str, Any]]
+        self,
+        task: Task,
+        when_done: Optional[Callable[[Task], None]],
+        process: SpawnProcess,
+        queue: Queue[tuple[str, Any]],
     ) -> None:
         """
         Synchronously monitors a subprocess lifecycle in a dedicated thread.
@@ -269,6 +283,21 @@ class TaskManager:
             context._report_normalized_progress(value)
         elif msg_type == "message":
             context.set_message(value)
+        elif msg_type == "event":
+            if context.task:
+                event_name, data = value
+                logger.debug(
+                    f"TaskManager: Received event '{event_name}' for task "
+                    f"'{context.task.key}'. Dispatching via idle_add."
+                )
+                # Fire the event signal on the Task object.
+                # This needs to be done on the main thread.
+                idle_add(
+                    context.task.event_received.send,
+                    context.task,
+                    event_name=event_name,
+                    data=data,
+                )
         elif msg_type == "done":
             state["result"] = value
             if context.task:
