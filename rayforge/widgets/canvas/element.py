@@ -214,6 +214,8 @@ class CanvasElement:
         return deepcopy(self)
 
     def add(self, elem: CanvasElement):
+        if elem.parent:
+            elem.parent.remove_child(elem)
         self.children.append(elem)
         elem.canvas = self.canvas
         elem.parent = self
@@ -223,6 +225,8 @@ class CanvasElement:
             self.canvas.queue_draw()
 
     def insert(self, index: int, elem: CanvasElement):
+        if elem.parent:
+            elem.parent.remove_child(elem)
         self.children.insert(index, elem)
         elem.canvas = self.canvas
         elem.parent = self
@@ -622,12 +626,21 @@ class CanvasElement:
         return pos_x, pos_y
 
     def dump(self, indent: int = 0):
-        print("  " * indent + self.__class__.__name__ + ":")
-        print("  " * (indent + 1) + "Visible:", self.visible)
-        print("  " * (indent + 1) + "Dirty:", self.dirty)
-        print(
-            "  " * (indent + 1) + "Dirty (recurs.):", self.has_dirty_children()
-        )
-        print("  " * (indent + 1) + "Size:", self.rect())
-        for child in self.children:
-            child.dump(indent + 1)
+        """Prints a representation of the element and its children."""
+        pad = "  " * indent
+        print(f"{pad}{self.__class__.__name__}: (Data: {self.data})")
+        print(f"{pad}  Visible: {self.visible}, Selected: {self.selected}")
+        print(f"{pad}  Rect: {self.rect()}")
+        print(f"{pad}  Angle: {self.angle}, Clip: {self.clip}")
+        if self.buffered:
+            surface_info = "None"
+            if self.surface:
+                surface_info = (
+                    f"Cairo Surface ({self.surface.get_width()}x"
+                    f"{self.surface.get_height()})"
+                )
+            print(f"{pad}  Buffered: True, Surface: {surface_info}")
+        if self.children:
+            print(f"{pad}  Children ({len(self.children)}):")
+            for child in self.children:
+                child.dump(indent + 1)

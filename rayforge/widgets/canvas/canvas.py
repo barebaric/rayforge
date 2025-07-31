@@ -971,6 +971,10 @@ class Canvas(Gtk.DrawingArea):
     def get_selected_elements(self) -> List[CanvasElement]:
         return list(self.root.get_selected())
 
+    def dump(self):
+        """Prints a representation of the entire element hierarchy."""
+        self.root.dump()
+
 
 if __name__ == "__main__":
     # To see debug logs
