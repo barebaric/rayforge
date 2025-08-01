@@ -282,6 +282,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Make a default document.
         self.doc = Doc()
         self.doc.changed.connect(self.on_doc_changed)
+        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
         self.doc.history_manager.changed.connect(self.on_history_changed)
 
         self.surface = WorkSurface(
@@ -584,6 +585,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update button sensitivity and other state
         self.update_state()
+
+    def _on_active_layer_changed(self, sender):
+        """Resets the paste counter when the active layer changes."""
+        self._paste_counter = 0
+        logger.debug("Active layer changed, paste counter reset.")
 
     def _on_selection_changed(
         self,
@@ -986,6 +992,9 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         self.on_copy_requested(sender, workpieces)
+        # For a cut, the next paste should be at the original location
+        # (no offset).
+        self._paste_counter = 0
 
         history = self.doc.history_manager
         with history.transaction(_("Cut workpiece(s)")) as t:
@@ -1009,26 +1018,28 @@ class MainWindow(Adw.ApplicationWindow):
             return
         # Create a snapshot of the current state by serializing to dicts.
         self._clipboard_snapshot = [wp.to_dict() for wp in workpieces]
-        # Reset the paste counter for a new copy/paste sequence.
-        self._paste_counter = 0
+        # For a copy, the next paste should be offset.
+        self._paste_counter = 1
         logger.debug(
             f"Copied {len(self._clipboard_snapshot)} workpieces. "
-            "Paste counter reset."
+            "Paste counter set to 1."
         )
 
     def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal. Pastes a new set of items
         with a cumulative offset from the original clipboard snapshot.
+        For a cut operation, the first paste is at the original location.
         """
         if not self._clipboard_snapshot:
             return
 
-        self._paste_counter += 1
         history = self.doc.history_manager
         newly_pasted_workpieces = []
 
         with history.transaction(_("Paste workpiece(s)")) as t:
+            # The paste counter determines the offset level.
+            # It's 0 for the first paste of a cut, and >0 for all others.
             offset_x = self._paste_increment_mm[0] * self._paste_counter
             offset_y = self._paste_increment_mm[1] * self._paste_counter
 
@@ -1045,13 +1056,16 @@ class MainWindow(Adw.ApplicationWindow):
 
                 cmd_name = _("Paste {name}").format(name=new_wp.name)
                 command = ListItemCommand(
-                    owner_obj=self.doc,
+                    owner_obj=self.doc.active_layer,
                     item=new_wp,
                     undo_command="remove_workpiece",
                     redo_command="add_workpiece",
                     name=cmd_name,
                 )
                 t.execute(command)
+
+        # Increment the counter for the *next* paste operation.
+        self._paste_counter += 1
 
         if newly_pasted_workpieces:
             self.surface.select_workpieces(newly_pasted_workpieces)

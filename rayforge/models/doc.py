@@ -25,6 +25,7 @@ class Doc:
     def __init__(self):
         self.history_manager = HistoryManager()
         self.changed = Signal()
+        self.active_layer_changed = Signal()
 
         self.layers: List[Layer] = []
         self._layer_ref_for_pyreverse: Layer
@@ -69,6 +70,7 @@ class Doc:
             if self._active_layer_index != new_index:
                 self._active_layer_index = new_index
                 self.changed.send(self)
+                self.active_layer_changed.send(self)
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
@@ -91,9 +93,12 @@ class Doc:
         except TypeError:
             pass
         self.layers.remove(layer)
+
         # Ensure active_layer_index remains valid
         if self._active_layer_index >= len(self.layers):
             self._active_layer_index = len(self.layers) - 1
+            self.active_layer_changed.send(self)
+
         self.changed.send(self)
 
     def set_layers(self, layers: List[Layer]):
@@ -103,6 +108,7 @@ class Doc:
 
         # Preserve the active layer if it still exists in the new list
         current_active = self.active_layer
+        old_active_index = self._active_layer_index
         try:
             new_active_index = layers.index(current_active)
         except ValueError:
@@ -119,6 +125,8 @@ class Doc:
 
         self._active_layer_index = new_active_index
         self.changed.send(self)
+        if old_active_index != self._active_layer_index:
+            self.active_layer_changed.send(self)
 
     def has_workpiece(self):
         return bool(self.workpieces)
