@@ -10,8 +10,11 @@ class OpsProducer(ABC):
     - Tracing a bitmap to produce a path (Ops object).
     - Reading vector data from an image to turn it into Ops.
     """
+
     @abstractmethod
-    def run(self, laser, surface, pixels_per_mm) -> Ops:
+    def run(
+        self, laser, surface, pixels_per_mm, y_offset_mm: float = 0.0
+    ) -> Ops:
         pass
 
     def can_scale(self) -> bool:
@@ -30,8 +33,8 @@ class OpsProducer(ABC):
         recreate the producer instance.
         """
         return {
-            'type': self.__class__.__name__,
-            'params': {}  # All current producers are stateless
+            "type": self.__class__.__name__,
+            "params": {},  # All current producers are stateless
         }
 
     @staticmethod
@@ -47,7 +50,7 @@ class OpsProducer(ABC):
         # which imports this module.
         from . import producer_by_name
 
-        producer_type = data.get('type')
+        producer_type = data.get("type")
         if not producer_type:
             raise ValueError("Input dictionary must contain a 'type' key.")
 
@@ -58,5 +61,5 @@ class OpsProducer(ABC):
 
         # Instantiate the class with parameters from the dictionary.
         # This allows for future producers to have configurable state.
-        params = data.get('params', {})
+        params = data.get("params", {})
         return ProducerClass(**params)

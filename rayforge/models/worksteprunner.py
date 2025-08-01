@@ -45,11 +45,11 @@ def run_step_in_subprocess(
     workpiece = WorkPiece.from_dict(workpiece_dict)
 
     # Helper functions
-    def _trace_and_modify_surface(surface, scaler):
+    def _trace_and_modify_surface(surface, scaler, y_offset_mm=0.0):
         """Applies modifiers and runs the OpsProducer on a surface."""
         for modifier in modifiers:
             modifier.run(surface)
-        return opsproducer.run(laser, surface, scaler)
+        return opsproducer.run(laser, surface, scaler, y_offset_mm=y_offset_mm)
 
     def _execute_vector() -> Iterator[Tuple[Ops, Tuple[int, int], float]]:
         """
@@ -119,8 +119,14 @@ def run_step_in_subprocess(
                 processed_height_px = y_offset_px + surface.get_height()
                 progress = min(1.0, processed_height_px / total_height_px)
 
+            # Calculate the absolute Y offset of this chunk from the top of
+            # the workpiece. This is crucial for aligning raster lines across
+            # chunks.
+            y_offset_from_top_mm = y_offset_px / px_per_mm_y
+
             chunk_ops = _trace_and_modify_surface(
-                surface, (px_per_mm_x, px_per_mm_y)
+                surface, (px_per_mm_x, px_per_mm_y),
+                y_offset_mm=y_offset_from_top_mm
             )
 
             y_offset_mm = (

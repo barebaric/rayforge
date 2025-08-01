@@ -59,6 +59,7 @@ class PotraceProducer(OpsProducer, ABC):
         laser,
         surface: cairo.ImageSurface,
         pixels_per_mm: Tuple[float, float],
+        y_offset_mm: float = 0.0,
     ) -> Ops:
         """
         Orchestrates the tracing process and calls a hook for filtering
