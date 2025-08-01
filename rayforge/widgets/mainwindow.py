@@ -27,6 +27,7 @@ from .statusview import (
     MachineStatusMonitor,
 )
 from .machineview import MachineView
+from .preferencesdialog import PreferencesDialog
 from .machinesettings import MachineSettingsDialog
 from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
@@ -390,7 +391,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.needs_homing = config.machine.home_on_start
 
         # Set initial state
-        self.update_state()
+        self.on_config_changed(None)
 
     def _on_root_click_pressed(self, gesture, n_press, x, y):
         """
@@ -450,9 +451,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.create_layer_action.connect("activate", self.on_menu_create_layer)
         self.add_action(self.create_layer_action)
 
-        settings_action = Gio.SimpleAction.new("settings", None)
-        settings_action.connect("activate", self.show_machine_settings)
-        self.add_action(settings_action)
+        machine_settings_action = Gio.SimpleAction.new(
+            "machine-settings", None
+        )
+        machine_settings_action.connect("activate", self.show_machine_settings)
+        self.add_action(machine_settings_action)
+
+        preferences_action = Gio.SimpleAction.new("preferences", None)
+        preferences_action.connect("activate", self.show_preferences)
+        self.add_action(preferences_action)
 
         # Help action
         about_action = Gio.SimpleAction.new("about", None)
@@ -491,7 +498,10 @@ class MainWindow(Adw.ApplicationWindow):
         edit_menu.append_section(None, layer_commands)
 
         other_edit_commands = Gio.Menu()
-        other_edit_commands.append(_("Preferences"), "win.settings")
+        other_edit_commands.append(
+            _("Machine Settings…"), "win.machine-settings"
+        )
+        other_edit_commands.append(_("Preferences…"), "win.preferences")
         edit_menu.append_section(None, other_edit_commands)
 
         menu_model.append_submenu(_("_Edit"), edit_menu)
@@ -628,6 +638,19 @@ class MainWindow(Adw.ApplicationWindow):
         self._try_driver_setup()
         self.surface.update_from_doc(self.doc)
         self.update_state()
+
+        # Update theme
+        self.apply_theme()
+
+    def apply_theme(self):
+        """Reads the theme from config and applies it to the UI."""
+        style_manager = Adw.StyleManager.get_default()
+        if config.theme == "light":
+            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_LIGHT)
+        elif config.theme == "dark":
+            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+        else:  # "system" or any other invalid value
+            style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
     def on_running_tasks_changed(self, sender, tasks, progress):
         self.update_state()
@@ -1167,8 +1190,13 @@ class MainWindow(Adw.ApplicationWindow):
     def show_machine_settings(self, action, param):
         dialog = MachineSettingsDialog(config.machine)
         dialog.present(self)
-        dialog.connect("closed", self._on_settings_dialog_closed)
+        dialog.connect("closed", self._on_preferences_dialog_closed)
 
-    def _on_settings_dialog_closed(self, dialog):
-        logger.debug("Settings closed")
+    def show_preferences(self, action, param):
+        dialog = PreferencesDialog()
+        dialog.present(self)
+        dialog.connect("closed", self._on_preferences_dialog_closed)
+
+    def _on_preferences_dialog_closed(self, dialog):
+        logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
