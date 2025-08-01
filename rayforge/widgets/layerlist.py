@@ -2,6 +2,7 @@ from gi.repository import Gtk  # type: ignore
 from blinker import Signal
 from ..models.doc import Doc
 from ..undo.list_cmd import ReorderListCommand
+from ..models.layer import Layer
 from .draglist import DragListBox
 from .layerview import LayerView
 from .expander import Expander
@@ -31,6 +32,31 @@ class LayerListView(Expander):
         self.draglist.reordered.connect(self.on_layers_reordered)
         self.draglist.connect("row-activated", self.on_row_activated)
         content_box.append(self.draglist)
+
+        # An "Add" button, styled like in WorkflowView
+        add_button = Gtk.Button()
+        add_button.add_css_class("darkbutton")
+        add_button.connect("clicked", self.on_button_add_clicked)
+        content_box.append(add_button)
+
+        # The button's content is a box with an icon and a label.
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        button_box.set_margin_top(10)
+        button_box.set_margin_end(12)
+        button_box.set_margin_bottom(10)
+        button_box.set_margin_start(12)
+
+        add_icon = Gtk.Image.new_from_icon_name("list-add-symbolic")
+        button_box.append(add_icon)
+
+        lbl = _('Add New Layer')
+        add_label = Gtk.Label()
+        add_label.set_markup(
+            f"<span weight='normal'>{lbl}</span>"
+        )
+        add_label.set_xalign(0)
+        button_box.append(add_label)
+        add_button.set_child(button_box)
 
         # Connect to document changes and perform initial population
         self.doc.changed.connect(self.on_doc_changed)
@@ -70,6 +96,30 @@ class LayerListView(Expander):
         if row and row.data:
             self.doc.set_active_layer(row.data)
             self.layer_activated.send(self, layer=row.data)
+
+    def on_button_add_clicked(self, button):
+        """Handles creation of a new layer with an undoable command."""
+        # Find a unique default name for the new layer
+        base_name = _("Layer")
+        existing_names = {layer.name for layer in self.doc.layers}
+        next_num_to_try = len(self.doc.layers) + 1
+        while True:
+            new_name = f"{base_name} {next_num_to_try}"
+            if new_name not in existing_names:
+                break
+            next_num_to_try += 1
+
+        new_layer = Layer(self.doc, name=new_name)
+
+        new_list = self.doc.layers + [new_layer]
+        command = ReorderListCommand(
+            target_obj=self.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+            name=_("Add layer '{name}'").format(name=new_layer.name),
+        )
+        self.doc.history_manager.execute(command)
 
     def on_delete_layer_clicked(self, layer_view):
         """Handles deletion of a layer with an undoable command."""

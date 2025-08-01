@@ -49,10 +49,10 @@ class WorkflowView(Expander):
         add_icon = Gtk.Image.new_from_icon_name("list-add-symbolic")
         button_box.append(add_icon)
 
+        lbl = _('Add New Step...')
         add_label = Gtk.Label()
-        # Use Pango markup to prevent the button from making the label bold.
         add_label.set_markup(
-            f"<span weight='normal'>{_('Add New Step...')}</span>"
+            f"<span weight='normal'>{lbl}</span>"
         )
         add_label.set_xalign(0)  # Left-align the label
         button_box.append(add_label)
