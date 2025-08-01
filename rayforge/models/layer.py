@@ -12,7 +12,7 @@ from blinker import Signal
 
 from ..config import task_mgr
 from ..tasker.task import Task
-from .workstep import WorkStep
+from .step import Step
 from .ops import Ops
 from .workplan import WorkPlan
 
@@ -59,13 +59,13 @@ class Layer:
         self.visible: bool = True
 
         # Cache for generated operations.
-        # Key: (workstep_uid, workpiece_uid)
+        # Key: (step_uid, workpiece_uid)
         # Value: (Ops object, pixel_dimensions_tuple)
         self._ops_cache: Layer.OpsCacheType = {}
 
         # Tracks the latest generation request ID for a given
-        # (workstep, workpiece) pair to prevent race conditions from stale
-        # async results. Key: (workstep_uid, workpiece_uid), Value: int
+        # (step, workpiece) pair to prevent race conditions from stale
+        # async results. Key: (step_uid, workpiece_uid), Value: int
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
 
         # Signals for notifying other parts of the application of changes.
@@ -88,7 +88,7 @@ class Layer:
         return self.doc.active_layer is self
 
     def _on_workplan_changed(
-        self, sender, step: Optional[WorkStep] = None, **kwargs
+        self, sender, step: Optional[Step] = None, **kwargs
     ):
         """
         Handles the 'changed' signal from the WorkPlan.
@@ -108,11 +108,11 @@ class Layer:
             self._update_ops_for_all_workpieces()
         self.changed.send(self)
 
-    def _on_step_ops_generation_starting(self, step: WorkStep, **kwargs):
+    def _on_step_ops_generation_starting(self, step: Step, **kwargs):
         """Bubbles up the signal from a step to this layer."""
         self.ops_generation_starting.send(self, step=step, **kwargs)
 
-    def _on_step_ops_chunk_available(self, step: WorkStep, **kwargs):
+    def _on_step_ops_chunk_available(self, step: Step, **kwargs):
         """Bubbles up a chunk availability signal from a step."""
         logger.debug(
             f"Layer '{self.name}': Received ops_chunk_available from step "
@@ -120,7 +120,7 @@ class Layer:
         )
         self.ops_chunk_available.send(self, step=step, **kwargs)
 
-    def _on_step_ops_generation_finished(self, step: WorkStep, **kwargs):
+    def _on_step_ops_generation_finished(self, step: Step, **kwargs):
         """Bubbles up the signal from a step to this layer."""
         self.ops_generation_finished.send(self, step=step, **kwargs)
 
@@ -219,8 +219,8 @@ class Layer:
         """Finds a workpiece in this layer by its UID."""
         return next((wp for wp in self.workpieces if wp.uid == uid), None)
 
-    def _get_step_by_uid(self, uid: str) -> Optional[WorkStep]:
-        """Finds a workstep in this layer's workplan by its UID."""
+    def _get_step_by_uid(self, uid: str) -> Optional[Step]:
+        """Finds a step in this layer's workplan by its UID."""
         return next((s for s in self.workplan.steps if s.uid == uid), None)
 
     def _cleanup_workpiece_ops(self, workpiece: WorkPiece):
@@ -249,22 +249,22 @@ class Layer:
         for workpiece in self.workpieces:
             self._update_ops_for_workpiece(workpiece)
 
-    def _update_ops_for_step(self, step: WorkStep):
+    def _update_ops_for_step(self, step: Step):
         """Triggers ops generation for a single step across all workpieces."""
         for workpiece in self.workpieces:
             self._trigger_ops_generation(step, workpiece)
 
-    def _trigger_ops_generation(self, step: WorkStep, workpiece: WorkPiece):
+    def _trigger_ops_generation(self, step: Step, workpiece: WorkPiece):
         """
         Starts an asynchronous task to generate operations by delegating
-        to the WorkStep.
+        to the Step.
 
         This method manages generation IDs to prevent race conditions and
-        tells the WorkStep to start its generation task. It provides a
+        tells the Step to start its generation task. It provides a
         callback for the Layer to handle the final result.
 
         Args:
-            step: The WorkStep to be applied.
+            step: The Step to be applied.
             workpiece: The WorkPiece to process.
         """
         size = workpiece.get_current_size()
@@ -290,7 +290,7 @@ class Layer:
         def when_done_callback(task: Task):
             self._on_generation_complete(task, s_uid, w_uid, current_gen_id)
 
-        # Delegate the actual task creation to the workstep.
+        # Delegate the actual task creation to the step.
         step.start_generation_task(
             workpiece,
             current_gen_id,
@@ -308,7 +308,7 @@ class Layer:
 
         Args:
             task: The completed Task object.
-            s_uid: The UID of the WorkStep.
+            s_uid: The UID of the Step.
             w_uid: The UID of the WorkPiece.
             task_generation_id: The generation ID of the completed task.
         """
@@ -322,7 +322,7 @@ class Layer:
             or self._generation_id_map[key] != task_generation_id
         ):
             logger.debug(
-                f"Ignoring stale ops result for WorkStep '{s_uid}' / "
+                f"Ignoring stale ops result for Step '{s_uid}' / "
                 f"WP '{w_uid}' (gen {task_generation_id})."
             )
             return
@@ -350,7 +350,7 @@ class Layer:
         self,
         task: Task,
         key: Tuple[str, str],
-        step: WorkStep,
+        step: Step,
         workpiece: WorkPiece,
     ):
         """Processes the result of a successfully completed task."""
@@ -371,7 +371,7 @@ class Layer:
             )
             self._ops_cache[key] = (None, None)
 
-    def get_ops(self, step: WorkStep, workpiece: WorkPiece) -> Optional[Ops]:
+    def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
         Retrieves generated operations from the cache.
 
@@ -380,7 +380,7 @@ class Layer:
         image), this method scales them to the workpiece's current size.
 
         Args:
-            step: The WorkStep for which to retrieve operations.
+            step: The Step for which to retrieve operations.
             workpiece: The WorkPiece for which to retrieve operations.
 
         Returns:
@@ -424,12 +424,12 @@ class Layer:
             scale_y = final_height_mm / traced_height_px
             ops.scale(scale_x, scale_y)
 
-    def get_renderable_items(self) -> List[Tuple[WorkStep, WorkPiece]]:
+    def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
         """
         Gets a list of all visible step/workpiece pairs for rendering.
 
         Returns:
-            A list of (WorkStep, WorkPiece) tuples that are currently
+            A list of (Step, WorkPiece) tuples that are currently
             visible and have valid geometry for rendering.
         """
         if not self.visible:

@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, cast
 from ...models.workpiece import WorkPiece
-from ...models.workplan import WorkStep
+from ...models.workplan import Step
 from ...models.ops import Ops
 from ..canvas import CanvasElement
 from .opselem import WorkPieceOpsElement
@@ -10,15 +10,15 @@ from .opselem import WorkPieceOpsElement
 logger = logging.getLogger(__name__)
 
 
-class WorkStepElement(CanvasElement):
+class StepElement(CanvasElement):
     """
-    WorkStepElements display the result of a WorkStep on the
+    StepElements display the result of a Step on the
     WorkSurface. The output represents the laser path.
     """
 
     def __init__(
         self,
-        workstep,
+        step,
         x: float,
         y: float,
         width: float,
@@ -27,10 +27,10 @@ class WorkStepElement(CanvasElement):
         **kwargs,
     ):
         """
-        Initializes a WorkStepElement with pixel dimensions.
+        Initializes a StepElement with pixel dimensions.
 
         Args:
-            workstep: The WorkStep data object.
+            step: The Step data object.
             x: The x-coordinate (pixel) relative to the parent.
             y: The y-coordinate (pixel) relative to the parent.
             width: The width (pixel).
@@ -38,22 +38,22 @@ class WorkStepElement(CanvasElement):
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         super().__init__(
-            x, y, width, height, data=workstep, selectable=False, **kwargs
+            x, y, width, height, data=step, selectable=False, **kwargs
         )
         self.show_travel_moves = show_travel_moves
 
         # Connect to both model signals with a single handler
-        workstep.changed.connect(self._on_workstep_model_changed)
-        workstep.visibility_changed.connect(self._on_workstep_model_changed)
+        step.changed.connect(self._on_step_model_changed)
+        step.visibility_changed.connect(self._on_step_model_changed)
 
-        # Connect to the actual signals from WorkStep's async pipeline
-        workstep.ops_generation_starting.connect(
+        # Connect to the actual signals from Step's async pipeline
+        step.ops_generation_starting.connect(
             self._on_ops_generation_starting
         )
         # Note: There is no explicit 'cleared' signal in the async pipeline,
         # starting implies clearing for the UI representation.
-        workstep.ops_chunk_available.connect(self._on_ops_chunk_available)
-        workstep.ops_generation_finished.connect(
+        step.ops_chunk_available.connect(self._on_ops_chunk_available)
+        step.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
         # Workpiece elements are added dynamically when ops chunks arrive
@@ -86,14 +86,14 @@ class WorkStepElement(CanvasElement):
             if isinstance(child, WorkPieceOpsElement):
                 child.set_show_travel_moves(show)
 
-    def _on_workstep_model_changed(self, step: WorkStep, **kwargs):
+    def _on_step_model_changed(self, step: Step, **kwargs):
         """
-        Handles any change from the WorkStep model to sync the view.
+        Handles any change from the Step model to sync the view.
         This includes visibility and pruning child elements for workpieces
         that are no longer in the parent layer.
         """
         assert self.canvas and self.parent and self.parent.data, (
-            "Received workstep change, but element has no canvas"
+            "Received step change, but element has no canvas"
             " or parent context"
         )
 
@@ -131,13 +131,13 @@ class WorkStepElement(CanvasElement):
 
     def _on_ops_generation_starting(
         self,
-        sender: WorkStep,
+        sender: Step,
         workpiece: WorkPiece,
         generation_id: int,
     ):
         """Called before ops generation starts for a workpiece."""
         logger.debug(
-            f"WorkStepElem '{sender.name}': Received ops_generation_starting "
+            f"StepElem '{sender.name}': Received ops_generation_starting "
             f"for {workpiece.name}"
         )
         assert self.canvas and self.parent and self.parent.data, (
@@ -157,14 +157,14 @@ class WorkStepElement(CanvasElement):
 
     def _on_ops_chunk_available(
         self,
-        sender: WorkStep,
+        sender: Step,
         workpiece: WorkPiece,
         chunk: Ops,
         generation_id: int,
     ):
         """Called when a chunk of ops is available for a workpiece."""
         logger.debug(
-            f"WorkStepElem '{sender.name}': Received ops_chunk_available for "
+            f"StepElem '{sender.name}': Received ops_chunk_available for "
             f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
         )
         assert self.canvas and self.parent and self.parent.data, (
@@ -184,7 +184,7 @@ class WorkStepElement(CanvasElement):
 
     def _on_ops_generation_finished(
         self,
-        sender: WorkStep,
+        sender: Step,
         workpiece: WorkPiece,
         generation_id: int,
     ):
@@ -193,7 +193,7 @@ class WorkStepElement(CanvasElement):
         guaranteed redraw of the element's complete state.
         """
         logger.debug(
-            f"WorkStepElem '{sender.name}': Received ops_generation_finished "
+            f"StepElem '{sender.name}': Received ops_generation_finished "
             f"for {workpiece.name}"
         )
         assert self.canvas and self.parent and self.parent.data, (

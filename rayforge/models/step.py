@@ -24,11 +24,11 @@ MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 DEBOUNCE_DELAY_MS = 250  # Delay in milliseconds for ops regeneration
 
 
-class WorkStep(ABC):
+class Step(ABC):
     """
     A set of modifiers and an OpsProducer that operate on WorkPieces.
 
-    A WorkStep is a stateless configuration object that defines a single
+    A Step is a stateless configuration object that defines a single
     operation (e.g., outline, engrave) to be performed.
     """
 
@@ -99,7 +99,7 @@ class WorkStep(ABC):
         Bubbles up the notification by firing this step's own `changed` signal.
         """
         logger.debug(
-            f"WorkStep '{self.name}': Notified of model change from "
+            f"Step '{self.name}': Notified of model change from "
             f"transformer '{sender.label}'. Firing own changed signal."
         )
         self.changed.send(self)
@@ -125,7 +125,7 @@ class WorkStep(ABC):
             return
 
         logger.debug(
-            f"WorkStep '{self.name}': _on_task_event_received caught "
+            f"Step '{self.name}': _on_task_event_received caught "
             f"'ops_chunk' from Task {task.key}."
         )
 
@@ -136,7 +136,7 @@ class WorkStep(ABC):
         )
         if not workpiece:
             logger.warning(
-                f"WorkStep '{self.name}': Received chunk for deleted "
+                f"Step '{self.name}': Received chunk for deleted "
                 f"workpiece {workpiece_uid}. Ignoring."
             )
             return
@@ -162,7 +162,7 @@ class WorkStep(ABC):
         """
         Starts the asynchronous task to generate operations for a workpiece.
         """
-        from .worksteprunner import run_step_in_subprocess
+        from .steprunner import run_step_in_subprocess
 
         settings = {
             "power": self.power,
@@ -203,7 +203,7 @@ class WorkStep(ABC):
         """
         if not self.workplan:
             logger.warning(
-                f"Cannot get_ops for WorkStep '{self.name}': "
+                f"Cannot get_ops for Step '{self.name}': "
                 "no parent workplan."
             )
             return None
@@ -251,7 +251,7 @@ class WorkStep(ABC):
         print("  " * indent, self.name)
 
 
-class Outline(WorkStep):
+class Outline(Step):
     typelabel = _("External Outline")
 
     def __init__(
@@ -266,7 +266,7 @@ class Outline(WorkStep):
         ]
 
 
-class Contour(WorkStep):
+class Contour(Step):
     typelabel = _("Contour")
 
     def __init__(
@@ -281,7 +281,7 @@ class Contour(WorkStep):
         ]
 
 
-class Rasterize(WorkStep):
+class Rasterize(Step):
     typelabel = _("Raster Engrave")
 
     def __init__(

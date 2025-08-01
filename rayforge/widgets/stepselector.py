@@ -10,7 +10,7 @@ css = """
 """
 
 
-class WorkStepSelector(Gtk.Popover):
+class StepSelector(Gtk.Popover):
     def __init__(self, step_classes, **kwargs):
         super().__init__(**kwargs)
         self.set_autohide(True)

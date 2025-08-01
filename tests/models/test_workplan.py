@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, ANY
 from rayforge.tasker.task import Task
 from rayforge.tasker.proxy import ExecutionContextProxy
 from rayforge.render import SVGRenderer
-from rayforge.models.workstep import Contour
-from rayforge.models.worksteprunner import run_step_in_subprocess
+from rayforge.models.step import Contour
+from rayforge.models.steprunner import run_step_in_subprocess
 from rayforge.models.workpiece import WorkPiece
 from rayforge.models.ops import Ops
 from rayforge.models.machine import Laser, Machine
@@ -43,7 +43,7 @@ def setup_real_config(mocker):
 def mock_task_mgr(mocker):
     """
     Mocks the task manager to control process execution synchronously in tests.
-    Patches the manager used by WorkStep and Layer classes.
+    Patches the manager used by Step and Layer classes.
     """
     mock_mgr = MagicMock()
     created_tasks_info = []
@@ -96,7 +96,7 @@ def mock_task_mgr(mocker):
         def cancel(self):
             self._cancelled = True
 
-    # Accept `when_event` to match the real call signature in WorkStep
+    # Accept `when_event` to match the real call signature in Step
     def run_process_mock(
         target_func, *args, key=None, when_done=None, when_event=None
     ):
@@ -107,7 +107,7 @@ def mock_task_mgr(mocker):
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
     mock_mgr.created_tasks = created_tasks_info
     # Patch the task_mgr where it's actually used for starting processes
-    mocker.patch("rayforge.models.workstep.task_mgr", mock_mgr)
+    mocker.patch("rayforge.models.step.task_mgr", mock_mgr)
     # Also patch in layer for cancel_task calls
     mocker.patch("rayforge.models.layer.task_mgr", mock_mgr)
     return mock_mgr
@@ -140,7 +140,7 @@ def test_layer(mock_doc):
 
 @pytest.fixture
 def contour_step(test_layer):
-    """Creates a real Contour WorkStep instance, associated with a workplan."""
+    """Creates a real Contour Step instance, associated with a workplan."""
     # Use the workplan's factory method to ensure correct initialization.
     # The factory correctly passes the workplan and config-derived args.
     step = test_layer.workplan.create_step(Contour)
@@ -148,7 +148,7 @@ def contour_step(test_layer):
     return step
 
 
-class TestLayerWorkStepInteraction:
+class TestLayerStepInteraction:
     @pytest.mark.asyncio
     async def test_add_workpiece_triggers_ops_generation(
         self, test_layer, contour_step, real_workpiece, mock_task_mgr
@@ -185,8 +185,8 @@ class TestLayerWorkStepInteraction:
         test_layer.ops_generation_starting.connect(start_handler)
         test_layer.ops_generation_finished.connect(finish_handler)
 
-        # 1. We need to mock the real `task_mgr` that `workstep` imports.
-        mock_task_mgr = mocker.patch("rayforge.models.workstep.task_mgr")
+        # 1. We need to mock the real `task_mgr` that `step` imports.
+        mock_task_mgr = mocker.patch("rayforge.models.step.task_mgr")
         # 2. Prepare the expected result from the subprocess worker.
         # The worker function returns a tuple: (Ops object, pixel_size).
         expected_ops = Ops()

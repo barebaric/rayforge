@@ -2,11 +2,11 @@ import logging
 from typing import Optional
 from gi.repository import Gtk  # type: ignore
 from ..models.workplan import WorkPlan
-from ..models.workstep import WorkStep
+from ..models.step import Step
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
 from .draglist import DragListBox
-from .workstepbox import WorkStepBox
-from .stepselector import WorkStepSelector
+from .stepbox import StepBox
+from .stepselector import StepSelector
 from .expander import Expander
 
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class WorkPlanView(Expander):
     """
-    A widget that displays a collapsible, reorderable list of WorkSteps
+    A widget that displays a collapsible, reorderable list of Steps
     for a given WorkPlan.
     """
 
@@ -52,7 +52,7 @@ class WorkPlanView(Expander):
         add_label = Gtk.Label()
         # Use Pango markup to prevent the button from making the label bold.
         add_label.set_markup(
-            f"<span weight='normal'>{_('Add New WorkStep...')}</span>"
+            f"<span weight='normal'>{_('Add New Step...')}</span>"
         )
         add_label.set_xalign(0)  # Left-align the label
         button_box.append(add_label)
@@ -111,17 +111,17 @@ class WorkPlanView(Expander):
         # rebuilds.
         current_steps = [row.data for row in self.draglist]
         if current_steps == self.workplan.steps:
-            # The list structure is the same, just tell each workstepbox to
+            # The list structure is the same, just tell each stepbox to
             # update its summary.
             for i, row in enumerate(self.draglist):
                 # The row's child is an HBox: [handle, content]. Get content.
                 hbox = row.get_child()
-                workstepbox = hbox.get_last_child()
-                if isinstance(workstepbox, WorkStepBox):
-                    workstepbox.set_prefix(
-                        _("WorkStep {seq}: ").format(seq=i + 1)
+                stepbox = hbox.get_last_child()
+                if isinstance(stepbox, StepBox):
+                    stepbox.set_prefix(
+                        _("Step {seq}: ").format(seq=i + 1)
                     )
-                    workstepbox.on_step_changed(workstepbox.step)
+                    stepbox.on_step_changed(stepbox.step)
             return
 
         # If the list structure has changed, rebuild it completely.
@@ -129,13 +129,13 @@ class WorkPlanView(Expander):
         for seq, step in enumerate(self.workplan, start=1):
             row = Gtk.ListBoxRow()
             row.data = step  # Store model for reordering
-            workstepbox = WorkStepBox(
+            stepbox = StepBox(
                 self.workplan.doc,
                 step,
-                prefix=_("WorkStep {seq}: ").format(seq=seq),
+                prefix=_("Step {seq}: ").format(seq=seq),
             )
-            workstepbox.delete_clicked.connect(self.on_button_delete_clicked)
-            row.set_child(workstepbox)
+            stepbox.delete_clicked.connect(self.on_button_delete_clicked)
+            row.set_child(stepbox)
             self.draglist.add_row(row)
 
     def on_button_add_clicked(self, button):
@@ -143,7 +143,7 @@ class WorkPlanView(Expander):
         if not self.workplan or not self.workplan.doc:
             return
 
-        popup = WorkStepSelector(WorkStep.__subclasses__())
+        popup = StepSelector(Step.__subclasses__())
         popup.set_parent(button)
         popup.popup()
         popup.connect("closed", self.on_add_dialog_response)

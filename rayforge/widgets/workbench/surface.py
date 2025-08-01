@@ -11,7 +11,7 @@ from ...undo import SetterCommand, ListItemCommand
 from ..canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .dotelem import DotElement
-from .workstepelem import WorkStepElement
+from .stepelem import StepElement
 from .workpieceelem import WorkPieceElement
 from .cameraelem import CameraImageElement
 from .layerelem import LayerElement
@@ -245,7 +245,7 @@ class WorkSurface(Canvas):
                 if not isinstance(element.data, WorkPiece):
                     continue
                 workpiece_data = element.data
-                for step_elem in self.find_by_type(WorkStepElement):
+                for step_elem in self.find_by_type(StepElement):
                     ops_elem = step_elem.find_by_data(workpiece_data)
                     if ops_elem:
                         ops_elem.set_visible(False)
@@ -267,7 +267,7 @@ class WorkSurface(Canvas):
         # trigger a re-allocation and re-render to reflect the new size.
         if workpieces_to_update:
             for workpiece in workpieces_to_update:
-                for step_elem in self.find_by_type(WorkStepElement):
+                for step_elem in self.find_by_type(StepElement):
                     ops_elem = step_elem.find_by_data(workpiece)
                     if ops_elem:
                         ops_elem.set_visible(True)
@@ -548,9 +548,9 @@ class WorkSurface(Canvas):
         """Sets whether to display travel moves and triggers re-rendering."""
         if self._show_travel_moves != show:
             self._show_travel_moves = show
-            # Propagate the change to all existing WorkStepElements
-            for elem in self.find_by_type(WorkStepElement):
-                elem = cast(WorkStepElement, elem)
+            # Propagate the change to all existing StepElements
+            for elem in self.find_by_type(StepElement):
+                elem = cast(StepElement, elem)
                 elem.set_show_travel_moves(show)
 
     def _create_and_add_layer_element(self, layer: "Layer"):
@@ -572,7 +572,7 @@ class WorkSurface(Canvas):
         Synchronizes the canvas elements with the document model.
 
         This method ensures that the layers and their contents (workpieces,
-        worksteps) displayed on the canvas perfectly match the state of the
+        steps) displayed on the canvas perfectly match the state of the
         document's data model. It also reorders the LayerElements to match
         the Z-order of the layers in the document.
         """

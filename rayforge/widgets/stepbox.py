@@ -1,14 +1,14 @@
 from gi.repository import Gtk, Adw  # type: ignore
 from blinker import Signal
 from ..models.doc import Doc
-from ..models.workstep import WorkStep
+from ..models.step import Step
 from ..util.resources import get_icon_path
 from ..undo.property_cmd import ChangePropertyCommand
-from .workstepsettings import WorkStepSettingsDialog
+from .stepsettings import StepSettingsDialog
 
 
-class WorkStepBox(Adw.ActionRow):
-    def __init__(self, doc: Doc, step: WorkStep, prefix=""):
+class StepBox(Adw.ActionRow):
+    def __init__(self, doc: Doc, step: Step, prefix=""):
         super().__init__()
         self.set_margin_start(0)
         self.set_margin_end(0)
@@ -67,7 +67,7 @@ class WorkStepBox(Adw.ActionRow):
 
     def on_button_properties_clicked(self, button):
         # The dialog now needs the doc object to access the history manager
-        dialog = WorkStepSettingsDialog(self.doc, self.step)
+        dialog = StepSettingsDialog(self.doc, self.step)
         dialog.present(self)
         dialog.changed.connect(self.on_step_changed)
 

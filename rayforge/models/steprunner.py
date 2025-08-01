@@ -22,7 +22,7 @@ def run_step_in_subprocess(
     import logging
 
     logger = logging.getLogger(
-        "rayforge.models.workstep.run_step_in_subprocess"
+        "rayforge.models.step.run_step_in_subprocess"
     )
     logger.setLevel(proxy.parent_log_level)
     logger.debug(f"Starting step execution with settings: {settings}")

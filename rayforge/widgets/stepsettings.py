@@ -7,11 +7,11 @@ from ..undo.property_cmd import ChangePropertyCommand
 from ..opstransformer import Smooth
 from ..util.adwfix import get_spinrow_int
 from ..models.doc import Doc
-from ..models.workstep import WorkStep
+from ..models.step import Step
 
 
-class WorkStepSettingsDialog(Adw.PreferencesDialog):
-    def __init__(self, doc: Doc, step: WorkStep, **kwargs):
+class StepSettingsDialog(Adw.PreferencesDialog):
+    def __init__(self, doc: Doc, step: Step, **kwargs):
         super().__init__(**kwargs)
         self.doc = doc
         self.step = step
