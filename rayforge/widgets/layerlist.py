@@ -120,6 +120,7 @@ class LayerListView(Expander):
             name=_("Add layer '{name}'").format(name=new_layer.name),
         )
         self.doc.history_manager.execute(command)
+        self.doc.set_active_layer(new_layer)
 
     def on_delete_layer_clicked(self, layer_view):
         """Handles deletion of a layer with an undoable command."""
