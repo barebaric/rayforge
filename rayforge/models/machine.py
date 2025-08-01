@@ -34,6 +34,10 @@ class Machine:
         self.y_axis_down: bool = False
         self.add_head(Laser())
 
+    def set_name(self, name: str):
+        self.name = str(name)
+        self.changed.send(self)
+
     def set_driver(self, driver_cls: type, args=None):
         self.driver = driver_cls.__name__
         self.driver_args = args or {}

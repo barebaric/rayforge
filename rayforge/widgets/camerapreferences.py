@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw  # type: ignore
 from ..models.machine import Camera
 from .cameraproperties import CameraProperties
 from .cameraselectiondialog import CameraSelectionDialog

@@ -50,6 +50,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
         self.add(machine_group)
 
+        # Machine Name
+        name_row = Adw.EntryRow(title=_("Name"))
+        name_row.set_text(self.machine.name)
+        name_row.connect("notify::text", self.on_name_changed)
+        machine_group.add(name_row)
+
         home_on_start_row = Adw.SwitchRow()
         home_on_start_row.set_title(_("Home On Start"))
         home_on_start_row.set_subtitle(
@@ -164,6 +170,10 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         self.machine.set_driver(driver_cls)
         self.driver_group.create_params(get_params(driver_cls))
+
+    def on_name_changed(self, entry_row, _):
+        """Update the machine name when the text changes."""
+        self.machine.set_name(entry_row.get_text())
 
     def on_home_on_start_changed(self, row, _):
         self.machine.set_home_on_start(row.get_active())
