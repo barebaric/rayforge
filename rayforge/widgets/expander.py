@@ -3,15 +3,15 @@ from gi.repository import Gtk, Gdk  # type: ignore
 
 css = """
 .expander-card {
-    background-color: @view_bg_color;
+    background-color: @headerbar_bg_color;
     border-radius: 12px;
     box-shadow: 0 4px 10px alpha(black, 0.06);
     margin-bottom: 6px;
 }
 
 .expander-header:hover {
-    border-radius: 12px;
-    background-color: alpha(@theme_fg_color, 0.05);
+    border-radius: 12px 12px 0 0;
+    background-color: shade(@headerbar_bg_color, 0.95);
 }
 
 .expander-title, .expander-subtitle {
@@ -19,7 +19,7 @@ css = """
 }
 
 .expander-subtitle {
-    color: alpha(@theme_fg_color, 0.7);
+    color: alpha(@headerbar_fg_color, 0.7);
 }
 
 .expander-arrow {
@@ -34,9 +34,13 @@ css = """
     border-bottom: 1px solid @borders;
 }
 
+.expander-card>:nth-child(2) {
+    border-radius: 0;
+}
+
 .expander-card .darkbutton {
-    background-color: shade(@card_bg_color, 0.98);;
-    border-radius: 12px;
+    background-color: shade(@card_bg_color, 0.98);
+    border-radius: 0 0 12px 12px;
 }
 
 .expander-card .darkbutton:hover {

@@ -1,6 +1,7 @@
 import logging
-from gi.repository import Gtk, Adw, Gdk  # type: ignore
+from gi.repository import Gtk, Adw  # type: ignore
 from typing import Optional, Tuple, List
+from .expander import Expander  # Import the new custom expander
 from ..config import config
 from ..models.workpiece import WorkPiece
 from ..util.adwfix import get_spinrow_float
@@ -10,30 +11,31 @@ from ..undo import (
 )
 
 
-css = """
-.workpiece-properties .boxed-list {
-    margin: 0 0 12px 0;
-    box-shadow: 0 8px 8px rgba(0, 0, 0, 0.1);
-}
-"""
-
-
 logger = logging.getLogger(__name__)
 
 
-class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
+class WorkpiecePropertiesWidget(Expander):
     def __init__(
         self,
         workpieces: Optional[List[WorkPiece]] = None,
         *args,
         **kwargs,
     ):
+        # Initialize the parent Expander widget
         super().__init__(*args, **kwargs)
-        self.add_css_class("workpiece-properties")
-        self.apply_css()
+
         self.workpieces = workpieces or []
         self._in_update = False
+
+        # Set the title and default state on the Expander itself
         self.set_title(_("Workpiece Properties"))
+        self.set_expanded(True)  # Expanded by default
+
+        # Create a ListBox to hold all the property rows. This replaces the
+        # Adw.ExpanderRow's internal list.
+        rows_container = Gtk.ListBox()
+        rows_container.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.set_child(rows_container)
 
         # X Position Entry
         self.x_row = Adw.SpinRow(
@@ -43,7 +45,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         )
         self.x_row.set_digits(2)
         self.x_row.connect("notify::value", self._on_x_changed)
-        self.add(self.x_row)
+        rows_container.append(self.x_row)
 
         # Y Position Entry
         self.y_row = Adw.SpinRow(
@@ -52,7 +54,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         )
         self.y_row.set_digits(2)
         self.y_row.connect("notify::value", self._on_y_changed)
-        self.add(self.y_row)
+        rows_container.append(self.y_row)
 
         # Width Entry
         self.width_row = Adw.SpinRow(
@@ -61,7 +63,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         )
         self.width_row.set_digits(2)
         self.width_row.connect("notify::value", self._on_width_changed)
-        self.add(self.width_row)
+        rows_container.append(self.width_row)
 
         # Height Entry
         self.height_row = Adw.SpinRow(
@@ -70,7 +72,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         )
         self.height_row.set_digits(2)
         self.height_row.connect("notify::value", self._on_height_changed)
-        self.add(self.height_row)
+        rows_container.append(self.height_row)
 
         # Fixed Ratio Switch
         self.fixed_ratio_switch = Adw.SwitchRow(
@@ -79,13 +81,13 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.fixed_ratio_switch.connect(
             "notify::active", self._on_fixed_ratio_toggled
         )
-        self.add(self.fixed_ratio_switch)
+        rows_container.append(self.fixed_ratio_switch)
 
         # Natural Size Label
         self.natural_size_row = Adw.ActionRow(title=_("Natural Size"))
         self.natural_size_label = Gtk.Label(label=_("N/A"), xalign=0)
         self.natural_size_row.add_suffix(self.natural_size_label)
-        self.add(self.natural_size_row)
+        rows_container.append(self.natural_size_row)
 
         # Reset Size Button
         self.reset_row = Adw.ActionRow(title=_("Reset Size"))
@@ -95,7 +97,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         self.reset_button.connect("clicked", self._on_reset_clicked)
         self.reset_row.add_suffix(self.reset_button)
         self.reset_row.activatable_widget = self.reset_button
-        self.add(self.reset_row)
+        rows_container.append(self.reset_row)
 
         # Angle Entry
         self.angle_row = Adw.SpinRow(
@@ -104,7 +106,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
             digits=2,
         )
         self.angle_row.connect("notify::value", self._on_angle_changed)
-        self.add(self.angle_row)
+        rows_container.append(self.angle_row)
 
         # Reset Angle Button
         self.reset_angle_row = Adw.ActionRow(title=_("Reset Angle"))
@@ -116,7 +118,7 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
         )
         self.reset_angle_row.add_suffix(self.reset_angle_button)
         self.reset_angle_row.activatable_widget = self.reset_angle_button
-        self.add(self.reset_angle_row)
+        rows_container.append(self.reset_angle_row)
 
         for workpiece in self.workpieces:
             workpiece.size_changed.connect(
@@ -127,15 +129,6 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                 self._on_workpiece_angle_changed
             )
         self._update_ui_from_workpieces()
-
-    def apply_css(self):
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
 
     def _calculate_new_size_with_ratio(
         self, workpiece: WorkPiece, value: float, changed_dim: str
@@ -446,6 +439,15 @@ class WorkpiecePropertiesWidget(Adw.PreferencesGroup):
                 self._on_workpiece_angle_changed
             )
         self.workpieces = workpieces or []
+
+        # Update the subtitle with the number of selected items
+        count = len(self.workpieces)
+        if count == 1:
+            self.set_subtitle(_("1 item selected"))
+        else:
+            # This format is standard for gettext pluralization support.
+            self.set_subtitle(_(f"{count} items selected"))
+
         for workpiece in self.workpieces:
             workpiece.size_changed.connect(
                 self._on_workpiece_size_changed

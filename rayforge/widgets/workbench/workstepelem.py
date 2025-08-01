@@ -41,7 +41,11 @@ class WorkStepElement(CanvasElement):
             x, y, width, height, data=workstep, selectable=False, **kwargs
         )
         self.show_travel_moves = show_travel_moves
-        workstep.changed.connect(self._on_workstep_changed)
+
+        # Connect to both model signals with a single handler
+        workstep.changed.connect(self._on_workstep_model_changed)
+        workstep.visibility_changed.connect(self._on_workstep_model_changed)
+
         # Connect to the actual signals from WorkStep's async pipeline
         workstep.ops_generation_starting.connect(
             self._on_ops_generation_starting
@@ -82,31 +86,33 @@ class WorkStepElement(CanvasElement):
             if isinstance(child, WorkPieceOpsElement):
                 child.set_show_travel_moves(show)
 
-    def _on_workstep_changed(self, step: WorkStep):
+    def _on_workstep_model_changed(self, step: WorkStep, **kwargs):
         """
-        Handles changes to the WorkStep model, including visibility and the
-        list of associated workpieces.
+        Handles any change from the WorkStep model to sync the view.
+        This includes visibility and pruning child elements for workpieces
+        that are no longer in the parent layer.
         """
-        assert self.canvas, (
-            "Received workstep change, but element was not added to canvas"
+        assert self.canvas and self.parent and self.parent.data, (
+            "Received workstep change, but element has no canvas"
+            " or parent context"
         )
 
         # Sync visibility
         self.set_visible(step.visible)
 
         # Sync the child ops elements with the model's workpiece list.
-        # This is crucial for handling undo/redo of add/remove workpiece.
+        # The list of workpieces comes from the parent LayerElement's data.
+        # This is crucial for handling undo/redo of add/remove workpiece,
         current_wp_elems = {child.data: child for child in self.children}
-        model_workpieces = set(step.workpieces())
+        model_workpieces = set(self.parent.data.workpieces)
 
-        # Remove ops elements for workpieces that are no longer in the model
-        for wp, elem in current_wp_elems.items():
-            if wp not in model_workpieces:
-                elem.remove()
-
-        # The async pipeline handles adding new elements, so we don't need
-        # to explicitly add them here. We just need to ensure old ones are
-        # gone.
+        # Remove ops elements for workpieces that are no longer in the model.
+        # Iterate over a copy of the keys to safely modify the underlying
+        # list of children during iteration.
+        for workpiece in list(current_wp_elems.keys()):
+            if workpiece not in model_workpieces:
+                # Get the element from the dictionary and remove it
+                current_wp_elems[workpiece].remove()
 
         if self.canvas:
             self.canvas.queue_draw()
@@ -134,11 +140,13 @@ class WorkStepElement(CanvasElement):
             f"WorkStepElem '{sender.name}': Received ops_generation_starting "
             f"for {workpiece.name}"
         )
-        assert self.canvas, (
-            "Received ops_start, but element was not added to canvas"
+        assert self.canvas and self.parent and self.parent.data, (
+            "Received ops_start, but element has no canvas or parent context"
         )
 
-        if workpiece not in sender.workpieces():
+        # If the signal is for a workpiece no longer in our layer, remove
+        # its element
+        if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()
@@ -159,11 +167,13 @@ class WorkStepElement(CanvasElement):
             f"WorkStepElem '{sender.name}': Received ops_chunk_available for "
             f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
         )
-        assert self.canvas, (
-            "Received update, but element was not added to canvas"
+        assert self.canvas and self.parent and self.parent.data, (
+            "Received update, but element has no canvas or parent context"
         )
 
-        if workpiece not in sender.workpieces():
+        # If the signal is for a workpiece no longer in our layer, remove its
+        # element
+        if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()
@@ -182,11 +192,18 @@ class WorkStepElement(CanvasElement):
         Called when ops generation is finished. This handler ensures a final,
         guaranteed redraw of the element's complete state.
         """
-        assert self.canvas, (
-            "Received ops_finished, but element was not added to canvas"
+        logger.debug(
+            f"WorkStepElem '{sender.name}': Received ops_generation_finished "
+            f"for {workpiece.name}"
+        )
+        assert self.canvas and self.parent and self.parent.data, (
+            "Received ops_finished, but element has no canvas or parent "
+            "context"
         )
 
-        if workpiece not in sender.workpieces():
+        # If the signal is for a workpiece no longer in our layer, remove its
+        # element
+        if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()

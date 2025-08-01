@@ -1,6 +1,7 @@
 import logging
 import uuid
 import cairo
+import importlib
 from typing import (
     Generator,
     Optional,
@@ -14,9 +15,9 @@ from typing import (
 from blinker import Signal
 from pathlib import Path
 from ..render import Renderer
-import importlib
 if TYPE_CHECKING:
     from .doc import Doc
+    from .layer import Layer
 
 
 logger = logging.getLogger(__name__)
@@ -32,9 +33,9 @@ class WorkPiece:
     """
 
     def __init__(self, name: str, data: bytes, renderer_class: Type[Renderer]):
-        self.doc: Optional['Doc'] = None
+        self.layer: Optional['Layer'] = None
         self.name = name
-        self.uid = uuid.uuid4()
+        self.uid = str(uuid.uuid4())
         self._data = data
         self.renderer_class = renderer_class
 
@@ -61,9 +62,7 @@ class WorkPiece:
         state = self.__dict__.copy()
 
         # Remove live objects that cannot or should not be pickled.
-        state.pop("doc", None)
-        # Using .pop() with a default value is safe even if the key doesn't
-        # exist.
+        state.pop("layer", None)
         state.pop("renderer", None)
         state.pop("_renderer_ref_for_pyreverse", None)
         state.pop("changed", None)
@@ -143,6 +142,12 @@ class WorkPiece:
         wp.angle = data_dict.get('angle', 0.0)
 
         return wp
+
+    @property
+    def doc(self) -> Optional["Doc"]:
+        if not self.layer:
+            return None
+        return self.layer.doc
 
     def set_pos(self, x_mm: float, y_mm: float):
         new_pos = float(x_mm), float(y_mm)

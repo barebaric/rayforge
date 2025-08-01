@@ -1,8 +1,8 @@
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # type: ignore
 
 
 css = """
-.workstep-selector-label {
+.step-selector-label {
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
     margin: 12px;
@@ -11,7 +11,7 @@ css = """
 
 
 class WorkStepSelector(Gtk.Popover):
-    def __init__(self, workstep_classes, **kwargs):
+    def __init__(self, step_classes, **kwargs):
         super().__init__(**kwargs)
         self.set_autohide(True)
         self.selected = None
@@ -29,11 +29,11 @@ class WorkStepSelector(Gtk.Popover):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-        # Add workstep_classes to the ListBox
-        for cls in workstep_classes:
+        # Add step_classes to the ListBox
+        for cls in step_classes:
             label = Gtk.Label(label=cls.typelabel)
             label.set_xalign(0)
-            label.add_css_class("workstep-selector-label")
+            label.add_css_class("step-selector-label")
             row = Gtk.ListBoxRow()
             row.set_child(label)
             row.cls = cls

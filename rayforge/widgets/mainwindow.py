@@ -13,11 +13,14 @@ from ..driver.dummy import NoDeviceDriver
 from ..util.resources import get_icon
 from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
+from ..models.layer import Layer
 from ..opsencoder.gcode import GcodeEncoder
 from ..render import renderers, renderer_by_mime_type, renderer_by_extension
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
+from ..undo.setter_cmd import SetterCommand
 from .workplanview import WorkPlanView
 from .workbench.surface import WorkSurface
+from .layerlist import LayerListView
 from .statusview import (
     ConnectionStatusMonitor,
     TransportStatus,
@@ -73,6 +76,12 @@ class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(_("Rayforge"))
+
+        # Add a global click handler to manage focus correctly.
+        root_click_gesture = Gtk.GestureClick.new()
+        root_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        root_click_gesture.connect("pressed", self._on_root_click_pressed)
+        self.add_controller(root_click_gesture)
 
         display = Gdk.Display.get_default()
         monitors = display.get_monitors()
@@ -250,6 +259,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the Paned splitting the window into left and right sections.
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paned.set_vexpand(True)
         vbox.append(self.paned)
 
         # Apply styles
@@ -266,7 +276,6 @@ class MainWindow(Adw.ApplicationWindow):
         ratio = width_mm / height_mm
         self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=False)
         self.frame.set_margin_start(12)
-        self.frame.set_margin_end(12)
         self.frame.set_hexpand(True)
         self.paned.set_start_child(self.frame)
 
@@ -289,17 +298,25 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create a vertical paned for the right pane content
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        right_pane_box.set_vexpand(True)
+        right_pane_box.set_margin_start(10)
         right_pane_box.set_margin_top(6)
         right_pane_box.set_margin_bottom(12)
         self.paned.set_end_child(right_pane_box)
         self.paned.set_resize_end_child(False)
         self.paned.set_shrink_end_child(False)
 
-        # Show the work plan.
-        self.workplanview = WorkPlanView(self.doc, self.doc.workplan)
+        # Add the Layer list view
+        self.layer_list_view = LayerListView(self.doc)
+        self.layer_list_view.set_margin_end(12)
+        right_pane_box.append(self.layer_list_view)
+
+        # The WorkPlanView will be updated when a layer is activated.
+        initial_workplan = self.doc.layers[0].workplan
+        self.workplanview = WorkPlanView(initial_workplan)
         self.workplanview.set_size_request(400, -1)
-        self.workplanview.set_vexpand(True)
-        self.workplanview.set_margin_start(4)
+        self.workplanview.set_margin_top(20)
+        self.workplanview.set_margin_end(12)
         right_pane_box.append(self.workplanview)
 
         # Add the WorkpiecePropertiesWidget
@@ -307,8 +324,8 @@ class MainWindow(Adw.ApplicationWindow):
         workpiece_props_container = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL
         )
-        workpiece_props_container.set_vexpand(False)
-        workpiece_props_container.set_valign(Gtk.Align.END)
+        self.workpiece_props_widget.set_margin_top(20)
+        self.workpiece_props_widget.set_margin_end(12)
         workpiece_props_container.append(self.workpiece_props_widget)
 
         self.workpiece_revealer = Gtk.Revealer()
@@ -318,8 +335,6 @@ class MainWindow(Adw.ApplicationWindow):
             Gtk.RevealerTransitionType.SLIDE_UP
         )
         right_pane_box.append(self.workpiece_revealer)
-        self.workpiece_props_widget.set_margin_top(20)
-        self.workpiece_props_widget.set_margin_start(4)
 
         # Connect signals for workpiece selection
         self.surface.selection_changed.connect(self._on_selection_changed)
@@ -376,6 +391,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Set initial state
         self.update_state()
 
+    def _on_root_click_pressed(self, gesture, n_press, x, y):
+        """
+        Global click handler to unfocus widgets when clicking on "dead space".
+        """
+        self.surface.grab_focus()
+
     def _setup_actions(self):
         """Creates all Gio.SimpleActions for the window and application."""
         # File actions
@@ -424,6 +445,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.remove_action.connect("activate", self.on_menu_remove)
         self.add_action(self.remove_action)
 
+        self.create_layer_action = Gio.SimpleAction.new("create-layer", None)
+        self.create_layer_action.connect("activate", self.on_menu_create_layer)
+        self.add_action(self.create_layer_action)
+
         settings_action = Gio.SimpleAction.new("settings", None)
         settings_action.connect("activate", self.show_machine_settings)
         self.add_action(settings_action)
@@ -460,6 +485,10 @@ class MainWindow(Adw.ApplicationWindow):
         clipboard_commands.append(_("Remove"), "win.remove")
         edit_menu.append_section(None, clipboard_commands)
 
+        layer_commands = Gio.Menu()
+        layer_commands.append(_("Create a Layer"), "win.create-layer")
+        edit_menu.append_section(None, layer_commands)
+
         other_edit_commands = Gio.Menu()
         other_edit_commands.append(_("Preferences"), "win.settings")
         edit_menu.append_section(None, other_edit_commands)
@@ -494,6 +523,7 @@ class MainWindow(Adw.ApplicationWindow):
         app.set_accels_for_action("win.paste", ["<Primary>v"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
+        app.set_accels_for_action("win.create-layer", ["<Primary>g"])
         app.set_accels_for_action("win.settings", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
 
@@ -542,9 +572,17 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_history_changed(self, history_manager):
         self.update_state()
+        # After undo/redo, the document state may have changed in ways
+        # that require a full UI sync (e.g., layer visibility).
+        self.on_doc_changed(self.doc)
 
     def on_doc_changed(self, sender, **kwargs):
+        # Synchronize UI elements that depend on the document model
         self.surface.update_from_doc(self.doc)
+        if self.doc.active_layer:
+            self.workplanview.set_workplan(self.doc.active_layer.workplan)
+
+        # Update button sensitivity and other state
         self.update_state()
 
     def _on_selection_changed(
@@ -606,6 +644,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.paste_action.set_enabled(can_paste and not has_tasks)
         self.duplicate_action.set_enabled(has_selection and not has_tasks)
         self.remove_action.set_enabled(has_selection and not has_tasks)
+        self.create_layer_action.set_enabled(not has_tasks)
 
         # Update button sensitivity
         self.export_button.set_sensitive(can_export)
@@ -665,8 +704,11 @@ class MainWindow(Adw.ApplicationWindow):
         connected = conn_status == TransportStatus.CONNECTED
         self.surface.set_laser_dot_visible(connected)
         state = self.machine_status.state
-        if state and None not in state.machine_pos:
-            self.surface.set_laser_dot_position(*state.machine_pos[:2])
+        if not state:
+            return
+        x, y = state.machine_pos[:2]
+        if x is not None and y is not None:
+            self.surface.set_laser_dot_position(x, y)
 
     def on_status_bar_clicked(self, gesture, n_press, x, y, box):
         dialog = MachineView()
@@ -770,7 +812,7 @@ class MainWindow(Adw.ApplicationWindow):
                 if not head.frame_power:
                     return
 
-                ops = await self.doc.workplan.execute(context)
+                ops = await self.doc.generate_job_ops(context)
                 frame = ops.get_frame(
                     power=head.frame_power,
                     speed=config.machine.max_travel_speed,
@@ -794,7 +836,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         async def send_coro(context: ExecutionContext):
             try:
-                ops = await self.doc.workplan.execute(context)
+                ops = await self.doc.generate_job_ops(context)
                 if not driver_mgr.driver:
                     raise RuntimeError("No driver configured to send job.")
                 await driver_mgr.driver.run(ops, config.machine)
@@ -840,7 +882,7 @@ class MainWindow(Adw.ApplicationWindow):
         async def export_coro(context: ExecutionContext):
             try:
                 # 1. Generate Ops (async, reports progress)
-                ops = await self.doc.workplan.execute(context)
+                ops = await self.doc.generate_job_ops(context)
 
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message("Encoding G-code...")
@@ -900,9 +942,33 @@ class MainWindow(Adw.ApplicationWindow):
                 return
 
         wp = WorkPiece.from_file(filename, renderer)
+
+        # Calculate and set a default size and position for the new workpiece
+        if wp.pos is None or wp.size is None:
+            wswidth_mm, wsheight_mm = self.surface.get_size()
+            wp_width_nat_mm, wp_height_nat_mm = wp.get_default_size(
+                wswidth_mm, wsheight_mm
+            )
+
+            # Determine the size to use in mm, scaling down if necessary to fit
+            width_mm = wp_width_nat_mm
+            height_mm = wp_height_nat_mm
+            if width_mm > wswidth_mm or height_mm > wsheight_mm:
+                scale_w = wswidth_mm / width_mm if width_mm > 0 else 1
+                scale_h = wsheight_mm / height_mm if height_mm > 0 else 1
+                scale = min(scale_w, scale_h)
+                width_mm *= scale
+                height_mm *= scale
+
+            # Set the workpiece's size and centered position in mm
+            wp.set_size(width_mm, height_mm)
+            x_mm = (wswidth_mm - width_mm) / 2
+            y_mm = (wsheight_mm - height_mm) / 2
+            wp.set_pos(x_mm, y_mm)
+
         cmd_name = _("Import {name}").format(name=filename.name)
         command = ListItemCommand(
-            owner_obj=self.doc,
+            owner_obj=self.doc.active_layer,
             item=wp,
             undo_command="remove_workpiece",
             redo_command="add_workpiece",
@@ -968,7 +1034,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             for wp_dict in self._clipboard_snapshot:
                 new_wp = WorkPiece.from_dict(wp_dict)
-                new_wp.uid = uuid.uuid4()
+                new_wp.uid = str(uuid.uuid4())
                 newly_pasted_workpieces.append(new_wp)
 
                 original_pos = wp_dict.get("pos")
@@ -1005,7 +1071,7 @@ class MainWindow(Adw.ApplicationWindow):
             for wp in workpieces:
                 wp_dict = wp.to_dict()
                 new_wp = WorkPiece.from_dict(wp_dict)
-                new_wp.uid = uuid.uuid4()
+                new_wp.uid = str(uuid.uuid4())
                 newly_duplicated_workpieces.append(new_wp)
 
                 cmd_name = _("Duplicate {name}").format(name=new_wp.name)
@@ -1020,6 +1086,33 @@ class MainWindow(Adw.ApplicationWindow):
 
         if newly_duplicated_workpieces:
             self.surface.select_workpieces(newly_duplicated_workpieces)
+
+    def on_menu_create_layer(self, action, param):
+        """Handles the 'create-layer' action from the menu."""
+        # Name new layers sequentially.
+        new_layer_num = len(self.doc.layers) + 1
+        new_layer_name = _("Layer {num}").format(num=new_layer_num)
+        new_layer = Layer(doc=self.doc, name=new_layer_name)
+        old_active_layer = self.doc.active_layer
+
+        with self.doc.history_manager.transaction(_("Create Layer")) as t:
+            # Command to add the layer
+            add_cmd = ListItemCommand(
+                owner_obj=self.doc,
+                item=new_layer,
+                undo_command="remove_layer",
+                redo_command="add_layer",
+            )
+            t.execute(add_cmd)
+
+            # Command to set the new layer as active
+            set_active_cmd = SetterCommand(
+                target=self.doc,
+                new_args=(new_layer,),
+                old_args=(old_active_layer,),
+                setter_method_name="set_active_layer",
+            )
+            t.execute(set_active_cmd)
 
     def on_menu_cut(self, action, param):
         selection = self.surface.get_selected_workpieces()

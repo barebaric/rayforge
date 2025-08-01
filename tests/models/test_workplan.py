@@ -4,10 +4,13 @@ from unittest.mock import MagicMock, ANY
 from rayforge.tasker.task import Task
 from rayforge.tasker.proxy import ExecutionContextProxy
 from rayforge.render import SVGRenderer
-from rayforge.models.workstep import Contour, run_workstep_in_subprocess
+from rayforge.models.workstep import Contour
+from rayforge.models.worksteprunner import run_step_in_subprocess
 from rayforge.models.workpiece import WorkPiece
 from rayforge.models.ops import Ops
 from rayforge.models.machine import Laser, Machine
+from rayforge.models.layer import Layer
+from rayforge.models.doc import Doc
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +34,7 @@ def setup_real_config(mocker):
 
     test_config = TestConfig()
     mocker.patch("rayforge.models.workplan.config", test_config)
-    # Patch the gettext function `_` which is expected to be a builtin.
+    mocker.patch("rayforge.models.doc.config", test_config)
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
 
@@ -40,13 +43,12 @@ def setup_real_config(mocker):
 def mock_task_mgr(mocker):
     """
     Mocks the task manager to control process execution synchronously in tests.
+    Patches the manager used by WorkStep and Layer classes.
     """
     mock_mgr = MagicMock()
     created_tasks_info = []
 
     class MockTask:
-        """A mock Task to simulate the real Task API for testing."""
-
         def __init__(self, target, args, callback):
             self.target = target
             self.args = args
@@ -94,14 +96,20 @@ def mock_task_mgr(mocker):
         def cancel(self):
             self._cancelled = True
 
-    def run_process_mock(target_func, *args, key=None, when_done=None):
+    # Accept `when_event` to match the real call signature in WorkStep
+    def run_process_mock(
+        target_func, *args, key=None, when_done=None, when_event=None
+    ):
         task = MockTask(target_func, args, when_done)
         created_tasks_info.append(task)
         return task
 
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
     mock_mgr.created_tasks = created_tasks_info
+    # Patch the task_mgr where it's actually used for starting processes
     mocker.patch("rayforge.models.workstep.task_mgr", mock_mgr)
+    # Also patch in layer for cancel_task calls
+    mocker.patch("rayforge.models.layer.task_mgr", mock_mgr)
     return mock_mgr
 
 
@@ -117,8 +125,17 @@ def real_workpiece():
 
 @pytest.fixture
 def mock_doc():
-    """Provides a mock document object needed by the WorkStep constructor."""
-    return MagicMock()
+    doc = MagicMock(spec=Doc)
+    doc.history_manager = MagicMock()
+    return doc
+
+
+@pytest.fixture
+def test_layer(mock_doc):
+    layer = Layer(doc=mock_doc, name="Test Layer")
+    # Start with a clean slate of steps for predictable testing
+    layer.workplan.set_steps([])
+    return layer
 
 
 @pytest.fixture
@@ -126,7 +143,7 @@ def contour_step(setup_real_config, mock_doc):
     """Creates a real Contour WorkStep instance."""
     config = setup_real_config
     step = Contour(
-        doc=mock_doc,  # Provide the required mock document
+        doc=mock_doc,
         laser=config.machine.heads[0],
         max_cut_speed=config.machine.max_cut_speed,
         max_travel_speed=config.machine.max_travel_speed,
@@ -135,41 +152,45 @@ def contour_step(setup_real_config, mock_doc):
     return step
 
 
-class TestWorkStepGeneration:
+class TestLayerWorkStepInteraction:
     @pytest.mark.asyncio
     async def test_add_workpiece_triggers_ops_generation(
-        self, contour_step, real_workpiece, mock_task_mgr
+        self, test_layer, contour_step, real_workpiece, mock_task_mgr
     ):
         """
-        Verify that adding a workpiece triggers the ops generation process.
+        Verify that adding a workpiece to a layer triggers ops generation
+        for the steps in its workplan.
         """
-        # Act
-        contour_step.add_workpiece(real_workpiece)
+        test_layer.workplan.add_step(contour_step)
+        mock_task_mgr.run_process.reset_mock()  # Reset after setup
 
-        # Assert
+        test_layer.add_workpiece(real_workpiece)
+
         mock_task_mgr.run_process.assert_called_once()
-        call_args = mock_task_mgr.run_process.call_args.args
-        assert call_args[0] == run_workstep_in_subprocess
+        call_args, call_kwargs = mock_task_mgr.run_process.call_args
+        assert call_args[0] == run_step_in_subprocess
         assert isinstance(call_args[1], dict)
         assert call_args[1]["uid"] == real_workpiece.uid
+        opsproducer_dict = call_args[2]
+        assert isinstance(opsproducer_dict, dict)
+        assert "when_done" in call_kwargs
+        assert "when_event" in call_kwargs
 
     def test_generation_success_emits_signals_and_caches_result(
-        self, contour_step, real_workpiece, mocker
+        self, test_layer, contour_step, real_workpiece, mocker
     ):
         """
-        Test that a successful ops generation emits signals and caches the
-        result.
-        This test now accurately mocks the task manager's behavior.
+        Test that a successful ops generation on a Layer emits signals and
+        caches the result correctly.
         """
-        # Arrange
+        test_layer.workplan.add_step(contour_step)
         start_handler = MagicMock()
         finish_handler = MagicMock()
-        contour_step.ops_generation_starting.connect(start_handler)
-        contour_step.ops_generation_finished.connect(finish_handler)
+        test_layer.ops_generation_starting.connect(start_handler)
+        test_layer.ops_generation_finished.connect(finish_handler)
 
         # 1. We need to mock the real `task_mgr` that `workstep` imports.
         mock_task_mgr = mocker.patch("rayforge.models.workstep.task_mgr")
-
         # 2. Prepare the expected result from the subprocess worker.
         # The worker function returns a tuple: (Ops object, pixel_size).
         expected_ops = Ops()
@@ -194,11 +215,14 @@ class TestWorkStepGeneration:
 
         # Act 1: Call the method that starts the process.
         # This will call our mocked `run_process` and capture the callback.
-        contour_step.add_workpiece(real_workpiece)
+        test_layer.add_workpiece(real_workpiece)
 
         # Assert 1: The process has started.
         start_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece, generation_id=ANY
+            test_layer,
+            workpiece=real_workpiece,
+            step=contour_step,
+            generation_id=ANY,
         )
         mock_task_mgr.run_process.assert_called_once()
         assert captured_when_done is not None, (
@@ -220,30 +244,34 @@ class TestWorkStepGeneration:
 
         # Assert 2: The finish handler has now been called.
         finish_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece, generation_id=ANY
+            test_layer,
+            workpiece=real_workpiece,
+            step=contour_step,
+            generation_id=ANY,
         )
 
         # Assert 3: The result from our mock task has been correctly cached.
-        assert real_workpiece.uid in contour_step._ops_cache
-        cached_result = contour_step._ops_cache[real_workpiece.uid]
-
+        cache_key = (contour_step.uid, real_workpiece.uid)
+        assert cache_key in test_layer._ops_cache
+        cached_result = test_layer._ops_cache[cache_key]
         assert cached_result == expected_result
         cached_ops, _ = cached_result
         assert isinstance(cached_ops, Ops)
-        # Verify it's the specific object we created.
         assert cached_ops.comment == "I am a test op"
 
     @pytest.mark.asyncio
     async def test_generation_cancellation_is_handled(
-        self, contour_step, real_workpiece, mock_task_mgr
+        self, test_layer, contour_step, real_workpiece, mock_task_mgr
     ):
         """Test that ops generation can be cancelled correctly."""
-        # Arrange
+        test_layer.workplan.add_step(contour_step)
+        mock_task_mgr.created_tasks.clear()  # Reset after setup
+
         finish_handler = MagicMock()
-        contour_step.ops_generation_finished.connect(finish_handler)
+        test_layer.ops_generation_finished.connect(finish_handler)
 
         # Act: This will schedule the coroutine via the mock task manager
-        contour_step.add_workpiece(real_workpiece)
+        test_layer.add_workpiece(real_workpiece)
 
         # Get the created task and cancel it before it "runs"
         assert len(mock_task_mgr.created_tasks) == 1
@@ -258,7 +286,11 @@ class TestWorkStepGeneration:
         # The 'finished' signal should still be called to notify listeners
         # the attempt is over.
         finish_handler.assert_called_once_with(
-            contour_step, workpiece=real_workpiece, generation_id=ANY
+            test_layer,
+            workpiece=real_workpiece,
+            step=contour_step,
+            generation_id=ANY,
         )
         # Verify the cache was set to None upon cancellation/failure.
-        assert contour_step._ops_cache.get(real_workpiece.uid) == (None, None)
+        cache_key = contour_step.uid, real_workpiece.uid
+        assert test_layer._ops_cache.get(cache_key) == (None, None)

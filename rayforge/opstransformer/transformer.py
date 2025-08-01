@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
+from blinker import Signal
 from ..models.ops import Ops
 from ..tasker.proxy import BaseExecutionContext
 
@@ -15,14 +16,22 @@ class OpsTransformer(ABC):
     """
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
+        self.changed = Signal()
 
     @property
     def enabled(self) -> bool:
         return self._enabled
 
+    def set_enabled(self, enabled: bool):
+        """Sets the enabled state and signals a change."""
+        if self._enabled != enabled:
+            self._enabled = enabled
+            self.changed.send(self)
+
     @enabled.setter
     def enabled(self, enabled: bool) -> None:
-        self._enabled = enabled
+        """Convenience setter, delegates to set_enabled."""
+        self.set_enabled(enabled)
 
     @property
     @abstractmethod

@@ -11,12 +11,12 @@ from ..models.workstep import WorkStep
 
 
 class WorkStepSettingsDialog(Adw.PreferencesDialog):
-    def __init__(self, doc: Doc, workstep: WorkStep, **kwargs):
+    def __init__(self, doc: Doc, step: WorkStep, **kwargs):
         super().__init__(**kwargs)
         self.doc = doc
-        self.workstep = workstep
+        self.step = step
         self.history_manager: HistoryManager = doc.history_manager
-        self.set_title(_("{name} Settings").format(name=workstep.name))
+        self.set_title(_("{name} Settings").format(name=step.name))
 
         # Create a preferences page
         page = Adw.PreferencesPage()
@@ -32,10 +32,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         )
         passes_row = Adw.SpinRow(
             title=_("Number of Passes"),
-            subtitle=_("How often to repeat this workstep"),
+            subtitle=_("How often to repeat this step"),
             adjustment=passes_adjustment,
         )
-        passes_adjustment.set_value(workstep.passes)
+        passes_adjustment.set_value(step.passes)
         passes_row.connect("changed", self.on_passes_changed)
         general_group.add(passes_row)
 
@@ -51,7 +51,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             draw_value=True,  # Show the current value
         )
         power_adjustment.set_value(
-            workstep.power / workstep.laser.max_power * 100
+            step.power / step.laser.max_power * 100
         )
         power_scale.set_size_request(300, -1)
         power_scale.connect("value-changed", self.on_power_changed)
@@ -72,7 +72,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             ),
             adjustment=cut_speed_adjustment,
         )
-        cut_speed_adjustment.set_value(workstep.cut_speed)
+        cut_speed_adjustment.set_value(step.cut_speed)
         cut_speed_row.connect("changed", self.on_cut_speed_changed)
         general_group.add(cut_speed_row)
 
@@ -90,19 +90,19 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             ),
             adjustment=travel_speed_adjustment,
         )
-        travel_speed_adjustment.set_value(workstep.travel_speed)
+        travel_speed_adjustment.set_value(step.travel_speed)
         travel_speed_row.connect("changed", self.on_travel_speed_changed)
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
         air_assist_row = Adw.SwitchRow()
         air_assist_row.set_title(_("Air Assist"))
-        air_assist_row.set_active(workstep.air_assist)
+        air_assist_row.set_active(step.air_assist)
         air_assist_row.connect("notify::active", self.on_air_assist_changed)
         general_group.add(air_assist_row)
 
         # Advanced/Optimization Settings
-        if workstep.opstransformers:
+        if step.opstransformers:
             advanced_group = Adw.PreferencesGroup(
                 title=_("Path Post-Processing"),
                 description=_(
@@ -112,7 +112,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             )
             page.add(advanced_group)
 
-            for transformer in workstep.opstransformers:
+            for transformer in step.opstransformers:
                 switch_row = Adw.SwitchRow(
                     title=transformer.label, subtitle=transformer.description
                 )
@@ -141,7 +141,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
                     # --- Corner Angle Threshold Setting ---
                     corner_angle_adj = Gtk.Adjustment(
-                        lower=0, upper=90, step_increment=1, page_increment=10
+                        lower=0, upper=179, step_increment=1, page_increment=10
                     )
                     corner_angle_row = Adw.SpinRow(
                         title=_("Corner Angle Threshold"),
@@ -152,7 +152,7 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
                         adjustment=corner_angle_adj,
                     )
                     corner_angle_adj.set_value(
-                        math.degrees(transformer.corner_threshold)
+                        transformer.corner_angle_threshold
                     )
                     advanced_group.add(corner_angle_row)
 
@@ -181,10 +181,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
     def on_passes_changed(self, spin_row):
         new_value = get_spinrow_int(spin_row)
-        if new_value == self.workstep.passes:
+        if new_value == self.step.passes:
             return
         command = ChangePropertyCommand(
-            target=self.workstep,
+            target=self.step,
             property_name="passes",
             new_value=new_value,
             setter_method_name="set_passes",
@@ -194,10 +194,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
         self.changed.send(self)
 
     def on_power_changed(self, scale):
-        max_power = self.workstep.laser.max_power
+        max_power = self.step.laser.max_power
         new_value = max_power / 100 * scale.get_value()
         command = ChangePropertyCommand(
-            target=self.workstep,
+            target=self.step,
             property_name="power",
             new_value=new_value,
             setter_method_name="set_power",
@@ -208,10 +208,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
     def on_cut_speed_changed(self, spin_row):
         new_value = get_spinrow_int(spin_row)
-        if new_value == self.workstep.cut_speed:
+        if new_value == self.step.cut_speed:
             return
         command = ChangePropertyCommand(
-            target=self.workstep,
+            target=self.step,
             property_name="cut_speed",
             new_value=new_value,
             setter_method_name="set_cut_speed",
@@ -222,10 +222,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
     def on_travel_speed_changed(self, spin_row):
         new_value = get_spinrow_int(spin_row)
-        if new_value == self.workstep.travel_speed:
+        if new_value == self.step.travel_speed:
             return
         command = ChangePropertyCommand(
-            target=self.workstep,
+            target=self.step,
             property_name="travel_speed",
             new_value=new_value,
             setter_method_name="set_travel_speed",
@@ -236,10 +236,10 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
     def on_air_assist_changed(self, row, pspec):
         new_value = row.get_active()
-        if new_value == self.workstep.air_assist:
+        if new_value == self.step.air_assist:
             return
         command = ChangePropertyCommand(
-            target=self.workstep,
+            target=self.step,
             property_name="air_assist",
             new_value=new_value,
             setter_method_name="set_air_assist",
@@ -261,7 +261,6 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             target=transformer,
             property_name="amount",
             new_value=new_value,
-            on_change_callback=self.workstep.update_all_workpieces,
             name=_("Change smoothness"),
         )
         self.history_manager.execute(command)
@@ -269,14 +268,12 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
 
     def on_corner_angle_changed(self, spin_row, transformer):
         value_deg = get_spinrow_int(spin_row)
-        new_value_rad = math.radians(value_deg)
-        if math.isclose(transformer.corner_threshold, new_value_rad):
+        if math.isclose(transformer.corner_angle_threshold, value_deg):
             return
         command = ChangePropertyCommand(
             target=transformer,
-            property_name="corner_threshold",
-            new_value=new_value_rad,
-            on_change_callback=self.workstep.update_all_workpieces,
+            property_name="corner_angle_threshold",
+            new_value=value_deg,
             name=_("Change corner angle"),
         )
         self.history_manager.execute(command)
@@ -290,7 +287,6 @@ class WorkStepSettingsDialog(Adw.PreferencesDialog):
             target=transformer,
             property_name="enabled",
             new_value=new_value,
-            on_change_callback=self.workstep.update_all_workpieces,
             name=_("Toggle '{label}' visibility").format(
                 label=transformer.label
             ),

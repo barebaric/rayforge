@@ -28,8 +28,11 @@ class Smooth(OpsTransformer):
                                     are preserved as corners.
         """
         super().__init__(enabled=enabled)
-        self.corner_threshold = math.radians(corner_angle_threshold)
+        self._corner_threshold_rad = math.radians(corner_angle_threshold)
         self._kernel: Optional[List[float]] = None
+        self._amount = (
+            -1
+        )  # Initialize to a value that guarantees the setter runs
         self.amount = amount  # Triggers the property setter and kernel setup
 
     @property
@@ -39,8 +42,31 @@ class Smooth(OpsTransformer):
 
     @amount.setter
     def amount(self, value: int) -> None:
-        self._amount = max(0, min(100, value))
+        new_amount = max(0, min(100, value))
+        if self._amount == new_amount:
+            return
+        self._amount = new_amount
         self._precompute_kernel()
+        self.changed.send(self)
+
+    @property
+    def corner_angle_threshold(self) -> float:
+        """The corner angle threshold in degrees."""
+        return math.degrees(self._corner_threshold_rad)
+
+    @corner_angle_threshold.setter
+    def corner_angle_threshold(self, value_deg: float):
+        """Sets the corner angle threshold from a value in degrees."""
+        new_value_rad = math.radians(value_deg)
+        if math.isclose(self._corner_threshold_rad, new_value_rad):
+            return
+        self._corner_threshold_rad = new_value_rad
+        self.changed.send(self)
+
+    @property
+    def corner_threshold(self) -> float:
+        """The corner angle threshold in radians, for internal use."""
+        return self._corner_threshold_rad
 
     def _precompute_kernel(self):
         """
@@ -234,7 +260,7 @@ class Smooth(OpsTransformer):
         data.update(
             {
                 "amount": self.amount,
-                "corner_angle_threshold": math.degrees(self.corner_threshold),
+                "corner_angle_threshold": self.corner_angle_threshold,
             }
         )
         return data

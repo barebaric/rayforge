@@ -1,21 +1,21 @@
 from __future__ import annotations
 import logging
+import uuid
 from abc import ABC
-from typing import Any, List, Dict, Tuple, Optional, TYPE_CHECKING
-from copy import deepcopy
+from typing import List, Optional, TYPE_CHECKING, Callable
 from blinker import Signal
-from gi.repository import GLib  # type:ignore
 from ..config import task_mgr
-from ..tasker.task import Task
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth
-from .workpiece import WorkPiece
 from .laser import Laser
-from .ops import Ops
-from .worksteprunner import run_workstep_in_subprocess
+
 if TYPE_CHECKING:
     from .doc import Doc
+    from .workpiece import WorkPiece
+    from .workplan import WorkPlan
+    from ..tasker.task import Task
+    from .ops import Ops
 
 
 logger = logging.getLogger(__name__)
@@ -28,26 +28,28 @@ class WorkStep(ABC):
     """
     A set of modifiers and an OpsProducer that operate on WorkPieces.
 
-    A WorkStep generates laser operations (Ops) based on its configuration
-    and the WorkPieces assigned to it.
+    A WorkStep is a stateless configuration object that defines a single
+    operation (e.g., outline, engrave) to be performed.
     """
 
     typelabel: str
 
     def __init__(
         self,
-        *,
-        doc: 'Doc',
+        doc: "Doc",
         opsproducer: OpsProducer,
         laser: Laser,
         max_cut_speed: int,
         max_travel_speed: int,
         name: Optional[str] = None,
+        workplan: Optional["WorkPlan"] = None,
     ):
         if not self.typelabel:
             raise AttributeError("Subclass must set a typelabel attribute.")
 
         self.doc = doc
+        self.workplan = workplan
+        self.uid = str(uuid.uuid4())
         self.name = name or self.typelabel
         self.visible = True
         self.modifiers = [
@@ -56,21 +58,15 @@ class WorkStep(ABC):
         ]
         self._modifier_ref_for_pyreverse: Modifier
         self.opsproducer = opsproducer
-        self.opstransformers: List[OpsTransformer] = []
-
-        # Maps UID to workpiece.
-        self._workpieces: Dict[Any, WorkPiece] = {}
-        self._ops_cache: Dict[
-            Any, Tuple[Optional[Ops], Optional[Tuple[int, int]]]
-        ] = {}
-        self._workpiece_update_timers: Dict[Any, int] = {}
-
-        self._generation_id_map: Dict[Any, int] = {}
+        self._opstransformers: List[OpsTransformer] = []
 
         self.passes: int = 1
         self.pixels_per_mm = 50, 50
 
+        # Specific signals for different types of changes
         self.changed = Signal()
+        self.visibility_changed = Signal()
+
         self.ops_generation_starting = Signal()
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
@@ -83,24 +79,87 @@ class WorkStep(ABC):
         self.travel_speed = max_travel_speed
         self.air_assist = False
 
-    def update_workpiece(self, workpiece: WorkPiece):
-        uid = workpiece.uid
-        size = workpiece.get_current_size()
-        if not size or None in size:
-            logger.debug(
-                f"Skipping update for '{workpiece.name}'; "
-                "size is not yet available."
+    @property
+    def opstransformers(self) -> List[OpsTransformer]:
+        return self._opstransformers
+
+    @opstransformers.setter
+    def opstransformers(self, transformers: List[OpsTransformer]):
+        self._disconnect_transformer_signals()
+        self._opstransformers = transformers
+        self._connect_transformer_signals()
+        self.changed.send(self)
+
+    def _on_transformer_changed(self, sender, **kwargs):
+        """
+        Handles data-changing signals from child transformers.
+        Bubbles up the notification by firing this step's own `changed` signal.
+        """
+        logger.debug(
+            f"WorkStep '{self.name}': Notified of model change from "
+            f"transformer '{sender.label}'. Firing own changed signal."
+        )
+        self.changed.send(self)
+
+    def _connect_transformer_signals(self):
+        """Connects the step's handlers to its transformers' signals."""
+        for transformer in self._opstransformers:
+            transformer.changed.connect(self._on_transformer_changed)
+
+    def _disconnect_transformer_signals(self):
+        """Disconnects the step's handlers from its transformers' signals."""
+        for transformer in self._opstransformers:
+            try:
+                transformer.changed.disconnect(self._on_transformer_changed)
+            except TypeError:
+                pass  # Signal was not connected
+
+    def _on_task_event_received(
+        self, task: "Task", event_name: str, data: dict
+    ):
+        """A stable instance method to handle events from tasks."""
+        if event_name != "ops_chunk" or not self.workplan:
+            return
+
+        logger.debug(
+            f"WorkStep '{self.name}': _on_task_event_received caught "
+            f"'ops_chunk' from Task {task.key}."
+        )
+
+        step_uid, workpiece_uid = task.key
+
+        workpiece = self.workplan.layer._get_workpiece_by_uid(
+            workpiece_uid
+        )
+        if not workpiece:
+            logger.warning(
+                f"WorkStep '{self.name}': Received chunk for deleted "
+                f"workpiece {workpiece_uid}. Ignoring."
             )
             return
 
-        self._generation_id_map[uid] = self._generation_id_map.get(uid, 0) + 1
-        current_generation_id = self._generation_id_map[uid]
-        key = (id(self), uid)
+        chunk = data.get("chunk")
+        generation_id = data.get("generation_id")
+        if not chunk or generation_id is None:
+            return
 
-        self.ops_generation_starting.send(
-            self, workpiece=workpiece, generation_id=current_generation_id
+        self.ops_chunk_available.send(
+            self,
+            workpiece=workpiece,
+            chunk=chunk,
+            generation_id=generation_id,
         )
-        self._ops_cache[uid] = (None, None)
+
+    def start_generation_task(
+        self,
+        workpiece: "WorkPiece",
+        generation_id: int,
+        when_done_callback: Callable,
+    ) -> "Task":
+        """
+        Starts the asynchronous task to generate operations for a workpiece.
+        """
+        from .worksteprunner import run_step_in_subprocess
 
         settings = {
             "power": self.power,
@@ -110,190 +169,72 @@ class WorkStep(ABC):
             "pixels_per_mm": self.pixels_per_mm,
         }
 
-        def when_done_callback(task: Task):
-            self._on_generation_complete(
-                task, uid, current_generation_id
-            )
+        # The task key MUST be stable to allow cancellation.
+        # It should not include the generation_id.
+        task_mgr_key = self.uid, workpiece.uid
 
-        task_mgr.run_process(
-            run_workstep_in_subprocess,
+        # This is the stable, race-free pattern.
+        # We pass our stable instance method directly to the TaskManager.
+        task = task_mgr.run_process(
+            run_step_in_subprocess,
+            # Pass generation_id as a regular argument to the subprocess
+            # function
             workpiece.to_dict(),
             self.opsproducer.to_dict(),
             [m.to_dict() for m in self.modifiers],
             [o.to_dict() for o in self.opstransformers],
             self.laser.to_dict(),
             settings,
-            key=key,
+            generation_id,
+            key=task_mgr_key,
             when_done=when_done_callback,
+            when_event=self._on_task_event_received,
         )
 
-    def _on_generation_complete(
-        self, task: Task, uid: Any, task_generation_id: int
-    ):
-        if (
-            uid not in self._generation_id_map
-            or self._generation_id_map[uid] != task_generation_id
-        ):
-            return
-        if uid not in self._workpieces:
-            return
+        return task
 
-        workpiece = self._workpieces[uid]
-        status = task.get_status()
-        if status == "completed":
-            try:
-                result = task.result()
-                if result is None:
-                    self._ops_cache[uid] = (None, None)
-                else:
-                    self._ops_cache[uid] = result
-                    logger.info(
-                        f"WorkStep {self.name}: Successfully generated "
-                        f"ops for {workpiece.name}."
-                    )
-            except Exception as e:
-                logger.error(
-                    f"WorkStep {self.name}: Error generating ops for "
-                    f"{workpiece.name}: {e}",
-                    exc_info=True,
-                )
-                self._ops_cache[uid] = (None, None)
-        else:
-            self._ops_cache[uid] = (None, None)
-
-        self.ops_generation_finished.send(
-            self, workpiece=workpiece, generation_id=task_generation_id
-        )
-        self.changed.send(self)
-
-    def get_ops(self, workpiece: WorkPiece) -> Optional[Ops]:
-        uid = workpiece.uid
-        if not workpiece.size:
+    def get_ops(self, workpiece: "WorkPiece") -> Optional["Ops"]:
+        """
+        Retrieves the final, cached Ops for a workpiece by delegating
+        the call to the parent Layer.
+        """
+        if not self.workplan:
+            logger.warning(
+                f"Cannot get_ops for WorkStep '{self.name}': "
+                "no parent workplan."
+            )
             return None
-
-        raw_ops, pixel_size = self._ops_cache.get(uid, (None, None))
-        if raw_ops is None:
-            return None
-
-        ops = deepcopy(raw_ops)
-        if pixel_size:
-            traced_width_px, traced_height_px = pixel_size
-            size = workpiece.get_current_size() or (0, 0)
-            final_width_mm, final_height_mm = size
-            if (
-                final_width_mm is not None
-                and final_height_mm is not None
-                and traced_width_px > 0
-                and traced_height_px > 0
-            ):
-                ops.scale(
-                    final_width_mm / traced_width_px,
-                    final_height_mm / traced_height_px,
-                )
-        return ops
+        return self.workplan.layer.get_ops(self, workpiece)
 
     def set_passes(self, passes: bool = True):
         self.passes = int(passes)
-        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_visible(self, visible: bool = True):
         self.visible = visible
-        self.changed.send(self)
+        self.visibility_changed.send(self)
 
     def set_laser(self, laser: Laser):
         if laser == self.laser:
             return
-        if self.laser:
-            self.laser.changed.disconnect(self._on_laser_changed)
         self.laser = laser
-        laser.changed.connect(self._on_laser_changed)
-        self.update_all_workpieces()
-        self.changed.send(self)
-
-    def _on_laser_changed(self, sender, **kwargs):
-        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_power(self, power: int):
         self.power = power
-        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_cut_speed(self, speed: int):
-        """Sets the cut speed and triggers regeneration."""
         self.cut_speed = int(speed)
-        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_travel_speed(self, speed: int):
-        """Sets the travel speed and triggers regeneration."""
         self.travel_speed = int(speed)
-        self.update_all_workpieces()
         self.changed.send(self)
 
     def set_air_assist(self, enabled: bool):
-        """Sets air assist state and triggers regeneration."""
         self.air_assist = bool(enabled)
-        self.update_all_workpieces()
         self.changed.send(self)
-
-    def set_workpieces(self, workpieces: List[WorkPiece]):
-        current_uids = {wp.uid for wp in workpieces}
-        existing_uids = set(self._workpieces.keys())
-        for uid in existing_uids - current_uids:
-            self._cleanup_workpiece(uid)
-        for workpiece in workpieces:
-            self.add_workpiece(workpiece)
-        self.changed.send(self)
-
-    def add_workpiece(self, workpiece: WorkPiece):
-        uid = workpiece.uid
-        if uid in self._workpieces:
-            return
-        self._workpieces[uid] = workpiece
-        self._ops_cache[uid] = (None, None)
-        self._generation_id_map[uid] = 0
-        workpiece.size_changed.connect(self._request_workpiece_update)
-        self.update_workpiece(workpiece)
-        self.changed.send(self)
-
-    def remove_workpiece(self, workpiece: WorkPiece):
-        self._cleanup_workpiece(workpiece.uid)
-        self.changed.send(self)
-
-    def _cleanup_workpiece(self, uid: Any):
-        if uid in self._workpiece_update_timers:
-            GLib.source_remove(self._workpiece_update_timers.pop(uid))
-        if uid in self._workpieces:
-            workpiece = self._workpieces.pop(uid)
-            workpiece.size_changed.disconnect(self._request_workpiece_update)
-        if uid in self._ops_cache:
-            del self._ops_cache[uid]
-        if uid in self._generation_id_map:
-            del self._generation_id_map[uid]
-
-    def _request_workpiece_update(self, workpiece: WorkPiece):
-        uid = workpiece.uid
-        if uid in self._workpiece_update_timers:
-            GLib.source_remove(self._workpiece_update_timers[uid])
-
-        def _update_callback():
-            if uid in self._workpieces:
-                self.update_workpiece(self._workpieces[uid])
-            if uid in self._workpiece_update_timers:
-                del self._workpiece_update_timers[uid]
-            return GLib.SOURCE_REMOVE
-
-        timer_id = GLib.timeout_add(DEBOUNCE_DELAY_MS, _update_callback)
-        self._workpiece_update_timers[uid] = timer_id
-
-    def workpieces(self) -> List[WorkPiece]:
-        return list(self._workpieces.values())
-
-    def update_all_workpieces(self):
-        for workpiece in self._workpieces.values():
-            self.update_workpiece(workpiece)
 
     def get_summary(self) -> str:
         power = int(self.power / self.laser.max_power * 100)
@@ -305,8 +246,6 @@ class WorkStep(ABC):
 
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)
-        for workpiece in self.workpieces():
-            workpiece.dump(1)
 
 
 class Outline(WorkStep):

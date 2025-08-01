@@ -8,7 +8,7 @@ DEBOUNCE_DELAY_MS = 250  # Delay in milliseconds for ops regeneration
 
 # This top-level function contains the core logic for generating Ops.
 # It is designed to be run in a separate process by the TaskManager.
-def run_workstep_in_subprocess(
+def run_step_in_subprocess(
     proxy: ExecutionContextProxy,
     # Pass all required state. Assume these are pickleable.
     workpiece_dict: dict[str, Any],
@@ -17,14 +17,15 @@ def run_workstep_in_subprocess(
     opstransformers_dict: List[dict],
     laser_dict: dict[str, Any],
     settings: dict,
+    generation_id: int,
 ):
     import logging
 
     logger = logging.getLogger(
-        "rayforge.models.workstep.run_workstep_in_subprocess"
+        "rayforge.models.workstep.run_step_in_subprocess"
     )
     logger.setLevel(proxy.parent_log_level)
-    logger.debug(f"Starting workstep execution with settings: {settings}")
+    logger.debug(f"Starting step execution with settings: {settings}")
 
     from ..modifier import Modifier
     from ..opsproducer import OpsProducer
@@ -163,6 +164,12 @@ def run_workstep_in_subprocess(
         execute_ctx.set_progress(execute_progress)
         if px_size:
             cached_pixel_size = px_size
+        if chunk:
+            # Include the generation_id in the event payload
+            proxy.send_event('ops_chunk', {
+                'chunk': chunk,
+                'generation_id': generation_id
+            })
         final_ops += chunk
 
     # Ensure path generation is marked as 100% complete before continuing.

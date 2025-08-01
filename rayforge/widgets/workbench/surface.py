@@ -4,6 +4,7 @@ from blinker import Signal
 from typing import Optional, Tuple, cast, Dict, List
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ...models.doc import Doc
+from ...models.layer import Layer
 from ...models.workpiece import WorkPiece
 from ...models.machine import Machine
 from ...undo import SetterCommand, ListItemCommand
@@ -13,6 +14,7 @@ from .dotelem import DotElement
 from .workstepelem import WorkStepElement
 from .workpieceelem import WorkPieceElement
 from .cameraelem import CameraImageElement
+from .layerelem import LayerElement
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ class WorkSurface(Canvas):
         self._transform_start_states: Dict[CanvasElement, dict] = {}
 
         # The root element itself should not clip, allowing its children
-        # (like _workpiece_elements) to draw outside its bounds.
+        # to draw outside its bounds.
         self.root.clip = False
 
         self._axis_renderer = AxisRenderer(
@@ -58,12 +60,6 @@ class WorkSurface(Canvas):
             y_axis_down=self.machine.y_axis_down,
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
-
-        # This container for workpieces should not clip its children.
-        self._workpiece_elements = CanvasElement(
-            0, 0, 0, 0, selectable=False, clip=False
-        )
-        self.root.add(self._workpiece_elements)
 
         # DotElement size will be set in pixels by WorkSurface
         # Initialize with zero size, size and position will be set in
@@ -515,12 +511,10 @@ class WorkSurface(Canvas):
         # Set the root element's size directly in pixels
         # The root element's origin is always its top-left corner
         if self.machine.y_axis_down:
-            self.root.set_pos(round(origin_x), round(origin_y))
+            self.root.set_pos(origin_x, origin_y)
         else:
-            self.root.set_pos(
-                round(origin_x), round(origin_y - content_height)
-            )
-        self.root.set_size(round(content_width), round(content_height))
+            self.root.set_pos(origin_x, origin_y - content_height)
+        self.root.set_size(content_width, content_height)
 
         # Update WorkSurface's internal pixel dimensions based on content area
         self.pixels_per_mm_x, self.pixels_per_mm_y = (
@@ -528,20 +522,15 @@ class WorkSurface(Canvas):
         )
 
         # Update children to match the new content area size
-        self._workpiece_elements.set_size(
-            round(content_width), round(content_height)
-        )
-        for elem in self.find_by_type(WorkStepElement):
-            elem.set_size(round(content_width), round(content_height))
+        for elem in self.find_by_type(LayerElement):
+            elem.set_size(content_width, content_height)
         for elem in self.find_by_type(CameraImageElement):
-            elem.set_size(round(content_width), round(content_height))
+            elem.set_size(content_width, content_height)
 
         # Update laser dot size based on new pixel dimensions and its mm radius
         dot_radius_mm = self._laser_dot.radius_mm
         dot_diameter_px = 2 * dot_radius_mm * self.pixels_per_mm_x
-        self._laser_dot.set_size(
-            round(dot_diameter_px), round(dot_diameter_px)
-        )
+        self._laser_dot.set_size(dot_diameter_px, dot_diameter_px)
 
         # Re-position laser dot based on new pixel dimensions
         current_dot_pos_mm = self.pixel_to_mm(*self._laser_dot.pos_abs())
@@ -564,50 +553,70 @@ class WorkSurface(Canvas):
                 elem = cast(WorkStepElement, elem)
                 elem.set_show_travel_moves(show)
 
+    def _create_and_add_layer_element(self, layer: "Layer"):
+        """Creates a new LayerElement and adds it to the canvas root."""
+        logger.debug(f"Adding new LayerElement for '{layer.name}'")
+        layer_elem = LayerElement(layer=layer, canvas=self)
+
+        # A LayerElement is a container that spans the entire content area
+        content_width, content_height = self._axis_renderer.get_content_size()
+        layer_elem.set_size(content_width, content_height)
+
+        self.root.add(layer_elem)
+
+        # Now populate the new layer element with its children
+        layer_elem.sync_with_model(layer)
+
     def update_from_doc(self, doc: Doc):
+        """
+        Synchronizes the canvas elements with the document model.
+
+        This method ensures that the layers and their contents (workpieces,
+        worksteps) displayed on the canvas perfectly match the state of the
+        document's data model. It also reorders the LayerElements to match
+        the Z-order of the layers in the document.
+        """
         self.doc = doc
 
-        # Remove anything from the canvas that no longer exists.
-        for elem in self.find_by_type(WorkStepElement):
-            if elem.data not in doc.workplan:
-                elem.remove()
-        for elem in self.find_by_type(WorkPieceElement):
-            if elem.data not in doc:
+        # --- Step 1: Add and Remove LayerElements ---
+        doc_layers_set = set(doc.layers)
+        current_elements_on_canvas = {
+            elem.data: elem for elem in self.find_by_type(LayerElement)
+        }
+
+        # Remove elements for layers that are no longer in the doc
+        for layer, elem in current_elements_on_canvas.items():
+            if layer not in doc_layers_set:
                 elem.remove()
 
-        # Add any new elements.
-        for workpiece in doc.workpieces:
-            self.add_workpiece(workpiece)
-        for workstep in doc.workplan:
-            self.add_workstep(workstep)
+        # Add elements for new layers that are not yet on the canvas
+        for layer in doc.layers:
+            if layer not in current_elements_on_canvas:
+                self._create_and_add_layer_element(layer)
 
-    def add_workstep(self, workstep):
-        """
-        Adds the workstep, but only if it does not yet exist.
-        Also adds each of the WorkPieces, but only if they
-        do not exist.
-        """
-        # Add or find the WorkStep.
-        elem = cast(WorkStepElement, self.find_by_data(workstep))
-        if not elem:
-            # WorkStepElement should cover the entire canvas area in pixels
-            elem = WorkStepElement(
-                workstep,
-                0.0,  # x_px
-                0.0,  # y_px
-                self.root.width,  # width_px
-                self.root.height,  # height_px
-                canvas=self,
-                parent=self.root,
-                show_travel_moves=self._show_travel_moves,
-            )
-            self.add(elem)
-            workstep.changed.connect(self.on_workstep_changed)
+        # --- Step 2: Reorder LayerElements for Z-stacking ---
+        # The first layer in the list is at the bottom (drawn first).
+        # The last layer is at the top (drawn last).
+        layer_order_map = {layer: i for i, layer in enumerate(doc.layers)}
+
+        def sort_key(element: CanvasElement):
+            """
+            Sort key for root's children. Camera at bottom, then dot,
+            then layers.
+            """
+            if isinstance(element, LayerElement):
+                # LayerElements are ordered according to the doc.layers list.
+                return layer_order_map.get(element.data, len(layer_order_map))
+            if isinstance(element, CameraImageElement):
+                # Camera images are at the very bottom.
+                return -2
+            # Other elements (like the laser dot) are above the camera but
+            # below layers.
+            return -1
+
+        self.root.children.sort(key=sort_key)
+
         self.queue_draw()
-
-        # Ensure WorkPieceOpsElements are created for each WorkPiece
-        for workpiece in workstep.workpieces():
-            elem.add_workpiece(workpiece)
 
     def set_laser_dot_visible(self, visible=True):
         self._laser_dot.set_visible(visible)
@@ -625,73 +634,15 @@ class WorkSurface(Canvas):
         )
         self.queue_draw()
 
-    def on_workstep_changed(self, workstep, **kwargs):
-        elem = self.find_by_data(workstep)
-        if not elem:
-            return
-        elem.set_visible(workstep.visible)
-        self.queue_draw()
-
-    def add_workpiece(self, workpiece: WorkPiece):
-        """
-        Adds a workpiece to the canvas.
-        If the workpiece does not have a position and size, it calculates a
-        sensible default (scaled to fit and centered). Otherwise, it uses
-        the existing properties.
-        """
-        if self._workpiece_elements.find_by_data(workpiece):
-            self.queue_draw()
-            return
-
-        # If the workpiece is new (e.g., from a file import) and has no
-        # position or size, calculate defaults.
-        if workpiece.pos is None or workpiece.size is None:
-            wswidth_mm, wsheight_mm = self.get_size()
-            wp_width_nat_mm, wp_height_nat_mm = workpiece.get_default_size(
-                wswidth_mm, wsheight_mm
-            )
-
-            # Determine the size to use in mm, scaling down if necessary to fit
-            width_mm = wp_width_nat_mm
-            height_mm = wp_height_nat_mm
-            if width_mm > wswidth_mm or height_mm > wsheight_mm:
-                scale_w = wswidth_mm / width_mm if width_mm > 0 else 1
-                scale_h = wsheight_mm / height_mm if height_mm > 0 else 1
-                scale = min(scale_w, scale_h)
-                width_mm *= scale
-                height_mm *= scale
-
-            # Set the workpiece's size and centered position in mm
-            workpiece.set_size(width_mm, height_mm)
-            x_mm = (wswidth_mm - width_mm) / 2
-            y_mm = (wsheight_mm - height_mm) / 2
-            workpiece.set_pos(x_mm, y_mm)
-
-        # Now that the workpiece is guaranteed to have a pos and size,
-        # create its canvas element representation.
-        elem = WorkPieceElement(
-            workpiece, canvas=self, parent=self._workpiece_elements
-        )
-        self._workpiece_elements.add(elem)
-        self.queue_draw()
-
-    def clear_workpieces(self):
-        self._workpiece_elements.remove_all()
-        self.queue_draw()
-        self._finalize_selection_state()
-
     def remove_all(self):
         # Clear all children except the fixed ones
-        # (_workpiece_elements, _laser_dot)
         children_to_remove = [
             c
             for c in self.root.children
-            if c not in [self._workpiece_elements, self._laser_dot]
+            if not isinstance(c, (CameraImageElement, DotElement))
         ]
         for child in children_to_remove:
             child.remove()
-        # Clear children of _workpiece_elements
-        self._workpiece_elements.remove_all()
         self.queue_draw()
 
     def find_by_type(self, thetype):
@@ -701,7 +652,8 @@ class WorkSurface(Canvas):
         return self.root.find_by_type(thetype)
 
     def set_workpieces_visible(self, visible=True):
-        self._workpiece_elements.set_visible(visible)
+        for wp_elem in self.find_by_type(WorkPieceElement):
+            wp_elem.set_visible(visible)
         self.queue_draw()
 
     def set_camera_image_visibility(self, visible: bool):
@@ -854,15 +806,11 @@ class WorkSurface(Canvas):
         if self.machine.y_axis_down:
             # In a Y-down view, moving content "up" means panning to lower
             # Y values.
-            new_pan_y_mm = (
-                self._pan_start[1] - offset.y / self.pixels_per_mm_y
-            )
+            new_pan_y_mm = self._pan_start[1] - offset.y / self.pixels_per_mm_y
         else:
             # In a Y-up view, moving content "up" means panning to higher
             # Y values.
-            new_pan_y_mm = (
-                self._pan_start[1] + offset.y / self.pixels_per_mm_y
-            )
+            new_pan_y_mm = self._pan_start[1] + offset.y / self.pixels_per_mm_y
         self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
     def on_pan_end(self, gesture, x: float, y: float):

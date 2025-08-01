@@ -41,7 +41,6 @@ class WorkPieceOpsElement(CanvasElement):
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
-        # Connect to specific signals instead of the generic 'changed' signal.
         workpiece.pos_changed.connect(self.allocate)
         workpiece.size_changed.connect(self.allocate)
         workpiece.angle_changed.connect(self.allocate)
@@ -79,9 +78,7 @@ class WorkPieceOpsElement(CanvasElement):
 
         # The element is positioned at the workpiece's top-left, adjusted
         # for the margin.
-        self.set_pos(
-            pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX
-        )
+        self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
         self.set_angle(self.data.angle)
 
         if not pixel_size_changed and not force:
@@ -125,16 +122,42 @@ class WorkPieceOpsElement(CanvasElement):
         """Adds a chunk of ops, but only if the generation_id is not stale."""
         if not ops_chunk:
             return
-        # Only add chunk if it belongs to the current generation.
-        if (
-            generation_id is not None
-            and generation_id != self._ops_generation_id
-        ):
+
+        # If no generation_id is provided, we can't perform staleness checks.
+        # Just append the chunk.
+        if generation_id is None:
+            self._accumulated_ops += ops_chunk
+            self.trigger_update()
+            return
+
+        # Case 1: The chunk is from a newer generation. This means we either
+        # missed the `ops_generation_starting` signal or a new generation
+        # started. We should clear the old ops and start accumulating for
+        # the new generation.
+        if generation_id > self._ops_generation_id:
+            logger.debug(
+                f"New generation chunk (gen {generation_id}) for "
+                f"'{self.data.name}', replacing current (gen "
+                f"{self._ops_generation_id})."
+            )
+            self._ops_generation_id = generation_id
+            self._accumulated_ops = ops_chunk
+            self.clear_surface()  # Clear the visual buffer
+            self.trigger_update()
+            return
+
+        # Case 2: The chunk is from a past generation. It's stale and should
+        # be ignored.
+        if generation_id < self._ops_generation_id:
             logger.debug(
                 f"Ignoring stale ops chunk (gen {generation_id}) for "
                 f"'{self.data.name}', current is {self._ops_generation_id}"
             )
             return
+
+        # Case 3: The chunk belongs to the current generation. Append it.
+        # This is the expected behavior for subsequent chunks.
+        # (This block executes if generation_id == self._ops_generation_id)
         self._accumulated_ops += ops_chunk
         self.trigger_update()
 
@@ -146,12 +169,71 @@ class WorkPieceOpsElement(CanvasElement):
             self.show_travel_moves = show
             self.trigger_update()
 
+    def draw(self, ctx: cairo.Context):
+        """
+        Custom draw method to handle intermediate scaling correctly.
+        It preserves the pixel margin by scaling only the content area.
+        """
+        if not self.surface:
+            # Draw background if no surface, then stop.
+            ctx.set_source_rgba(*self.background)
+            ctx.rectangle(0, 0, self.width, self.height)
+            ctx.fill()
+            return
+
+        source_w, source_h = (
+            self.surface.get_width(),
+            self.surface.get_height(),
+        )
+        if (
+            source_w <= 0
+            or source_h <= 0
+            or self.width <= 0
+            or self.height <= 0
+        ):
+            return
+
+        # If the surface and element size are identical, we can use the fast
+        # default drawing method.
+        if round(self.width) == source_w and round(self.height) == source_h:
+            super().draw(ctx)
+            return
+
+        # --- Smart scaling logic for intermediate drawing ---
+
+        # Calculate the dimensions of the actual content, excluding the margin.
+        source_content_w = source_w - 2 * OPS_MARGIN_PX
+        source_content_h = source_h - 2 * OPS_MARGIN_PX
+        dest_content_w = self.width - 2 * OPS_MARGIN_PX
+        dest_content_h = self.height - 2 * OPS_MARGIN_PX
+
+        if source_content_w <= 0 or source_content_h <= 0:
+            return  # Cannot scale if source content has no area.
+
+        # Calculate the scaling factor based on the content areas.
+        scale_x = dest_content_w / source_content_w
+        scale_y = dest_content_h / source_content_h
+
+        ctx.save()
+        # 1. Translate to the destination content's top-left corner.
+        ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
+        # 2. Scale the context to match the content area's new size.
+        ctx.scale(scale_x, scale_y)
+        # 3. Set the source surface, but shift it left/up by the margin.
+        #    This aligns the source content's top-left (which is at
+        #    (margin, margin) on the surface) with the current origin (0,0)
+        #    of our translated and scaled context.
+        ctx.set_source_surface(self.surface, -OPS_MARGIN_PX, -OPS_MARGIN_PX)
+
+        ctx.get_source().set_filter(cairo.FILTER_GOOD)
+        ctx.paint()
+        ctx.restore()
+
     def render_to_surface(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """
-        Renders the accumulated ops to a new surface. This runs in a
-        background thread.
+        Renders the accumulated ops to a new surface.
         """
         if width <= 0 or height <= 0:
             return None
@@ -170,6 +252,9 @@ class WorkPieceOpsElement(CanvasElement):
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1
         pixels_per_mm = px_per_mm_x, px_per_mm_y
 
+        # This translation of the millimeter-based Ops data is correct for
+        # the final render, as the CairoEncoder will scale this mm value
+        # by the ppm, resulting in a constant pixel margin.
         margin_mm_x = OPS_MARGIN_PX / px_per_mm_x
         margin_mm_y = OPS_MARGIN_PX / px_per_mm_y
         render_ops.translate(margin_mm_x, margin_mm_y)

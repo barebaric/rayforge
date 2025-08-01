@@ -1,134 +1,171 @@
-from __future__ import annotations
-import logging
-import asyncio
-from typing import List, Optional
-from ..tasker.manager import CancelledError
-from ..tasker.context import ExecutionContext
-from ..config import config
-from .workpiece import WorkPiece
-from .workstep import WorkStep, Outline
-from .ops import Ops
-from blinker import Signal
+"""
+Defines the WorkPlan class, which holds an ordered sequence of WorkSteps.
+"""
 
+from __future__ import annotations
+import uuid
+import logging
+from typing import List, TYPE_CHECKING
+from blinker import Signal
+from ..config import config
+from .workstep import WorkStep
+
+if TYPE_CHECKING:
+    from .layer import Layer
 
 logger = logging.getLogger(__name__)
 
 
 class WorkPlan:
     """
-    Represents a sequence of worksteps that define a laser job.
+    An ordered sequence of WorkSteps that defines a manufacturing process.
+
+    Each Layer owns a WorkPlan. The WorkPlan holds a list of WorkStep
+    objects, which are applied in order to the workpieces in the layer to
+    generate machine operations. It listens for changes in its child steps
+    and propagates a `changed` signal.
     """
 
-    def __init__(self, doc, name: str):
-        self.doc = doc
+    changed = Signal()
+
+    def __init__(self, layer: "Layer", name: str):
+        """
+        Initializes the WorkPlan.
+
+        Args:
+            layer: The parent Layer object.
+            name: The user-facing name for the work plan.
+        """
+        self.layer = layer
+        self.doc = layer.doc
+        self.uid: str = str(uuid.uuid4())
         self.name: str = name
-        self.worksteps: List[WorkStep] = []
-        self._workstep_ref_for_pyreverse: WorkStep
-        self.changed = Signal()
-        self.add_workstep(self.create_workstep(Outline))
+        self.steps: List[WorkStep] = []
+
+        # Ref for static analysis tools to detect class relations.
+        self._step_ref_for_pyreverse: WorkStep
 
     def __iter__(self):
-        return iter(self.worksteps)
+        """Allows iteration over the work steps."""
+        return iter(self.steps)
 
-    def create_workstep(self, workstep_cls, name=None) -> WorkStep:
+    def _on_step_changed(self, step: WorkStep, **kwargs):
+        """
+        Handles data-changing signals from child steps.
+
+        When a child step's `changed` signal is fired, this method
+        catches it and bubbles up the notification by firing the work
+        plan's own `changed` signal. This ensures that the parent Layer
+        is notified to regenerate operations.
+        """
+        logger.debug(
+            f"WorkPlan '{self.name}': Notified of model change from step "
+            f"'{step.name}'. Firing own changed signal."
+        )
+        self.changed.send(self, step=step)
+
+    def _connect_step_signals(self, step: WorkStep):
+        """Connects the work plan's handlers to a step's signals."""
+        logger.debug(f"Connecting signals for step '{step.name}'.")
+        step.changed.connect(self._on_step_changed)
+
+        step.ops_generation_starting.connect(
+            self.layer._on_step_ops_generation_starting
+        )
+        step.ops_chunk_available.connect(
+            self.layer._on_step_ops_chunk_available
+        )
+        step.ops_generation_finished.connect(
+            self.layer._on_step_ops_generation_finished
+        )
+
+    def _disconnect_step_signals(self, step: WorkStep):
+        """Disconnects the work plan's handlers from a step's signals."""
+        try:
+            step.changed.disconnect(self._on_step_changed)
+            step.ops_generation_starting.disconnect(
+                self.layer._on_step_ops_generation_starting
+            )
+            step.ops_chunk_available.disconnect(
+                self.layer._on_step_ops_chunk_available
+            )
+            step.ops_generation_finished.disconnect(
+                self.layer._on_step_ops_generation_finished
+            )
+        except TypeError:
+            # This can occur if a signal was never connected or was
+            # already disconnected, which is safe to ignore.
+            pass
+
+    def create_step(self, step_cls, name=None) -> WorkStep:
         """Factory method to create a new workstep with correct config."""
-        return workstep_cls(
+        return step_cls(
             doc=self.doc,
+            workplan=self,
             laser=config.machine.heads[0],
             max_cut_speed=config.machine.max_cut_speed,
             max_travel_speed=config.machine.max_travel_speed,
             name=name,
         )
 
-    def set_workpieces(self, workpieces: List[WorkPiece]):
-        for step in self.worksteps:
-            step.set_workpieces(workpieces)
+    def add_step(self, step: WorkStep):
+        """
+        Adds a step to the end of the work plan.
 
-    def add_workstep(self, step: WorkStep):
-        self.worksteps.append(step)
-        step.set_workpieces(self.doc.workpieces)
+        Appends the step, connects its signals, and notifies listeners
+        that the work plan has changed.
+
+        Args:
+            step: The WorkStep instance to add.
+        """
+        step.workplan = self
+        self.steps.append(step)
+        self._connect_step_signals(step)
         self.changed.send(self)
 
-    def remove_workstep(self, workstep: WorkStep):
-        self.worksteps.remove(workstep)
+    def remove_step(self, step: WorkStep):
+        """
+        Removes a step from the work plan.
+
+        Disconnects signals from the step, removes it from the list,
+        and notifies listeners of the change.
+
+        Args:
+            step: The WorkStep instance to remove.
+        """
+        self._disconnect_step_signals(step)
+        self.steps.remove(step)
+        step.workplan = None
         self.changed.send(self)
 
-    def set_worksteps(self, worksteps: List[WorkStep]):
+    def set_steps(self, steps: List[WorkStep]):
         """
-        Replace all worksteps.
+        Replaces the entire list of steps with a new one.
+
+        This method efficiently disconnects all signals from the old steps
+        and connects signals for all the new ones.
+
+        Args:
+            steps: The new list of WorkStep instances.
         """
-        self.worksteps = worksteps
+        for step in self.steps:
+            self._disconnect_step_signals(step)
+            step.workplan = None
+
+        self.steps = list(steps)
+
+        for step in self.steps:
+            step.workplan = self
+            self._connect_step_signals(step)
+
         self.changed.send(self)
 
     def has_steps(self) -> bool:
-        return len(self.worksteps) > 0
-
-    async def execute(self, context: Optional[ExecutionContext] = None) -> Ops:
         """
-        Executes all visible worksteps and returns the final, combined Ops.
-
-        This method asynchronously collects, transforms, and
-        optimizes operations from all steps for all workpieces.
+        Checks if the work plan contains any steps.
 
         Returns:
-            A single Ops object containing the fully processed operations.
+            True if the number of steps is greater than zero, False
+            otherwise.
         """
-        final_ops = Ops()
-        machine_width, machine_height = config.machine.dimensions
-        clip_rect = 0, 0, machine_width, machine_height
-
-        work_items = []
-        for step in self.worksteps:
-            if not step.visible:
-                continue
-            for workpiece in step.workpieces():
-                if not workpiece.pos or not workpiece.size:
-                    continue  # workpiece is not added to canvas
-                work_items.append((step, workpiece))
-
-        if not work_items:
-            return final_ops
-
-        total_items = len(work_items)
-        for i, (step, workpiece) in enumerate(work_items):
-            if context:
-                if context.is_cancelled():
-                    raise CancelledError("Operation cancelled")
-                context.set_progress(i / total_items)
-                context.set_message(
-                    _("Processing '{workpiece}' in '{step}'").format(
-                        workpiece=workpiece.name, step=step.name
-                    )
-                )
-                await asyncio.sleep(0)
-
-            # Get the pre-scaled ops (still in local, canonical coords)
-            step_ops = await asyncio.to_thread(step.get_ops, workpiece)
-            if not step_ops:
-                continue
-
-            # 1. Rotate the ops around its local center. G-code uses CCW.
-            wp_angle = workpiece.angle
-            if wp_angle != 0:
-                wp_w, wp_h = workpiece.size
-                cx, cy = wp_w / 2, wp_h / 2
-                step_ops.rotate(-wp_angle, cx, cy)
-
-            # 2. Translate to final canonical position on the work area
-            step_ops.translate(*workpiece.pos)
-
-            # 3. Convert from canonical (Y-up) to machine-native coords
-            if config.machine.y_axis_down:
-                step_ops.scale(1, -1)
-                step_ops.translate(0, machine_height)
-
-            # 4. Clip to machine boundaries and apply post-transformers
-            clipped_ops = step_ops.clip(clip_rect)
-            for transformer in step.opstransformers:
-                await asyncio.to_thread(transformer.run, clipped_ops)
-            final_ops += clipped_ops * step.passes
-
-        if context:
-            context.set_progress(1.0)
-            context.flush()
-        return final_ops
+        return len(self.steps) > 0

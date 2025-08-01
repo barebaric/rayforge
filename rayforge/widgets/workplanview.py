@@ -1,7 +1,6 @@
 import logging
 from typing import Optional
 from gi.repository import Gtk  # type: ignore
-from ..models.doc import Doc
 from ..models.workplan import WorkPlan
 from ..models.workstep import WorkStep
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
@@ -20,9 +19,8 @@ class WorkPlanView(Expander):
     for a given WorkPlan.
     """
 
-    def __init__(self, doc: Doc, workplan: WorkPlan, **kwargs):
+    def __init__(self, workplan: WorkPlan, **kwargs):
         super().__init__(**kwargs)
-        self.doc = doc
         self.workplan: Optional[WorkPlan] = None  # Will be set by set_workplan
         self.set_expanded(True)
 
@@ -91,7 +89,7 @@ class WorkPlanView(Expander):
             return
 
         # Update metadata
-        count = len(self.workplan.worksteps)
+        count = len(self.workplan.steps)
         self.set_title(self.workplan.name)
         self.set_subtitle(
             _("{count} step").format(count=count)
@@ -106,17 +104,19 @@ class WorkPlanView(Expander):
         """
         Re-populates the draglist to match the state of the workplan's steps.
         """
-        if not self.workplan:
+        if not self.workplan or not self.workplan.doc:
             return
 
         # Check if the list of steps is already in sync to avoid unnecessary
         # rebuilds.
         current_steps = [row.data for row in self.draglist]
-        if current_steps == self.workplan.worksteps:
+        if current_steps == self.workplan.steps:
             # The list structure is the same, just tell each workstepbox to
             # update its summary.
             for i, row in enumerate(self.draglist):
-                workstepbox = row.get_child()
+                # The row's child is an HBox: [handle, content]. Get content.
+                hbox = row.get_child()
+                workstepbox = hbox.get_last_child()
                 if isinstance(workstepbox, WorkStepBox):
                     workstepbox.set_prefix(
                         _("WorkStep {seq}: ").format(seq=i + 1)
@@ -130,7 +130,9 @@ class WorkPlanView(Expander):
             row = Gtk.ListBoxRow()
             row.data = step  # Store model for reordering
             workstepbox = WorkStepBox(
-                self.doc, step, prefix=_("WorkStep {seq}: ").format(seq=seq)
+                self.workplan.doc,
+                step,
+                prefix=_("WorkStep {seq}: ").format(seq=seq),
             )
             workstepbox.delete_clicked.connect(self.on_button_delete_clicked)
             row.set_child(workstepbox)
@@ -138,9 +140,9 @@ class WorkPlanView(Expander):
 
     def on_button_add_clicked(self, button):
         """Shows a popup to select and add a new step type."""
-        if not self.workplan:
+        if not self.workplan or not self.workplan.doc:
             return
-        logger.info("add clicked")
+
         popup = WorkStepSelector(WorkStep.__subclasses__())
         popup.set_parent(button)
         popup.popup()
@@ -148,46 +150,44 @@ class WorkPlanView(Expander):
 
     def on_add_dialog_response(self, popup):
         """Handles the creation of a new step after the popup closes."""
-        if not self.workplan:
+        if not self.workplan or not self.workplan.doc:
             return
         if popup.selected:
             step_cls = popup.selected
-            new_step = self.workplan.create_workstep(step_cls)
-
-            # Create an undoable command for adding the step
+            new_step = self.workplan.create_step(step_cls)
             command = ListItemCommand(
                 owner_obj=self.workplan,
                 item=new_step,
-                undo_command="remove_workstep",
-                redo_command="add_workstep",
+                undo_command="remove_step",
+                redo_command="add_step",
                 name=_("Add step '{name}'").format(name=new_step.name),
             )
-            self.doc.history_manager.execute(command)
+            self.workplan.doc.history_manager.execute(command)
 
     def on_button_delete_clicked(self, sender, step, **kwargs):
         """Handles deletion of a step with an undoable command."""
-        if not self.workplan:
+        if not self.workplan or not self.workplan.doc:
             return
-        new_list = [s for s in self.workplan.worksteps if s is not step]
+        new_list = [s for s in self.workplan.steps if s is not step]
         command = ReorderListCommand(
             target_obj=self.workplan,
-            list_property_name="worksteps",
+            list_property_name="steps",
             new_list=new_list,
-            setter_method_name="set_worksteps",
+            setter_method_name="set_steps",
             name=_("Remove step '{name}'").format(name=step.name),
         )
-        self.doc.history_manager.execute(command)
+        self.workplan.doc.history_manager.execute(command)
 
     def on_workplan_reordered(self, sender, **kwargs):
         """Handles reordering of steps with an undoable command."""
-        if not self.workplan:
+        if not self.workplan or not self.workplan.doc:
             return
         new_order = [row.data for row in self.draglist]
         command = ReorderListCommand(
             target_obj=self.workplan,
-            list_property_name="worksteps",
+            list_property_name="steps",
             new_list=new_order,
-            setter_method_name="set_worksteps",
+            setter_method_name="set_steps",
             name=_("Reorder steps"),
         )
-        self.doc.history_manager.execute(command)
+        self.workplan.doc.history_manager.execute(command)
