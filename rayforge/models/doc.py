@@ -9,6 +9,7 @@ from ..undo import HistoryManager
 from ..tasker.manager import CancelledError
 from ..tasker.context import ExecutionContext
 from .workpiece import WorkPiece
+from .step import Contour
 from .layer import Layer
 from .ops import Ops
 
@@ -31,6 +32,12 @@ class Doc:
 
         layer = Layer(self, _("Layer 1"))
         self.add_layer(layer)
+
+        # Create a default Contour step and add it to the first layer's
+        # workplan.
+        workplan = layer.workplan
+        default_step = workplan.create_step(Contour)
+        workplan.add_step(default_step)
 
     def __iter__(self):
         """Iterates through all workpieces in all layers."""
