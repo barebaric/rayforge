@@ -37,6 +37,9 @@ include = ["rayforge*"]
 [tool.setuptools-git-versioning]
 enabled = true
 
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
 [tool.ruff]
 builtins = ["_"]
 

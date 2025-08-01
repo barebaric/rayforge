@@ -64,7 +64,7 @@ snap connect rayforge:camera
 Advanced users may also install it through PIP, but know what you are doing. Something like this:
 
 ```bash
-sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64 libpotrace-dev libagg-dev
+sudo apt install python3-pip-whl python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64 libpotrace-dev libagg-dev libadwaita-1-0 libopencv-dev
 
 pip3 install rayforge
 ```
