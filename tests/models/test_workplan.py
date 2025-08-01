@@ -139,15 +139,11 @@ def test_layer(mock_doc):
 
 
 @pytest.fixture
-def contour_step(setup_real_config, mock_doc):
-    """Creates a real Contour WorkStep instance."""
-    config = setup_real_config
-    step = Contour(
-        doc=mock_doc,
-        laser=config.machine.heads[0],
-        max_cut_speed=config.machine.max_cut_speed,
-        max_travel_speed=config.machine.max_travel_speed,
-    )
+def contour_step(test_layer):
+    """Creates a real Contour WorkStep instance, associated with a workplan."""
+    # Use the workplan's factory method to ensure correct initialization.
+    # The factory correctly passes the workplan and config-derived args.
+    step = test_layer.workplan.create_step(Contour)
     step.opstransformers = []  # Clear transformers to isolate testing
     return step
 

@@ -36,19 +36,17 @@ class WorkStep(ABC):
 
     def __init__(
         self,
-        doc: "Doc",
+        workplan: "WorkPlan",
         opsproducer: OpsProducer,
         laser: Laser,
         max_cut_speed: int,
         max_travel_speed: int,
         name: Optional[str] = None,
-        workplan: Optional["WorkPlan"] = None,
     ):
         if not self.typelabel:
             raise AttributeError("Subclass must set a typelabel attribute.")
 
-        self.doc = doc
-        self.workplan = workplan
+        self.workplan: Optional["WorkPlan"] = workplan
         self.uid = str(uuid.uuid4())
         self.name = name or self.typelabel
         self.visible = True
@@ -78,6 +76,11 @@ class WorkStep(ABC):
         self.cut_speed = max_cut_speed
         self.travel_speed = max_travel_speed
         self.air_assist = False
+
+    @property
+    def doc(self) -> Optional["Doc"]:
+        """The parent Doc object, accessed via the WorkPlan."""
+        return self.workplan.doc if self.workplan else None
 
     @property
     def opstransformers(self) -> List[OpsTransformer]:
@@ -251,9 +254,11 @@ class WorkStep(ABC):
 class Outline(WorkStep):
     typelabel = _("External Outline")
 
-    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+    def __init__(
+        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+    ):
         super().__init__(
-            doc=doc, opsproducer=OutlineTracer(), name=name, **kwargs
+            workplan=workplan, opsproducer=OutlineTracer(), name=name, **kwargs
         )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
@@ -264,9 +269,11 @@ class Outline(WorkStep):
 class Contour(WorkStep):
     typelabel = _("Contour")
 
-    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+    def __init__(
+        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+    ):
         super().__init__(
-            doc=doc, opsproducer=EdgeTracer(), name=name, **kwargs
+            workplan=workplan, opsproducer=EdgeTracer(), name=name, **kwargs
         )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
@@ -277,9 +284,11 @@ class Contour(WorkStep):
 class Rasterize(WorkStep):
     typelabel = _("Raster Engrave")
 
-    def __init__(self, *, doc: "Doc", name: Optional[str] = None, **kwargs):
+    def __init__(
+        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+    ):
         super().__init__(
-            doc=doc, opsproducer=Rasterizer(), name=name, **kwargs
+            workplan=workplan, opsproducer=Rasterizer(), name=name, **kwargs
         )
         self.opstransformers = [
             Optimize(enabled=True),
