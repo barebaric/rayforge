@@ -230,14 +230,12 @@ class Layer:
         for key in keys_to_del:
             self._ops_cache.pop(key, None)
             self._generation_id_map.pop(key, None)
-        # Also cancel any running tasks for this workpiece
+
+        # Also cancel any running tasks for this workpiece.
         for step in self.workflow.steps:
-            for gen_id in range(
-                self._generation_id_map.get((step.uid, w_uid), 0) + 1
-            ):
-                # The 'cancel_task' method is part of the tasker framework.
-                # We ignore the static analysis warning.
-                task_mgr.cancel_task((step.uid, w_uid, gen_id))  # type: ignore
+            # The key for a task is (step.uid, workpiece.uid)
+            task_key = (step.uid, w_uid)
+            task_mgr.cancel_task(task_key)
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for all steps for one workpiece."""

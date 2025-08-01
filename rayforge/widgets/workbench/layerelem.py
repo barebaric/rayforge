@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, cast
+from typing import List, Optional, TYPE_CHECKING, cast
 
 from ..canvas.element import CanvasElement
 from .workpieceelem import WorkPieceElement
@@ -86,20 +86,23 @@ class LayerElement(CanvasElement):
             wp_elem.allocate()
 
         # --- Reconcile StepElements ---
+        # Notify existing StepElements of the layer change.
+        current_ws_elements = cast(
+            List[StepElement], self.find_by_type(StepElement)
+        )
+        for elem in current_ws_elements:
+            elem._on_step_model_changed(elem.data)
+
+        # Now add/remove the StepElements themselves.
         model_steps = set(self.data.workflow.steps)
-        current_ws_elements = {
-            child
-            for child in self.children
-            if isinstance(child, StepElement)
-        }
         current_ws_data = {elem.data for elem in current_ws_elements}
 
-        # Remove elements for steps that are no longer in the layer
+        # Remove elements for steps that are no longer in the layer's workplan
         for elem in current_ws_elements:
             if elem.data not in model_steps:
                 elem.remove()
 
-        # Add elements for new steps in the layer
+        # Add elements for new steps in the layer's workplan
         # Use local import to break circular dependency
         #  (surface -> layerelem -> surface)
         from .surface import WorkSurface
@@ -119,6 +122,7 @@ class LayerElement(CanvasElement):
                 height=self.height,
                 show_travel_moves=show_travel,
                 canvas=self.canvas,
+                parent=self,  # Explicitly set parent
             )
             self.add(ws_elem)
 

@@ -130,6 +130,14 @@ class TaskManager:
 
         return task
 
+    def cancel_task(self, key: Any) -> None:
+        """Cancels a running task by its key."""
+        with self._lock:
+            task = self._tasks.get(key)
+            if task:
+                logger.debug(f"TaskManager: Cancelling task with key '{key}'.")
+                task.cancel()
+
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
     ) -> None:
