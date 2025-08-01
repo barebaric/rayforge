@@ -272,6 +272,33 @@ class WorkSurface(Canvas):
                     if ops_elem:
                         ops_elem.set_visible(True)
 
+    def set_machine(self, machine: Machine):
+        """
+        Updates the WorkSurface to use a new machine instance. This handles
+        disconnecting from the old machine's signals, connecting to the new
+        one's, and rebuilding machine-specific elements like cameras.
+        """
+        if self.machine == machine:
+            return  # No change needed
+
+        logger.debug(
+            f"WorkSurface switching from machine '{self.machine.id}' "
+            f" to '{machine.id}'"
+        )
+
+        # Disconnect from the old machine's signals
+        self.machine.changed.disconnect(self._on_machine_changed)
+
+        # Update the machine reference
+        self.machine = machine
+        self.set_size(machine.dimensions[0], machine.dimensions[1])
+
+        # Connect to the new machine's signals
+        self.machine.changed.connect(self._on_machine_changed)
+
+        # Manually trigger the handler to rebuild camera elements, etc.
+        self._on_machine_changed(machine)
+
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
         self._axis_renderer.set_pan_x_mm(pan_x_mm)

@@ -3,14 +3,15 @@ import logging
 import uuid
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
-from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
+from gi.repository import Gtk, Gio, GLib, Gdk, Adw, GObject  # type: ignore
 from .. import __version__
 from ..tasker.context import ExecutionContext
-from ..config import config, task_mgr
+from ..config import config, task_mgr, machine_mgr
 from ..driver import get_driver_cls
 from ..driver.driver import driver_mgr, DeviceStatus
 from ..driver.dummy import NoDeviceDriver
 from ..util.resources import get_icon
+from ..models.machine import Machine
 from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
 from ..models.layer import Layer
@@ -27,8 +28,7 @@ from .statusview import (
     MachineStatusMonitor,
 )
 from .machineview import MachineView
-from .preferencesdialog import PreferencesDialog
-from .machinesettings import MachineSettingsDialog
+from .preferencesdialog import PreferencesWindow
 from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
@@ -71,6 +71,15 @@ css = """
     margin-bottom: 5px;
 }
 """
+
+
+# This allows the plain Python Machine object to be stored in a Gio.ListStore.
+class MachineListItem(GObject.Object):
+    __gtype_name__ = "MachineListItem"
+
+    def __init__(self, machine: Machine):
+        super().__init__()
+        self.machine = machine
 
 
 class MainWindow(Adw.ApplicationWindow):
@@ -258,6 +267,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         toolbar.append(self.cancel_button)
 
+        # Add spacer to push machine selector to the right
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        toolbar.append(spacer)
+
+        # Add machine selector dropdown
+        self._setup_machine_selector()
+        toolbar.append(self.machine_dropdown)
+
         # Create the Paned splitting the window into left and right sections.
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.paned.set_vexpand(True)
@@ -399,6 +417,95 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self.surface.grab_focus()
 
+    def _setup_machine_selector(self):
+        """Creates the Gtk.DropDown for machine selection."""
+        # The model holds GObject wrappers for our Machine objects.
+        self.machine_model = Gio.ListStore.new(MachineListItem)
+
+        # The Factory for the list items in the popup
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._on_machine_selector_setup)
+        factory.connect("bind", self._on_machine_selector_bind)
+
+        # The Expression for the main dropdown button
+        expression = Gtk.ClosureExpression.new(
+            str, lambda item: item.machine.name if item else "", None
+        )
+
+        # Create the DropDown and set the factory
+        self.machine_dropdown = Gtk.DropDown.new(
+            self.machine_model, expression
+        )
+        self.machine_dropdown.set_factory(factory)
+
+        self.machine_dropdown.set_tooltip_text(_("Select active machine"))
+        self.machine_dropdown.connect(
+            "notify::selected-item", self._on_machine_selected
+        )
+
+        # Connect to the machine manager to keep the list updated.
+        machine_mgr.machine_added.connect(self._update_machine_list)
+        machine_mgr.machine_removed.connect(self._update_machine_list)
+        machine_mgr.machine_updated.connect(self._update_machine_list)
+
+        # Initial population of the list.
+        self._update_machine_list()
+
+    def _on_machine_selector_setup(self, factory, list_item):
+        """Setup a list item for the machine dropdown."""
+        box = Gtk.Box(spacing=6)
+        label = Gtk.Label()
+        box.append(label)
+        list_item.set_child(box)
+
+    def _on_machine_selector_bind(self, factory, list_item):
+        """Bind a machine object to a list item."""
+        box = list_item.get_child()
+        label = box.get_first_child()
+        list_item_obj = list_item.get_item()
+        label.set_text(list_item_obj.machine.name)
+
+    def _update_machine_list(self, *args, **kwargs):
+        """
+        Repopulates the machine dropdown from the machine manager.
+        """
+        logger.debug("Updating machine list in dropdown.")
+        machines = sorted(machine_mgr.machines.values(), key=lambda m: m.name)
+
+        # Block the selection signal while we modify the list to avoid
+        # recursion.
+        self.machine_dropdown.handler_block_by_func(self._on_machine_selected)
+
+        try:
+            self.machine_model.remove_all()
+            selected_index = -1
+            for i, machine in enumerate(machines):
+                # Append an instance of the wrapper, not the raw object
+                self.machine_model.append(MachineListItem(machine))
+                if config.machine and machine.id == config.machine.id:
+                    selected_index = i
+
+            if selected_index != -1:
+                self.machine_dropdown.set_selected(selected_index)
+        finally:
+            # Unblock the signal in a finally block to ensure it always runs.
+            self.machine_dropdown.handler_unblock_by_func(
+                self._on_machine_selected
+            )
+
+        # Set visibility based on the number of machines
+        self.machine_dropdown.set_visible(len(machines) > 1)
+
+    def _on_machine_selected(self, dropdown, param):
+        """Handles when a user selects a new machine from the dropdown."""
+        selected_list_item = dropdown.get_selected_item()
+        if selected_list_item:
+            # selected_list_item is the MachineListItem wrapper
+            logger.info(
+                f"User selected machine: {selected_list_item.machine.name}"
+            )
+            config.set_machine(selected_list_item.machine)
+
     def _setup_actions(self):
         """Creates all Gio.SimpleActions for the window and application."""
         # File actions
@@ -451,12 +558,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.create_layer_action.connect("activate", self.on_menu_create_layer)
         self.add_action(self.create_layer_action)
 
-        machine_settings_action = Gio.SimpleAction.new(
-            "machine-settings", None
-        )
-        machine_settings_action.connect("activate", self.show_machine_settings)
-        self.add_action(machine_settings_action)
-
         preferences_action = Gio.SimpleAction.new("preferences", None)
         preferences_action.connect("activate", self.show_preferences)
         self.add_action(preferences_action)
@@ -498,9 +599,6 @@ class MainWindow(Adw.ApplicationWindow):
         edit_menu.append_section(None, layer_commands)
 
         other_edit_commands = Gio.Menu()
-        other_edit_commands.append(
-            _("Machine Settings…"), "win.machine-settings"
-        )
         other_edit_commands.append(_("Preferences…"), "win.preferences")
         edit_menu.append_section(None, other_edit_commands)
 
@@ -535,7 +633,7 @@ class MainWindow(Adw.ApplicationWindow):
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
         app.set_accels_for_action("win.create-layer", ["<Primary>g"])
-        app.set_accels_for_action("win.settings", ["<Primary>comma"])
+        app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
 
     def _try_driver_setup(self):
@@ -630,7 +728,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def on_config_changed(self, sender, **kwargs):
-        self.surface.set_size(*config.machine.dimensions)
+        self.surface.set_machine(config.machine)
         width_mm, height_mm = config.machine.dimensions
         self.frame.set_ratio(width_mm / height_mm)
 
@@ -641,6 +739,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update theme
         self.apply_theme()
+
+        # Ensure dropdown selection is synced with config
+        self._update_machine_list()
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
@@ -1187,15 +1288,10 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = AboutDialog(transient_for=self)
         dialog.present()
 
-    def show_machine_settings(self, action, param):
-        dialog = MachineSettingsDialog(config.machine)
-        dialog.present(self)
-        dialog.connect("closed", self._on_preferences_dialog_closed)
-
     def show_preferences(self, action, param):
-        dialog = PreferencesDialog()
-        dialog.present(self)
-        dialog.connect("closed", self._on_preferences_dialog_closed)
+        dialog = PreferencesWindow(parent=self, transient_for=self)
+        dialog.present()
+        dialog.connect("close-request", self._on_preferences_dialog_closed)
 
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")

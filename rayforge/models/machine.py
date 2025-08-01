@@ -14,12 +14,14 @@ logger = logging.getLogger(__name__)
 class Machine:
     def __init__(self):
         self.id = str(uuid.uuid4())
-        self.name: str = _('Default Machine')
+        self.name: str = _("Default Machine")
         self.driver: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
         self.home_on_start: bool = False
-        self.preamble: List[str] = ["G21 ; Set units to mm",
-                                    "G90 ; Absolute positioning"]
+        self.preamble: List[str] = [
+            "G21 ; Set units to mm",
+            "G90 ; Absolute positioning",
+        ]
         self.postscript: List[str] = ["G0 X0 Y0 ; Return to origin"]
         self.air_assist_on = "M8 ; Enable air assist"
         self.air_assist_off = "M9 ; Disable air assist"
@@ -27,8 +29,8 @@ class Machine:
         self._heads_ref_for_pyreverse: Laser
         self.cameras: List[Camera] = []
         self._cameras_ref_for_pyreverse: Camera
-        self.max_travel_speed: int = 3000   # in mm/min
-        self.max_cut_speed: int = 1000   # in mm/min
+        self.max_travel_speed: int = 3000  # in mm/min
+        self.max_cut_speed: int = 1000  # in mm/min
         self.dimensions: Tuple[int, int] = 200, 200
         self.changed = Signal()
         self.y_axis_down: bool = False
@@ -140,7 +142,7 @@ class Machine:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Machine':
+    def from_dict(cls, data: Dict[str, Any]) -> "Machine":
         ma = cls()
         ma_data = data.get("machine", {})
         ma.name = ma_data.get("name", ma.name)
@@ -157,8 +159,9 @@ class Machine:
             ma.add_camera(Camera.from_dict(obj))
         speeds = ma_data.get("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
-        ma.max_travel_speed = speeds.get("max_travel_speed",
-                                         ma.max_travel_speed)
+        ma.max_travel_speed = speeds.get(
+            "max_travel_speed", ma.max_travel_speed
+        )
         gcode = ma_data.get("gcode", {})
         ma.preamble = gcode.get("preamble", ma.preamble)
         ma.postscript = gcode.get("postscript", ma.postscript)
@@ -173,16 +176,38 @@ class MachineManager:
         self.base_dir = base_dir
         self.machines: Dict[str, Machine] = dict()
         self._machine_ref_for_pyreverse: Machine
+        self.machine_added = Signal()
+        self.machine_removed = Signal()
+        self.machine_updated = Signal()
         self.load()
 
     def filename_from_id(self, machine_id: str) -> Path:
         return self.base_dir / f"{machine_id}.yaml"
 
-    def add_machine(self, machine):
+    def add_machine(self, machine: Machine):
         if machine.id in self.machines:
             return
         self.machines[machine.id] = machine
         machine.changed.connect(self.on_machine_changed)
+        self.save_machine(machine)
+        self.machine_added.send(self, machine_id=machine.id)
+
+    def remove_machine(self, machine_id: str):
+        machine = self.machines.get(machine_id)
+        if not machine:
+            return
+
+        machine.changed.disconnect(self.on_machine_changed)
+        del self.machines[machine_id]
+
+        machine_file = self.filename_from_id(machine_id)
+        try:
+            machine_file.unlink()
+            logger.info(f"Removed machine file: {machine_file}")
+        except OSError as e:
+            logger.error(f"Error removing machine file {machine_file}: {e}")
+
+        self.machine_removed.send(self, machine_id=machine_id)
 
     def get_machine_by_id(self, machine_id):
         return self.machines.get(machine_id)
@@ -190,21 +215,20 @@ class MachineManager:
     def create_default_machine(self):
         machine = Machine()
         self.add_machine(machine)
-        self.save_machine(machine)
         return machine
 
     def save_machine(self, machine):
-        logger.debug("Saving machine")
+        logger.debug(f"Saving machine {machine.id}")
         machine_file = self.filename_from_id(machine.id)
-        with open(machine_file, 'w') as f:
+        with open(machine_file, "w") as f:
             data = machine.to_dict()
             yaml.safe_dump(data, f)
 
-    def load_machine(self, machine_id: str) -> Optional['Machine']:
+    def load_machine(self, machine_id: str) -> Optional["Machine"]:
         machine_file = self.filename_from_id(machine_id)
         if not machine_file.exists():
             raise FileNotFoundError(f"Machine file {machine_file} not found")
-        with open(machine_file, 'r') as f:
+        with open(machine_file, "r") as f:
             data = yaml.safe_load(f)
             if not data:
                 msg = f"skipping invalid machine file {f.name}"
@@ -212,14 +236,17 @@ class MachineManager:
                 return None
         machine = Machine.from_dict(data)
         machine.id = machine_id
-        self.add_machine(machine)
+        self.machines[machine.id] = machine
+        machine.changed.connect(self.on_machine_changed)
         return machine
 
     def on_machine_changed(self, machine, **kwargs):
         self.save_machine(machine)
+        self.machine_updated.send(self, machine_id=machine.id)
 
     def load(self):
         for file in self.base_dir.glob("*.yaml"):
-            machine = self.load_machine(file.stem)
-            if machine:
-                self.add_machine(machine)
+            try:
+                self.load_machine(file.stem)
+            except Exception as e:
+                logger.error(f"Failed to load machine from {file}: {e}")

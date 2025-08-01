@@ -30,7 +30,7 @@ task_mgr = TaskManager()
 # Load all machines. If none exist, create a default machine.
 # These are initialized to None to prevent automatic setup in subprocesses.
 # The main application must call initialize_managers() to populate them.
-machine_mgr: Optional[MachineManager] = None
+machine_mgr = None
 config_mgr: Optional[ConfigManager] = None
 config = None  # Will be an alias for config_mgr.config after init
 

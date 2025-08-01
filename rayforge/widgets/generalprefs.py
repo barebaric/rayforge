@@ -7,29 +7,27 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     Preferences page for general application settings.
     This is distinct from the machine-specific general settings.
     """
+
     # Map for converting between UI index and config string
     THEME_MAP = ["system", "light", "dark"]
-    THEME_LABELS = ["System", "Light", "Dark"]
+    THEME_LABELS = [_("System"), _("Light"), _("Dark")]
 
     def __init__(self, **kwargs):
-        super().__init__(
-            title=_("General"),
-            icon_name="preferences-system-symbolic",
-            **kwargs,
-        )
+        super().__init__(**kwargs)
+        self.set_title(_("General"))
+        self.set_icon_name("preferences-system-symbolic")
 
-        app_settings_group = Adw.PreferencesGroup(
-            title=_("Appearance"),
-            description=_(
-                "Settings related to the application's look and feel."
-            ),
+        app_settings_group = Adw.PreferencesGroup()
+        app_settings_group.set_title(_("Appearance"))
+        app_settings_group.set_description(
+            _("Settings related to the application's look and feel.")
         )
         self.add(app_settings_group)
 
         self.theme_row = Adw.ComboRow(
-            title=_("Theme"),
-            model=Gtk.StringList.new(self.THEME_LABELS),
+            model=Gtk.StringList.new(self.THEME_LABELS)
         )
+        self.theme_row.set_title(_("Theme"))
 
         try:
             selected_index = self.THEME_MAP.index(config.theme)
