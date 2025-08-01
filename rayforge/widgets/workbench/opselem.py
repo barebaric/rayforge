@@ -141,8 +141,7 @@ class WorkPieceOpsElement(CanvasElement):
                 f"{self._ops_generation_id})."
             )
             self._ops_generation_id = generation_id
-            self._accumulated_ops = ops_chunk
-            self.clear_surface()  # Clear the visual buffer
+            self._accumulated_ops = ops_chunk.copy()
             self.trigger_update()
             return
 
