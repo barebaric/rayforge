@@ -18,7 +18,7 @@ from ..opsencoder.gcode import GcodeEncoder
 from ..render import renderers, renderer_by_mime_type, renderer_by_extension
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
 from ..undo.setter_cmd import SetterCommand
-from .workplanview import WorkPlanView
+from .workflowview import WorkflowView
 from .workbench.surface import WorkSurface
 from .layerlist import LayerListView
 from .statusview import (
@@ -311,13 +311,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.layer_list_view.set_margin_end(12)
         right_pane_box.append(self.layer_list_view)
 
-        # The WorkPlanView will be updated when a layer is activated.
-        initial_workplan = self.doc.layers[0].workplan
-        self.workplanview = WorkPlanView(initial_workplan)
-        self.workplanview.set_size_request(400, -1)
-        self.workplanview.set_margin_top(20)
-        self.workplanview.set_margin_end(12)
-        right_pane_box.append(self.workplanview)
+        # The WorkflowView will be updated when a layer is activated.
+        initial_workflow = self.doc.layers[0].workflow
+        self.workflowview = WorkflowView(initial_workflow)
+        self.workflowview.set_size_request(400, -1)
+        self.workflowview.set_margin_top(20)
+        self.workflowview.set_margin_end(12)
+        right_pane_box.append(self.workflowview)
 
         # Add the WorkpiecePropertiesWidget
         self.workpiece_props_widget = WorkpiecePropertiesWidget()
@@ -580,7 +580,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Synchronize UI elements that depend on the document model
         self.surface.update_from_doc(self.doc)
         if self.doc.active_layer:
-            self.workplanview.set_workplan(self.doc.active_layer.workplan)
+            self.workflowview.set_workflow(self.doc.active_layer.workflow)
 
         # Update button sensitivity and other state
         self.update_state()

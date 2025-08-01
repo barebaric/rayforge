@@ -13,7 +13,7 @@ from .laser import Laser
 if TYPE_CHECKING:
     from .doc import Doc
     from .workpiece import WorkPiece
-    from .workplan import WorkPlan
+    from .workflow import Workflow
     from ..tasker.task import Task
     from .ops import Ops
 
@@ -36,7 +36,7 @@ class Step(ABC):
 
     def __init__(
         self,
-        workplan: "WorkPlan",
+        workflow: "Workflow",
         opsproducer: OpsProducer,
         laser: Laser,
         max_cut_speed: int,
@@ -46,7 +46,7 @@ class Step(ABC):
         if not self.typelabel:
             raise AttributeError("Subclass must set a typelabel attribute.")
 
-        self.workplan: Optional["WorkPlan"] = workplan
+        self.workflow: Optional["Workflow"] = workflow
         self.uid = str(uuid.uuid4())
         self.name = name or self.typelabel
         self.visible = True
@@ -79,8 +79,8 @@ class Step(ABC):
 
     @property
     def doc(self) -> Optional["Doc"]:
-        """The parent Doc object, accessed via the WorkPlan."""
-        return self.workplan.doc if self.workplan else None
+        """The parent Doc object, accessed via the Workflow."""
+        return self.workflow.doc if self.workflow else None
 
     @property
     def opstransformers(self) -> List[OpsTransformer]:
@@ -121,7 +121,7 @@ class Step(ABC):
         self, task: "Task", event_name: str, data: dict
     ):
         """A stable instance method to handle events from tasks."""
-        if event_name != "ops_chunk" or not self.workplan:
+        if event_name != "ops_chunk" or not self.workflow:
             return
 
         logger.debug(
@@ -131,7 +131,7 @@ class Step(ABC):
 
         step_uid, workpiece_uid = task.key
 
-        workpiece = self.workplan.layer._get_workpiece_by_uid(
+        workpiece = self.workflow.layer._get_workpiece_by_uid(
             workpiece_uid
         )
         if not workpiece:
@@ -201,13 +201,13 @@ class Step(ABC):
         Retrieves the final, cached Ops for a workpiece by delegating
         the call to the parent Layer.
         """
-        if not self.workplan:
+        if not self.workflow:
             logger.warning(
                 f"Cannot get_ops for Step '{self.name}': "
-                "no parent workplan."
+                "no parent workflow."
             )
             return None
-        return self.workplan.layer.get_ops(self, workpiece)
+        return self.workflow.layer.get_ops(self, workpiece)
 
     def set_passes(self, passes: bool = True):
         self.passes = int(passes)
@@ -255,10 +255,10 @@ class Outline(Step):
     typelabel = _("External Outline")
 
     def __init__(
-        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+        self, *, workflow: "Workflow", name: Optional[str] = None, **kwargs
     ):
         super().__init__(
-            workplan=workplan, opsproducer=OutlineTracer(), name=name, **kwargs
+            workflow=workflow, opsproducer=OutlineTracer(), name=name, **kwargs
         )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
@@ -270,10 +270,10 @@ class Contour(Step):
     typelabel = _("Contour")
 
     def __init__(
-        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+        self, *, workflow: "Workflow", name: Optional[str] = None, **kwargs
     ):
         super().__init__(
-            workplan=workplan, opsproducer=EdgeTracer(), name=name, **kwargs
+            workflow=workflow, opsproducer=EdgeTracer(), name=name, **kwargs
         )
         self.opstransformers = [
             Smooth(enabled=False, amount=20),
@@ -285,10 +285,10 @@ class Rasterize(Step):
     typelabel = _("Raster Engrave")
 
     def __init__(
-        self, *, workplan: "WorkPlan", name: Optional[str] = None, **kwargs
+        self, *, workflow: "Workflow", name: Optional[str] = None, **kwargs
     ):
         super().__init__(
-            workplan=workplan, opsproducer=Rasterizer(), name=name, **kwargs
+            workflow=workflow, opsproducer=Rasterizer(), name=name, **kwargs
         )
         self.opstransformers = [
             Optimize(enabled=True),

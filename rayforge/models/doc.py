@@ -34,10 +34,10 @@ class Doc:
         self.add_layer(layer)
 
         # Create a default Contour step and add it to the first layer's
-        # workplan.
-        workplan = layer.workplan
-        default_step = workplan.create_step(Contour)
-        workplan.add_step(default_step)
+        # workflow.
+        workflow = layer.workflow
+        default_step = workflow.create_step(Contour)
+        workflow.add_step(default_step)
 
     def __iter__(self):
         """Iterates through all workpieces in all layers."""
@@ -125,16 +125,16 @@ class Doc:
 
     def has_result(self):
         # A result is possible if there's a workpiece and at least one
-        # workplan (in any layer) has steps.
+        # workflow (in any layer) has steps.
         return self.has_workpiece() and any(
-            layer.workplan.has_steps() for layer in self.layers
+            layer.workflow.has_steps() for layer in self.layers
         )
 
     async def generate_job_ops(
         self, context: Optional[ExecutionContext] = None
     ) -> Ops:
         """
-        Executes all steps in all assigned workplans and returns the
+        Executes all steps in all assigned workflows and returns the
         final, combined Ops for the entire job.
         """
         final_ops = Ops()

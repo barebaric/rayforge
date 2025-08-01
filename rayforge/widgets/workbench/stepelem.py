@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, cast
 from ...models.workpiece import WorkPiece
-from ...models.workplan import Step
+from ...models.workflow import Step
 from ...models.ops import Ops
 from ..canvas import CanvasElement
 from .opselem import WorkPieceOpsElement

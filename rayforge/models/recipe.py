@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from blinker import Signal
-from .workplan import WorkPlan
+from .workflow import Workflow
 
 
 logger = logging.getLogger(__name__)
@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 class Recipe:
     """
-    A saved, portable entity that contains a WorkPlan and its
+    A saved, portable entity that contains a Workflow and its
     associated metadata (e.g., material, thickness). It lives in a
     user-level library, outside any specific document.
     """
     def __init__(self, name: str):
         self.uid: str = str(uuid.uuid4())
         self.name: str = name
-        self.workplan: Optional[WorkPlan] = None
+        self.workflow: Optional[Workflow] = None
         self.metadata: Dict[str, Any] = {
             "material": "",
             "thickness_mm": 0.0,
@@ -35,13 +35,13 @@ class Recipe:
         self.name = name
         self.changed.send(self)
 
-    def set_workplan(self, workplan: Optional[WorkPlan]):
+    def set_workflow(self, workflow: Optional[Workflow]):
         """
-        Sets the recipe's workplan and triggers a save.
-        Note: The workplan must be serializable.
+        Sets the recipe's workflow and triggers a save.
+        Note: The workflow must be serializable.
         """
         # A proper comparison would be complex; for now, any set is a change.
-        self.workplan = workplan
+        self.workflow = workflow
         self.changed.send(self)
 
     def set_metadata(self, metadata: Dict[str, Any]):
@@ -54,12 +54,12 @@ class Recipe:
     def to_dict(self) -> Dict[str, Any]:
         """
         Serializes the Recipe to a dictionary for saving.
-        NOTE: WorkPlan serialization is required for this to be complete.
+        NOTE: Workflow serialization is required for this to be complete.
         """
         return {
             "uid": self.uid,
             "name": self.name,
-            # "workplan": self.workplan.to_dict() if self.workplan else None,
+            # "workflow": self.workflow.to_dict() if self.workflow else None,
             "metadata": self.metadata,
         }
 
@@ -67,16 +67,16 @@ class Recipe:
     def from_dict(cls, data: Dict[str, Any]) -> 'Recipe':
         """
         Deserializes a Recipe from a dictionary.
-        NOTE: A loaded Recipe's workplan is not instantiated here because it
+        NOTE: A loaded Recipe's workflow is not instantiated here because it
         lacks a document context. It should be instantiated by the consumer
         when applying the recipe to a document.
         """
         recipe = cls(data["name"])
         recipe.uid = data.get("uid", recipe.uid)
         recipe.metadata = data.get("metadata", {})
-        # workplan_data = data.get("workplan")
-        # if workplan_data:
-        #     # The workplan would be instantiated here if it were document-
+        # workflow_data = data.get("workflow")
+        # if workflow_data:
+        #     # The workflow would be instantiated here if it were document-
         #     # independent, but it requires a `doc` object.
         #     pass
         return recipe

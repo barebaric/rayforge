@@ -1,5 +1,5 @@
 """
-Defines the WorkPlan class, which holds an ordered sequence of Steps.
+Defines the Workflow class, which holds an ordered sequence of Steps.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class WorkPlan:
+class Workflow:
     """
     An ordered sequence of Steps that defines a manufacturing process.
 
-    Each Layer owns a WorkPlan. The WorkPlan holds a list of Step
+    Each Layer owns a Workflow. The Workflow holds a list of Step
     objects, which are applied in order to the workpieces in the layer to
     generate machine operations. It listens for changes in its child steps
     and propagates a `changed` signal.
@@ -30,7 +30,7 @@ class WorkPlan:
 
     def __init__(self, layer: "Layer", name: str):
         """
-        Initializes the WorkPlan.
+        Initializes the Workflow.
 
         Args:
             layer: The parent Layer object.
@@ -59,7 +59,7 @@ class WorkPlan:
         is notified to regenerate operations.
         """
         logger.debug(
-            f"WorkPlan '{self.name}': Notified of model change from step "
+            f"Workflow '{self.name}': Notified of model change from step "
             f"'{step.name}'. Firing own changed signal."
         )
         self.changed.send(self, step=step)
@@ -100,7 +100,7 @@ class WorkPlan:
     def create_step(self, step_cls, name=None) -> Step:
         """Factory method to create a new step with correct config."""
         return step_cls(
-            workplan=self,
+            workflow=self,
             laser=config.machine.heads[0],
             max_cut_speed=config.machine.max_cut_speed,
             max_travel_speed=config.machine.max_travel_speed,
@@ -117,7 +117,7 @@ class WorkPlan:
         Args:
             step: The Step instance to add.
         """
-        step.workplan = self
+        step.workflow = self
         self.steps.append(step)
         self._connect_step_signals(step)
         self.changed.send(self)
@@ -134,7 +134,7 @@ class WorkPlan:
         """
         self._disconnect_step_signals(step)
         self.steps.remove(step)
-        step.workplan = None
+        step.workflow = None
         self.changed.send(self)
 
     def set_steps(self, steps: List[Step]):
@@ -149,12 +149,12 @@ class WorkPlan:
         """
         for step in self.steps:
             self._disconnect_step_signals(step)
-            step.workplan = None
+            step.workflow = None
 
         self.steps = list(steps)
 
         for step in self.steps:
-            step.workplan = self
+            step.workflow = self
             self._connect_step_signals(step)
 
         self.changed.send(self)

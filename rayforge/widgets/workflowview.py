@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 from gi.repository import Gtk  # type: ignore
-from ..models.workplan import WorkPlan
+from ..models.workflow import Workflow
 from ..models.step import Step
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
 from .draglist import DragListBox
@@ -13,15 +13,15 @@ from .expander import Expander
 logger = logging.getLogger(__name__)
 
 
-class WorkPlanView(Expander):
+class WorkflowView(Expander):
     """
     A widget that displays a collapsible, reorderable list of Steps
-    for a given WorkPlan.
+    for a given Workflow.
     """
 
-    def __init__(self, workplan: WorkPlan, **kwargs):
+    def __init__(self, workflow: Workflow, **kwargs):
         super().__init__(**kwargs)
-        self.workplan: Optional[WorkPlan] = None  # Will be set by set_workplan
+        self.workflow: Optional[Workflow] = None  # Will be set by set_workflow
         self.set_expanded(True)
 
         # A container for all content that will be revealed by the expander
@@ -30,7 +30,7 @@ class WorkPlanView(Expander):
 
         # The reorderable list of steps goes inside the content box
         self.draglist = DragListBox()
-        self.draglist.reordered.connect(self.on_workplan_reordered)
+        self.draglist.reordered.connect(self.on_workflow_reordered)
         content_box.append(self.draglist)
 
         # A Gtk.Button, styled as a card, serves as our "Add" button
@@ -59,38 +59,38 @@ class WorkPlanView(Expander):
 
         add_button.set_child(button_box)
 
-        # Set initial workplan
-        self.set_workplan(workplan)
+        # Set initial workflow
+        self.set_workflow(workflow)
 
-    def set_workplan(self, workplan: Optional[WorkPlan]):
-        """Sets the view to display a different workplan."""
-        if self.workplan:
+    def set_workflow(self, workflow: Optional[Workflow]):
+        """Sets the view to display a different workflow."""
+        if self.workflow:
             try:
                 # Disconnect old handlers
-                self.workplan.changed.disconnect(self.on_workplan_changed)
+                self.workflow.changed.disconnect(self.on_workflow_changed)
             except (TypeError, ValueError):
                 pass
 
-        self.workplan = workplan
-        self.set_visible(bool(self.workplan))
+        self.workflow = workflow
+        self.set_visible(bool(self.workflow))
 
-        if self.workplan:
+        if self.workflow:
             # Connect new handler to the single 'changed' signal
-            self.workplan.changed.connect(self.on_workplan_changed)
+            self.workflow.changed.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
-            self.on_workplan_changed(self.workplan)
+            self.on_workflow_changed(self.workflow)
 
-    def on_workplan_changed(self, sender, **kwargs):
+    def on_workflow_changed(self, sender, **kwargs):
         """
-        Handles any change to the workplan (structural or property) by
+        Handles any change to the workflow (structural or property) by
         updating the UI completely.
         """
-        if not self.workplan:
+        if not self.workflow:
             return
 
         # Update metadata
-        count = len(self.workplan.steps)
-        self.set_title(self.workplan.name)
+        count = len(self.workflow.steps)
+        self.set_title(self.workflow.name)
         self.set_subtitle(
             _("{count} step").format(count=count)
             if count == 1
@@ -102,15 +102,15 @@ class WorkPlanView(Expander):
 
     def update_list(self):
         """
-        Re-populates the draglist to match the state of the workplan's steps.
+        Re-populates the draglist to match the state of the workflow's steps.
         """
-        if not self.workplan or not self.workplan.doc:
+        if not self.workflow or not self.workflow.doc:
             return
 
         # Check if the list of steps is already in sync to avoid unnecessary
         # rebuilds.
         current_steps = [row.data for row in self.draglist]
-        if current_steps == self.workplan.steps:
+        if current_steps == self.workflow.steps:
             # The list structure is the same, just tell each stepbox to
             # update its summary.
             for i, row in enumerate(self.draglist):
@@ -126,11 +126,11 @@ class WorkPlanView(Expander):
 
         # If the list structure has changed, rebuild it completely.
         self.draglist.remove_all()
-        for seq, step in enumerate(self.workplan, start=1):
+        for seq, step in enumerate(self.workflow, start=1):
             row = Gtk.ListBoxRow()
             row.data = step  # Store model for reordering
             stepbox = StepBox(
-                self.workplan.doc,
+                self.workflow.doc,
                 step,
                 prefix=_("Step {seq}: ").format(seq=seq),
             )
@@ -140,7 +140,7 @@ class WorkPlanView(Expander):
 
     def on_button_add_clicked(self, button):
         """Shows a popup to select and add a new step type."""
-        if not self.workplan or not self.workplan.doc:
+        if not self.workflow or not self.workflow.doc:
             return
 
         popup = StepSelector(Step.__subclasses__())
@@ -150,44 +150,44 @@ class WorkPlanView(Expander):
 
     def on_add_dialog_response(self, popup):
         """Handles the creation of a new step after the popup closes."""
-        if not self.workplan or not self.workplan.doc:
+        if not self.workflow or not self.workflow.doc:
             return
         if popup.selected:
             step_cls = popup.selected
-            new_step = self.workplan.create_step(step_cls)
+            new_step = self.workflow.create_step(step_cls)
             command = ListItemCommand(
-                owner_obj=self.workplan,
+                owner_obj=self.workflow,
                 item=new_step,
                 undo_command="remove_step",
                 redo_command="add_step",
                 name=_("Add step '{name}'").format(name=new_step.name),
             )
-            self.workplan.doc.history_manager.execute(command)
+            self.workflow.doc.history_manager.execute(command)
 
     def on_button_delete_clicked(self, sender, step, **kwargs):
         """Handles deletion of a step with an undoable command."""
-        if not self.workplan or not self.workplan.doc:
+        if not self.workflow or not self.workflow.doc:
             return
-        new_list = [s for s in self.workplan.steps if s is not step]
+        new_list = [s for s in self.workflow.steps if s is not step]
         command = ReorderListCommand(
-            target_obj=self.workplan,
+            target_obj=self.workflow,
             list_property_name="steps",
             new_list=new_list,
             setter_method_name="set_steps",
             name=_("Remove step '{name}'").format(name=step.name),
         )
-        self.workplan.doc.history_manager.execute(command)
+        self.workflow.doc.history_manager.execute(command)
 
-    def on_workplan_reordered(self, sender, **kwargs):
+    def on_workflow_reordered(self, sender, **kwargs):
         """Handles reordering of steps with an undoable command."""
-        if not self.workplan or not self.workplan.doc:
+        if not self.workflow or not self.workflow.doc:
             return
         new_order = [row.data for row in self.draglist]
         command = ReorderListCommand(
-            target_obj=self.workplan,
+            target_obj=self.workflow,
             list_property_name="steps",
             new_list=new_order,
             setter_method_name="set_steps",
             name=_("Reorder steps"),
         )
-        self.workplan.doc.history_manager.execute(command)
+        self.workflow.doc.history_manager.execute(command)

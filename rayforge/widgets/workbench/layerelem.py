@@ -86,7 +86,7 @@ class LayerElement(CanvasElement):
             wp_elem.allocate()
 
         # --- Reconcile StepElements ---
-        model_steps = set(self.data.workplan.steps)
+        model_steps = set(self.data.workflow.steps)
         current_ws_elements = {
             child
             for child in self.children

@@ -33,7 +33,7 @@ def setup_real_config(mocker):
             self.machine = test_machine
 
     test_config = TestConfig()
-    mocker.patch("rayforge.models.workplan.config", test_config)
+    mocker.patch("rayforge.models.workflow.config", test_config)
     mocker.patch("rayforge.models.doc.config", test_config)
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
@@ -134,16 +134,16 @@ def mock_doc():
 def test_layer(mock_doc):
     layer = Layer(doc=mock_doc, name="Test Layer")
     # Start with a clean slate of steps for predictable testing
-    layer.workplan.set_steps([])
+    layer.workflow.set_steps([])
     return layer
 
 
 @pytest.fixture
 def contour_step(test_layer):
-    """Creates a real Contour Step instance, associated with a workplan."""
-    # Use the workplan's factory method to ensure correct initialization.
-    # The factory correctly passes the workplan and config-derived args.
-    step = test_layer.workplan.create_step(Contour)
+    """Creates a real Contour Step instance, associated with a workflow."""
+    # Use the workflow's factory method to ensure correct initialization.
+    # The factory correctly passes the workflow and config-derived args.
+    step = test_layer.workflow.create_step(Contour)
     step.opstransformers = []  # Clear transformers to isolate testing
     return step
 
@@ -155,9 +155,9 @@ class TestLayerStepInteraction:
     ):
         """
         Verify that adding a workpiece to a layer triggers ops generation
-        for the steps in its workplan.
+        for the steps in its workflow.
         """
-        test_layer.workplan.add_step(contour_step)
+        test_layer.workflow.add_step(contour_step)
         mock_task_mgr.run_process.reset_mock()  # Reset after setup
 
         test_layer.add_workpiece(real_workpiece)
@@ -179,7 +179,7 @@ class TestLayerStepInteraction:
         Test that a successful ops generation on a Layer emits signals and
         caches the result correctly.
         """
-        test_layer.workplan.add_step(contour_step)
+        test_layer.workflow.add_step(contour_step)
         start_handler = MagicMock()
         finish_handler = MagicMock()
         test_layer.ops_generation_starting.connect(start_handler)
@@ -260,7 +260,7 @@ class TestLayerStepInteraction:
         self, test_layer, contour_step, real_workpiece, mock_task_mgr
     ):
         """Test that ops generation can be cancelled correctly."""
-        test_layer.workplan.add_step(contour_step)
+        test_layer.workflow.add_step(contour_step)
         mock_task_mgr.created_tasks.clear()  # Reset after setup
 
         finish_handler = MagicMock()

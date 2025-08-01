@@ -14,7 +14,7 @@ from ..config import task_mgr
 from ..tasker.task import Task
 from .step import Step
 from .ops import Ops
-from .workplan import WorkPlan
+from .workflow import Workflow
 
 if TYPE_CHECKING:
     from .workpiece import WorkPiece
@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 
 class Layer:
     """
-    Represents a group of workpieces processed by a single workplan.
+    Represents a group of workpieces processed by a single workflow.
 
     A Layer acts as a container for `WorkPiece` objects and owns a
-    `WorkPlan`. It is responsible for triggering, managing, and caching the
+    `Workflow`. It is responsible for triggering, managing, and caching the
     generation of machine operations (`Ops`) for each workpiece based on the
-    steps in its workplan.
+    steps in its workflow.
     """
 
     # Type alias for the structure of the operations cache.
@@ -52,9 +52,9 @@ class Layer:
         # Reference for static analysis tools to detect class relations.
         self._workpiece_ref_for_pyreverse: WorkPiece
 
-        self.workplan: WorkPlan = WorkPlan(self, f"{name} WorkPlan")
+        self.workflow: Workflow = Workflow(self, f"{name} Workflow")
         # Reference for static analysis tools to detect class relations.
-        self._workplan_ref_for_pyreverse: WorkPlan
+        self._workflow_ref_for_pyreverse: Workflow
 
         self.visible: bool = True
 
@@ -75,7 +75,7 @@ class Layer:
         self.ops_generation_finished = Signal()
 
         # Connect to signals from child objects.
-        self.workplan.changed.connect(self._on_workplan_changed)
+        self.workflow.changed.connect(self._on_workflow_changed)
 
     @property
     def active(self) -> bool:
@@ -87,15 +87,15 @@ class Layer:
         # in its parent document.
         return self.doc.active_layer is self
 
-    def _on_workplan_changed(
+    def _on_workflow_changed(
         self, sender, step: Optional[Step] = None, **kwargs
     ):
         """
-        Handles the 'changed' signal from the WorkPlan.
+        Handles the 'changed' signal from the Workflow.
 
         If a specific step is provided, this indicates that only that step's
         parameters were modified, so only its operations are regenerated.
-        If no step is provided, the workplan's structure (e.g., step order,
+        If no step is provided, the workflow's structure (e.g., step order,
         add/remove) has changed, triggering a full regeneration for the layer.
         """
         if step:
@@ -137,7 +137,7 @@ class Layer:
         if self.name == name:
             return
         self.name = name
-        self.workplan.name = f"{name} WorkPlan"
+        self.workflow.name = f"{name} Workflow"
         self.changed.send(self)
 
     def set_visible(self, visible: bool):
@@ -220,8 +220,8 @@ class Layer:
         return next((wp for wp in self.workpieces if wp.uid == uid), None)
 
     def _get_step_by_uid(self, uid: str) -> Optional[Step]:
-        """Finds a step in this layer's workplan by its UID."""
-        return next((s for s in self.workplan.steps if s.uid == uid), None)
+        """Finds a step in this layer's workflow by its UID."""
+        return next((s for s in self.workflow.steps if s.uid == uid), None)
 
     def _cleanup_workpiece_ops(self, workpiece: WorkPiece):
         """Removes all cached ops and metadata for a workpiece."""
@@ -231,7 +231,7 @@ class Layer:
             self._ops_cache.pop(key, None)
             self._generation_id_map.pop(key, None)
         # Also cancel any running tasks for this workpiece
-        for step in self.workplan.steps:
+        for step in self.workflow.steps:
             for gen_id in range(
                 self._generation_id_map.get((step.uid, w_uid), 0) + 1
             ):
@@ -241,7 +241,7 @@ class Layer:
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for all steps for one workpiece."""
-        for step in self.workplan.steps:
+        for step in self.workflow.steps:
             self._trigger_ops_generation(step, workpiece)
 
     def _update_ops_for_all_workpieces(self):
@@ -438,7 +438,7 @@ class Layer:
         for workpiece in self.workpieces:
             if not workpiece.pos or not workpiece.size:
                 continue
-            for step in self.workplan.steps:
+            for step in self.workflow.steps:
                 if step.visible:
                     items.append((step, workpiece))
         return items
