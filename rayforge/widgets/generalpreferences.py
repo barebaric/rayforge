@@ -81,8 +81,13 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         # These must be called after the selection is set, so the correct
         # parameters are created based on the selected driver.
-        self.driver_group.create_params(get_params(driver_cls))
-        self.driver_group.set_values(machine.driver_args)
+        if driver_cls:
+            self.driver_group.create_params(get_params(driver_cls))
+            self.driver_group.set_values(machine.driver_args)
+        else:
+            # When no driver is selected (e.g., for a new machine),
+            # there are no parameters to display.
+            self.driver_group.create_params([])
 
         # Group for Machine Settings
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
