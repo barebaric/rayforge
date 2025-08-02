@@ -1,4 +1,5 @@
 import json
+import time
 import threading
 from typing import Optional, List, Tuple, Dict, Sequence, Any
 import cv2
@@ -45,6 +46,7 @@ class Camera:
         self._image_data: Optional[np.ndarray] = None
         # None indicates auto white balance, float for manual Kelvin
         self._white_balance: Optional[float] = None
+        self._active_subscribers: int = 0
         self._contrast: float = 50.0
         self._brightness: float = 0.0  # Default brightness (0 = no change)
         self._transparency: float = 1.0  # Default transparency (1.0 = opaque)
@@ -129,9 +131,12 @@ class Camera:
             return
         logger.debug(f"Camera enabled changed from {self._enabled} to {value}")
         self._enabled = value
-        if self._enabled:
+        if self._enabled and self._active_subscribers > 0:
+            # Only start if enabled AND someone is subscribed.
             self._start_capture_stream()
         else:
+            # Stop if disabled OR no one is subscribed (handled in
+            # unsubscribe).
             self._stop_capture_stream()
         self.changed.send(self)
 
@@ -330,6 +335,36 @@ class Camera:
         self.changed.send(self)
         self.settings_changed.send(self)
 
+    def subscribe(self):
+        """
+        Registers a subscriber to the camera's image stream.
+
+        The stream will start if this is the first subscriber and the camera
+        is enabled.
+        """
+        self._active_subscribers += 1
+        logger.debug(
+            f"Camera {self.name} subscribed. Count: "
+            f"{self._active_subscribers}"
+        )
+        if self._active_subscribers == 1 and self.enabled:
+            self._start_capture_stream()
+
+    def unsubscribe(self):
+        """
+        Unregisters a subscriber.
+
+        The stream will stop if this was the last active subscriber.
+        """
+        if self._active_subscribers > 0:
+            self._active_subscribers -= 1
+        logger.debug(
+            f"Camera {self.name} unsubscribed. Count: "
+            f"{self._active_subscribers}"
+        )
+        if self._active_subscribers == 0:
+            self._stop_capture_stream()
+
     def set_camera_calibration(
         self, camera_matrix: np.ndarray, dist_coeffs: np.ndarray
     ):
@@ -510,16 +545,23 @@ class Camera:
         """
         while self._running:
             try:
+                # Open the device ONCE
                 with VideoCaptureDevice(self.device_id) as cap:
                     logger.info(
                         f"Camera {self.device_id} opened successfully."
                     )
+                    # Loop to read frames from the open device
                     while self._running:
                         self._read_frame_and_update_data(cap)
-                        GLib.usleep(33000)  # ~30 FPS
+                        # Use time.sleep for portability in a non-GUI thread
+                        time.sleep(1 / 30)  # ~30 FPS
             except Exception as e:
-                logger.error(f"Error in capture loop: {e}")
-                GLib.usleep(1000000)  # 1 second delay
+                logger.error(
+                    f"Error in capture loop for camera '{self.name}': {e}. "
+                    "Retrying in 1 second."
+                )
+                if self._running:
+                    time.sleep(1)  # 1 second delay before retrying
 
         logger.debug(f"Camera capture loop stopped for camera {self.name}.")
 

@@ -21,6 +21,7 @@ class CameraImageElement(CanvasElement):
         self.camera = camera
         self.camera.image_captured.connect(self._on_state_changed)
         self.camera.settings_changed.connect(self._on_state_changed)
+        self.camera.subscribe()
         self.set_visible(self.camera.enabled)
 
         # Cache for the processed cairo surface and its underlying data buffer.
@@ -30,6 +31,14 @@ class CameraImageElement(CanvasElement):
         self._cached_key: tuple | None = None
         # A flag to prevent scheduling multiple recomputations.
         self._recomputing: bool = False
+
+    def remove(self):
+        """
+        Extends the base remove to unsubscribe from the camera stream before
+        being removed from the canvas.
+        """
+        self.camera.unsubscribe()
+        super().remove()
 
     def _on_state_changed(self, sender):
         """
