@@ -1,11 +1,12 @@
 import asyncio
-from typing import Optional
+from typing import Optional, cast
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
 from ..transport import TelnetTransport, TransportStatus
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DeviceStatus, DriverSetupError
+from .util import Hostname, is_valid_hostname_or_ip
 from .grbl import _parse_state
 
 
@@ -24,9 +25,11 @@ class SmoothieDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
         self._ok_event = asyncio.Event()
 
-    def setup(self, host: str = "", port: int = 23):
-        if not host:
-            raise DriverSetupError(_("Hostname must be set."))
+    def setup(self, host: Hostname = cast(Hostname, ""), port: int = 23):
+        if not is_valid_hostname_or_ip(host):
+            raise DriverSetupError(
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
+            )
         super().setup()
 
         # Initialize transports
@@ -91,9 +94,7 @@ class SmoothieDriver(Driver):
         if wait_for_ok:
             self._ok_event.clear()
 
-        debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, cmd
-        )
+        debug_log_manager.add_entry(self.__class__.__name__, LogType.TX, cmd)
         await self.telnet.send(cmd)
 
         if wait_for_ok:
@@ -136,9 +137,7 @@ class SmoothieDriver(Driver):
         await self._send_and_wait(cmd.encode())
 
     def on_telnet_data_received(self, sender, data: bytes):
-        debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data
-        )
+        debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
         data_str = data.decode("utf-8")
         for line in data_str.splitlines():
             self._log(line)

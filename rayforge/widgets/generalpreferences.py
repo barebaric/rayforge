@@ -14,6 +14,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             **kwargs,
         )
         self.machine = machine
+        self._is_initializing = True
 
         # Error Banner Group
         error_group = Adw.PreferencesGroup()
@@ -183,6 +184,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Initial check for errors
         self._update_error_state()
 
+        # Initialization is complete.
+        self._is_initializing = False
+
     def _on_driver_manager_changed(self, sender, **kwargs):
         """
         Handler for the global driver manager's changed signal.
@@ -215,6 +219,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.error_banner.set_revealed(False)
 
     def on_driver_param_changed(self, sender):
+        if self._is_initializing:
+            return
         self.machine.set_driver_args(self.driver_group.get_values())
 
     def on_factory_setup(self, factory, list_item):

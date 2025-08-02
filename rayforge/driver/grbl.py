@@ -2,13 +2,14 @@ import re
 import asyncio
 import aiohttp
 from copy import copy
-from typing import Callable, Optional
+from typing import Callable, Optional, cast
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DeviceStatus, DeviceState, Pos, DriverSetupError
+from .util import Hostname, is_valid_hostname_or_ip
 
 
 hw_info_url = "/command?plain=%5BESP420%5D&PAGEID="
@@ -78,9 +79,11 @@ class GrblDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
 
-    def setup(self, host: str = ""):
-        if not host:
-            raise DriverSetupError(_("Hostname must be set."))
+    def setup(self, host: Hostname = cast(Hostname, "")):
+        if not is_valid_hostname_or_ip(host):
+            raise DriverSetupError(
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
+            )
 
         super().setup()
         self.host = host

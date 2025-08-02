@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import Optional
+from typing import Optional, cast
 from ..transport import SerialTransport, TransportStatus
 from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
@@ -17,8 +17,9 @@ class GrblSerialDriver(Driver):
     """
     Handles GRBL based devices via Serial port
     """
+
     label = "GRBL Serial"
-    subtitle = 'Send GRBL-compatible Gcode via serial connection'
+    subtitle = "Send GRBL-compatible Gcode via serial connection"
 
     def __init__(self):
         super().__init__()
@@ -26,7 +27,9 @@ class GrblSerialDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
 
-    def setup(self, port: SerialPort = "", baudrate: int = 115200):
+    def setup(
+        self, port: SerialPort = cast(SerialPort, ""), baudrate: int = 115200
+    ):
         """
         Parameters:
           - port: Serial port (e.g., "/dev/ttyUSB0" or "COM1")
@@ -76,7 +79,7 @@ class GrblSerialDriver(Driver):
         if not self.serial_transport:
             raise ConnectionError("Serial transport not initialized")
         # GRBL commands usually need a newline
-        payload = (command + '\n').encode('utf-8')
+        payload = (command + "\n").encode("utf-8")
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.TX, payload
         )
@@ -96,7 +99,7 @@ class GrblSerialDriver(Driver):
                 assert self.serial_transport, "Transport not initialized"
                 await self.serial_transport.connect()
                 # Send a status report request to get initial state
-                await self._send_command('?')
+                await self._send_command("?")
             except Exception as e:
                 logger.error(f"Connection error: {e}")
                 self._on_connection_status_changed(
@@ -124,9 +127,9 @@ class GrblSerialDriver(Driver):
 
     async def set_hold(self, hold: bool = True) -> None:
         if hold:
-            await self._send_command('!')
+            await self._send_command("!")
         else:
-            await self._send_command('~')
+            await self._send_command("~")
 
     async def cancel(self) -> None:
         # GRBL reset command (Ctrl-X) is usually sent as a byte, not a string
@@ -135,7 +138,7 @@ class GrblSerialDriver(Driver):
         # the transport can handle raw bytes.
         # A common way to reset GRBL is to send 0x18 (Ctrl-X)
         if self.serial_transport:
-            payload = b'\x18'
+            payload = b"\x18"
             debug_log_manager.add_entry(
                 self.__class__.__name__, LogType.TX, payload
             )
@@ -144,36 +147,32 @@ class GrblSerialDriver(Driver):
             raise ConnectionError("Serial transport not initialized")
 
     async def home(self) -> None:
-        await self._send_command('$H')
+        await self._send_command("$H")
 
     async def move_to(self, pos_x, pos_y) -> None:
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
         await self._send_command(cmd)
 
     def on_serial_data_received(self, sender, data: bytes):
-        debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data
-        )
-        data_str = data.decode('utf-8').strip()
+        debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
+        data_str = data.decode("utf-8").strip()
         for line in data_str.splitlines():
             self._log(line)
-            if line.startswith('<') and line.endswith('>'):
+            if line.startswith("<") and line.endswith(">"):
                 state = _parse_state(line[1:-1], self.state, self._log)
                 if state != self.state:
                     self.state = state
                     self._on_state_changed()
-            elif line == 'ok':
+            elif line == "ok":
                 # GRBL 'ok' response, indicates command received
                 self._on_command_status_changed(TransportStatus.IDLE)
-            elif line.startswith('error:'):
+            elif line.startswith("error:"):
                 self._on_command_status_changed(
-                    TransportStatus.ERROR,
-                    message=line
+                    TransportStatus.ERROR, message=line
                 )
             # Add more GRBL specific responses handling here if needed
 
-    def on_serial_status_changed(self,
-                                 sender,
-                                 status: TransportStatus,
-                                 message: Optional[str] = None):
+    def on_serial_status_changed(
+        self, sender, status: TransportStatus, message: Optional[str] = None
+    ):
         self._on_connection_status_changed(status, message)
