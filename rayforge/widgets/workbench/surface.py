@@ -61,6 +61,10 @@ class WorkSurface(Canvas):
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
 
+        # Set theme colors for axis and grid. This will be called on each
+        # redraw as well, to handle live theme changes.
+        self._update_theme_colors()
+
         # DotElement size will be set in pixels by WorkSurface
         # Initialize with zero size, size and position will be set in
         # do_size_allocate
@@ -112,6 +116,32 @@ class WorkSurface(Canvas):
         # globally, which is necessary for undo/redo actions triggered
         # outside of this widget.
         self.doc.history_manager.changed.connect(self._on_history_changed)
+
+    def _update_theme_colors(self):
+        """
+        Reads the current theme colors from the widget's style context
+        and applies them to the AxisRenderer.
+        """
+        style_context = self.get_style_context()
+
+        # Get the foreground color for axes and labels
+        found, fg_rgba = style_context.lookup_color("view_fg_color")
+        if found:
+            self._axis_renderer.set_fg_color(
+                (fg_rgba.red, fg_rgba.green, fg_rgba.blue, fg_rgba.alpha)
+            )
+
+        # Get the separator color for the grid lines
+        found, grid_rgba = style_context.lookup_color("separator_color")
+        if found:
+            self._axis_renderer.set_grid_color(
+                (
+                    grid_rgba.red,
+                    grid_rgba.green,
+                    grid_rgba.blue,
+                    grid_rgba.alpha,
+                )
+            )
 
     def _on_history_changed(self, sender, **kwargs):
         """
@@ -721,6 +751,9 @@ class WorkSurface(Canvas):
                 )
 
     def do_snapshot(self, snapshot):
+        # Update theme colors right before drawing to catch any live changes.
+        self._update_theme_colors()
+
         # Create a Cairo context for the snapshot
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)

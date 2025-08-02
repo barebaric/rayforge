@@ -23,6 +23,8 @@ class AxisRenderer:
         pan_y_mm: float = 0.0,
         zoom_level: float = 1.0,
         y_axis_down: bool = False,
+        fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
+        grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
     ):
         self.grid_size_mm: float = grid_size_mm
         self.width_px: int = width_px
@@ -33,6 +35,8 @@ class AxisRenderer:
         self.pan_y_mm: float = pan_y_mm
         self.zoom_level: float = zoom_level
         self.y_axis_down: bool = y_axis_down
+        self.fg_color: Tuple[float, float, float, float] = fg_color
+        self.grid_color: Tuple[float, float, float, float] = grid_color
 
     def _get_content_layout(self) -> Tuple[float, float, float, float]:
         """
@@ -187,7 +191,7 @@ class AxisRenderer:
         content_x, content_y, content_width, content_height = (
             self._get_content_layout()
         )
-        ctx.set_source_rgb(0.9, 0.9, 0.9)
+        ctx.set_source_rgba(*self.grid_color)
         ctx.set_hairline(True)
 
         # Vertical lines
@@ -211,8 +215,8 @@ class AxisRenderer:
             self._get_content_layout()
         )
 
-        # Draw fixed axis lines
-        ctx.set_source_rgb(0, 0, 0)
+        # Draw fixed axis lines and labels
+        ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
 
         # Y-axis line (fixed at left of content area)
@@ -312,3 +316,9 @@ class AxisRenderer:
 
     def set_y_axis_down(self, y_axis_down: bool):
         self.y_axis_down = y_axis_down
+
+    def set_fg_color(self, fg_color: Tuple[float, float, float, float]):
+        self.fg_color = fg_color
+
+    def set_grid_color(self, grid_color: Tuple[float, float, float, float]):
+        self.grid_color = grid_color
