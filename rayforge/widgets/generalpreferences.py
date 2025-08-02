@@ -1,4 +1,5 @@
 from gi.repository import Gtk, Adw  # type: ignore
+from ..driver.driver import driver_mgr
 from ..driver import drivers, get_driver_cls, get_params
 from ..util.adwfix import get_spinrow_int
 from ..models.machine import Machine
@@ -13,6 +14,22 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             **kwargs,
         )
         self.machine = machine
+
+        # Error Banner Group
+        error_group = Adw.PreferencesGroup()
+        self.add(error_group)
+
+        # Configuration Error Banner
+        self.error_banner = Adw.Banner()
+        self.error_banner.set_use_markup(True)
+        self.error_banner.set_revealed(False)
+        error_group.add(self.error_banner)
+        # Hide the group if the banner is not revealed to avoid extra spacing
+        self.error_banner.connect(
+            "notify::revealed",
+            lambda banner, _: error_group.set_visible(banner.get_revealed()),
+        )
+        error_group.set_visible(False)
 
         # Group for Machine Name
         name_group = Adw.PreferencesGroup()
@@ -159,6 +176,44 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.height_row.connect("changed", self.on_height_changed)
         dimensions_group.add(self.height_row)
 
+        # Connect to the global driver manager to get updates
+        driver_mgr.changed.connect(self._on_driver_manager_changed)
+        self.connect("destroy", self._on_destroy)
+
+        # Initial check for errors
+        self._update_error_state()
+
+    def _on_driver_manager_changed(self, sender, **kwargs):
+        """
+        Handler for the global driver manager's changed signal.
+        This ensures the UI reflects the current driver's state, even if
+        the change was triggered elsewhere.
+        """
+        self._update_error_state()
+
+    def _on_destroy(self, *args):
+        """Disconnects signals to prevent memory leaks."""
+        driver_mgr.changed.disconnect(self._on_driver_manager_changed)
+
+    def _update_error_state(self):
+        """Shows or hides the error banner based on driver state."""
+        if not driver_mgr.driver:
+            return
+        is_current_driver = (
+            driver_mgr.driver
+            and driver_mgr.driver.__class__.__name__ == self.machine.driver
+        )
+        if is_current_driver and driver_mgr.driver.setup_error:
+            error_msg = driver_mgr.driver.setup_error
+            self.error_banner.set_title(
+                _("<b>Configuration required:</b> {error}").format(
+                    error=error_msg
+                )
+            )
+            self.error_banner.set_revealed(True)
+        else:
+            self.error_banner.set_revealed(False)
+
     def on_driver_param_changed(self, sender):
         self.machine.set_driver_args(self.driver_group.get_values())
 
@@ -191,10 +246,12 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # the dialog is first initialized, as setting the combo box's initial
         # value also triggers this signal.
         if self.machine.driver == driver_cls.__name__:
+            self._update_error_state()
             return
 
         self.machine.set_driver(driver_cls)
         self.driver_group.create_params(get_params(driver_cls))
+        self._update_error_state()
 
     def on_name_changed(self, entry_row, _):
         """Update the machine name when the text changes."""

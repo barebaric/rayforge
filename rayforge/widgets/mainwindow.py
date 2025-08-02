@@ -27,6 +27,7 @@ from .statusview import (
 )
 from .machineview import MachineView
 from .preferencesdialog import PreferencesWindow
+from .machinesettings import MachineSettingsDialog
 from .progress import TaskProgressBar
 from .workpieceprops import WorkpiecePropertiesWidget
 from .canvas import CanvasElement
@@ -49,7 +50,6 @@ css = """
 }
 
 .statusbar:hover {
-    /* A subtle highlight that works on both light and dark themes. */
     background-color: alpha(@theme_fg_color, 0.1);
 }
 
@@ -62,11 +62,15 @@ css = """
     padding: 6px 12px 6px 12px;
 }
 
-/* This is the new rule to make menu separators visible */
 .menu separator {
     border-top: 1px solid @borders;
     margin-top: 5px;
     margin-bottom: 5px;
+}
+
+.warning-label {
+    color: @warning_color;
+    font-weight: bold;
 }
 """
 
@@ -275,6 +279,23 @@ class MainWindow(Adw.ApplicationWindow):
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         toolbar.append(spacer)
+
+        # Add clickable warning for misconfigured machine
+        self.machine_warning_box = Gtk.Box(spacing=6)
+        self.machine_warning_box.set_margin_end(12)
+        warning_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        warning_label = Gtk.Label(label=_("Machine not fully configured"))
+        warning_label.add_css_class("warning-label")
+        self.machine_warning_box.append(warning_icon)
+        self.machine_warning_box.append(warning_label)
+        self.machine_warning_box.set_tooltip_text(
+            _("Machine driver is missing required settings. Click to edit.")
+        )
+        self.machine_warning_box.set_visible(False)
+        warning_click = Gtk.GestureClick.new()
+        warning_click.connect("pressed", self._on_machine_warning_clicked)
+        self.machine_warning_box.add_controller(warning_click)
+        toolbar.append(self.machine_warning_box)
 
         # Add machine selector dropdown
         self._setup_machine_selector()
@@ -760,6 +781,12 @@ class MainWindow(Adw.ApplicationWindow):
         can_redo = self.doc.history_manager.can_redo()
         can_paste = len(self._clipboard_snapshot) > 0
 
+        # Show warning if the current machine is not configured
+        warning_visible = False
+        if driver_mgr.driver and not driver_mgr.driver.did_setup:
+            warning_visible = True
+        self.machine_warning_box.set_visible(warning_visible)
+
         # Update action sensitivity
         self.export_action.set_enabled(can_export)
         self.undo_action.set_enabled(can_undo)
@@ -799,6 +826,9 @@ class MainWindow(Adw.ApplicationWindow):
         if driver_mgr.driver.__class__ is NoDeviceDriver:
             send_tooltip = _("Send to machine (select driver to enable)")
             send_sensitive = False
+        elif not (driver_mgr.driver and driver_mgr.driver.did_setup):
+            send_tooltip = _("Send to machine (configure driver to enable)")
+            send_sensitive = False
         elif conn_status != TransportStatus.CONNECTED:
             send_tooltip = _("Send to machine (connect to enable)")
             send_sensitive = False
@@ -833,6 +863,15 @@ class MainWindow(Adw.ApplicationWindow):
         x, y = state.machine_pos[:2]
         if x is not None and y is not None:
             self.surface.set_laser_dot_position(x, y)
+
+    def _on_machine_warning_clicked(self, *args):
+        """Opens the machine settings dialog for the current machine."""
+        current_machine = config.machine
+        if not current_machine:
+            return
+
+        dialog = MachineSettingsDialog(machine=current_machine)
+        dialog.present(self)
 
     def on_status_bar_clicked(self, gesture, n_press, x, y, box):
         dialog = MachineView()

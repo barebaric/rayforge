@@ -5,7 +5,7 @@ from ..models.ops import Ops
 from ..models.machine import Machine
 from ..transport import TelnetTransport, TransportStatus
 from ..debug import debug_log_manager, LogType
-from .driver import Driver, DeviceStatus
+from .driver import Driver, DeviceStatus, DriverSetupError
 from .grbl import _parse_state
 
 
@@ -25,9 +25,8 @@ class SmoothieDriver(Driver):
         self._ok_event = asyncio.Event()
 
     def setup(self, host: str = "", port: int = 23):
-        assert not self.did_setup
         if not host:
-            return  # Leave unconfigured
+            raise DriverSetupError(_("Hostname must be set."))
         super().setup()
 
         # Initialize transports

@@ -7,7 +7,7 @@ from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
-from .driver import Driver
+from .driver import Driver, DriverSetupError
 from .grbl import _parse_state
 
 logger = logging.getLogger(__name__)
@@ -32,9 +32,10 @@ class GrblSerialDriver(Driver):
           - port: Serial port (e.g., "/dev/ttyUSB0" or "COM1")
           - baudrate: Baud rate (default: 115200)
         """
-        assert not self.did_setup
-        if not port or not baudrate:
-            return  # Leave unconfigured
+        if not port:
+            raise DriverSetupError(_("Port must be configured."))
+        if not baudrate:
+            raise DriverSetupError(_("Baud rate must be configured."))
 
         super().setup()
 

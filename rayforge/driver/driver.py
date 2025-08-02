@@ -10,6 +10,11 @@ from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
 
 
+class DriverSetupError(Exception):
+    """Custom exception for driver setup failures."""
+    pass
+
+
 class DeviceStatus(Enum):
     UNKNOWN = auto()
     IDLE = auto()
@@ -70,6 +75,7 @@ class Driver(ABC):
         self.connection_status_changed = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
+        self.setup_error: Optional[str] = None
 
     def setup(self, *args: Any, **kwargs: Any):
         """
@@ -81,10 +87,13 @@ class Driver(ABC):
         The method will be invoked once the user has provided the arguments
         in the UI.
         """
+        assert not self.did_setup
         self.did_setup = True
+        self.setup_error = None
 
     async def cleanup(self):
         self.did_setup = False
+        self.setup_error = None
 
     @abstractmethod
     async def connect(self) -> None:
@@ -186,21 +195,29 @@ class Driver(ABC):
 
 class DriverManager:
     def __init__(self):
-        self.driver = None
+        self.driver: Optional[Driver] = None
         self.changed = Signal()
 
-    async def _assign_driver(self, driver, **args):
+    async def _assign_driver(self, driver: Driver, **args):
         self.driver = driver
-        self._on_driver_changed()
-        self.driver.setup(**args)
+        try:
+            self.driver.setup(**args)
+        except DriverSetupError as e:
+            self.driver.setup_error = str(e)
+        finally:
+            self._on_driver_changed()
         await self.driver.connect()
 
     async def _reconfigure_driver(self, **args):
         if not self.driver:
             return
         await self.driver.cleanup()
-        self._on_driver_changed()
-        self.driver.setup(**args)
+        try:
+            self.driver.setup(**args)
+        except DriverSetupError as e:
+            self.driver.setup_error = str(e)
+        finally:
+            self._on_driver_changed()
         await self.driver.connect()
 
     async def _switch_driver(self, driver, **args):

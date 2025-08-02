@@ -8,7 +8,7 @@ from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
-from .driver import Driver, DeviceStatus, DeviceState, Pos
+from .driver import Driver, DeviceStatus, DeviceState, Pos, DriverSetupError
 
 
 hw_info_url = "/command?plain=%5BESP420%5D&PAGEID="
@@ -37,7 +37,6 @@ def _parse_pos_triplet(pos) -> Optional[Pos]:
 def _parse_state(
     state_str: str, default: DeviceState, logger: Callable
 ) -> DeviceState:
-    # ... (this function is unchanged) ...
     state = copy(default)
     try:
         status, *attribs = state_str.split("|")
@@ -68,7 +67,6 @@ def _parse_state(
 
 
 class GrblDriver(Driver):
-    # ... (__init__, setup, cleanup, and _get* methods are unchanged) ...
     label = "GRBL"
     subtitle = "Send GRBL-compatible Gcode via network connection"
 
@@ -81,6 +79,9 @@ class GrblDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
 
     def setup(self, host: str = ""):
+        if not host:
+            raise DriverSetupError(_("Hostname must be set."))
+
         super().setup()
         self.host = host
 
@@ -245,7 +246,6 @@ class GrblDriver(Driver):
             self._on_connection_status_changed(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
-    # ... (rest of the methods are unchanged) ...
     async def run(self, ops: Ops, machine: Machine) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
