@@ -190,8 +190,6 @@ class Doc:
 
             # 4. Clip to machine boundaries and apply post-transformers
             clipped_ops = step_ops.clip(clip_rect)
-            for transformer in step.opstransformers:
-                await asyncio.to_thread(transformer.run, clipped_ops)
             final_ops += clipped_ops * step.passes
 
         if context:
