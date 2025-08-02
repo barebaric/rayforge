@@ -38,7 +38,6 @@ class CameraImageElement(CanvasElement):
         keeps the old surface and data to prevent flickering.
         """
         self._cached_key = None
-        self.set_visible(self.camera.enabled)
         self.mark_dirty()
         if self.canvas:
             self.canvas.queue_draw()
