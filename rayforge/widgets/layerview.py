@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk, Pango  # type: ignore
 from blinker import Signal
 from ..models.doc import Doc
 from ..models.layer import Layer
@@ -40,7 +40,7 @@ css = """
 class LayerView(Gtk.Box):
     """
     A custom widget representing a single Layer in a list.
-    It displays the layer's name, workpiece count, and actions.
+    It displays the layer's name, a summary of its contents, and actions.
     """
 
     delete_clicked = Signal()
@@ -78,11 +78,12 @@ class LayerView(Gtk.Box):
         key_controller.connect("key-pressed", self.on_name_escape_pressed)
         self.name_entry.add_controller(key_controller)
 
-        # Subtitle: A simple label for the workpiece count
-        self.workpiece_count_label = Gtk.Label()
-        self.workpiece_count_label.set_halign(Gtk.Align.START)
-        self.workpiece_count_label.add_css_class("dim-label")
-        content_box.append(self.workpiece_count_label)
+        # Subtitle: A label for the step list and workpiece count
+        self.subtitle_label = Gtk.Label()
+        self.subtitle_label.set_halign(Gtk.Align.START)
+        self.subtitle_label.add_css_class("dim-label")
+        self.subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        content_box.append(self.subtitle_label)
 
         # Suffix icons
         suffix_box = Gtk.Box(spacing=6)
@@ -196,12 +197,27 @@ class LayerView(Gtk.Box):
         if not self.name_entry.has_focus():
             self.name_entry.set_text(self.layer.name)
 
+        # Get step names from the layer's workflow
+        step_names = [s.name for s in self.layer.workflow]
+        steps_string = ", ".join(step_names)
+
+        # Get workpiece count string
         count = len(self.layer.workpieces)
-        self.workpiece_count_label.set_label(
-            _("{count} workpiece").format(count=count)
-            if count == 1
-            else _("{count} workpieces").format(count=count)
-        )
+        if count == 1:
+            workpiece_string = _("{count} workpiece").format(count=count)
+        else:
+            workpiece_string = _("{count} workpieces").format(count=count)
+
+        # Combine them into the final subtitle
+        if steps_string:
+            # Example: "Outline, Rasterize 4 workpieces"
+            subtitle_text = f"{steps_string} {workpiece_string}"
+        else:
+            # Example: "4 workpieces"
+            subtitle_text = workpiece_string
+
+        self.subtitle_label.set_label(subtitle_text)
+        self.subtitle_label.set_tooltip_text(subtitle_text)
 
         # Sync the visibility button's state and icon with the model.
         # Assume 'visible' property exists, default to True for robustness.
