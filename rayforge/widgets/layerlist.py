@@ -20,7 +20,7 @@ class LayerListView(Expander):
         self.doc = doc
 
         self.set_title(_("Workpiece Layers"))
-        self.set_expanded(True)  # Expanded by default
+        self.set_expanded(False)
 
         # A container for all content that will be revealed by the expander
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

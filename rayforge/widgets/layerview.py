@@ -19,7 +19,7 @@ css = """
 
 .layer-list-box > row.active-layer-row {
     background-color: @accent_bg_color;
-    color: white;
+    color: @accent_fg_color;
     border-radius: 6px;
 }
 
@@ -28,7 +28,7 @@ css = """
 }
 
 .layer-list-box > row.active-layer-row entry {
-    caret-color: white;
+    caret-color: @accent_fg_color;
 }
 
 .layer-list-box > row.active-layer-row .dim-label {
