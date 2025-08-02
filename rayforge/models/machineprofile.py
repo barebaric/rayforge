@@ -10,17 +10,18 @@ class MachineProfile:
     settings. All fields are optional to allow for partial profiles.
     """
 
-    name: Optional[str] = None
+    name: str
     driver_class_name: Optional[str] = None
+    dialect_name: Optional[str] = None
     dimensions: Optional[Tuple[int, int]] = None
     y_axis_down: Optional[bool] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
     preamble: Optional[List[str]] = None
     postscript: Optional[List[str]] = None
-    air_assist_on: Optional[str] = None
-    air_assist_off: Optional[str] = None
     driver_args: Optional[Dict[str, Any]] = None
+    home_on_start: Optional[bool] = None
+    heads: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self) -> Machine:
         """
@@ -31,11 +32,12 @@ class MachineProfile:
         be used for any unspecified profile values.
         """
         m = Machine()
+        m.name = self.name
 
-        if self.name is not None:
-            m.name = self.name
         if self.driver_class_name is not None:
             m.driver = self.driver_class_name
+        if self.dialect_name is not None:
+            m.dialect_name = self.dialect_name
         if self.dimensions is not None:
             m.dimensions = self.dimensions
         if self.y_axis_down is not None:
@@ -46,19 +48,34 @@ class MachineProfile:
             m.max_cut_speed = self.max_cut_speed
         if self.preamble is not None:
             m.preamble = self.preamble.copy()
+            m.use_custom_preamble = True
         if self.postscript is not None:
             m.postscript = self.postscript.copy()
-        if self.air_assist_on is not None:
-            m.air_assist_on = self.air_assist_on
-        if self.air_assist_off is not None:
-            m.air_assist_off = self.air_assist_off
+            m.use_custom_postscript = True
         if self.driver_args is not None:
             m.driver_args = self.driver_args.copy()
+        if self.home_on_start is not None:
+            m.home_on_start = self.home_on_start
 
-        # Standard setup for any machine created from a profile
-        m.heads = []
-        m.add_head(Laser())
         m.cameras = []
+
+        if self.heads:
+            # The machine is initialized with one head. We clear it before
+            # applying profile-specific heads. This safely disconnects
+            # signals.
+            for head in m.heads[:]:
+                m.remove_head(head)
+
+            for head_profile in self.heads:
+                # Create a laser head from the profile data. The dictionary
+                # for each head should have a flat structure with keys that
+                # Laser.from_dict can parse, such as "max_power",
+                # "frame_power", and "spot_size_mm".
+                m.add_head(Laser.from_dict(head_profile))
+        else:
+            # If no heads are specified in the profile, add a default one.
+            m.add_head(Laser())
+
         return m
 
 
@@ -66,20 +83,23 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name="Sculpfun iCube",
         driver_class_name="GrblDriver",
+        dialect_name="GRBL",
         dimensions=(120, 120),
         y_axis_down=False,
         max_travel_speed=3000,
         max_cut_speed=1000,
-        preamble=["G21", "G90"],
-        postscript=["G0 X0 Y0"],
-        air_assist_on="M8",
-        air_assist_off="M9",
+        home_on_start=True,
+        heads=[
+            {
+                "frame_power": 10.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
     ),
     MachineProfile(
-        name="Custom GRBL Machine",
+        name="Other",
         driver_class_name="GrblDriver",
+        dialect_name="GRBL",
         y_axis_down=False,
-        preamble=["G21", "G90", "$32=1"],
-        postscript=["$32=0", "G0 X0 Y0"],
     ),
 ]

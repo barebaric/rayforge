@@ -100,7 +100,6 @@ class GrblDriver(Driver):
 
     def __init__(self):
         super().__init__()
-        self.encoder = GcodeEncoder()
         self.http = None
         self.websocket = None
         self.keep_running = False
@@ -233,7 +232,8 @@ class GrblDriver(Driver):
             await asyncio.sleep(5)
 
     async def run(self, ops: Ops, machine: Machine) -> None:
-        gcode = self.encoder.encode(ops, machine)
+        encoder = GcodeEncoder.for_machine(machine)
+        gcode = encoder.encode(ops, machine)
 
         try:
             await self._upload(gcode, 'rayforge.gcode')

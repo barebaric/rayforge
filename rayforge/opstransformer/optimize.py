@@ -3,7 +3,7 @@ import math
 import logging
 from copy import copy
 from typing import Optional, List, cast, Dict, Any
-from ..models.ops import Ops, State, ArcToCommand, Command
+from ..models.ops import Ops, State, ArcToCommand, Command, MovingCommand
 from .transformer import OpsTransformer
 from ..tasker.context import BaseExecutionContext, ExecutionContext
 
@@ -37,12 +37,13 @@ def split_long_segments(operations: List[Command]) -> List[List[Command]]:
     return segments
 
 
-def split_segments(commands: List[Command]) -> List[List[Command]]:
+def split_segments(commands: List[Command]) -> List[List[MovingCommand]]:
     """
     Split a list of commands into segments. We use it to prepare
     for reordering the segments for travel distance minimization.
 
-    Returns a list of segments. In other words, a list of list[Command].
+    Returns a list of segments. In other words, a list of
+    List[MovingCommand].
     """
     segments = []
     current_segment = []
@@ -61,7 +62,7 @@ def split_segments(commands: List[Command]) -> List[List[Command]]:
     return segments
 
 
-def flip_segment(segment: List[Command]) -> List[Command]:
+def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
     """
     The states attached to each point descibe the intended
     machine state while traveling TO the point.
@@ -120,8 +121,8 @@ def flip_segment(segment: List[Command]) -> List[Command]:
 
 def greedy_order_segments(
     context: BaseExecutionContext,
-    segments: List[List[Command]],
-) -> List[List[Command]]:
+    segments: List[List[MovingCommand]],
+) -> List[List[MovingCommand]]:
     """
     Greedy ordering using vectorized math.dist computations.
     Part of the path optimization algorithm.
@@ -135,7 +136,7 @@ def greedy_order_segments(
         return []
 
     context.set_total(len(segments))
-    ordered: List[List[Command]] = []
+    ordered: List[List[MovingCommand]] = []
     current_seg = segments[0]
     ordered.append(current_seg)
     current_pos = np.array(current_seg[-1].end)
@@ -174,8 +175,8 @@ def greedy_order_segments(
 
 
 def flip_segments(
-    context: BaseExecutionContext, ordered: List[List[Command]]
-) -> List[List[Command]]:
+    context: BaseExecutionContext, ordered: List[List[MovingCommand]]
+) -> List[List[MovingCommand]]:
     improved = True
     context.set_total(1)  # Simple task, just needs cancellation check
     while improved:
@@ -209,9 +210,9 @@ def flip_segments(
 
 def two_opt(
     context: BaseExecutionContext,
-    ordered: List[List[Command]],
+    ordered: List[List[MovingCommand]],
     max_iter: int,
-) -> List[List[Command]]:
+) -> List[List[MovingCommand]]:
     """
     2-opt: try reversing entire sub-sequences if that lowers the travel cost.
     """

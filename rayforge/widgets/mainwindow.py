@@ -1004,7 +1004,7 @@ class MainWindow(Adw.ApplicationWindow):
 
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message("Encoding G-code...")
-                encoder = GcodeEncoder()
+                encoder = GcodeEncoder.for_machine(config.machine)
                 gcode = encoder.encode(ops, config.machine)
 
                 # 3. Write to file (sync, potentially slow, run in thread)
@@ -1250,7 +1250,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def show_preferences(self, action, param):
-        dialog = PreferencesWindow(parent=self, transient_for=self)
+        dialog = PreferencesWindow(transient_for=self)
         dialog.present()
         dialog.connect("close-request", self._on_preferences_dialog_closed)
 

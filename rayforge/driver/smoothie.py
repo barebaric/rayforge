@@ -18,7 +18,6 @@ class SmoothieDriver(Driver):
 
     def __init__(self):
         super().__init__()
-        self.encoder = GcodeEncoder()
         self.telnet = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -100,10 +99,14 @@ class SmoothieDriver(Driver):
             ) from e
 
     async def run(self, ops: Ops, machine: Machine) -> None:
-        gcode = self.encoder.encode(ops, machine)
+        encoder = GcodeEncoder.for_machine(machine)
+        gcode = encoder.encode(ops, machine)
+
         try:
             for line in gcode.splitlines():
-                await self._send_and_wait(line.encode())
+                line = line.strip()
+                if line:
+                    await self._send_and_wait(line.encode())
         except Exception as e:
             self._on_connection_status_changed(TransportStatus.ERROR, str(e))
             raise

@@ -21,7 +21,6 @@ class GrblSerialDriver(Driver):
 
     def __init__(self):
         super().__init__()
-        self.encoder = GcodeEncoder()
         self.serial_transport: Optional[SerialTransport] = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -106,7 +105,9 @@ class GrblSerialDriver(Driver):
         logger.debug("Leaving _connection_loop.")
 
     async def run(self, ops: Ops, machine: Machine) -> None:
-        gcode = self.encoder.encode(ops, machine)
+        encoder = GcodeEncoder.for_machine(machine)
+        gcode = encoder.encode(ops, machine)
+
         # Split gcode into lines and send them one by one
         for line in gcode.splitlines():
             if line.strip():

@@ -18,13 +18,11 @@ class Machine:
         self.driver: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
         self.home_on_start: bool = False
-        self.preamble: List[str] = [
-            "G21 ; Set units to mm",
-            "G90 ; Absolute positioning",
-        ]
-        self.postscript: List[str] = ["G0 X0 Y0 ; Return to origin"]
-        self.air_assist_on = "M8 ; Enable air assist"
-        self.air_assist_off = "M9 ; Disable air assist"
+        self.dialect_name: str = "GRBL"
+        self.use_custom_preamble: bool = False
+        self.preamble: List[str] = []
+        self.use_custom_postscript: bool = False
+        self.postscript: List[str] = []
         self.heads: List[Laser] = []
         self._heads_ref_for_pyreverse: Laser
         self.cameras: List[Camera] = []
@@ -49,24 +47,34 @@ class Machine:
         self.driver_args = args or {}
         self.changed.send(self)
 
+    def set_dialect_name(self, dialect_name: str):
+        if self.dialect_name == dialect_name:
+            return
+        self.dialect_name = dialect_name
+        self.changed.send(self)
+
     def set_home_on_start(self, home_on_start: bool = True):
         self.home_on_start = home_on_start
+        self.changed.send(self)
+
+    def set_use_custom_preamble(self, use: bool):
+        if self.use_custom_preamble == use:
+            return
+        self.use_custom_preamble = use
         self.changed.send(self)
 
     def set_preamble(self, preamble: List[str]):
         self.preamble = preamble
         self.changed.send(self)
 
+    def set_use_custom_postscript(self, use: bool):
+        if self.use_custom_postscript == use:
+            return
+        self.use_custom_postscript = use
+        self.changed.send(self)
+
     def set_postscript(self, postscript: List[str]):
         self.postscript = postscript
-        self.changed.send(self)
-
-    def set_air_assist_on(self, gcode: Optional[str]):
-        self.air_assist_on = gcode
-        self.changed.send(self)
-
-    def set_air_assist_off(self, gcode: Optional[str]):
-        self.air_assist_off = gcode
         self.changed.send(self)
 
     def set_max_travel_speed(self, speed: int):
@@ -124,6 +132,7 @@ class Machine:
                 "driver": self.driver,
                 "driver_args": self.driver_args,
                 "home_on_start": self.home_on_start,
+                "dialect": self.dialect_name,
                 "dimensions": list(self.dimensions),
                 "y_axis_down": self.y_axis_down,
                 "heads": [head.to_dict() for head in self.heads],
@@ -135,8 +144,8 @@ class Machine:
                 "gcode": {
                     "preamble": self.preamble,
                     "postscript": self.postscript,
-                    "air_assist_on": self.air_assist_on,
-                    "air_assist_off": self.air_assist_off,
+                    "use_custom_preamble": self.use_custom_preamble,
+                    "use_custom_postscript": self.use_custom_postscript,
                 },
             }
         }
@@ -149,6 +158,7 @@ class Machine:
         ma.driver = ma_data.get("driver")
         ma.driver_args = ma_data.get("driver_args", {})
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
+        ma.dialect_name = ma_data.get("dialect", "GRBL")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
         ma.heads = []
@@ -163,10 +173,22 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         gcode = ma_data.get("gcode", {})
-        ma.preamble = gcode.get("preamble", ma.preamble)
-        ma.postscript = gcode.get("postscript", ma.postscript)
-        ma.air_assist_on = gcode.get("air_assist_on", ma.air_assist_on)
-        ma.air_assist_off = gcode.get("air_assist_off", ma.air_assist_off)
+
+        # Load preamble/postscript values. They might be None in old files.
+        preamble = gcode.get("preamble")
+        postscript = gcode.get("postscript")
+        ma.preamble = preamble if preamble is not None else []
+        ma.postscript = postscript if postscript is not None else []
+
+        # Load override flags. If they don't exist (old file),
+        # infer state from whether preamble/postscript were defined.
+        ma.use_custom_preamble = gcode.get(
+            "use_custom_preamble", preamble is not None
+        )
+        ma.use_custom_postscript = gcode.get(
+            "use_custom_postscript", postscript is not None
+        )
+
         return ma
 
 

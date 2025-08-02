@@ -1,9 +1,9 @@
 from gi.repository import Adw, Gtk  # type: ignore
-
 from ..config import machine_mgr
 from ..models.machine import Machine
-from ..models.machineprofile import PROFILES
+from ..models.machineprofile import MachineProfile
 from .machinesettings import MachineSettingsDialog
+from .machineprofileselector import MachineProfileSelectorDialog
 from .roundbutton import RoundButton
 
 
@@ -55,6 +55,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             row = Adw.ActionRow(title=machine.name, subtitle=machine.id)
 
             buttons_box = Gtk.Box(spacing=6)
+            row.add_suffix(buttons_box)
 
             edit_button = Gtk.Button(
                 icon_name="document-edit-symbolic",
@@ -75,17 +76,16 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             )
             buttons_box.append(delete_button)
 
-            row.add_suffix(buttons_box)
             self.machine_list_box.append(row)
 
     def _on_machine_list_changed(self, sender, machine_id, **kwargs):
-        """Handler to rebuild the list when machines are added or removed."""
+        """Handler to rebuild the list when machines change."""
         self._populate_machines_list()
 
     def _on_edit_machine_clicked(self, button, machine: Machine):
         """Opens the detailed settings dialog for a specific machine."""
         dialog = MachineSettingsDialog(machine=machine)
-        dialog.present(self)
+        dialog.present(self.get_root())
 
     def _on_delete_machine_clicked(self, button, machine: Machine):
         """Shows a confirmation dialog before deleting a machine."""
@@ -118,36 +118,16 @@ class MachinePreferencesPage(Adw.PreferencesPage):
 
     def _on_add_machine_clicked(self, button):
         """Shows a dialog to select a machine profile to add."""
-        dialog = Adw.MessageDialog(
-            transient_for=self.get_root(),
-            modal=True,
-            heading=_("Add a New Machine"),
-            body=_("Select a machine profile to use as a template."),
-        )
-
-        combo = Gtk.ComboBoxText()
-        for i, profile in enumerate(PROFILES):
-            combo.insert(i, str(i), profile.name)
-        combo.set_active(0)
-
-        dialog.set_extra_child(combo)
-        dialog.add_response("cancel", _("Cancel"))
-        dialog.add_response("add", _("Add"))
-        dialog.set_response_appearance("add", Adw.ResponseAppearance.SUGGESTED)
-        dialog.set_default_response("add")
-
-        dialog.connect("response", self._on_add_dialog_response)
+        dialog = MachineProfileSelectorDialog(transient_for=self.get_root())
+        dialog.profile_selected.connect(self._on_profile_selected_for_add)
         dialog.present()
 
-    def _on_add_dialog_response(self, dialog, response_id: str):
-        """Handles the response from the add machine dialog."""
-        if response_id == "add":
-            combo = dialog.get_extra_child()
-            active_id_str = combo.get_active_id()
-            if active_id_str:
-                profile_index = int(active_id_str)
-                selected_profile = PROFILES[profile_index]
+    def _on_profile_selected_for_add(
+        self, sender, *, profile: MachineProfile
+    ):
+        """Creates a machine and opens its settings editor."""
+        new_machine = profile.create_machine()
+        machine_mgr.add_machine(new_machine)
 
-                new_machine = selected_profile.create_machine()
-                machine_mgr.add_machine(new_machine)
-        dialog.close()
+        editor_dialog = MachineSettingsDialog(machine=new_machine)
+        editor_dialog.present(self.get_root())

@@ -71,23 +71,21 @@ class Command:
         return False
 
 
-class MoveToCommand(Command):
+class MovingCommand(Command):
     end: Tuple[float, float]  # type: ignore[reportRedeclaration]
 
+
+class MoveToCommand(MovingCommand):
     def is_travel_command(self) -> bool:
         return True
 
 
-class LineToCommand(Command):
-    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
-
+class LineToCommand(MovingCommand):
     def is_cutting_command(self) -> bool:
         return True
 
 
-class ArcToCommand(Command):
-    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
-
+class ArcToCommand(MovingCommand):
     def __init__(
         self,
         end: Tuple[float, float],
@@ -239,27 +237,45 @@ class Ops:
         )
 
     def set_power(self, power: float) -> None:
-        """Laser power (0-1000 for GRBL)"""
+        """
+        Sets the intended laser power for subsequent cutting commands.
+        This is a state declaration, not an immediate command to turn on
+        the laser.
+        """
         cmd = SetPowerCommand(int(power))
         self.commands.append(cmd)
 
     def set_cut_speed(self, speed: float) -> None:
-        """Cutting speed (mm/min)"""
+        """
+        Sets the intended feed rate for subsequent cutting commands.
+        This is a state declaration.
+        """
         cmd = SetCutSpeedCommand(int(speed))
         self.commands.append(cmd)
 
     def set_travel_speed(self, speed: float) -> None:
-        """Rapid movement speed (mm/min)"""
+        """
+        Sets the intended feed rate for subsequent travel commands.
+        This is a state declaration.
+        """
         cmd = SetTravelSpeedCommand(int(speed))
         self.commands.append(cmd)
 
     def enable_air_assist(self, enable: bool = True) -> None:
+        """
+        Sets the intended state of the air assist for subsequent commands.
+        This is a state declaration.
+        """
         if enable:
             self.commands.append(EnableAirAssistCommand())
         else:
             self.disable_air_assist()
 
     def disable_air_assist(self) -> None:
+        """
+        Sets the intended state of the air assist for subsequent commands.
+        This is a state declaration.
+        """
         self.commands.append(DisableAirAssistCommand())
 
     def rect(self) -> Tuple[float, float, float, float]:
