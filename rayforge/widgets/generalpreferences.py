@@ -13,6 +13,16 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         self.machine = machine
 
+        # Group for Machine Name
+        name_group = Adw.PreferencesGroup()
+        self.add(name_group)
+
+        # Machine Name
+        name_row = Adw.EntryRow(title=_("Name"))
+        name_row.set_text(self.machine.name)
+        name_row.connect("notify::text", self.on_name_changed)
+        name_group.add(name_row)
+
         self.driver_group = DynamicPreferencesGroup(title=_("Driver Settings"))
         self.driver_group.data_changed.connect(self.on_driver_param_changed)
         self.add(self.driver_group)
@@ -49,12 +59,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Group for Machine Settings
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
         self.add(machine_group)
-
-        # Machine Name
-        name_row = Adw.EntryRow(title=_("Name"))
-        name_row.set_text(self.machine.name)
-        name_row.connect("notify::text", self.on_name_changed)
-        machine_group.add(name_row)
 
         home_on_start_row = Adw.SwitchRow()
         home_on_start_row.set_title(_("Home On Start"))
