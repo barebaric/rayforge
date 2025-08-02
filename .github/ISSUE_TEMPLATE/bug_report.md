@@ -10,7 +10,9 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-Important: If you are opening an issue related to the connection to your machine, please provide the debug dump! [See here how to save it.](https://github.com/barebaric/rayforge/blob/main/docs/debug.md).
+IMPORTANT:
+If you are opening an issue related to the connection to your machine, please provide the debug dump!
+See here how to save it: https://github.com/barebaric/rayforge/blob/main/docs/debug.md
 
 **To Reproduce**
 Steps to reproduce the behavior:
