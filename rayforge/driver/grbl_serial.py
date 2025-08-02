@@ -6,6 +6,7 @@ from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
+from ..debug import debug_log_manager, LogType
 from .driver import Driver
 from .grbl import _parse_state
 
@@ -74,7 +75,11 @@ class GrblSerialDriver(Driver):
         if not self.serial_transport:
             raise ConnectionError("Serial transport not initialized")
         # GRBL commands usually need a newline
-        await self.serial_transport.send((command + '\n').encode('utf-8'))
+        payload = (command + '\n').encode('utf-8')
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.TX, payload
+        )
+        await self.serial_transport.send(payload)
 
     async def connect(self):
         logger.debug("GrblSerialDriver connect initiated.")
@@ -129,7 +134,11 @@ class GrblSerialDriver(Driver):
         # the transport can handle raw bytes.
         # A common way to reset GRBL is to send 0x18 (Ctrl-X)
         if self.serial_transport:
-            await self.serial_transport.send(b'\x18')
+            payload = b'\x18'
+            debug_log_manager.add_entry(
+                self.__class__.__name__, LogType.TX, payload
+            )
+            await self.serial_transport.send(payload)
         else:
             raise ConnectionError("Serial transport not initialized")
 
@@ -141,6 +150,9 @@ class GrblSerialDriver(Driver):
         await self._send_command(cmd)
 
     def on_serial_data_received(self, sender, data: bytes):
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.RX, data
+        )
         data_str = data.decode('utf-8').strip()
         for line in data_str.splitlines():
             self._log(line)

@@ -9,7 +9,7 @@ class HttpTransport(Transport):
     HTTP transport using persistent connection with auto-reconnect.
     """
 
-    def __init__(self, base_url: str, receive_interval: int = None):
+    def __init__(self, base_url: str, receive_interval: float):
         """
         Initialize HTTP transport.
 

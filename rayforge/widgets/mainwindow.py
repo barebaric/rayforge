@@ -85,6 +85,16 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title(_("Rayforge"))
 
+        # The main content box
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        # The ToastOverlay will wrap the main content box
+        self.toast_overlay = Adw.ToastOverlay()
+        self.toast_overlay.set_child(vbox)
+
+        # Set the ToastOverlay as the window's content
+        self.set_content(self.toast_overlay)
+
         # Add a global click handler to manage focus correctly.
         root_click_gesture = Gtk.GestureClick.new()
         root_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
@@ -119,10 +129,6 @@ class MainWindow(Adw.ApplicationWindow):
             )
         else:
             self.set_default_size(1200, 900)
-
-        # Create the main vbox
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.set_content(vbox)
 
         # Setup keyboard actions.
         self._setup_actions()
@@ -830,7 +836,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_status_bar_clicked(self, gesture, n_press, x, y, box):
         dialog = MachineView()
+        dialog.notification_requested.connect(self._on_dialog_notification)
         dialog.present(self)
+
+    def _on_dialog_notification(self, sender, message: str = ""):
+        """Shows a toast when requested by a child dialog."""
+        self.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def on_quit_action(self, action, parameter):
         self.close()

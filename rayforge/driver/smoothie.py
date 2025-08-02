@@ -4,6 +4,7 @@ from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..models.machine import Machine
 from ..transport import TelnetTransport, TransportStatus
+from ..debug import debug_log_manager, LogType
 from .driver import Driver, DeviceStatus
 from .grbl import _parse_state
 
@@ -66,7 +67,7 @@ class SmoothieDriver(Driver):
                 # The transport handles the connection loop.
                 # We just need to wait here until cleanup.
                 while self.keep_running:
-                    await self.telnet.send(b"?")
+                    await self._send_and_wait(b"?", wait_for_ok=False)
                     await asyncio.sleep(1)
 
             except asyncio.CancelledError:
@@ -85,18 +86,25 @@ class SmoothieDriver(Driver):
             self._on_connection_status_changed(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
-    async def _send_and_wait(self, cmd: bytes):
+    async def _send_and_wait(self, cmd: bytes, wait_for_ok: bool = True):
         if not self.telnet:
             return
-        self._ok_event.clear()
+        if wait_for_ok:
+            self._ok_event.clear()
+
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.TX, cmd
+        )
         await self.telnet.send(cmd)
-        try:
-            # Set a 10s timeout to avoid deadlocks
-            await asyncio.wait_for(self._ok_event.wait(), 10.0)
-        except asyncio.TimeoutError as e:
-            raise ConnectionError(
-                f"Command '{cmd.decode()}' not confirmed"
-            ) from e
+
+        if wait_for_ok:
+            try:
+                # Set a 10s timeout to avoid deadlocks
+                await asyncio.wait_for(self._ok_event.wait(), 10.0)
+            except asyncio.TimeoutError as e:
+                raise ConnectionError(
+                    f"Command '{cmd.decode()}' not confirmed"
+                ) from e
 
     async def run(self, ops: Ops, machine: Machine) -> None:
         encoder = GcodeEncoder.for_machine(machine)
@@ -129,6 +137,9 @@ class SmoothieDriver(Driver):
         await self._send_and_wait(cmd.encode())
 
     def on_telnet_data_received(self, sender, data: bytes):
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.RX, data
+        )
         data_str = data.decode("utf-8")
         for line in data_str.splitlines():
             self._log(line)

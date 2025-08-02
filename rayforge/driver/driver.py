@@ -7,6 +7,7 @@ from ..transport import TransportStatus
 from ..util.glib import idle_add
 from ..models.ops import Ops
 from ..models.machine import Machine
+from ..debug import debug_log_manager, LogType
 
 
 class DeviceStatus(Enum):
@@ -131,6 +132,9 @@ class Driver(ABC):
         pass
 
     def _log(self, message: str):
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.APP_INFO, message
+        )
         idle_add(
             self.log_received.send,
             self,
@@ -138,6 +142,9 @@ class Driver(ABC):
         )
 
     def _on_state_changed(self):
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.STATE_CHANGE, self.state
+        )
         idle_add(
             self.state_changed.send,
             self,
@@ -147,6 +154,12 @@ class Driver(ABC):
     def _on_command_status_changed(self,
                                    status: TransportStatus,
                                    message: Optional[str] = None):
+        log_data = f"Command status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.APP_INFO, log_data
+        )
         idle_add(
             self.command_status_changed.send,
             self,
@@ -157,6 +170,12 @@ class Driver(ABC):
     def _on_connection_status_changed(self,
                                       status: TransportStatus,
                                       message: Optional[str] = None):
+        log_data = f"Connection status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.APP_INFO, log_data
+        )
         idle_add(
             self.connection_status_changed.send,
             self,

@@ -1,7 +1,11 @@
+import shutil
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, GLib, Gio  # type: ignore
+from blinker import Signal
 from ..driver.driver import driver_mgr, TransportStatus
+from ..debug import debug_log_manager, LogEntry, LogType
 
 
 css = """
@@ -13,98 +17,194 @@ css = """
 
 
 class MachineView(Adw.Dialog):
+    notification_requested = Signal()
+
     def __init__(self):
         super().__init__()
         self.set_presentation_mode(Adw.DialogPresentationMode.BOTTOM_SHEET)
+        self.set_title(_("Machine Log"))
 
-        # Main container
+        self._temp_archive_path: Optional[Path] = None
+
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.set_child(box)
 
-        # WebSocket terminal-like display
         self.terminal = Gtk.TextView()
-        self.terminal.set_editable(False)  # Make it read-only
-        self.terminal.set_cursor_visible(False)  # Hide the cursor
-        self.terminal.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)  # Wrap text
+        self.terminal.set_editable(False)
+        self.terminal.set_cursor_visible(False)
+        self.terminal.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.terminal.set_margin_top(12)
         self.terminal.set_margin_bottom(12)
         self.terminal.set_margin_start(12)
         self.terminal.set_margin_end(12)
 
-        # Apply a monospace font using CSS
         css_provider = Gtk.CssProvider()
         css_provider.load_from_string(css)
         self.terminal.get_style_context().add_provider(
             css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-        # Wrap the TextView in a ScrolledWindow
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_min_content_height(400)
         scrolled_window.set_child(self.terminal)
         box.append(scrolled_window)
 
-        # Listen to driver
-        driver = driver_mgr.driver
-        driver.log_received.connect(self.on_log_received)
-        driver.command_status_changed.connect(
-            self.on_command_status_changed
-        )
-        driver.connection_status_changed.connect(
-            self.on_connection_status_changed
-        )
+        self.save_log_button = Gtk.Button.new_with_label(_("Save Debug Log"))
+        self.save_log_button.set_icon_name("document-save-symbolic")
+        self.save_log_button.add_css_class("suggested-action")
+        self.save_log_button.set_margin_top(6)
+        self.save_log_button.set_margin_bottom(6)
+        self.save_log_button.set_halign(Gtk.Align.CENTER)
+        self.save_log_button.connect("clicked", self._on_save_log_clicked)
+        box.append(self.save_log_button)
 
-        # The dialog does not support expansion. Adw 1.6 will support
-        # BottomSheet, at which time this widget should probably use that
-        # instead. But for now, it is not available in Ubuntu 24.04,
-        # so we need to define a fixed size.
-        self.set_size_request(900, -1)  # Allow the dialog to expand
+        self._populate_history()
+
+        driver = driver_mgr.driver
+        if driver:
+            driver.log_received.connect(self.on_log_received)
+            driver.command_status_changed.connect(
+                self.on_command_status_changed
+            )
+            driver.connection_status_changed.connect(
+                self.on_connection_status_changed
+            )
+
+        self.set_size_request(900, -1)
         self.set_follows_content_size(True)
 
-    def append_to_terminal(self, data):
-        # Get the current timestamp in the user's locale
+    def _populate_history(self):
+        log_snapshot = debug_log_manager._get_log_snapshot()
+        text_buffer = self.terminal.get_buffer()
+        formatted_lines = [
+            self._format_log_entry_for_terminal(entry)
+            for entry in log_snapshot
+        ]
+        text_buffer.set_text("".join(formatted_lines))
+        GLib.idle_add(self._scroll_to_bottom)
+
+    def _format_log_entry_for_terminal(self, entry: LogEntry) -> str:
+        local_timestamp = entry.timestamp.astimezone().strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )[:-3]
+        data_str = ""
+        if isinstance(entry.data, bytes):
+            try:
+                data_str = entry.data.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                data_str = f"[Binary data: {len(entry.data)} bytes]"
+        elif isinstance(entry.data, str):
+            data_str = entry.data.strip()
+        else:
+            data_str = str(entry.data)
+
+        if entry.log_type in [LogType.TX, LogType.RX]:
+            return ""
+
+        return (
+            f"[{local_timestamp}] {entry.source} "
+            f" ({entry.log_type.name}): {data_str}\n"
+        )
+
+    def append_to_terminal(self, data: str):
         timestamp = datetime.now().strftime("%x %X")
         formatted_message = f"[{timestamp}] {data}\n"
-
-        # Get the TextBuffer and insert the new message
         text_buffer = self.terminal.get_buffer()
         text_buffer.insert(text_buffer.get_end_iter(), formatted_message)
-
-        # Scroll to the end of the buffer. Gtk may not have calculated the
-        # text dimensions yet, so we queue this using idle_add. This ensures
-        # that the calculations are complete.
         GLib.idle_add(self._scroll_to_bottom)
 
     def _scroll_to_bottom(self):
         text_buffer = self.terminal.get_buffer()
         end_iter = text_buffer.get_end_iter()
-        self.terminal.scroll_to_iter(end_iter, 0.0, False, 0.0, 0.0)
-        return False  # Ensure this callback is only run once
+        mark = text_buffer.create_mark("end_mark", end_iter, False)
+        self.terminal.scroll_to_mark(mark, 0.0, False, 0.0, 0.0)
+        text_buffer.delete_mark(mark)
+        return False
 
-    def on_log_received(self, sender, message=None):
-        """
-        Update terminal display.
-        """
+    def on_log_received(self, sender, message: Optional[str] = None):
+        if not message:
+            return
         driver_name = sender.__class__.__name__
         self.append_to_terminal(f"{driver_name}: {message}")
 
-    def on_command_status_changed(self,
-                                  sender,
-                                  status: TransportStatus,
-                                  message: Optional[str] = None):
-        self.append_to_terminal(
-            _(
-                "Command status changed to {status} with message: {message}"
-            ).format(status=status, message=message)
+    def on_command_status_changed(
+        self, sender, status: TransportStatus, message: Optional[str] = None
+    ):
+        msg = _("Command status changed to {status}").format(
+            status=status.name
         )
+        if message:
+            msg += f" with message: {message}"
+        self.append_to_terminal(msg)
 
-    def on_connection_status_changed(self,
-                                     sender,
-                                     status:
-                                     TransportStatus,
-                                     message: Optional[str] = None):
-        self.append_to_terminal(
-            _(
-                "Connection status changed to {status} with message: {message}"
-            ).format(status=status, message=message)
+    def on_connection_status_changed(
+        self, sender, status: TransportStatus, message: Optional[str] = None
+    ):
+        msg = _("Connection status changed to {status}").format(
+            status=status.name
         )
+        if message:
+            msg += f" with message: {message}"
+        self.append_to_terminal(msg)
+
+    def _on_save_log_clicked(self, button: Gtk.Button):
+        self.save_log_button.set_sensitive(False)
+
+        archive_path = debug_log_manager.create_dump_archive()
+
+        if not archive_path:
+            self.notification_requested.send(
+                self, message=_("Failed to create debug archive.")
+            )
+            self.save_log_button.set_sensitive(True)
+            return
+
+        self._temp_archive_path = archive_path
+
+        parent_window = self.get_root()
+
+        if not isinstance(parent_window, Gtk.Window):
+            self.notification_requested.send(
+                self,
+                message=_("Could not find parent window to attach dialog."),
+            )
+            self.save_log_button.set_sensitive(True)
+            return
+
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(_("Save Debug Log"))
+        dialog.set_initial_name(self._temp_archive_path.name)
+        dialog.save(parent_window, None, self._on_save_dialog_response)
+
+    def _on_save_dialog_response(self, dialog, result):
+        try:
+            destination_file = dialog.save_finish(result)
+            if destination_file and self._temp_archive_path:
+                destination_path = Path(destination_file.get_path())
+                shutil.move(self._temp_archive_path, destination_path)
+                self.notification_requested.send(
+                    self,
+                    message=_("Debug log saved to {path}").format(
+                        path=destination_path.name
+                    ),
+                )
+        except GLib.Error as e:
+            if not e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+                self.notification_requested.send(
+                    self,
+                    message=_("Error saving file: {msg}").format(
+                        msg=e.message
+                    ),
+                )
+        except Exception as e:
+            self.notification_requested.send(
+                self,
+                message=_("An unexpected error occurred: {error}").format(
+                    error=e
+                ),
+            )
+        finally:
+            if self._temp_archive_path and self._temp_archive_path.exists():
+                self._temp_archive_path.unlink()
+            self._temp_archive_path = None
+            self.save_log_button.set_sensitive(True)
