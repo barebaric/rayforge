@@ -161,13 +161,13 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Import and export icons
         open_button = Gtk.Button()
-        open_button.set_child(get_icon("open"))
+        open_button.set_child(get_icon("document-open-symbolic"))
         open_button.set_tooltip_text(_("Import image"))
         open_button.connect("clicked", self.on_open_clicked)
         toolbar.append(open_button)
 
         self.export_button = Gtk.Button()
-        self.export_button.set_child(get_icon("publish"))
+        self.export_button.set_child(get_icon("document-save-symbolic"))
         self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.connect("clicked", self.on_export_clicked)
         toolbar.append(self.export_button)
@@ -187,13 +187,13 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(sep)
 
         clear_button = Gtk.Button()
-        clear_button.set_child(get_icon("clear-layers"))
+        clear_button.set_child(get_icon("edit-clear-all-symbolic"))
         clear_button.set_tooltip_text(_("Remove all workpieces"))
         clear_button.connect("clicked", self.on_clear_clicked)
         toolbar.append(clear_button)
 
-        self.visibility_on_icon = get_icon("visibility-on")
-        self.visibility_off_icon = get_icon("visibility-off")
+        self.visibility_on_icon = get_icon("stock-eye-symbolic")
+        self.visibility_off_icon = get_icon("eye-not-looking-symbolic")
         button = Gtk.ToggleButton()
         button.set_active(True)
         button.set_child(self.visibility_on_icon)
@@ -202,8 +202,8 @@ class MainWindow(Adw.ApplicationWindow):
         button.connect("clicked", self.on_button_visibility_clicked)
 
         # Camera Image Visibility Toggle Button
-        self.camera_visibility_on_icon = get_icon("camera-on")
-        self.camera_visibility_off_icon = get_icon("camera-off")
+        self.camera_visibility_on_icon = get_icon("camera-app-symbolic")
+        self.camera_visibility_off_icon = get_icon("camera-disabled-symbolic")
         self.camera_visibility_button = Gtk.ToggleButton()
         self.camera_visibility_button.set_active(True)
         self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
@@ -217,7 +217,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Show Travel Moves Toggle Button
         self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("timeline"))
+        self.show_travel_button.set_child(get_icon("function-linear-symbolic"))
         self.show_travel_button.set_active(False)
         self.show_travel_button.set_tooltip_text(
             _("Toggle travel move visibility")
@@ -232,13 +232,13 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(sep)
 
         self.home_button = Gtk.Button()
-        self.home_button.set_child(get_icon("home"))
+        self.home_button.set_child(get_icon("go-home-symbolic"))
         self.home_button.set_tooltip_text(_("Home the machine"))
         self.home_button.connect("clicked", self.on_home_clicked)
         toolbar.append(self.home_button)
 
         self.frame_button = Gtk.Button()
-        self.frame_button.set_child(get_icon("frame"))
+        self.frame_button.set_child(get_icon("edit-select-all-symbolic"))
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
         )
@@ -246,13 +246,13 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(self.frame_button)
 
         self.send_button = Gtk.Button()
-        self.send_button.set_child(get_icon("send"))
+        self.send_button.set_child(get_icon("document-send-symbolic"))
         self.send_button.set_tooltip_text(_("Send to machine"))
         self.send_button.connect("clicked", self.on_send_clicked)
         toolbar.append(self.send_button)
 
-        self.hold_on_icon = get_icon("play-arrow")
-        self.hold_off_icon = get_icon("pause")
+        self.hold_on_icon = get_icon("pause-symbolic")
+        self.hold_off_icon = get_icon("pause-symbolic")
         self.hold_button = Gtk.ToggleButton()
         self.hold_button.set_child(self.hold_off_icon)
         self.hold_button.set_tooltip_text(_("Pause machine"))
@@ -260,7 +260,7 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(self.hold_button)
 
         self.cancel_button = Gtk.Button()
-        self.cancel_button.set_child(get_icon("stop"))
+        self.cancel_button.set_child(get_icon("process-stop-symbolic"))
         self.cancel_button.set_tooltip_text(_("Cancel running job"))
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         toolbar.append(self.cancel_button)

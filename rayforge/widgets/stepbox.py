@@ -2,7 +2,7 @@ from gi.repository import Gtk, Adw  # type: ignore
 from blinker import Signal
 from ..models.doc import Doc
 from ..models.step import Step
-from ..util.resources import get_icon_path
+from ..util.resources import get_icon
 from ..undo.property_cmd import ChangePropertyCommand
 from .stepsettings import StepSettingsDialog
 
@@ -24,16 +24,14 @@ class StepBox(Adw.ActionRow):
         self.add_suffix(self.visibility_switch)
         self.visibility_switch.connect("state-set", self.on_switch_state_set)
 
-        icon = Gtk.Image.new_from_file(get_icon_path("settings"))
         button = Gtk.Button()
-        button.set_child(icon)
+        button.set_child(get_icon("settings-symbolic"))
         button.set_valign(Gtk.Align.CENTER)
         self.add_suffix(button)
         button.connect("clicked", self.on_button_properties_clicked)
 
-        icon = Gtk.Image.new_from_file(get_icon_path("delete"))
         button = Gtk.Button()
-        button.set_child(icon)
+        button.set_child(get_icon("user-trash-symbolic"))
         button.set_valign(Gtk.Align.CENTER)
         self.add_suffix(button)
         button.connect("clicked", self.on_button_delete_clicked)
