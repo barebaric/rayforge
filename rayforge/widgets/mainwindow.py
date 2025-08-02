@@ -14,11 +14,9 @@ from ..util.resources import get_icon
 from ..models.machine import Machine
 from ..models.doc import Doc
 from ..models.workpiece import WorkPiece
-from ..models.layer import Layer
 from ..opsencoder.gcode import GcodeEncoder
 from ..render import renderers, renderer_by_mime_type, renderer_by_extension
 from ..undo.list_cmd import ListItemCommand, ReorderListCommand
-from ..undo.setter_cmd import SetterCommand
 from .workflowview import WorkflowView
 from .workbench.surface import WorkSurface
 from .layerlist import LayerListView
@@ -554,10 +552,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.remove_action.connect("activate", self.on_menu_remove)
         self.add_action(self.remove_action)
 
-        self.create_layer_action = Gio.SimpleAction.new("create-layer", None)
-        self.create_layer_action.connect("activate", self.on_menu_create_layer)
-        self.add_action(self.create_layer_action)
-
         preferences_action = Gio.SimpleAction.new("preferences", None)
         preferences_action.connect("activate", self.show_preferences)
         self.add_action(preferences_action)
@@ -594,10 +588,6 @@ class MainWindow(Adw.ApplicationWindow):
         clipboard_commands.append(_("Remove"), "win.remove")
         edit_menu.append_section(None, clipboard_commands)
 
-        layer_commands = Gio.Menu()
-        layer_commands.append(_("Create a Layer"), "win.create-layer")
-        edit_menu.append_section(None, layer_commands)
-
         other_edit_commands = Gio.Menu()
         other_edit_commands.append(_("Preferences…"), "win.preferences")
         edit_menu.append_section(None, other_edit_commands)
@@ -632,7 +622,6 @@ class MainWindow(Adw.ApplicationWindow):
         app.set_accels_for_action("win.paste", ["<Primary>v"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
-        app.set_accels_for_action("win.create-layer", ["<Primary>g"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
 
@@ -774,7 +763,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.paste_action.set_enabled(can_paste and not has_tasks)
         self.duplicate_action.set_enabled(has_selection and not has_tasks)
         self.remove_action.set_enabled(has_selection and not has_tasks)
-        self.create_layer_action.set_enabled(not has_tasks)
 
         # Update button sensitivity
         self.export_button.set_sensitive(can_export)
@@ -1224,33 +1212,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         if newly_duplicated_workpieces:
             self.surface.select_workpieces(newly_duplicated_workpieces)
-
-    def on_menu_create_layer(self, action, param):
-        """Handles the 'create-layer' action from the menu."""
-        # Name new layers sequentially.
-        new_layer_num = len(self.doc.layers) + 1
-        new_layer_name = _("Layer {num}").format(num=new_layer_num)
-        new_layer = Layer(doc=self.doc, name=new_layer_name)
-        old_active_layer = self.doc.active_layer
-
-        with self.doc.history_manager.transaction(_("Create Layer")) as t:
-            # Command to add the layer
-            add_cmd = ListItemCommand(
-                owner_obj=self.doc,
-                item=new_layer,
-                undo_command="remove_layer",
-                redo_command="add_layer",
-            )
-            t.execute(add_cmd)
-
-            # Command to set the new layer as active
-            set_active_cmd = SetterCommand(
-                target=self.doc,
-                new_args=(new_layer,),
-                old_args=(old_active_layer,),
-                setter_method_name="set_active_layer",
-            )
-            t.execute(set_active_cmd)
 
     def on_menu_cut(self, action, param):
         selection = self.surface.get_selected_workpieces()
