@@ -32,29 +32,38 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         for d in drivers:
             self.driver_store.append(d.label)
         driver_cls = get_driver_cls(machine.driver)
+
         self.combo_row = Adw.ComboRow(
-            title=driver_cls.label if driver_cls else _("Select driver"),
-            subtitle=driver_cls.subtitle if driver_cls else None,
+            # Start with a sensible default; it will be updated momentarily.
+            title=_("Select driver"),
             model=self.driver_store,
         )
         self.combo_row.set_use_subtitle(True)
-        self.combo_row.set_subtitle(driver_cls.subtitle)
         self.driver_group.add(self.combo_row)
-        self.driver_group.create_params(get_params(driver_cls))
-        self.driver_group.set_values(machine.driver_args)
 
-        # Set up a custom factory to display both title and subtitle
+        # Set up a custom factory to display both title and subtitle in the
+        # dropdown
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self.on_factory_setup)
         factory.connect("bind", self.on_factory_bind)
         self.combo_row.set_factory(factory)
 
+        # Connect the signal BEFORE setting the initial selection.
+        # This ensures that our handler is called to correctly set the initial
+        # title and subtitle, working around the widget's buggy behavior.
+        self.combo_row.connect("notify::selected", self.on_combo_row_changed)
+
+        # Now, set the initial selection. This will trigger the
+        # on_combo_row_changed
+        # handler, which correctly populates the title and subtitle.
         if driver_cls:
             selected_index = drivers.index(driver_cls)
             self.combo_row.set_selected(selected_index)
 
-        # Connect to the "notify::selected" signal to handle selection changes
-        self.combo_row.connect("notify::selected", self.on_combo_row_changed)
+        # These must be called after the selection is set, so the correct
+        # parameters are created based on the selected driver.
+        self.driver_group.create_params(get_params(driver_cls))
+        self.driver_group.set_values(machine.driver_args)
 
         # Group for Machine Settings
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
@@ -165,10 +174,14 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
     def on_combo_row_changed(self, combo_row, _):
         selected_index = combo_row.get_selected()
+        if selected_index < 0:
+            return  # No selection, do nothing
+
         driver_cls = drivers[selected_index]
 
-        # This is a workaround due to an Adw.ComboRow bug.
-        # Update the ComboRow title to reflect the selected item.
+        # To work around a bug in Adw.ComboRow, we must explicitly set both the
+        # title and subtitle. Setting the title alone would clobber the
+        # subtitle.
         self.combo_row.set_title(driver_cls.label)
         self.combo_row.set_subtitle(driver_cls.subtitle)
 
