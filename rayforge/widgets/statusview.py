@@ -65,7 +65,7 @@ class MachineStatusIconWidget(Gtk.Box):
     def _get_icon_for_status(self, status):
         """Map the status to an appropriate icon name."""
         if status == DeviceStatus.UNKNOWN:
-            return get_icon("question-box")
+            return get_icon("question-symbolic")
         elif status == DeviceStatus.IDLE:
             return get_icon("check-circle")
         elif status == DeviceStatus.RUN:
