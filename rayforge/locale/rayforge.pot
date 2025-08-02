@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-01 15:35+0200\n"
+"POT-Creation-Date: 2025-08-02 23:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,44 +17,44 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: rayforge/opstransformer/optimize.py:291
+#: rayforge/opstransformer/optimize.py:292
 msgid "Optimize Path"
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:295
+#: rayforge/opstransformer/optimize.py:296
 msgid "Minimizes travel distance by reordering segments"
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:304
+#: rayforge/opstransformer/optimize.py:305
 msgid "Preprocessing for optimization..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:335
+#: rayforge/opstransformer/optimize.py:336
 #, python-brace-format
 msgid "Optimizing segment {i}/{total}..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:356
+#: rayforge/opstransformer/optimize.py:357
 msgid "Finding reorderable paths..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:367
+#: rayforge/opstransformer/optimize.py:368
 msgid "Ordering paths..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:378
+#: rayforge/opstransformer/optimize.py:379
 msgid "Flipping segments for improvement..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:387
+#: rayforge/opstransformer/optimize.py:388
 msgid "Applying 2-opt refinement..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:399
+#: rayforge/opstransformer/optimize.py:400
 msgid "Reassembling optimized paths..."
 msgstr ""
 
-#: rayforge/opstransformer/optimize.py:436
+#: rayforge/opstransformer/optimize.py:437
 msgid "Optimization complete"
 msgstr ""
 
@@ -74,28 +74,91 @@ msgstr ""
 msgid "Smooths the path by applying a Gaussian filter"
 msgstr ""
 
-#: rayforge/widgets/gcodepreferences.py:7
+#: rayforge/driver/grbl_serial.py:21
+msgid "GRBL Serial"
+msgstr ""
+
+#: rayforge/driver/grbl_serial.py:22
+msgid "GRBL-compatible serial connection"
+msgstr ""
+
+#: rayforge/driver/grbl_serial.py:39
+msgid "Port must be configured."
+msgstr ""
+
+#: rayforge/driver/grbl_serial.py:41
+msgid "Baud rate must be configured."
+msgstr ""
+
+#: rayforge/driver/dummy.py:11
+msgid "No driver"
+msgstr ""
+
+#: rayforge/driver/dummy.py:12
+msgid "No connection"
+msgstr ""
+
+#: rayforge/driver/smoothie.py:18
+msgid "Smoothie"
+msgstr ""
+
+#: rayforge/driver/smoothie.py:19
+msgid "Smoothieware via a Telnet connection"
+msgstr ""
+
+#: rayforge/driver/smoothie.py:31 rayforge/driver/grbl.py:85
+#, python-brace-format
+msgid "Invalid hostname or IP address: '{host}'"
+msgstr ""
+
+#: rayforge/driver/grbl.py:71
+msgid "GRBL"
+msgstr ""
+
+#: rayforge/driver/grbl.py:72
+msgid "Connect to a GRBL-compatible device over the network"
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:12
 msgid "GCode"
 msgstr ""
 
-#: rayforge/widgets/gcodepreferences.py:14
+#: rayforge/widgets/gcodepreferences.py:19
+msgid "Dialect"
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:21
+msgid "Select the G-code flavor your machine understands."
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:28
+msgid "G-Code Dialect"
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:50
 msgid "Preamble"
 msgstr ""
 
-#: rayforge/widgets/gcodepreferences.py:27
+#: rayforge/widgets/gcodepreferences.py:55
+msgid "Override Default Preamble"
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:56
+#: rayforge/widgets/gcodepreferences.py:115
+msgid "Use custom G-code instead of the dialect's default."
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:97
+#: rayforge/widgets/gcodepreferences.py:153
+msgid "Append Commands from Dialect Default"
+msgstr ""
+
+#: rayforge/widgets/gcodepreferences.py:110
 msgid "Postscript"
 msgstr ""
 
-#: rayforge/widgets/gcodepreferences.py:40 rayforge/widgets/stepsettings.py:99
-msgid "Air Assist"
-msgstr ""
-
-#: rayforge/widgets/gcodepreferences.py:47
-msgid "Air Assist Enable GCode (blank if unsupported)"
-msgstr ""
-
-#: rayforge/widgets/gcodepreferences.py:59
-msgid "Air Assist Disable GCode (blank if unsupported)"
+#: rayforge/widgets/gcodepreferences.py:114
+msgid "Override Default Postscript"
 msgstr ""
 
 #: rayforge/widgets/cameraproperties.py:18
@@ -111,6 +174,7 @@ msgid "Device ID"
 msgstr ""
 
 #: rayforge/widgets/cameraproperties.py:26
+#: rayforge/widgets/generalpreferences.py:40
 msgid "Name"
 msgstr ""
 
@@ -131,37 +195,85 @@ msgstr ""
 msgid "Image Alignment"
 msgstr ""
 
-#: rayforge/widgets/layerlist.py:21
+#: rayforge/widgets/layerlist.py:22
 msgid "Workpiece Layers"
 msgstr ""
 
-#: rayforge/widgets/layerlist.py:43
+#: rayforge/widgets/layerlist.py:52
+msgid "Add New Layer"
+msgstr ""
+
+#: rayforge/widgets/layerlist.py:69
 #, python-brace-format
 msgid "{count} layer"
 msgstr ""
 
-#: rayforge/widgets/layerlist.py:45
+#: rayforge/widgets/layerlist.py:71
 #, python-brace-format
 msgid "{count} Layers"
 msgstr ""
 
-#: rayforge/widgets/layerlist.py:85
+#: rayforge/widgets/layerlist.py:103
+msgid "Layer"
+msgstr ""
+
+#: rayforge/widgets/layerlist.py:120
+#, python-brace-format
+msgid "Add layer '{name}'"
+msgstr ""
+
+#: rayforge/widgets/layerlist.py:136
 #, python-brace-format
 msgid "Remove layer '{name}'"
 msgstr ""
 
-#: rayforge/widgets/layerlist.py:97
+#: rayforge/widgets/layerlist.py:148
 msgid "Reorder layers"
 msgstr ""
 
-#: rayforge/widgets/machineview.py:97
-#, python-brace-format
-msgid "Command status changed to {status} with message: {message}"
+#: rayforge/widgets/machineview.py:25
+msgid "Machine Log"
 msgstr ""
 
-#: rayforge/widgets/machineview.py:108
+#: rayforge/widgets/machineview.py:52 rayforge/widgets/machineview.py:175
+msgid "Save Debug Log"
+msgstr ""
+
+#: rayforge/widgets/machineview.py:133
 #, python-brace-format
-msgid "Connection status changed to {status} with message: {message}"
+msgid "Command status changed to {status}"
+msgstr ""
+
+#: rayforge/widgets/machineview.py:143
+#, python-brace-format
+msgid "Connection status changed to {status}"
+msgstr ""
+
+#: rayforge/widgets/machineview.py:157
+msgid "Failed to create debug archive."
+msgstr ""
+
+#: rayforge/widgets/machineview.py:169
+msgid "Could not find parent window to attach dialog."
+msgstr ""
+
+#: rayforge/widgets/machineview.py:187
+#, python-brace-format
+msgid "Debug log saved to {path}"
+msgstr ""
+
+#: rayforge/widgets/machineview.py:195
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr ""
+
+#: rayforge/widgets/machineview.py:202
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
+msgstr ""
+
+#: rayforge/widgets/workflowview.py:52
+msgid "Add New Step..."
 msgstr ""
 
 #: rayforge/widgets/workflowview.py:95
@@ -193,74 +305,104 @@ msgstr ""
 msgid "Reorder steps"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:10
+#: rayforge/widgets/generalprefs.py:13 rayforge/widgets/about.py:34
+msgid "System"
+msgstr ""
+
+#: rayforge/widgets/generalprefs.py:13
+msgid "Light"
+msgstr ""
+
+#: rayforge/widgets/generalprefs.py:13
+msgid "Dark"
+msgstr ""
+
+#: rayforge/widgets/generalprefs.py:17
+#: rayforge/widgets/generalpreferences.py:12
 msgid "General"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:16
+#: rayforge/widgets/generalprefs.py:21
+msgid "Appearance"
+msgstr ""
+
+#: rayforge/widgets/generalprefs.py:23
+msgid "Settings related to the application's look and feel."
+msgstr ""
+
+#: rayforge/widgets/generalprefs.py:30
+msgid "Theme"
+msgstr ""
+
+#: rayforge/widgets/generalpreferences.py:45
 msgid "Driver Settings"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:26
+#: rayforge/widgets/generalpreferences.py:57
 msgid "Select driver"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:50
+#: rayforge/widgets/generalpreferences.py:88
 msgid "Machine Settings"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:54
+#: rayforge/widgets/generalpreferences.py:92
 msgid "Home On Start"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:56
+#: rayforge/widgets/generalpreferences.py:94
 msgid "Whether Rayforce will send a homing command when it is started"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:66
+#: rayforge/widgets/generalpreferences.py:104
 msgid "Invert Y Axis Direction"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:68
+#: rayforge/widgets/generalpreferences.py:106
 msgid "Enable if your machine's origin is top-left instead of bottom-left"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:84
+#: rayforge/widgets/generalpreferences.py:122
 msgid "Max Travel Speed"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:85
+#: rayforge/widgets/generalpreferences.py:123
 msgid "Maximum travel speed in mm/min"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:100
+#: rayforge/widgets/generalpreferences.py:138
 msgid "Max Cut Speed"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:101
+#: rayforge/widgets/generalpreferences.py:139
 msgid "Maximum cutting speed in mm/min"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:109
+#: rayforge/widgets/generalpreferences.py:147
 msgid "Dimensions"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:119
+#: rayforge/widgets/generalpreferences.py:157
 #: rayforge/widgets/workpieceprops.py:61
 msgid "Width"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:120
+#: rayforge/widgets/generalpreferences.py:158
 msgid "Width of the machine in mm"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:134
+#: rayforge/widgets/generalpreferences.py:172
 #: rayforge/widgets/workpieceprops.py:70
 msgid "Height"
 msgstr ""
 
-#: rayforge/widgets/generalpreferences.py:135
+#: rayforge/widgets/generalpreferences.py:173
 msgid "Height of the machine in mm"
+msgstr ""
+
+#: rayforge/widgets/generalpreferences.py:213
+#, python-brace-format
+msgid "<b>Configuration required:</b> {error}"
 msgstr ""
 
 #: rayforge/widgets/cameraalignment.py:38
@@ -283,6 +425,8 @@ msgid "Clear All Points"
 msgstr ""
 
 #: rayforge/widgets/cameraalignment.py:97
+#: rayforge/widgets/machineprofileselector.py:54
+#: rayforge/widgets/machineprefs.py:101
 #: rayforge/widgets/cameraselectiondialog.py:45
 msgid "Cancel"
 msgstr ""
@@ -399,6 +543,10 @@ msgstr ""
 msgid "Max: {max_travel_speed} mm/min"
 msgstr ""
 
+#: rayforge/widgets/stepsettings.py:99
+msgid "Air Assist"
+msgstr ""
+
 #: rayforge/widgets/stepsettings.py:107
 msgid "Path Post-Processing"
 msgstr ""
@@ -505,27 +653,27 @@ msgstr ""
 msgid "Laser (Max Power: {head.max_power})"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:139
+#: rayforge/widgets/workbench/surface.py:169
 msgid "Move workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:162
+#: rayforge/widgets/workbench/surface.py:192
 msgid "Rotate workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:185
+#: rayforge/widgets/workbench/surface.py:215
 msgid "Resize workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:224
+#: rayforge/widgets/workbench/surface.py:254
 msgid "Delete workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:231
+#: rayforge/widgets/workbench/surface.py:261
 msgid "Delete workpiece"
 msgstr ""
 
-#: rayforge/widgets/workbench/surface.py:773
+#: rayforge/widgets/workbench/surface.py:833
 msgid "Move the workpiece"
 msgstr ""
 
@@ -549,208 +697,211 @@ msgstr ""
 msgid "Delete this point"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:78
+#: rayforge/widgets/mainwindow.py:90
 msgid "Rayforge"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:157
+#: rayforge/widgets/mainwindow.py:175
 msgid "Import image"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:163 rayforge/widgets/mainwindow.py:654
+#: rayforge/widgets/mainwindow.py:181 rayforge/widgets/mainwindow.py:805
 msgid "Generate G-code"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:183 rayforge/widgets/mainwindow.py:774
+#: rayforge/widgets/mainwindow.py:201 rayforge/widgets/mainwindow.py:942
 msgid "Remove all workpieces"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:192
+#: rayforge/widgets/mainwindow.py:210
 msgid "Toggle workpiece visibility"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:203
+#: rayforge/widgets/mainwindow.py:221
 msgid "Toggle camera image visibility"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:215
+#: rayforge/widgets/mainwindow.py:233
 msgid "Toggle travel move visibility"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:228
+#: rayforge/widgets/mainwindow.py:246
 msgid "Home the machine"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:235 rayforge/widgets/mainwindow.py:669
+#: rayforge/widgets/mainwindow.py:253 rayforge/widgets/mainwindow.py:820
 msgid "Cycle laser head around the occupied area"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:242 rayforge/widgets/mainwindow.py:674
+#: rayforge/widgets/mainwindow.py:260 rayforge/widgets/mainwindow.py:825
 msgid "Send to machine"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:250
+#: rayforge/widgets/mainwindow.py:268
 msgid "Pause machine"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:256
+#: rayforge/widgets/mainwindow.py:274
 msgid "Cancel running job"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:360
+#: rayforge/widgets/mainwindow.py:287
+msgid "Machine not fully configured"
+msgstr ""
+
+#: rayforge/widgets/mainwindow.py:292
+msgid "Machine driver is missing required settings. Click to edit."
+msgstr ""
+
+#: rayforge/widgets/mainwindow.py:405
 msgid "<b>Machine status:</b>"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:369
+#: rayforge/widgets/mainwindow.py:414
 msgid "<b>Connection status:</b>"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:467
+#: rayforge/widgets/mainwindow.py:466
+msgid "Select active machine"
+msgstr ""
+
+#: rayforge/widgets/mainwindow.py:597
 msgid "Import..."
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:468
+#: rayforge/widgets/mainwindow.py:598
 msgid "Export G-code..."
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:471
+#: rayforge/widgets/mainwindow.py:601
 msgid "Quit"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:473
+#: rayforge/widgets/mainwindow.py:603
 msgid "_File"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:477
+#: rayforge/widgets/mainwindow.py:607
 msgid "Undo"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:478
+#: rayforge/widgets/mainwindow.py:608
 msgid "Redo"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:481
+#: rayforge/widgets/mainwindow.py:611
 msgid "Cut"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:482
+#: rayforge/widgets/mainwindow.py:612
 msgid "Copy"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:483
+#: rayforge/widgets/mainwindow.py:613
 msgid "Paste"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:484
+#: rayforge/widgets/mainwindow.py:614
 msgid "Duplicate"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:485
+#: rayforge/widgets/mainwindow.py:615
 msgid "Remove"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:489
-msgid "Create a Layer"
+#: rayforge/widgets/mainwindow.py:619
+msgid "Preferences…"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:493
-msgid "Preferences"
-msgstr ""
-
-#: rayforge/widgets/mainwindow.py:496
+#: rayforge/widgets/mainwindow.py:622
 msgid "_Edit"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:500
+#: rayforge/widgets/mainwindow.py:626
 msgid "About"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:501
+#: rayforge/widgets/mainwindow.py:627
 msgid "_Help"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:652
+#: rayforge/widgets/mainwindow.py:803
 msgid "Cannot export while operations are being generated"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:667
+#: rayforge/widgets/mainwindow.py:818
 msgid "Cannot frame while operations are being generated"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:676
+#: rayforge/widgets/mainwindow.py:827
 msgid "Send to machine (select driver to enable)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:679
+#: rayforge/widgets/mainwindow.py:830
+msgid "Send to machine (configure driver to enable)"
+msgstr ""
+
+#: rayforge/widgets/mainwindow.py:833
 msgid "Send to machine (connect to enable)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:683
+#: rayforge/widgets/mainwindow.py:837
 msgid "Send to machine (wait for calculations to finish)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:723
+#: rayforge/widgets/mainwindow.py:891
 msgid "Open File"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:728
+#: rayforge/widgets/mainwindow.py:896
 msgid "All supported"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:781
+#: rayforge/widgets/mainwindow.py:949
 msgid "Save G-code File"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:789
+#: rayforge/widgets/mainwindow.py:957
 msgid "G-code files"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:969
+#: rayforge/widgets/mainwindow.py:1137
 #, python-brace-format
 msgid "Import {name}"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:991
+#: rayforge/widgets/mainwindow.py:1162
 msgid "Cut workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:993
+#: rayforge/widgets/mainwindow.py:1164
 #, python-brace-format
 msgid "Cut {name}"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1031
+#: rayforge/widgets/mainwindow.py:1202
 msgid "Paste workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1046
+#: rayforge/widgets/mainwindow.py:1219
 #, python-brace-format
 msgid "Paste {name}"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1070
+#: rayforge/widgets/mainwindow.py:1246
 msgid "Duplicate workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1077
+#: rayforge/widgets/mainwindow.py:1253
 #, python-brace-format
 msgid "Duplicate {name}"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1094
-#, python-brace-format
-msgid "Layer {num}"
-msgstr ""
-
-#: rayforge/widgets/mainwindow.py:1098
-msgid "Create Layer"
-msgstr ""
-
-#: rayforge/widgets/mainwindow.py:1137
+#: rayforge/widgets/mainwindow.py:1286
 msgid "Remove workpiece(s)"
 msgstr ""
 
-#: rayforge/widgets/mainwindow.py:1139
+#: rayforge/widgets/mainwindow.py:1288
 #, python-brace-format
 msgid "Remove {name}"
 msgstr ""
@@ -837,6 +988,45 @@ msgstr ""
 msgid "Zero is at the bottom"
 msgstr ""
 
+#: rayforge/widgets/machineprofileselector.py:26
+msgid "Add a New Machine"
+msgstr ""
+
+#: rayforge/widgets/machineprofileselector.py:27
+msgid "Select a machine profile to use as a template."
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:16
+msgid "Machines"
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:20
+msgid "Configured Machines"
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:21
+msgid "Add or remove machines."
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:35
+msgid "+"
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:95
+#, python-brace-format
+msgid "Delete ‘{name}’?"
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:97
+msgid ""
+"This machine profile and all its settings will be permanently removed. This "
+"action cannot be undone."
+msgstr ""
+
+#: rayforge/widgets/machineprefs.py:102
+msgid "Delete"
+msgstr ""
+
 #: rayforge/widgets/cameraselectiondialog.py:11
 msgid "Select Camera"
 msgstr ""
@@ -859,8 +1049,16 @@ msgstr ""
 msgid "Device ID: {device_id}"
 msgstr ""
 
-#: rayforge/widgets/stepbox.py:64
+#: rayforge/widgets/stepbox.py:62
 msgid "Toggle step visibility"
+msgstr ""
+
+#: rayforge/widgets/preferencesdialog.py:16
+msgid "Preferences"
+msgstr ""
+
+#: rayforge/widgets/preferencesdialog.py:38
+msgid "Categories"
 msgstr ""
 
 #: rayforge/widgets/progress.py:101
@@ -873,34 +1071,30 @@ msgstr ""
 msgid "{tasks} tasks"
 msgstr ""
 
-#: rayforge/widgets/layerview.py:102
+#: rayforge/widgets/layerview.py:103
 msgid "Delete this layer"
 msgstr ""
 
-#: rayforge/widgets/layerview.py:161
+#: rayforge/widgets/layerview.py:162
 msgid "Rename layer"
 msgstr ""
 
-#: rayforge/widgets/layerview.py:176
+#: rayforge/widgets/layerview.py:177
 msgid "Toggle layer visibility"
 msgstr ""
 
-#: rayforge/widgets/layerview.py:201
+#: rayforge/widgets/layerview.py:207
 #, python-brace-format
 msgid "{count} workpiece"
 msgstr ""
 
-#: rayforge/widgets/layerview.py:203
+#: rayforge/widgets/layerview.py:209
 #, python-brace-format
 msgid "{count} workpieces"
 msgstr ""
 
 #: rayforge/widgets/about.py:14
 msgid "Not found"
-msgstr ""
-
-#: rayforge/widgets/about.py:34
-msgid "System"
 msgstr ""
 
 #: rayforge/widgets/about.py:66
@@ -962,13 +1156,25 @@ msgstr ""
 msgid "Finalizing '{workpiece}'"
 msgstr ""
 
-#: rayforge/models/doc.py:33
+#: rayforge/models/doc.py:34
 msgid "Layer 1"
 msgstr ""
 
-#: rayforge/models/doc.py:158
+#: rayforge/models/doc.py:166
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
+msgstr ""
+
+#: rayforge/models/dialect.py:54
+msgid "Standard GRBL for most diode lasers and hobby CNCs."
+msgstr ""
+
+#: rayforge/models/dialect.py:79
+msgid "G-code dialect for Smoothieware-based controllers."
+msgstr ""
+
+#: rayforge/models/dialect.py:106
+msgid "G-code for Marlin-based controllers, common in 3D printers."
 msgstr ""
 
 #: rayforge/models/machine.py:17
@@ -985,6 +1191,10 @@ msgstr ""
 
 #: rayforge/models/step.py:285
 msgid "Raster Engrave"
+msgstr ""
+
+#: rayforge/models/machineprofile.py:100
+msgid "Other Device"
 msgstr ""
 
 #: rayforge/app.py:90

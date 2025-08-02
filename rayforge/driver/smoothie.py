@@ -15,8 +15,8 @@ class SmoothieDriver(Driver):
     Handles Smoothie-based devices via Telnet
     """
 
-    label = "Smoothie"
-    subtitle = "Smoothieware via a Telnet connection"
+    label = _("Smoothie")
+    subtitle = _("Smoothieware via a Telnet connection")
 
     def __init__(self):
         super().__init__()

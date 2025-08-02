@@ -68,8 +68,8 @@ def _parse_state(
 
 
 class GrblDriver(Driver):
-    label = "GRBL"
-    subtitle = "Send GRBL-compatible Gcode via network connection"
+    label = _("GRBL")
+    subtitle = _("Connect to a GRBL-compatible device over the network")
 
     def __init__(self):
         super().__init__()

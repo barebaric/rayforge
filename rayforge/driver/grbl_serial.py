@@ -18,8 +18,8 @@ class GrblSerialDriver(Driver):
     Handles GRBL based devices via Serial port
     """
 
-    label = "GRBL Serial"
-    subtitle = "Send GRBL-compatible Gcode via serial connection"
+    label = _("GRBL Serial")
+    subtitle = _("GRBL-compatible serial connection")
 
     def __init__(self):
         super().__init__()

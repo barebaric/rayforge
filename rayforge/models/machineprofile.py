@@ -97,7 +97,7 @@ PROFILES: List[MachineProfile] = [
         ],
     ),
     MachineProfile(
-        name="Other",
+        name=_("Other Device"),
         driver_class_name="GrblDriver",
         dialect_name="GRBL",
         y_axis_down=False,
