@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gtk  # type: ignore
+from gi.repository import Adw, Gdk, Gtk  # type: ignore
 from .generalprefs import GeneralPreferencesPage
 from .machineprefs import MachinePreferencesPage
 
@@ -59,6 +59,11 @@ class PreferencesWindow(Adw.Window):
         self.sidebar_list.connect("row-selected", self._on_row_selected)
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
 
+        # Add a key controller to close the window on Escape press
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
+
     def _add_page(self, page_class):
         """
         Instantiates a page and adds it to the stack and sidebar.
@@ -103,3 +108,13 @@ class PreferencesWindow(Adw.Window):
             # Update the title using the title from the wrapper
             page_title = stack_page.get_title()
             self.content_page.set_title(page_title)
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        """
+        Handles key press events for the window. Closes the window when the
+        Escape key is pressed.
+        """
+        if keyval == Gdk.KEY_Escape:
+            self.close()
+            return True  # Event handled, do not propagate further
+        return False  # Event not handled
