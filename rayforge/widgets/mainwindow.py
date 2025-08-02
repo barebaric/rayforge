@@ -132,7 +132,7 @@ class MainWindow(Adw.ApplicationWindow):
                 int(geometry.width * 0.6), int(geometry.height * 0.6)
             )
         else:
-            self.set_default_size(1200, 900)
+            self.set_default_size(1100, 800)
 
         # Setup keyboard actions.
         self._setup_actions()
@@ -342,14 +342,22 @@ class MainWindow(Adw.ApplicationWindow):
         self.redo_button.set_history_manager(self.doc.history_manager)
 
         # Create a vertical paned for the right pane content
-        right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        right_pane_box.set_vexpand(True)
-        right_pane_box.set_margin_start(10)
-        right_pane_box.set_margin_top(6)
-        right_pane_box.set_margin_bottom(12)
-        self.paned.set_end_child(right_pane_box)
+        right_pane_scrolled_window = Gtk.ScrolledWindow()
+        right_pane_scrolled_window.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        right_pane_scrolled_window.set_vexpand(True)
+        right_pane_scrolled_window.set_margin_start(10)
+        right_pane_scrolled_window.set_margin_top(6)
+        right_pane_scrolled_window.set_margin_bottom(12)
+        self.paned.set_end_child(right_pane_scrolled_window)
         self.paned.set_resize_end_child(False)
         self.paned.set_shrink_end_child(False)
+
+        # Create a vertical box to organize the content within the
+        # ScrolledWindow.
+        right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        right_pane_scrolled_window.set_child(right_pane_box)
 
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc)

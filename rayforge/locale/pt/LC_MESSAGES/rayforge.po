@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-02 23:24+0200\n"
+"POT-Creation-Date: 2025-08-02 23:47+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -714,11 +714,11 @@ msgstr "Rayforge"
 msgid "Import image"
 msgstr "Importar imagem"
 
-#: rayforge/widgets/mainwindow.py:181 rayforge/widgets/mainwindow.py:805
+#: rayforge/widgets/mainwindow.py:181 rayforge/widgets/mainwindow.py:813
 msgid "Generate G-code"
 msgstr "Gerar G-code"
 
-#: rayforge/widgets/mainwindow.py:201 rayforge/widgets/mainwindow.py:942
+#: rayforge/widgets/mainwindow.py:201 rayforge/widgets/mainwindow.py:950
 msgid "Remove all workpieces"
 msgstr "Remover todas as peças de trabalho"
 
@@ -738,11 +738,11 @@ msgstr "Alternar visibilidade do movimento de deslocamento"
 msgid "Home the machine"
 msgstr "Referenciar a máquina"
 
-#: rayforge/widgets/mainwindow.py:253 rayforge/widgets/mainwindow.py:820
+#: rayforge/widgets/mainwindow.py:253 rayforge/widgets/mainwindow.py:828
 msgid "Cycle laser head around the occupied area"
 msgstr "Percorrer a área ocupada com a cabeça do laser"
 
-#: rayforge/widgets/mainwindow.py:260 rayforge/widgets/mainwindow.py:825
+#: rayforge/widgets/mainwindow.py:260 rayforge/widgets/mainwindow.py:833
 msgid "Send to machine"
 msgstr "Enviar para a máquina"
 
@@ -763,155 +763,155 @@ msgid "Machine driver is missing required settings. Click to edit."
 msgstr ""
 "Faltam configurações obrigatórias no driver da máquina. Clique para editar."
 
-#: rayforge/widgets/mainwindow.py:405
+#: rayforge/widgets/mainwindow.py:413
 msgid "<b>Machine status:</b>"
 msgstr "<b>Status da máquina:</b>"
 
-#: rayforge/widgets/mainwindow.py:414
+#: rayforge/widgets/mainwindow.py:422
 msgid "<b>Connection status:</b>"
 msgstr "<b>Status da conexão:</b>"
 
-#: rayforge/widgets/mainwindow.py:466
+#: rayforge/widgets/mainwindow.py:474
 msgid "Select active machine"
 msgstr "Selecionar máquina ativa"
 
-#: rayforge/widgets/mainwindow.py:597
+#: rayforge/widgets/mainwindow.py:605
 msgid "Import..."
 msgstr "Importar..."
 
-#: rayforge/widgets/mainwindow.py:598
+#: rayforge/widgets/mainwindow.py:606
 msgid "Export G-code..."
 msgstr "Exportar G-code..."
 
-#: rayforge/widgets/mainwindow.py:601
+#: rayforge/widgets/mainwindow.py:609
 msgid "Quit"
 msgstr "Sair"
 
-#: rayforge/widgets/mainwindow.py:603
+#: rayforge/widgets/mainwindow.py:611
 msgid "_File"
 msgstr "_Arquivo"
 
-#: rayforge/widgets/mainwindow.py:607
+#: rayforge/widgets/mainwindow.py:615
 msgid "Undo"
 msgstr "Desfazer"
 
-#: rayforge/widgets/mainwindow.py:608
+#: rayforge/widgets/mainwindow.py:616
 msgid "Redo"
 msgstr "Refazer"
 
-#: rayforge/widgets/mainwindow.py:611
+#: rayforge/widgets/mainwindow.py:619
 msgid "Cut"
 msgstr "Cortar"
 
-#: rayforge/widgets/mainwindow.py:612
+#: rayforge/widgets/mainwindow.py:620
 msgid "Copy"
 msgstr "Copiar"
 
-#: rayforge/widgets/mainwindow.py:613
+#: rayforge/widgets/mainwindow.py:621
 msgid "Paste"
 msgstr "Colar"
 
-#: rayforge/widgets/mainwindow.py:614
+#: rayforge/widgets/mainwindow.py:622
 msgid "Duplicate"
 msgstr "Duplicar"
 
-#: rayforge/widgets/mainwindow.py:615
+#: rayforge/widgets/mainwindow.py:623
 msgid "Remove"
 msgstr "Remover"
 
-#: rayforge/widgets/mainwindow.py:619
+#: rayforge/widgets/mainwindow.py:627
 msgid "Preferences…"
 msgstr "Preferências…"
 
-#: rayforge/widgets/mainwindow.py:622
+#: rayforge/widgets/mainwindow.py:630
 msgid "_Edit"
 msgstr "_Editar"
 
-#: rayforge/widgets/mainwindow.py:626
+#: rayforge/widgets/mainwindow.py:634
 msgid "About"
 msgstr "Sobre"
 
-#: rayforge/widgets/mainwindow.py:627
+#: rayforge/widgets/mainwindow.py:635
 msgid "_Help"
 msgstr "_Ajuda"
 
-#: rayforge/widgets/mainwindow.py:803
+#: rayforge/widgets/mainwindow.py:811
 msgid "Cannot export while operations are being generated"
 msgstr "Não é possível exportar enquanto as operações estão sendo geradas"
 
-#: rayforge/widgets/mainwindow.py:818
+#: rayforge/widgets/mainwindow.py:826
 msgid "Cannot frame while operations are being generated"
 msgstr "Não é possível enquadrar enquanto as operações estão sendo geradas"
 
-#: rayforge/widgets/mainwindow.py:827
+#: rayforge/widgets/mainwindow.py:835
 msgid "Send to machine (select driver to enable)"
 msgstr "Enviar para a máquina (selecione o driver para habilitar)"
 
-#: rayforge/widgets/mainwindow.py:830
+#: rayforge/widgets/mainwindow.py:838
 msgid "Send to machine (configure driver to enable)"
 msgstr "Enviar para a máquina (configure o driver para habilitar)"
 
-#: rayforge/widgets/mainwindow.py:833
+#: rayforge/widgets/mainwindow.py:841
 msgid "Send to machine (connect to enable)"
 msgstr "Enviar para a máquina (conecte para habilitar)"
 
-#: rayforge/widgets/mainwindow.py:837
+#: rayforge/widgets/mainwindow.py:845
 msgid "Send to machine (wait for calculations to finish)"
 msgstr "Enviar para a máquina (aguarde a conclusão dos cálculos)"
 
-#: rayforge/widgets/mainwindow.py:891
+#: rayforge/widgets/mainwindow.py:899
 msgid "Open File"
 msgstr "Abrir Arquivo"
 
-#: rayforge/widgets/mainwindow.py:896
+#: rayforge/widgets/mainwindow.py:904
 msgid "All supported"
 msgstr "Todos os suportados"
 
-#: rayforge/widgets/mainwindow.py:949
+#: rayforge/widgets/mainwindow.py:957
 msgid "Save G-code File"
 msgstr "Salvar Arquivo G-code"
 
-#: rayforge/widgets/mainwindow.py:957
+#: rayforge/widgets/mainwindow.py:965
 msgid "G-code files"
 msgstr "Arquivos G-code"
 
-#: rayforge/widgets/mainwindow.py:1137
+#: rayforge/widgets/mainwindow.py:1145
 #, python-brace-format
 msgid "Import {name}"
 msgstr "Importar {name}"
 
-#: rayforge/widgets/mainwindow.py:1162
+#: rayforge/widgets/mainwindow.py:1170
 msgid "Cut workpiece(s)"
 msgstr "Cortar peça(s) de trabalho"
 
-#: rayforge/widgets/mainwindow.py:1164
+#: rayforge/widgets/mainwindow.py:1172
 #, python-brace-format
 msgid "Cut {name}"
 msgstr "Cortar {name}"
 
-#: rayforge/widgets/mainwindow.py:1202
+#: rayforge/widgets/mainwindow.py:1210
 msgid "Paste workpiece(s)"
 msgstr "Colar peça(s) de trabalho"
 
-#: rayforge/widgets/mainwindow.py:1219
+#: rayforge/widgets/mainwindow.py:1227
 #, python-brace-format
 msgid "Paste {name}"
 msgstr "Colar {name}"
 
-#: rayforge/widgets/mainwindow.py:1246
+#: rayforge/widgets/mainwindow.py:1254
 msgid "Duplicate workpiece(s)"
 msgstr "Duplicar peça(s) de trabalho"
 
-#: rayforge/widgets/mainwindow.py:1253
+#: rayforge/widgets/mainwindow.py:1261
 #, python-brace-format
 msgid "Duplicate {name}"
 msgstr "Duplicar {name}"
 
-#: rayforge/widgets/mainwindow.py:1286
+#: rayforge/widgets/mainwindow.py:1294
 msgid "Remove workpiece(s)"
 msgstr "Remover peça(s) de trabalho"
 
-#: rayforge/widgets/mainwindow.py:1288
+#: rayforge/widgets/mainwindow.py:1296
 #, python-brace-format
 msgid "Remove {name}"
 msgstr "Remover {name}"
