@@ -1,3 +1,5 @@
+# opselem.py
+
 import logging
 import cairo
 from typing import Optional
@@ -41,9 +43,30 @@ class WorkPieceOpsElement(CanvasElement):
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
-        workpiece.pos_changed.connect(self.allocate)
+        workpiece.pos_changed.connect(self._on_pos_changed)
         workpiece.size_changed.connect(self.allocate)
-        workpiece.angle_changed.connect(self.allocate)
+        workpiece.angle_changed.connect(self._on_angle_changed)
+
+    def _on_pos_changed(self, workpiece: WorkPiece):
+        """A lightweight handler for position changes. Does not re-render."""
+        if not self.canvas or not self.parent:
+            return
+
+        # Recalculate pixel position based on the new mm position.
+        pos_px, _ = self.canvas.workpiece_coords_to_element_coords(self.data)
+
+        # set_pos is cheap, it just updates coordinates and marks the parent
+        # dirty.
+        # This is all that's needed for a move operation.
+        self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
+
+    def _on_angle_changed(self, workpiece: WorkPiece):
+        """A lightweight handler for angle changes. Does not re-render."""
+        if not self.canvas:
+            return
+
+        # set_angle is cheap, it just updates the angle property.
+        self.set_angle(self.data.angle)
 
     def allocate(self, force: bool = False):
         """
@@ -72,12 +95,13 @@ class WorkPieceOpsElement(CanvasElement):
 
         new_width = size_px[0] + 2 * OPS_MARGIN_PX
         new_height = size_px[1] + 2 * OPS_MARGIN_PX
-        pixel_size_changed = (
-            self.width != new_width or self.height != new_height
-        )
 
-        # The element is positioned at the workpiece's top-left, adjusted
-        # for the margin.
+        pixel_size_changed = round(self.width) != round(new_width) or round(
+            self.height
+        ) != round(new_height)
+
+        # Update position and angle here as well, to ensure they are correct
+        # after a size change.
         self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
         self.set_angle(self.data.angle)
 
