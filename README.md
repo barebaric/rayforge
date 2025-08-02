@@ -16,8 +16,10 @@ It supports Linux and Windows.
 | Feature                          | Description                                                |
 | -------------------------------- | ---------------------------------------------------------- |
 | Intuitive user interface         | Drag & drop reordering, focus on essentials                |
+| Multi layer support              | Perform different operations on different workpieces       |
 | Multi step operations            | For example, first engrave, then cut                       |
 | Multiple operation types         | Contour, External Outline, Raster Engraving                |
+| Multi machine support            | Easily switch between multiple machines in a second        |
 | High quality path generation     | Interpolation based on spot size, path optimization        |
 | Path post processing             | Travel time optimization and path smoothing                |
 | Multiple input formats           | SVG, DXF, PDF, and PNG import are supported                |
@@ -25,6 +27,8 @@ It supports Linux and Windows.
 | Cross-platform                   | Support for Linux and Windows                              |
 | Camera support                   | Live camera feed, de-distortion, alignment                 |
 | Multi-language support           | English, Portuguese and German are supported               |
+| G-code dialects                  | Support for GRBL, Smoothieware, and GRBL dialects          |
+| Theme support                    | Switch between system theme, light, and dark mode          |
 | Much more                        | Framing, support for air assist, control buttons, ...      |
 
 
