@@ -72,16 +72,22 @@ class Command:
 
 
 class MoveToCommand(Command):
+    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
+
     def is_travel_command(self) -> bool:
         return True
 
 
 class LineToCommand(Command):
+    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
+
     def is_cutting_command(self) -> bool:
         return True
 
 
 class ArcToCommand(Command):
+    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
+
     def __init__(
         self,
         end: Tuple[float, float],
@@ -89,8 +95,8 @@ class ArcToCommand(Command):
         clockwise: bool,
     ) -> None:
         super().__init__(end)
-        self.center_offset: tuple = center_offset
-        self.clockwise: bool = clockwise
+        self.center_offset = center_offset
+        self.clockwise = clockwise
 
     def is_cutting_command(self) -> bool:
         return True
