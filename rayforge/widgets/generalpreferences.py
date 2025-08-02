@@ -1,11 +1,12 @@
 from gi.repository import Gtk, Adw  # type: ignore
 from ..driver import drivers, get_driver_cls, get_params
 from ..util.adwfix import get_spinrow_int
+from ..models.machine import Machine
 from .dynamicprefs import DynamicPreferencesGroup
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
-    def __init__(self, machine, **kwargs):
+    def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("General"),
             icon_name="preferences-system-symbolic",
@@ -31,7 +32,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.driver_store = Gtk.StringList()
         for d in drivers:
             self.driver_store.append(d.label)
-        driver_cls = get_driver_cls(machine.driver)
+        driver_cls = get_driver_cls(machine.driver) if machine.driver else None
 
         self.combo_row = Adw.ComboRow(
             # Start with a sensible default; it will be updated momentarily.
@@ -184,6 +185,13 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # subtitle.
         self.combo_row.set_title(driver_cls.label)
         self.combo_row.set_subtitle(driver_cls.subtitle)
+
+        # If the driver hasn't actually changed, we don't need to do anything
+        # else. This is crucial to prevent wiping the driver arguments when
+        # the dialog is first initialized, as setting the combo box's initial
+        # value also triggers this signal.
+        if self.machine.driver == driver_cls.__name__:
+            return
 
         self.machine.set_driver(driver_cls)
         self.driver_group.create_params(get_params(driver_cls))
