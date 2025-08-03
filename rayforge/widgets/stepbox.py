@@ -64,9 +64,14 @@ class StepBox(Adw.ActionRow):
         self.doc.history_manager.execute(command)
 
     def on_button_properties_clicked(self, button):
+        # Get the parent window to set the dialog as transient
+        parent_window = self.get_root()
+
         # The dialog now needs the doc object to access the history manager
-        dialog = StepSettingsDialog(self.doc, self.step)
-        dialog.present(self)
+        dialog = StepSettingsDialog(
+            self.doc, self.step, transient_for=parent_window
+        )
+        dialog.present()
         dialog.changed.connect(self.on_step_changed)
 
     def on_button_delete_clicked(self, button):

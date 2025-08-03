@@ -10,7 +10,7 @@ from ..models.doc import Doc
 from ..models.step import Step
 
 
-class StepSettingsDialog(Adw.PreferencesDialog):
+class StepSettingsDialog(Adw.Window):
     def __init__(self, doc: Doc, step: Step, **kwargs):
         super().__init__(**kwargs)
         self.doc = doc
@@ -18,9 +18,32 @@ class StepSettingsDialog(Adw.PreferencesDialog):
         self.history_manager: HistoryManager = doc.history_manager
         self.set_title(_("{name} Settings").format(name=step.name))
 
-        # Create a preferences page
+        # Create a vertical box to hold the header bar and the content
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(main_box)
+
+        # Add a header bar for title and window controls (like close)
+        header = Adw.HeaderBar()
+        main_box.append(header)
+
+        # Set a reasonable default size to avoid being too narrow
+        self.set_default_size(600, 750)
+
+        # Destroy window on close to prevent leaks, as a new one is created
+        # each time
+        self.set_hide_on_close(False)
+
+        # The main content area should be scrollable
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        scrolled_window.set_vexpand(True)  # Allow the scrolled area to grow
+        main_box.append(scrolled_window)
+
+        # Create a preferences page and add it to the scrollable area
         page = Adw.PreferencesPage()
-        self.add(page)
+        scrolled_window.set_child(page)
 
         # General Settings group
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
@@ -50,9 +73,7 @@ class StepSettingsDialog(Adw.PreferencesDialog):
             digits=0,  # No decimal places
             draw_value=True,  # Show the current value
         )
-        power_adjustment.set_value(
-            step.power / step.laser.max_power * 100
-        )
+        power_adjustment.set_value(step.power / step.laser.max_power * 100)
         power_scale.set_size_request(300, -1)
         power_scale.connect("value-changed", self.on_power_changed)
         power_row.add_suffix(power_scale)
