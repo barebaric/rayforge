@@ -1,4 +1,5 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from typing import Tuple
+from gi.repository import Gtk, Adw, GLib  # type: ignore
 from blinker import Signal
 import math
 from ..config import config
@@ -17,6 +18,12 @@ class StepSettingsDialog(Adw.Window):
         self.step = step
         self.history_manager: HistoryManager = doc.history_manager
         self.set_title(_("{name} Settings").format(name=step.name))
+
+        # Used to delay updates from continuous-change widgets like sliders
+        # to avoid excessive updates.
+        self._debounce_timer = 0
+        self._debounced_callback = None
+        self._debounced_args: Tuple = ()
 
         # Create a vertical box to hold the header bar and the content
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -75,7 +82,10 @@ class StepSettingsDialog(Adw.Window):
         )
         power_adjustment.set_value(step.power / step.laser.max_power * 100)
         power_scale.set_size_request(300, -1)
-        power_scale.connect("value-changed", self.on_power_changed)
+        power_scale.connect(
+            "value-changed",
+            lambda scale: self._debounce(self.on_power_changed, scale),
+        )
         power_row.add_suffix(power_scale)
         general_group.add(power_row)
 
@@ -189,16 +199,45 @@ class StepSettingsDialog(Adw.Window):
                         smooth_amount_row,
                         corner_angle_row,
                     )
+                    # Using a lambda with a default argument `t=transformer`
+                    # captures the current value of `transformer` in the loop.
                     smooth_scale.connect(
                         "value-changed",
-                        self.on_smoothness_changed,
-                        transformer,
+                        lambda scale, t=transformer: self._debounce(
+                            self.on_smoothness_changed, scale, t
+                        ),
                     )
                     corner_angle_row.connect(
                         "changed", self.on_corner_angle_changed, transformer
                     )
 
         self.changed = Signal()
+
+    def _debounce(self, callback, *args):
+        """
+        Schedules a callback to be executed after a short delay, canceling any
+        previously scheduled callback. This prevents excessive updates from
+        widgets like sliders.
+        """
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+
+        self._debounced_callback = callback
+        self._debounced_args = args
+        # Debounce requests by 150ms
+        self._debounce_timer = GLib.timeout_add(
+            150, self._commit_debounced_change
+        )
+
+    def _commit_debounced_change(self):
+        """Executes the debounced callback."""
+        if self._debounced_callback:
+            self._debounced_callback(*self._debounced_args)
+
+        self._debounce_timer = 0
+        self._debounced_callback = None
+        self._debounced_args = ()
+        return GLib.SOURCE_REMOVE
 
     def on_passes_changed(self, spin_row):
         new_value = get_spinrow_int(spin_row)
