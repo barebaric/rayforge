@@ -66,31 +66,13 @@ class Workflow:
 
     def _connect_step_signals(self, step: Step):
         """Connects the work plan's handlers to a step's signals."""
-        logger.debug(f"Connecting signals for step '{step.name}'.")
+        logger.debug(f"Connecting 'changed' signal for step '{step.name}'.")
         step.changed.connect(self._on_step_changed)
-
-        step.ops_generation_starting.connect(
-            self.layer._on_step_ops_generation_starting
-        )
-        step.ops_chunk_available.connect(
-            self.layer._on_step_ops_chunk_available
-        )
-        step.ops_generation_finished.connect(
-            self.layer._on_step_ops_generation_finished
-        )
 
     def _disconnect_step_signals(self, step: Step):
         """Disconnects the work plan's handlers from a step's signals."""
+        # This is safe; blinker's disconnect is a no-op if not connected.
         step.changed.disconnect(self._on_step_changed)
-        step.ops_generation_starting.disconnect(
-            self.layer._on_step_ops_generation_starting
-        )
-        step.ops_chunk_available.disconnect(
-            self.layer._on_step_ops_chunk_available
-        )
-        step.ops_generation_finished.disconnect(
-            self.layer._on_step_ops_generation_finished
-        )
 
     def create_step(self, step_cls, name=None) -> Step:
         """Factory method to create a new step with correct config."""

@@ -43,6 +43,7 @@ class WorkSurface(Canvas):
         self.machine = machine
         self.zoom_level = 1.0
         self._show_travel_moves = False
+        self._workpieces_visible = True
         self.width_mm, self.height_mm = machine.dimensions
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
@@ -709,6 +710,7 @@ class WorkSurface(Canvas):
         return self.root.find_by_type(thetype)
 
     def set_workpieces_visible(self, visible=True):
+        self._workpieces_visible = visible
         for wp_elem in self.find_by_type(WorkPieceElement):
             wp_elem.set_visible(visible)
         self.queue_draw()

@@ -93,36 +93,54 @@ class Layer:
         """
         Handles the 'changed' signal from the Workflow.
 
-        If a specific step is provided, this indicates that only that step's
-        parameters were modified, so only its operations are regenerated.
-        If no step is provided, the workflow's structure (e.g., step order,
-        add/remove) has changed, triggering a full regeneration for the layer.
+        If a specific step is provided, its properties were modified, so only
+        its operations are regenerated. If no step is provided, the
+        workflow's structure changed, so we must reconcile the cache and ops.
         """
         if step:
+            # A step's properties changed. Just update its ops.
             logger.debug(
-                f"Layer '{self.name}': Workplan changed for specific step "
-                f"'{step.name}'. Updating ops for that step only."
+                f"Layer '{self.name}': Properties changed for step "
+                f"'{step.name}'. Updating its ops."
             )
             self._update_ops_for_step(step)
-        else:
-            self._update_ops_for_all_workpieces()
-        self.changed.send(self)
+            self.changed.send(self)
+            return
 
-    def _on_step_ops_generation_starting(self, step: Step, **kwargs):
-        """Bubbles up the signal from a step to this layer."""
-        self.ops_generation_starting.send(self, step=step, **kwargs)
-
-    def _on_step_ops_chunk_available(self, step: Step, **kwargs):
-        """Bubbles up a chunk availability signal from a step."""
+        # Workflow structure changed (add/remove/reorder).
         logger.debug(
-            f"Layer '{self.name}': Received ops_chunk_available from step "
-            f"'{step.name}'. Bubbling up."
+            f"Layer '{self.name}': Workflow structure changed. "
+            "Reconciling ops..."
         )
-        self.ops_chunk_available.send(self, step=step, **kwargs)
+        # 1. Clean up the cache for any steps that no longer exist.
+        current_step_uids = {s.uid for s in self.workflow.steps}
+        keys_to_del = [
+            key
+            for key in self._ops_cache
+            if key[0] not in current_step_uids
+        ]
+        for key in keys_to_del:
+            logger.debug(
+                f"Removing obsolete ops cache for step_uid {key[0]}"
+            )
+            self._ops_cache.pop(key, None)
+            self._generation_id_map.pop(key, None)
+            task_mgr.cancel_task(key)
 
-    def _on_step_ops_generation_finished(self, step: Step, **kwargs):
-        """Bubbles up the signal from a step to this layer."""
-        self.ops_generation_finished.send(self, step=step, **kwargs)
+        # 2. Trigger ops generation for any NEWLY added steps.
+        # A "new" step is one that's in the workflow but has no cache entry
+        # for any workpiece yet.
+        for s in self.workflow.steps:
+            for wp in self.workpieces:
+                key = (s.uid, wp.uid)
+                if key not in self._ops_cache:
+                    logger.debug(
+                        f"Found new step '{s.name}' for workpiece "
+                        f"'{wp.name}'. Generating ops."
+                    )
+                    self._trigger_ops_generation(s, wp)
+
+        self.changed.send(self)
 
     def _on_workpiece_size_changed(self, workpiece: WorkPiece, **kwargs):
         """Handles workpiece size changes by regenerating its ops."""
@@ -172,13 +190,7 @@ class Layer:
         """
         if workpiece in self.workpieces:
             workpiece.layer = None
-            try:
-                workpiece.size_changed.disconnect(
-                    self._on_workpiece_size_changed
-                )
-            except TypeError:
-                # This can happen if the signal was already disconnected.
-                pass
+            workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
             self.workpieces.remove(workpiece)
             self._cleanup_workpiece_ops(workpiece)
             self.changed.send(self)
@@ -200,10 +212,7 @@ class Layer:
         # Disconnect and clean up workpieces that are being removed.
         for wp in old_set - new_set:
             wp.layer = None
-            try:
-                wp.size_changed.disconnect(self._on_workpiece_size_changed)
-            except TypeError:
-                pass
+            wp.size_changed.disconnect(self._on_workpiece_size_changed)
             self._cleanup_workpiece_ops(wp)
 
         # Connect new workpieces.

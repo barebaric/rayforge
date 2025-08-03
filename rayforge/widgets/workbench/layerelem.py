@@ -57,6 +57,10 @@ class LayerElement(CanvasElement):
         self.set_visible(self.data.visible)
         is_selectable = self.data.visible
 
+        # Use local import to break circular dependency and get canvas type
+        from .surface import WorkSurface
+        work_surface = cast(WorkSurface, self.canvas)
+
         # --- Reconcile WorkPieceElements ---
         model_workpieces = set(self.data.workpieces)
         current_wp_elements = {
@@ -78,7 +82,10 @@ class LayerElement(CanvasElement):
         wps_to_add = model_workpieces - current_wp_data
         for wp_data in wps_to_add:
             wp_elem = WorkPieceElement(
-                workpiece=wp_data, canvas=self.canvas, selectable=is_selectable
+                workpiece=wp_data,
+                canvas=self.canvas,
+                selectable=is_selectable,
+                visible=work_surface._workpieces_visible,
             )
             self.add(wp_elem)
             # Position and size the new element based on model data
@@ -88,19 +95,22 @@ class LayerElement(CanvasElement):
         # Now add/remove the StepElements themselves.
         current_ws_elements = self.find_by_type(StepElement)
         model_steps = set(self.data.workflow.steps)
-        current_ws_data = {elem.data for elem in current_ws_elements}
 
-        # Remove elements for steps that are no longer in the layer's workplan
+        # Create a list of elements to remove first.
+        elements_to_remove = []
         for elem in current_ws_elements:
             if elem.data not in model_steps:
-                elem.remove()
+                elements_to_remove.append(elem)
+
+        # Now, iterate over the list to perform the removal.
+        # This avoids modifying the list we are iterating over.
+        for elem in elements_to_remove:
+            elem.remove()
 
         # Add elements for new steps in the layer's workplan
-        # Use local import to break circular dependency
-        #  (surface -> layerelem -> surface)
-        from .surface import WorkSurface
-
-        work_surface = cast(WorkSurface, self.canvas)
+        current_ws_data = {
+            elem.data for elem in self.find_by_type(StepElement)
+        }
         show_travel = (
             work_surface._show_travel_moves if work_surface else False
         )
@@ -118,6 +128,24 @@ class LayerElement(CanvasElement):
                 parent=self,  # Explicitly set parent
             )
             self.add(ws_elem)
+
+        # Now that the set of StepElements is correct, tell all of them to
+        # reconcile their children against the (possibly changed) workpiece
+        # list.
+        for elem in self.find_by_type(StepElement):
+            elem = cast(StepElement, elem)
+            elem._on_step_model_changed(elem.data)
+
+        # Sort the children to ensure that all StepElements are drawn on
+        # top of all WorkPieceElements.
+        def z_order_sort_key(element: CanvasElement):
+            if isinstance(element, WorkPieceElement):
+                return 0  # Draw workpieces first (at the bottom)
+            if isinstance(element, StepElement):
+                return 1  # Draw step ops on top of workpieces
+            return 2  # Other elements on top
+
+        self.children.sort(key=z_order_sort_key)
 
         self.canvas.queue_draw()
 
