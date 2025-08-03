@@ -182,8 +182,8 @@ class TestLayerStepInteraction:
         test_layer.workflow.add_step(contour_step)
         start_handler = MagicMock()
         finish_handler = MagicMock()
-        test_layer.ops_generation_starting.connect(start_handler)
-        test_layer.ops_generation_finished.connect(finish_handler)
+        contour_step.ops_generation_starting.connect(start_handler)
+        contour_step.ops_generation_finished.connect(finish_handler)
 
         # 1. We need to mock the real `task_mgr` that `step` imports.
         mock_task_mgr = mocker.patch("rayforge.models.step.task_mgr")
@@ -215,9 +215,8 @@ class TestLayerStepInteraction:
 
         # Assert 1: The process has started.
         start_handler.assert_called_once_with(
-            test_layer,
+            contour_step,
             workpiece=real_workpiece,
-            step=contour_step,
             generation_id=ANY,
         )
         mock_task_mgr.run_process.assert_called_once()
@@ -240,9 +239,8 @@ class TestLayerStepInteraction:
 
         # Assert 2: The finish handler has now been called.
         finish_handler.assert_called_once_with(
-            test_layer,
+            contour_step,
             workpiece=real_workpiece,
-            step=contour_step,
             generation_id=ANY,
         )
 
@@ -264,7 +262,7 @@ class TestLayerStepInteraction:
         mock_task_mgr.created_tasks.clear()  # Reset after setup
 
         finish_handler = MagicMock()
-        test_layer.ops_generation_finished.connect(finish_handler)
+        contour_step.ops_generation_finished.connect(finish_handler)
 
         # Act: This will schedule the coroutine via the mock task manager
         test_layer.add_workpiece(real_workpiece)
@@ -282,9 +280,8 @@ class TestLayerStepInteraction:
         # The 'finished' signal should still be called to notify listeners
         # the attempt is over.
         finish_handler.assert_called_once_with(
-            test_layer,
+            contour_step,
             workpiece=real_workpiece,
-            step=contour_step,
             generation_id=ANY,
         )
         # Verify the cache was set to None upon cancellation/failure.
