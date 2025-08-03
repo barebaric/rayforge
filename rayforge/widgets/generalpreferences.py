@@ -265,6 +265,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         self.machine.set_driver(driver_cls)
         self.driver_group.create_params(get_params(driver_cls))
+        self.driver_group.set_values(self.machine.driver_args)
         self._update_error_state()
 
     def on_name_changed(self, entry_row, _):

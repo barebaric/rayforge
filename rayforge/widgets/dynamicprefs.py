@@ -11,10 +11,14 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+NULL_CHOICE_LABEL = _("None Selected")
+
 
 def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split('([0-9]+)', s)]
+    return [
+        int(text) if text.isdigit() else text.lower()
+        for text in re.split("([0-9]+)", s)
+    ]
 
 
 class DynamicPreferencesGroup(Adw.PreferencesGroup):
@@ -37,7 +41,7 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
 
         # Get constructor parameters
         for name, param in params:
-            if name == 'self':
+            if name == "self":
                 continue
 
             annotation = param.annotation
@@ -121,7 +125,7 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
             value=default if default is not None else 0,
             lower=-2147483648,
             upper=2147483647,
-            step_increment=1
+            step_increment=1,
         )
         row = Adw.SpinRow(title=name.capitalize(), adjustment=adjustment)
         row.connect("changed", lambda e: self.data_changed.send(e))
@@ -129,12 +133,16 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
 
     def _create_port_selection_row(self, name: str, default: Any):
         ports = sorted(SerialTransport.list_ports(), key=natural_sort_key)
-        store = Gtk.StringList.new(ports)
+        choices = [NULL_CHOICE_LABEL] + ports
+        store = Gtk.StringList.new(choices)
         row = Adw.ComboRow(title=name.capitalize(), model=store)
-        if default and default in ports:
-            row.set_selected(ports.index(default))
-        row.connect("notify::selected-item",
-                    lambda e, p: self.data_changed.send(e))
+
+        if default and default in choices:
+            row.set_selected(choices.index(default))
+
+        row.connect(
+            "notify::selected-item", lambda e, p: self.data_changed.send(e)
+        )
         return row
 
     def get_values(self):
@@ -142,10 +150,11 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
         for name, (row, annotation) in self.widget_map.items():
             if annotation is SerialPort:
                 selected_item = row.get_selected_item()
-                if selected_item:
-                    values[name] = selected_item.get_string()
+                value_str = selected_item.get_string() if selected_item else ""
+                if value_str == NULL_CHOICE_LABEL:
+                    values[name] = ""  # Store an empty string for "None"
                 else:
-                    values[name] = ""
+                    values[name] = value_str
             elif annotation is int:
                 values[name] = get_spinrow_int(row)
             elif annotation is bool:
@@ -162,12 +171,21 @@ class DynamicPreferencesGroup(Adw.PreferencesGroup):
             row, annotation = item
 
             if annotation is SerialPort:
-                ports = SerialTransport.list_ports()
-                try:
-                    index = ports.index(str(value))
-                    row.set_selected(index)
-                except ValueError:
-                    row.set_selected(0)  # Select the first item as a fallback
+                model = row.get_model()
+                if not model:
+                    continue
+
+                choices = [
+                    model.get_string(i) for i in range(model.get_n_items())
+                ]
+
+                # If a valid port is stored, select it.
+                if value and str(value) in choices:
+                    row.set_selected(choices.index(str(value)))
+                else:
+                    # Otherwise, select the "None Selected" placeholder.
+                    row.set_selected(0)
+
             elif annotation is str or annotation is Hostname:
                 row.set_text(str(value))
             elif annotation is int:
