@@ -35,7 +35,11 @@ class WorkSurface(Canvas):
     MAX_PIXELS_PER_MM = 100.0
 
     def __init__(
-        self, doc: Doc, machine: Machine, cam_visible: bool = False, **kwargs
+        self,
+        doc: Doc,
+        machine: Optional[Machine],
+        cam_visible: bool = False,
+        **kwargs,
     ):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
@@ -44,7 +48,9 @@ class WorkSurface(Canvas):
         self.zoom_level = 1.0
         self._show_travel_moves = False
         self._workpieces_visible = True
-        self.width_mm, self.height_mm = machine.dimensions
+        self.width_mm, self.height_mm = (
+            machine.dimensions if machine else (100.0, 100.0)
+        )
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
         self._cam_visible = cam_visible
@@ -55,11 +61,12 @@ class WorkSurface(Canvas):
         # to draw outside its bounds.
         self.root.clip = False
 
+        y_axis_down = machine.y_axis_down if machine else False
         self._axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
             zoom_level=self.zoom_level,
-            y_axis_down=self.machine.y_axis_down,
+            y_axis_down=y_axis_down,
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
 
@@ -111,7 +118,8 @@ class WorkSurface(Canvas):
         self.elements_deleted.connect(self._on_elements_deleted)
 
         # Add CameraImageElements for each camera
-        self.machine.changed.connect(self._on_machine_changed)
+        if self.machine:
+            self.machine.changed.connect(self._on_machine_changed)
         self._on_machine_changed(machine)
 
         # Connect to the history manager's changed signal to sync the view
@@ -304,32 +312,38 @@ class WorkSurface(Canvas):
                     if ops_elem:
                         ops_elem.set_visible(True)
 
-    def set_machine(self, machine: Machine):
+    def set_machine(self, machine: Optional[Machine]):
         """
         Updates the WorkSurface to use a new machine instance. This handles
         disconnecting from the old machine's signals, connecting to the new
         one's, and rebuilding machine-specific elements like cameras.
         """
-        if self.machine == machine:
+        if self.machine is machine:
             return  # No change needed
 
+        old_id = self.machine.id if self.machine else "None"
+        new_id = machine.id if machine else "None"
         logger.debug(
-            f"WorkSurface switching from machine '{self.machine.id}' "
-            f" to '{machine.id}'"
+            f"WorkSurface switching from machine '{old_id}' " f" to '{new_id}'"
         )
 
         # Disconnect from the old machine's signals
-        self.machine.changed.disconnect(self._on_machine_changed)
+        if self.machine:
+            self.machine.changed.disconnect(self._on_machine_changed)
 
         # Update the machine reference
         self.machine = machine
-        self.set_size(machine.dimensions[0], machine.dimensions[1])
+        width, height = (
+            machine.dimensions if machine else (100.0, 100.0)
+        )
+        self.set_size(width, height)
 
         # Connect to the new machine's signals
-        self.machine.changed.connect(self._on_machine_changed)
+        if self.machine:
+            self.machine.changed.connect(self._on_machine_changed)
 
         # Manually trigger the handler to rebuild camera elements, etc.
-        self._on_machine_changed(machine)
+        self._on_machine_changed(self.machine)
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
@@ -403,7 +417,7 @@ class WorkSurface(Canvas):
         top_margin = math.ceil(x_axis_height / 2)
 
         x_px = x_mm * self.pixels_per_mm_x + y_axis_width
-        if self.machine.y_axis_down:
+        if self._axis_renderer.y_axis_down:
             y_px = y_mm * self.pixels_per_mm_y + top_margin
         else:
             y_px = height - x_axis_height - (y_mm * self.pixels_per_mm_y)
@@ -425,7 +439,7 @@ class WorkSurface(Canvas):
         top_margin = math.ceil(x_axis_height / 2)
 
         x_mm = (x_px - y_axis_width) / ppm_x
-        if self.machine.y_axis_down:
+        if self._axis_renderer.y_axis_down:
             y_mm = (y_px - top_margin) / ppm_y
         else:
             y_mm = (height - x_axis_height - y_px) / ppm_y
@@ -547,7 +561,7 @@ class WorkSurface(Canvas):
             top_margin = math.ceil(x_axis_height / 2)
 
             new_view_x_mm = (mouse_x_px - y_axis_width) / new_ppm_x
-            if self.machine.y_axis_down:
+            if self._axis_renderer.y_axis_down:
                 new_view_y_mm = (mouse_y_px - top_margin) / new_ppm_y
             else:
                 new_view_y_mm = (
@@ -569,7 +583,7 @@ class WorkSurface(Canvas):
 
         # Set the root element's size directly in pixels
         # The root element's origin is always its top-left corner
-        if self.machine.y_axis_down:
+        if self._axis_renderer.y_axis_down:
             self.root.set_pos(origin_x, origin_y)
         else:
             self.root.set_pos(origin_x, origin_y - content_height)
@@ -736,19 +750,23 @@ class WorkSurface(Canvas):
             elem.set_visible(visible)
         self.queue_draw()
 
-    def _on_machine_changed(self, machine, **kwargs):
+    def _on_machine_changed(self, machine: Optional[Machine], **kwargs):
         logger.debug("WorkSurface: Machine changed, updating camera elements.")
-        self._axis_renderer.set_y_axis_down(machine.y_axis_down)
+        y_axis_down = machine.y_axis_down if machine else False
+        self._axis_renderer.set_y_axis_down(y_axis_down)
         self.queue_draw()
 
         # Get current camera elements on the canvas
-        current_camera_elements = {}
-        for elem in self.find_by_type(CameraImageElement):
-            elem = cast(CameraImageElement, elem)
-            current_camera_elements[elem.camera] = elem
+        current_camera_elements = {
+            cast(CameraImageElement, elem).camera: elem
+            for elem in self.find_by_type(CameraImageElement)
+        }
+
+        # Get the set of cameras from the new machine configuration
+        new_cameras = machine.cameras if machine else []
 
         # Add new camera elements
-        for camera in self.machine.cameras:
+        for camera in new_cameras:
             if camera not in current_camera_elements:
                 camera_image_elem = CameraImageElement(camera)
                 camera_image_elem.set_visible(self._cam_visible)
@@ -758,9 +776,9 @@ class WorkSurface(Canvas):
                 )
 
         # Remove camera elements that no longer exist in the machine
-        cameras_in_machine = {camera for camera in self.machine.cameras}
+        new_cameras_set = set(new_cameras)
         for camera_instance, elem in list(current_camera_elements.items()):
-            if camera_instance not in cameras_in_machine:
+            if camera_instance not in new_cameras_set:
                 elem.remove()
                 logger.debug(
                     "Removed CameraImageElement for camera "
@@ -880,7 +898,7 @@ class WorkSurface(Canvas):
 
         # For Y-panning, dragging down (positive offset.y) should always
         # move the content "up" on screen.
-        if self.machine.y_axis_down:
+        if self._axis_renderer.y_axis_down:
             # In a Y-down view, moving content "up" means panning to lower
             # Y values.
             new_pan_y_mm = self._pan_start[1] - offset.y / self.pixels_per_mm_y

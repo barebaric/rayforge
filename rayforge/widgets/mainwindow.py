@@ -316,8 +316,12 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         # Create a work area to display the image and paths
-        width_mm, height_mm = config.machine.dimensions
-        ratio = width_mm / height_mm
+        if config.machine:
+            width_mm, height_mm = config.machine.dimensions
+            ratio = width_mm / height_mm if height_mm > 0 else 1.0
+        else:
+            # Default to a square aspect ratio if no machine is configured
+            ratio = 1.0
         self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=False)
         self.frame.set_margin_start(12)
         self.frame.set_hexpand(True)
@@ -439,7 +443,9 @@ class MainWindow(Adw.ApplicationWindow):
         config.changed.connect(self.on_config_changed)
         driver_mgr.changed.connect(self.on_driver_changed)
         task_mgr.tasks_updated.connect(self.on_running_tasks_changed)
-        self.needs_homing = config.machine.home_on_start
+        self.needs_homing = (
+            config.machine.home_on_start if config.machine else False
+        )
 
         # Set initial state
         self.on_config_changed(None)
@@ -663,6 +669,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _try_driver_setup(self):
         # Reconfigure, because params may have changed.
+        if not config.machine:
+            logger.info("No machine selected, skipping driver setup.")
+            return
+
         driver_name = config.machine.driver
         if driver_name is None:
             logger.warning("No driver configured.")
@@ -754,9 +764,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def on_config_changed(self, sender, **kwargs):
-        self.surface.set_machine(config.machine)
-        width_mm, height_mm = config.machine.dimensions
-        self.frame.set_ratio(width_mm / height_mm)
+        if config.machine:
+            self.surface.set_machine(config.machine)
+            width_mm, height_mm = config.machine.dimensions
+            self.frame.set_ratio(
+                width_mm / height_mm if height_mm > 0 else 1.0
+            )
+        else:
+            # Default to a square aspect ratio if no machine is configured.
+            self.frame.set_ratio(1.0)
 
         # Apply selected device driver.
         self._try_driver_setup()
@@ -785,7 +801,11 @@ class MainWindow(Adw.ApplicationWindow):
     def update_state(self):
         device_status = self.machine_status.get_status()
         has_tasks = len(task_mgr._tasks) > 0
-        can_export = self.doc.has_workpiece() and not has_tasks
+        can_export = (
+            self.doc.has_workpiece()
+            and not has_tasks
+            and config.machine is not None
+        )
         has_selection = len(self.surface.get_selected_workpieces()) > 0
         can_undo = self.doc.history_manager.can_undo()
         can_redo = self.doc.history_manager.can_redo()
@@ -809,16 +829,24 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update button sensitivity
         self.export_button.set_sensitive(can_export)
-        self.export_button.set_tooltip_text(
-            _("Cannot export while operations are being generated")
-            if has_tasks
-            else _("Generate G-code")
-        )
+        export_tooltip = _("Generate G-code")
+        if not config.machine:
+            export_tooltip = _("Select a machine to enable G-code export")
+        elif not self.doc.has_workpiece():
+            export_tooltip = _(
+                "Add a workpiece to the document to enable export"
+            )
+        elif has_tasks:
+            export_tooltip = _(
+                "Cannot export while operations are being generated"
+            )
+        self.export_button.set_tooltip_text(export_tooltip)
 
         self.home_button.set_sensitive(device_status == DeviceStatus.IDLE)
 
         can_frame = (
-            config.machine.can_frame()
+            config.machine
+            and config.machine.can_frame()
             and self.doc.has_result()
             and device_status == DeviceStatus.IDLE
             and not has_tasks
@@ -986,6 +1014,12 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         async def frame_coro(context: ExecutionContext):
+            if not config.machine:
+                logger.warning(
+                    "Framing requested without a configured machine."
+                )
+                return
+
             try:
                 head = config.machine.heads[0]
                 if not head.frame_power:
@@ -1018,6 +1052,8 @@ class MainWindow(Adw.ApplicationWindow):
                 ops = await self.doc.generate_job_ops(context)
                 if not driver_mgr.driver:
                     raise RuntimeError("No driver configured to send job.")
+                if not config.machine:
+                    raise RuntimeError("No machine is configured")
                 await driver_mgr.driver.run(ops, config.machine)
             except Exception:
                 logger.error("Failed to send job to machine", exc_info=True)
@@ -1061,6 +1097,10 @@ class MainWindow(Adw.ApplicationWindow):
                 f.write(gcode)
 
         async def export_coro(context: ExecutionContext):
+            if not config.machine:
+                logger.error("Export called with no machine configured.")
+                return
+
             try:
                 # 1. Generate Ops (async, reports progress)
                 ops = await self.doc.generate_job_ops(context)
