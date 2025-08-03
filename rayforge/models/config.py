@@ -1,6 +1,6 @@
 import yaml
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from blinker import Signal
 from .machine import Machine
 from pathlib import Path
@@ -11,14 +11,15 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
-        self.machine: Machine = Machine()
+        self.machine: Optional[Machine] = None
         self.theme: str = "system"
         self.changed = Signal()
 
     def set_machine(self, machine: Machine):
         if self.machine == machine:
             return
-        self.machine.changed.disconnect(self.changed.send)
+        if self.machine:
+            self.machine.changed.disconnect(self.changed.send)
         self.machine = machine
         self.changed.send(self)
         self.machine.changed.connect(self.changed.send)

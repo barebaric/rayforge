@@ -69,4 +69,5 @@ def initialize_managers():
             sorted(machine_mgr.machines.values(), key=lambda m: m.id)
         )[0]
         config.set_machine(machine)
+        assert config.machine
     logger.info(f"Config loaded. Using machine {config.machine.id}")
