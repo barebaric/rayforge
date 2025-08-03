@@ -3,6 +3,7 @@ import inspect
 from .driver import Driver
 from .dummy import NoDeviceDriver
 from .grbl import GrblDriver
+from .grbl2 import Grbl2Driver
 from .grbl_serial import GrblSerialDriver
 from .smoothie import SmoothieDriver
 
@@ -30,6 +31,7 @@ __all__ = [
     'Driver',
     'NoDeviceDriver',
     'GrblDriver',
+    'Grbl2Driver',
     'GrblSerialDriver',
     'SmoothieDriver',
 ]
