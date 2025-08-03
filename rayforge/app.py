@@ -41,7 +41,7 @@ else:
 
 # Make "_" available in all modules
 locale_dir = base_dir / 'rayforge' / 'locale'
-logger.info(f"Loading locales from {locale_dir}")
+logger.debug(f"Loading locales from {locale_dir}")
 gettext.install("rayforge", locale_dir)
 
 # --------------------------------------------------------
@@ -86,8 +86,17 @@ def main():
                 win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
             win.present()
 
+    # Import version for the --version flag.
+    # This is safe to do early as it has no heavy dependencies.
+    from rayforge import __version__
+
     parser = argparse.ArgumentParser(
         description=_("A GCode generator for laser cutters.")
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}'
     )
     parser.add_argument(
         "filename",
