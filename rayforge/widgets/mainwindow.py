@@ -697,7 +697,8 @@ class MainWindow(Adw.ApplicationWindow):
             device_status = self.machine_status.get_status()
             if device_status == DeviceStatus.IDLE:
                 self.needs_homing = False
-                task_mgr.add_coroutine(driver_mgr.driver.home)
+                driver = driver_mgr.driver
+                task_mgr.add_coroutine(lambda ctx: driver.home())
 
         self.update_state()
 
@@ -977,7 +978,8 @@ class MainWindow(Adw.ApplicationWindow):
     def on_home_clicked(self, button):
         if not driver_mgr.driver:
             return
-        task_mgr.add_coroutine(driver_mgr.driver.home)
+        driver = driver_mgr.driver
+        task_mgr.add_coroutine(lambda ctx: driver.home())
 
     def on_frame_clicked(self, button):
         if not driver_mgr.driver:
@@ -1029,17 +1031,19 @@ class MainWindow(Adw.ApplicationWindow):
     def on_hold_clicked(self, button):
         if not driver_mgr.driver:
             return
+        driver = driver_mgr.driver
         if button.get_active():
-            task_mgr.add_coroutine(driver_mgr.driver.set_hold)
+            task_mgr.add_coroutine(lambda ctx: driver.set_hold(True))
             button.set_child(self.hold_on_icon)
         else:
-            task_mgr.add_coroutine(driver_mgr.driver.set_hold, False)
+            task_mgr.add_coroutine(lambda ctx: driver.set_hold(False))
             button.set_child(self.hold_off_icon)
 
     def on_cancel_clicked(self, button):
         if not driver_mgr.driver:
             return
-        task_mgr.add_coroutine(driver_mgr.driver.cancel)
+        driver = driver_mgr.driver
+        task_mgr.add_coroutine(lambda ctx: driver.cancel())
 
     def on_save_dialog_response(self, dialog, result):
         try:
