@@ -44,7 +44,7 @@ class GcodeEncoder(OpsEncoder):
         )
         postscript = (
             machine.postscript
-            if machine.use_custom_postscript is not None
+            if machine.use_custom_postscript
             else self.dialect.default_postscript
         )
 
