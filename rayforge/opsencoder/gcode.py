@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from ..models.ops import (
     Ops,
     Command,
@@ -10,9 +11,10 @@ from ..models.ops import (
     LineToCommand,
     ArcToCommand,
 )
-from ..models.machine import Machine
 from ..models.dialect import GcodeDialect, get_dialect
 from .encoder import OpsEncoder
+if TYPE_CHECKING:
+    from ..models.machine import Machine
 
 
 class GcodeEncoder(OpsEncoder):
@@ -27,7 +29,7 @@ class GcodeEncoder(OpsEncoder):
         self.laser_active = False  # Laser on/off state
 
     @classmethod
-    def for_machine(cls, machine: Machine) -> "GcodeEncoder":
+    def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
         """
         Factory method to create a GcodeEncoder instance configured for a
         specific machine's dialect.
@@ -35,7 +37,7 @@ class GcodeEncoder(OpsEncoder):
         dialect = get_dialect(machine.dialect_name)
         return cls(dialect)
 
-    def encode(self, ops: Ops, machine: Machine) -> str:
+    def encode(self, ops: Ops, machine: "Machine") -> str:
         """Main encoding workflow"""
         preamble = (
             machine.preamble
@@ -54,7 +56,7 @@ class GcodeEncoder(OpsEncoder):
         self._finalize(gcode, postscript)
         return "\n".join(gcode)
 
-    def _handle_command(self, gcode: list, cmd: Command, machine: Machine):
+    def _handle_command(self, gcode: list, cmd: Command, machine: "Machine"):
         """Dispatch command to appropriate handler"""
         match cmd:
             case SetPowerCommand():
@@ -80,7 +82,7 @@ class GcodeEncoder(OpsEncoder):
                     gcode, *cmd.end, *cmd.center_offset, cmd.clockwise
                 )
 
-    def _update_power(self, gcode: list, power: float, machine: Machine):
+    def _update_power(self, gcode: list, power: float, machine: "Machine"):
         """
         Updates the target power. If power is set to 0 while the laser is
         active, it will be turned off. This method does NOT turn the laser on.

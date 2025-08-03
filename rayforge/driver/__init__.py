@@ -3,8 +3,9 @@ import inspect
 from .driver import Driver
 from .dummy import NoDeviceDriver
 from .grbl import GrblDriver
-from .grbl2 import Grbl2Driver
 from .grbl_serial import GrblSerialDriver
+from .grbl_next import GrblNextNetworkDriver
+from .grbl_serial_next import GrblNextSerialDriver
 from .smoothie import SmoothieDriver
 
 def isdriver(obj):
@@ -31,7 +32,8 @@ __all__ = [
     'Driver',
     'NoDeviceDriver',
     'GrblDriver',
-    'Grbl2Driver',
     'GrblSerialDriver',
+    'GrblNextNetworkDriver',
+    'GrblNextSerialDriver',
     'SmoothieDriver',
 ]

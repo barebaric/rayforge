@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw  # type: ignore
 from ..models.laser import Laser
 from ..util.adwfix import get_spinrow_int, get_spinrow_float
 
@@ -13,7 +13,14 @@ class LaserHeadPreferencesPage(Adw.PreferencesPage):
         self.machine = machine
 
         # List of Lasers
-        laserhead_list_group = Adw.PreferencesGroup(title=_("Laser Heads"))
+        laserhead_list_group = Adw.PreferencesGroup(
+            title=_("Laser Heads"),
+            description=_(
+                "You can configure multiple laser heads, but "
+                "only the first in the list will be used because "
+                "Rayforge does not support multi-head operations yet."
+            ),
+        )
         self.add(laserhead_list_group)
         self.laserhead_list = Gtk.ListBox()
         self.laserhead_list.set_selection_mode(Gtk.SelectionMode.SINGLE)

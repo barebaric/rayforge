@@ -1,14 +1,16 @@
 import logging
 import asyncio
-from typing import Optional, cast
+from typing import Optional, cast, Any, TYPE_CHECKING
 from ..transport import SerialTransport, TransportStatus
 from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
-from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DriverSetupError
 from .grbl import _parse_state
+
+if TYPE_CHECKING:
+    from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +20,9 @@ class GrblSerialDriver(Driver):
     Handles GRBL based devices via Serial port
     """
 
-    label = _("GRBL Serial")
+    label = _("GRBL (Serial)")
     subtitle = _("GRBL-compatible serial connection")
+    supports_settings = False
 
     def __init__(self):
         super().__init__()
@@ -113,7 +116,7 @@ class GrblSerialDriver(Driver):
                 break
         logger.debug("Leaving _connection_loop.")
 
-    async def run(self, ops: Ops, machine: Machine) -> None:
+    async def run(self, ops: Ops, machine: "Machine") -> None:
         encoder = GcodeEncoder.for_machine(machine)
         gcode = encoder.encode(ops, machine)
 
@@ -176,3 +179,16 @@ class GrblSerialDriver(Driver):
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
         self._on_connection_status_changed(status, message)
+
+    async def read_settings(self) -> None:
+        raise NotImplementedError(
+            "Device settings not implemented for this driver"
+        )
+
+    async def write_setting(self, key: str, value: Any) -> None:
+        raise NotImplementedError(
+            "Device settings not implemented for this driver"
+        )
+
+    def get_setting_definitions(self) -> dict[str, str]:
+        return {}

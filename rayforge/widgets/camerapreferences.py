@@ -12,7 +12,12 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         self.machine = machine
 
         # List of Cameras
-        camera_list_group = Adw.PreferencesGroup(title=_("Cameras"))
+        camera_list_group = Adw.PreferencesGroup(
+            title=_("Cameras"),
+            description=_(
+                "Stream a camera image directly onto the work surface."
+            ),
+        )
         self.add(camera_list_group)
         self.camera_list = Gtk.ListBox()
         self.camera_list.set_selection_mode(Gtk.SelectionMode.SINGLE)

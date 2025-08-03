@@ -18,10 +18,6 @@ def is_valid_hostname_or_ip(s: str) -> bool:
     if not isinstance(s, str):
         return False
 
-    # Allow empty string in UI; driver setup will handle it.
-    if not s:
-        return True
-
     # 1. Check for valid IP address (IPv4 or IPv6)
     try:
         ipaddress.ip_address(s)

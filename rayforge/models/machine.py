@@ -4,6 +4,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 from blinker import Signal
+from ..driver.driver import driver_mgr, Driver
 from .camera import Camera
 from .laser import Laser
 
@@ -32,7 +33,10 @@ class Machine:
         self.dimensions: Tuple[int, int] = 200, 200
         self.changed = Signal()
         self.y_axis_down: bool = False
+        self.firmware_settings: Dict[str, Any] = {}
         self.add_head(Laser())
+        # Signal to indicate that settings have been read from the device
+        self.firmware_settings_updated = Signal()
 
     def set_name(self, name: str):
         self.name = str(name)
@@ -93,6 +97,14 @@ class Machine:
         self.y_axis_down = y_axis_down
         self.changed.send(self)
 
+    def set_firmware_settings(self, settings: Dict[str, Any]):
+        self.firmware_settings = settings
+        # Send a specific signal for this, as it's a different kind of update
+        # than a simple property change. Also send the general 'changed' signal
+        # to trigger saving.
+        self.firmware_settings_updated.send(self)
+        self.changed.send(self)
+
     def add_head(self, head: Laser):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)
@@ -125,6 +137,74 @@ class Machine:
                 return True
         return False
 
+    def _get_active_driver(self) -> Optional[Driver]:
+        """
+        Helper to get the active driver instance, but only if it matches
+        this machine's configured driver type.
+        """
+        driver = driver_mgr.driver
+        if driver and driver.__class__.__name__ == self.driver:
+            return driver
+        return None
+
+    def get_setting_definitions(self) -> dict[str, str]:
+        """
+        Gets the setting definitions from the machine's active driver.
+        """
+        driver = self._get_active_driver()
+        if driver:
+            return driver.get_setting_definitions()
+        return {}
+
+    async def read_settings_from_device(self):
+        """
+        Commands the active driver to read settings and updates this machine
+        instance with the result.
+        """
+        driver = self._get_active_driver()
+        if not driver:
+            logger.warning(
+                "No active driver for this machine to read settings from."
+            )
+            return
+
+        def on_settings_read(sender, settings: dict):
+            # This handler is responsible for disconnecting itself,
+            # as we only want this event once. We cannot stay connected
+            # because drivers are often dynamically replaced by new
+            # instances.
+            logger.info(f"Machine {self.id} received settings from driver.")
+            driver.settings_read.disconnect(on_settings_read)
+            self.set_firmware_settings(settings)
+
+        driver.settings_read.connect(on_settings_read)
+        try:
+            await driver.read_settings()
+        except Exception as e:
+            # If the read operation fails, the signal will never be sent.
+            # We MUST disconnect the handler here to prevent a memory leak.
+            logger.error(f"Failed to read settings from device: {e}")
+            driver.settings_read.disconnect(on_settings_read)
+            raise
+
+    async def write_setting_to_device(self, key: str, value: Any):
+        """
+        Commands the active driver to write a setting to the device.
+        """
+        driver = self._get_active_driver()
+        if not driver:
+            raise ConnectionError(
+                "No active driver for this machine to write settings to."
+            )
+
+        try:
+            await driver.write_setting(key, value)
+            # After a successful write, re-read to confirm and update the UI
+            await self.read_settings_from_device()
+        except Exception as e:
+            logger.error(f"Failed to write setting to device: {e}")
+            raise
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": {
@@ -135,6 +215,7 @@ class Machine:
                 "dialect": self.dialect_name,
                 "dimensions": list(self.dimensions),
                 "y_axis_down": self.y_axis_down,
+                "firmware_settings": self.firmware_settings,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "speeds": {
@@ -161,6 +242,7 @@ class Machine:
         ma.dialect_name = ma_data.get("dialect", "GRBL")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
+        ma.firmware_settings = ma_data.get("firmware_settings", {})
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))

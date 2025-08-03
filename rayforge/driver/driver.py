@@ -1,17 +1,27 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, TYPE_CHECKING
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto
 from ..transport import TransportStatus
 from ..util.glib import idle_add
 from ..models.ops import Ops
-from ..models.machine import Machine
 from ..debug import debug_log_manager, LogType
+if TYPE_CHECKING:
+    from ..models.machine import Machine
+
+
+logger = logging.getLogger(__name__)
 
 
 class DriverSetupError(Exception):
     """Custom exception for driver setup failures."""
+    pass
+
+
+class DeviceConnectionError(Exception):
+    """Custom exception for failures to communicate with a device."""
     pass
 
 
@@ -67,12 +77,14 @@ class Driver(ABC):
     """
     label = None
     subtitle = None
+    supports_settings = False
 
     def __init__(self):
         self.log_received = Signal()
         self.state_changed = Signal()
         self.command_status_changed = Signal()
         self.connection_status_changed = Signal()
+        self.settings_read = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None
@@ -104,7 +116,7 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def run(self, ops: Ops, machine: Machine) -> None:
+    async def run(self, ops: Ops, machine: "Machine") -> None:
         """
         Converts the given Ops into commands for the machine, and executes
         them.
@@ -140,6 +152,30 @@ class Driver(ABC):
         """
         pass
 
+    @abstractmethod
+    async def read_settings(self) -> None:
+        """
+        Reads the configuration settings from the device.
+        Upon completion, it should emit the `settings_read` signal with the
+        retrieved settings as a dictionary.
+        """
+        pass
+
+    @abstractmethod
+    async def write_setting(self, key: str, value: Any) -> None:
+        """
+        Writes a single configuration setting to the device.
+        """
+        pass
+
+    @abstractmethod
+    def get_setting_definitions(self) -> dict[str, str]:
+        """
+        Returns a dictionary mapping setting keys to human-readable
+        descriptions.
+        """
+        pass
+
     def _log(self, message: str):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, message
@@ -158,6 +194,19 @@ class Driver(ABC):
             self.state_changed.send,
             self,
             state=self.state
+        )
+
+    def _on_settings_read(self, settings: dict):
+        logger.info(f"Driver settings read with {len(settings)} settings.")
+
+        debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.APP_INFO,
+            f"Device settings read: {settings}"
+        )
+        idle_add(
+            self.settings_read.send,
+            self,
+            settings=settings
         )
 
     def _on_command_status_changed(self,
@@ -204,6 +253,7 @@ class DriverManager:
             self.driver.setup(**args)
         except DriverSetupError as e:
             self.driver.setup_error = str(e)
+            return
         finally:
             self._on_driver_changed()
         await self.driver.connect()
@@ -216,6 +266,7 @@ class DriverManager:
             self.driver.setup(**args)
         except DriverSetupError as e:
             self.driver.setup_error = str(e)
+            return
         finally:
             self._on_driver_changed()
         await self.driver.connect()

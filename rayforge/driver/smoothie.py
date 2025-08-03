@@ -1,13 +1,15 @@
 import asyncio
-from typing import Optional, cast
+from typing import Optional, cast, Any, TYPE_CHECKING
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
-from ..models.machine import Machine
 from ..transport import TelnetTransport, TransportStatus
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DeviceStatus, DriverSetupError
 from .util import Hostname, is_valid_hostname_or_ip
 from .grbl import _parse_state
+
+if TYPE_CHECKING:
+    from ..models.machine import Machine
 
 
 class SmoothieDriver(Driver):
@@ -17,6 +19,7 @@ class SmoothieDriver(Driver):
 
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")
+    supports_settings = False
 
     def __init__(self):
         super().__init__()
@@ -106,7 +109,7 @@ class SmoothieDriver(Driver):
                     f"Command '{cmd.decode()}' not confirmed"
                 ) from e
 
-    async def run(self, ops: Ops, machine: Machine) -> None:
+    async def run(self, ops: Ops, machine: "Machine") -> None:
         encoder = GcodeEncoder.for_machine(machine)
         gcode = encoder.encode(ops, machine)
 
@@ -160,3 +163,16 @@ class SmoothieDriver(Driver):
             if self.state.status != DeviceStatus.UNKNOWN:
                 self.state.status = DeviceStatus.UNKNOWN
                 self._on_state_changed()
+
+    async def read_settings(self) -> None:
+        raise NotImplementedError(
+            "Device settings not implemented for this driver"
+        )
+
+    async def write_setting(self, key: str, value: Any) -> None:
+        raise NotImplementedError(
+            "Device settings not implemented for this driver"
+        )
+
+    def get_setting_definitions(self) -> dict[str, str]:
+        return {}

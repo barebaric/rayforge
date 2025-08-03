@@ -19,10 +19,27 @@ class WebSocketTransport(Transport):
         self._reconnect_interval = 5
         self._lock = asyncio.Lock()
         self._receive_task: Optional[asyncio.Task] = None
+        self._status = TransportStatus.DISCONNECTED
+
+    @property
+    def is_connected(self) -> bool:
+        """Check if the transport's status is CONNECTED."""
+        return self._status == TransportStatus.CONNECTED
+
+    def _set_status(
+        self, status: TransportStatus, message: Optional[str] = None
+    ) -> None:
+        """
+        Internal helper to set status and send signal, avoiding duplicates.
+        """
+        if self._status == status:
+            return
+        self._status = status
+        self.status_changed.send(self, status=status, message=message)
 
     async def connect(self) -> None:
         """
-        Establish connection with proper state validation.
+        Establish and maintain a connection, reconnecting on failure.
         """
         async with self._lock:
             if self._running:
@@ -31,50 +48,41 @@ class WebSocketTransport(Transport):
 
         while self._running:
             try:
-                self.status_changed.send(
-                    self,
-                    status=TransportStatus.CONNECTING
-                )
+                self._set_status(TransportStatus.CONNECTING)
                 self._websocket = await websockets.connect(
                     self.uri,
                     origin=self._origin,
                     additional_headers=(
-                        ('Connection', 'Upgrade'),
-                        ('Upgrade', 'websocket'),
-                    )
+                        ("Connection", "Upgrade"),
+                        ("Upgrade", "websocket"),
+                    ),
                 )
-                self.status_changed.send(
-                    self,
-                    status=TransportStatus.CONNECTED
-                )
+                self._set_status(TransportStatus.CONNECTED)
                 self._receive_task = asyncio.create_task(self._receive_loop())
                 await self._receive_task
-                self.status_changed.send(self, status=TransportStatus.IDLE)
+
             except (asyncio.CancelledError, ConnectionClosed):
+                # This is an expected part of a clean shutdown or reconnect
+                # cycle.
                 pass
             except Exception as e:
-                self.status_changed.send(
-                    self,
-                    status=TransportStatus.ERROR,
-                    message=str(e)
-                )
+                self._set_status(TransportStatus.ERROR, message=str(e))
             finally:
+                # Always clean up the connection before the next step.
                 await self._safe_close()
+                # If we are still supposed to be running, wait and reconnect.
                 if self._running:
-                    self.status_changed.send(
-                        self,
-                        status=TransportStatus.SLEEPING
-                    )
+                    self._set_status(TransportStatus.SLEEPING)
                     await asyncio.sleep(self._reconnect_interval)
+
+        # When the loop is fully stopped, we are disconnected.
+        self._set_status(TransportStatus.DISCONNECTED)
 
     async def disconnect(self) -> None:
         """
-        Terminate connection immediately.
+        Terminate the connection immediately and permanently.
         """
-        self.status_changed.send(
-            self,
-            status=TransportStatus.CLOSING
-        )
+        self._set_status(TransportStatus.CLOSING)
         async with self._lock:
             if not self._running:
                 return
@@ -82,67 +90,47 @@ class WebSocketTransport(Transport):
             if self._receive_task:
                 self._receive_task.cancel()
             await self._safe_close()
-        self.status_changed.send(
-            self,
-            status=TransportStatus.DISCONNECTED
-        )
+        self._set_status(TransportStatus.DISCONNECTED)
 
     async def send(self, data: bytes) -> None:
         """
-        Send data through active connection.
+        Send data through the active connection.
         """
-        if self._websocket is None:
+        if not self.is_connected or self._websocket is None:
             raise ConnectionError("Not connected")
         try:
-            await self._websocket.send(self, data)
+            await self._websocket.send(data)
         except ConnectionClosed:
-            await self._handle_disconnect()
+            # The main `connect` loop will detect the closure via the
+            # `_receive_loop` and handle the reconnect automatically.
+            # We just need to signal that this specific send operation failed.
+            raise ConnectionError("Connection lost while sending")
 
     async def _receive_loop(self) -> None:
         """
-        Receive messages with proper state checks.
+        Receive messages and handle connection state internally.
         """
+        if self._websocket is None:
+            return
         try:
             async for message in self._websocket:
                 if isinstance(message, bytes):
                     self.received.send(self, data=message)
         except ConnectionClosed:
-            pass
+            pass  # The outer connect() loop will handle this.
         except Exception as e:
-            self.status_changed.send(
-                self,
-                status=TransportStatus.ERROR,
-                message=str(e)
-            )
+            self._set_status(TransportStatus.ERROR, message=str(e))
 
     async def _safe_close(self) -> None:
         """
-        Safely close connection with state cleanup.
+        Safely close connection and reset the internal websocket object.
         """
         if self._websocket is not None:
             try:
                 await self._websocket.close()
-            except Exception as e:
-                self.status_changed.send(
-                    self,
-                    status=TransportStatus.ERROR,
-                    message=str(e)
-                )
+            except Exception:
+                # Ignore errors on close, as we are tearing down the
+                # connection.
+                pass
             finally:
                 self._websocket = None
-
-    async def _handle_disconnect(self) -> None:
-        """
-        Handle unexpected disconnection.
-        """
-        self.status_changed.send(
-            self,
-            status=TransportStatus.CLOSING
-        )
-        async with self._lock:
-            if self._running:
-                await self._safe_close()
-        self.status_changed.send(
-            self,
-            status=TransportStatus.DISCONNECTED
-        )

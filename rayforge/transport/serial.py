@@ -39,6 +39,11 @@ class SerialTransport(Transport):
         self._running = False
         self._receive_task: Optional[asyncio.Task] = None
 
+    @property
+    def is_connected(self) -> bool:
+        """Check if the transport is actively connected."""
+        return self._writer is not None and self._running
+
     async def connect(self) -> None:
         logger.debug("Attempting to connect serial port...")
         self.status_changed.send(self, status=TransportStatus.CONNECTING)

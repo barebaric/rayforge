@@ -6,10 +6,10 @@ from ..models.dialect import DIALECTS, get_dialect
 logger = logging.getLogger(__name__)
 
 
-class GCodePreferencesPage(Adw.PreferencesPage):
+class AdvancedPreferencesPage(Adw.PreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title=_("GCode"),
+            title=_("Advanced"),
             icon_name="applications-engineering-symbolic",
             **kwargs,
         )
