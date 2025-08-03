@@ -117,6 +117,11 @@ class Workflow:
         Args:
             step: The Step instance to add.
         """
+        if step in self.steps:
+            return
+        if step.workflow and step.workflow is not self:
+            step.workflow.remove_step(step)
+
         step.workflow = self
         self.steps.append(step)
         self._connect_step_signals(step)

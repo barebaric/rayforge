@@ -1,6 +1,5 @@
 import logging
-from typing import List, Optional, TYPE_CHECKING, cast
-
+from typing import Optional, TYPE_CHECKING, cast
 from ..canvas.element import CanvasElement
 from .workpieceelem import WorkPieceElement
 from .stepelem import StepElement
@@ -86,14 +85,8 @@ class LayerElement(CanvasElement):
             wp_elem.allocate()
 
         # --- Reconcile StepElements ---
-        # Notify existing StepElements of the layer change.
-        current_ws_elements = cast(
-            List[StepElement], self.find_by_type(StepElement)
-        )
-        for elem in current_ws_elements:
-            elem._on_step_model_changed(elem.data)
-
         # Now add/remove the StepElements themselves.
+        current_ws_elements = self.find_by_type(StepElement)
         model_steps = set(self.data.workflow.steps)
         current_ws_data = {elem.data for elem in current_ws_elements}
 
