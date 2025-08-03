@@ -81,21 +81,16 @@ class Workflow:
 
     def _disconnect_step_signals(self, step: Step):
         """Disconnects the work plan's handlers from a step's signals."""
-        try:
-            step.changed.disconnect(self._on_step_changed)
-            step.ops_generation_starting.disconnect(
-                self.layer._on_step_ops_generation_starting
-            )
-            step.ops_chunk_available.disconnect(
-                self.layer._on_step_ops_chunk_available
-            )
-            step.ops_generation_finished.disconnect(
-                self.layer._on_step_ops_generation_finished
-            )
-        except TypeError:
-            # This can occur if a signal was never connected or was
-            # already disconnected, which is safe to ignore.
-            pass
+        step.changed.disconnect(self._on_step_changed)
+        step.ops_generation_starting.disconnect(
+            self.layer._on_step_ops_generation_starting
+        )
+        step.ops_chunk_available.disconnect(
+            self.layer._on_step_ops_chunk_available
+        )
+        step.ops_generation_finished.disconnect(
+            self.layer._on_step_ops_generation_finished
+        )
 
     def create_step(self, step_cls, name=None) -> Step:
         """Factory method to create a new step with correct config."""
