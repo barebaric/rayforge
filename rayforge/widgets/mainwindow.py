@@ -462,7 +462,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # The Expression for the main dropdown button
         expression = Gtk.ClosureExpression.new(
-            str, lambda item: item.machine.name if item else "", None
+            str,
+            lambda item: item.machine.name if item else _("Select Machine"),
+            None,
         )
 
         # Create the DropDown and set the factory
@@ -520,14 +522,13 @@ class MainWindow(Adw.ApplicationWindow):
 
             if selected_index != -1:
                 self.machine_dropdown.set_selected(selected_index)
+            else:
+                self.machine_dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
         finally:
             # Unblock the signal in a finally block to ensure it always runs.
             self.machine_dropdown.handler_unblock_by_func(
                 self._on_machine_selected
             )
-
-        # Set visibility based on the number of machines
-        self.machine_dropdown.set_visible(len(machines) > 1)
 
     def _on_machine_selected(self, dropdown, param):
         """Handles when a user selects a new machine from the dropdown."""
