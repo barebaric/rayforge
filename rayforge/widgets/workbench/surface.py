@@ -48,6 +48,7 @@ class WorkSurface(Canvas):
         self.pixels_per_mm_x = 0.0
         self.pixels_per_mm_y = 0.0
         self._cam_visible = cam_visible
+        self._laser_dot_pos_mm = 0.0, 0.0
         self._transform_start_states: Dict[CanvasElement, dict] = {}
 
         # The root element itself should not clip, allowing its children
@@ -591,8 +592,12 @@ class WorkSurface(Canvas):
         self._laser_dot.set_size(dot_diameter_px, dot_diameter_px)
 
         # Re-position laser dot based on new pixel dimensions
-        current_dot_pos_mm = self.pixel_to_mm(*self._laser_dot.pos_abs())
-        self.set_laser_dot_position(*current_dot_pos_mm)
+        # By storing the dot's mm position, we avoid a fragile pixel->mm->pixel
+        # conversion during zoom/pan, which could cause drift. We simply
+        # re-apply the true mm position to the newly sized/panned view.
+        self.set_laser_dot_position(
+            self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]
+        )
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
         """Handles canvas size allocation in pixels."""
@@ -682,13 +687,23 @@ class WorkSurface(Canvas):
 
     def set_laser_dot_position(self, x_mm: float, y_mm: float):
         """Sets the laser dot position in real-world mm."""
+        self._laser_dot_pos_mm = x_mm, y_mm
+
         # LaserDotElement is sized to represent the dot diameter in pixels.
         # Its position should be the top-left corner of its bounding box.
         # We want the center of the dot to be at (x_px, y_px).
-        x_px, y_px = self.mm_to_pixel(x_mm, y_mm)
+        x_px_abs, y_px_abs = self.mm_to_pixel(x_mm, y_mm)
         dot_width_px = self._laser_dot.width
+
+        # The coordinates from mm_to_pixel are absolute widget coordinates.
+        # The dot is a child of self.root, so its position must be relative
+        # to self.root's top-left corner.
+        center_x_rel = x_px_abs - self.root.x
+        center_y_rel = y_px_abs - self.root.y
+
         self._laser_dot.set_pos(
-            round(x_px - dot_width_px / 2), round(y_px - dot_width_px / 2)
+            round(center_x_rel - dot_width_px / 2),
+            round(center_y_rel - dot_width_px / 2),
         )
         self.queue_draw()
 
