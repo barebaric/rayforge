@@ -78,6 +78,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         if driver_cls:
             selected_index = drivers.index(driver_cls)
             self.combo_row.set_selected(selected_index)
+        else:
+            # Manually trigger an update for the empty state
+            self.on_combo_row_changed(self.combo_row, None)
 
         # These must be called after the selection is set, so the correct
         # parameters are created based on the selected driver.
