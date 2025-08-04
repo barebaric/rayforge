@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw, GObject  # type: ignore
 from .. import __version__
+from ..tasker import task_mgr
 from ..tasker.context import ExecutionContext
-from ..config import config, task_mgr, machine_mgr
+from ..config import config, machine_mgr
 from ..driver import get_driver_cls
 from ..driver.driver import driver_mgr, DeviceStatus
 from ..driver.dummy import NoDeviceDriver

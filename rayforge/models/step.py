@@ -4,7 +4,7 @@ import uuid
 from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Callable
 from blinker import Signal
-from ..config import task_mgr
+from ..tasker import task_mgr
 from ..modifier import Modifier, MakeTransparent, ToGrayscale
 from ..opsproducer import OpsProducer, OutlineTracer, EdgeTracer, Rasterizer
 from ..opstransformer import OpsTransformer, Optimize, Smooth

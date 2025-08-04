@@ -10,7 +10,7 @@ from typing import List, TYPE_CHECKING, Dict, Tuple, Optional
 from copy import deepcopy
 from blinker import Signal
 
-from ..config import task_mgr
+from ..tasker import task_mgr
 from ..tasker.task import Task
 from .step import Step
 from .ops import Ops

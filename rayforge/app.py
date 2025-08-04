@@ -149,6 +149,7 @@ def main():
     gi.require_version('GdkPixbuf', '2.0')
 
     # Import modules that depend on GTK or manage global state
+    import rayforge.tasker
     import rayforge.config
 
     # Explicitly initialize the configuration managers. This ensures that
@@ -161,7 +162,7 @@ def main():
     exit_code = app.run(None)
     
     # Shutdown
-    rayforge.config.task_mgr.shutdown()
+    rayforge.tasker.task_mgr.shutdown()
     if rayforge.config.config_mgr:
         rayforge.config.config_mgr.save()
 
