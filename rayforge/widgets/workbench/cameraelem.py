@@ -20,6 +20,7 @@ class CameraImageElement(CanvasElement):
         self.selectable = False
         self.camera = camera
         self.camera.image_captured.connect(self._on_state_changed)
+        self.camera.changed.connect(self._on_camera_model_changed)
         self.camera.settings_changed.connect(self._on_state_changed)
         self.camera.subscribe()
         self.set_visible(self.camera.enabled)
@@ -32,12 +33,31 @@ class CameraImageElement(CanvasElement):
         # A flag to prevent scheduling multiple recomputations.
         self._recomputing: bool = False
 
+    def _on_camera_model_changed(self, sender):
+        """
+        Handles changes in the camera model, such as being enabled or disabled.
+
+        The element's visibility depends on both its model's `enabled` state
+        and the global visibility toggle on the `WorkSurface`. This handler
+        ensures the element's visibility is correctly re-evaluated when the
+        model changes at runtime.
+        """
+        if not self.canvas:
+            return  # Cannot update visibility without canvas context
+        is_globally_visible = self.canvas._cam_visible
+        should_be_visible = is_globally_visible and self.camera.enabled
+        if self.visible != should_be_visible:
+            self.set_visible(should_be_visible)
+
     def remove(self):
         """
         Extends the base remove to unsubscribe from the camera stream before
         being removed from the canvas.
         """
         self.camera.unsubscribe()
+        self.camera.image_captured.disconnect(self._on_state_changed)
+        self.camera.changed.disconnect(self._on_camera_model_changed)
+        self.camera.settings_changed.disconnect(self._on_state_changed)
         super().remove()
 
     def _on_state_changed(self, sender):

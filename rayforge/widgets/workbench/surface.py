@@ -747,7 +747,8 @@ class WorkSurface(Canvas):
     def set_camera_image_visibility(self, visible: bool):
         self._cam_visible = visible
         for elem in self.find_by_type(CameraImageElement):
-            elem.set_visible(visible)
+            camera_elem = cast(CameraImageElement, elem)
+            camera_elem.set_visible(visible and camera_elem.camera.enabled)
         self.queue_draw()
 
     def _on_machine_changed(self, machine: Optional[Machine], **kwargs):
@@ -769,7 +770,9 @@ class WorkSurface(Canvas):
         for camera in new_cameras:
             if camera not in current_camera_elements:
                 camera_image_elem = CameraImageElement(camera)
-                camera_image_elem.set_visible(self._cam_visible)
+                camera_image_elem.set_visible(
+                    self._cam_visible and camera.enabled
+                )
                 self.root.insert(0, camera_image_elem)
                 logger.debug(
                     f"Added CameraImageElement for camera {camera.name}"
