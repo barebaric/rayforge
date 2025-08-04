@@ -57,13 +57,29 @@ class Var(Generic[T]):
 
         value: T
         try:
-            # Special case: allow int for bool type (0/1)
-            if self.var_type is bool and isinstance(new_value, int):
-                value = bool(new_value)
+            if self.var_type is int:
+                # We coerce via float() to handle strings, floats, and ints.
+                value = int(float(new_value))  # type: ignore
+
+            # Handle coercion to bool, which can come from ints or various
+            # string forms.
+            elif self.var_type is bool:
+                if isinstance(new_value, str):
+                    val_lower = new_value.lower()
+                    if val_lower in ("true", "1", "on", "yes"):
+                        value = True  # type: ignore
+                    elif val_lower in ("false", "0", "off", "no"):
+                        value = False  # type: ignore
+                    else:
+                        raise ValueError(
+                            f"Cannot convert string '{new_value}' to bool."
+                        )
+                else:
+                    # Coerce from other types like int or float using standard
+                    # bool()
+                    value = bool(new_value)  # type: ignore
             else:
-                # This dynamic cast is correct for the intended types (str,
-                # int, float, and str-subclasses), but Pylance cannot verify
-                # it for a generic T. Hence, we suppress the 'call-arg' error.
+                # For other types (float, str, etc.), use direct coercion.
                 value = self.var_type(new_value)  # type: ignore[call-arg]
         except (ValueError, TypeError) as e:
             raise TypeError(
@@ -81,6 +97,18 @@ class Var(Generic[T]):
                 ) from e
 
         self._value = value
+
+    def to_dict(self):
+        """Returns a dict of constructor arguments for easy copying."""
+        return {
+            "key": self.key,
+            "label": self.label,
+            "var_type": self.var_type,
+            "description": self.description,
+            "default": self.default,
+            "value": self.value,
+            "validator": self.validator,
+        }
 
     def __repr__(self) -> str:
         return (

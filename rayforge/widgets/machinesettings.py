@@ -21,7 +21,18 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
 
         # Create and add the preferences pages
         self.add(GeneralPreferencesPage(machine=self.machine))
-        self.add(FirmwareSettingsPage(machine=self.machine))
+
+        # Create the firmware page
+        firmware_page = FirmwareSettingsPage(machine=self.machine)
+        firmware_page.show_toast.connect(self._on_show_toast)
+        self.add(firmware_page)
+
         self.add(AdvancedPreferencesPage(machine=self.machine))
         self.add(LaserHeadPreferencesPage(machine=self.machine))
         self.add(CameraPreferencesPage(machine=self.machine))
+
+    def _on_show_toast(self, sender, message: str):
+        """
+        Handler to show the toast when requested by the child page.
+        """
+        self.add_toast(Adw.Toast(title=message, timeout=5))

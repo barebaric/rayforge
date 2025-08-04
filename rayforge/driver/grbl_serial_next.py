@@ -2,37 +2,25 @@ import logging
 import asyncio
 import serial.serialutil
 from typing import Optional, Any, List, cast, TYPE_CHECKING
-from dataclasses import dataclass, field
 
 from .driver import Driver, DriverSetupError
-from .grbl_next import (
-    _parse_state,
-    grbl_setting_re,
-    GRBL_SETTINGS_DEFINITIONS,
-)
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..debug import debug_log_manager, LogType
+from ..varset import Var, VarSet
+from .grbl_util import (
+    parse_state,
+    get_grbl_setting_varsets,
+    grbl_setting_re,
+    CommandRequest,
+)
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class CommandRequest:
-    """A request to send a command and await its full response."""
-
-    command: str
-    response_lines: List[str] = field(default_factory=list)
-    finished: asyncio.Event = field(default_factory=asyncio.Event)
-
-    @property
-    def payload(self) -> bytes:
-        return (self.command + "\n").encode("utf-8")
 
 
 class GrblNextSerialDriver(Driver):
@@ -53,14 +41,30 @@ class GrblNextSerialDriver(Driver):
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
 
-    def setup(
-        self, port: SerialPort = cast(SerialPort, ""), baudrate: int = 115200
-    ):
-        """
-        Parameters:
-          - port: Serial port (e.g., "/dev/ttyUSB0" or "COM1")
-          - baudrate: Baud rate (default: 115200)
-        """
+    @classmethod
+    def get_setup_vars(cls) -> "VarSet":
+        return VarSet(
+            vars=[
+                Var(
+                    key="port",
+                    label=_("Port"),
+                    var_type=SerialPort,
+                    description=_("Serial port for the device"),
+                ),
+                Var(
+                    key="baudrate",
+                    label=_("Baud Rate"),
+                    var_type=int,
+                    description=_("Connection speed in bits per second"),
+                    default=115200,
+                ),
+            ]
+        )
+
+    def setup(self, **kwargs: Any):
+        port = cast(SerialPort, kwargs.get("port", ""))
+        baudrate = kwargs.get("baudrate", 115200)
+
         if not port:
             raise DriverSetupError(_("Port must be configured."))
         if not baudrate:
@@ -77,19 +81,15 @@ class GrblNextSerialDriver(Driver):
     async def cleanup(self):
         logger.debug("GrblNextSerialDriver cleanup initiated.")
         self.keep_running = False
-        # The TaskManager will cancel the running `connect()` task.
-        # The `_connection_loop`'s finally block will handle the
-        # transport disconnect. We just need to disconnect signals.
+        if self._connection_task:
+            self._connection_task.cancel()
         if self.serial_transport:
-            try:
-                self.serial_transport.received.disconnect(
-                    self.on_serial_data_received
-                )
-                self.serial_transport.status_changed.disconnect(
-                    self.on_serial_status_changed
-                )
-            except (TypeError, ValueError):
-                pass  # Signal may have already been disconnected
+            self.serial_transport.received.disconnect(
+                self.on_serial_data_received
+            )
+            self.serial_transport.status_changed.disconnect(
+                self.on_serial_status_changed
+            )
         await super().cleanup()
         logger.debug("GrblNextSerialDriver cleanup completed.")
 
@@ -200,29 +200,59 @@ class GrblNextSerialDriver(Driver):
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
         await self._execute_command(cmd)
 
+    def get_setting_vars(self) -> List["VarSet"]:
+        return get_grbl_setting_varsets()
+
     async def read_settings(self) -> None:
         response_lines = await self._execute_command("$$")
-        settings = {}
+        # Get the list of VarSets, which serve as our template
+        known_varsets = self.get_setting_vars()
+
+        # For efficient lookup, map each setting key to its parent VarSet
+        key_to_varset_map = {
+            var_key: varset
+            for varset in known_varsets
+            for var_key in varset.keys()
+        }
+
+        unknown_vars = VarSet(
+            title=_("Unknown Settings"),
+            description=_(
+                "Settings reported by the device not in the standard list."
+            ),
+        )
+
         for line in response_lines:
             match = grbl_setting_re.match(line)
             if match:
-                key, value = match.groups()
-                # Attempt to convert to float/int, fall back to string
-                try:
-                    if "." in value:
-                        settings[key] = float(value)
-                    else:
-                        settings[key] = int(value)
-                except ValueError:
-                    settings[key] = value
-        self._on_settings_read(settings)
+                key, value_str = match.groups()
+                # Find which VarSet this key belongs to
+                target_varset = key_to_varset_map.get(key)
+                if target_varset:
+                    # Update the value in the correct VarSet
+                    target_varset[key] = value_str
+                else:
+                    # This setting is not defined in our known VarSets
+                    unknown_vars.add(
+                        Var(
+                            key=key,
+                            label=f"${key}",
+                            var_type=str,
+                            value=value_str,
+                            description=_("Unknown setting from device"),
+                        )
+                    )
+
+        # The result is the list of known VarSets (now populated)
+        result = known_varsets
+        if len(unknown_vars) > 0:
+            # Append the VarSet of unknown settings if any were found
+            result.append(unknown_vars)
+        self._on_settings_read(result)
 
     async def write_setting(self, key: str, value: Any) -> None:
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
-
-    def get_setting_definitions(self) -> dict[str, str]:
-        return GRBL_SETTINGS_DEFINITIONS
 
     def on_serial_data_received(self, sender, data: bytes):
         debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
@@ -233,7 +263,7 @@ class GrblNextSerialDriver(Driver):
             if request and not request.finished.is_set():
                 request.response_lines.append(line)
             if line.startswith("<") and line.endswith(">"):
-                state = _parse_state(line[1:-1], self.state, self._log)
+                state = parse_state(line[1:-1], self.state, self._log)
                 if state != self.state:
                     self.state = state
                     self._on_state_changed()

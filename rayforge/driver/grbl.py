@@ -2,7 +2,7 @@ import re
 import asyncio
 import aiohttp
 from copy import copy
-from typing import Callable, Optional, cast, Any, TYPE_CHECKING
+from typing import Callable, List, Optional, cast, Any, TYPE_CHECKING
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
@@ -16,6 +16,7 @@ from .driver import (
     DeviceConnectionError,
 )
 from .util import Hostname, is_valid_hostname_or_ip
+from ..varset import Var, VarSet
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
@@ -89,7 +90,24 @@ class GrblDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
 
-    def setup(self, host: Hostname = cast(Hostname, "")):
+    @classmethod
+    def get_setup_vars(cls) -> "VarSet":
+        return VarSet(
+            vars=[
+                Var(
+                    key="host",
+                    label=_("Hostname"),
+                    var_type=Hostname,
+                    description=_("The IP address or hostname of the device"),
+                )
+            ]
+        )
+
+    def get_setting_vars(self) -> List["VarSet"]:
+        return [VarSet()]
+
+    def setup(self, **kwargs: Any):
+        host = cast(Hostname, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverSetupError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
@@ -347,6 +365,3 @@ class GrblDriver(Driver):
         raise NotImplementedError(
             "Device settings not implemented for this driver"
         )
-
-    def get_setting_definitions(self) -> dict[str, str]:
-        return {}

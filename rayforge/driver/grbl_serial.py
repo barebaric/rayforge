@@ -1,10 +1,11 @@
 import logging
 import asyncio
-from typing import Optional, cast, Any, TYPE_CHECKING
+from typing import List, Optional, cast, Any, TYPE_CHECKING
 from ..transport import SerialTransport, TransportStatus
 from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
+from ..varset import Var, VarSet
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DriverSetupError
 from .grbl import _parse_state
@@ -30,14 +31,38 @@ class GrblSerialDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
 
-    def setup(
-        self, port: SerialPort = cast(SerialPort, ""), baudrate: int = 115200
-    ):
+    @classmethod
+    def get_setup_vars(cls) -> "VarSet":
+        return VarSet(
+            vars=[
+                Var(
+                    key="port",
+                    label=_("Port"),
+                    var_type=SerialPort,
+                    description=_("Serial port for the device"),
+                ),
+                Var(
+                    key="baudrate",
+                    label=_("Baud Rate"),
+                    var_type=int,
+                    description=_("Connection speed in bits per second"),
+                    default=115200,
+                ),
+            ]
+        )
+
+    def get_setting_vars(self) -> List["VarSet"]:
+        return [VarSet()]
+
+    def setup(self, **kwargs: Any):
         """
         Parameters:
           - port: Serial port (e.g., "/dev/ttyUSB0" or "COM1")
           - baudrate: Baud rate (default: 115200)
         """
+        port = cast(SerialPort, kwargs.get("port", ""))
+        baudrate = kwargs.get("baudrate", 115200)
+
         if not port:
             raise DriverSetupError(_("Port must be configured."))
         if not baudrate:
@@ -189,6 +214,3 @@ class GrblSerialDriver(Driver):
         raise NotImplementedError(
             "Device settings not implemented for this driver"
         )
-
-    def get_setting_definitions(self) -> dict[str, str]:
-        return {}

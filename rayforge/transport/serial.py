@@ -1,13 +1,18 @@
 import logging
 import asyncio
 import serial_asyncio
-from typing import Optional, List, NewType
+from typing import Optional, List
 from serial.tools import list_ports
 from .transport import Transport, TransportStatus
 
 
 logger = logging.getLogger(__name__)
-SerialPort = NewType('SerialPort', str)
+
+
+class SerialPort(str):
+    """A string subclass for identifying serial ports, for UI generation."""
+
+    pass
 
 
 class SerialTransport(Transport):

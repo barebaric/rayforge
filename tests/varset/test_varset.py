@@ -59,9 +59,10 @@ class TestVarSet(unittest.TestCase):
 
         iterated_vars = list(vs)
         self.assertEqual(len(iterated_vars), 3)
-        # Check if they are sorted by key
-        self.assertIs(iterated_vars[0], v2)  # a_var
-        self.assertIs(iterated_vars[1], v1)  # b_var
+
+        # Check if they are in insertion order
+        self.assertIs(iterated_vars[0], v1)  # b_var
+        self.assertIs(iterated_vars[1], v2)  # a_var
         self.assertIs(iterated_vars[2], v3)  # c_var
 
     def test_get_values(self):

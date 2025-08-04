@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Iterator, Any, List
+from typing import Dict, Optional, Iterator, Any, List, KeysView
 from .var import Var
 
 
@@ -55,12 +55,16 @@ class VarSet:
         self._vars[key].value = value
 
     def __iter__(self) -> Iterator[Var]:
-        """Iterates over the Var objects, sorted by key."""
-        return (self._vars[key] for key in sorted(self._vars.keys()))
+        """Iterates over the Var objects in insertion order."""
+        return iter(self._vars.values())
 
     def __len__(self) -> int:
         """Returns the number of Var objects in the set."""
         return len(self._vars)
+
+    def keys(self) -> KeysView[str]:
+        """Returns a view of the Var keys."""
+        return self._vars.keys()
 
     def get_values(self) -> Dict[str, Any]:
         """Returns a dictionary of all keys and their current values."""

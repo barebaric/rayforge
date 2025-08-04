@@ -1,129 +1,34 @@
 import aiohttp
-import re
 import asyncio
-from copy import copy
-from typing import Callable, Optional, cast, Any, TYPE_CHECKING, List
-from dataclasses import dataclass, field
+from typing import Optional, cast, Any, TYPE_CHECKING, List
 
 from ..debug import debug_log_manager, LogType
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
+from ..varset import Var, VarSet
 from .driver import (
     Driver,
-    DeviceStatus,
-    DeviceState,
-    Pos,
     DriverSetupError,
     DeviceConnectionError,
 )
 from .util import Hostname, is_valid_hostname_or_ip
+from .grbl_util import (
+    parse_state,
+    get_grbl_setting_varsets,
+    grbl_setting_re,
+    CommandRequest,
+    hw_info_url,
+    fw_info_url,
+    eeprom_info_url,
+    command_url,
+    upload_url,
+    execute_url,
+    status_url,
+)
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
-
-
-hw_info_url = "/command?plain=%5BESP420%5D&PAGEID="
-fw_info_url = "/command?plain=%5BESP800%5D&PAGEID="
-eeprom_info_url = "/command?plain=%5BESP400%5D&PAGEID="
-command_url = "/command?commandText={command}&PAGEID="
-upload_url = "/upload"
-upload_list_url = "/upload?path=/&PAGEID=0"
-execute_url = "/command?commandText=%5BESP220%5D/{filename}"
-status_url = command_url.format(command="?")
-
-
-@dataclass
-class CommandRequest:
-    """A request to send a command and await its full response."""
-
-    command: str
-    response_lines: List[str] = field(default_factory=list)
-    finished: asyncio.Event = field(default_factory=asyncio.Event)
-
-
-pos_re = re.compile(r":(\d+\.\d+),(\d+\.\d+),(\d+\.\d+)")
-fs_re = re.compile(r"FS:(\d+),(\d+)")
-grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
-
-GRBL_SETTINGS_DEFINITIONS: dict[str, str] = {
-    "0": "Step pulse time, microseconds",
-    "1": "Step idle delay, milliseconds",
-    "2": "Step pulse invert, mask",
-    "3": "Step direction invert, mask",
-    "4": "Invert step enable pin, boolean",
-    "5": "Invert limit pins, boolean",
-    "6": "Invert probe pin, boolean",
-    "10": "Status report options, mask",
-    "11": "Junction deviation, mm",
-    "12": "Arc tolerance, mm",
-    "13": "Report in inches, boolean",
-    "20": "Soft limits enable, boolean",
-    "21": "Hard limits enable, boolean",
-    "22": "Homing cycle enable, boolean",
-    "23": "Homing direction invert, mask",
-    "24": "Homing locate feed rate, mm/min",
-    "25": "Homing search seek rate, mm/min",
-    "26": "Homing switch debounce delay, milliseconds",
-    "27": "Homing switch pull-off distance, mm",
-    "30": "Maximum spindle speed, RPM",
-    "31": "Minimum spindle speed, RPM",
-    "32": "Laser-mode enable, boolean",
-    "100": "X-axis travel resolution, step/mm",
-    "101": "Y-axis travel resolution, step/mm",
-    "102": "Z-axis travel resolution, step/mm",
-    "110": "X-axis maximum rate, mm/min",
-    "111": "Y-axis maximum rate, mm/min",
-    "112": "Z-axis maximum rate, mm/min",
-    "120": "X-axis acceleration, mm/sec^2",
-    "121": "Y-axis acceleration, mm/sec^2",
-    "122": "Z-axis acceleration, mm/sec^2",
-    "130": "X-axis maximum travel, mm",
-    "131": "Y-axis maximum travel, mm",
-    "132": "Z-axis maximum travel, mm",
-}
-
-
-def _parse_pos_triplet(pos) -> Optional[Pos]:
-    match = pos_re.search(pos)
-    if not match:
-        return None
-    pos = tuple(float(i) for i in match.groups())
-    if len(pos) != 3:
-        return None
-    return pos
-
-
-def _parse_state(
-    state_str: str, default: DeviceState, logger: Callable
-) -> DeviceState:
-    state = copy(default)
-    try:
-        status, *attribs = state_str.split("|")
-        status = status.split(":")[0]
-    except ValueError:
-        return state
-
-    try:
-        state.status = DeviceStatus[status.upper()]
-    except KeyError:
-        logger(message=f"device sent an unupported status: {status}")
-
-    for attrib in attribs:
-        if attrib.startswith("MPos:"):
-            state.machine_pos = _parse_pos_triplet(attrib) or state.machine_pos
-        elif attrib.startswith("WPos:"):
-            state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
-        elif attrib.startswith("FS:"):
-            try:
-                match = fs_re.match(attrib)
-                if not match:
-                    continue
-                fs = [int(i) for i in match.groups()]
-                state.feed_rate = int(fs[0])
-            except (ValueError, IndexError):
-                pass
-    return state
 
 
 class GrblNextNetworkDriver(Driver):
@@ -146,7 +51,21 @@ class GrblNextNetworkDriver(Driver):
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
 
-    def setup(self, host: Hostname = cast(Hostname, "")):
+    @classmethod
+    def get_setup_vars(cls) -> "VarSet":
+        return VarSet(
+            vars=[
+                Var(
+                    key="host",
+                    label=_("Hostname"),
+                    var_type=Hostname,
+                    description=_("The IP address or hostname of the device"),
+                )
+            ]
+        )
+
+    def setup(self, **kwargs: Any):
+        host = cast(Hostname, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverSetupError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
@@ -417,7 +336,7 @@ class GrblNextNetworkDriver(Driver):
 
             # Process line for state updates, regardless of active request.
             if line.startswith("<") and line.endswith(">"):
-                state = _parse_state(line[1:-1], self.state, self._log)
+                state = parse_state(line[1:-1], self.state, self._log)
                 if state != self.state:
                     self.state = state
                     self._on_state_changed()
@@ -437,30 +356,57 @@ class GrblNextNetworkDriver(Driver):
     ):
         self._on_connection_status_changed(status, message)
 
-    def _parse_and_emit_settings(self, response_lines: List[str]):
-        settings = {}
+    def get_setting_vars(self) -> List["VarSet"]:
+        return get_grbl_setting_varsets()
+
+    async def read_settings(self) -> None:
+        response_lines = await self._execute_command("$$")
+        # Get the list of VarSets, which serve as our template
+        known_varsets = self.get_setting_vars()
+
+        # For efficient lookup, map each setting key to its parent VarSet
+        key_to_varset_map = {
+            var_key: varset
+            for varset in known_varsets
+            for var_key in varset.keys()
+        }
+
+        unknown_vars = VarSet(
+            title=_("Unknown Settings"),
+            description=_(
+                "Settings reported by the device not in the standard list."
+            ),
+        )
+
         for line in response_lines:
             match = grbl_setting_re.match(line)
             if match:
-                key, value = match.groups()
-                try:
-                    if "." in value:
-                        settings[key] = float(value)
-                    else:
-                        settings[key] = int(value)
-                except ValueError:
-                    settings[key] = value
-        self._on_settings_read(settings)
+                key, value_str = match.groups()
+                # Find which VarSet this key belongs to
+                target_varset = key_to_varset_map.get(key)
+                if target_varset:
+                    # Update the value in the correct VarSet
+                    target_varset[key] = value_str
+                else:
+                    # This setting is not defined in our known VarSets
+                    unknown_vars.add(
+                        Var(
+                            key=key,
+                            label=f"${key}",
+                            var_type=str,
+                            value=value_str,
+                            description=_("Unknown setting from device"),
+                        )
+                    )
 
-    async def read_settings(self) -> None:
-        """Reads settings by sending '$$' and parsing the response."""
-        response_lines = await self._execute_command("$$")
-        self._parse_and_emit_settings(response_lines)
+        # The result is the list of known VarSets (now populated)
+        result = known_varsets
+        if len(unknown_vars) > 0:
+            # Append the VarSet of unknown settings if any were found
+            result.append(unknown_vars)
+        self._on_settings_read(result)
 
     async def write_setting(self, key: str, value: Any) -> None:
         """Writes a setting by sending '$<key>=<value>'."""
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
-
-    def get_setting_definitions(self) -> dict[str, str]:
-        return GRBL_SETTINGS_DEFINITIONS

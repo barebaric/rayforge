@@ -1,9 +1,9 @@
 from gi.repository import Gtk, Adw  # type: ignore
 from ..driver.driver import driver_mgr
-from ..driver import drivers, get_driver_cls, get_params
+from ..driver import drivers, get_driver_cls
 from ..util.adwfix import get_spinrow_int
 from ..models.machine import Machine
-from .dynamicprefs import DynamicPreferencesGroup
+from ..varset.varsetwidget import VarSetWidget
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -42,7 +42,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         name_row.connect("notify::text", self.on_name_changed)
         name_group.add(name_row)
 
-        self.driver_group = DynamicPreferencesGroup(title=_("Driver Settings"))
+        self.driver_group = VarSetWidget(title=_("Driver Settings"))
         self.driver_group.data_changed.connect(self.on_driver_param_changed)
         self.add(self.driver_group)
 
@@ -53,7 +53,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         driver_cls = get_driver_cls(machine.driver) if machine.driver else None
 
         self.combo_row = Adw.ComboRow(
-            # Start with a sensible default; it will be updated momentarily.
             title=_("Select driver"),
             model=self.driver_store,
         )
@@ -81,16 +80,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         else:
             # Manually trigger an update for the empty state
             self.on_combo_row_changed(self.combo_row, None)
-
-        # These must be called after the selection is set, so the correct
-        # parameters are created based on the selected driver.
-        if driver_cls:
-            self.driver_group.create_params(get_params(driver_cls))
-            self.driver_group.set_values(machine.driver_args)
-        else:
-            # When no driver is selected (e.g., for a new machine),
-            # there are no parameters to display.
-            self.driver_group.create_params([])
 
         # Group for Machine Settings
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
@@ -226,10 +215,11 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         else:
             self.error_banner.set_revealed(False)
 
-    def on_driver_param_changed(self, sender):
+    def on_driver_param_changed(self, sender, **kwargs):
         if self._is_initializing:
             return
-        self.machine.set_driver_args(self.driver_group.get_values())
+        values = self.driver_group.get_values()
+        self.machine.set_driver_args(values)
 
     def on_factory_setup(self, factory, list_item):
         row = Adw.ActionRow()
@@ -242,30 +232,32 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         row.set_title(driver_cls.label)
         row.set_subtitle(driver_cls.subtitle)
 
-    def on_combo_row_changed(self, combo_row, _):
+    def on_combo_row_changed(self, combo_row, _param):
         selected_index = combo_row.get_selected()
         if selected_index < 0:
-            return  # No selection, do nothing
+            self.combo_row.set_title(_("Select driver"))
+            self.combo_row.set_subtitle("")
+            self.driver_group.clear_dynamic_rows()
+            self._update_error_state()
+            return  # No driver selected
 
         driver_cls = drivers[selected_index]
 
-        # To work around a bug in Adw.ComboRow, we must explicitly set both the
-        # title and subtitle. Setting the title alone would clobber the
-        # subtitle.
         self.combo_row.set_title(driver_cls.label)
         self.combo_row.set_subtitle(driver_cls.subtitle)
 
-        # If the driver hasn't actually changed, we don't need to do anything
-        # else. This is crucial to prevent wiping the driver arguments when
-        # the dialog is first initialized, as setting the combo box's initial
-        # value also triggers this signal.
-        if self.machine.driver == driver_cls.__name__:
-            self._update_error_state()
-            return
+        # If the user selected a new driver (and not during initialization),
+        # update the machine model and clear existing args.
+        if (
+            not self._is_initializing
+            and self.machine.driver != driver_cls.__name__
+        ):
+            self.machine.set_driver(driver_cls, {})
 
-        self.machine.set_driver(driver_cls)
-        self.driver_group.create_params(get_params(driver_cls))
-        self.driver_group.set_values(self.machine.driver_args)
+        # Always populate the UI.
+        var_set = driver_cls.get_setup_vars()
+        var_set.set_values(self.machine.driver_args)
+        self.driver_group.populate(var_set)
         self._update_error_state()
 
     def on_name_changed(self, entry_row, _):

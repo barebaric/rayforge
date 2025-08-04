@@ -1,12 +1,17 @@
 import yaml
 import uuid
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+import asyncio
+from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
-from ..driver.driver import driver_mgr, Driver
+from ..tasker import task_mgr
+from ..driver.driver import driver_mgr, Driver, DeviceConnectionError
 from .camera import Camera
 from .laser import Laser
+
+if TYPE_CHECKING:
+    from ..varset import VarSet
 
 
 logger = logging.getLogger(__name__)
@@ -14,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class Machine:
     def __init__(self):
+        logger.debug("Machine.__init__")
         self.id = str(uuid.uuid4())
         self.name: str = _("Default Machine")
         self.driver: Optional[str] = None
@@ -31,18 +37,22 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.dimensions: Tuple[int, int] = 200, 200
-        self.changed = Signal()
         self.y_axis_down: bool = False
-        self.firmware_settings: Dict[str, Any] = {}
-        self.add_head(Laser())
-        # Signal to indicate that settings have been read from the device
+        self._settings_lock = asyncio.Lock()
+
+        # Signals
+        self.changed = Signal()
+        self.settings_error = Signal()
         self.firmware_settings_updated = Signal()
+        self.setting_applied = Signal()
+
+        self.add_head(Laser())
 
     def set_name(self, name: str):
         self.name = str(name)
         self.changed.send(self)
 
-    def set_driver(self, driver_cls: type, args=None):
+    def set_driver(self, driver_cls: Type[Driver], args=None):
         self.driver = driver_cls.__name__
         self.driver_args = args or {}
         self.changed.send(self)
@@ -97,14 +107,6 @@ class Machine:
         self.y_axis_down = y_axis_down
         self.changed.send(self)
 
-    def set_firmware_settings(self, settings: Dict[str, Any]):
-        self.firmware_settings = settings
-        # Send a specific signal for this, as it's a different kind of update
-        # than a simple property change. Also send the general 'changed' signal
-        # to trigger saving.
-        self.firmware_settings_updated.send(self)
-        self.changed.send(self)
-
     def add_head(self, head: Laser):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)
@@ -137,6 +139,21 @@ class Machine:
                 return True
         return False
 
+    def refresh_settings(self):
+        """Public API for the UI to request a settings refresh."""
+        task_mgr.add_coroutine(
+            self._read_from_device, key="device-settings-read"
+        )
+
+    def apply_setting(self, key: str, value: Any):
+        """Public API for the UI to apply a single setting."""
+        task_mgr.add_coroutine(
+            self._write_setting_to_device,
+            key,
+            value,
+            key="device-settings-write",
+        )
+
     def _get_active_driver(self) -> Optional[Driver]:
         """
         Helper to get the active driver instance, but only if it matches
@@ -147,63 +164,77 @@ class Machine:
             return driver
         return None
 
-    def get_setting_definitions(self) -> dict[str, str]:
+    def get_setting_vars(self) -> List["VarSet"]:
         """
-        Gets the setting definitions from the machine's active driver.
+        Gets the setting definitions from the machine's active driver
+        as a VarSet.
         """
         driver = self._get_active_driver()
         if driver:
-            return driver.get_setting_definitions()
-        return {}
+            return driver.get_setting_vars()
+        return []
 
-    async def read_settings_from_device(self):
+    async def _read_from_device(self, ctx):
         """
-        Commands the active driver to read settings and updates this machine
-        instance with the result.
+        Task entry point for reading settings. This handles locking and
+        all errors.
         """
+        logger.debug("Machine._read_from_device: Acquiring lock.")
+        async with self._settings_lock:
+            logger.debug("_read_from_device: Lock acquired.")
+            driver = self._get_active_driver()
+            if not driver:
+                err = ConnectionError(
+                    "No active driver for this machine to read settings from."
+                )
+                self.settings_error.send(self, error=err)
+                return
+
+            def on_settings_read(sender, settings: List["VarSet"]):
+                logger.debug("on_settings_read: Handler called.")
+                sender.settings_read.disconnect(on_settings_read)
+                self.firmware_settings_updated.send(self, var_sets=settings)
+                logger.debug("on_settings_read: Handler finished.")
+
+            driver.settings_read.connect(on_settings_read)
+            try:
+                await driver.read_settings()
+            except (DeviceConnectionError, ConnectionError) as e:
+                logger.error(f"Failed to read settings from device: {e}")
+                driver.settings_read.disconnect(on_settings_read)
+                self.settings_error.send(self, error=e)
+            finally:
+                logger.debug("_read_from_device: Read operation finished.")
+        logger.debug("_read_from_device: Lock released.")
+
+    async def _write_setting_to_device(self, ctx, key: str, value: Any):
+        """
+        Writes a single setting to the device and signals success or failure.
+        It no longer triggers an automatic re-read.
+        """
+        logger.debug(f"_write_setting_to_device(key={key}): Acquiring lock.")
         driver = self._get_active_driver()
         if not driver:
-            logger.warning(
-                "No active driver for this machine to read settings from."
-            )
-            return
-
-        def on_settings_read(sender, settings: dict):
-            # This handler is responsible for disconnecting itself,
-            # as we only want this event once. We cannot stay connected
-            # because drivers are often dynamically replaced by new
-            # instances.
-            logger.info(f"Machine {self.id} received settings from driver.")
-            driver.settings_read.disconnect(on_settings_read)
-            self.set_firmware_settings(settings)
-
-        driver.settings_read.connect(on_settings_read)
-        try:
-            await driver.read_settings()
-        except Exception as e:
-            # If the read operation fails, the signal will never be sent.
-            # We MUST disconnect the handler here to prevent a memory leak.
-            logger.error(f"Failed to read settings from device: {e}")
-            driver.settings_read.disconnect(on_settings_read)
-            raise
-
-    async def write_setting_to_device(self, key: str, value: Any):
-        """
-        Commands the active driver to write a setting to the device.
-        """
-        driver = self._get_active_driver()
-        if not driver:
-            raise ConnectionError(
+            err = ConnectionError(
                 "No active driver for this machine to write settings to."
             )
+            self.settings_error.send(self, error=err)
+            return
 
         try:
-            await driver.write_setting(key, value)
-            # After a successful write, re-read to confirm and update the UI
-            await self.read_settings_from_device()
-        except Exception as e:
+            async with self._settings_lock:
+                logger.debug(
+                    f"_write_setting_to_device(key={key}): Lock acquired."
+                )
+                await driver.write_setting(key, value)
+                self.setting_applied.send(self)
+        except (DeviceConnectionError, ConnectionError) as e:
             logger.error(f"Failed to write setting to device: {e}")
-            raise
+            self.settings_error.send(self, error=e)
+        finally:
+            logger.debug(
+                f"_write_setting_to_device(key={key}): Operation finished."
+            )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -215,7 +246,6 @@ class Machine:
                 "dialect": self.dialect_name,
                 "dimensions": list(self.dimensions),
                 "y_axis_down": self.y_axis_down,
-                "firmware_settings": self.firmware_settings,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "speeds": {
@@ -242,7 +272,6 @@ class Machine:
         ma.dialect_name = ma_data.get("dialect", "GRBL")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
-        ma.firmware_settings = ma_data.get("firmware_settings", {})
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))

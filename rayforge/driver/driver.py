@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -8,8 +8,10 @@ from ..transport import TransportStatus
 from ..util.glib import idle_add
 from ..models.ops import Ops
 from ..debug import debug_log_manager, LogType
+
 if TYPE_CHECKING:
     from ..models.machine import Machine
+    from ..varset import VarSet
 
 
 logger = logging.getLogger(__name__)
@@ -17,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 class DriverSetupError(Exception):
     """Custom exception for driver setup failures."""
+
     pass
 
 
 class DeviceConnectionError(Exception):
     """Custom exception for failures to communicate with a device."""
+
     pass
 
 
@@ -75,6 +79,7 @@ class Driver(ABC):
     Subclasses of driver MUST NOT emit these signals directly;
     the should instead call self._log, self,_on_state_changed, etc.
     """
+
     label = None
     subtitle = None
     supports_settings = False
@@ -89,15 +94,10 @@ class Driver(ABC):
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None
 
-    def setup(self, *args: Any, **kwargs: Any):
+    def setup(self, **kwargs: Any):
         """
-        The type annotations of this method are used to generate a UI
-        for the user! So if your driver requires any UI parameters,
-        you should overload this function to ensure that a UI for the
-        parameters is generated.
-
-        The method will be invoked once the user has provided the arguments
-        in the UI.
+        The method will be invoked with a dictionary of values gathered
+        from the UI, based on the VarSet returned by get_setup_vars().
         """
         assert not self.did_setup
         self.did_setup = True
@@ -106,6 +106,23 @@ class Driver(ABC):
     async def cleanup(self):
         self.did_setup = False
         self.setup_error = None
+
+    @classmethod
+    @abstractmethod
+    def get_setup_vars(cls) -> "VarSet":
+        """
+        Returns a VarSet defining the parameters needed for setup().
+        This is used to dynamically generate the user interface.
+        """
+        pass
+
+    @abstractmethod
+    def get_setting_vars(self) -> List["VarSet"]:
+        """
+        Returns a VarSet defining the device's firmware settings.
+        The VarSet should define the settings but may have empty values.
+        """
+        pass
 
     @abstractmethod
     async def connect(self) -> None:
@@ -168,50 +185,36 @@ class Driver(ABC):
         """
         pass
 
-    @abstractmethod
-    def get_setting_definitions(self) -> dict[str, str]:
-        """
-        Returns a dictionary mapping setting keys to human-readable
-        descriptions.
-        """
-        pass
-
     def _log(self, message: str):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, message
         )
-        idle_add(
-            self.log_received.send,
-            self,
-            message=message
-        )
+        idle_add(self.log_received.send, self, message=message)
 
     def _on_state_changed(self):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.STATE_CHANGE, self.state
         )
-        idle_add(
-            self.state_changed.send,
-            self,
-            state=self.state
-        )
+        idle_add(self.state_changed.send, self, state=self.state)
 
-    def _on_settings_read(self, settings: dict):
-        logger.info(f"Driver settings read with {len(settings)} settings.")
+    def _on_settings_read(self, settings: List["VarSet"]):
+        num_settings = sum(len(vs) for vs in settings)
+        logger.info(f"Driver settings read with {num_settings} settings.")
+
+        all_values = {}
+        for vs in settings:
+            all_values.update(vs.get_values())
 
         debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.APP_INFO,
-            f"Device settings read: {settings}"
+            self.__class__.__name__,
+            LogType.APP_INFO,
+            f"Device settings read: {all_values}",
         )
-        idle_add(
-            self.settings_read.send,
-            self,
-            settings=settings
-        )
+        idle_add(self.settings_read.send, self, settings=settings)
 
-    def _on_command_status_changed(self,
-                                   status: TransportStatus,
-                                   message: Optional[str] = None):
+    def _on_command_status_changed(
+        self, status: TransportStatus, message: Optional[str] = None
+    ):
         log_data = f"Command status: {status.name}"
         if message:
             log_data += f" - {message}"
@@ -222,12 +225,12 @@ class Driver(ABC):
             self.command_status_changed.send,
             self,
             status=status,
-            message=message
+            message=message,
         )
 
-    def _on_connection_status_changed(self,
-                                      status: TransportStatus,
-                                      message: Optional[str] = None):
+    def _on_connection_status_changed(
+        self, status: TransportStatus, message: Optional[str] = None
+    ):
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"
@@ -238,7 +241,7 @@ class Driver(ABC):
             self.connection_status_changed.send,
             self,
             status=status,
-            message=message
+            message=message,
         )
 
 
@@ -278,11 +281,7 @@ class DriverManager:
         await self._assign_driver(driver, **args)
 
     def _on_driver_changed(self):
-        idle_add(
-            self.changed.send,
-            self,
-            driver=self.driver
-        )
+        idle_add(self.changed.send, self, driver=self.driver)
 
     async def select_by_cls(self, driver_cls, **args):
         if self.driver and self.driver.__class__ == driver_cls:
