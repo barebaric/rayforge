@@ -598,6 +598,14 @@ class MainWindow(Adw.ApplicationWindow):
         preferences_action.connect("activate", self.show_preferences)
         self.add_action(preferences_action)
 
+        self.machine_settings_action = Gio.SimpleAction.new(
+            "machine_settings", None
+        )
+        self.machine_settings_action.connect(
+            "activate", self.show_machine_settings
+        )
+        self.add_action(self.machine_settings_action)
+
         # Help action
         about_action = Gio.SimpleAction.new("about", None)
         about_action.connect("activate", self.show_about_dialog)
@@ -664,6 +672,9 @@ class MainWindow(Adw.ApplicationWindow):
         app.set_accels_for_action("win.paste", ["<Primary>v"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
+        app.set_accels_for_action(
+            "win.machine_settings", ["<Primary>less"]
+        )
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
 
@@ -810,6 +821,7 @@ class MainWindow(Adw.ApplicationWindow):
         can_undo = self.doc.history_manager.can_undo()
         can_redo = self.doc.history_manager.can_redo()
         can_paste = len(self._clipboard_snapshot) > 0
+        can_edit_machine_settings = config.machine is not None
 
         # Show warning if the current machine is not configured
         warning_visible = False
@@ -826,6 +838,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.paste_action.set_enabled(can_paste and not has_tasks)
         self.duplicate_action.set_enabled(has_selection and not has_tasks)
         self.remove_action.set_enabled(has_selection and not has_tasks)
+        self.machine_settings_action.set_enabled(can_edit_machine_settings)
 
         # Update button sensitivity
         self.export_button.set_sensitive(can_export)
@@ -1356,6 +1369,15 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = PreferencesWindow(transient_for=self)
         dialog.present()
         dialog.connect("close-request", self._on_preferences_dialog_closed)
+
+    def show_machine_settings(self, action, param):
+        """Opens the machine settings dialog for the current machine."""
+        current_machine = config.machine
+        if not current_machine:
+            return
+
+        dialog = MachineSettingsDialog(machine=current_machine)
+        dialog.present(self)
 
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")
