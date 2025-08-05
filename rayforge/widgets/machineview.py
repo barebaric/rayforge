@@ -16,11 +16,11 @@ css = """
 """
 
 
-class MachineView(Adw.Dialog):
+class MachineView(Adw.Dialog):  # with Adw 1.6 we should switch to BottomSheet
     notification_requested = Signal()
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
         self.set_presentation_mode(Adw.DialogPresentationMode.BOTTOM_SHEET)
         self.set_title(_("Machine Log"))
 
@@ -44,10 +44,10 @@ class MachineView(Adw.Dialog):
             css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_min_content_height(400)
-        scrolled_window.set_child(self.terminal)
-        box.append(scrolled_window)
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.set_min_content_height(600)
+        self.scrolled_window.set_child(self.terminal)
+        box.append(self.scrolled_window)
 
         self.save_log_button = Gtk.Button.new_with_label(_("Save Debug Log"))
         self.save_log_button.set_icon_name("document-save-symbolic")
@@ -70,7 +70,8 @@ class MachineView(Adw.Dialog):
                 self.on_connection_status_changed
             )
 
-        self.set_size_request(900, -1)
+        parent_width = parent.get_allocated_width()
+        self.set_size_request(max(100, parent_width - 24), -1)
         self.set_follows_content_size(True)
 
     def _populate_history(self):
@@ -81,6 +82,7 @@ class MachineView(Adw.Dialog):
             for entry in log_snapshot
         ]
         text_buffer.set_text("".join(formatted_lines))
+        # Always scroll to the bottom on initial population
         GLib.idle_add(self._scroll_to_bottom)
 
     def _format_log_entry_for_terminal(self, entry: LogEntry) -> str:
@@ -106,12 +108,26 @@ class MachineView(Adw.Dialog):
             f" ({entry.log_type.name}): {data_str}\n"
         )
 
+    def _is_at_bottom(self) -> bool:
+        """Check if the scrolled window is at the bottom."""
+        vadjustment = self.scrolled_window.get_vadjustment()
+        # The maximum value for the adjustment is upper - page_size
+        max_value = vadjustment.get_upper() - vadjustment.get_page_size()
+        # Use a small tolerance to account for floating point inaccuracies
+        return vadjustment.get_value() >= max_value - 1.0
+
     def append_to_terminal(self, data: str):
+        # Check if we should scroll after appending text.
+        # This is true if the user is already at the bottom.
+        should_autoscroll = self._is_at_bottom()
+
         timestamp = datetime.now().strftime("%x %X")
         formatted_message = f"[{timestamp}] {data}\n"
         text_buffer = self.terminal.get_buffer()
         text_buffer.insert(text_buffer.get_end_iter(), formatted_message)
-        GLib.idle_add(self._scroll_to_bottom)
+
+        if should_autoscroll:
+            GLib.idle_add(self._scroll_to_bottom)
 
     def _scroll_to_bottom(self):
         text_buffer = self.terminal.get_buffer()

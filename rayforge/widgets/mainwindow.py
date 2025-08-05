@@ -130,7 +130,7 @@ class MainWindow(Adw.ApplicationWindow):
         if monitor:
             geometry = monitor.get_geometry()
             self.set_default_size(
-                int(geometry.width * 0.6), int(geometry.height * 0.6)
+                int(geometry.width * 0.8), int(geometry.height * 0.8)
             )
         else:
             self.set_default_size(1100, 800)
@@ -926,7 +926,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present(self)
 
     def on_status_bar_clicked(self, gesture, n_press, x, y, box):
-        dialog = MachineView()
+        dialog = MachineView(self)
         dialog.notification_requested.connect(self._on_dialog_notification)
         dialog.present(self)
 
