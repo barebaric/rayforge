@@ -12,6 +12,7 @@ from ...undo import (
 
 
 logger = logging.getLogger(__name__)
+default_dim = 100, 100
 
 
 class WorkpiecePropertiesWidget(Expander):
@@ -166,7 +167,7 @@ class WorkpiecePropertiesWidget(Expander):
         This method operates on canonical Y-up coordinates.
         """
         new_width, new_height = new_size
-        bounds = config.machine.dimensions
+        bounds = config.machine.dimensions if config.machine else default_dim
         old_pos = workpiece.pos or (0, 0)
         old_w, old_h = (
             workpiece.get_current_size()
@@ -387,9 +388,9 @@ class WorkpiecePropertiesWidget(Expander):
         if not doc:
             return False
 
+        bounds = config.machine.dimensions if config.machine else default_dim
         with doc.history_manager.transaction(_("Reset workpiece size")) as t:
             for workpiece in self.workpieces:
-                bounds = config.machine.dimensions
                 old_size = workpiece.size
                 natural_width, natural_height = workpiece.get_default_size(
                     *bounds
@@ -481,7 +482,8 @@ class WorkpiecePropertiesWidget(Expander):
         workpiece = self.workpieces[0]
 
         self._in_update = True
-        bounds = config.machine.dimensions
+        bounds = config.machine.dimensions if config.machine else default_dim
+        y_axis_down = config.machine.y_axis_down if config.machine else False
         size = (
             workpiece.get_current_size()
             or workpiece.get_default_size(*bounds)
@@ -490,7 +492,7 @@ class WorkpiecePropertiesWidget(Expander):
         angle = workpiece.angle
 
         # Update Y-axis label to reflect coordinate system
-        if config.machine.y_axis_down:
+        if y_axis_down:
             self.y_row.set_subtitle(_("Zero is at the top"))
         else:
             self.y_row.set_subtitle(_("Zero is at the bottom"))

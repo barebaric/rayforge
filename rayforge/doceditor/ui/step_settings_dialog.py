@@ -25,6 +25,15 @@ class StepSettingsDialog(Adw.Window):
         self._debounced_callback = None
         self._debounced_args: Tuple = ()
 
+        # Safely get machine properties with sensible fallbacks
+        if config.machine:
+            max_cut_speed = config.machine.max_cut_speed
+            max_travel_speed = config.machine.max_travel_speed
+        else:
+            # Provide sensible defaults if no machine is configured
+            max_cut_speed = 3000  # mm/min
+            max_travel_speed = 3000  # mm/min
+
         # Create a vertical box to hold the header bar and the content
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(main_box)
@@ -92,14 +101,14 @@ class StepSettingsDialog(Adw.Window):
         # Add a spin row for cut speed
         cut_speed_adjustment = Gtk.Adjustment(
             lower=0,
-            upper=config.machine.max_cut_speed,
+            upper=max_cut_speed,
             step_increment=1,
             page_increment=100,
         )
         cut_speed_row = Adw.SpinRow(
             title=_("Cut Speed (mm/min)"),
             subtitle=_("Max: {max_cut_speed} mm/min").format(
-                max_cut_speed=config.machine.max_cut_speed
+                max_cut_speed=max_cut_speed
             ),
             adjustment=cut_speed_adjustment,
         )
@@ -110,14 +119,14 @@ class StepSettingsDialog(Adw.Window):
         # Add a spin row for travel speed
         travel_speed_adjustment = Gtk.Adjustment(
             lower=0,
-            upper=config.machine.max_travel_speed,
+            upper=max_travel_speed,
             step_increment=1,
             page_increment=100,
         )
         travel_speed_row = Adw.SpinRow(
             title=_("Travel Speed (mm/min)"),
             subtitle=_("Max: {max_travel_speed} mm/min").format(
-                max_travel_speed=config.machine.max_travel_speed
+                max_travel_speed=max_travel_speed
             ),
             adjustment=travel_speed_adjustment,
         )
