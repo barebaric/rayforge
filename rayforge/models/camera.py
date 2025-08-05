@@ -49,7 +49,7 @@ class Camera:
         self._active_subscribers: int = 0
         self._contrast: float = 50.0
         self._brightness: float = 0.0  # Default brightness (0 = no change)
-        self._transparency: float = 1.0  # Default transparency (1.0 = opaque)
+        self._transparency: float = 0.2
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
 
