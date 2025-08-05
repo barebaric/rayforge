@@ -41,39 +41,64 @@ class AxisRenderer:
     def _get_content_layout(self) -> Tuple[float, float, float, float]:
         """
         A centralized helper to calculate the content area's rectangle in
-        unzoomed widget pixels. This is the single source of truth for layout.
+        unzoomed widget pixels, ensuring it respects the mm aspect ratio.
+        This is the single source of truth for layout.
 
         Returns:
             A tuple of (content_x, content_y, content_width, content_height).
         """
+        # 1. Calculate space needed for axes and labels.
         x_axis_space = float(self.get_x_axis_height())
         y_axis_space = float(self.get_y_axis_width())
-        right_padding = math.ceil(y_axis_space / 2)
 
-        content_x = y_axis_space
-        content_width = float(self.width_px) - y_axis_space - right_padding
+        # Define paddings based on original logic.
+        left_padding = y_axis_space
+        right_padding = math.ceil(y_axis_space / 2)
+        total_horiz_padding = left_padding + right_padding
 
         if self.y_axis_down:
-            # The X-axis and its labels are at the top.
-            content_y = x_axis_space
-            # The content height is everything below the top axis space.
-            content_height = float(self.height_px) - x_axis_space
-        else:
-            # The X-axis is at the bottom. Keep the original small top padding.
+            top_padding = x_axis_space
+            bottom_padding = 0  # Original logic had no bottom padding.
+        else:  # Y-up
             top_padding = math.ceil(x_axis_space / 2)
-            content_y = top_padding
-            # Content height is total minus top padding and bottom axis space.
-            content_height = (
-                float(self.height_px) - x_axis_space - top_padding
-            )
+            bottom_padding = x_axis_space
+        total_vert_padding = top_padding + bottom_padding
 
-        if content_width < 0 or content_height < 0:
+        # 2. Determine the available drawing area after subtracting padding.
+        available_width = float(self.width_px) - total_horiz_padding
+        available_height = float(self.height_px) - total_vert_padding
+
+        if available_width <= 0 or available_height <= 0:
             logger.warning(
-                "Content area dimensions are negative; "
+                "Available drawing area is non-positive; "
                 "canvas may be too small."
             )
-            content_width = max(0.0, content_width)
-            content_height = max(0.0, content_height)
+            return left_padding, top_padding, 0.0, 0.0
+
+        # 3. Calculate the target aspect ratio from mm dimensions.
+        if self.width_mm <= 0 or self.height_mm <= 0:
+            return left_padding, top_padding, available_width, available_height
+
+        world_aspect_ratio = self.width_mm / self.height_mm
+
+        # 4. Calculate content dimensions that fit and match aspect ratio.
+        available_aspect_ratio = available_width / available_height
+
+        if available_aspect_ratio > world_aspect_ratio:
+            # Available area is wider than needed. Height is the constraint.
+            content_height = available_height
+            content_width = content_height * world_aspect_ratio
+        else:
+            # Available area is taller than needed. Width is the constraint.
+            content_width = available_width
+            content_height = content_width / world_aspect_ratio
+
+        # 5. Center the content area within the available space.
+        x_offset = (available_width - content_width) / 2
+        y_offset = (available_height - content_height) / 2
+
+        content_x = left_padding + x_offset
+        content_y = top_padding + y_offset
 
         return content_x, content_y, content_width, content_height
 
@@ -263,35 +288,27 @@ class AxisRenderer:
 
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
-        max_height = 0
+        # The height of numeric labels is generally constant for a given font.
+        # We can measure a representative character like "8", which usually has
+        # the maximum height among digits.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
 
-        for x_mm in range(
-            0,
-            int(self.width_mm) + int(self.grid_size_mm),
-            int(self.grid_size_mm),
-        ):
-            if x_mm == 0:
-                continue
-            extents = ctx.text_extents(f"{x_mm}")
-            max_height = max(max_height, extents.height)
-        return math.ceil(max_height) + 4  # adding some margin
+        extents = ctx.text_extents("8")
+        return math.ceil(extents.height) + 4  # adding some margin
 
     def get_y_axis_width(self) -> int:
         """Calculates the maximum width of the Y-axis labels."""
-        max_width = 0
+        # The maximum width is determined by the label with the most digits,
+        # which corresponds to the largest coordinate value.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
 
-        for y_mm in range(
-            0,
-            int(self.height_mm) + int(self.grid_size_mm),
-            int(self.grid_size_mm),
-        ):
-            extents = ctx.text_extents(f"{y_mm:.0f}")
-            max_width = max(max_width, extents.width)
-        return math.ceil(max_width) + 4  # adding some margin
+        # The widest label on the Y-axis will be for the largest coordinate.
+        max_y_label = f"{self.height_mm:.0f}"
+        extents = ctx.text_extents(max_y_label)
+
+        return math.ceil(extents.width) + 4  # adding some margin
 
     def set_width_px(self, width_px: int):
         self.width_px = width_px
