@@ -84,7 +84,15 @@ class VarSet:
         """Removes all Var objects from the set."""
         self._vars.clear()
 
+    def validate(self):
+        """
+        Validates all Var objects in the set.
+
+        Raises:
+            ValidationError: On the first validation failure.
+        """
+        for var in self:
+            var.validate()
+
     def __repr__(self) -> str:
-        return (
-            f"VarSet(title='{self.title}', count={len(self)})"
-        )
+        return f"VarSet(title='{self.title}', count={len(self)})"

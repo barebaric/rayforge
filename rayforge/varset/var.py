@@ -4,6 +4,12 @@ from typing import Optional, Type, Callable, Generic, TypeVar
 T = TypeVar("T")
 
 
+class ValidationError(ValueError):
+    """Custom exception for validation failures in Var."""
+
+    pass
+
+
 class Var(Generic[T]):
     """
     Represents a single typed variable with metadata for UI generation,
@@ -18,7 +24,7 @@ class Var(Generic[T]):
         description: Optional[str] = None,
         default: Optional[T] = None,
         value: Optional[T] = None,
-        validator: Optional[Callable[[T], None]] = None,
+        validator: Optional[Callable[[Optional[T]], None]] = None,
     ):
         """
         Initializes a new Var instance.
@@ -44,6 +50,26 @@ class Var(Generic[T]):
         # Set initial value, preferring explicit `value` over `default`.
         self.value = value if value is not None else default
 
+    def validate(self) -> None:
+        """
+        Runs the validator on the current value.
+
+        Raises:
+            ValidationError: If validation fails.
+        """
+        if self.validator:
+            try:
+                # The validator receives self._value which might be None.
+                # It's the validator's job to handle this.
+                self.validator(self._value)
+            except ValidationError:
+                raise
+            except Exception as e:
+                raise ValidationError(
+                    f"Validation failed for key '{self.key}' with value "
+                    f"'{self._value}': {e}"
+                ) from e
+
     @property
     def value(self) -> Optional[T]:
         """The current value of the variable."""
@@ -51,11 +77,16 @@ class Var(Generic[T]):
 
     @value.setter
     def value(self, new_value: Optional[T]):
+        """
+        Sets the variable's value, coercing it to the correct type.
+        Validation is now handled exclusively by the `validate()` method.
+        """
+        # 1. Coerce value if not None
+        value: Optional[T]
         if new_value is None:
             self._value = None
             return
 
-        value: T
         try:
             if self.var_type is int:
                 # We coerce via float() to handle strings, floats, and ints.
@@ -83,19 +114,11 @@ class Var(Generic[T]):
                 value = self.var_type(new_value)  # type: ignore[call-arg]
         except (ValueError, TypeError) as e:
             raise TypeError(
-                f"Value '{new_value}' for key '{self.key}' cannot be coerced "
-                f"to type {self.var_type.__name__}"
+                f"Value '{new_value}' for key '{self.key}' cannot be "
+                f"coerced to type {self.var_type.__name__}"
             ) from e
 
-        if self.validator:
-            try:
-                self.validator(value)
-            except Exception as e:
-                raise ValueError(
-                    f"Validation failed for key '{self.key}' with value "
-                    f"'{value}': {e}"
-                ) from e
-
+        # 2. Assign the coerced value. Validation is NOT performed here.
         self._value = value
 
     def to_dict(self):

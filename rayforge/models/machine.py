@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
 from ..tasker import task_mgr
+from ..varset import ValidationError
 from ..driver.driver import driver_mgr, Driver, DeviceConnectionError
 from .camera import Camera
 from .laser import Laser
@@ -138,6 +139,40 @@ class Machine:
             if head.frame_power:
                 return True
         return False
+
+    def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
+        """
+        Validates the machine's driver arguments against the driver's setup
+        VarSet.
+
+        Returns:
+            A tuple of (is_valid, error_message).
+        """
+        # Local import to prevent circular dependency
+        from ..driver import get_driver_cls
+
+        if not self.driver:
+            return False, _("No driver selected for this machine.")
+
+        driver_cls = get_driver_cls(self.driver)
+        if not driver_cls:
+            return False, _("Driver '{driver}' not found.").format(
+                driver=self.driver
+            )
+
+        try:
+            setup_vars = driver_cls.get_setup_vars()
+            setup_vars.set_values(self.driver_args)
+            setup_vars.validate()
+        except ValidationError as e:
+            return False, str(e)
+        except Exception as e:
+            # Catch other potential errors during var setup
+            return False, _(
+                "An unexpected error occurred during validation: {error}"
+            ).format(error=str(e))
+
+        return True, None
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""

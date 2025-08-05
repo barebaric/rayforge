@@ -2,7 +2,8 @@ import logging
 from typing import List
 from gi.repository import Gtk, Adw, GLib, Gdk  # type: ignore
 from blinker import Signal
-from ..driver.driver import driver_mgr
+from ..config import config
+from ..driver import get_driver_cls
 from ..varset.varsetwidget import VarSetWidget, VarSet
 
 logger = logging.getLogger(__name__)
@@ -51,13 +52,22 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self.header_box.append(self.read_button)
         self.main_group.set_header_suffix(self.header_box)
 
-        # Add all notifications into the main group
+        # Banners
         self.unsupported_banner = Adw.Banner(
             title=_(
                 "The current driver does not support reading device settings."
             )
         )
         self.main_group.add(self.unsupported_banner)
+
+        self.not_connected_banner = Adw.Banner(
+            title=_("This machine is not active."),
+            button_label=_("Activate Machine"),
+        )
+        self.not_connected_banner.connect(
+            "button-clicked", self._on_activate_clicked
+        )
+        self.main_group.add(self.not_connected_banner)
 
         # Error row with copy and close buttons
         self.error_row = Adw.ActionRow(use_markup=True, activatable=False)
@@ -123,7 +133,8 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self.add(self.prompt_group)
 
         # Signal Connections & Initial State
-        driver_mgr.changed.connect(self.on_driver_changed)
+        self.machine.changed.connect(self._on_machine_config_changed)
+        config.changed.connect(self._on_machine_config_changed)
         self.machine.firmware_settings_updated.connect(
             self._on_settings_op_success
         )
@@ -136,7 +147,8 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
     def on_destroy(self, _widget):
         logger.debug("on_destroy: Disconnecting signals.")
-        driver_mgr.changed.disconnect(self.on_driver_changed)
+        self.machine.changed.disconnect(self._on_machine_config_changed)
+        config.changed.disconnect(self._on_machine_config_changed)
         self.machine.firmware_settings_updated.disconnect(
             self._on_settings_op_success
         )
@@ -145,8 +157,8 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         if self._error_timeout_id > 0:
             GLib.source_remove(self._error_timeout_id)
 
-    def on_driver_changed(self, sender, driver):
-        logger.debug("on_driver_changed: Rebuilding UI.")
+    def _on_machine_config_changed(self, sender, **kwargs):
+        logger.debug("_on_machine_config_changed: Rebuilding UI.")
         for widget in self._varset_widgets:
             self.remove(widget)
         self._varset_widgets.clear()
@@ -175,30 +187,41 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
     def _update_ui_state(self):
         logger.debug(f"_update_ui_state: Starting (is_busy={self._is_busy}).")
-        driver = driver_mgr.driver
-        is_supported = driver is not None and driver.supports_settings
-        has_settings_to_show = is_supported and len(self._varset_widgets) > 0
+        driver_cls = (
+            get_driver_cls(self.machine.driver)
+            if self.machine.driver
+            else None
+        )
+        is_supported = driver_cls is not None and driver_cls.supports_settings
+
+        active_machine = config.machine
+        is_active = active_machine and self.machine.id == active_machine.id
+
+        can_interact = is_supported and is_active
+        has_settings_to_show = can_interact and len(self._varset_widgets) > 0
+
+        # Control banners
+        self.unsupported_banner.set_revealed(not is_supported)
+        self.not_connected_banner.set_revealed(is_supported and not is_active)
 
         # Control the state of the single main group
-        if is_supported:
-            self.main_group.set_title(self._main_group_title)
-            self.main_group.set_description(self._main_group_desc)
-            self.header_box.set_visible(True)
-            self.unsupported_banner.set_revealed(False)
-            for row in self._warning_rows:
-                row.set_visible(row not in self._dismissed_warnings)
-        else:
-            self.main_group.set_title("")
-            self.main_group.set_description("")
-            self.header_box.set_visible(False)
-            self.unsupported_banner.set_revealed(True)
-            for row in self._warning_rows:
-                row.set_visible(False)
+        self.main_group.set_title(
+            self._main_group_title if can_interact else ""
+        )
+        self.main_group.set_description(
+            self._main_group_desc if can_interact else ""
+        )
+        self.header_box.set_visible(can_interact)
+
+        for row in self._warning_rows:
+            row.set_visible(
+                can_interact and row not in self._dismissed_warnings
+            )
 
         has_error = self._current_error is not None
         self.error_row.set_visible(has_error)
         if has_error:
-            self.error_row.set_title(_("Connection failed"))
+            self.error_row.set_title(_("Operation failed"))
             self.error_row.set_subtitle(self._current_error or "")
 
         # The main group is visible if any of its contents are.
@@ -207,6 +230,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         )
         self.main_group.set_visible(
             self.unsupported_banner.get_revealed()
+            or self.not_connected_banner.get_revealed()
             or self.error_row.get_visible()
             or is_any_warning_visible
             or has_settings_to_show
@@ -218,7 +242,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
         # Control visibility of prompt group
         show_prompt = (
-            is_supported
+            can_interact
             and not has_settings_to_show
             and not self._is_busy
             and not has_error
@@ -230,7 +254,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
             self.read_button.set_sensitive(False)
         else:
             self.spinner.stop()
-            self.read_button.set_sensitive(True)
+            self.read_button.set_sensitive(is_active)
         logger.debug("_update_ui_state: Finished.")
 
     def _on_settings_op_success(self, sender, var_sets: List[VarSet]):
@@ -317,6 +341,12 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
             provider = Gdk.ContentProvider.new_for_value(self._current_error)
             clipboard.set_content(provider)
 
+    def _on_activate_clicked(self, _banner):
+        """Handler for the 'Activate Machine' button."""
+        logger.debug(f"Activating machine: {self.machine.name}")
+        config.set_machine(self.machine)
+        self.show_toast.send(self, message=_("Machine activated."))
+
     def _on_error_timeout(self):
         self._clear_error_state()
         self._update_ui_state()
@@ -329,6 +359,12 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self._current_error = None
 
     def _show_error(self, error_message: str):
+        # Do not show a red error row for the "not active" state, as it's
+        # handled by the `not_connected_banner`.
+        if _("Machine is not active") in error_message:
+            logger.debug("Ignoring 'not active' error for error row display.")
+            return
+
         logger.debug(f"_show_error: Displaying '{error_message}'.")
         self._clear_error_state()
         self._current_error = error_message

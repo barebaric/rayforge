@@ -7,6 +7,7 @@ from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..debug import debug_log_manager, LogType
+from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
     Driver,
     DeviceStatus,
@@ -15,8 +16,7 @@ from .driver import (
     DriverSetupError,
     DeviceConnectionError,
 )
-from .util import Hostname, is_valid_hostname_or_ip
-from ..varset import Var, VarSet
+from ..varset import VarSet, HostnameVar
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
@@ -94,10 +94,9 @@ class GrblDriver(Driver):
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
-                Var(
+                HostnameVar(
                     key="host",
                     label=_("Hostname"),
-                    var_type=Hostname,
                     description=_("The IP address or hostname of the device"),
                 )
             ]
@@ -107,7 +106,7 @@ class GrblDriver(Driver):
         return [VarSet()]
 
     def setup(self, **kwargs: Any):
-        host = cast(Hostname, kwargs.get("host", ""))
+        host = cast(str, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverSetupError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)

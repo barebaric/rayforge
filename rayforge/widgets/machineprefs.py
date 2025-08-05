@@ -1,5 +1,5 @@
 from gi.repository import Adw, Gtk  # type: ignore
-from ..config import machine_mgr
+from ..config import machine_mgr, config
 from ..models.machine import Machine
 from ..models.machineprofile import MachineProfile
 from .machinesettings import MachineSettingsDialog
@@ -41,6 +41,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         machine_mgr.machine_added.connect(self._on_machine_list_changed)
         machine_mgr.machine_removed.connect(self._on_machine_list_changed)
         machine_mgr.machine_updated.connect(self._on_machine_list_changed)
+        config.changed.connect(self._on_machine_list_changed)
 
     def _populate_machines_list(self):
         """Clears and rebuilds the rows within the ListBox."""
@@ -50,9 +51,35 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         sorted_machines = sorted(
             machine_mgr.machines.values(), key=lambda m: m.name.lower()
         )
+        active_machine_id = config.machine.id if config.machine else None
 
         for machine in sorted_machines:
-            row = Adw.ActionRow(title=machine.name, subtitle=machine.id)
+            row = Adw.ActionRow(title=machine.name)
+
+            # Use a box to hold an icon, ensuring consistent row alignment.
+            icon_placeholder = Gtk.Box()
+            icon_placeholder.set_valign(Gtk.Align.CENTER)
+            icon_placeholder.set_size_request(24, -1)
+            row.add_prefix(icon_placeholder)
+
+            is_valid, error_msg = machine.validate_driver_setup()
+
+            if not is_valid:
+                icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+                icon.get_style_context().add_class("warning")
+                tooltip = error_msg or _(
+                    "This machine has an invalid configuration."
+                )
+                icon.set_tooltip_text(tooltip)
+                icon_placeholder.append(icon)
+                row.set_subtitle(tooltip)
+            elif machine.id == active_machine_id:
+                icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
+                icon.set_tooltip_text(_("This is the active machine."))
+                icon_placeholder.append(icon)
+                row.set_subtitle(machine.id)
+            else:
+                row.set_subtitle(machine.id)
 
             buttons_box = Gtk.Box(spacing=6)
             row.add_suffix(buttons_box)
@@ -78,7 +105,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
 
             self.machine_list_box.append(row)
 
-    def _on_machine_list_changed(self, sender, machine_id, **kwargs):
+    def _on_machine_list_changed(self, sender, **kwargs):
         """Handler to rebuild the list when machines change."""
         self._populate_machines_list()
 
@@ -122,9 +149,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         dialog.profile_selected.connect(self._on_profile_selected_for_add)
         dialog.present()
 
-    def _on_profile_selected_for_add(
-        self, sender, *, profile: MachineProfile
-    ):
+    def _on_profile_selected_for_add(self, sender, *, profile: MachineProfile):
         """Creates a machine and opens its settings editor."""
         new_machine = profile.create_machine()
         machine_mgr.add_machine(new_machine)

@@ -5,11 +5,10 @@ from typing import Optional, Any, List, cast, TYPE_CHECKING
 
 from .driver import Driver, DriverSetupError
 from ..transport import TransportStatus, SerialTransport
-from ..transport.serial import SerialPort
 from ..opsencoder.gcode import GcodeEncoder
 from ..models.ops import Ops
 from ..debug import debug_log_manager, LogType
-from ..varset import Var, VarSet
+from ..varset import Var, VarSet, SerialPortVar, IntVar
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -45,24 +44,23 @@ class GrblNextSerialDriver(Driver):
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
-                Var(
+                SerialPortVar(
                     key="port",
                     label=_("Port"),
-                    var_type=SerialPort,
                     description=_("Serial port for the device"),
                 ),
-                Var(
+                IntVar(
                     key="baudrate",
                     label=_("Baud Rate"),
-                    var_type=int,
                     description=_("Connection speed in bits per second"),
                     default=115200,
+                    min_val=1,
                 ),
             ]
         )
 
     def setup(self, **kwargs: Any):
-        port = cast(SerialPort, kwargs.get("port", ""))
+        port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
 
         if not port:

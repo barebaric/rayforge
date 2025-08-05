@@ -3,8 +3,10 @@ import logging
 from gi.repository import Gtk, Adw  # type: ignore
 from blinker import Signal
 from ..util.adwfix import get_spinrow_int
-from ..transport.serial import SerialPort, SerialTransport
-from ..driver.util import Hostname, is_valid_hostname_or_ip
+from ..transport.serial import SerialTransport
+from ..transport.validators import is_valid_hostname_or_ip
+from .hostnamevar import HostnameVar
+from .serialportvar import SerialPortVar
 from .var import Var
 from .varset import VarSet
 
@@ -82,12 +84,13 @@ class VarSetWidget(Adw.PreferencesGroup):
         self.data_changed.send(self, key=key)
 
     def _create_row_for_var(self, var: Var):
-        var_type = var.var_type
-        if var_type is SerialPort:
+        if isinstance(var, SerialPortVar):
             return self._create_port_selection_row(var)
-        elif var_type is Hostname:
+        if isinstance(var, HostnameVar):
             return self._create_hostname_row(var)
-        elif var_type is str:
+
+        var_type = var.var_type
+        if var_type is str:
             return self._create_string_row(var)
         elif var_type is bool:
             return self._create_boolean_row(var)
@@ -109,7 +112,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         apply_button.connect("clicked", lambda b: self._on_data_changed(key))
         row.add_suffix(apply_button)
 
-    def _create_hostname_row(self, var: Var[Hostname]):
+    def _create_hostname_row(self, var: HostnameVar):
         row = Adw.EntryRow(title=var.label)
         if var.description:
             row.set_tooltip_text(var.description)
@@ -120,7 +123,7 @@ class VarSetWidget(Adw.PreferencesGroup):
 
         def on_validate(entry_row):
             text = entry_row.get_text()
-            if is_valid_hostname_or_ip(text) or not text:
+            if is_valid_hostname_or_ip(text):
                 entry_row.remove_css_class("error")
             else:
                 entry_row.add_css_class("error")
@@ -190,7 +193,7 @@ class VarSetWidget(Adw.PreferencesGroup):
             self._add_apply_button_if_needed(row, var.key)
         return row
 
-    def _create_port_selection_row(self, var: Var[SerialPort]):
+    def _create_port_selection_row(self, var: SerialPortVar):
         ports = sorted(SerialTransport.list_ports(), key=natural_sort_key)
         choices = [NULL_CHOICE_LABEL] + ports
         store = Gtk.StringList.new(choices)

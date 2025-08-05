@@ -5,9 +5,8 @@ from ..models.ops import Ops
 from ..transport import TelnetTransport, TransportStatus
 from ..debug import debug_log_manager, LogType
 from .driver import Driver, DeviceStatus, DriverSetupError
-from .util import Hostname, is_valid_hostname_or_ip
 from .grbl import _parse_state
-from ..varset import Var, VarSet
+from ..varset import VarSet, HostnameVar, IntVar
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
@@ -33,18 +32,18 @@ class SmoothieDriver(Driver):
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
-                Var(
+                HostnameVar(
                     key="host",
                     label=_("Hostname"),
-                    var_type=Hostname,
                     description=_("The IP address or hostname of the device"),
                 ),
-                Var(
+                IntVar(
                     key="port",
                     label=_("Port"),
-                    var_type=int,
                     description=_("The Telnet port number"),
                     default=23,
+                    min_val=1,
+                    max_val=65535,
                 ),
             ]
         )
@@ -53,10 +52,10 @@ class SmoothieDriver(Driver):
         return [VarSet()]
 
     def setup(self, **kwargs: Any):
-        host = cast(Hostname, kwargs.get("host", ""))
+        host = cast(str, kwargs.get("host", ""))
         port = kwargs.get("port", 23)
 
-        if not is_valid_hostname_or_ip(host):
+        if not host:
             raise DriverSetupError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
             )
