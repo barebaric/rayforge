@@ -9,7 +9,7 @@ from .shared.tasker import task_mgr
 from .shared.tasker.context import ExecutionContext
 from .config import config, machine_mgr
 from .machine.driver import get_driver_cls
-from .machine.driver.driver import driver_mgr, DeviceStatus
+from .machine.driver.driver import driver_mgr, DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .icons import get_icon
 from .machine.models.machine import Machine
@@ -22,15 +22,11 @@ from .undo.models.list_cmd import ListItemCommand, ReorderListCommand
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
-from .shared.ui.status_view import (
-    ConnectionStatusMonitor,
-    TransportStatus,
-    MachineStatusMonitor,
-)
+from .machine.transport import TransportStatus
+from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
 from .shared.ui.preferences_dialog import PreferencesWindow
 from .machine.ui.settings_dialog import MachineSettingsDialog
-from .shared.ui.progress_bar import ProgressBar
 from .doceditor.ui.workpiece_properties import WorkpiecePropertiesWidget
 from .workbench.canvas import CanvasElement
 from .undo.ui.undo_button import UndoButton, RedoButton
@@ -90,6 +86,7 @@ class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(_("Rayforge"))
+        self._current_machine: Optional[Machine] = None  # For signal handling
 
         # The main content box
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -404,41 +401,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.paste_requested.connect(self.on_paste_requested)
         self.surface.duplicate_requested.connect(self.on_duplicate_requested)
 
-        # Create a two-row progress and status widget.
-        self.progress_widget = ProgressBar(task_mgr)
-        self.progress_widget.add_css_class("statusbar")
-        vbox.append(self.progress_widget)
-
-        # Get the top row of the widget to add status monitors to it.
-        status_row = self.progress_widget.status_box
-        status_row.set_margin_start(12)
-        status_row.set_margin_end(12)
-
-        # Monitor machine status
-        label = Gtk.Label()
-        label.set_markup(_("<b>Machine status:</b>"))
-        status_row.append(label)
-
-        self.machine_status = MachineStatusMonitor()
-        status_row.append(self.machine_status)
-        self.machine_status.changed.connect(self.on_machine_status_changed)
-
-        # Monitor connection status
-        label = Gtk.Label()
-        label.set_markup(_("<b>Connection status:</b>"))
-        label.set_margin_start(12)
-        status_row.append(label)
-
-        self.connection_status = ConnectionStatusMonitor()
-        status_row.append(self.connection_status)
-        self.connection_status.changed.connect(
-            self.on_connection_status_changed
-        )
-
-        # Open machine log if the status row is clicked.
-        gesture = Gtk.GestureClick()
-        gesture.connect("pressed", self.on_status_bar_clicked, status_row)
-        status_row.add_controller(gesture)
+        # Create and add the status monitor widget.
+        self.status_monitor = TaskBar(task_mgr)
+        self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
+        vbox.append(self.status_monitor)
 
         # Set up driver and config signals.
         self._try_driver_setup()
@@ -713,19 +679,21 @@ class MainWindow(Adw.ApplicationWindow):
     def on_driver_changed(self, sender, driver):
         self.update_state()
 
-    def on_machine_status_changed(self, sender):
+    def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
+        """Called when the active machine's state changes."""
         # If the machine is idle for the first time, perform auto-homing
         # if requested.
         if self.needs_homing and driver_mgr.driver:
-            device_status = self.machine_status.get_status()
-            if device_status == DeviceStatus.IDLE:
+            if state.status == DeviceStatus.IDLE:
                 self.needs_homing = False
                 driver = driver_mgr.driver
                 task_mgr.add_coroutine(lambda ctx: driver.home())
-
         self.update_state()
 
-    def on_connection_status_changed(self, sender):
+    def _on_connection_status_changed(
+        self, machine: Machine, status: TransportStatus, message: str
+    ):
+        """Called when the active machine's connection status changes."""
         self.update_state()
 
     def on_history_changed(self, history_manager):
@@ -777,6 +745,32 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def on_config_changed(self, sender, **kwargs):
+        # Disconnect from the previously active machine, if any
+        if self._current_machine:
+            try:
+                self._current_machine.state_changed.disconnect(
+                    self._on_machine_status_changed
+                )
+                self._current_machine.connection_status_changed.disconnect(
+                    self._on_connection_status_changed
+                )
+            except TypeError:
+                pass  # Was not connected
+
+        self._current_machine = config.machine
+
+        # Connect to the new active machine's signals
+        if self._current_machine:
+            self._current_machine.state_changed.connect(
+                self._on_machine_status_changed
+            )
+            self._current_machine.connection_status_changed.connect(
+                self._on_connection_status_changed
+            )
+
+        # Update the status monitor to observe the new machine
+        self.status_monitor.set_machine(config.machine)
+
         if config.machine:
             self.surface.set_machine(config.machine)
             width_mm, height_mm = config.machine.dimensions
@@ -812,7 +806,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def update_state(self):
-        device_status = self.machine_status.get_status()
+        if config.machine:
+            device_status = config.machine.device_state.status
+            conn_status = config.machine.connection_status
+            state = config.machine.device_state
+        else:
+            device_status = DeviceStatus.UNKNOWN
+            conn_status = TransportStatus.DISCONNECTED
+            state = None
+
         has_tasks = len(task_mgr._tasks) > 0
         can_export = (
             self.doc.has_workpiece()
@@ -873,7 +875,6 @@ class MainWindow(Adw.ApplicationWindow):
             else _("Cycle laser head around the occupied area")
         )
 
-        conn_status = self.connection_status.get_status()
         send_sensitive = True
         send_tooltip = _("Send to machine")
         if driver_mgr.driver.__class__ is NoDeviceDriver:
@@ -910,7 +911,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Laser dot
         connected = conn_status == TransportStatus.CONNECTED
         self.surface.set_laser_dot_visible(connected)
-        state = self.machine_status.state
         if not state:
             return
         x, y = state.machine_pos[:2]
@@ -926,7 +926,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = MachineSettingsDialog(machine=current_machine)
         dialog.present(self)
 
-    def on_status_bar_clicked(self, gesture, n_press, x, y, box):
+    def on_status_bar_clicked(self, sender):
         dialog = MachineLogDialog(self)
         dialog.notification_requested.connect(self._on_dialog_notification)
         dialog.present(self)

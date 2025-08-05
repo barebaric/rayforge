@@ -8,8 +8,15 @@ from blinker import Signal
 from ...shared.tasker import task_mgr
 from ...shared.varset import ValidationError
 from ...camera.models.camera import Camera
+from ..transport import TransportStatus
+from ..driver.driver import (
+    driver_mgr,
+    Driver,
+    DeviceConnectionError,
+    DeviceState,
+    DeviceStatus,
+)
 from .laser import Laser
-from ..driver.driver import driver_mgr, Driver, DeviceConnectionError
 
 if TYPE_CHECKING:
     from ...shared.varset import VarSet
@@ -41,13 +48,109 @@ class Machine:
         self.y_axis_down: bool = False
         self._settings_lock = asyncio.Lock()
 
+        # Own state tracking
+        self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
+        self.device_state: DeviceState = DeviceState()
+        self._active_driver_ref: Optional[Driver] = None
+
         # Signals
         self.changed = Signal()
         self.settings_error = Signal()
         self.settings_updated = Signal()
         self.setting_applied = Signal()
+        self.connection_status_changed = Signal()
+        self.state_changed = Signal()
 
         self.add_head(Laser())
+
+        driver_mgr.changed.connect(self._track_active_driver)
+        self._track_active_driver(driver_mgr, driver_mgr.driver)
+
+    def _track_active_driver(self, sender, driver: Optional[Driver]):
+        """
+        Monitors the global driver manager and "latches on" to the driver
+        instance that corresponds to this machine's configuration.
+        """
+        # Disconnect from any previously tracked driver.
+        old_driver = self._active_driver_ref
+        self._active_driver_ref = None
+
+        if old_driver:
+            old_driver.connection_status_changed.disconnect(
+                self._on_driver_connection_status_changed
+            )
+            old_driver.state_changed.disconnect(self._on_driver_state_changed)
+
+        if driver is None:
+            return
+
+        # Check if the new driver is the one for this machine.
+        is_my_driver = (
+            driver
+            and not driver.setup_error
+            and driver.__class__.__name__ == self.driver
+        )
+
+        if is_my_driver:
+            self._active_driver_ref = driver
+            driver.connection_status_changed.connect(
+                self._on_driver_connection_status_changed
+            )
+            driver.state_changed.connect(self._on_driver_state_changed)
+
+            # Manually trigger update with the driver's current state.
+            self._on_driver_state_changed(driver, driver.state)
+            # Connection status is only signaled, not stored in the driver.
+            # Assume it's unknown/connecting until a signal is received.
+            if self.connection_status != TransportStatus.CONNECTING:
+                self.connection_status = TransportStatus.CONNECTING
+                self.connection_status_changed.send(
+                    self,
+                    status=self.connection_status,
+                    message="Driver activated",
+                )
+        else:
+            # The active driver is not for this machine, so reset status.
+            self._reset_status()
+
+    def _reset_status(self):
+        """Resets status to a disconnected/unknown state and signals it."""
+        state_actually_changed = (
+            self.device_state.status != DeviceStatus.UNKNOWN
+        )
+        conn_actually_changed = (
+            self.connection_status != TransportStatus.DISCONNECTED
+        )
+
+        self.device_state = DeviceState()  # Defaults to UNKNOWN
+        self.connection_status = TransportStatus.DISCONNECTED
+
+        if state_actually_changed:
+            self.state_changed.send(self, state=self.device_state)
+        if conn_actually_changed:
+            self.connection_status_changed.send(
+                self, status=self.connection_status, message="Driver inactive"
+            )
+
+    def _on_driver_connection_status_changed(
+        self,
+        driver: Driver,
+        status: TransportStatus,
+        message: Optional[str] = None,
+    ):
+        """Proxies the connection status signal from the active driver."""
+        if self.connection_status != status:
+            self.connection_status = status
+            self.connection_status_changed.send(
+                self, status=status, message=message
+            )
+
+    def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
+        """Proxies the state changed signal from the active driver."""
+        # Avoid redundant signals if state hasn't changed.
+        if self.device_state != state:
+            self.device_state = state
+            self.state_changed.send(self, state=state)
 
     def set_name(self, name: str):
         self.name = str(name)
@@ -189,22 +292,12 @@ class Machine:
             key="device-settings-write",
         )
 
-    def _get_active_driver(self) -> Optional[Driver]:
-        """
-        Helper to get the active driver instance, but only if it matches
-        this machine's configured driver type.
-        """
-        driver = driver_mgr.driver
-        if driver and driver.__class__.__name__ == self.driver:
-            return driver
-        return None
-
     def get_setting_vars(self) -> List["VarSet"]:
         """
         Gets the setting definitions from the machine's active driver
         as a VarSet.
         """
-        driver = self._get_active_driver()
+        driver = self._active_driver_ref
         if driver:
             return driver.get_setting_vars()
         return []
@@ -217,7 +310,7 @@ class Machine:
         logger.debug("Machine._read_from_device: Acquiring lock.")
         async with self._settings_lock:
             logger.debug("_read_from_device: Lock acquired.")
-            driver = self._get_active_driver()
+            driver = self._active_driver_ref
             if not driver:
                 err = ConnectionError(
                     "No active driver for this machine to read settings from."
@@ -248,7 +341,7 @@ class Machine:
         It no longer triggers an automatic re-read.
         """
         logger.debug(f"_write_setting_to_device(key={key}): Acquiring lock.")
-        driver = self._get_active_driver()
+        driver = self._active_driver_ref
         if not driver:
             err = ConnectionError(
                 "No active driver for this machine to write settings to."
