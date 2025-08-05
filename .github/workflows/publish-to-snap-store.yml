@@ -38,5 +38,5 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
           snap: ${{ steps.build.outputs.snap }}
-          release: edge
-  
+          # Push to stable and edge on tagged releases, otherwise just edge.
+          release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable,edge' || 'edge' }}
