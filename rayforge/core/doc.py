@@ -1,9 +1,7 @@
-import cairo
 import asyncio
 import logging
 from typing import List, Optional
 from blinker import Signal
-from pathlib import Path
 from ..config import config
 from ..undo import HistoryManager
 from ..shared.tasker.manager import CancelledError
@@ -196,36 +194,3 @@ class Doc:
             context.set_progress(1.0)
             context.flush()
         return final_ops
-
-    def render(
-        self, pixels_per_mm_x: int, pixels_per_mm_y: int
-    ) -> cairo.ImageSurface:
-        """
-        Renders the entire document to a new surface.
-        """
-        surface_width_mm, surface_height_mm = config.machine.dimensions
-        width = int(surface_width_mm * pixels_per_mm_x)
-        height = int(surface_height_mm * pixels_per_mm_y)
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        ctx = cairo.Context(surface)
-
-        for workpiece in self.workpieces:
-            wp_surface = workpiece.render_for_ops(
-                pixels_per_mm_x, pixels_per_mm_y
-            )
-
-            if wp_surface:
-                pos_x_mm, pos_y_mm = workpiece.pos or (0, 0)
-                pos_x = pos_x_mm * pixels_per_mm_x
-                pos_y = pos_y_mm * pixels_per_mm_y
-
-                ctx.set_source_surface(wp_surface, pos_x, pos_y)
-                ctx.paint()
-
-        return surface
-
-    def save_bitmap(
-        self, filename: Path, pixels_per_mm_x: int, pixels_per_mm_y: int
-    ):
-        surface = self.render(pixels_per_mm_x, pixels_per_mm_y)
-        surface.write_to_png(str(filename))

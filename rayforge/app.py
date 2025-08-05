@@ -82,8 +82,6 @@ def main():
             if self.args.filename:
                 mime_type, _ = mimetypes.guess_type(self.args.filename)
                 win.load_file(Path(self.args.filename), mime_type)
-            if self.args.dumpsurface:
-                win.doc.save_bitmap(self.args.dumpsurface, 10, 10)
             win.present()
 
     # Import version for the --version flag.
@@ -101,12 +99,6 @@ def main():
     parser.add_argument(
         "filename",
         help=_("Path to the input SVG or image file."),
-        nargs='?'
-    )
-    parser.add_argument(
-        "--dumpsurface",
-        metavar="FILENAME",
-        help=_("Stores the work surface (no paths) as a PNG image."),
         nargs='?'
     )
     parser.add_argument(
