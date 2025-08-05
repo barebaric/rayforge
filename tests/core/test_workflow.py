@@ -34,7 +34,6 @@ def setup_real_config(mocker):
 
     test_config = TestConfig()
     mocker.patch("rayforge.core.workflow.config", test_config)
-    mocker.patch("rayforge.core.doc.config", test_config)
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
 

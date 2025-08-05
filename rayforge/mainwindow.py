@@ -15,6 +15,7 @@ from .icons import get_icon
 from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.workpiece import WorkPiece
+from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
 from .importer import renderers, renderer_by_mime_type, renderer_by_extension
 from .undo.models.list_cmd import ListItemCommand, ReorderListCommand
@@ -1039,7 +1040,7 @@ class MainWindow(Adw.ApplicationWindow):
                 if not head.frame_power:
                     return
 
-                ops = await self.doc.generate_job_ops(context)
+                ops = await generate_job_ops(self.doc, config.machine, context)
                 frame = ops.get_frame(
                     power=head.frame_power,
                     speed=config.machine.max_travel_speed,
@@ -1063,11 +1064,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         async def send_coro(context: ExecutionContext):
             try:
-                ops = await self.doc.generate_job_ops(context)
-                if not driver_mgr.driver:
-                    raise RuntimeError("No driver configured to send job.")
                 if not config.machine:
                     raise RuntimeError("No machine is configured")
+                ops = await generate_job_ops(self.doc, config.machine, context)
+                if not driver_mgr.driver:
+                    raise RuntimeError("No driver configured to send job.")
                 await driver_mgr.driver.run(ops, config.machine)
             except Exception:
                 logger.error("Failed to send job to machine", exc_info=True)
@@ -1117,7 +1118,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             try:
                 # 1. Generate Ops (async, reports progress)
-                ops = await self.doc.generate_job_ops(context)
+                ops = await generate_job_ops(self.doc, config.machine, context)
 
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message("Encoding G-code...")
