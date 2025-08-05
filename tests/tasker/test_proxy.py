@@ -1,7 +1,7 @@
 import pytest
 from queue import Queue, Full
 from unittest.mock import Mock, call
-from rayforge.tasker.proxy import ExecutionContextProxy
+from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
 
 @pytest.fixture

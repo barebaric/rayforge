@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import Mock
-from rayforge.tasker.context import ExecutionContext
+from rayforge.shared.tasker.context import ExecutionContext
 
 
 @pytest.fixture
 def mock_idle_add(mocker):
     """Mocks the glib.idle_add function."""
-    return mocker.patch("rayforge.tasker.context.idle_add")
+    return mocker.patch("rayforge.shared.tasker.context.idle_add")
 
 
 class ControllableTimer:

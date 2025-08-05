@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch
-from rayforge.varset.var import Var, ValidationError
-from rayforge.varset.intvar import IntVar
-from rayforge.varset.floatvar import FloatVar
-from rayforge.varset.hostnamevar import HostnameVar
-from rayforge.varset.serialportvar import SerialPortVar
+from rayforge.shared.varset.var import Var, ValidationError
+from rayforge.shared.varset.intvar import IntVar
+from rayforge.shared.varset.floatvar import FloatVar
+from rayforge.shared.varset.hostnamevar import HostnameVar
+from rayforge.shared.varset.serialportvar import SerialPortVar
 
 
 class TestVar(unittest.TestCase):
@@ -194,7 +194,7 @@ class TestVar(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "Must be a whole number"):
             v_whole.validate()
 
-    @patch("rayforge.varset.hostnamevar.is_valid_hostname_or_ip")
+    @patch("rayforge.shared.varset.hostnamevar.is_valid_hostname_or_ip")
     def test_hostname_var(self, mock_is_valid):
         mock_is_valid.side_effect = lambda h: h in ["valid.com", "1.2.3.4"]
 

@@ -4,10 +4,10 @@ import time
 from unittest.mock import Mock
 from multiprocessing import get_context
 import pytest
-from rayforge.tasker.manager import TaskManager, CancelledError
-from rayforge.tasker.task import Task
-from rayforge.tasker.context import ExecutionContext
-from rayforge.tasker.proxy import ExecutionContextProxy
+from rayforge.shared.tasker.manager import TaskManager, CancelledError
+from rayforge.shared.tasker.task import Task
+from rayforge.shared.tasker.context import ExecutionContext
+from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
 
 async def simple_coro(
@@ -43,7 +43,7 @@ async def controllable_coro(
 
         # 2. Perform the work for this step
         context.set_progress(i + 1)
-        context.set_message(f"{name} step {i+1}")
+        context.set_message(f"{name} step {i + 1}")
 
         # 3. Signal back to the test (this is a thread-safe call)
         done_events[i].set()
@@ -131,8 +131,12 @@ def patch_idle_add(monkeypatch):
         return callback(*args, **kwargs)
 
     # Patch in both modules where it is imported
-    monkeypatch.setattr("rayforge.tasker.manager.idle_add", mock_idle_add)
-    monkeypatch.setattr("rayforge.tasker.context.idle_add", mock_idle_add)
+    monkeypatch.setattr(
+        "rayforge.shared.tasker.manager.idle_add", mock_idle_add
+    )
+    monkeypatch.setattr(
+        "rayforge.shared.tasker.context.idle_add", mock_idle_add
+    )
 
 
 class ControllableTimer:
@@ -171,7 +175,7 @@ def mock_timer_factory(mocker):
         timers.append(timer)
         return timer
 
-    mocker.patch("rayforge.tasker.context.threading.Timer", factory)
+    mocker.patch("rayforge.shared.tasker.context.threading.Timer", factory)
     return timers
 
 
@@ -251,7 +255,9 @@ class TestCoroutineTasks:
         assert not manager._tasks
 
     def test_task_replacement(self, manager: TaskManager):
-        """Verify that adding a task with an existing key cancels the old one."""
+        """
+        Verify that adding a task with an existing key cancels the old one.
+        """
         first_task_done = threading.Event()
         second_task_done = threading.Event()
         started_event = threading.Event()

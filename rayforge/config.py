@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from typing import Optional
 from platformdirs import user_config_dir
-from .models.machine import MachineManager
-from .models.config import ConfigManager
+from .machine.models.machine import MachineManager
+from .core.config import ConfigManager
 import logging
 
 

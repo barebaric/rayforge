@@ -1,6 +1,6 @@
 import unittest
-from rayforge.varset.var import Var
-from rayforge.varset.varset import VarSet
+from rayforge.shared.varset.var import Var
+from rayforge.shared.varset.varset import VarSet
 
 
 class TestVarSet(unittest.TestCase):

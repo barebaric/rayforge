@@ -116,7 +116,7 @@ class DebugLogManager:
         """
         # Perform imports locally to avoid circular dependencies at startup
         from .config import config, machine_mgr
-        from .widgets.about import get_dependency_info
+        from .shared.ui.about import get_dependency_info
         from . import __version__
 
         logger.info("Creating debug dump archive...")

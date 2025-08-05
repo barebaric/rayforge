@@ -77,7 +77,7 @@ def main():
 
         def do_activate(self):
             # Import the window here to avoid module-level side-effects
-            from rayforge.widgets.mainwindow import MainWindow
+            from rayforge.mainwindow import MainWindow
             win = MainWindow(application=self)
             if self.args.filename:
                 mime_type, _ = mimetypes.guess_type(self.args.filename)
@@ -149,7 +149,7 @@ def main():
     gi.require_version('GdkPixbuf', '2.0')
 
     # Import modules that depend on GTK or manage global state
-    import rayforge.tasker
+    import rayforge.shared.tasker
     import rayforge.config
 
     # Explicitly initialize the configuration managers. This ensures that
@@ -162,7 +162,7 @@ def main():
     exit_code = app.run(None)
     
     # Shutdown
-    rayforge.tasker.task_mgr.shutdown()
+    rayforge.shared.tasker.task_mgr.shutdown()
     if rayforge.config.config_mgr:
         rayforge.config.config_mgr.save()
 
