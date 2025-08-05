@@ -1,10 +1,9 @@
-from gi.repository import Gtk
+from gi.repository import Gtk  # type: ignore
 from typing import Optional
 from blinker import Signal
 from ..transport.transport import TransportStatus
 from ..driver.driver import driver_mgr, DeviceState, DeviceStatus
 from ..driver.dummy import NoDeviceDriver
-from ..util.resources import get_icon
 
 
 class ConnectionStatusIconWidget(Gtk.Box):
@@ -58,46 +57,45 @@ class MachineStatusIconWidget(Gtk.Box):
 
     def set_status(self, status):
         """Update the status icon based on the given status."""
-        self.remove(self.status_image)
-        self.status_image = self._get_icon_for_status(status)
-        self.append(self.status_image)
+        icon_name = self._get_icon_name_for_status(status)
+        self.status_image.set_from_icon_name(icon_name)
 
-    def _get_icon_for_status(self, status):
-        """Map the status to an appropriate icon name."""
+    def _get_icon_name_for_status(self, status):
+        """Map the status to an appropriate symbolic icon name."""
         if status == DeviceStatus.UNKNOWN:
-            return get_icon("question-symbolic")
+            return "dialog-question-symbolic"
         elif status == DeviceStatus.IDLE:
-            return get_icon("check-circle")
+            return "emblem-ok-symbolic"
         elif status == DeviceStatus.RUN:
-            return get_icon("laser-path")
+            return "media-playback-start-symbolic"
         elif status == DeviceStatus.HOLD:
-            return get_icon("pause")
+            return "media-playback-pause-symbolic"
         elif status == DeviceStatus.JOG:
-            return get_icon("fast-forward")
+            return "media-seek-forward-symbolic"
         elif status == DeviceStatus.ALARM:
-            return get_icon("siren")
+            return "dialog-warning-symbolic"
         elif status == DeviceStatus.DOOR:
-            return get_icon("door")
+            return "system-lock-screen-symbolic"
         elif status == DeviceStatus.CHECK:
-            return get_icon("preliminary-check")
+            return "system-search-symbolic"
         elif status == DeviceStatus.HOME:
-            return get_icon("homing")
+            return "go-home-symbolic"
         elif status == DeviceStatus.SLEEP:
-            return get_icon("sleep")
+            return "system-suspend-symbolic"
         elif status == DeviceStatus.TOOL:
-            return get_icon("tool-change")
+            return "preferences-system-symbolic"
         elif status == DeviceStatus.QUEUE:
-            return get_icon("queued")
+            return "view-list-bullet-symbolic"
         elif status == DeviceStatus.LOCK:
-            return get_icon("locked")
+            return "system-lock-screen-symbolic"
         elif status == DeviceStatus.UNLOCK:
-            return get_icon("unlocking")
+            return "process-working-symbolic"
         elif status == DeviceStatus.CYCLE:
-            return get_icon("cycle")
+            return "view-refresh-symbolic"
         elif status == DeviceStatus.TEST:
-            return get_icon("test")
+            return "utilities-terminal-symbolic"
         else:
-            return Gtk.Image.new_from_icon_name("network-offline-symbolic")
+            return "network-offline-symbolic"
 
 
 class StatusWidget(Gtk.Box):
