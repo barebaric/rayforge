@@ -45,7 +45,7 @@ class WorkSurface(Canvas):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
         self.doc = doc
-        self.machine = machine
+        self.machine = None  # will be assigned by set_machine() below
         self.ops_generator = OpsGenerator(doc)
         self.zoom_level = 1.0
         self._show_travel_moves = False
@@ -109,6 +109,7 @@ class WorkSurface(Canvas):
         self.copy_requested = Signal()
         self.paste_requested = Signal()
         self.duplicate_requested = Signal()
+        self.aspect_ratio_changed = Signal()
 
         # Connect to undo/redo signals from the canvas
         self.move_begin.connect(self._on_any_transform_begin)
@@ -119,10 +120,8 @@ class WorkSurface(Canvas):
         self.rotate_end.connect(self._on_rotate_end)
         self.elements_deleted.connect(self._on_elements_deleted)
 
-        # Add CameraImageElements for each camera
-        if self.machine:
-            self.machine.changed.connect(self._on_machine_changed)
-        self._on_machine_changed(machine)
+        # Initialize
+        self.set_machine(machine)
 
         # Connect to the history manager's changed signal to sync the view
         # globally, which is necessary for undo/redo actions triggered
@@ -324,16 +323,10 @@ class WorkSurface(Canvas):
         """
         Updates the WorkSurface to use a new machine instance. This handles
         disconnecting from the old machine's signals, connecting to the new
-        one's, and rebuilding machine-specific elements like cameras.
+        one's, and performing a full reset of the view.
         """
         if self.machine is machine:
-            return  # No change needed
-
-        old_id = self.machine.id if self.machine else "None"
-        new_id = machine.id if machine else "None"
-        logger.debug(
-            f"WorkSurface switching from machine '{old_id}' " f" to '{new_id}'"
-        )
+            return
 
         # Disconnect from the old machine's signals
         if self.machine:
@@ -341,21 +334,11 @@ class WorkSurface(Canvas):
 
         # Update the machine reference
         self.machine = machine
-        width, height = (
-            machine.dimensions if machine else (100.0, 100.0)
-        )
-        self.set_size(width, height)
-
-        # Reset pan and zoom to fit the new machine's work area
-        self.set_pan(0.0, 0.0)
-        self.set_zoom(1.0)
 
         # Connect to the new machine's signals
         if self.machine:
             self.machine.changed.connect(self._on_machine_changed)
-
-        # Manually trigger the handler to rebuild camera elements, etc.
-        self._on_machine_changed(self.machine)
+            self.reset_view()
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis renderer."""
@@ -764,42 +747,92 @@ class WorkSurface(Canvas):
             camera_elem.set_visible(visible and camera_elem.camera.enabled)
         self.queue_draw()
 
-    def _on_machine_changed(self, machine: Optional[Machine], **kwargs):
-        logger.debug("WorkSurface: Machine changed, updating camera elements.")
-        y_axis_down = machine.y_axis_down if machine else False
-        self._axis_renderer.set_y_axis_down(y_axis_down)
+    def _on_machine_changed(self, machine: Optional[Machine]):
+        """
+        Handles incremental updates from the currently-assigned machine model.
+        If core properties like dimensions or axis direction change, it
+        performs a full view reset. Otherwise, it syncs other properties like
+        cameras.
+        """
+        if not machine:
+            return
+
+        # Check for changes that require a full view reset. A change to either
+        # dimensions or y-axis orientation invalidates the current pan, zoom,
+        # and all calculated coordinates.
+        size_changed = machine.dimensions != (self.width_mm, self.height_mm)
+        y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
+
+        if size_changed or y_axis_changed:
+            self.reset_view()
+        else:
+            # No major reset needed, but other properties like the list of
+            # cameras might have changed.
+            self._sync_camera_elements(machine)
+
+    def reset_view(self):
+        """
+        Resets the view to fit the given machine's properties, including a
+        full reset of pan, zoom, and size. Also syncs camera elements.
+        """
+        if not self.machine:
+            return
+        logger.debug(
+            f"Resetting view for machine '{self.machine.name}' "
+            f"with dims={self.machine.dimensions} and "
+            f"y_down={self.machine.y_axis_down}"
+        )
+        new_dimensions = self.machine.dimensions
+        self.set_size(new_dimensions[0], new_dimensions[1])
+        self.set_pan(0.0, 0.0)
+        self.set_zoom(1.0)
+        self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
+        # _recalculate_sizes must be called after other properties are set,
+        # especially after y_axis_down is changed, as it affects all
+        # coordinate calculations.
+        self._recalculate_sizes()
+
+        new_ratio = (
+            new_dimensions[0] / new_dimensions[1]
+            if new_dimensions[1] > 0
+            else 1.0
+        )
+        self.aspect_ratio_changed.send(self, ratio=new_ratio)
+        self._sync_camera_elements(self.machine)
         self.queue_draw()
 
+    def _sync_camera_elements(self, machine: Machine):
+        """Adds, removes, and updates camera elements on the canvas."""
         # Get current camera elements on the canvas
         current_camera_elements = {
             cast(CameraImageElement, elem).camera: elem
             for elem in self.find_by_type(CameraImageElement)
         }
+        new_cameras = machine.cameras
 
-        # Get the set of cameras from the new machine configuration
-        new_cameras = machine.cameras if machine else []
+        cameras_on_canvas = set(current_camera_elements.keys())
+        cameras_in_model = set(new_cameras)
+
+        # If there are no changes, do nothing.
+        if cameras_on_canvas == cameras_in_model:
+            return
+
+        logger.debug("Syncing camera elements.")
 
         # Add new camera elements
-        for camera in new_cameras:
-            if camera not in current_camera_elements:
-                camera_image_elem = CameraImageElement(camera)
-                camera_image_elem.set_visible(
-                    self._cam_visible and camera.enabled
-                )
-                self.root.insert(0, camera_image_elem)
-                logger.debug(
-                    f"Added CameraImageElement for camera {camera.name}"
-                )
+        for camera in cameras_in_model - cameras_on_canvas:
+            camera_image_elem = CameraImageElement(camera)
+            camera_image_elem.set_visible(self._cam_visible and camera.enabled)
+            self.root.insert(0, camera_image_elem)
+            logger.debug(f"Added CameraImageElement for camera {camera.name}")
 
         # Remove camera elements that no longer exist in the machine
-        new_cameras_set = set(new_cameras)
-        for camera_instance, elem in list(current_camera_elements.items()):
-            if camera_instance not in new_cameras_set:
-                elem.remove()
-                logger.debug(
-                    "Removed CameraImageElement for camera "
-                    f"{camera_instance.name}"
-                )
+        for camera_instance in cameras_on_canvas - cameras_in_model:
+            elem = current_camera_elements[camera_instance]
+            elem.remove()
+            logger.debug(
+                f"Removed CameraImageElement for camera {camera_instance.name}"
+            )
 
     def do_snapshot(self, snapshot):
         # Update theme colors right before drawing to catch any live changes.
@@ -823,8 +856,7 @@ class WorkSurface(Canvas):
         """Handles key press events for the work surface."""
         # Reset pan and zoom with '1'
         if keyval == Gdk.KEY_1:
-            self.set_pan(0.0, 0.0)
-            self.set_zoom(1.0)
+            self.reset_view()
             return True  # Event handled
 
         # Handle clipboard and duplication

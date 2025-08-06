@@ -413,6 +413,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.copy_requested.connect(self.on_copy_requested)
         self.surface.paste_requested.connect(self.on_paste_requested)
         self.surface.duplicate_requested.connect(self.on_duplicate_requested)
+        self.surface.aspect_ratio_changed.connect(
+            self._on_surface_aspect_changed
+        )
 
         # Create and add the status monitor widget.
         self.status_monitor = TaskBar(task_mgr)
@@ -541,6 +544,7 @@ class MainWindow(Adw.ApplicationWindow):
                 f"User selected machine: {selected_list_item.machine.name}"
             )
             config.set_machine(selected_list_item.machine)
+            self.surface.set_machine(selected_list_item.machine)
 
     def _setup_actions(self):
         """Creates all Gio.SimpleActions for the window and application."""
@@ -772,18 +776,18 @@ class MainWindow(Adw.ApplicationWindow):
         self.workpiece_revealer.set_reveal_child(bool(selected_workpieces))
         self.update_state()
 
+    def _on_surface_aspect_changed(self, sender, ratio):
+        self.frame.set_ratio(ratio)
+
     def on_config_changed(self, sender, **kwargs):
         # Disconnect from the previously active machine, if any
         if self._current_machine:
-            try:
-                self._current_machine.state_changed.disconnect(
-                    self._on_machine_status_changed
-                )
-                self._current_machine.connection_status_changed.disconnect(
-                    self._on_connection_status_changed
-                )
-            except TypeError:
-                pass  # Was not connected
+            self._current_machine.state_changed.disconnect(
+                self._on_machine_status_changed
+            )
+            self._current_machine.connection_status_changed.disconnect(
+                self._on_connection_status_changed
+            )
 
         self._current_machine = config.machine
 
@@ -798,16 +802,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
-
-        if config.machine:
-            self.surface.set_machine(config.machine)
-            width_mm, height_mm = config.machine.dimensions
-            self.frame.set_ratio(
-                width_mm / height_mm if height_mm > 0 else 1.0
-            )
-        else:
-            # Default to a square aspect ratio if no machine is configured.
-            self.frame.set_ratio(1.0)
 
         # Apply selected device driver.
         self._try_driver_setup()
