@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING
+from typing import Any
 from ...core.ops import Ops
-if TYPE_CHECKING:
-    from ...machine.models.machine import Machine
 
 
 class OpsEncoder(ABC):
@@ -14,5 +12,5 @@ class OpsEncoder(ABC):
     - Ops to a G-code string
     """
     @abstractmethod
-    def encode(self, pos: Ops, machine: "Machine", *args, **kwargs) -> Any:
+    def encode(self, ops: Ops, *args, **kwargs) -> Any:
         pass

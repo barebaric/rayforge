@@ -1,7 +1,6 @@
 import logging
 import cairo
 from typing import Optional
-from ...config import config
 from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
@@ -280,12 +279,9 @@ class WorkPieceOpsElement(CanvasElement):
         margin_mm_y = OPS_MARGIN_PX / px_per_mm_y
         render_ops.translate(margin_mm_x, margin_mm_y)
 
-        if not config.machine:
-            return  # TODO: decouple encoder.encode() from machine
         encoder = CairoEncoder()
         encoder.encode(
             render_ops,
-            config.machine,
             ctx,
             pixels_per_mm,
             show_travel_moves=self.show_travel_moves,

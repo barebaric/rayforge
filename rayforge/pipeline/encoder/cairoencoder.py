@@ -1,11 +1,9 @@
 import math
-from typing import Tuple, TYPE_CHECKING
+from typing import Tuple
 import cairo
 import logging
 from ...core.ops import Ops, MoveToCommand, LineToCommand, ArcToCommand
 from .base import OpsEncoder
-if TYPE_CHECKING:
-    from ...machine.models.machine import Machine
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +16,6 @@ class CairoEncoder(OpsEncoder):
     """
     def encode(self,
                ops: Ops,
-               machine: "Machine",
                ctx: cairo.Context,
                scale: Tuple[float, float],
                show_travel_moves: bool = False) -> None:
