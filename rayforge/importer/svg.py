@@ -7,7 +7,7 @@ with warnings.catch_warnings():
     import pyvips
 from xml.etree import ElementTree as ET
 from .util import to_mm
-from .renderer import Renderer
+from .renderer import Renderer, CAIRO_MAX_DIMENSION
 import cairo
 
 logger = logging.getLogger(__name__)
@@ -192,6 +192,37 @@ class SVGRenderer(Renderer):
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         final_image = self._render_to_vips_image(width, height)
+        render_width, render_height = width, height
+
+        if render_width <= 0 or render_height <= 0:
+            return None
+
+        # If the requested render size exceeds Cairo's hard limit, we must
+        # scale it down to prevent a crash. The UI layer will scale the
+        # resulting (smaller) surface back up, resulting in pixelation,
+        # which is an acceptable trade-off at extreme zoom levels.
+        if (
+            render_width > CAIRO_MAX_DIMENSION
+            or render_height > CAIRO_MAX_DIMENSION
+        ):
+            scale_factor = 1.0
+            if render_width > CAIRO_MAX_DIMENSION:
+                scale_factor = CAIRO_MAX_DIMENSION / render_width
+            if render_height > CAIRO_MAX_DIMENSION:
+                scale_factor = min(
+                    scale_factor, CAIRO_MAX_DIMENSION / render_height
+                )
+
+            new_width = int(render_width * scale_factor)
+            new_height = int(render_height * scale_factor)
+
+            render_width = max(1, new_width)
+            render_height = max(1, new_height)
+
+            final_image = self._render_to_vips_image(
+                render_width, render_height
+            )
+
         if not isinstance(final_image, pyvips.Image):
             return None
 

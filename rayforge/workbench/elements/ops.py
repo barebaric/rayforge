@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 OPS_MARGIN_PX = 10.0
 
+# Cairo has a hard limit on surface dimensions, 32767.
+# We use a slightly more conservative value to be safe.
+CAIRO_MAX_DIMENSION = 30000
+
 
 class WorkPieceOpsElement(CanvasElement):
     """
@@ -258,19 +262,48 @@ class WorkPieceOpsElement(CanvasElement):
         if width <= 0 or height <= 0:
             return None
 
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        render_width, render_height = width, height
+        scale_factor = 1.0
+
+        # If the requested render size exceeds Cairo's hard limit, we must
+        # scale it down to prevent a crash. The UI layer will scale the
+        # resulting (smaller) surface back up, resulting in pixelation,
+        # which is an acceptable trade-off at extreme zoom levels.
+        if (
+            render_width > CAIRO_MAX_DIMENSION
+            or render_height > CAIRO_MAX_DIMENSION
+        ):
+            if render_width > CAIRO_MAX_DIMENSION:
+                scale_factor = CAIRO_MAX_DIMENSION / render_width
+            if render_height > CAIRO_MAX_DIMENSION:
+                scale_factor = min(
+                    scale_factor, CAIRO_MAX_DIMENSION / render_height
+                )
+
+            new_width = int(render_width * scale_factor)
+            new_height = int(render_height * scale_factor)
+
+            render_width = max(1, new_width)
+            render_height = max(1, new_height)
+
+        surface = cairo.ImageSurface(
+            cairo.FORMAT_ARGB32, render_width, render_height
+        )
         ctx = cairo.Context(surface)
         ctx.set_source_rgba(*self.background)
         ctx.set_operator(cairo.OPERATOR_SOURCE)
         ctx.paint()
 
         render_ops = self._accumulated_ops.copy()
-        if not render_ops or not self.canvas:
+        if (
+            not render_ops
+            or not self.canvas
+            or not self.canvas.pixels_per_mm_x
+        ):
             return surface
 
         px_per_mm_x = self.canvas.pixels_per_mm_x or 1
         px_per_mm_y = self.canvas.pixels_per_mm_y or 1
-        pixels_per_mm = px_per_mm_x, px_per_mm_y
 
         # This translation of the millimeter-based Ops data is correct for
         # the final render, as the CairoEncoder will scale this mm value
@@ -279,11 +312,18 @@ class WorkPieceOpsElement(CanvasElement):
         margin_mm_y = OPS_MARGIN_PX / px_per_mm_y
         render_ops.translate(margin_mm_x, margin_mm_y)
 
+        # We must scale the pixels_per_mm value by the same factor we scaled
+        # the surface, otherwise the toolpaths will be drawn too large.
+        scaled_pixels_per_mm = (
+            px_per_mm_x * scale_factor,
+            px_per_mm_y * scale_factor,
+        )
+
         encoder = CairoEncoder()
         encoder.encode(
             render_ops,
             ctx,
-            pixels_per_mm,
+            scaled_pixels_per_mm,
             show_travel_moves=self.show_travel_moves,
         )
         return surface
