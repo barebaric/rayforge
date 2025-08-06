@@ -12,7 +12,8 @@ from blinker import Signal
 def sample_svg_data() -> bytes:
     """Provides a simple SVG with defined dimensions in mm."""
     svg = """
-    <svg width="100mm" height="50mm" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+    <svg width="100mm" height="50mm" viewBox="0 0 100 50"
+         xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="100" height="50" fill="blue"/>
     </svg>
     """
@@ -147,7 +148,8 @@ class TestWorkPiece:
                 return None
 
         wp = WorkPiece("nosize.dat", b"", MockNoSizeRenderer)
-        # The size should be calculated based on the provided bounds and aspect ratio.
+        # The size should be calculated based on the provided bounds and
+        # aspect ratio.
         assert wp.get_default_size(
             bounds_width=400.0, bounds_height=300.0
         ) == (400.0, 200.0)
@@ -170,7 +172,8 @@ class TestWorkPiece:
 
     def test_render_chunk(self, workpiece_instance):
         """
-        Tests that render_chunk yields chunks that correctly tile the full image area.
+        Tests that render_chunk yields chunks that correctly tile the full
+        image area.
         """
         wp = workpiece_instance
         # Without a size set, render_chunk should yield nothing.
@@ -198,7 +201,8 @@ class TestWorkPiece:
             max_x = max(max_x, x_offset + chunk_surface.get_width())
             max_y = max(max_y, y_offset + chunk_surface.get_height())
 
-        # The reconstructed size should match the total rendered size (100x50 px).
+        # The reconstructed size should match the total rendered size
+        # (100x50 px).
         assert max_x == 100
         assert max_y == 50
 

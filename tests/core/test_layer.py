@@ -1,9 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from rayforge.core.doc import Doc
-from rayforge.core.workpiece import (
-    WorkPiece,
-)  # Assuming dummy workpiece for test
+from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
 
 
@@ -25,11 +23,25 @@ def test_add_workpiece_to_layer_fires_changed(layer):
     # Using a mock workpiece as its implementation is not relevant here
     mock_workpiece = MagicMock(spec=WorkPiece)
     mock_workpiece.size_changed = MagicMock()  # Mock the signal attribute
+    mock_workpiece.layer = None
 
     layer.add_workpiece(mock_workpiece)
 
     layer_changed_handler.assert_called_once_with(layer)
     assert mock_workpiece in layer.workpieces
+
+
+def test_add_workpiece_fires_descendant_added(layer):
+    """Adding a workpiece should fire descendant_added."""
+    handler = MagicMock()
+    layer.descendant_added.connect(handler)
+
+    mock_workpiece = MagicMock(spec=WorkPiece)
+    mock_workpiece.size_changed = MagicMock()
+    mock_workpiece.layer = None
+
+    layer.add_workpiece(mock_workpiece)
+    handler.assert_called_once_with(layer, origin=mock_workpiece)
 
 
 def test_workflow_change_bubbles_up_to_layer(layer):
@@ -47,3 +59,18 @@ def test_workflow_change_bubbles_up_to_layer(layer):
 
     # Assert
     layer_changed_handler.assert_called_once_with(layer)
+
+
+def test_workflow_descendant_added_bubbles_to_layer(layer):
+    """A descendant_added signal from a workflow should bubble up."""
+    handler = MagicMock()
+    layer.descendant_added.connect(handler)
+
+    workflow = layer.workflow
+    step = Step(workflow, "Test Step")
+
+    # Act
+    workflow.add_step(step)
+
+    # Assert
+    handler.assert_called_once_with(layer, origin=step)
