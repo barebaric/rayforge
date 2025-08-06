@@ -218,12 +218,14 @@ class StepSettingsDialog(Adw.Window):
                     # captures the current value of `transformer` in the loop.
                     smooth_scale.connect(
                         "value-changed",
-                        lambda scale, t=transformer: self._debounce(
-                            self.on_smoothness_changed, scale, t
+                        lambda scale, t_dict=transformer_dict: self._debounce(
+                            self.on_smoothness_changed, scale, t_dict
                         ),
                     )
                     corner_angle_row.connect(
-                        "changed", self.on_corner_angle_changed, transformer
+                        "changed",
+                        self.on_corner_angle_changed,
+                        transformer_dict,
                     )
 
         self.changed = Signal()
