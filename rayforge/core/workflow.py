@@ -25,8 +25,6 @@ class Workflow:
     and propagates a `changed` signal.
     """
 
-    changed = Signal()
-
     def __init__(self, layer: "Layer", name: str):
         """
         Initializes the Workflow.
@@ -43,6 +41,8 @@ class Workflow:
 
         # Ref for static analysis tools to detect class relations.
         self._step_ref_for_pyreverse: Step
+
+        self.changed = Signal()
 
     def __iter__(self):
         """Allows iteration over the work steps."""
