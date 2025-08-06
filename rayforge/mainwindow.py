@@ -23,7 +23,7 @@ from .pipeline.steps import (
 from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
 from .importer import renderers, renderer_by_mime_type, renderer_by_extension
-from .undo.models.list_cmd import ListItemCommand, ReorderListCommand
+from .undo import HistoryManager, Command, ListItemCommand, ReorderListCommand
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
@@ -728,7 +728,9 @@ class MainWindow(Adw.ApplicationWindow):
         """Called when the active machine's connection status changes."""
         self.update_state()
 
-    def on_history_changed(self, history_manager):
+    def on_history_changed(
+        self, history_manager: HistoryManager, command: Command
+    ):
         self.update_state()
         # After undo/redo, the document state may have changed in ways
         # that require a full UI sync (e.g., layer visibility).

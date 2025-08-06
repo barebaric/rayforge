@@ -83,13 +83,13 @@ class HistoryManager:
                 command
             ):
                 # The last command was successfully updated.
-                self.changed.send(self)
+                self.changed.send(self, command=last_command)
                 return
 
         # If we couldn't coalesce, add the new command to the stack.
         self.undo_stack.append(command)
         self.redo_stack.clear()
-        self.changed.send(self)
+        self.changed.send(self, command=command)
 
     @contextmanager
     def transaction(
@@ -128,7 +128,7 @@ class HistoryManager:
                     pass
             self.abort_transaction()
             # The state has changed due to the undos, so we signal.
-            self.changed.send(self)
+            self.changed.send(self, command=None)
             raise  # Re-raise the original exception
 
     def begin_transaction(self, name: str = "Transaction"):
@@ -204,7 +204,7 @@ class HistoryManager:
         command = self.undo_stack.pop()
         command.undo()
         self.redo_stack.append(command)
-        self.changed.send(self)
+        self.changed.send(self, command=command)
 
     def redo(self):
         """Redoes the last undone action."""
@@ -213,7 +213,7 @@ class HistoryManager:
         command = self.redo_stack.pop()
         command.execute()
         self.undo_stack.append(command)
-        self.changed.send(self)
+        self.changed.send(self, command=command)
 
     def undo_to(self, target_command: Command):
         """Undoes all actions up to and including the target command."""
@@ -245,4 +245,4 @@ class HistoryManager:
         self.redo_stack.clear()
         self.in_transaction = False
         self.transaction_commands.clear()
-        self.changed.send(self)
+        self.changed.send(self, command=None)
