@@ -18,6 +18,9 @@ class Doc:
         self.history_manager = HistoryManager()
         self.changed = Signal()
         self.active_layer_changed = Signal()
+        self.descendant_added = Signal()
+        self.descendant_removed = Signal()
+        self.descendant_updated = Signal()
 
         self.layers: List[Layer] = []
         self._layer_ref_for_pyreverse: Layer
@@ -63,27 +66,38 @@ class Doc:
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
-    def _on_model_changed(self, sender, **kwargs):
-        """
-        A single handler for changes in layers. It propagates all keyword
-        arguments to ensure the OpsGenerator gets full context.
-        """
-        self.changed.send(self, **kwargs)
+    def _on_layer_changed(self, sender):
+        """A single handler for generic changes in layers."""
+        self.changed.send(self)
+
+    def _on_descendant_added(self, sender, *, origin):
+        self.descendant_added.send(self, origin=origin)
+
+    def _on_descendant_removed(self, sender, *, origin):
+        self.descendant_removed.send(self, origin=origin)
+
+    def _on_descendant_updated(self, sender, *, origin):
+        self.descendant_updated.send(self, origin=origin)
 
     def add_layer(self, layer: Layer):
         self.layers.append(layer)
-        layer.changed.connect(self._on_model_changed)
+        layer.changed.connect(self._on_layer_changed)
+        layer.descendant_added.connect(self._on_descendant_added)
+        layer.descendant_removed.connect(self._on_descendant_removed)
+        layer.descendant_updated.connect(self._on_descendant_updated)
+        self.descendant_added.send(self, origin=layer)
         self.changed.send(self)
 
     def remove_layer(self, layer: Layer):
         # Prevent removing the last layer.
         if layer not in self.layers or len(self.layers) <= 1:
             return
-        try:
-            layer.changed.disconnect(self._on_model_changed)
-        except TypeError:
-            pass
+        layer.changed.disconnect(self._on_layer_changed)
+        layer.descendant_added.disconnect(self._on_descendant_added)
+        layer.descendant_removed.disconnect(self._on_descendant_removed)
+        layer.descendant_updated.disconnect(self._on_descendant_updated)
         self.layers.remove(layer)
+        self.descendant_removed.send(self, origin=layer)
 
         # Ensure active_layer_index remains valid
         if self._active_layer_index >= len(self.layers):
@@ -97,6 +111,9 @@ class Doc:
         if not layers:
             raise ValueError("Workpiece layer list cannot be empty.")
 
+        old_layers = set(self.layers)
+        new_layers = set(layers)
+
         # Preserve the active layer if it still exists in the new list
         current_active = self.active_layer
         old_active_index = self._active_layer_index
@@ -105,14 +122,23 @@ class Doc:
         except ValueError:
             new_active_index = 0  # Default to first layer
 
-        for layer in self.layers:
-            try:
-                layer.changed.disconnect(self._on_model_changed)
-            except TypeError:
-                pass
+        for layer in old_layers:
+            layer.changed.disconnect(self._on_layer_changed)
+            layer.descendant_added.disconnect(self._on_descendant_added)
+            layer.descendant_removed.disconnect(self._on_descendant_removed)
+            layer.descendant_updated.disconnect(self._on_descendant_updated)
+
         self.layers = list(layers)
         for layer in self.layers:
-            layer.changed.connect(self._on_model_changed)
+            layer.changed.connect(self._on_layer_changed)
+            layer.descendant_added.connect(self._on_descendant_added)
+            layer.descendant_removed.connect(self._on_descendant_removed)
+            layer.descendant_updated.connect(self._on_descendant_updated)
+
+        for layer in old_layers - new_layers:
+            self.descendant_removed.send(self, origin=layer)
+        for layer in new_layers - old_layers:
+            self.descendant_added.send(self, origin=layer)
 
         self._active_layer_index = new_active_index
         self.changed.send(self)

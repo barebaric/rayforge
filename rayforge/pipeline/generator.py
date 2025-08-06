@@ -14,15 +14,15 @@ import logging
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
-
-from ..core.ops import Ops
 from ..shared.tasker import task_mgr
-from ..pipeline.steprunner import run_step_in_subprocess
+from ..core.doc import Doc
+from ..core.layer import Layer
+from ..core.step import Step
+from ..core.workpiece import WorkPiece
+from ..core.ops import Ops
+from .steprunner import run_step_in_subprocess
 
 if TYPE_CHECKING:
-    from ..core.doc import Doc
-    from ..core.step import Step
-    from ..core.workpiece import WorkPiece
     from ..shared.tasker.task import Task
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,21 @@ class OpsGenerator:
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
 
-        self.doc.changed.connect(self._on_model_changed)
+        self._connect_signals()
         self.reconcile_all()
+
+    def _connect_signals(self):
+        """Connects to the document's signals."""
+        self.doc.descendant_added.connect(self._on_descendant_added)
+        self.doc.descendant_removed.connect(self._on_descendant_removed)
+        self.doc.descendant_updated.connect(self._on_descendant_updated)
+
+    def _disconnect_signals(self):
+        """Disconnects from the document's signals."""
+        # Blinker's disconnect is safe to call even if not connected.
+        self.doc.descendant_added.disconnect(self._on_descendant_added)
+        self.doc.descendant_removed.disconnect(self._on_descendant_removed)
+        self.doc.descendant_updated.disconnect(self._on_descendant_updated)
 
     def pause(self):
         """
@@ -95,10 +108,7 @@ class OpsGenerator:
         if self._is_paused:
             return
         logger.debug("OpsGenerator paused.")
-        try:
-            self.doc.changed.disconnect(self._on_model_changed)
-        except TypeError:
-            pass  # Was not connected
+        self._disconnect_signals()
         self._is_paused = True
 
     def resume(self):
@@ -112,7 +122,7 @@ class OpsGenerator:
             return
         logger.debug("OpsGenerator resumed.")
         self._is_paused = False
-        self.doc.changed.connect(self._on_model_changed)
+        self._connect_signals()
         self.reconcile_all()
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
@@ -131,36 +141,68 @@ class OpsGenerator:
                     return wp
         return None
 
-    def _on_model_changed(self, sender, step: Optional[Step] = None, **kwargs):
-        """
-        Handles the 'changed' signal from the Doc.
-
-        This is the main entry point for reacting to model changes. It
-        differentiates between a specific step's properties changing (which
-        triggers regeneration only for that step) and a structural change
-        (like adding/removing workpieces or steps), which triggers a full
-        reconciliation.
-
-        Args:
-            sender: The object that sent the signal.
-            step: If provided, indicates that only this Step's properties
-                have changed.
-            **kwargs: Additional arguments from the signal.
-        """
+    def _on_descendant_added(self, sender, *, origin):
+        """Handles the addition of a new model object."""
         if self._is_paused:
             return
+        logger.debug(
+            f"OpsGenerator: Noticed added {origin.__class__.__name__}"
+        )
+        if isinstance(origin, Step):
+            self._update_ops_for_step(origin)
+        elif isinstance(origin, WorkPiece):
+            self._update_ops_for_workpiece(origin)
+        elif isinstance(origin, Layer):
+            for step in origin.workflow:
+                self._update_ops_for_step(step)
 
-        logger.debug(f"OpsGenerator: Noticed model change from {sender}.")
-        if step:
-            logger.debug(
-                f"OpsGenerator: Step '{step.name}' changed. Updating its ops."
-            )
-            self._update_ops_for_step(step)
+    def _on_descendant_removed(self, sender, *, origin):
+        """Handles the removal of a model object."""
+        if self._is_paused:
+            return
+        logger.debug(
+            f"OpsGenerator: Noticed removed {origin.__class__.__name__}"
+        )
+        uids_to_remove = set()
+
+        if isinstance(origin, Step):
+            uids_to_remove.add(origin.uid)
+            keys_to_clean = [
+                k for k in self._ops_cache if k[0] in uids_to_remove
+            ]
+        elif isinstance(origin, WorkPiece):
+            uids_to_remove.add(origin.uid)
+            keys_to_clean = [
+                k for k in self._ops_cache if k[1] in uids_to_remove
+            ]
+        elif isinstance(origin, Layer):
+            step_uids = {s.uid for s in origin.workflow}
+            keys_to_clean = [k for k in self._ops_cache if k[0] in step_uids]
         else:
-            logger.debug(
-                "OpsGenerator: Structural change detected. Reconciling all."
-            )
-            self.reconcile_all()
+            return
+
+        for key in keys_to_clean:
+            self._cleanup_key(key)
+
+    def _on_descendant_updated(self, sender, *, origin):
+        """Handles updates to an existing model object's data."""
+        if self._is_paused:
+            return
+        logger.debug(
+            f"OpsGenerator: Noticed updated {origin.__class__.__name__}"
+        )
+        if isinstance(origin, Step):
+            self._update_ops_for_step(origin)
+        elif isinstance(origin, WorkPiece):
+            self._update_ops_for_workpiece(origin)
+
+    def _cleanup_key(self, key: Tuple[str, str]):
+        """Removes a cache entry and cancels any associated task."""
+        logger.debug(f"OpsGenerator: Cleaning up key {key}.")
+        self._ops_cache.pop(key, None)
+        self._generation_id_map.pop(key, None)
+        self._active_tasks.pop(key, None)
+        task_mgr.cancel_task(key)
 
     def reconcile_all(self):
         """
@@ -184,11 +226,7 @@ class OpsGenerator:
 
         # Clean up obsolete items
         for s_uid, w_uid in cached_pairs - all_current_pairs:
-            key = (s_uid, w_uid)
-            logger.debug(f"OpsGenerator: Cleaning up obsolete key {key}.")
-            self._ops_cache.pop(key, None)
-            self._generation_id_map.pop(key, None)
-            task_mgr.cancel_task(key)
+            self._cleanup_key((s_uid, w_uid))
 
         # Trigger generation for all current items
         for layer in self.doc.layers:
@@ -200,6 +238,12 @@ class OpsGenerator:
         """Triggers ops generation for a single step across all workpieces."""
         if step.workflow and step.workflow.layer:
             for workpiece in step.workflow.layer.workpieces:
+                self._trigger_ops_generation(step, workpiece)
+
+    def _update_ops_for_workpiece(self, workpiece: WorkPiece):
+        """Triggers ops generation for a single workpiece across all steps."""
+        if workpiece.layer:
+            for step in workpiece.layer.workflow:
                 self._trigger_ops_generation(step, workpiece)
 
     def _trigger_ops_generation(self, step: Step, workpiece: WorkPiece):

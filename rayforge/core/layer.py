@@ -51,9 +51,15 @@ class Layer:
 
         # Signals for notifying other parts of the application of changes.
         self.changed = Signal()
+        self.descendant_added = Signal()
+        self.descendant_removed = Signal()
+        self.descendant_updated = Signal()
 
         # Connect to signals from child objects.
         self.workflow.changed.connect(self._on_workflow_changed)
+        self.workflow.descendant_added.connect(self._on_descendant_added)
+        self.workflow.descendant_removed.connect(self._on_descendant_removed)
+        self.workflow.descendant_updated.connect(self._on_descendant_updated)
 
     @property
     def active(self) -> bool:
@@ -63,23 +69,34 @@ class Layer:
         """
         return self.doc.active_layer is self
 
-    def _on_workflow_changed(self, sender, **kwargs):
+    def _on_workflow_changed(self, sender):
         """
         Handles the 'changed' signal from the Workflow and bubbles it up.
-        It preserves any keyword arguments (like a specific 'step' that
-        changed) for the upstream listener (OpsGenerator).
         """
         logger.debug(
             f"Layer '{self.name}': Noticed workflow change, bubbling up."
         )
-        self.changed.send(self, **kwargs)
+        self.changed.send(self)
 
-    def _on_workpiece_size_changed(self, workpiece: WorkPiece, **kwargs):
+    def _on_descendant_added(self, sender, *, origin):
+        """Bubbles up the descendant_added signal."""
+        self.descendant_added.send(self, origin=origin)
+
+    def _on_descendant_removed(self, sender, *, origin):
+        """Bubbles up the descendant_removed signal."""
+        self.descendant_removed.send(self, origin=origin)
+
+    def _on_descendant_updated(self, sender, *, origin):
+        """Bubbles up the descendant_updated signal."""
+        self.descendant_updated.send(self, origin=origin)
+
+    def _on_workpiece_size_changed(self, workpiece: WorkPiece):
         """Handles workpiece size changes by firing the changed signal."""
         logger.debug(
             f"Layer '{self.name}': Noticed size change for "
             f"'{workpiece.name}', bubbling up."
         )
+        self.descendant_updated.send(self, origin=workpiece)
         self.changed.send(self)
 
     def set_name(self, name: str):
@@ -115,6 +132,7 @@ class Layer:
             workpiece.layer = self
             self.workpieces.append(workpiece)
             workpiece.size_changed.connect(self._on_workpiece_size_changed)
+            self.descendant_added.send(self, origin=workpiece)
             self.changed.send(self)
 
     def remove_workpiece(self, workpiece: "WorkPiece"):
@@ -127,6 +145,7 @@ class Layer:
             workpiece.layer = None
             workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
             self.workpieces.remove(workpiece)
+            self.descendant_removed.send(self, origin=workpiece)
             self.changed.send(self)
 
     def set_workpieces(self, workpieces: List["WorkPiece"]):
@@ -144,11 +163,13 @@ class Layer:
         for wp in old_set - new_set:
             wp.layer = None
             wp.size_changed.disconnect(self._on_workpiece_size_changed)
+            self.descendant_removed.send(self, origin=wp)
 
         # Connect new workpieces.
         for wp in new_set - old_set:
             wp.layer = self
             wp.size_changed.connect(self._on_workpiece_size_changed)
+            self.descendant_added.send(self, origin=wp)
 
         self.workpieces = list(workpieces)
         self.changed.send(self)

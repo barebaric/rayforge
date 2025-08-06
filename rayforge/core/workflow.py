@@ -43,25 +43,28 @@ class Workflow:
         self._step_ref_for_pyreverse: Step
 
         self.changed = Signal()
+        self.descendant_added = Signal()
+        self.descendant_removed = Signal()
+        self.descendant_updated = Signal()
 
     def __iter__(self):
         """Allows iteration over the work steps."""
         return iter(self.steps)
 
-    def _on_step_changed(self, step: Step, **kwargs):
+    def _on_step_changed(self, step: Step):
         """
         Handles data-changing signals from child steps.
 
-        When a child step's `changed` signal is fired, this method
-        catches it and bubbles up the notification by firing the work
-        plan's own `changed` signal. This ensures that the parent Layer
-        is notified to regenerate operations.
+        When a child step's `changed` signal is fired, this is interpreted
+        as an update to that step. This method fires the `descendant_updated`
+        signal with the step as the origin, and the general `changed` signal.
         """
         logger.debug(
             f"Workflow '{self.name}': Notified of model change from step "
-            f"'{step.name}'. Firing own changed signal."
+            f"'{step.name}'. Firing own signals."
         )
-        self.changed.send(self, step=step)
+        self.descendant_updated.send(self, origin=step)
+        self.changed.send(self)
 
     def _connect_step_signals(self, step: Step):
         """Connects the work plan's handlers to a step's signals."""
@@ -91,6 +94,7 @@ class Workflow:
         step.workflow = self
         self.steps.append(step)
         self._connect_step_signals(step)
+        self.descendant_added.send(self, origin=step)
         self.changed.send(self)
 
     def remove_step(self, step: Step):
@@ -106,6 +110,7 @@ class Workflow:
         self._disconnect_step_signals(step)
         self.steps.remove(step)
         step.workflow = None
+        self.descendant_removed.send(self, origin=step)
         self.changed.send(self)
 
     def set_steps(self, steps: List[Step]):
@@ -118,16 +123,26 @@ class Workflow:
         Args:
             steps: The new list of Step instances.
         """
-        for step in self.steps:
+        old_set = set(self.steps)
+        new_set = set(steps)
+
+        for step in old_set - new_set:
             self._disconnect_step_signals(step)
             step.workflow = None
+            self.descendant_removed.send(self, origin=step)
 
-        self.steps = list(steps)
-
-        for step in self.steps:
+        for step in new_set - old_set:
+            if step.workflow and step.workflow is not self:
+                step.workflow.remove_step(step)
             step.workflow = self
             self._connect_step_signals(step)
+            self.descendant_added.send(self, origin=step)
 
+        # Ensure workflow is set for all steps in the new list
+        for step in steps:
+            step.workflow = self
+
+        self.steps = list(steps)
         self.changed.send(self)
 
     def has_steps(self) -> bool:
