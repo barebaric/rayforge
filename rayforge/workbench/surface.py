@@ -338,6 +338,10 @@ class WorkSurface(Canvas):
         )
         self.set_size(width, height)
 
+        # Reset pan and zoom to fit the new machine's work area
+        self.set_pan(0.0, 0.0)
+        self.set_zoom(1.0)
+
         # Connect to the new machine's signals
         if self.machine:
             self.machine.changed.connect(self._on_machine_changed)
