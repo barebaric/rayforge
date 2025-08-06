@@ -90,16 +90,6 @@ class WorkpiecePropertiesWidget(Expander):
         self.natural_size_row.add_suffix(self.natural_size_label)
         rows_container.append(self.natural_size_row)
 
-        # Reset Size Button
-        self.reset_row = Adw.ActionRow(title=_("Reset Size"))
-        self.reset_button = Gtk.Button(label=_("Reset"))
-        self.reset_button.set_halign(Gtk.Align.END)
-        self.reset_button.set_valign(Gtk.Align.CENTER)
-        self.reset_button.connect("clicked", self._on_reset_clicked)
-        self.reset_row.add_suffix(self.reset_button)
-        self.reset_row.activatable_widget = self.reset_button
-        rows_container.append(self.reset_row)
-
         # Angle Entry
         self.angle_row = Adw.SpinRow(
             title=_("Angle"),
@@ -109,26 +99,34 @@ class WorkpiecePropertiesWidget(Expander):
         self.angle_row.connect("notify::value", self._on_angle_changed)
         rows_container.append(self.angle_row)
 
-        # Reset Angle Button
-        self.reset_angle_row = Adw.ActionRow(title=_("Reset Angle"))
-        self.reset_angle_button = Gtk.Button(label=_("Reset"))
-        self.reset_angle_button.set_halign(Gtk.Align.END)
-        self.reset_angle_button.set_valign(Gtk.Align.CENTER)
+        # Reset Buttons Row
+        self.reset_buttons_row = Adw.ActionRow(title=("Reset"))
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        button_box.set_valign(Gtk.Align.CENTER)
+
+        self.reset_size_button = Gtk.Button(label=_(" Size"))
+        self.reset_size_button.connect("clicked", self._on_reset_size_clicked)
+        button_box.append(self.reset_size_button)
+
+        self.reset_angle_button = Gtk.Button(label=_("Angle"))
         self.reset_angle_button.connect(
             "clicked", self._on_reset_angle_clicked
         )
-        self.reset_angle_row.add_suffix(self.reset_angle_button)
-        self.reset_angle_row.activatable_widget = self.reset_angle_button
-        rows_container.append(self.reset_angle_row)
+        button_box.append(self.reset_angle_button)
+
+        self.reset_aspect_button = Gtk.Button(label=_("Aspect"))
+        self.reset_aspect_button.connect(
+            "clicked", self._on_reset_aspect_clicked
+        )
+        button_box.append(self.reset_aspect_button)
+
+        self.reset_buttons_row.add_suffix(button_box)
+        rows_container.append(self.reset_buttons_row)
 
         for workpiece in self.workpieces:
-            workpiece.size_changed.connect(
-                self._on_workpiece_size_changed
-            )
+            workpiece.size_changed.connect(self._on_workpiece_size_changed)
             workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            workpiece.angle_changed.connect(
-                self._on_workpiece_angle_changed
-            )
+            workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
         self._update_ui_from_workpieces()
 
     def _calculate_new_size_with_ratio(
@@ -170,8 +168,7 @@ class WorkpiecePropertiesWidget(Expander):
         bounds = config.machine.dimensions if config.machine else default_dim
         old_pos = workpiece.pos or (0, 0)
         old_w, old_h = (
-            workpiece.get_current_size()
-            or workpiece.get_default_size(*bounds)
+            workpiece.get_current_size() or workpiece.get_default_size(*bounds)
         )
         old_x, old_y = old_pos
 
@@ -381,28 +378,101 @@ class WorkpiecePropertiesWidget(Expander):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
         return False
 
-    def _on_reset_clicked(self, button):
+    def _on_reset_aspect_clicked(self, button):
+        if not self.workpieces:
+            return
+        doc = self.workpieces[0].doc
+        if not doc:
+            return
+
+        with doc.history_manager.transaction(
+            _("Reset workpiece aspect ratio")
+        ) as t:
+            for workpiece in self.workpieces:
+                current_size = workpiece.get_current_size()
+                if not current_size:
+                    continue
+
+                current_width = current_size[0]
+                default_aspect = workpiece.get_default_aspect_ratio()
+                if not default_aspect or default_aspect == 0:
+                    continue
+
+                new_height = current_width / default_aspect
+                new_size = (current_width, new_height)
+
+                if new_size == current_size:
+                    continue
+
+                old_pos = workpiece.pos or (0, 0)
+                old_size = workpiece.size or (0, 0)
+
+                # Recalculate position to keep anchor
+                new_pos = self._calculate_resize_anchor_pos(
+                    workpiece, new_size
+                )
+
+                if new_pos != old_pos:
+                    pos_cmd = SetterCommand(
+                        workpiece,
+                        "set_pos",
+                        new_args=new_pos,
+                        old_args=old_pos,
+                    )
+                    t.execute(pos_cmd)
+
+                if new_size != old_size:
+                    size_cmd = SetterCommand(
+                        workpiece,
+                        "set_size",
+                        new_args=new_size,
+                        old_args=old_size,
+                    )
+                    t.execute(size_cmd)
+
+    def _on_reset_size_clicked(self, button):
         if not self.workpieces:
             return False
         doc = self.workpieces[0].doc
         if not doc:
             return False
 
-        bounds = config.machine.dimensions if config.machine else default_dim
         with doc.history_manager.transaction(_("Reset workpiece size")) as t:
+            bounds = (
+                config.machine.dimensions if config.machine else default_dim
+            )
             for workpiece in self.workpieces:
-                old_size = workpiece.size
+                old_size = workpiece.size or (0, 0)
+                old_pos = workpiece.pos or (0, 0)
                 natural_width, natural_height = workpiece.get_default_size(
                     *bounds
                 )
+                new_size = (natural_width, natural_height)
+
+                if new_size == old_size:
+                    continue
+
+                new_pos = self._calculate_resize_anchor_pos(
+                    workpiece, new_size
+                )
+
+                if new_pos != old_pos:
+                    pos_cmd = SetterCommand(
+                        workpiece,
+                        "set_pos",
+                        new_args=new_pos,
+                        old_args=old_pos,
+                    )
+                    t.execute(pos_cmd)
+
                 cmd = SetterCommand(
                     workpiece,
                     "set_size",
-                    new_args=(natural_width, natural_height),
-                    old_args=old_size or (natural_width, natural_height),
+                    new_args=new_size,
+                    old_args=old_size,
                 )
                 t.execute(cmd)
-        self._update_ui_from_workpieces()
+        return False
 
     def _on_reset_angle_clicked(self, button):
         if not self.workpieces:
@@ -411,10 +481,10 @@ class WorkpiecePropertiesWidget(Expander):
         if not doc:
             return
 
-        with doc.history_manager.transaction(
-            _("Reset workpiece angle")
-        ) as t:
+        with doc.history_manager.transaction(_("Reset workpiece angle")) as t:
             for workpiece in self.workpieces:
+                if workpiece.angle == 0.0:
+                    continue
                 cmd = ChangePropertyCommand(
                     workpiece,
                     "angle",
@@ -432,9 +502,7 @@ class WorkpiecePropertiesWidget(Expander):
     def set_workpieces(self, workpieces: Optional[List[WorkPiece]]):
         self._in_update = True
         for workpiece in self.workpieces:
-            workpiece.size_changed.disconnect(
-                self._on_workpiece_size_changed
-            )
+            workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
             workpiece.pos_changed.disconnect(self._on_workpiece_pos_changed)
             workpiece.angle_changed.disconnect(
                 self._on_workpiece_angle_changed
@@ -450,13 +518,9 @@ class WorkpiecePropertiesWidget(Expander):
             self.set_subtitle(_(f"{count} items selected"))
 
         for workpiece in self.workpieces:
-            workpiece.size_changed.connect(
-                self._on_workpiece_size_changed
-            )
+            workpiece.size_changed.connect(self._on_workpiece_size_changed)
             workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            workpiece.angle_changed.connect(
-                self._on_workpiece_angle_changed
-            )
+            workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
         self._in_update = False
         self._update_ui_from_workpieces()
 
@@ -484,9 +548,8 @@ class WorkpiecePropertiesWidget(Expander):
         self._in_update = True
         bounds = config.machine.dimensions if config.machine else default_dim
         y_axis_down = config.machine.y_axis_down if config.machine else False
-        size = (
-            workpiece.get_current_size()
-            or workpiece.get_default_size(*bounds)
+        size = workpiece.get_current_size() or workpiece.get_default_size(
+            *bounds
         )
         pos = workpiece.pos_machine  # Use machine-native coordinates
         angle = workpiece.angle
@@ -502,9 +565,7 @@ class WorkpiecePropertiesWidget(Expander):
             logger.debug(f"Updating UI: width={width}, height={height}")
             self.width_row.set_value(width)
             self.height_row.set_value(height)
-            natural_width, natural_height = workpiece.get_default_size(
-                *bounds
-            )
+            natural_width, natural_height = workpiece.get_default_size(*bounds)
             self.natural_size_label.set_label(
                 f"{natural_width:.2f}x{natural_height:.2f}"
             )
