@@ -29,6 +29,23 @@ class CameraAlignmentDialog(Adw.Window):
         self.drag_start_image_y = 0
         self._display_ready = False
 
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(
+            b"""
+            .info-highlight {
+                background-color: @accent_bg_color;
+                color: @accent_fg_color;
+                border-radius: 6px;
+                padding: 8px 12px;
+            }
+            """
+        )
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(content)
 
@@ -45,11 +62,11 @@ class CameraAlignmentDialog(Adw.Window):
 
         vbox = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
-            spacing=12,
-            margin_top=12,
-            margin_bottom=12,
-            margin_start=12,
-            margin_end=12,
+            spacing=6,
+            margin_top=24,
+            margin_bottom=24,
+            margin_start=24,
+            margin_end=24,
         )
         content.append(vbox)
 
@@ -68,10 +85,22 @@ class CameraAlignmentDialog(Adw.Window):
         self.bubble.delete_requested.connect(self.on_point_delete_requested)
         self.bubble.focus_requested.connect(self.on_bubble_focus_requested)
 
-        bottom_bar = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=12, margin_top=12
+        # A floating, dismissible info box
+        self.info_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=6,
+            margin_top=24,  # Increased top margin
+            margin_start=12,
+            margin_end=12,
         )
-        vbox.append(bottom_bar)
+        self.info_box.add_css_class("info-highlight")
+        self.info_box.set_valign(Gtk.Align.START)
+        self.info_box.set_halign(Gtk.Align.CENTER)
+        self.overlay.add_overlay(self.info_box)
+
+        icon = Gtk.Image.new_from_icon_name("dialog-info-symbolic")
+        icon.set_valign(Gtk.Align.CENTER)  # Vertically centered
+        self.info_box.append(icon)
 
         info_label = Gtk.Label(
             label=_(
@@ -82,14 +111,21 @@ class CameraAlignmentDialog(Adw.Window):
         )
         info_label.set_wrap(True)
         info_label.set_hexpand(True)
-        bottom_bar.append(info_label)
+        self.info_box.append(info_label)
+
+        dismiss_button = Gtk.Button.new_from_icon_name("window-close-symbolic")
+        dismiss_button.add_css_class("flat")
+        dismiss_button.set_valign(Gtk.Align.CENTER)  # Vertically centered
+        dismiss_button.connect("clicked", lambda btn: self.info_box.hide())
+        self.info_box.append(dismiss_button)
 
         btn_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=12,
             halign=Gtk.Align.END,
+            margin_top=12,
         )
-        bottom_bar.append(btn_box)
+        vbox.append(btn_box)
 
         for label, cb in [
             (_("Reset Points"), self.on_reset_points_clicked),
