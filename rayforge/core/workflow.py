@@ -7,7 +7,6 @@ import uuid
 import logging
 from typing import List, TYPE_CHECKING
 from blinker import Signal
-from ..config import config
 from .step import Step
 
 if TYPE_CHECKING:
@@ -73,17 +72,6 @@ class Workflow:
         """Disconnects the work plan's handlers from a step's signals."""
         # This is safe; blinker's disconnect is a no-op if not connected.
         step.changed.disconnect(self._on_step_changed)
-
-    def create_step(self, step_cls, name=None) -> Step:
-        """Factory method to create a new step with correct config."""
-        assert config.machine
-        return step_cls(
-            workflow=self,
-            laser=config.machine.heads[0],
-            max_cut_speed=config.machine.max_cut_speed,
-            max_travel_speed=config.machine.max_travel_speed,
-            name=name,
-        )
 
     def add_step(self, step: Step):
         """

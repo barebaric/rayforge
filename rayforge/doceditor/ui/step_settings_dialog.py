@@ -1,11 +1,9 @@
-from typing import Tuple
+from typing import Tuple, Dict, Any
 from gi.repository import Gtk, Adw, GLib  # type: ignore
 from blinker import Signal
-import math
 from ...config import config
-from ...undo import HistoryManager
-from ...undo.models.property_cmd import ChangePropertyCommand
-from ...pipeline.transformer import Smooth
+from ...undo import HistoryManager, ChangePropertyCommand, DictItemCommand
+from ...pipeline.transformer import OpsTransformer, Smooth
 from ...shared.util.adwfix import get_spinrow_int
 from ...core.doc import Doc
 from ...core.step import Step
@@ -48,6 +46,7 @@ class StepSettingsDialog(Adw.Window):
         # Destroy window on close to prevent leaks, as a new one is created
         # each time
         self.set_hide_on_close(False)
+        self.connect("close-request", self._on_close_request)
 
         # The main content area should be scrollable
         scrolled_window = Gtk.ScrolledWindow()
@@ -86,10 +85,14 @@ class StepSettingsDialog(Adw.Window):
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=power_adjustment,
-            digits=0,  # No decimal places
-            draw_value=True,  # Show the current value
+            digits=0,
+            draw_value=True,
         )
-        power_adjustment.set_value(step.power / step.laser.max_power * 100)
+        max_power = (
+            step.laser_dict.get("max_power", 1000) if step.laser_dict else 1000
+        )
+        power_percent = (step.power / max_power * 100) if max_power > 0 else 0
+        power_adjustment.set_value(power_percent)
         power_scale.set_size_request(300, -1)
         power_scale.connect(
             "value-changed",
@@ -142,7 +145,7 @@ class StepSettingsDialog(Adw.Window):
         general_group.add(air_assist_row)
 
         # Advanced/Optimization Settings
-        if step.opstransformers:
+        if self.step.opstransformers_dicts:
             advanced_group = Adw.PreferencesGroup(
                 title=_("Path Post-Processing"),
                 description=_(
@@ -152,18 +155,21 @@ class StepSettingsDialog(Adw.Window):
             )
             page.add(advanced_group)
 
-            for transformer in step.opstransformers:
+            for transformer_dict in self.step.opstransformers_dicts:
+                transformer = OpsTransformer.from_dict(transformer_dict)
                 switch_row = Adw.SwitchRow(
                     title=transformer.label, subtitle=transformer.description
                 )
                 switch_row.set_active(transformer.enabled)
                 advanced_group.add(switch_row)
                 switch_row.connect(
-                    "notify::active", self.on_transformer_toggled, transformer
+                    "notify::active",
+                    self.on_transformer_toggled,
+                    transformer_dict,
                 )
 
                 if isinstance(transformer, Smooth):
-                    # --- Smoothness Amount Setting (Slider) ---
+                    # Smoothness Amount Setting (Slider)
                     smooth_amount_row = Adw.ActionRow(title=_("Smoothness"))
                     smooth_adj = Gtk.Adjustment(
                         lower=0, upper=100, step_increment=1, page_increment=10
@@ -179,7 +185,7 @@ class StepSettingsDialog(Adw.Window):
                     smooth_amount_row.add_suffix(smooth_scale)
                     advanced_group.add(smooth_amount_row)
 
-                    # --- Corner Angle Threshold Setting ---
+                    # Corner Angle Threshold Setting
                     corner_angle_adj = Gtk.Adjustment(
                         lower=0, upper=179, step_increment=1, page_increment=10
                     )
@@ -222,6 +228,14 @@ class StepSettingsDialog(Adw.Window):
 
         self.changed = Signal()
 
+    def _on_close_request(self, window):
+        # Clean up the debounce timer when the window is closed to prevent
+        # a GLib warning.
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+            self._debounce_timer = 0
+        return False  # Allow the window to close
+
     def _debounce(self, callback, *args):
         """
         Schedules a callback to be executed after a short delay, canceling any
@@ -263,7 +277,11 @@ class StepSettingsDialog(Adw.Window):
         self.changed.send(self)
 
     def on_power_changed(self, scale):
-        max_power = self.step.laser.max_power
+        max_power = (
+            self.step.laser_dict.get("max_power", 1000)
+            if self.step.laser_dict
+            else 1000
+        )
         new_value = max_power / 100 * scale.get_value()
         command = ChangePropertyCommand(
             target=self.step,
@@ -324,41 +342,43 @@ class StepSettingsDialog(Adw.Window):
         amount_row.set_sensitive(is_active)
         angle_row.set_sensitive(is_active)
 
-    def on_smoothness_changed(self, scale, transformer):
+    def on_smoothness_changed(self, scale, transformer_dict: Dict[str, Any]):
         new_value = int(scale.get_value())
-        command = ChangePropertyCommand(
-            target=transformer,
-            property_name="amount",
+        command = DictItemCommand(
+            target_dict=transformer_dict,
+            key="amount",
             new_value=new_value,
             name=_("Change smoothness"),
+            on_change_callback=lambda: self.step.changed.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)
 
-    def on_corner_angle_changed(self, spin_row, transformer):
-        value_deg = get_spinrow_int(spin_row)
-        if math.isclose(transformer.corner_angle_threshold, value_deg):
-            return
-        command = ChangePropertyCommand(
-            target=transformer,
-            property_name="corner_angle_threshold",
-            new_value=value_deg,
-            name=_("Change corner angle"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_transformer_toggled(self, row, pspec, transformer):
-        new_value = row.get_active()
-        if transformer.enabled == new_value:
-            return
-        command = ChangePropertyCommand(
-            target=transformer,
-            property_name="enabled",
+    def on_corner_angle_changed(
+        self, spin_row, transformer_dict: Dict[str, Any]
+    ):
+        new_value = get_spinrow_int(spin_row)
+        command = DictItemCommand(
+            target_dict=transformer_dict,
+            key="corner_angle_threshold",
             new_value=new_value,
-            name=_("Toggle '{label}' visibility").format(
-                label=transformer.label
-            ),
+            name=_("Change corner angle"),
+            on_change_callback=lambda: self.step.changed.send(self.step),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)
+
+    def on_transformer_toggled(
+        self, row, pspec, transformer_dict: Dict[str, Any]
+    ):
+        new_value = row.get_active()
+        label = transformer_dict.get("label", "Transformer")
+        command = DictItemCommand(
+            target_dict=transformer_dict,
+            key="enabled",
+            new_value=new_value,
+            name=_("Toggle '{label}'").format(label=label),
+            on_change_callback=lambda: self.step.changed.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)

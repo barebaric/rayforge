@@ -154,6 +154,7 @@ def run_step_in_subprocess(
     )
     final_ops = _create_initial_ops()
     cached_pixel_size = None
+    is_vector = opsproducer.can_scale()
 
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight
@@ -163,7 +164,7 @@ def run_step_in_subprocess(
         base_progress=0.0, progress_range=execute_weight
     )
     execute_iterator = (
-        _execute_vector() if opsproducer.can_scale() else _execute_raster()
+        _execute_vector() if is_vector else _execute_raster()
     )
 
     for chunk, px_size, execute_progress in execute_iterator:
@@ -171,11 +172,13 @@ def run_step_in_subprocess(
         if px_size:
             cached_pixel_size = px_size
         if chunk:
-            # Include the generation_id in the event payload
-            proxy.send_event('ops_chunk', {
-                'chunk': chunk,
-                'generation_id': generation_id
-            })
+            # For raster ops, send chunks for responsive UI. For vector ops,
+            # do not send the unscaled chunk, as it will cause a visual glitch.
+            if not is_vector:
+                proxy.send_event('ops_chunk', {
+                    'chunk': chunk,
+                    'generation_id': generation_id
+                })
         final_ops += chunk
 
     # Ensure path generation is marked as 100% complete before continuing.
@@ -192,7 +195,7 @@ def run_step_in_subprocess(
         for i, transformer in enumerate(enabled_transformers):
             proxy.set_message(
                 _("Applying '{transformer}' on '{workpiece}'").format(
-                    transformer=transformer.__class__.__name__,
+                    transformer=transformer.label,
                     workpiece=workpiece.name,
                 )
             )

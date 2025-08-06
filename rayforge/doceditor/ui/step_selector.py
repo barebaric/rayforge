@@ -1,3 +1,4 @@
+from typing import List, Callable
 from gi.repository import Gtk, Gdk  # type: ignore
 
 
@@ -11,10 +12,10 @@ css = """
 
 
 class StepSelector(Gtk.Popover):
-    def __init__(self, step_classes, **kwargs):
+    def __init__(self, step_factories: List[Callable], **kwargs):
         super().__init__(**kwargs)
         self.set_autohide(True)
-        self.selected = None
+        self.selected_factory: Callable | None = None
 
         # Create a ListBox inside the Popover
         self.listbox = Gtk.ListBox()
@@ -26,22 +27,25 @@ class StepSelector(Gtk.Popover):
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-        # Add step_classes to the ListBox
-        for cls in step_classes:
-            label = Gtk.Label(label=cls.typelabel)
+        # Add step_factories to the ListBox
+        for factory_func in step_factories:
+            # Create a temporary, parentless step to get its default label.
+            # This is a bit of a hack but keeps the UI decoupled.
+            temp_step = factory_func(workflow=None)
+            label = Gtk.Label(label=temp_step.typelabel)
             label.set_xalign(0)
             label.add_css_class("step-selector-label")
             row = Gtk.ListBoxRow()
             row.set_child(label)
-            row.cls = cls
+            row.factory = factory_func
             self.listbox.append(row)
 
-        # Connect the row-activated signal to handle cls selection
+        # Connect the row-activated signal to handle factory selection
         self.listbox.connect("row-activated", self.on_row_activated)
 
     def on_row_activated(self, listbox, row):
-        self.selected = row.cls
+        self.selected_factory = row.factory
         self.popdown()

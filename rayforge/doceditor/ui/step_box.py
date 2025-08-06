@@ -38,6 +38,7 @@ class StepBox(Adw.ActionRow):
 
         # Connect to the model's changed signal to keep the UI in sync
         self.step.changed.connect(self.on_step_changed)
+        self.step.visibility_changed.connect(self.on_step_changed)
         self.on_step_changed(self.step)  # trigger initial UI update
 
     def set_prefix(self, prefix):

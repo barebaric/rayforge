@@ -3,7 +3,6 @@ from typing import List
 from blinker import Signal
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
-from .step import Contour
 from .layer import Layer
 
 
@@ -24,14 +23,11 @@ class Doc:
         self._layer_ref_for_pyreverse: Layer
         self._active_layer_index: int = 0
 
+        # A new document starts with one empty layer. The application
+        # controller (e.g., MainWindow) is responsible for populating it
+        # with a default step.
         layer = Layer(self, _("Layer 1"))
         self.add_layer(layer)
-
-        # Create a default Contour step and add it to the first layer's
-        # workflow.
-        workflow = layer.workflow
-        default_step = workflow.create_step(Contour)
-        workflow.add_step(default_step)
 
     def __iter__(self):
         """Iterates through all workpieces in all layers."""
@@ -68,9 +64,11 @@ class Doc:
             logger.warning("Attempted to set a non-existent layer as active.")
 
     def _on_model_changed(self, sender, **kwargs):
-        """A single handler for changes in layers."""
-        # Just bubble up the notification. The document state has changed.
-        self.changed.send(self)
+        """
+        A single handler for changes in layers. It propagates all keyword
+        arguments to ensure the OpsGenerator gets full context.
+        """
+        self.changed.send(self, **kwargs)
 
     def add_layer(self, layer: Layer):
         self.layers.append(layer)

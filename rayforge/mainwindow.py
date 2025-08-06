@@ -2,7 +2,7 @@ import asyncio
 import logging
 import uuid
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Callable
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw, GObject  # type: ignore
 from . import __version__
 from .shared.tasker import task_mgr
@@ -15,6 +15,11 @@ from .icons import get_icon
 from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.workpiece import WorkPiece
+from .pipeline.steps import (
+    create_contour_step,
+    create_outline_step,
+    create_raster_step,
+)
 from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
 from .importer import renderers, renderer_by_mime_type, renderer_by_extension
@@ -328,6 +333,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Make a default document.
         self.doc = Doc()
+        self._initialize_document()
         self.doc.changed.connect(self.on_doc_changed)
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
         self.doc.history_manager.changed.connect(self.on_history_changed)
@@ -369,7 +375,14 @@ class MainWindow(Adw.ApplicationWindow):
 
         # The WorkflowView will be updated when a layer is activated.
         initial_workflow = self.doc.layers[0].workflow
-        self.workflowview = WorkflowView(initial_workflow)
+        step_factories: List[Callable] = [
+            create_contour_step,
+            create_outline_step,
+            create_raster_step,
+        ]
+        self.workflowview = WorkflowView(
+            initial_workflow, step_factories=step_factories
+        )
         self.workflowview.set_size_request(400, -1)
         self.workflowview.set_margin_top(20)
         self.workflowview.set_margin_end(12)
@@ -417,6 +430,21 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def _initialize_document(self):
+        """
+        Adds required initial state to a new document, such as a default
+        step.
+        """
+        if not self.doc.layers:
+            return
+
+        first_layer = self.doc.layers[0]
+        if not first_layer.workflow.has_steps():
+            workflow = first_layer.workflow
+            default_step = create_contour_step(workflow=workflow)
+            workflow.add_step(default_step)
+            logger.info("Added default Contour step to initial document.")
 
     def _on_root_click_pressed(self, gesture, n_press, x, y):
         """
@@ -1040,7 +1068,12 @@ class MainWindow(Adw.ApplicationWindow):
                 if not head.frame_power:
                     return
 
-                ops = await generate_job_ops(self.doc, config.machine, context)
+                ops = await generate_job_ops(
+                    self.doc,
+                    config.machine,
+                    self.surface.ops_generator,
+                    context,
+                )
                 frame = ops.get_frame(
                     power=head.frame_power,
                     speed=config.machine.max_travel_speed,
@@ -1066,7 +1099,12 @@ class MainWindow(Adw.ApplicationWindow):
             try:
                 if not config.machine:
                     raise RuntimeError("No machine is configured")
-                ops = await generate_job_ops(self.doc, config.machine, context)
+                ops = await generate_job_ops(
+                    self.doc,
+                    config.machine,
+                    self.surface.ops_generator,
+                    context,
+                )
                 if not driver_mgr.driver:
                     raise RuntimeError("No driver configured to send job.")
                 await driver_mgr.driver.run(ops, config.machine)
@@ -1118,7 +1156,12 @@ class MainWindow(Adw.ApplicationWindow):
 
             try:
                 # 1. Generate Ops (async, reports progress)
-                ops = await generate_job_ops(self.doc, config.machine, context)
+                ops = await generate_job_ops(
+                    self.doc,
+                    config.machine,
+                    self.surface.ops_generator,
+                    context,
+                )
 
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message("Encoding G-code...")

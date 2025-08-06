@@ -114,11 +114,13 @@ class LayerElement(CanvasElement):
         show_travel = (
             work_surface._show_travel_moves if work_surface else False
         )
+        ops_generator = work_surface.ops_generator
 
         wss_to_add = model_steps - current_ws_data
         for ws_data in wss_to_add:
             ws_elem = StepElement(
                 step=ws_data,
+                ops_generator=ops_generator,
                 x=0,
                 y=0,
                 width=self.width,

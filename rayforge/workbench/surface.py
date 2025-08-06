@@ -7,6 +7,7 @@ from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..machine.models.machine import Machine
+from ..pipeline.generator import OpsGenerator
 from ..undo import SetterCommand, ListItemCommand
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
@@ -45,6 +46,7 @@ class WorkSurface(Canvas):
         super().__init__(**kwargs)
         self.doc = doc
         self.machine = machine
+        self.ops_generator = OpsGenerator(doc)
         self.zoom_level = 1.0
         self._show_travel_moves = False
         self._workpieces_visible = True
@@ -111,7 +113,7 @@ class WorkSurface(Canvas):
         # Connect to undo/redo signals from the canvas
         self.move_begin.connect(self._on_any_transform_begin)
         self.move_end.connect(self._on_move_end)
-        self.resize_begin.connect(self._on_any_transform_begin)
+        self.resize_begin.connect(self._on_resize_begin)
         self.resize_end.connect(self._on_resize_end)
         self.rotate_begin.connect(self._on_any_transform_begin)
         self.rotate_end.connect(self._on_rotate_end)
@@ -163,6 +165,7 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
+        """Saves the initial state of elements before any transformation."""
         self._transform_start_states.clear()
         for element in elements:
             if not isinstance(element.data, WorkPiece):
@@ -173,6 +176,11 @@ class WorkSurface(Canvas):
                 "size": workpiece.size,
                 "angle": workpiece.angle,
             }
+
+    def _on_resize_begin(self, sender, elements: List[CanvasElement]):
+        """Handles start of a resize, which invalidates Ops."""
+        self._on_any_transform_begin(sender, elements)
+        self.ops_generator.pause()
 
     def _on_move_end(self, sender, elements: List[CanvasElement]):
         history = self.doc.history_manager
@@ -249,8 +257,8 @@ class WorkSurface(Canvas):
                             start_state["size"],
                         )
                     )
-
         self._transform_start_states.clear()
+        self.ops_generator.resume()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
         workpieces_to_delete = [
@@ -658,6 +666,7 @@ class WorkSurface(Canvas):
         the Z-order of the layers in the document.
         """
         self.doc = doc
+        self.ops_generator.doc = doc
 
         # --- Step 1: Add and Remove LayerElements ---
         doc_layers_set = set(doc.layers)

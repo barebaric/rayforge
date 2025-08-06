@@ -1,8 +1,7 @@
 import logging
-from typing import Optional
+from typing import Optional, List, Callable
 from gi.repository import Gtk  # type: ignore
 from ...core.workflow import Workflow
-from ...core.step import Step
 from ...undo.models.list_cmd import ListItemCommand, ReorderListCommand
 from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
@@ -19,9 +18,15 @@ class WorkflowView(Expander):
     for a given Workflow.
     """
 
-    def __init__(self, workflow: Workflow, **kwargs):
+    def __init__(
+        self,
+        workflow: Workflow,
+        step_factories: List[Callable],
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.workflow: Optional[Workflow] = None  # Will be set by set_workflow
+        self.step_factories = step_factories
         self.set_expanded(True)
 
         # A container for all content that will be revealed by the expander
@@ -143,7 +148,7 @@ class WorkflowView(Expander):
         if not self.workflow or not self.workflow.doc:
             return
 
-        popup = StepSelector(Step.__subclasses__())
+        popup = StepSelector(self.step_factories)
         popup.set_parent(button)
         popup.popup()
         popup.connect("closed", self.on_add_dialog_response)
@@ -152,9 +157,9 @@ class WorkflowView(Expander):
         """Handles the creation of a new step after the popup closes."""
         if not self.workflow or not self.workflow.doc:
             return
-        if popup.selected:
-            step_cls = popup.selected
-            new_step = self.workflow.create_step(step_cls)
+        if popup.selected_factory:
+            step_factory = popup.selected_factory
+            new_step = step_factory(workflow=self.workflow)
             command = ListItemCommand(
                 owner_obj=self.workflow,
                 item=new_step,

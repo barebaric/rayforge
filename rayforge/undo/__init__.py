@@ -7,6 +7,7 @@ Command pattern.
 from .models.history import HistoryManager
 from .models.command import Command
 from .models.composite_cmd import CompositeCommand
+from .models.dict_cmd import DictItemCommand
 from .models.list_cmd import ListItemCommand, ReorderListCommand
 from .models.property_cmd import ChangePropertyCommand
 from .models.setter_cmd import SetterCommand
@@ -16,6 +17,7 @@ __all__ = [
     "Command",
     "ChangePropertyCommand",
     "CompositeCommand",
+    "DictItemCommand",
     "ListItemCommand",
     "ReorderListCommand",
     "SetterCommand",

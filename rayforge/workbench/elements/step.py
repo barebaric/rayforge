@@ -1,10 +1,13 @@
 import logging
-from typing import Optional, cast
+from typing import Optional, cast, TYPE_CHECKING
 from ...core.workpiece import WorkPiece
 from ...core.workflow import Step
 from ...core.ops import Ops
 from ..canvas import CanvasElement
 from .ops import WorkPieceOpsElement
+
+if TYPE_CHECKING:
+    from ...pipeline.generator import OpsGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +21,8 @@ class StepElement(CanvasElement):
 
     def __init__(
         self,
-        step,
+        step: Step,
+        ops_generator: "OpsGenerator",
         x: float,
         y: float,
         width: float,
@@ -31,6 +35,7 @@ class StepElement(CanvasElement):
 
         Args:
             step: The Step data object.
+            ops_generator: The central generator for pipeline operations.
             x: The x-coordinate (pixel) relative to the parent.
             y: The y-coordinate (pixel) relative to the parent.
             width: The width (pixel).
@@ -41,22 +46,22 @@ class StepElement(CanvasElement):
             x, y, width, height, data=step, selectable=False, **kwargs
         )
         self.show_travel_moves = show_travel_moves
+        self.ops_generator = ops_generator
 
-        # Connect to both model signals with a single handler
+        # Connect to model signals for visibility and structural changes.
         step.changed.connect(self._on_step_model_changed)
         step.visibility_changed.connect(self._on_step_model_changed)
 
-        # Connect to the actual signals from Step's async pipeline
-        step.ops_generation_starting.connect(
+        # Connect to the OpsGenerator's signals for data pipeline events.
+        self.ops_generator.ops_generation_starting.connect(
             self._on_ops_generation_starting
         )
-        # Note: There is no explicit 'cleared' signal in the async pipeline,
-        # starting implies clearing for the UI representation.
-        step.ops_chunk_available.connect(self._on_ops_chunk_available)
-        step.ops_generation_finished.connect(
+        self.ops_generator.ops_chunk_available.connect(
+            self._on_ops_chunk_available
+        )
+        self.ops_generator.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
-        # Workpiece elements are added dynamically when ops chunks arrive
 
     def add_workpiece(self, workpiece) -> WorkPieceOpsElement:
         """
@@ -136,6 +141,10 @@ class StepElement(CanvasElement):
         generation_id: int,
     ):
         """Called before ops generation starts for a workpiece."""
+        # Only handle events for the step this element represents
+        if sender is not self.data:
+            return
+
         logger.debug(
             f"StepElem '{sender.name}': Received ops_generation_starting "
             f"for {workpiece.name}"
@@ -144,8 +153,6 @@ class StepElement(CanvasElement):
             "Received ops_start, but element has no canvas or parent context"
         )
 
-        # If the signal is for a workpiece no longer in our layer, remove
-        # its element
         if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
@@ -163,6 +170,10 @@ class StepElement(CanvasElement):
         generation_id: int,
     ):
         """Called when a chunk of ops is available for a workpiece."""
+        # Only handle events for the step this element represents
+        if sender is not self.data:
+            return
+
         logger.debug(
             f"StepElem '{sender.name}': Received ops_chunk_available for "
             f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
@@ -171,8 +182,6 @@ class StepElement(CanvasElement):
             "Received update, but element has no canvas or parent context"
         )
 
-        # If the signal is for a workpiece no longer in our layer, remove its
-        # element
         if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
@@ -192,6 +201,10 @@ class StepElement(CanvasElement):
         Called when ops generation is finished. This handler ensures a final,
         guaranteed redraw of the element's complete state.
         """
+        # Only handle events for the step this element represents
+        if sender is not self.data:
+            return
+
         logger.debug(
             f"StepElem '{sender.name}': Received ops_generation_finished "
             f"for {workpiece.name}"
@@ -201,8 +214,6 @@ class StepElement(CanvasElement):
             "context"
         )
 
-        # If the signal is for a workpiece no longer in our layer, remove its
-        # element
         if workpiece not in self.parent.data.workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
@@ -210,5 +221,5 @@ class StepElement(CanvasElement):
             return
 
         elem = self._find_or_add_workpiece_elem(workpiece)
-        final_ops = sender.get_ops(workpiece)
+        final_ops = self.ops_generator.get_ops(sender, workpiece)
         elem.set_ops(final_ops, generation_id=generation_id)

@@ -1,3 +1,7 @@
+"""
+Handles the final assembly of machine operations for an entire job.
+"""
+
 import asyncio
 import logging
 from typing import Optional
@@ -6,18 +10,45 @@ from ..shared.tasker.context import ExecutionContext
 from ..shared.tasker.manager import CancelledError
 from ..core.doc import Doc
 from ..core.ops import Ops
+from ..pipeline.generator import OpsGenerator
 
 
 logger = logging.getLogger(__name__)
 
 
 async def generate_job_ops(
-    doc: Doc, machine: Machine, context: Optional[ExecutionContext] = None
+    doc: Doc,
+    machine: Machine,
+    ops_generator: OpsGenerator,
+    context: Optional[ExecutionContext] = None,
 ) -> Ops:
     """
-    Executes all steps in all assigned workflows for a document and returns
-    the final, combined Ops for the entire job, tailored for a specific
-    machine.
+    Assembles all workpiece Ops into a single, final job for a machine.
+
+    This function iterates through all visible step/workpiece pairs in a
+    document. For each pair, it fetches the pre-generated, cached `Ops` from
+    the `OpsGenerator`. It then applies the final transformations to place
+    these local `Ops` into the machine's global coordinate space.
+
+    The transformations include:
+    1. Rotating the `Ops` around the workpiece's local center.
+    2. Translating the `Ops` to the workpiece's final position on the work
+       area.
+    3. Flipping the Y-axis if the machine's coordinate system requires it.
+    4. Clipping the final `Ops` to the machine's physical boundaries.
+    5. Applying the number of passes specified in the step.
+
+    Args:
+        doc: The document containing all layers, workflows, and workpieces.
+        machine: The target machine, used for its dimensions and properties.
+        ops_generator: The instance of the OpsGenerator that holds the cached,
+            pre-generated Ops for each workpiece.
+        context: An optional ExecutionContext for reporting progress and
+            handling cancellation in an async task environment.
+
+    Returns:
+        A single, combined Ops object representing the entire job, ready to be
+        encoded or sent to a driver.
     """
     final_ops = Ops()
     machine_width, machine_height = machine.dimensions
@@ -43,7 +74,8 @@ async def generate_job_ops(
             )
             await asyncio.sleep(0)
 
-        step_ops = workpiece.layer.get_ops(step, workpiece)
+        # This is the critical hand-off from the generator to the assembler.
+        step_ops = ops_generator.get_ops(step, workpiece)
         if not step_ops:
             continue
 
