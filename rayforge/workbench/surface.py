@@ -8,7 +8,12 @@ from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..machine.models.machine import Machine
 from ..pipeline.generator import OpsGenerator
-from ..undo import SetterCommand, ListItemCommand, Command
+from ..undo import (
+    SetterCommand,
+    ListItemCommand,
+    Command,
+    ChangePropertyCommand,
+)
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.dot import DotElement
@@ -345,9 +350,25 @@ class WorkSurface(Canvas):
                 t.add(cmd)
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
-        # First, let the parent Canvas handle the event to determine if a
-        # resize is starting and to set self._active_elem and self._resizing.
+        # Let the parent Canvas handle the event first. It will update the
+        # selection, set self._active_elem, and determine if a resize is
+        # starting.
         super().on_button_press(gesture, n_press, x, y)
+
+        # After the click, check if a new workpiece is active.
+        active_wp = self.get_active_workpiece()
+        if active_wp and active_wp.layer:
+            # If the workpiece's layer is not the document's active layer,
+            # create an undoable command to change it.
+            if active_wp.layer != self.doc.active_layer:
+                cmd = ChangePropertyCommand(
+                    target=self.doc,
+                    property_name="active_layer",
+                    new_value=active_wp.layer,
+                    name=_("Select Layer"),
+                )
+                # Using execute() adds it to the undo stack.
+                self.doc.history_manager.execute(cmd)
 
         # If a resize operation has started on a WorkPieceElement, hide the
         # corresponding ops elements to improve performance.

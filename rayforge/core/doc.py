@@ -55,7 +55,8 @@ class Doc:
         """Returns the currently active layer."""
         return self.layers[self._active_layer_index]
 
-    def set_active_layer(self, layer: Layer):
+    @active_layer.setter
+    def active_layer(self, layer: Layer):
         """Sets the active layer by instance."""
         try:
             new_index = self.layers.index(layer)
