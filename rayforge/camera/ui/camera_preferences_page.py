@@ -1,15 +1,27 @@
 from gi.repository import Gtk, Adw  # type: ignore
+from blinker import Signal
+from typing import List
 from ..models.camera import Camera
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 
 
 class CameraPreferencesPage(Adw.PreferencesPage):
-    def __init__(self, machine, **kwargs):
+
+    camera_add_requested = Signal()
+    """Signal emitted when a user requests to add a camera.
+    Sends: sender, device_id (str)
+    """
+    camera_remove_requested = Signal()
+    """Signal emitted when a user requests to remove a camera.
+    Sends: sender, camera (Camera)
+    """
+
+    def __init__(self, **kwargs):
         super().__init__(
             title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs
         )
-        self.machine = machine
+        self._cameras: List[Camera] = []
 
         # List of Cameras
         camera_list_group = Adw.PreferencesGroup(
@@ -45,24 +57,46 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         # Connect signals for cameras
         self.camera_list.connect("row-selected", self.on_camera_selected)
 
-        # Populate the list with existing Cameras
-        self.populate_camera_list()
+    def set_cameras(self, cameras: List[Camera]):
+        """Sets the list of cameras to be displayed and refreshes the UI."""
+        self._cameras = cameras
+        self._populate_camera_list()
 
-    def populate_camera_list(self):
-        """Populate the list of Cameras."""
-        for camera in self.machine.cameras:
+    def _populate_camera_list(self):
+        """Populate the list of Cameras from the internal list."""
+        selected_row = self.camera_list.get_selected_row()
+        selected_index = selected_row.get_index() if selected_row else -1
+
+        # Clear the listbox
+        while child := self.camera_list.get_row_at_index(0):
+            self.camera_list.remove(child)
+
+        # Repopulate from the internal list
+        for camera in self._cameras:
             row = Adw.ActionRow(
                 title=_("Camera: {name}").format(name=camera.name)
             )
             row.set_margin_top(5)
             row.set_margin_bottom(5)
             self.camera_list.append(row)
-        row = self.camera_list.get_row_at_index(0)
+
+        # Restore selection
+        if 0 <= selected_index < len(self._cameras):
+            row = self.camera_list.get_row_at_index(selected_index)
+        elif self._cameras:
+            # If previous selection is invalid, select the first item
+            row = self.camera_list.get_row_at_index(0)
+        else:
+            row = None
+
         if row:
             self.camera_list.select_row(row)
+        else:
+            # Explicitly set properties to None if list is empty
+            self.camera_properties_widget.set_camera(None)
 
     def on_add_camera(self, button):
-        """Add a new Camera to the machine."""
+        """Show a dialog to select a new camera device."""
         dialog = CameraSelectionDialog(self.get_ancestor(Gtk.Window))
         dialog.present()
         dialog.connect("response", self.on_camera_selection_dialog_response)
@@ -71,45 +105,26 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         if response_id == "select":
             device_id = dialog.selected_device_id
             if device_id:
-                # Check if a camera with this device_id already exists
-                if any(c.device_id == device_id for c in self.machine.cameras):
-                    # Optionally, show a message to the user that camera
-                    # exists
+                # Check for duplicates in the current list
+                if any(c.device_id == device_id for c in self._cameras):
                     return
-
-                new_camera = Camera(
-                    _("Camera {device_id}").format(device_id=device_id),
-                    device_id,
-                )
-                new_camera.enabled = True
-                self.machine.add_camera(new_camera)
-                row = Adw.ActionRow(
-                    title=_("Camera: {camera_name}").format(
-                        camera_name=new_camera.name
-                    )
-                )
-                row.set_margin_top(5)
-                row.set_margin_bottom(5)
-                self.camera_list.append(row)
-                self.camera_list.select_row(row)
+                # Emit a signal to request the addition
+                self.camera_add_requested.send(self, device_id=device_id)
         dialog.destroy()
 
     def on_remove_camera(self, button):
-        """Remove the selected Camera from the machine."""
+        """Emit a signal to request removal of the selected Camera."""
         selected_row = self.camera_list.get_selected_row()
         if selected_row:
             index = selected_row.get_index()
-            camera = self.machine.cameras[index]
-            camera.enabled = False
-            self.machine.remove_camera(camera)
-            self.camera_list.remove(selected_row)
-            self.camera_properties_widget.set_camera(None)
+            camera_to_remove = self._cameras[index]
+            self.camera_remove_requested.send(self, camera=camera_to_remove)
 
     def on_camera_selected(self, listbox, row):
         """Update the configuration panel when a Camera is selected."""
         if row is not None:
             index = row.get_index()
-            selected_camera = self.machine.cameras[index]
+            selected_camera = self._cameras[index]
             self.camera_properties_widget.set_camera(selected_camera)
         else:
             self.camera_properties_widget.set_camera(None)

@@ -1,4 +1,5 @@
 from gi.repository import Adw  # type: ignore
+from ...camera.models import Camera
 from ..models.machine import Machine
 from .general_preferences_page import GeneralPreferencesPage
 from .firmware_settings_page import FirmwareSettingsPage
@@ -29,10 +30,55 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
 
         self.add(AdvancedPreferencesPage(machine=self.machine))
         self.add(LaserPreferencesPage(machine=self.machine))
-        self.add(CameraPreferencesPage(machine=self.machine))
+
+        # Create and manage the decoupled camera page
+        self.camera_page = CameraPreferencesPage()
+        self.camera_page.camera_add_requested.connect(
+            self._on_camera_add_requested
+        )
+        self.camera_page.camera_remove_requested.connect(
+            self._on_camera_remove_requested
+        )
+        self.add(self.camera_page)
+
+        # Sync UI with model state
+        self.machine.changed.connect(self._on_machine_changed)
+        self.connect("destroy", self._on_destroy)
+
+        # Initial population of all dependent pages
+        self._on_machine_changed(self.machine)
 
     def _on_show_toast(self, sender, message: str):
         """
         Handler to show the toast when requested by the child page.
         """
         self.add_toast(Adw.Toast(title=message, timeout=5))
+
+    def _on_camera_add_requested(self, sender, *, device_id: str):
+        """Handles the request to add a new camera to the machine."""
+        if any(c.device_id == device_id for c in self.machine.cameras):
+            return  # Safety check
+
+        new_camera = Camera(
+            _("Camera {device_id}").format(device_id=device_id),
+            device_id,
+        )
+        new_camera.enabled = True
+        self.machine.add_camera(new_camera)
+        # The machine.changed signal will handle the UI update
+
+    def _on_camera_remove_requested(self, sender, *, camera: Camera):
+        """Handles the request to remove a camera from the machine."""
+        camera.enabled = False
+        self.machine.remove_camera(camera)
+        # The machine.changed signal will handle the UI update
+
+    def _on_machine_changed(self, sender, **kwargs):
+        """Updates child pages that depend on the machine model."""
+        if hasattr(self, "camera_page"):
+            self.camera_page.set_cameras(self.machine.cameras)
+
+    def _on_destroy(self, *args):
+        """Disconnects signals to prevent memory leaks."""
+        if self.machine:
+            self.machine.changed.disconnect(self._on_machine_changed)
