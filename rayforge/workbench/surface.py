@@ -8,7 +8,7 @@ from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..machine.models.machine import Machine
 from ..pipeline.generator import OpsGenerator
-from ..undo import SetterCommand, ListItemCommand
+from ..undo import SetterCommand, ListItemCommand, Command
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.dot import DotElement
@@ -19,6 +19,71 @@ from .elements.layer import LayerElement
 
 
 logger = logging.getLogger(__name__)
+
+
+class MoveWorkpiecesLayerCommand(Command):
+    """
+    An undoable command to move one or more workpieces to a different layer.
+    """
+
+    def __init__(
+        self,
+        canvas: "WorkSurface",
+        workpieces: List[WorkPiece],
+        new_layer: Layer,
+        old_layer: Layer,
+        name: Optional[str] = None,
+    ):
+        super().__init__(name)
+        self.canvas = canvas
+        self.workpieces = workpieces
+        self.new_layer = new_layer
+        self.old_layer = old_layer
+        if not name:
+            self.name = _("Move to another layer")
+
+    def _move(self, from_layer: Layer, to_layer: Layer):
+        """The core logic for moving workpieces, view-first."""
+        from_layer_elem = cast(
+            Optional[LayerElement], self.canvas.find_by_data(from_layer)
+        )
+        to_layer_elem = cast(
+            Optional[LayerElement], self.canvas.find_by_data(to_layer)
+        )
+
+        if not from_layer_elem or not to_layer_elem:
+            logger.warning("Could not find layer elements for move operation.")
+            return
+
+        # Step 1 & 2: UI-first, flicker-free re-parenting
+        elements_to_move = []
+        for wp in self.workpieces:
+            wp_elem = self.canvas.find_by_data(wp)
+            if wp_elem:
+                elements_to_move.append(wp_elem)
+
+        for elem in elements_to_move:
+            to_layer_elem.add(elem)
+
+        # Enforce correct Z-order immediately after the move.
+        from_layer_elem.sort_children_by_z_order()
+        to_layer_elem.sort_children_by_z_order()
+        self.canvas.queue_draw()
+
+        # Step 3: Update the model
+        # The signals fired by these methods will now trigger a non-destructive
+        # reconciliation in the LayerElements.
+        for wp in self.workpieces:
+            from_layer.remove_workpiece(wp)
+            to_layer.add_workpiece(wp)
+
+    def execute(self):
+        """Executes the command, moving workpieces to the new layer."""
+        self._move(self.old_layer, self.new_layer)
+
+    def undo(self):
+        """Undoes the command, moving workpieces back to the old layer."""
+        self._move(self.new_layer, self.old_layer)
 
 
 class WorkSurface(Canvas):
@@ -859,8 +924,37 @@ class WorkSurface(Canvas):
             self.reset_view()
             return True  # Event handled
 
-        # Handle clipboard and duplication
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+        # Handle moving workpiece to another layer
+        if is_ctrl and (
+            keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
+        ):
+            selected_wps = self.get_selected_workpieces()
+            if not selected_wps:
+                return True
+
+            layers = self.doc.layers
+            if len(layers) <= 1:
+                return True
+
+            current_layer = selected_wps[0].layer
+            if not current_layer:
+                return True
+
+            current_index = layers.index(current_layer)
+            direction = -1 if keyval == Gdk.KEY_Page_Up else 1
+            new_index = (current_index + direction + len(layers)) % len(layers)
+            new_layer = layers[new_index]
+
+            cmd = MoveWorkpiecesLayerCommand(
+                self, selected_wps, new_layer, current_layer
+            )
+            self.doc.history_manager.execute(cmd)
+
+            return True
+
+        # Handle clipboard and duplication
         if is_ctrl:
             selected_wps = self.get_selected_workpieces()
             if keyval == Gdk.KEY_x:

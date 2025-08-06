@@ -11,6 +11,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _z_order_sort_key(element: CanvasElement):
+    """
+    Sort key to ensure StepElements are drawn on top of WorkPieceElements.
+    """
+    if isinstance(element, WorkPieceElement):
+        return 0  # Draw workpieces first (at the bottom)
+    if isinstance(element, StepElement):
+        return 1  # Draw step ops on top of workpieces
+    return 2  # Other elements on top
+
+
 class LayerElement(CanvasElement):
     """
     A non-selectable, non-visible container element in the canvas that
@@ -42,6 +53,10 @@ class LayerElement(CanvasElement):
             if isinstance(elem, StepElement):
                 elem.set_size(width, height)
 
+    def sort_children_by_z_order(self):
+        """Sorts child elements to maintain correct drawing order."""
+        self.children.sort(key=_z_order_sort_key)
+
     def sync_with_model(self, *args, **kwargs):
         """
         Updates the element's properties and reconciles all child elements
@@ -59,6 +74,7 @@ class LayerElement(CanvasElement):
 
         # Use local import to break circular dependency and get canvas type
         from ..surface import WorkSurface
+
         work_surface = cast(WorkSurface, self.canvas)
 
         # --- Reconcile WorkPieceElements ---
@@ -140,14 +156,7 @@ class LayerElement(CanvasElement):
 
         # Sort the children to ensure that all StepElements are drawn on
         # top of all WorkPieceElements.
-        def z_order_sort_key(element: CanvasElement):
-            if isinstance(element, WorkPieceElement):
-                return 0  # Draw workpieces first (at the bottom)
-            if isinstance(element, StepElement):
-                return 1  # Draw step ops on top of workpieces
-            return 2  # Other elements on top
-
-        self.children.sort(key=z_order_sort_key)
+        self.sort_children_by_z_order()
 
         self.canvas.queue_draw()
 
