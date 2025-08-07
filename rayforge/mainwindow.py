@@ -1036,14 +1036,18 @@ class MainWindow(Adw.ApplicationWindow):
         if not self.doc.workpieces:
             return
 
-        command = ReorderListCommand(
-            target_obj=self.doc,
-            list_property_name="workpieces",
-            new_list=[],
-            setter_method_name="set_workpieces",
-            name=_("Remove all workpieces"),
-        )
-        self.doc.history_manager.execute(command)
+        history = self.doc.history_manager
+        with history.transaction(_("Remove all workpieces")) as t:
+            for layer in self.doc.layers:
+                if layer.workpieces:
+                    command = ReorderListCommand(
+                        target_obj=layer,
+                        list_property_name="workpieces",
+                        new_list=[],
+                        setter_method_name="set_workpieces",
+                        name=_("Clear Layer Workpieces"),
+                    )
+                    t.execute(command)
 
     def on_export_clicked(self, action, param=None):
         # Create a file chooser dialog for saving the file
