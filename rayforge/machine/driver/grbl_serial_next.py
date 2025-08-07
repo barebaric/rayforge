@@ -177,7 +177,7 @@ class GrblNextSerialDriver(Driver):
                 self._current_request = None
 
     async def set_hold(self, hold: bool = True) -> None:
-        await self._execute_command("!" if hold else "~")
+        await self._send_command("!" if hold else "~")
 
     async def cancel(self) -> None:
         # GRBL reset command (Ctrl-X) is usually sent as a byte, not a string

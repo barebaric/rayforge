@@ -294,7 +294,7 @@ class GrblNextNetworkDriver(Driver):
                 self._current_request = None
 
     async def set_hold(self, hold: bool = True) -> None:
-        await self._execute_command("!" if hold else "~")
+        await self._send_command("!" if hold else "~")
 
     async def cancel(self) -> None:
         # Cancel is a fire-and-forget soft reset, doesn't always
