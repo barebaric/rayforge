@@ -24,7 +24,7 @@ msgstr "Capa 1"
 
 #: rayforge/camera/ui/selection_dialog.py:11
 msgid "Select Camera"
-msgstr "Seleccionar Cámara"
+msgstr "Seleccionar cámara"
 
 #: rayforge/camera/ui/selection_dialog.py:12
 msgid "Please select an available camera device"
@@ -50,12 +50,12 @@ msgstr "Cámara {device_id}"
 #: rayforge/camera/ui/selection_dialog.py:74
 #, python-brace-format
 msgid "Failed to load image for Device ID: {device_id}"
-msgstr "Fallo al cargar la imagen para el ID de Dispositivo: {device_id}"
+msgstr "Error al cargar la imagen para el ID de dispositivo: {device_id}"
 
 #: rayforge/camera/ui/selection_dialog.py:106
 #, python-brace-format
 msgid "Device ID: {device_id}"
-msgstr "ID de Dispositivo: {device_id}"
+msgstr "ID del dispositivo: {device_id}"
 
 #: rayforge/camera/ui/point_bubble_widget.py:69
 msgid "Delete this point"
@@ -63,7 +63,7 @@ msgstr "Eliminar este punto"
 
 #: rayforge/camera/ui/properties_widget.py:18
 msgid "Camera Properties"
-msgstr "Propiedades de la Cámara"
+msgstr "Propiedades de la cámara"
 
 #: rayforge/camera/ui/properties_widget.py:19
 msgid "Configure the selected camera"
@@ -71,7 +71,7 @@ msgstr "Configurar la cámara seleccionada"
 
 #: rayforge/camera/ui/properties_widget.py:22
 msgid "Device ID"
-msgstr "ID del Dispositivo"
+msgstr "ID del dispositivo"
 
 #: rayforge/camera/ui/properties_widget.py:26
 #: rayforge/machine/ui/general_preferences_page.py:39
@@ -89,16 +89,16 @@ msgstr "Configurar"
 
 #: rayforge/camera/ui/properties_widget.py:42
 msgid "Image Settings"
-msgstr "Ajustes de Imagen"
+msgstr "Ajustes de imagen"
 
 #: rayforge/camera/ui/properties_widget.py:53
 msgid "Image Alignment"
-msgstr "Alineación de Imagen"
+msgstr "Alineación de imagen"
 
 #: rayforge/camera/ui/alignment_dialog.py:55
 #, python-brace-format
 msgid "{camera_name} – Image Alignment"
-msgstr "{camera_name} – Alineación de Imagen"
+msgstr "{camera_name} – Alineación de imagen"
 
 #: rayforge/camera/ui/alignment_dialog.py:107
 msgid ""
@@ -108,11 +108,11 @@ msgstr "Haga clic en la imagen para añadir nuevos puntos de referencia. Haga cl
 
 #: rayforge/camera/ui/alignment_dialog.py:131
 msgid "Reset Points"
-msgstr "Restablecer Puntos"
+msgstr "Restablecer puntos"
 
 #: rayforge/camera/ui/alignment_dialog.py:132
 msgid "Clear All Points"
-msgstr "Borrar Todos los Puntos"
+msgstr "Borrar todos los puntos"
 
 #: rayforge/camera/ui/alignment_dialog.py:139
 msgid "Apply"
@@ -121,15 +121,15 @@ msgstr "Aplicar"
 #: rayforge/camera/ui/image_settings_dialog.py:15
 #, python-brace-format
 msgid "{camera_name} - Camera Image Settings"
-msgstr "{camera_name} - Ajustes de Imagen de la Cámara"
+msgstr "{camera_name} - Ajustes de imagen de la cámara"
 
 #: rayforge/camera/ui/image_settings_dialog.py:37
 msgid "Camera Image Settings"
-msgstr "Ajustes de Imagen de la Cámara"
+msgstr "Ajustes de imagen de la cámara"
 
 #: rayforge/camera/ui/image_settings_dialog.py:43
 msgid "Auto White Balance"
-msgstr "Balance de Blancos Automático"
+msgstr "Balance de blancos automático"
 
 #: rayforge/camera/ui/image_settings_dialog.py:44
 msgid "Automatically adjust white balance"
@@ -137,7 +137,7 @@ msgstr "Ajustar automáticamente el balance de blancos"
 
 #: rayforge/camera/ui/image_settings_dialog.py:74
 msgid "White Balance (Kelvin)"
-msgstr "Balance de Blancos (Kelvin)"
+msgstr "Balance de blancos (Kelvin)"
 
 #: rayforge/camera/ui/image_settings_dialog.py:98
 msgid "Contrast"
@@ -169,7 +169,7 @@ msgstr "Cámaras"
 
 #: rayforge/camera/ui/camera_preferences_page.py:30
 msgid "Stream a camera image directly onto the work surface."
-msgstr "Transmitir una imagen de la cámara directamente a la superficie de trabajo."
+msgstr "Transmitir una imagen de la cámara directamente sobre la superficie de trabajo."
 
 #: rayforge/camera/ui/camera_preferences_page.py:77
 #, python-brace-format
@@ -178,15 +178,15 @@ msgstr "Cámara: {name}"
 
 #: rayforge/machine/driver/grbl_util.py:316
 msgid "Stepper Configuration"
-msgstr "Configuración del Motor de Paso"
+msgstr "Configuración del motor paso a paso"
 
 #: rayforge/machine/driver/grbl_util.py:318
 msgid "Settings related to stepper motor timing and signal polarity."
-msgstr "Ajustes relacionados con la temporización del motor de paso y la polaridad de la señal."
+msgstr "Ajustes relacionados con la temporización del motor paso a paso y la polaridad de la señal."
 
 #: rayforge/machine/driver/grbl_util.py:323
 msgid "Control & Reporting"
-msgstr "Control e Informes"
+msgstr "Control e informes"
 
 #: rayforge/machine/driver/grbl_util.py:325
 msgid "Settings for GRBL's motion control and status reporting."
@@ -194,7 +194,7 @@ msgstr "Ajustes para el control de movimiento y los informes de estado de GRBL."
 
 #: rayforge/machine/driver/grbl_util.py:330
 msgid "Limits & Homing"
-msgstr "Límites y Posicionamiento Inicial"
+msgstr "Límites y posicionamiento inicial"
 
 #: rayforge/machine/driver/grbl_util.py:332
 msgid "Settings for soft/hard limits and the homing cycle."
@@ -202,7 +202,7 @@ msgstr "Ajustes para límites de software/hardware y el ciclo de posicionamiento
 
 #: rayforge/machine/driver/grbl_util.py:337
 msgid "Spindle & Laser"
-msgstr "Husillo y Láser"
+msgstr "Husillo y láser"
 
 #: rayforge/machine/driver/grbl_util.py:339
 msgid "Settings for controlling the spindle or laser module."
@@ -210,7 +210,7 @@ msgstr "Ajustes para controlar el husillo o el módulo láser."
 
 #: rayforge/machine/driver/grbl_util.py:344
 msgid "Axis Calibration"
-msgstr "Calibración de Ejes"
+msgstr "Calibración de ejes"
 
 #: rayforge/machine/driver/grbl_util.py:345
 msgid "Defines the steps-per-millimeter for each axis."
@@ -218,7 +218,7 @@ msgstr "Define los pasos por milímetro para cada eje."
 
 #: rayforge/machine/driver/grbl_util.py:349
 msgid "Axis Kinematics"
-msgstr "Cinemática de Ejes"
+msgstr "Cinemática de ejes"
 
 #: rayforge/machine/driver/grbl_util.py:351
 msgid "Defines the maximum rate and acceleration for each axis."
@@ -226,7 +226,7 @@ msgstr "Define la velocidad máxima y la aceleración para cada eje."
 
 #: rayforge/machine/driver/grbl_util.py:356
 msgid "Axis Travel"
-msgstr "Recorrido del Eje"
+msgstr "Recorrido del eje"
 
 #: rayforge/machine/driver/grbl_util.py:358
 msgid "Defines the maximum travel distance for each axis."
@@ -254,7 +254,7 @@ msgstr "Puerto serie para el dispositivo"
 #: rayforge/machine/driver/grbl_serial.py:44
 #: rayforge/machine/driver/grbl_serial_next.py:53
 msgid "Baud Rate"
-msgstr "Tasa de Baudios"
+msgstr "Tasa de baudios"
 
 #: rayforge/machine/driver/grbl_serial.py:45
 #: rayforge/machine/driver/grbl_serial_next.py:54
@@ -294,7 +294,7 @@ msgstr "Smoothieware a través de una conexión Telnet"
 #: rayforge/machine/driver/smoothie.py:37
 #: rayforge/machine/driver/grbl_next.py:60 rayforge/machine/driver/grbl.py:99
 msgid "Hostname"
-msgstr "Nombre de Host"
+msgstr "Nombre de host"
 
 #: rayforge/machine/driver/smoothie.py:38
 #: rayforge/machine/driver/grbl_next.py:61 rayforge/machine/driver/grbl.py:100
@@ -303,13 +303,13 @@ msgstr "La dirección IP o el nombre de host del dispositivo"
 
 #: rayforge/machine/driver/smoothie.py:43
 msgid "The Telnet port number"
-msgstr "El número del puerto Telnet"
+msgstr "El número de puerto Telnet"
 
 #: rayforge/machine/driver/smoothie.py:60
 #: rayforge/machine/driver/grbl_next.py:70 rayforge/machine/driver/grbl.py:112
 #, python-brace-format
 msgid "Invalid hostname or IP address: '{host}'"
-msgstr "Nombre de host o dirección IP no válidos: '{host}'"
+msgstr "Nombre de host o dirección IP no válido: '{host}'"
 
 #: rayforge/machine/driver/grbl_next.py:40
 msgid "GRBL (Next, Network)"
@@ -321,7 +321,7 @@ msgstr "Controlador GRBL avanzado con soporte para ajustes"
 
 #: rayforge/machine/driver/grbl_next.py:149 rayforge/machine/driver/grbl.py:191
 msgid "Host is not configured. Please set a valid IP address or hostname."
-msgstr "El host no está configurado. Por favor, establezca una dirección IP o nombre de host válido."
+msgstr "El host no está configurado. Por favor, establezca una dirección IP o un nombre de host válido."
 
 #: rayforge/machine/driver/grbl_next.py:169 rayforge/machine/driver/grbl.py:211
 #, python-brace-format
@@ -333,7 +333,7 @@ msgstr "No se pudo conectar al host '{host}'. Compruebe la dirección IP y la co
 #: rayforge/machine/driver/grbl_next.py:374
 #: rayforge/machine/driver/grbl_serial_next.py:216
 msgid "Unknown Settings"
-msgstr "Ajustes Desconocidos"
+msgstr "Ajustes desconocidos"
 
 #: rayforge/machine/driver/grbl_next.py:376
 #: rayforge/machine/driver/grbl_serial_next.py:218
@@ -343,7 +343,7 @@ msgstr "Ajustes informados por el dispositivo que no están en la lista estánda
 #: rayforge/machine/driver/grbl_next.py:397
 #: rayforge/machine/driver/grbl_serial_next.py:239
 msgid "Unknown setting from device"
-msgstr "Ajuste desconocido desde el dispositivo"
+msgstr "Ajuste desconocido del dispositivo"
 
 #: rayforge/machine/driver/grbl_serial_next.py:30
 msgid "GRBL (Next, Serial)"
@@ -363,7 +363,7 @@ msgstr "Conectar a un dispositivo compatible con GRBL a través de la red"
 
 #: rayforge/machine/models/dialect.py:54
 msgid "Standard GRBL for most diode lasers and hobby CNCs."
-msgstr "GRBL estándar para la mayoría de láseres de diodo y CNCs de aficionado."
+msgstr "GRBL estándar para la mayoría de láseres de diodo y CNC de aficionado."
 
 #: rayforge/machine/models/dialect.py:79
 msgid "G-code dialect for Smoothieware-based controllers."
@@ -375,7 +375,7 @@ msgstr "G-code para controladores basados en Marlin, comunes en impresoras 3D."
 
 #: rayforge/machine/models/machine.py:36
 msgid "Default Machine"
-msgstr "Máquina Predeterminada"
+msgstr "Máquina por defecto"
 
 #: rayforge/machine/models/machine.py:311
 msgid "No driver selected for this machine."
@@ -393,7 +393,7 @@ msgstr "Ocurrió un error inesperado durante la validación: {error}"
 
 #: rayforge/machine/models/profile.py:100
 msgid "Other Device"
-msgstr "Otro Dispositivo"
+msgstr "Otro dispositivo"
 
 #: rayforge/machine/ui/preferences_page.py:16
 msgid "Machines"
@@ -401,7 +401,7 @@ msgstr "Máquinas"
 
 #: rayforge/machine/ui/preferences_page.py:20
 msgid "Configured Machines"
-msgstr "Máquinas Configuradas"
+msgstr "Máquinas configuradas"
 
 #: rayforge/machine/ui/preferences_page.py:21
 msgid "Add or remove machines."
@@ -413,7 +413,7 @@ msgstr "+"
 
 #: rayforge/machine/ui/preferences_page.py:71
 msgid "This machine has an invalid configuration."
-msgstr "Esta máquina tiene una configuración no válida."
+msgstr "Esta máquina tiene una configuración inválida."
 
 #: rayforge/machine/ui/preferences_page.py:78
 msgid "This is the active machine."
@@ -422,13 +422,13 @@ msgstr "Esta es la máquina activa."
 #: rayforge/machine/ui/preferences_page.py:122
 #, python-brace-format
 msgid "Delete ‘{name}’?"
-msgstr "¿Eliminar ‘{name}’?"
+msgstr "¿Eliminar «{name}»?"
 
 #: rayforge/machine/ui/preferences_page.py:124
 msgid ""
 "This machine profile and all its settings will be permanently removed. This "
 "action cannot be undone."
-msgstr "Este perfil de máquina y todos sus ajustes se eliminarán permanentemente. Esta acción no se puede deshacer."
+msgstr "Este perfil de la máquina y todos sus ajustes se eliminarán permanentemente. Esta acción no se puede deshacer."
 
 #: rayforge/machine/ui/preferences_page.py:129
 msgid "Delete"
@@ -440,7 +440,7 @@ msgstr "Dispositivo"
 
 #: rayforge/machine/ui/device_settings_page.py:38
 msgid "Device Settings"
-msgstr "Ajustes del Dispositivo"
+msgstr "Ajustes del dispositivo"
 
 #: rayforge/machine/ui/device_settings_page.py:40
 msgid "Read or apply settings directly to the device."
@@ -448,19 +448,19 @@ msgstr "Leer o aplicar ajustes directamente al dispositivo."
 
 #: rayforge/machine/ui/device_settings_page.py:48
 msgid "Read from Device"
-msgstr "Leer del Dispositivo"
+msgstr "Leer del dispositivo"
 
 #: rayforge/machine/ui/device_settings_page.py:58
 msgid "The current driver does not support reading device settings."
-msgstr "El controlador actual no soporta la lectura de ajustes del dispositivo."
+msgstr "El controlador actual no admite la lectura de ajustes del dispositivo."
 
 #: rayforge/machine/ui/device_settings_page.py:69
 msgid "Copy Error Details"
-msgstr "Copiar Detalles del Error"
+msgstr "Copiar detalles del error"
 
 #: rayforge/machine/ui/device_settings_page.py:78
 msgid "Dismiss Error"
-msgstr "Descartar Error"
+msgstr "Descartar error"
 
 #: rayforge/machine/ui/device_settings_page.py:88
 msgid "Editing these values can be dangerous and may render your machine inoperable!"
@@ -472,11 +472,11 @@ msgstr "El dispositivo puede reiniciarse o desconectarse temporalmente después 
 
 #: rayforge/machine/ui/device_settings_page.py:104
 msgid "Dismiss Warning"
-msgstr "Descartar Advertencia"
+msgstr "Descartar advertencia"
 
 #: rayforge/machine/ui/device_settings_page.py:118
 msgid "Click the refresh button to load settings from the device."
-msgstr "Haga clic en el botón de actualizar para cargar los ajustes desde el dispositivo."
+msgstr "Haga clic en el botón de actualización para cargar los ajustes desde el dispositivo."
 
 #: rayforge/machine/ui/device_settings_page.py:224
 msgid "Operation failed"
@@ -484,7 +484,7 @@ msgstr "La operación falló"
 
 #: rayforge/machine/ui/device_settings_page.py:227
 msgid "Machine Not Connected"
-msgstr "Máquina no Conectada"
+msgstr "Máquina no conectada"
 
 #: rayforge/machine/ui/device_settings_page.py:228
 msgid "The machine is not connected."
@@ -512,7 +512,7 @@ msgstr "Seleccione la variante de G-code que su máquina entiende."
 
 #: rayforge/machine/ui/advanced_preferences_page.py:28
 msgid "G-Code Dialect"
-msgstr "Dialecto de G-Code"
+msgstr "Dialecto de G-code"
 
 #: rayforge/machine/ui/advanced_preferences_page.py:50
 msgid "Preamble"
@@ -520,7 +520,7 @@ msgstr "Preámbulo"
 
 #: rayforge/machine/ui/advanced_preferences_page.py:55
 msgid "Override Default Preamble"
-msgstr "Sobrescribir Preámbulo Predeterminado"
+msgstr "Sobrescribir preámbulo por defecto"
 
 #: rayforge/machine/ui/advanced_preferences_page.py:56
 #: rayforge/machine/ui/advanced_preferences_page.py:115
@@ -530,15 +530,15 @@ msgstr "Usar G-code personalizado en lugar del predeterminado del dialecto."
 #: rayforge/machine/ui/advanced_preferences_page.py:97
 #: rayforge/machine/ui/advanced_preferences_page.py:153
 msgid "Append Commands from Dialect Default"
-msgstr "Añadir Comandos del Predeterminado del Dialecto"
+msgstr "Añadir comandos del dialecto por defecto"
 
 #: rayforge/machine/ui/advanced_preferences_page.py:110
 msgid "Postscript"
-msgstr "Script Final"
+msgstr "Script final"
 
 #: rayforge/machine/ui/advanced_preferences_page.py:114
 msgid "Override Default Postscript"
-msgstr "Sobrescribir Script Final Predeterminado"
+msgstr "Sobrescribir script final por defecto"
 
 #: rayforge/machine/ui/connection_status_widget.py:90
 #: rayforge/machine/ui/status_widget.py:97
@@ -547,15 +547,15 @@ msgstr "Ningún controlador seleccionado"
 
 #: rayforge/machine/ui/profile_selector.py:26
 msgid "Add a New Machine"
-msgstr "Añadir una Nueva Máquina"
+msgstr "Añadir nueva máquina"
 
 #: rayforge/machine/ui/profile_selector.py:27
 msgid "Select a machine profile to use as a template."
-msgstr "Seleccione un perfil de máquina para usar como plantilla."
+msgstr "Seleccione un perfil de la máquina para usar como plantilla."
 
 #: rayforge/machine/ui/machine_selector.py:44
 msgid "Select Machine"
-msgstr "Seleccionar Máquina"
+msgstr "Seleccionar máquina"
 
 #: rayforge/machine/ui/machine_selector.py:55
 msgid "Select active machine"
@@ -564,7 +564,7 @@ msgstr "Seleccionar máquina activa"
 #: rayforge/machine/ui/laser_preferences_page.py:9
 #: rayforge/machine/ui/laser_preferences_page.py:17
 msgid "Laser Heads"
-msgstr "Cabezales Láser"
+msgstr "Cabezales láser"
 
 #: rayforge/machine/ui/laser_preferences_page.py:19
 msgid ""
@@ -574,7 +574,7 @@ msgstr "Puede configurar múltiples cabezales láser, pero solo se usará el pri
 
 #: rayforge/machine/ui/laser_preferences_page.py:46
 msgid "Laser Properties"
-msgstr "Propiedades del Láser"
+msgstr "Propiedades del láser"
 
 #: rayforge/machine/ui/laser_preferences_page.py:47
 msgid "Configure the selected laser"
@@ -582,23 +582,23 @@ msgstr "Configurar el láser seleccionado"
 
 #: rayforge/machine/ui/laser_preferences_page.py:55
 msgid "Max Power"
-msgstr "Potencia Máxima"
+msgstr "Potencia máxima"
 
 #: rayforge/machine/ui/laser_preferences_page.py:56
 msgid "Maximum power value in GCode"
-msgstr "Valor máximo de potencia en GCode"
+msgstr "Valor máximo de potencia en G-code"
 
 #: rayforge/machine/ui/laser_preferences_page.py:67
 msgid "Frame Power"
-msgstr "Potencia de Encuadre"
+msgstr "Potencia de encuadre"
 
 #: rayforge/machine/ui/laser_preferences_page.py:69
 msgid "Power value in Gcode to use when framing. 0 to disable"
-msgstr "Valor de potencia en Gcode para usar al encuadrar. 0 para desactivar."
+msgstr "Valor de potencia en G-code para usar al encuadrar (0 para desactivar)."
 
 #: rayforge/machine/ui/laser_preferences_page.py:84
 msgid "Spot Size X"
-msgstr "Tamaño del Punto X"
+msgstr "Tamaño del punto X"
 
 #: rayforge/machine/ui/laser_preferences_page.py:85
 msgid "Size of the laser spot in the X direction"
@@ -606,7 +606,7 @@ msgstr "Tamaño del punto láser en la dirección X"
 
 #: rayforge/machine/ui/laser_preferences_page.py:100
 msgid "Spot Size Y"
-msgstr "Tamaño del Punto Y"
+msgstr "Tamaño del punto Y"
 
 #: rayforge/machine/ui/laser_preferences_page.py:101
 msgid "Size of the laser spot in the Y direction"
@@ -616,24 +616,24 @@ msgstr "Tamaño del punto láser en la dirección Y"
 #: rayforge/machine/ui/laser_preferences_page.py:140
 #, python-brace-format
 msgid "Laser (Max Power: {head.max_power})"
-msgstr "Láser (Potencia Máx.: {head.max_power})"
+msgstr "Láser (Potencia máx.: {head.max_power})"
 
 #: rayforge/machine/ui/settings_dialog.py:16
 #, python-brace-format
 msgid "{machine.name} - Machine Preferences"
-msgstr "{machine.name} - Preferencias de la Máquina"
+msgstr "{machine.name} - Preferencias de la máquina"
 
 #: rayforge/machine/ui/settings_dialog.py:18
 msgid "Machine Preferences"
-msgstr "Preferencias de la Máquina"
+msgstr "Preferencias de la máquina"
 
 #: rayforge/machine/ui/log_dialog.py:26
 msgid "Machine Log"
-msgstr "Registro de la Máquina"
+msgstr "Registro de la máquina"
 
 #: rayforge/machine/ui/log_dialog.py:53 rayforge/machine/ui/log_dialog.py:192
 msgid "Save Debug Log"
-msgstr "Guardar Registro de Depuración"
+msgstr "Guardar registro de depuración"
 
 #: rayforge/machine/ui/log_dialog.py:150
 #, python-brace-format
@@ -647,7 +647,7 @@ msgstr "El estado de la conexión cambió a {status}"
 
 #: rayforge/machine/ui/log_dialog.py:174
 msgid "Failed to create debug archive."
-msgstr "Fallo al crear el archivo de depuración."
+msgstr "Error al crear el archivo de depuración."
 
 #: rayforge/machine/ui/log_dialog.py:186
 msgid "Could not find parent window to attach dialog."
@@ -675,7 +675,7 @@ msgstr "General"
 
 #: rayforge/machine/ui/general_preferences_page.py:44
 msgid "Driver Settings"
-msgstr "Ajustes del Controlador"
+msgstr "Ajustes del controlador"
 
 #: rayforge/machine/ui/general_preferences_page.py:55
 #: rayforge/machine/ui/general_preferences_page.py:231
@@ -684,27 +684,27 @@ msgstr "Seleccionar controlador"
 
 #: rayforge/machine/ui/general_preferences_page.py:84
 msgid "Machine Settings"
-msgstr "Ajustes de la Máquina"
+msgstr "Ajustes de la máquina"
 
 #: rayforge/machine/ui/general_preferences_page.py:88
 msgid "Home On Start"
-msgstr "Posicionar al Iniciar"
+msgstr "Posicionar al iniciar"
 
 #: rayforge/machine/ui/general_preferences_page.py:90
 msgid "Whether Rayforge will send a homing command when it is started"
-msgstr "Si Rayforge enviará un comando de posicionamiento inicial al arrancar"
+msgstr "Indica si Rayforge enviará un comando de posicionamiento inicial al iniciarse."
 
 #: rayforge/machine/ui/general_preferences_page.py:100
 msgid "Invert Y Axis Direction"
-msgstr "Invertir Dirección del Eje Y"
+msgstr "Invertir la dirección del eje Y"
 
 #: rayforge/machine/ui/general_preferences_page.py:102
 msgid "Enable if your machine's origin is top-left instead of bottom-left"
-msgstr "Habilitar si el origen de su máquina es superior-izquierda en lugar de inferior-izquierda"
+msgstr "Habilitar si el origen de su máquina está arriba a la izquierda en lugar de abajo a la izquierda."
 
 #: rayforge/machine/ui/general_preferences_page.py:118
 msgid "Max Travel Speed"
-msgstr "Velocidad Máx. de Desplazamiento"
+msgstr "Velocidad máx. de desplazamiento"
 
 #: rayforge/machine/ui/general_preferences_page.py:119
 msgid "Maximum travel speed in mm/min"
@@ -712,7 +712,7 @@ msgstr "Velocidad máxima de desplazamiento en mm/min"
 
 #: rayforge/machine/ui/general_preferences_page.py:134
 msgid "Max Cut Speed"
-msgstr "Velocidad Máx. de Corte"
+msgstr "Velocidad máx. de corte"
 
 #: rayforge/machine/ui/general_preferences_page.py:135
 msgid "Maximum cutting speed in mm/min"
@@ -769,11 +769,11 @@ msgstr "El valor debe ser como máximo {max_val}."
 
 #: rayforge/shared/varset/varsetwidget.py:14
 msgid "None Selected"
-msgstr "Ninguno Seleccionado"
+msgstr "Ninguno seleccionado"
 
 #: rayforge/shared/varset/varsetwidget.py:108
 msgid "Apply Change"
-msgstr "Aplicar Cambio"
+msgstr "Aplicar cambio"
 
 #: rayforge/shared/varset/serialportvar.py:8
 msgid "Serial port cannot be empty."
@@ -816,27 +816,27 @@ msgstr "Sistema"
 
 #: rayforge/shared/ui/about.py:66
 msgid "UI Toolkit"
-msgstr "Kit de Herramientas de UI"
+msgstr "Kit de herramientas de IU"
 
 #: rayforge/shared/ui/about.py:107
 msgid "Graphics & Imaging"
-msgstr "Gráficos e Imágenes"
+msgstr "Gráficos e imágenes"
 
 #: rayforge/shared/ui/about.py:122
 msgid "File Formats & Communication"
-msgstr "Formatos de Archivo y Comunicación"
+msgstr "Formatos de archivo y comunicación"
 
 #: rayforge/shared/ui/about.py:204
 msgid "Website"
-msgstr "Sitio Web"
+msgstr "Sitio web"
 
 #: rayforge/shared/ui/about.py:211
 msgid "Report an Issue"
-msgstr "Informar de un Problema"
+msgstr "Informar de un problema"
 
 #: rayforge/shared/ui/about.py:223
 msgid "Lead Developer"
-msgstr "Desarrollador Principal"
+msgstr "Desarrollador principal"
 
 #: rayforge/shared/ui/about.py:227
 msgid "License"
@@ -844,7 +844,7 @@ msgstr "Licencia"
 
 #: rayforge/shared/ui/about.py:237 rayforge/shared/ui/about.py:301
 msgid "System Information"
-msgstr "Información del Sistema"
+msgstr "Información del sistema"
 
 #: rayforge/shared/ui/about.py:238
 msgid "Versions of libraries and components"
@@ -852,7 +852,7 @@ msgstr "Versiones de bibliotecas y componentes"
 
 #: rayforge/shared/ui/about.py:247 rayforge/shared/ui/about.py:314
 msgid "Copy System Information"
-msgstr "Copiar Información del Sistema"
+msgstr "Copiar información del sistema"
 
 #: rayforge/shared/ui/about.py:300
 msgid "About Rayforge"
@@ -880,35 +880,35 @@ msgstr "Tema"
 
 #: rayforge/workbench/aligner.py:127 rayforge/toolbar.py:124
 msgid "Center Horizontally"
-msgstr "Centrar Horizontalmente"
+msgstr "Centrar horizontalmente"
 
 #: rayforge/workbench/aligner.py:158 rayforge/toolbar.py:131
 msgid "Center Vertically"
-msgstr "Centrar Verticalmente"
+msgstr "Centrar verticalmente"
 
 #: rayforge/workbench/aligner.py:188 rayforge/toolbar.py:138
 msgid "Align Left"
-msgstr "Alinear a la Izquierda"
+msgstr "Alinear a la izquierda"
 
 #: rayforge/workbench/aligner.py:218 rayforge/toolbar.py:139
 msgid "Align Right"
-msgstr "Alinear a la Derecha"
+msgstr "Alinear a la derecha"
 
 #: rayforge/workbench/aligner.py:248 rayforge/toolbar.py:140
 msgid "Align Top"
-msgstr "Alinear Arriba"
+msgstr "Alinear arriba"
 
 #: rayforge/workbench/aligner.py:278 rayforge/toolbar.py:141
 msgid "Align Bottom"
-msgstr "Alinear Abajo"
+msgstr "Alinear abajo"
 
 #: rayforge/workbench/aligner.py:335 rayforge/toolbar.py:149
 msgid "Spread Horizontally"
-msgstr "Distribuir Horizontalmente"
+msgstr "Distribuir horizontalmente"
 
 #: rayforge/workbench/aligner.py:402 rayforge/toolbar.py:154
 msgid "Spread Vertically"
-msgstr "Distribuir Verticalmente"
+msgstr "Distribuir verticalmente"
 
 #: rayforge/workbench/surface.py:49
 msgid "Move to another layer"
@@ -936,7 +936,7 @@ msgstr "Eliminar pieza de trabajo"
 
 #: rayforge/workbench/surface.py:370
 msgid "Select Layer"
-msgstr "Seleccionar Capa"
+msgstr "Seleccionar capa"
 
 #: rayforge/workbench/surface.py:1052
 msgid "Move the workpiece"
@@ -944,7 +944,7 @@ msgstr "Mover la pieza de trabajo"
 
 #: rayforge/app.py:92
 msgid "A GCode generator for laser cutters."
-msgstr "Un generador de GCode para cortadoras láser."
+msgstr "Un generador de G-code para cortadoras láser."
 
 #: rayforge/app.py:101
 msgid "Path to the input SVG or image file."
@@ -1048,11 +1048,11 @@ msgstr "Pausar máquina"
 
 #: rayforge/mainwindow.py:603
 msgid "Open File"
-msgstr "Abrir Archivo"
+msgstr "Abrir archivo"
 
 #: rayforge/mainwindow.py:608
 msgid "All supported"
-msgstr "Todos los soportados"
+msgstr "Todos los compatibles"
 
 #: rayforge/mainwindow.py:655 rayforge/toolbar.py:63
 msgid "Remove all workpieces"
@@ -1060,11 +1060,11 @@ msgstr "Eliminar todas las piezas de trabajo"
 
 #: rayforge/mainwindow.py:663
 msgid "Clear Layer Workpieces"
-msgstr "Limpiar Piezas de Trabajo de la Capa"
+msgstr "Eliminar piezas de trabajo de la capa"
 
 #: rayforge/mainwindow.py:670
 msgid "Save G-code File"
-msgstr "Guardar Archivo G-code"
+msgstr "Guardar archivo G-code"
 
 #: rayforge/mainwindow.py:678
 msgid "G-code files"
@@ -1113,11 +1113,11 @@ msgstr "Eliminar {name}"
 
 #: rayforge/undo/ui/undo_button.py:38
 msgid "Show History"
-msgstr "Mostrar Historial"
+msgstr "Mostrar historial"
 
 #: rayforge/undo/ui/undo_button.py:89
 msgid "Unnamed Action"
-msgstr "Acción sin Nombre"
+msgstr "Acción sin nombre"
 
 #: rayforge/undo/ui/undo_button.py:126
 msgid "Undo the last action"
@@ -1180,7 +1180,7 @@ msgstr "Finalizando '{workpiece}'"
 
 #: rayforge/pipeline/steps.py:21
 msgid "External Outline"
-msgstr "Contorno Externo"
+msgstr "Contorno externo"
 
 #: rayforge/pipeline/steps.py:46
 msgid "Contour"
@@ -1188,11 +1188,11 @@ msgstr "Contorno"
 
 #: rayforge/pipeline/steps.py:71
 msgid "Raster Engrave"
-msgstr "Grabado Rasterizado"
+msgstr "Grabado rasterizado"
 
 #: rayforge/pipeline/transformer/optimize.py:292
 msgid "Optimize Path"
-msgstr "Optimizar Trayectoria"
+msgstr "Optimizar trayectoria"
 
 #: rayforge/pipeline/transformer/optimize.py:296
 msgid "Minimizes travel distance by reordering segments"
@@ -1200,7 +1200,7 @@ msgstr "Minimiza la distancia de desplazamiento reordenando los segmentos"
 
 #: rayforge/pipeline/transformer/optimize.py:305
 msgid "Preprocessing for optimization..."
-msgstr "Preprocesando para optimización..."
+msgstr "Preprocesando para la optimización..."
 
 #: rayforge/pipeline/transformer/optimize.py:336
 #, python-brace-format
@@ -1233,15 +1233,15 @@ msgstr "Optimización completada"
 
 #: rayforge/pipeline/transformer/smooth.py:105
 msgid "Smooth Path"
-msgstr "Suavizar Trayectoria"
+msgstr "Suavizar trayectoria"
 
 #: rayforge/pipeline/transformer/smooth.py:109
 msgid "Smooths the path by applying a Gaussian filter"
-msgstr "Suaviza la trayectoria aplicando un filtro Gaussiano"
+msgstr "Suaviza la trayectoria aplicando un filtro gaussiano"
 
 #: rayforge/pipeline/transformer/arcwelder.py:270
 msgid "Arc Weld Path"
-msgstr "Soldar Trayectoria en Arco"
+msgstr "Unir líneas en arcos"
 
 #: rayforge/pipeline/transformer/arcwelder.py:274
 msgid "Welds lines into arcs for smoother paths"
@@ -1250,7 +1250,7 @@ msgstr "Convierte líneas en arcos para trayectorias más suaves"
 #: rayforge/pipeline/job.py:71
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
-msgstr "Procesando '{workpiece}' en el paso '{step}'"
+msgstr "Procesando «{workpiece}» en el paso «{step}»"
 
 #: rayforge/doceditor/ui/layer_view.py:103
 msgid "Delete this layer"
@@ -1276,7 +1276,7 @@ msgstr "{count} piezas de trabajo"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:32
 msgid "Workpiece Properties"
-msgstr "Propiedades de la Pieza de Trabajo"
+msgstr "Propiedades de la pieza de trabajo"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:43
 msgid "X Position"
@@ -1292,11 +1292,11 @@ msgstr "Posición Y"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:80
 msgid "Fixed Ratio"
-msgstr "Relación Fija"
+msgstr "Proporción fija"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:88
 msgid "Natural Size"
-msgstr "Tamaño Natural"
+msgstr "Tamaño original"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:89
 msgid "N/A"
@@ -1313,7 +1313,7 @@ msgstr " Tamaño"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:117
 msgid "Aspect"
-msgstr "Aspecto"
+msgstr "Relación de aspecto"
 
 #: rayforge/doceditor/ui/workpiece_properties.py:204
 msgid "Resize workpiece"
@@ -1364,15 +1364,15 @@ msgstr "Ajustes de {name}"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:64
 msgid "General Settings"
-msgstr "Ajustes Generales"
+msgstr "Ajustes generales"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:72
 msgid "Number of Passes"
-msgstr "Número de Pasadas"
+msgstr "Número de pasadas"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:73
 msgid "How often to repeat this step"
-msgstr "Frecuencia con la que se repite este paso"
+msgstr "Cuántas veces repetir este paso"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:81
 msgid "Power (%)"
@@ -1380,43 +1380,43 @@ msgstr "Potencia (%)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:112
 msgid "Cut Speed (mm/min)"
-msgstr "Velocidad de Corte (mm/min)"
+msgstr "Velocidad de corte (mm/min)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:113
 #, python-brace-format
 msgid "Max: {max_cut_speed} mm/min"
-msgstr "Máx: {max_cut_speed} mm/min"
+msgstr "Máx.: {max_cut_speed} mm/min"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:130
 msgid "Travel Speed (mm/min)"
-msgstr "Velocidad de Desplazamiento (mm/min)"
+msgstr "Velocidad de desplazamiento (mm/min)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:131
 #, python-brace-format
 msgid "Max: {max_travel_speed} mm/min"
-msgstr "Máx: {max_travel_speed} mm/min"
+msgstr "Máx.: {max_travel_speed} mm/min"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:142
 msgid "Air Assist"
-msgstr "Asistencia de Aire"
+msgstr "Asistencia de aire"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:150
 msgid "Path Post-Processing"
-msgstr "Post-procesamiento de Trayectoria"
+msgstr "Postprocesamiento de trayectoria"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:152
 msgid ""
 "These steps are applied after path generation and can improve quality or "
 "reduce job time."
-msgstr "Estos pasos se aplican después de la generación de la trayectoria y pueden mejorar la calidad o reducir el tiempo del trabajo."
+msgstr "Estos pasos se aplican después de la generación de la trayectoria y pueden mejorar la calidad o reducir el tiempo de trabajo."
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:173
 msgid "Smoothness"
-msgstr "Suavidad"
+msgstr "Suavizado"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:193
 msgid "Corner Angle Threshold"
-msgstr "Umbral de Ángulo de Esquina"
+msgstr "Umbral de ángulo de esquina"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:195
 msgid "Angles sharper than this are kept as corners (degrees)"
@@ -1436,7 +1436,7 @@ msgstr "Cambiar velocidad de corte"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:321
 msgid "Change Travel Speed"
-msgstr "Cambiar Velocidad de Desplazamiento"
+msgstr "Cambiar velocidad de desplazamiento"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:335
 msgid "Toggle air assist"
@@ -1444,7 +1444,7 @@ msgstr "Alternar asistencia de aire"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:353
 msgid "Change smoothness"
-msgstr "Cambiar suavidad"
+msgstr "Cambiar suavizado"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:367
 msgid "Change corner angle"
@@ -1461,11 +1461,11 @@ msgstr "Alternar visibilidad del paso"
 
 #: rayforge/doceditor/ui/layer_list.py:22
 msgid "Workpiece Layers"
-msgstr "Capas de la Pieza de Trabajo"
+msgstr "Capas de la pieza de trabajo"
 
 #: rayforge/doceditor/ui/layer_list.py:52
 msgid "Add New Layer"
-msgstr "Añadir Nueva Capa"
+msgstr "Añadir nueva capa"
 
 #: rayforge/doceditor/ui/layer_list.py:69
 #, python-brace-format
@@ -1497,7 +1497,7 @@ msgstr "Reordenar capas"
 
 #: rayforge/doceditor/ui/workflow_view.py:57
 msgid "Add New Step..."
-msgstr "Añadir Nuevo Paso..."
+msgstr "Añadir nuevo paso..."
 
 #: rayforge/doceditor/ui/workflow_view.py:100
 #, python-brace-format
