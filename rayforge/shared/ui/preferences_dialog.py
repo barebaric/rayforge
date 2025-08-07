@@ -1,6 +1,7 @@
 from gi.repository import Adw, Gdk, Gtk  # type: ignore
 from .general_preferences_page import GeneralPreferencesPage
 from ...machine.ui.preferences_page import MachinePreferencesPage
+from ...icons import get_icon
 
 
 class PreferencesWindow(Adw.Window):
@@ -82,7 +83,7 @@ class PreferencesWindow(Adw.Window):
             margin_top=6,
             margin_bottom=6,
         )
-        icon = Gtk.Image.new_from_icon_name(page.get_icon_name())
+        icon = get_icon(page.get_icon_name())
         label = Gtk.Label(label=page_name, xalign=0)
         box.append(icon)
         box.append(label)

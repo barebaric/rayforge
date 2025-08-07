@@ -31,13 +31,13 @@ class MainToolbar(Gtk.Box):
         self.set_margin_end(12)
 
         # Import and export buttons
-        open_button = Gtk.Button.new_from_icon_name("document-open-symbolic")
+        open_button = Gtk.Button(child=get_icon("document-open-symbolic"))
         open_button.set_tooltip_text(_("Import image"))
         open_button.set_action_name("win.import")
         self.append(open_button)
 
-        self.export_button = Gtk.Button.new_from_icon_name(
-            "document-save-symbolic"
+        self.export_button = Gtk.Button(
+            child=get_icon("document-save-symbolic")
         )
         self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.set_action_name("win.export")
@@ -59,15 +59,15 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        clear_button = Gtk.Button.new_from_icon_name("edit-clear-all-symbolic")
+        clear_button = Gtk.Button(child=get_icon("edit-clear-all-symbolic"))
         clear_button.set_tooltip_text(_("Remove all workpieces"))
         clear_button.set_action_name("win.clear")
         self.append(clear_button)
 
         # This button controls view state, not an app command, so it keeps its
         # signal.
-        self.visibility_on_icon = get_icon("stock-eye-symbolic")
-        self.visibility_off_icon = get_icon("eye-not-looking-symbolic")
+        self.visibility_on_icon = get_icon("visibility-on-symbolic")
+        self.visibility_off_icon = get_icon("visibility-off-symbolic")
         self.visibility_button = Gtk.ToggleButton()
         self.visibility_button.set_active(True)
         self.visibility_button.set_child(self.visibility_on_icon)
@@ -83,8 +83,8 @@ class MainToolbar(Gtk.Box):
         self.append(self.visibility_button)
 
         # This button also controls view state.
-        self.camera_visibility_on_icon = get_icon("camera-app-symbolic")
-        self.camera_visibility_off_icon = get_icon("camera-disabled-symbolic")
+        self.camera_visibility_on_icon = get_icon("camera-on-symbolic")
+        self.camera_visibility_off_icon = get_icon("camera-off-symbolic")
         self.camera_visibility_button = Gtk.ToggleButton()
         self.camera_visibility_button.set_active(True)
         self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
@@ -118,22 +118,22 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.align_h_center_button = Gtk.Button.new_from_icon_name(
-            "align-horizontal-center-symbolic"
+        self.align_h_center_button = Gtk.Button(
+            child=get_icon("align-horizontal-center-symbolic")
         )
         self.align_h_center_button.set_tooltip_text(_("Center Horizontally"))
         self.align_h_center_button.set_action_name("win.align-h-center")
         self.append(self.align_h_center_button)
 
-        self.align_v_center_button = Gtk.Button.new_from_icon_name(
-            "align-vertical-center-symbolic"
+        self.align_v_center_button = Gtk.Button(
+            child=get_icon("align-vertical-center-symbolic")
         )
         self.align_v_center_button.set_tooltip_text(_("Center Vertically"))
         self.align_v_center_button.set_action_name("win.align-v-center")
         self.append(self.align_v_center_button)
 
         # Align Edge buttons (Split Dropdown)
-        # We pass the action name string to the SplitMenuButton
+        # We pass the icon NAME string to the SplitMenuButton, not the widget.
         align_actions = [
             (_("Align Left"), "align-left-symbolic", "win.align-left"),
             (_("Align Right"), "align-right-symbolic", "win.align-right"),
@@ -165,13 +165,13 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.home_button = Gtk.Button.new_from_icon_name("go-home-symbolic")
+        self.home_button = Gtk.Button(child=get_icon("go-home-symbolic"))
         self.home_button.set_tooltip_text(_("Home the machine"))
         self.home_button.set_action_name("win.home")
         self.append(self.home_button)
 
-        self.frame_button = Gtk.Button.new_from_icon_name(
-            "edit-select-all-symbolic"
+        self.frame_button = Gtk.Button(
+            child=get_icon("edit-select-all-symbolic")
         )
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
@@ -179,14 +179,12 @@ class MainToolbar(Gtk.Box):
         self.frame_button.set_action_name("win.frame")
         self.append(self.frame_button)
 
-        self.send_button = Gtk.Button.new_from_icon_name(
-            "document-send-symbolic"
-        )
+        self.send_button = Gtk.Button(child=get_icon("document-send-symbolic"))
         self.send_button.set_tooltip_text(_("Send to machine"))
         self.send_button.set_action_name("win.send")
         self.append(self.send_button)
 
-        self.hold_on_icon = get_icon("media-playback-start-symbolic")
+        self.hold_on_icon = get_icon("play-arrow-symbolic")
         self.hold_off_icon = get_icon("pause-symbolic")
         self.hold_button = Gtk.ToggleButton()
         self.hold_button.set_child(self.hold_off_icon)
@@ -195,8 +193,8 @@ class MainToolbar(Gtk.Box):
         self.hold_button.set_action_name("win.hold")
         self.append(self.hold_button)
 
-        self.cancel_button = Gtk.Button.new_from_icon_name(
-            "process-stop-symbolic"
+        self.cancel_button = Gtk.Button(
+            child=get_icon("process-stop-symbolic")
         )
         self.cancel_button.set_tooltip_text(_("Cancel running job"))
         self.cancel_button.set_action_name("win.cancel")
@@ -210,7 +208,7 @@ class MainToolbar(Gtk.Box):
         # Add clickable warning for misconfigured machine
         self.machine_warning_box = Gtk.Box(spacing=6)
         self.machine_warning_box.set_margin_end(12)
-        warning_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        warning_icon = get_icon("dialog-warning-symbolic")
         warning_label = Gtk.Label(label=_("Machine not fully configured"))
         warning_label.add_css_class("warning-label")
         self.machine_warning_box.append(warning_icon)

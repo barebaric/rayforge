@@ -7,6 +7,7 @@ from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
 from .step_box import StepBox
 from .step_selector import StepSelector
+from ...icons import get_icon
 
 
 logger = logging.getLogger(__name__)
@@ -51,14 +52,12 @@ class WorkflowView(Expander):
         button_box.set_margin_bottom(10)
         button_box.set_margin_start(12)
 
-        add_icon = Gtk.Image.new_from_icon_name("list-add-symbolic")
+        add_icon = get_icon("list-add-symbolic")
         button_box.append(add_icon)
 
-        lbl = _('Add New Step...')
+        lbl = _("Add New Step...")
         add_label = Gtk.Label()
-        add_label.set_markup(
-            f"<span weight='normal'>{lbl}</span>"
-        )
+        add_label.set_markup(f"<span weight='normal'>{lbl}</span>")
         add_label.set_xalign(0)  # Left-align the label
         button_box.append(add_label)
 

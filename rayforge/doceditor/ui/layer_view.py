@@ -3,6 +3,7 @@ from blinker import Signal
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...undo.models.property_cmd import ChangePropertyCommand
+from ...icons import get_icon
 
 
 css = """
@@ -90,16 +91,10 @@ class LayerView(Gtk.Box):
         suffix_box.set_valign(Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        self.visibility_on_icon = Gtk.Image.new_from_icon_name(
-            "view-reveal-symbolic"
-        )
-        self.visibility_off_icon = Gtk.Image.new_from_icon_name(
-            "view-conceal-symbolic"
-        )
+        self.visibility_on_icon = get_icon("visibility-on-symbolic")
+        self.visibility_off_icon = get_icon("visibility-off-symbolic")
 
-        self.delete_button = Gtk.Button.new_from_icon_name(
-            "user-trash-symbolic"
-        )
+        self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
         self.delete_button.set_tooltip_text(_("Delete this layer"))
         self.delete_button.connect("clicked", self.on_delete_clicked)
         suffix_box.append(self.delete_button)

@@ -1,4 +1,5 @@
 from gi.repository import Gtk, Gdk  # type: ignore
+from ...icons import get_icon
 
 
 css = """
@@ -96,7 +97,7 @@ class Expander(Gtk.Box):
         self.subtitle_label.add_css_class("expander-subtitle")
         label_box.append(self.subtitle_label)
 
-        self.arrow = Gtk.Image.new_from_icon_name("pan-end-symbolic")
+        self.arrow = get_icon("pan-end-symbolic")
         self.arrow.add_css_class("expander-arrow")
         self.arrow.set_valign(Gtk.Align.CENTER)
         header_content_box.append(self.arrow)

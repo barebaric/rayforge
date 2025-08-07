@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Tuple
 from blinker import Signal
 from gi.repository import Gtk, Gdk  # type: ignore
+from ...icons import get_icon
 
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,7 @@ class PointBubbleWidget(Gtk.Box):
         self.append(self.world_y_spin)
 
         # Add delete button
-        self.delete_button = Gtk.Button.new_from_icon_name(
-            "edit-delete-symbolic"
-        )
+        self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
         self.delete_button.set_valign(Gtk.Align.CENTER)
         self.delete_button.set_tooltip_text(_("Delete this point"))
         self.append(self.delete_button)

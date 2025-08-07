@@ -4,6 +4,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk  # type: ignore
 from blinker import Signal
 from ...config import config
 from ...shared.varset.varsetwidget import VarSetWidget, VarSet
+from ...icons import get_icon
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
 
         # Create header controls once and store them
         self.spinner = Gtk.Spinner()
-        self.read_button = Gtk.Button.new_from_icon_name(
-            "view-refresh-symbolic"
-        )
+        self.read_button = Gtk.Button(child=get_icon("view-refresh-symbolic"))
         self.read_button.set_tooltip_text(_("Read from Device"))
         self.read_button.connect("clicked", self._on_read_clicked)
         self.header_box = Gtk.Box(spacing=6)
@@ -65,15 +64,15 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.error_row.set_icon_name("dialog-error-symbolic")
         self.error_row.add_css_class("error")
 
-        copy_button = Gtk.Button.new_from_icon_name("edit-copy-symbolic")
+        copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
         copy_button.set_tooltip_text(_("Copy Error Details"))
         copy_button.add_css_class("flat")
         copy_button.set_valign(Gtk.Align.CENTER)
         copy_button.connect("clicked", self._on_copy_error_clicked)
         self.error_row.add_suffix(copy_button)
 
-        error_close_button = Gtk.Button.new_from_icon_name(
-            "window-close-symbolic"
+        error_close_button = Gtk.Button(
+            child=get_icon("window-close-symbolic")
         )
         error_close_button.set_tooltip_text(_("Dismiss Error"))
         error_close_button.add_css_class("flat")
@@ -98,9 +97,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
             warning_row.set_icon_name("dialog-warning-symbolic")
             warning_row.add_css_class("warning")
 
-            close_button = Gtk.Button.new_from_icon_name(
-                "window-close-symbolic"
-            )
+            close_button = Gtk.Button(child=get_icon("window-close-symbolic"))
             close_button.set_tooltip_text(_("Dismiss Warning"))
             close_button.add_css_class("flat")
             close_button.set_valign(Gtk.Align.CENTER)

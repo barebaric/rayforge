@@ -5,6 +5,7 @@ from ..models.profile import MachineProfile
 from .settings_dialog import MachineSettingsDialog
 from .profile_selector import MachineProfileSelectorDialog
 from ...shared.ui.round_button import RoundButton
+from ...icons import get_icon
 
 
 class MachinePreferencesPage(Adw.PreferencesPage):
@@ -65,7 +66,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             is_valid, error_msg = machine.validate_driver_setup()
 
             if not is_valid:
-                icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+                icon = get_icon("dialog-warning-symbolic")
                 icon.get_style_context().add_class("warning")
                 tooltip = error_msg or _(
                     "This machine has an invalid configuration."
@@ -74,7 +75,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
                 icon_placeholder.append(icon)
                 row.set_subtitle(tooltip)
             elif machine.id == active_machine_id:
-                icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
+                icon = get_icon("check-circle-symbolic")
                 icon.set_tooltip_text(_("This is the active machine."))
                 icon_placeholder.append(icon)
                 row.set_subtitle(machine.id)
@@ -85,7 +86,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             row.add_suffix(buttons_box)
 
             edit_button = Gtk.Button(
-                icon_name="document-edit-symbolic",
+                child=get_icon("document-edit-symbolic"),
                 valign=Gtk.Align.CENTER,
             )
             edit_button.connect(
@@ -94,7 +95,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             buttons_box.append(edit_button)
 
             delete_button = Gtk.Button(
-                icon_name="edit-delete-symbolic",
+                child=get_icon("delete-symbolic"),
                 valign=Gtk.Align.CENTER,
             )
             delete_button.get_style_context().add_class("destructive-action")

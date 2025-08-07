@@ -1,5 +1,3 @@
-# rayforge/widgets/about.py
-
 import sys
 import platform
 import webbrowser
@@ -148,19 +146,21 @@ class AboutDialog(Adw.Window):
         full_text = "\n".join(lines).strip()
         clipboard = self.get_display().get_clipboard()
         clipboard.set(full_text)
-        button.set_icon_name("object-select-symbolic")
+        button.set_child(get_icon("check-symbolic"))
         GLib.timeout_add(
             2000,
-            lambda: button.set_icon_name("edit-copy-symbolic")
+            lambda: button.set_child(get_icon("copy-symbolic"))
             and GLib.SOURCE_REMOVE,
         )
         # Also give feedback on the headerbar copy button if it exists
         if hasattr(self, "header_copy_button"):
-            self.header_copy_button.set_icon_name("object-select-symbolic")
+            self.header_copy_button.set_child(
+                get_icon("check-symbolic")
+            )
             GLib.timeout_add(
                 2000,
-                lambda: self.header_copy_button.set_icon_name(
-                    "edit-copy-symbolic"
+                lambda: self.header_copy_button.set_child(
+                    get_icon("copy-symbolic")
                 )
                 and GLib.SOURCE_REMOVE,
             )
@@ -179,7 +179,7 @@ class AboutDialog(Adw.Window):
         hero_box.set_halign(Gtk.Align.CENTER)
         content_box.append(hero_box)
 
-        icon = Gtk.Image.new_from_icon_name("com.barebaric.rayforge")
+        icon = get_icon("com.barebaric.rayforge")
         icon.set_pixel_size(128)
         hero_box.append(icon)
 
@@ -226,7 +226,7 @@ class AboutDialog(Adw.Window):
 
         license_row = Adw.ActionRow(title=_("License"), subtitle="MIT X11")
         license_row.set_activatable(True)
-        license_row.add_suffix(get_icon("open-in-new"))
+        license_row.add_suffix(get_icon("open-in-new-symbolic"))
         license_row.connect(
             "activated",
             lambda _: webbrowser.open("https://opensource.org/license/mit"),
@@ -239,18 +239,16 @@ class AboutDialog(Adw.Window):
         )
         sys_info_row.set_activatable(True)
 
-        inline_copy_button = Gtk.Button.new_from_icon_name(
-            "edit-copy-symbolic"
+        self.inline_copy_button = Gtk.Button(
+            child=get_icon("edit-copy-symbolic")
         )
-        inline_copy_button.set_valign(Gtk.Align.CENTER)
-        inline_copy_button.add_css_class("flat")
-        inline_copy_button.set_tooltip_text(_("Copy System Information"))
-        inline_copy_button.connect("clicked", self._on_copy_info_clicked)
-        sys_info_row.add_suffix(inline_copy_button)
+        self.inline_copy_button.set_valign(Gtk.Align.CENTER)
+        self.inline_copy_button.add_css_class("flat")
+        self.inline_copy_button.set_tooltip_text(_("Copy System Information"))
+        self.inline_copy_button.connect("clicked", self._on_copy_info_clicked)
+        sys_info_row.add_suffix(self.inline_copy_button)
 
-        sys_info_row.add_suffix(
-            Gtk.Image.new_from_icon_name("go-next-symbolic")
-        )
+        sys_info_row.add_suffix(get_icon("go-next-symbolic"))
         sys_info_row.connect(
             "activated",
             lambda w: self.view_stack.set_visible_child_name("sysinfo"),
@@ -300,16 +298,14 @@ class AboutDialog(Adw.Window):
         self.main_title = Adw.WindowTitle(title=_("About Rayforge"))
         self.sysinfo_title = Adw.WindowTitle(title=_("System Information"))
 
-        self.back_button = Gtk.Button.new_from_icon_name(
-            "go-previous-symbolic"
-        )
+        self.back_button = Gtk.Button(child=get_icon("go-previous-symbolic"))
         self.back_button.connect(
             "clicked", lambda w: self.view_stack.set_visible_child_name("main")
         )
         self.header_bar.pack_start(self.back_button)
 
-        self.header_copy_button = Gtk.Button.new_from_icon_name(
-            "edit-copy-symbolic"
+        self.header_copy_button = Gtk.Button(
+            child=get_icon("edit-copy-symbolic")
         )
         self.header_copy_button.set_tooltip_text(_("Copy System Information"))
         self.header_copy_button.connect("clicked", self._on_copy_info_clicked)

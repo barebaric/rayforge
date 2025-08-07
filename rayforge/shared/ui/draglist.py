@@ -1,5 +1,6 @@
 from gi.repository import Gtk, Gdk  # type: ignore
 from blinker import Signal
+from ...icons import get_icon
 
 
 css = """
@@ -79,7 +80,7 @@ class DragListBox(Gtk.ListBox):
         )
 
         # Create drag handle
-        handle = Gtk.Image.new_from_icon_name("drag-handle-symbolic")
+        handle = get_icon("drag-handle-symbolic")
         handle.add_css_class("drag-handle")
         handle.set_valign(Gtk.Align.CENTER)
 
