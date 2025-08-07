@@ -267,22 +267,6 @@ class MainWindow(Adw.ApplicationWindow):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         toolbar.append(sep)
 
-        self.align_top_button = Gtk.Button()
-        self.align_top_button.set_child(get_icon("align-top-symbolic"))
-        self.align_top_button.set_tooltip_text(_("Align Top"))
-        self.align_top_button.connect(
-            "clicked", lambda b: self.surface.align_top()
-        )
-        toolbar.append(self.align_top_button)
-
-        self.align_bottom_button = Gtk.Button()
-        self.align_bottom_button.set_child(get_icon("align-bottom-symbolic"))
-        self.align_bottom_button.set_tooltip_text(_("Align Bottom"))
-        self.align_bottom_button.connect(
-            "clicked", lambda b: self.surface.align_bottom()
-        )
-        toolbar.append(self.align_bottom_button)
-
         self.align_left_button = Gtk.Button()
         self.align_left_button.set_child(get_icon("align-left-symbolic"))
         self.align_left_button.set_tooltip_text(_("Align Left"))
@@ -298,6 +282,22 @@ class MainWindow(Adw.ApplicationWindow):
             "clicked", lambda b: self.surface.align_right()
         )
         toolbar.append(self.align_right_button)
+
+        self.align_top_button = Gtk.Button()
+        self.align_top_button.set_child(get_icon("align-top-symbolic"))
+        self.align_top_button.set_tooltip_text(_("Align Top"))
+        self.align_top_button.connect(
+            "clicked", lambda b: self.surface.align_top()
+        )
+        toolbar.append(self.align_top_button)
+
+        self.align_bottom_button = Gtk.Button()
+        self.align_bottom_button.set_child(get_icon("align-bottom-symbolic"))
+        self.align_bottom_button.set_tooltip_text(_("Align Bottom"))
+        self.align_bottom_button.connect(
+            "clicked", lambda b: self.surface.align_bottom()
+        )
+        toolbar.append(self.align_bottom_button)
 
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
