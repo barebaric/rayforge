@@ -10,7 +10,6 @@ from .shared.tasker.context import ExecutionContext
 from .config import config
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
-from .icons import get_icon
 from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.workpiece import WorkPiece
@@ -33,9 +32,8 @@ from .shared.ui.preferences_dialog import PreferencesWindow
 from .machine.ui.settings_dialog import MachineSettingsDialog
 from .doceditor.ui.workpiece_properties import WorkpiecePropertiesWidget
 from .workbench.canvas import CanvasElement
-from .undo.ui.undo_button import UndoButton, RedoButton
 from .shared.ui.about import AboutDialog
-from .machine.ui.machine_selector import MachineSelector
+from .toolbar import MainToolbar
 
 
 logger = logging.getLogger(__name__)
@@ -156,207 +154,11 @@ class MainWindow(Adw.ApplicationWindow):
         # The (x, -y) offset to apply for each paste level.
         self._paste_increment_mm: Tuple[float, float] = (10.0, -10.0)
 
-        # Create a toolbar
-        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        toolbar.set_margin_bottom(2)
-        toolbar.set_margin_top(2)
-        toolbar.set_margin_start(12)
-        toolbar.set_margin_end(12)
-        vbox.append(toolbar)
-
-        # Import and export icons
-        open_button = Gtk.Button()
-        open_button.set_child(get_icon("document-open-symbolic"))
-        open_button.set_tooltip_text(_("Import image"))
-        open_button.connect("clicked", self.on_open_clicked)
-        toolbar.append(open_button)
-
-        self.export_button = Gtk.Button()
-        self.export_button.set_child(get_icon("document-save-symbolic"))
-        self.export_button.set_tooltip_text(_("Generate G-code"))
-        self.export_button.connect("clicked", self.on_export_clicked)
-        toolbar.append(self.export_button)
-
-        # Undo/Redo Buttons
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        toolbar.append(sep)
-
-        self.undo_button = UndoButton()
-        toolbar.append(self.undo_button)
-
-        self.redo_button = RedoButton()
-        toolbar.append(self.redo_button)
-
-        # Clear and visibility
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        toolbar.append(sep)
-
-        clear_button = Gtk.Button()
-        clear_button.set_child(get_icon("edit-clear-all-symbolic"))
-        clear_button.set_tooltip_text(_("Remove all workpieces"))
-        clear_button.connect("clicked", self.on_clear_clicked)
-        toolbar.append(clear_button)
-
-        self.visibility_on_icon = get_icon("stock-eye-symbolic")
-        self.visibility_off_icon = get_icon("eye-not-looking-symbolic")
-        button = Gtk.ToggleButton()
-        button.set_active(True)
-        button.set_child(self.visibility_on_icon)
-        button.set_tooltip_text(_("Toggle workpiece visibility"))
-        toolbar.append(button)
-        button.connect("clicked", self.on_button_visibility_clicked)
-
-        # Camera Image Visibility Toggle Button
-        self.camera_visibility_on_icon = get_icon("camera-app-symbolic")
-        self.camera_visibility_off_icon = get_icon("camera-disabled-symbolic")
-        self.camera_visibility_button = Gtk.ToggleButton()
-        self.camera_visibility_button.set_active(True)
-        self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
-        self.camera_visibility_button.set_tooltip_text(
-            _("Toggle camera image visibility")
-        )
-        self.camera_visibility_button.connect(
-            "toggled", self._on_camera_image_visibility_toggled
-        )
-        toolbar.append(self.camera_visibility_button)
-
-        # Show Travel Moves Toggle Button
-        self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("function-linear-symbolic"))
-        self.show_travel_button.set_active(False)
-        self.show_travel_button.set_tooltip_text(
-            _("Toggle travel move visibility")
-        )
-        self.show_travel_button.connect(
-            "toggled", self._on_show_travel_toggled
-        )
-        toolbar.append(self.show_travel_button)
-
-        # Align buttons
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        toolbar.append(sep)
-
-        self.align_h_center_button = Gtk.Button()
-        self.align_h_center_button.set_child(
-            get_icon("align-horizontal-center-symbolic")
-        )
-        self.align_h_center_button.set_tooltip_text(_("Center Horizontally"))
-        self.align_h_center_button.connect(
-            "clicked", lambda b: self.surface.center_horizontally()
-        )
-        toolbar.append(self.align_h_center_button)
-
-        self.align_v_center_button = Gtk.Button()
-        self.align_v_center_button.set_child(
-            get_icon("align-vertical-center-symbolic")
-        )
-        self.align_v_center_button.set_tooltip_text(_("Center Vertically"))
-        self.align_v_center_button.connect(
-            "clicked", lambda b: self.surface.center_vertically()
-        )
-        toolbar.append(self.align_v_center_button)
-
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        toolbar.append(sep)
-
-        self.align_left_button = Gtk.Button()
-        self.align_left_button.set_child(get_icon("align-left-symbolic"))
-        self.align_left_button.set_tooltip_text(_("Align Left"))
-        self.align_left_button.connect(
-            "clicked", lambda b: self.surface.align_left()
-        )
-        toolbar.append(self.align_left_button)
-
-        self.align_right_button = Gtk.Button()
-        self.align_right_button.set_child(get_icon("align-right-symbolic"))
-        self.align_right_button.set_tooltip_text(_("Align Right"))
-        self.align_right_button.connect(
-            "clicked", lambda b: self.surface.align_right()
-        )
-        toolbar.append(self.align_right_button)
-
-        self.align_top_button = Gtk.Button()
-        self.align_top_button.set_child(get_icon("align-top-symbolic"))
-        self.align_top_button.set_tooltip_text(_("Align Top"))
-        self.align_top_button.connect(
-            "clicked", lambda b: self.surface.align_top()
-        )
-        toolbar.append(self.align_top_button)
-
-        self.align_bottom_button = Gtk.Button()
-        self.align_bottom_button.set_child(get_icon("align-bottom-symbolic"))
-        self.align_bottom_button.set_tooltip_text(_("Align Bottom"))
-        self.align_bottom_button.connect(
-            "clicked", lambda b: self.surface.align_bottom()
-        )
-        toolbar.append(self.align_bottom_button)
-
-        # Control buttons: home, send, pause, stop
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        toolbar.append(sep)
-
-        self.home_button = Gtk.Button()
-        self.home_button.set_child(get_icon("go-home-symbolic"))
-        self.home_button.set_tooltip_text(_("Home the machine"))
-        self.home_button.connect("clicked", self.on_home_clicked)
-        toolbar.append(self.home_button)
-
-        self.frame_button = Gtk.Button()
-        self.frame_button.set_child(get_icon("edit-select-all-symbolic"))
-        self.frame_button.set_tooltip_text(
-            _("Cycle laser head around the occupied area")
-        )
-        self.frame_button.connect("clicked", self.on_frame_clicked)
-        toolbar.append(self.frame_button)
-
-        self.send_button = Gtk.Button()
-        self.send_button.set_child(get_icon("document-send-symbolic"))
-        self.send_button.set_tooltip_text(_("Send to machine"))
-        self.send_button.connect("clicked", self.on_send_clicked)
-        toolbar.append(self.send_button)
-
-        self.hold_on_icon = get_icon("pause-symbolic")
-        self.hold_off_icon = get_icon("pause-symbolic")
-        self.hold_button = Gtk.ToggleButton()
-        self.hold_button.set_child(self.hold_off_icon)
-        self.hold_button.set_tooltip_text(_("Pause machine"))
-        self.hold_button.connect("clicked", self.on_hold_clicked)
-        toolbar.append(self.hold_button)
-
-        self.cancel_button = Gtk.Button()
-        self.cancel_button.set_child(get_icon("process-stop-symbolic"))
-        self.cancel_button.set_tooltip_text(_("Cancel running job"))
-        self.cancel_button.connect("clicked", self.on_cancel_clicked)
-        toolbar.append(self.cancel_button)
-
-        # Add spacer to push machine selector to the right
-        spacer = Gtk.Box()
-        spacer.set_hexpand(True)
-        toolbar.append(spacer)
-
-        # Add clickable warning for misconfigured machine
-        self.machine_warning_box = Gtk.Box(spacing=6)
-        self.machine_warning_box.set_margin_end(12)
-        warning_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
-        warning_label = Gtk.Label(label=_("Machine not fully configured"))
-        warning_label.add_css_class("warning-label")
-        self.machine_warning_box.append(warning_icon)
-        self.machine_warning_box.append(warning_label)
-        self.machine_warning_box.set_tooltip_text(
-            _("Machine driver is missing required settings. Click to edit.")
-        )
-        self.machine_warning_box.set_visible(False)
-        warning_click = Gtk.GestureClick.new()
-        warning_click.connect("pressed", self._on_machine_warning_clicked)
-        self.machine_warning_box.add_controller(warning_click)
-        toolbar.append(self.machine_warning_box)
-
-        # Add machine selector dropdown
-        self.machine_selector = MachineSelector()
-        self.machine_selector.machine_selected.connect(
-            self._on_machine_selected_by_selector
-        )
-        toolbar.append(self.machine_selector)
+        # Create and add the main toolbar.
+        # It takes `self` as its action handler for now.
+        # This will be replaced by a dedicated ActionHandler class later.
+        self.toolbar = MainToolbar(action_handler=self)
+        vbox.append(self.toolbar)
 
         # Create the Paned splitting the window into left and right sections.
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -394,14 +196,14 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface = WorkSurface(
             self.doc,
             config.machine,
-            cam_visible=self.camera_visibility_button.get_active(),
+            cam_visible=self.toolbar.camera_visibility_button.get_active(),
         )
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
 
         # Connect the undo/redo buttons to the document's history manager
-        self.undo_button.set_history_manager(self.doc.history_manager)
-        self.redo_button.set_history_manager(self.doc.history_manager)
+        self.toolbar.undo_button.set_history_manager(self.doc.history_manager)
+        self.toolbar.redo_button.set_history_manager(self.doc.history_manager)
 
         # Create a vertical paned for the right pane content
         right_pane_scrolled_window = Gtk.ScrolledWindow()
@@ -506,7 +308,7 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self.surface.grab_focus()
 
-    def _on_machine_selected_by_selector(self, sender, *, machine: Machine):
+    def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
         Handles the 'machine_selected' signal from the MachineSelector widget.
         The signature is compatible with the blinker library.
@@ -765,16 +567,16 @@ class MainWindow(Adw.ApplicationWindow):
             # If no machine is selected, disable most controls
             self.export_action.set_enabled(False)
             self.machine_settings_action.set_enabled(False)
-            self.export_button.set_sensitive(False)
-            self.export_button.set_tooltip_text(
+            self.toolbar.export_button.set_sensitive(False)
+            self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
             )
-            self.home_button.set_sensitive(False)
-            self.frame_button.set_sensitive(False)
-            self.send_button.set_sensitive(False)
-            self.hold_button.set_sensitive(False)
-            self.cancel_button.set_sensitive(False)
-            self.machine_warning_box.set_visible(False)
+            self.toolbar.home_button.set_sensitive(False)
+            self.toolbar.frame_button.set_sensitive(False)
+            self.toolbar.send_button.set_sensitive(False)
+            self.toolbar.hold_button.set_sensitive(False)
+            self.toolbar.cancel_button.set_sensitive(False)
+            self.toolbar.machine_warning_box.set_visible(False)
             self.surface.set_laser_dot_visible(False)
             # Other actions are handled below based on selection/history
         else:
@@ -786,7 +588,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             can_export = self.doc.has_workpiece() and not task_mgr.has_tasks()
             self.export_action.set_enabled(can_export)
-            self.export_button.set_sensitive(can_export)
+            self.toolbar.export_button.set_sensitive(can_export)
 
             export_tooltip = _("Generate G-code")
             if not self.doc.has_workpiece():
@@ -795,14 +597,16 @@ class MainWindow(Adw.ApplicationWindow):
                 export_tooltip = _(
                     "Cannot export while other tasks are running"
                 )
-            self.export_button.set_tooltip_text(export_tooltip)
+            self.toolbar.export_button.set_tooltip_text(export_tooltip)
 
-            self.machine_warning_box.set_visible(
+            self.toolbar.machine_warning_box.set_visible(
                 bool(active_driver and active_driver.setup_error)
             )
             self.machine_settings_action.set_enabled(True)
 
-            self.home_button.set_sensitive(device_status == DeviceStatus.IDLE)
+            self.toolbar.home_button.set_sensitive(
+                device_status == DeviceStatus.IDLE
+            )
 
             can_frame = (
                 active_machine.can_frame()
@@ -810,8 +614,8 @@ class MainWindow(Adw.ApplicationWindow):
                 and device_status == DeviceStatus.IDLE
                 and not task_mgr.has_tasks()
             )
-            self.frame_button.set_sensitive(can_frame)
-            self.frame_button.set_tooltip_text(
+            self.toolbar.frame_button.set_sensitive(can_frame)
+            self.toolbar.frame_button.set_tooltip_text(
                 _("Cycle laser head around the occupied area")
             )
 
@@ -833,15 +637,17 @@ class MainWindow(Adw.ApplicationWindow):
                 send_sensitive = False
             elif not self.doc.has_result():
                 send_sensitive = False
-            self.send_button.set_sensitive(send_sensitive)
-            self.send_button.set_tooltip_text(send_tooltip)
+            self.toolbar.send_button.set_sensitive(send_sensitive)
+            self.toolbar.send_button.set_tooltip_text(send_tooltip)
 
             hold_sensitive = device_status in (
                 DeviceStatus.RUN,
                 DeviceStatus.HOLD,
             )
-            self.hold_button.set_sensitive(hold_sensitive)
-            self.hold_button.set_active(device_status == DeviceStatus.HOLD)
+            self.toolbar.hold_button.set_sensitive(hold_sensitive)
+            self.toolbar.hold_button.set_active(
+                device_status == DeviceStatus.HOLD
+            )
 
             cancel_sensitive = device_status in (
                 DeviceStatus.RUN,
@@ -849,7 +655,7 @@ class MainWindow(Adw.ApplicationWindow):
                 DeviceStatus.JOG,
                 DeviceStatus.CYCLE,
             )
-            self.cancel_button.set_sensitive(cancel_sensitive)
+            self.toolbar.cancel_button.set_sensitive(cancel_sensitive)
 
             connected = conn_status == TransportStatus.CONNECTED
             self.surface.set_laser_dot_visible(connected)
@@ -874,14 +680,14 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update sensitivity for all alignment buttons
         align_sensitive = has_selection and not has_tasks
-        self.align_left_button.set_sensitive(align_sensitive)
-        self.align_h_center_button.set_sensitive(align_sensitive)
-        self.align_right_button.set_sensitive(align_sensitive)
-        self.align_top_button.set_sensitive(align_sensitive)
-        self.align_v_center_button.set_sensitive(align_sensitive)
-        self.align_bottom_button.set_sensitive(align_sensitive)
+        self.toolbar.align_left_button.set_sensitive(align_sensitive)
+        self.toolbar.align_h_center_button.set_sensitive(align_sensitive)
+        self.toolbar.align_right_button.set_sensitive(align_sensitive)
+        self.toolbar.align_top_button.set_sensitive(align_sensitive)
+        self.toolbar.align_v_center_button.set_sensitive(align_sensitive)
+        self.toolbar.align_bottom_button.set_sensitive(align_sensitive)
 
-    def _on_machine_warning_clicked(self, *args):
+    def on_machine_warning_clicked(self, *args):
         """Opens the machine settings dialog for the current machine."""
         if not config.machine:
             return
@@ -929,19 +735,19 @@ class MainWindow(Adw.ApplicationWindow):
         is_active = button.get_active()
         self.surface.set_workpieces_visible(is_active)
         if is_active:
-            button.set_child(self.visibility_on_icon)
+            button.set_child(self.toolbar.visibility_on_icon)
         else:
-            button.set_child(self.visibility_off_icon)
+            button.set_child(self.toolbar.visibility_off_icon)
 
-    def _on_camera_image_visibility_toggled(self, button):
+    def on_camera_image_visibility_toggled(self, button):
         is_active = button.get_active()
         self.surface.set_camera_image_visibility(is_active)
         if is_active:
-            button.set_child(self.camera_visibility_on_icon)
+            button.set_child(self.toolbar.camera_visibility_on_icon)
         else:
-            button.set_child(self.camera_visibility_off_icon)
+            button.set_child(self.toolbar.camera_visibility_off_icon)
 
-    def _on_show_travel_toggled(self, button):
+    def on_show_travel_toggled(self, button):
         is_active = button.get_active()
         self.surface.set_show_travel_moves(is_active)
 
@@ -1044,16 +850,35 @@ class MainWindow(Adw.ApplicationWindow):
         driver = config.machine.driver
         if button.get_active():
             task_mgr.add_coroutine(lambda ctx: driver.set_hold(True))
-            button.set_child(self.hold_on_icon)
+            button.set_child(self.toolbar.hold_on_icon)
         else:
             task_mgr.add_coroutine(lambda ctx: driver.set_hold(False))
-            button.set_child(self.hold_off_icon)
+            button.set_child(self.toolbar.hold_off_icon)
 
     def on_cancel_clicked(self, button):
         if not config.machine:
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel())
+
+    # --- Alignment handlers ---
+    def on_align_h_center_clicked(self, button):
+        self.surface.center_horizontally()
+
+    def on_align_v_center_clicked(self, button):
+        self.surface.center_vertically()
+
+    def on_align_left_clicked(self, button):
+        self.surface.align_left()
+
+    def on_align_right_clicked(self, button):
+        self.surface.align_right()
+
+    def on_align_top_clicked(self, button):
+        self.surface.align_top()
+
+    def on_align_bottom_clicked(self, button):
+        self.surface.align_bottom()
 
     def on_save_dialog_response(self, dialog, result):
         try:
