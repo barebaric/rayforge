@@ -37,7 +37,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.add(self.main_group)
         self._main_group_title = _("Device Settings")
         self._main_group_desc = _(
-            "Read or apply settings directly to the device device."
+            "Read or apply settings directly to the device."
         )
 
         # Create header controls once and store them
