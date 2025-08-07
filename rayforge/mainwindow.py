@@ -34,6 +34,8 @@ from .doceditor.ui.workpiece_properties import WorkpiecePropertiesWidget
 from .workbench.canvas import CanvasElement
 from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
+from .actions import ActionManager
+from .main_menu import MainMenu
 
 
 logger = logging.getLogger(__name__)
@@ -127,19 +129,23 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.set_default_size(1100, 800)
 
-        # Setup keyboard actions.
-        self._setup_actions()
-        self._set_accelerators()
+        # Make a default document. Must be created before ActionManager.
+        self.doc = Doc()
+
+        # Setup keyboard actions using the new ActionManager.
+        self.action_manager = ActionManager(self)
+        self.action_manager.register_actions()
+        self.action_manager.set_accelerators(self.get_application())
 
         # HeaderBar with left-aligned menu and centered title
         header_bar = Adw.HeaderBar()
         vbox.append(header_bar)
 
         # Create the menu model and the popover menubar
-        menu_model = self._create_menu_model()
+        menu_model = MainMenu()
         menubar = Gtk.PopoverMenuBar.new_from_model(menu_model)
         menubar.add_css_class("in-header-menubar")
-        header_bar.pack_start(menubar)  # Pack menubar to the left
+        header_bar.pack_start(menubar)
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
@@ -168,7 +174,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.paned.add_css_class("mainpaned")
         provider = Gtk.CssProvider()
         provider.load_from_string(css)
-        display = Gdk.Display.get_default()
         Gtk.StyleContext.add_provider_for_display(
             display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
@@ -185,8 +190,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.frame.set_hexpand(True)
         self.paned.set_start_child(self.frame)
 
-        # Make a default document.
-        self.doc = Doc()
+        # Connect document signals
         self._initialize_document()
         self.doc.changed.connect(self.on_doc_changed)
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
@@ -200,7 +204,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_hexpand(True)
         self.frame.set_child(self.surface)
 
-        # Connect the undo/redo buttons to the document's history manager
+        # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(self.doc.history_manager)
         self.toolbar.redo_button.set_history_manager(self.doc.history_manager)
 
@@ -302,10 +306,10 @@ class MainWindow(Adw.ApplicationWindow):
             logger.info("Added default Contour step to initial document.")
 
     def _connect_toolbar_signals(self):
-        """Connects all signals from the MainToolbar to their handlers."""
-        self.toolbar.open_clicked.connect(self.on_open_clicked)
-        self.toolbar.export_clicked.connect(self.on_export_clicked)
-        self.toolbar.clear_clicked.connect(self.on_clear_clicked)
+        """Connects signals from the MainToolbar to their handlers.
+        Most buttons are connected via Gio.Actions. Only view-state toggles
+        and special widgets are connected here.
+        """
         self.toolbar.visibility_toggled.connect(
             self.on_button_visibility_toggled
         )
@@ -314,30 +318,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.toolbar.show_travel_toggled.connect(self.on_show_travel_toggled)
 
-        # Alignment and Distribution
-        self.toolbar.center_horizontally_clicked.connect(
-            self.on_align_h_center_clicked
-        )
-        self.toolbar.center_vertically_clicked.connect(
-            self.on_align_v_center_clicked
-        )
-        self.toolbar.align_left_clicked.connect(self.on_align_left_clicked)
-        self.toolbar.align_right_clicked.connect(self.on_align_right_clicked)
-        self.toolbar.align_top_clicked.connect(self.on_align_top_clicked)
-        self.toolbar.align_bottom_clicked.connect(self.on_align_bottom_clicked)
-        self.toolbar.spread_horizontally_clicked.connect(
-            self.on_spread_horizontally_clicked
-        )
-        self.toolbar.spread_vertically_clicked.connect(
-            self.on_spread_vertically_clicked
-        )
-
-        # Machine Control
-        self.toolbar.home_clicked.connect(self.on_home_clicked)
-        self.toolbar.frame_clicked.connect(self.on_frame_clicked)
-        self.toolbar.send_clicked.connect(self.on_send_clicked)
-        self.toolbar.hold_toggled.connect(self.on_hold_clicked)
-        self.toolbar.cancel_clicked.connect(self.on_cancel_clicked)
         self.toolbar.machine_warning_clicked.connect(
             self.on_machine_warning_clicked
         )
@@ -362,136 +342,6 @@ class MainWindow(Adw.ApplicationWindow):
             logger.info(f"User selected machine via dropdown: {machine.name}")
             config.set_machine(machine)
             self.surface.set_machine(machine)
-
-    def _setup_actions(self):
-        """Creates all Gio.SimpleActions for the window and application."""
-        # File actions
-        quit_action = Gio.SimpleAction.new("quit", None)
-        quit_action.connect("activate", self.on_quit_action)
-        self.add_action(quit_action)
-
-        import_action = Gio.SimpleAction.new("import", None)
-        import_action.connect("activate", self.on_menu_import)
-        self.add_action(import_action)
-
-        self.export_action = Gio.SimpleAction.new("export", None)
-        self.export_action.connect("activate", self.on_export_clicked)
-        self.add_action(self.export_action)
-
-        # Edit actions
-        self.undo_action = Gio.SimpleAction.new("undo", None)
-        self.undo_action.connect(
-            "activate", lambda a, p: self.doc.history_manager.undo()
-        )
-        self.add_action(self.undo_action)
-
-        self.redo_action = Gio.SimpleAction.new("redo", None)
-        self.redo_action.connect(
-            "activate", lambda a, p: self.doc.history_manager.redo()
-        )
-        self.add_action(self.redo_action)
-
-        self.cut_action = Gio.SimpleAction.new("cut", None)
-        self.cut_action.connect("activate", self.on_menu_cut)
-        self.add_action(self.cut_action)
-
-        self.copy_action = Gio.SimpleAction.new("copy", None)
-        self.copy_action.connect("activate", self.on_menu_copy)
-        self.add_action(self.copy_action)
-
-        self.paste_action = Gio.SimpleAction.new("paste", None)
-        self.paste_action.connect("activate", self.on_paste_requested)
-        self.add_action(self.paste_action)
-
-        self.duplicate_action = Gio.SimpleAction.new("duplicate", None)
-        self.duplicate_action.connect("activate", self.on_menu_duplicate)
-        self.add_action(self.duplicate_action)
-
-        self.remove_action = Gio.SimpleAction.new("remove", None)
-        self.remove_action.connect("activate", self.on_menu_remove)
-        self.add_action(self.remove_action)
-
-        preferences_action = Gio.SimpleAction.new("preferences", None)
-        preferences_action.connect("activate", self.show_preferences)
-        self.add_action(preferences_action)
-
-        self.machine_settings_action = Gio.SimpleAction.new(
-            "machine_settings", None
-        )
-        self.machine_settings_action.connect(
-            "activate", self.show_machine_settings
-        )
-        self.add_action(self.machine_settings_action)
-
-        # Help action
-        about_action = Gio.SimpleAction.new("about", None)
-        about_action.connect("activate", self.show_about_dialog)
-        self.add_action(about_action)
-
-    def _create_menu_model(self) -> Gio.Menu:
-        """Creates the Gio.Menu model for the menubar."""
-        menu_model = Gio.Menu()
-
-        # File Menu
-        file_menu = Gio.Menu()
-        file_menu.append(_("Import..."), "win.import")
-        file_menu.append(_("Export G-code..."), "win.export")
-
-        quit_command = Gio.Menu()
-        quit_command.append(_("Quit"), "win.quit")
-        file_menu.append_section(None, quit_command)
-        menu_model.append_submenu(_("_File"), file_menu)
-
-        # Edit Menu
-        edit_menu = Gio.Menu()
-        edit_menu.append(_("Undo"), "win.undo")
-        edit_menu.append(_("Redo"), "win.redo")
-
-        clipboard_commands = Gio.Menu()
-        clipboard_commands.append(_("Cut"), "win.cut")
-        clipboard_commands.append(_("Copy"), "win.copy")
-        clipboard_commands.append(_("Paste"), "win.paste")
-        clipboard_commands.append(_("Duplicate"), "win.duplicate")
-        clipboard_commands.append(_("Remove"), "win.remove")
-        edit_menu.append_section(None, clipboard_commands)
-
-        other_edit_commands = Gio.Menu()
-        other_edit_commands.append(_("Preferences…"), "win.preferences")
-        edit_menu.append_section(None, other_edit_commands)
-
-        menu_model.append_submenu(_("_Edit"), edit_menu)
-
-        # Help Menu
-        help_menu = Gio.Menu()
-        help_menu.append(_("About"), "win.about")
-        menu_model.append_submenu(_("_Help"), help_menu)
-
-        return menu_model
-
-    def _set_accelerators(self):
-        """Sets keyboard accelerators for the application's actions."""
-        app = self.get_application()
-        if not app:
-            logger.warning(
-                "Cannot set accelerators without a Gtk.Application."
-            )
-            return
-
-        app.set_accels_for_action("win.import", ["<Primary>o"])
-        app.set_accels_for_action("win.export", ["<Primary>e"])
-        app.set_accels_for_action("win.quit", ["<Primary>q"])
-        app.set_accels_for_action("win.undo", ["<Primary>z"])
-        app.set_accels_for_action(
-            "win.redo", ["<Primary>y", "<Primary><Shift>z"]
-        )
-        app.set_accels_for_action("win.cut", ["<Primary>x"])
-        app.set_accels_for_action("win.copy", ["<Primary>c"])
-        app.set_accels_for_action("win.paste", ["<Primary>v"])
-        app.set_accels_for_action("win.duplicate", ["<Primary>d"])
-        app.set_accels_for_action("win.remove", ["Delete"])
-        app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
-        app.set_accels_for_action("win.preferences", ["<Primary>comma"])
-        app.set_accels_for_action("win.about", ["F1"])
 
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""
@@ -606,33 +456,29 @@ class MainWindow(Adw.ApplicationWindow):
 
     def update_state(self):
         active_machine = config.machine
+        am = self.action_manager
+
         if not active_machine:
-            # If no machine is selected, disable most controls
-            self.export_action.set_enabled(False)
-            self.machine_settings_action.set_enabled(False)
-            self.toolbar.export_button.set_sensitive(False)
+            am.get_action("export").set_enabled(False)
+            am.get_action("machine_settings").set_enabled(False)
+            am.get_action("home").set_enabled(False)
+            am.get_action("frame").set_enabled(False)
+            am.get_action("send").set_enabled(False)
+            am.get_action("hold").set_enabled(False)
+            am.get_action("cancel").set_enabled(False)
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
             )
-            self.toolbar.home_button.set_sensitive(False)
-            self.toolbar.frame_button.set_sensitive(False)
-            self.toolbar.send_button.set_sensitive(False)
-            self.toolbar.hold_button.set_sensitive(False)
-            self.toolbar.cancel_button.set_sensitive(False)
             self.toolbar.machine_warning_box.set_visible(False)
             self.surface.set_laser_dot_visible(False)
-            # Other actions are handled below based on selection/history
         else:
-            # Get state from the active machine and its driver
             device_status = active_machine.device_state.status
             conn_status = active_machine.connection_status
             state = active_machine.device_state
             active_driver = active_machine.driver
 
             can_export = self.doc.has_workpiece() and not task_mgr.has_tasks()
-            self.export_action.set_enabled(can_export)
-            self.toolbar.export_button.set_sensitive(can_export)
-
+            am.get_action("export").set_enabled(can_export)
             export_tooltip = _("Generate G-code")
             if not self.doc.has_workpiece():
                 export_tooltip = _("Add a workpiece to enable export")
@@ -645,52 +491,49 @@ class MainWindow(Adw.ApplicationWindow):
             self.toolbar.machine_warning_box.set_visible(
                 bool(active_driver and active_driver.setup_error)
             )
-            self.machine_settings_action.set_enabled(True)
+            am.get_action("machine_settings").set_enabled(True)
 
-            self.toolbar.home_button.set_sensitive(
-                device_status == DeviceStatus.IDLE
+            # A job/task is running if the machine is not idle or a UI task is
+            # active.
+            is_job_or_task_active = (
+                device_status != DeviceStatus.IDLE or task_mgr.has_tasks()
             )
+
+            am.get_action("home").set_enabled(not is_job_or_task_active)
 
             can_frame = (
                 active_machine.can_frame()
                 and self.doc.has_result()
-                and device_status == DeviceStatus.IDLE
-                and not task_mgr.has_tasks()
+                and not is_job_or_task_active
             )
-            self.toolbar.frame_button.set_sensitive(can_frame)
-            self.toolbar.frame_button.set_tooltip_text(
-                _("Cycle laser head around the occupied area")
-            )
+            am.get_action("frame").set_enabled(can_frame)
 
-            send_sensitive = True
-            send_tooltip = _("Send to machine")
-            if isinstance(active_driver, NoDeviceDriver):
-                send_tooltip = _("Select a valid driver to enable sending")
-                send_sensitive = False
-            elif not (active_driver and not active_driver.setup_error):
-                send_tooltip = _("Configure the driver to enable sending")
-                send_sensitive = False
-            elif conn_status != TransportStatus.CONNECTED:
-                send_tooltip = _("Connect to the machine to enable sending")
-                send_sensitive = False
-            elif task_mgr.has_tasks():
-                send_tooltip = _(
-                    "Wait for other tasks to finish before sending"
-                )
-                send_sensitive = False
-            elif not self.doc.has_result():
-                send_sensitive = False
-            self.toolbar.send_button.set_sensitive(send_sensitive)
-            self.toolbar.send_button.set_tooltip_text(send_tooltip)
+            send_sensitive = (
+                not isinstance(active_driver, NoDeviceDriver)
+                and (active_driver and not active_driver.setup_error)
+                and conn_status == TransportStatus.CONNECTED
+                and self.doc.has_result()
+                and not is_job_or_task_active
+            )
+            am.get_action("send").set_enabled(send_sensitive)
+            self.toolbar.send_button.set_tooltip_text(_("Send to machine"))
 
             hold_sensitive = device_status in (
                 DeviceStatus.RUN,
                 DeviceStatus.HOLD,
+                DeviceStatus.CYCLE,
             )
-            self.toolbar.hold_button.set_sensitive(hold_sensitive)
-            self.toolbar.hold_button.set_active(
-                device_status == DeviceStatus.HOLD
+            is_holding = device_status == DeviceStatus.HOLD
+            am.get_action("hold").set_enabled(hold_sensitive)
+            am.get_action("hold").set_state(
+                GLib.Variant.new_boolean(is_holding)
             )
+            if is_holding:
+                self.toolbar.hold_button.set_child(self.toolbar.hold_on_icon)
+                self.toolbar.hold_button.set_tooltip_text(_("Resume machine"))
+            else:
+                self.toolbar.hold_button.set_child(self.toolbar.hold_off_icon)
+                self.toolbar.hold_button.set_tooltip_text(_("Pause machine"))
 
             cancel_sensitive = device_status in (
                 DeviceStatus.RUN,
@@ -698,11 +541,11 @@ class MainWindow(Adw.ApplicationWindow):
                 DeviceStatus.JOG,
                 DeviceStatus.CYCLE,
             )
-            self.toolbar.cancel_button.set_sensitive(cancel_sensitive)
+            am.get_action("cancel").set_enabled(cancel_sensitive)
 
             connected = conn_status == TransportStatus.CONNECTED
             self.surface.set_laser_dot_visible(connected)
-            if state:
+            if state and connected:
                 x, y = state.machine_pos[:2]
                 if x is not None and y is not None:
                     self.surface.set_laser_dot_position(x, y)
@@ -710,21 +553,25 @@ class MainWindow(Adw.ApplicationWindow):
         # Update actions that don't depend on the machine state
         has_selection = len(self.surface.get_selected_workpieces()) > 0
         has_tasks = task_mgr.has_tasks()
+        can_edit = not has_tasks
 
-        self.undo_action.set_enabled(self.doc.history_manager.can_undo())
-        self.redo_action.set_enabled(self.doc.history_manager.can_redo())
-        self.cut_action.set_enabled(has_selection and not has_tasks)
-        self.copy_action.set_enabled(has_selection)
-        self.paste_action.set_enabled(
-            len(self._clipboard_snapshot) > 0 and not has_tasks
+        am.get_action("undo").set_enabled(self.doc.history_manager.can_undo())
+        am.get_action("redo").set_enabled(self.doc.history_manager.can_redo())
+        am.get_action("cut").set_enabled(has_selection and can_edit)
+        am.get_action("copy").set_enabled(has_selection)
+        am.get_action("paste").set_enabled(
+            len(self._clipboard_snapshot) > 0 and can_edit
         )
-        self.duplicate_action.set_enabled(has_selection and not has_tasks)
-        self.remove_action.set_enabled(has_selection and not has_tasks)
+        am.get_action("duplicate").set_enabled(has_selection and can_edit)
+        am.get_action("remove").set_enabled(has_selection and can_edit)
+        am.get_action("clear").set_enabled(
+            self.doc.has_workpiece() and can_edit
+        )
 
         # Update sensitivity for all alignment buttons
-        align_sensitive = has_selection and not has_tasks
-        self.toolbar.align_h_center_button.set_sensitive(align_sensitive)
-        self.toolbar.align_v_center_button.set_sensitive(align_sensitive)
+        align_sensitive = has_selection and can_edit
+        am.get_action("align-h-center").set_enabled(align_sensitive)
+        am.get_action("align-v-center").set_enabled(align_sensitive)
         self.toolbar.align_menu_button.set_sensitive(align_sensitive)
         self.toolbar.distribute_menu_button.set_sensitive(align_sensitive)
 
@@ -800,7 +647,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_show_travel_toggled(self, sender, active):
         self.surface.set_show_travel_moves(active)
 
-    def on_clear_clicked(self, sender):
+    def on_clear_clicked(self, action, param):
         if not self.doc.workpieces:
             return
 
@@ -817,7 +664,7 @@ class MainWindow(Adw.ApplicationWindow):
                     )
                     t.execute(command)
 
-    def on_export_clicked(self, sender, param=None):
+    def on_export_clicked(self, action, param=None):
         # Create a file chooser dialog for saving the file
         dialog = Gtk.FileDialog.new()
         dialog.set_title(_("Save G-code File"))
@@ -839,13 +686,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Show the dialog and handle the response
         dialog.save(self, None, self.on_save_dialog_response)
 
-    def on_home_clicked(self, sender):
+    def on_home_clicked(self, action, param):
         if not config.machine:
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.home())
 
-    def on_frame_clicked(self, sender):
+    def on_frame_clicked(self, action, param):
         if not config.machine:
             return
 
@@ -873,7 +720,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         task_mgr.add_coroutine(frame_coro, key="frame-job")
 
-    def on_send_clicked(self, sender):
+    def on_send_clicked(self, action, param):
         if not config.machine:
             return
 
@@ -893,45 +740,48 @@ class MainWindow(Adw.ApplicationWindow):
 
         task_mgr.add_coroutine(send_coro, key="send-job")
 
-    def on_hold_clicked(self, sender, active):
+    def on_hold_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        """
+        Handles the 'change-state' signal for the 'hold' action.
+        This is the correct handler for a stateful action.
+        """
         if not config.machine:
             return
         driver = config.machine.driver
-        if active:
-            task_mgr.add_coroutine(lambda ctx: driver.set_hold(True))
-            self.toolbar.hold_button.set_child(self.toolbar.hold_on_icon)
-        else:
-            task_mgr.add_coroutine(lambda ctx: driver.set_hold(False))
-            self.toolbar.hold_button.set_child(self.toolbar.hold_off_icon)
+        is_requesting_hold = value.get_boolean()
+        task_mgr.add_coroutine(lambda ctx: driver.set_hold(is_requesting_hold))
+        action.set_state(value)
 
-    def on_cancel_clicked(self, sender):
+    def on_cancel_clicked(self, action, param):
         if not config.machine:
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel())
 
-    def on_align_h_center_clicked(self, sender):
+    def on_align_h_center_clicked(self, action, param):
         self.surface.center_horizontally()
 
-    def on_align_v_center_clicked(self, sender):
+    def on_align_v_center_clicked(self, action, param):
         self.surface.center_vertically()
 
-    def on_align_left_clicked(self, sender):
+    def on_align_left_clicked(self, action, param):
         self.surface.align_left()
 
-    def on_align_right_clicked(self, sender):
+    def on_align_right_clicked(self, action, param):
         self.surface.align_right()
 
-    def on_align_top_clicked(self, sender):
+    def on_align_top_clicked(self, action, param):
         self.surface.align_top()
 
-    def on_align_bottom_clicked(self, sender):
+    def on_align_bottom_clicked(self, action, param):
         self.surface.align_bottom()
 
-    def on_spread_horizontally_clicked(self, sender):
+    def on_spread_horizontally_clicked(self, action, param):
         self.surface.spread_horizontally()
 
-    def on_spread_vertically_clicked(self, sender):
+    def on_spread_vertically_clicked(self, action, param):
         self.surface.spread_vertically()
 
     def on_save_dialog_response(self, dialog, result):

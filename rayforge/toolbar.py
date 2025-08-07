@@ -12,32 +12,17 @@ logger = logging.getLogger(__name__)
 class MainToolbar(Gtk.Box):
     """
     The main application toolbar.
+    Connects its buttons to Gio.Actions for centralized control.
     """
 
     def __init__(self, **kwargs):
         super().__init__(
             orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs
         )
-
-        self.open_clicked = Signal()
-        self.export_clicked = Signal()
-        self.clear_clicked = Signal()
+        # Signals for View-State controls (not app actions)
         self.visibility_toggled = Signal()
         self.camera_visibility_toggled = Signal()
         self.show_travel_toggled = Signal()
-        self.center_horizontally_clicked = Signal()
-        self.center_vertically_clicked = Signal()
-        self.align_left_clicked = Signal()
-        self.align_right_clicked = Signal()
-        self.align_top_clicked = Signal()
-        self.align_bottom_clicked = Signal()
-        self.spread_horizontally_clicked = Signal()
-        self.spread_vertically_clicked = Signal()
-        self.home_clicked = Signal()
-        self.frame_clicked = Signal()
-        self.send_clicked = Signal()
-        self.hold_toggled = Signal()
-        self.cancel_clicked = Signal()
         self.machine_warning_clicked = Signal()
 
         self.set_margin_bottom(2)
@@ -45,43 +30,42 @@ class MainToolbar(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(12)
 
-        # --- Import and export icons ---
-        open_button = Gtk.Button()
-        open_button.set_child(get_icon("document-open-symbolic"))
+        # Import and export buttons
+        open_button = Gtk.Button.new_from_icon_name("document-open-symbolic")
         open_button.set_tooltip_text(_("Import image"))
-        open_button.connect("clicked", lambda _: self.open_clicked.send(self))
+        open_button.set_action_name("win.import")
         self.append(open_button)
 
-        self.export_button = Gtk.Button()
-        self.export_button.set_child(get_icon("document-save-symbolic"))
-        self.export_button.set_tooltip_text(_("Generate G-code"))
-        self.export_button.connect(
-            "clicked", lambda _: self.export_clicked.send(self)
+        self.export_button = Gtk.Button.new_from_icon_name(
+            "document-save-symbolic"
         )
+        self.export_button.set_tooltip_text(_("Generate G-code"))
+        self.export_button.set_action_name("win.export")
         self.append(self.export_button)
 
-        # --- Undo/Redo Buttons ---
+        # Undo/Redo Buttons
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
         self.undo_button = UndoButton()
+        self.undo_button.set_action_name("win.undo")
         self.append(self.undo_button)
 
         self.redo_button = RedoButton()
+        self.redo_button.set_action_name("win.redo")
         self.append(self.redo_button)
 
-        # --- Clear and visibility ---
+        # Clear and visibility
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        clear_button = Gtk.Button()
-        clear_button.set_child(get_icon("edit-clear-all-symbolic"))
+        clear_button = Gtk.Button.new_from_icon_name("edit-clear-all-symbolic")
         clear_button.set_tooltip_text(_("Remove all workpieces"))
-        clear_button.connect(
-            "clicked", lambda _: self.clear_clicked.send(self)
-        )
+        clear_button.set_action_name("win.clear")
         self.append(clear_button)
 
+        # This button controls view state, not an app command, so it keeps its
+        # signal.
         self.visibility_on_icon = get_icon("stock-eye-symbolic")
         self.visibility_off_icon = get_icon("eye-not-looking-symbolic")
         self.visibility_button = Gtk.ToggleButton()
@@ -98,7 +82,7 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.visibility_button)
 
-        # --- Camera Image Visibility Toggle Button ---
+        # This button also controls view state.
         self.camera_visibility_on_icon = get_icon("camera-app-symbolic")
         self.camera_visibility_off_icon = get_icon("camera-disabled-symbolic")
         self.camera_visibility_button = Gtk.ToggleButton()
@@ -115,7 +99,7 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.camera_visibility_button)
 
-        # --- Show Travel Moves Toggle Button ---
+        # This button also controls view state.
         self.show_travel_button = Gtk.ToggleButton()
         self.show_travel_button.set_child(get_icon("function-linear-symbolic"))
         self.show_travel_button.set_active(False)
@@ -130,59 +114,46 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.show_travel_button)
 
-        # --- Align buttons ---
+        # Align buttons
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.align_h_center_button = Gtk.Button()
-        self.align_h_center_button.set_child(
-            get_icon("align-horizontal-center-symbolic")
+        self.align_h_center_button = Gtk.Button.new_from_icon_name(
+            "align-horizontal-center-symbolic"
         )
         self.align_h_center_button.set_tooltip_text(_("Center Horizontally"))
-        self.align_h_center_button.connect(
-            "clicked", lambda _: self.center_horizontally_clicked.send(self)
-        )
+        self.align_h_center_button.set_action_name("win.align-h-center")
         self.append(self.align_h_center_button)
 
-        self.align_v_center_button = Gtk.Button()
-        self.align_v_center_button.set_child(
-            get_icon("align-vertical-center-symbolic")
+        self.align_v_center_button = Gtk.Button.new_from_icon_name(
+            "align-vertical-center-symbolic"
         )
         self.align_v_center_button.set_tooltip_text(_("Center Vertically"))
-        self.align_v_center_button.connect(
-            "clicked", lambda _: self.center_vertically_clicked.send(self)
-        )
+        self.align_v_center_button.set_action_name("win.align-v-center")
         self.append(self.align_v_center_button)
 
-        # --- Align Edge buttons (Split Dropdown) ---
+        # Align Edge buttons (Split Dropdown)
+        # We pass the action name string to the SplitMenuButton
         align_actions = [
-            (_("Align Left"), "align-left-symbolic", self.align_left_clicked),
-            (
-                _("Align Right"),
-                "align-right-symbolic",
-                self.align_right_clicked,
-            ),
-            (_("Align Top"), "align-top-symbolic", self.align_top_clicked),
-            (
-                _("Align Bottom"),
-                "align-bottom-symbolic",
-                self.align_bottom_clicked,
-            ),
+            (_("Align Left"), "align-left-symbolic", "win.align-left"),
+            (_("Align Right"), "align-right-symbolic", "win.align-right"),
+            (_("Align Top"), "align-top-symbolic", "win.align-top"),
+            (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
         ]
         self.align_menu_button = SplitMenuButton(actions=align_actions)
         self.append(self.align_menu_button)
 
-        # --- Distribute buttons (Split Dropdown) ---
+        # Distribute buttons (Split Dropdown)
         distribute_actions = [
             (
                 _("Spread Horizontally"),
                 "distribute-horizontal-symbolic",
-                self.spread_horizontally_clicked,
+                "win.spread-h",
             ),
             (
                 _("Spread Vertically"),
                 "distribute-vertical-symbolic",
-                self.spread_vertically_clicked,
+                "win.spread-v",
             ),
         ]
         self.distribute_menu_button = SplitMenuButton(
@@ -190,61 +161,53 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.distribute_menu_button)
 
-        # --- Control buttons: home, send, pause, stop ---
+        # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.home_button = Gtk.Button()
-        self.home_button.set_child(get_icon("go-home-symbolic"))
+        self.home_button = Gtk.Button.new_from_icon_name("go-home-symbolic")
         self.home_button.set_tooltip_text(_("Home the machine"))
-        self.home_button.connect(
-            "clicked", lambda _: self.home_clicked.send(self)
-        )
+        self.home_button.set_action_name("win.home")
         self.append(self.home_button)
 
-        self.frame_button = Gtk.Button()
-        self.frame_button.set_child(get_icon("edit-select-all-symbolic"))
+        self.frame_button = Gtk.Button.new_from_icon_name(
+            "edit-select-all-symbolic"
+        )
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
         )
-        self.frame_button.connect(
-            "clicked", lambda _: self.frame_clicked.send(self)
-        )
+        self.frame_button.set_action_name("win.frame")
         self.append(self.frame_button)
 
-        self.send_button = Gtk.Button()
-        self.send_button.set_child(get_icon("document-send-symbolic"))
-        self.send_button.set_tooltip_text(_("Send to machine"))
-        self.send_button.connect(
-            "clicked", lambda _: self.send_clicked.send(self)
+        self.send_button = Gtk.Button.new_from_icon_name(
+            "document-send-symbolic"
         )
+        self.send_button.set_tooltip_text(_("Send to machine"))
+        self.send_button.set_action_name("win.send")
         self.append(self.send_button)
 
-        self.hold_on_icon = get_icon("pause-symbolic")
+        self.hold_on_icon = get_icon("media-playback-start-symbolic")
         self.hold_off_icon = get_icon("pause-symbolic")
         self.hold_button = Gtk.ToggleButton()
         self.hold_button.set_child(self.hold_off_icon)
         self.hold_button.set_tooltip_text(_("Pause machine"))
-        self.hold_button.connect(
-            "toggled",
-            lambda btn: self.hold_toggled.send(self, active=btn.get_active()),
-        )
+        # The ToggleButton state is now controlled by the 'win.hold' action
+        self.hold_button.set_action_name("win.hold")
         self.append(self.hold_button)
 
-        self.cancel_button = Gtk.Button()
-        self.cancel_button.set_child(get_icon("process-stop-symbolic"))
-        self.cancel_button.set_tooltip_text(_("Cancel running job"))
-        self.cancel_button.connect(
-            "clicked", lambda _: self.cancel_clicked.send(self)
+        self.cancel_button = Gtk.Button.new_from_icon_name(
+            "process-stop-symbolic"
         )
+        self.cancel_button.set_tooltip_text(_("Cancel running job"))
+        self.cancel_button.set_action_name("win.cancel")
         self.append(self.cancel_button)
 
-        # --- Add spacer to push machine selector to the right ---
+        # Add spacer to push machine selector to the right
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         self.append(spacer)
 
-        # --- Add clickable warning for misconfigured machine ---
+        # Add clickable warning for misconfigured machine
         self.machine_warning_box = Gtk.Box(spacing=6)
         self.machine_warning_box.set_margin_end(12)
         warning_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
@@ -263,6 +226,6 @@ class MainToolbar(Gtk.Box):
         self.machine_warning_box.add_controller(warning_click)
         self.append(self.machine_warning_box)
 
-        # --- Add machine selector dropdown ---
+        # Add machine selector dropdown
         self.machine_selector = MachineSelector()
         self.append(self.machine_selector)
