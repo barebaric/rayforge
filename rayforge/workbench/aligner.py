@@ -285,3 +285,138 @@ class Aligner:
                     old_pos = wp.pos
                     new_pos = (old_pos[0], old_pos[1] + delta_y)
                     t.execute(SetterCommand(wp, "set_pos", new_pos, old_pos))
+
+    def spread_horizontally(self):
+        """
+        Distributes selected workpieces evenly in the horizontal direction.
+
+        Requires 3 or more items to be selected. The leftmost and rightmost
+        items in the selection (based on their bounding boxes) remain fixed.
+        All other items are positioned to create equal horizontal spacing
+        between their bounding boxes. Items may overlap if the space is
+        insufficient.
+        """
+        selected_wps = self.surface.get_selected_workpieces()
+        if len(selected_wps) < 3:
+            return
+
+        wps_with_bboxes = []
+        for wp in selected_wps:
+            bbox = self._get_workpiece_bbox_mm(wp)
+            # Ensure workpiece has a position, required for moving it
+            if bbox and wp.pos:
+                wps_with_bboxes.append((wp, bbox))
+
+        if len(wps_with_bboxes) < 3:
+            return
+
+        # Sort by the center x of the bounding box
+        wps_with_bboxes.sort(key=lambda item: (item[1][0] + item[1][2]) / 2)
+
+        # Leftmost and rightmost items define the boundaries
+        leftmost_bbox = wps_with_bboxes[0][1]
+        rightmost_bbox = wps_with_bboxes[-1][1]
+
+        # Total width of the space spanned by the outer edges of the selection
+        total_span = rightmost_bbox[2] - leftmost_bbox[0]
+
+        # Total width of all the workpieces' bounding boxes
+        total_items_width = sum(
+            bbox[2] - bbox[0] for _, bbox in wps_with_bboxes
+        )
+
+        # The total space to be distributed into gaps between items
+        total_gap_space = total_span - total_items_width
+
+        num_gaps = len(wps_with_bboxes) - 1
+        gap_size = total_gap_space / num_gaps
+
+        with self.doc.history_manager.transaction(
+            _("Spread Horizontally")
+        ) as t:
+            # Running x-coordinate, starts at the right edge of the leftmost
+            # item. This item does not move.
+            current_x = leftmost_bbox[2]
+
+            # Reposition items from the second one up to, but not including,
+            # the last one.
+            for wp, bbox in wps_with_bboxes[1:-1]:
+                target_min_x = current_x + gap_size
+                delta_x = target_min_x - bbox[0]
+
+                if abs(delta_x) > 1e-6:
+                    # All wps here are guaranteed to have a .pos
+                    old_pos = wp.pos
+                    new_pos = (old_pos[0] + delta_x, old_pos[1])
+                    t.execute(SetterCommand(wp, "set_pos", new_pos, old_pos))
+
+                # Update the running coordinate for the next item's placement.
+                item_width = bbox[2] - bbox[0]
+                current_x = target_min_x + item_width
+
+    def spread_vertically(self):
+        """
+        Distributes selected workpieces evenly in the vertical direction.
+
+        Requires 3 or more items to be selected. The bottommost and topmost
+        items in the selection (based on their bounding boxes) remain fixed.
+        All other items are positioned to create equal vertical spacing
+        between their bounding boxes. Items may overlap if the space is
+        insufficient.
+        """
+        selected_wps = self.surface.get_selected_workpieces()
+        if len(selected_wps) < 3:
+            return
+
+        wps_with_bboxes = []
+        for wp in selected_wps:
+            bbox = self._get_workpiece_bbox_mm(wp)
+            if bbox and wp.pos:
+                wps_with_bboxes.append((wp, bbox))
+
+        if len(wps_with_bboxes) < 3:
+            return
+
+        # Sort by the center y of the bounding box (bottom to top)
+        wps_with_bboxes.sort(key=lambda item: (item[1][1] + item[1][3]) / 2)
+
+        # Bottommost and topmost items define the boundaries
+        bottommost_bbox = wps_with_bboxes[0][1]
+        topmost_bbox = wps_with_bboxes[-1][1]
+
+        # Total height of the space spanned by the outer edges of the selection
+        total_span = topmost_bbox[3] - bottommost_bbox[1]
+
+        # Total height of all the workpieces' bounding boxes
+        total_items_height = sum(
+            bbox[3] - bbox[1] for _, bbox in wps_with_bboxes
+        )
+
+        # The total space to be distributed into gaps between items
+        total_gap_space = total_span - total_items_height
+
+        num_gaps = len(wps_with_bboxes) - 1
+        gap_size = total_gap_space / num_gaps
+
+        with self.doc.history_manager.transaction(
+            _("Spread Vertically")
+        ) as t:
+            # Running y-coordinate, starts at the top edge of the bottommost
+            # item. This item does not move.
+            current_y = bottommost_bbox[3]
+
+            # Reposition items from the second one up to, but not including,
+            # the last one.
+            for wp, bbox in wps_with_bboxes[1:-1]:
+                target_min_y = current_y + gap_size
+                delta_y = target_min_y - bbox[1]
+
+                if abs(delta_y) > 1e-6:
+                    # All wps here are guaranteed to have a .pos
+                    old_pos = wp.pos
+                    new_pos = (old_pos[0], old_pos[1] + delta_y)
+                    t.execute(SetterCommand(wp, "set_pos", new_pos, old_pos))
+
+                # Update the running coordinate for the next item's placement.
+                item_height = bbox[3] - bbox[1]
+                current_y = target_min_y + item_height

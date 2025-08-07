@@ -155,9 +155,8 @@ class MainWindow(Adw.ApplicationWindow):
         self._paste_increment_mm: Tuple[float, float] = (10.0, -10.0)
 
         # Create and add the main toolbar.
-        # It takes `self` as its action handler for now.
-        # This will be replaced by a dedicated ActionHandler class later.
-        self.toolbar = MainToolbar(action_handler=self)
+        self.toolbar = MainToolbar()
+        self._connect_toolbar_signals()
         vbox.append(self.toolbar)
 
         # Create the Paned splitting the window into left and right sections.
@@ -302,6 +301,50 @@ class MainWindow(Adw.ApplicationWindow):
             workflow.add_step(default_step)
             logger.info("Added default Contour step to initial document.")
 
+    def _connect_toolbar_signals(self):
+        """Connects all signals from the MainToolbar to their handlers."""
+        self.toolbar.open_clicked.connect(self.on_open_clicked)
+        self.toolbar.export_clicked.connect(self.on_export_clicked)
+        self.toolbar.clear_clicked.connect(self.on_clear_clicked)
+        self.toolbar.visibility_toggled.connect(
+            self.on_button_visibility_toggled
+        )
+        self.toolbar.camera_visibility_toggled.connect(
+            self.on_camera_image_visibility_toggled
+        )
+        self.toolbar.show_travel_toggled.connect(self.on_show_travel_toggled)
+
+        # Alignment and Distribution
+        self.toolbar.center_horizontally_clicked.connect(
+            self.on_align_h_center_clicked
+        )
+        self.toolbar.center_vertically_clicked.connect(
+            self.on_align_v_center_clicked
+        )
+        self.toolbar.align_left_clicked.connect(self.on_align_left_clicked)
+        self.toolbar.align_right_clicked.connect(self.on_align_right_clicked)
+        self.toolbar.align_top_clicked.connect(self.on_align_top_clicked)
+        self.toolbar.align_bottom_clicked.connect(self.on_align_bottom_clicked)
+        self.toolbar.spread_horizontally_clicked.connect(
+            self.on_spread_horizontally_clicked
+        )
+        self.toolbar.spread_vertically_clicked.connect(
+            self.on_spread_vertically_clicked
+        )
+
+        # Machine Control
+        self.toolbar.home_clicked.connect(self.on_home_clicked)
+        self.toolbar.frame_clicked.connect(self.on_frame_clicked)
+        self.toolbar.send_clicked.connect(self.on_send_clicked)
+        self.toolbar.hold_toggled.connect(self.on_hold_clicked)
+        self.toolbar.cancel_clicked.connect(self.on_cancel_clicked)
+        self.toolbar.machine_warning_clicked.connect(
+            self.on_machine_warning_clicked
+        )
+        self.toolbar.machine_selector.machine_selected.connect(
+            self.on_machine_selected_by_selector
+        )
+
     def _on_root_click_pressed(self, gesture, n_press, x, y):
         """
         Global click handler to unfocus widgets when clicking on "dead space".
@@ -328,7 +371,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.add_action(quit_action)
 
         import_action = Gio.SimpleAction.new("import", None)
-        import_action.connect("activate", self.on_open_clicked)
+        import_action.connect("activate", self.on_menu_import)
         self.add_action(import_action)
 
         self.export_action = Gio.SimpleAction.new("export", None)
@@ -680,14 +723,12 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update sensitivity for all alignment buttons
         align_sensitive = has_selection and not has_tasks
-        self.toolbar.align_left_button.set_sensitive(align_sensitive)
         self.toolbar.align_h_center_button.set_sensitive(align_sensitive)
-        self.toolbar.align_right_button.set_sensitive(align_sensitive)
-        self.toolbar.align_top_button.set_sensitive(align_sensitive)
         self.toolbar.align_v_center_button.set_sensitive(align_sensitive)
-        self.toolbar.align_bottom_button.set_sensitive(align_sensitive)
+        self.toolbar.align_menu_button.set_sensitive(align_sensitive)
+        self.toolbar.distribute_menu_button.set_sensitive(align_sensitive)
 
-    def on_machine_warning_clicked(self, *args):
+    def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
         if not config.machine:
             return
@@ -706,7 +747,10 @@ class MainWindow(Adw.ApplicationWindow):
     def on_quit_action(self, action, parameter):
         self.close()
 
-    def on_open_clicked(self, action, param=None):
+    def on_menu_import(self, action, param=None):
+        self.on_open_clicked(self)
+
+    def on_open_clicked(self, sender):
         # Create a file chooser dialog
         dialog = Gtk.FileDialog.new()
         dialog.set_title(_("Open File"))
@@ -731,27 +775,32 @@ class MainWindow(Adw.ApplicationWindow):
         # Show the dialog and handle the response
         dialog.open(self, None, self.on_file_dialog_response)
 
-    def on_button_visibility_clicked(self, button):
-        is_active = button.get_active()
-        self.surface.set_workpieces_visible(is_active)
-        if is_active:
-            button.set_child(self.toolbar.visibility_on_icon)
+    def on_button_visibility_toggled(self, sender, active):
+        self.surface.set_workpieces_visible(active)
+        if active:
+            self.toolbar.visibility_button.set_child(
+                self.toolbar.visibility_on_icon
+            )
         else:
-            button.set_child(self.toolbar.visibility_off_icon)
+            self.toolbar.visibility_button.set_child(
+                self.toolbar.visibility_off_icon
+            )
 
-    def on_camera_image_visibility_toggled(self, button):
-        is_active = button.get_active()
-        self.surface.set_camera_image_visibility(is_active)
-        if is_active:
-            button.set_child(self.toolbar.camera_visibility_on_icon)
+    def on_camera_image_visibility_toggled(self, sender, active):
+        self.surface.set_camera_image_visibility(active)
+        if active:
+            self.toolbar.camera_visibility_button.set_child(
+                self.toolbar.camera_visibility_on_icon
+            )
         else:
-            button.set_child(self.toolbar.camera_visibility_off_icon)
+            self.toolbar.camera_visibility_button.set_child(
+                self.toolbar.camera_visibility_off_icon
+            )
 
-    def on_show_travel_toggled(self, button):
-        is_active = button.get_active()
-        self.surface.set_show_travel_moves(is_active)
+    def on_show_travel_toggled(self, sender, active):
+        self.surface.set_show_travel_moves(active)
 
-    def on_clear_clicked(self, button):
+    def on_clear_clicked(self, sender):
         if not self.doc.workpieces:
             return
 
@@ -768,7 +817,7 @@ class MainWindow(Adw.ApplicationWindow):
                     )
                     t.execute(command)
 
-    def on_export_clicked(self, action, param=None):
+    def on_export_clicked(self, sender, param=None):
         # Create a file chooser dialog for saving the file
         dialog = Gtk.FileDialog.new()
         dialog.set_title(_("Save G-code File"))
@@ -790,13 +839,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Show the dialog and handle the response
         dialog.save(self, None, self.on_save_dialog_response)
 
-    def on_home_clicked(self, button):
+    def on_home_clicked(self, sender):
         if not config.machine:
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.home())
 
-    def on_frame_clicked(self, button):
+    def on_frame_clicked(self, sender):
         if not config.machine:
             return
 
@@ -824,7 +873,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         task_mgr.add_coroutine(frame_coro, key="frame-job")
 
-    def on_send_clicked(self, button):
+    def on_send_clicked(self, sender):
         if not config.machine:
             return
 
@@ -844,41 +893,46 @@ class MainWindow(Adw.ApplicationWindow):
 
         task_mgr.add_coroutine(send_coro, key="send-job")
 
-    def on_hold_clicked(self, button):
+    def on_hold_clicked(self, sender, active):
         if not config.machine:
             return
         driver = config.machine.driver
-        if button.get_active():
+        if active:
             task_mgr.add_coroutine(lambda ctx: driver.set_hold(True))
-            button.set_child(self.toolbar.hold_on_icon)
+            self.toolbar.hold_button.set_child(self.toolbar.hold_on_icon)
         else:
             task_mgr.add_coroutine(lambda ctx: driver.set_hold(False))
-            button.set_child(self.toolbar.hold_off_icon)
+            self.toolbar.hold_button.set_child(self.toolbar.hold_off_icon)
 
-    def on_cancel_clicked(self, button):
+    def on_cancel_clicked(self, sender):
         if not config.machine:
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel())
 
-    # --- Alignment handlers ---
-    def on_align_h_center_clicked(self, button):
+    def on_align_h_center_clicked(self, sender):
         self.surface.center_horizontally()
 
-    def on_align_v_center_clicked(self, button):
+    def on_align_v_center_clicked(self, sender):
         self.surface.center_vertically()
 
-    def on_align_left_clicked(self, button):
+    def on_align_left_clicked(self, sender):
         self.surface.align_left()
 
-    def on_align_right_clicked(self, button):
+    def on_align_right_clicked(self, sender):
         self.surface.align_right()
 
-    def on_align_top_clicked(self, button):
+    def on_align_top_clicked(self, sender):
         self.surface.align_top()
 
-    def on_align_bottom_clicked(self, button):
+    def on_align_bottom_clicked(self, sender):
         self.surface.align_bottom()
+
+    def on_spread_horizontally_clicked(self, sender):
+        self.surface.spread_horizontally()
+
+    def on_spread_vertically_clicked(self, sender):
+        self.surface.spread_vertically()
 
     def on_save_dialog_response(self, dialog, result):
         try:

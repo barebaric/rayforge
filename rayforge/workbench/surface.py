@@ -1178,3 +1178,15 @@ class WorkSurface(Canvas):
         - Multiple items: aligned to the bottom edge of their collective bbox.
         """
         self.aligner.align_bottom()
+
+    def spread_horizontally(self):
+        """
+        Horizontally distributes selected items evenly over the work surface.
+        """
+        self.aligner.spread_horizontally()
+
+    def spread_vertically(self):
+        """
+        Vertically distributes selected items evenly over the work surface.
+        """
+        self.aligner.spread_vertically()
