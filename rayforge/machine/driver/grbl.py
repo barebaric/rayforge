@@ -157,7 +157,7 @@ class GrblDriver(Driver):
         )
         return data
 
-    async def _get_firmware_info(self):
+    async def _get_device_info(self):
         url = f"{self.http_base}{fw_info_url}"
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.TX, f"GET {url}"
@@ -264,8 +264,8 @@ class GrblDriver(Driver):
                 self._log("Fetching hardware info...")
                 await self._get_hardware_info()
 
-                self._log("Fetching firmware info...")
-                await self._get_firmware_info()
+                self._log("Fetching device info...")
+                await self._get_device_info()
 
                 self._log("Fetching EEPROM info...")
                 await self._get_eeprom_info()

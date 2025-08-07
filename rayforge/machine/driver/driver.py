@@ -118,7 +118,7 @@ class Driver(ABC):
     @abstractmethod
     def get_setting_vars(self) -> List["VarSet"]:
         """
-        Returns a VarSet defining the device's firmware settings.
+        Returns a VarSet defining the device's settings.
         The VarSet should define the settings but may have empty values.
         """
         pass

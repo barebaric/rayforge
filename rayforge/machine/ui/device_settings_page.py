@@ -8,14 +8,14 @@ from ...shared.varset.varsetwidget import VarSetWidget, VarSet
 logger = logging.getLogger(__name__)
 
 
-class FirmwareSettingsPage(Adw.PreferencesPage):
+class DeviceSettingsPage(Adw.PreferencesPage):
     """
-    A preferences page for reading and writing firmware settings.
+    A preferences page for reading and writing device settings.
     """
 
     def __init__(self, machine, **kwargs):
         super().__init__(
-            title=_("Firmware"),
+            title=_("Device"),
             icon_name="drive-harddisk-symbolic",
             **kwargs,
         )
@@ -37,7 +37,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self.add(self.main_group)
         self._main_group_title = _("Device Settings")
         self._main_group_desc = _(
-            "Read or apply settings directly to the device firmware."
+            "Read or apply settings directly to the device device."
         )
 
         # Create header controls once and store them
