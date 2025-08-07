@@ -240,6 +240,65 @@ class MainWindow(Adw.ApplicationWindow):
         )
         toolbar.append(self.show_travel_button)
 
+        # Align buttons
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
+
+        self.align_h_center_button = Gtk.Button()
+        self.align_h_center_button.set_child(
+            get_icon("align-horizontal-center-symbolic")
+        )
+        self.align_h_center_button.set_tooltip_text(_("Center Horizontally"))
+        self.align_h_center_button.connect(
+            "clicked", lambda b: self.surface.center_horizontally()
+        )
+        toolbar.append(self.align_h_center_button)
+
+        self.align_v_center_button = Gtk.Button()
+        self.align_v_center_button.set_child(
+            get_icon("align-vertical-center-symbolic")
+        )
+        self.align_v_center_button.set_tooltip_text(_("Center Vertically"))
+        self.align_v_center_button.connect(
+            "clicked", lambda b: self.surface.center_vertically()
+        )
+        toolbar.append(self.align_v_center_button)
+
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
+
+        self.align_top_button = Gtk.Button()
+        self.align_top_button.set_child(get_icon("align-top-symbolic"))
+        self.align_top_button.set_tooltip_text(_("Align Top"))
+        self.align_top_button.connect(
+            "clicked", lambda b: self.surface.align_top()
+        )
+        toolbar.append(self.align_top_button)
+
+        self.align_bottom_button = Gtk.Button()
+        self.align_bottom_button.set_child(get_icon("align-bottom-symbolic"))
+        self.align_bottom_button.set_tooltip_text(_("Align Bottom"))
+        self.align_bottom_button.connect(
+            "clicked", lambda b: self.surface.align_bottom()
+        )
+        toolbar.append(self.align_bottom_button)
+
+        self.align_left_button = Gtk.Button()
+        self.align_left_button.set_child(get_icon("align-left-symbolic"))
+        self.align_left_button.set_tooltip_text(_("Align Left"))
+        self.align_left_button.connect(
+            "clicked", lambda b: self.surface.align_left()
+        )
+        toolbar.append(self.align_left_button)
+
+        self.align_right_button = Gtk.Button()
+        self.align_right_button.set_child(get_icon("align-right-symbolic"))
+        self.align_right_button.set_tooltip_text(_("Align Right"))
+        self.align_right_button.connect(
+            "clicked", lambda b: self.surface.align_right()
+        )
+        toolbar.append(self.align_right_button)
+
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         toolbar.append(sep)
@@ -899,6 +958,15 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.duplicate_action.set_enabled(has_selection and not has_tasks)
         self.remove_action.set_enabled(has_selection and not has_tasks)
+
+        # Update sensitivity for all alignment buttons
+        align_sensitive = has_selection and not has_tasks
+        self.align_left_button.set_sensitive(align_sensitive)
+        self.align_h_center_button.set_sensitive(align_sensitive)
+        self.align_right_button.set_sensitive(align_sensitive)
+        self.align_top_button.set_sensitive(align_sensitive)
+        self.align_v_center_button.set_sensitive(align_sensitive)
+        self.align_bottom_button.set_sensitive(align_sensitive)
 
     def _on_machine_warning_clicked(self, *args):
         """Opens the machine settings dialog for the current machine."""
