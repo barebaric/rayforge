@@ -8,8 +8,7 @@ from . import __version__
 from .shared.tasker import task_mgr
 from .shared.tasker.context import ExecutionContext
 from .config import config, machine_mgr
-from .machine.driver import get_driver_cls
-from .machine.driver.driver import driver_mgr, DeviceStatus, DeviceState
+from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .icons import get_icon
 from .machine.models.machine import Machine
@@ -422,10 +421,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
         vbox.append(self.status_monitor)
 
-        # Set up driver and config signals.
-        self._try_driver_setup()
+        # Set up config signals.
         config.changed.connect(self.on_config_changed)
-        driver_mgr.changed.connect(self.on_driver_changed)
         task_mgr.tasks_updated.connect(self.on_running_tasks_changed)
         self.needs_homing = (
             config.machine.home_on_start if config.machine else False
@@ -672,53 +669,16 @@ class MainWindow(Adw.ApplicationWindow):
         app.set_accels_for_action("win.paste", ["<Primary>v"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
-        app.set_accels_for_action(
-            "win.machine_settings", ["<Primary>less"]
-        )
+        app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
 
-    def _try_driver_setup(self):
-        # Reconfigure, because params may have changed.
-        if not config.machine:
-            logger.info("No machine selected, skipping driver setup.")
-            return
-
-        driver_name = config.machine.driver
-        if driver_name is None:
-            logger.warning("No driver configured.")
-            return
-        driver_cls = get_driver_cls(driver_name)
-        try:
-            # This wrapper coroutine adapts the call to the TaskManager's
-            # expectation that all tasks accept an ExecutionContext.
-            async def setup_driver_coro(
-                context: ExecutionContext, cls, **kwargs
-            ):
-                # The context is accepted but not used for this simple task.
-                await driver_mgr.select_by_cls(cls, **kwargs)
-
-            task_mgr.add_coroutine(
-                setup_driver_coro,
-                driver_cls,
-                key="driver-setup",
-                **config.machine.driver_args,
-            )
-        except Exception as e:
-            logger.error(f"Failed to set up driver: {e}")
-            return
-
-    def on_driver_changed(self, sender, driver):
-        self.update_state()
-
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""
-        # If the machine is idle for the first time, perform auto-homing
-        # if requested.
-        if self.needs_homing and driver_mgr.driver:
+        if self.needs_homing and config.machine and config.machine.driver:
             if state.status == DeviceStatus.IDLE:
                 self.needs_homing = False
-                driver = driver_mgr.driver
+                driver = config.machine.driver
                 task_mgr.add_coroutine(lambda ctx: driver.home())
         self.update_state()
 
@@ -805,8 +765,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
 
-        # Apply selected device driver.
-        self._try_driver_setup()
         self.surface.update_from_doc(self.doc)
         self.update_state()
 
@@ -830,128 +788,127 @@ class MainWindow(Adw.ApplicationWindow):
         self.update_state()
 
     def update_state(self):
-        if config.machine:
-            device_status = config.machine.device_state.status
-            conn_status = config.machine.connection_status
-            state = config.machine.device_state
+        active_machine = config.machine
+        if not active_machine:
+            # If no machine is selected, disable most controls
+            self.export_action.set_enabled(False)
+            self.machine_settings_action.set_enabled(False)
+            self.export_button.set_sensitive(False)
+            self.export_button.set_tooltip_text(
+                _("Select a machine to enable G-code export")
+            )
+            self.home_button.set_sensitive(False)
+            self.frame_button.set_sensitive(False)
+            self.send_button.set_sensitive(False)
+            self.hold_button.set_sensitive(False)
+            self.cancel_button.set_sensitive(False)
+            self.machine_warning_box.set_visible(False)
+            self.surface.set_laser_dot_visible(False)
+            # Other actions are handled below based on selection/history
         else:
-            device_status = DeviceStatus.UNKNOWN
-            conn_status = TransportStatus.DISCONNECTED
-            state = None
+            # Get state from the active machine and its driver
+            device_status = active_machine.device_state.status
+            conn_status = active_machine.connection_status
+            state = active_machine.device_state
+            active_driver = active_machine.driver
 
-        has_tasks = len(task_mgr._tasks) > 0
-        can_export = (
-            self.doc.has_workpiece()
-            and not has_tasks
-            and config.machine is not None
-        )
+            can_export = self.doc.has_workpiece() and not task_mgr.has_tasks()
+            self.export_action.set_enabled(can_export)
+            self.export_button.set_sensitive(can_export)
+
+            export_tooltip = _("Generate G-code")
+            if not self.doc.has_workpiece():
+                export_tooltip = _("Add a workpiece to enable export")
+            elif task_mgr.has_tasks():
+                export_tooltip = _(
+                    "Cannot export while other tasks are running"
+                )
+            self.export_button.set_tooltip_text(export_tooltip)
+
+            self.machine_warning_box.set_visible(
+                bool(active_driver and active_driver.setup_error)
+            )
+            self.machine_settings_action.set_enabled(True)
+
+            self.home_button.set_sensitive(device_status == DeviceStatus.IDLE)
+
+            can_frame = (
+                active_machine.can_frame()
+                and self.doc.has_result()
+                and device_status == DeviceStatus.IDLE
+                and not task_mgr.has_tasks()
+            )
+            self.frame_button.set_sensitive(can_frame)
+            self.frame_button.set_tooltip_text(
+                _("Cycle laser head around the occupied area")
+            )
+
+            send_sensitive = True
+            send_tooltip = _("Send to machine")
+            if isinstance(active_driver, NoDeviceDriver):
+                send_tooltip = _("Select a valid driver to enable sending")
+                send_sensitive = False
+            elif not (active_driver and not active_driver.setup_error):
+                send_tooltip = _("Configure the driver to enable sending")
+                send_sensitive = False
+            elif conn_status != TransportStatus.CONNECTED:
+                send_tooltip = _("Connect to the machine to enable sending")
+                send_sensitive = False
+            elif task_mgr.has_tasks():
+                send_tooltip = _(
+                    "Wait for other tasks to finish before sending"
+                )
+                send_sensitive = False
+            elif not self.doc.has_result():
+                send_sensitive = False
+            self.send_button.set_sensitive(send_sensitive)
+            self.send_button.set_tooltip_text(send_tooltip)
+
+            hold_sensitive = device_status in (
+                DeviceStatus.RUN,
+                DeviceStatus.HOLD,
+            )
+            self.hold_button.set_sensitive(hold_sensitive)
+            self.hold_button.set_active(device_status == DeviceStatus.HOLD)
+
+            cancel_sensitive = device_status in (
+                DeviceStatus.RUN,
+                DeviceStatus.HOLD,
+                DeviceStatus.JOG,
+                DeviceStatus.CYCLE,
+            )
+            self.cancel_button.set_sensitive(cancel_sensitive)
+
+            connected = conn_status == TransportStatus.CONNECTED
+            self.surface.set_laser_dot_visible(connected)
+            if state:
+                x, y = state.machine_pos[:2]
+                if x is not None and y is not None:
+                    self.surface.set_laser_dot_position(x, y)
+
+        # Update actions that don't depend on the machine state
         has_selection = len(self.surface.get_selected_workpieces()) > 0
-        can_undo = self.doc.history_manager.can_undo()
-        can_redo = self.doc.history_manager.can_redo()
-        can_paste = len(self._clipboard_snapshot) > 0
-        can_edit_machine_settings = config.machine is not None
+        has_tasks = task_mgr.has_tasks()
 
-        # Show warning if the current machine is not configured
-        warning_visible = False
-        if driver_mgr.driver and not driver_mgr.driver.did_setup:
-            warning_visible = True
-        self.machine_warning_box.set_visible(warning_visible)
-
-        # Update action sensitivity
-        self.export_action.set_enabled(can_export)
-        self.undo_action.set_enabled(can_undo)
-        self.redo_action.set_enabled(can_redo)
+        self.undo_action.set_enabled(self.doc.history_manager.can_undo())
+        self.redo_action.set_enabled(self.doc.history_manager.can_redo())
         self.cut_action.set_enabled(has_selection and not has_tasks)
         self.copy_action.set_enabled(has_selection)
-        self.paste_action.set_enabled(can_paste and not has_tasks)
+        self.paste_action.set_enabled(
+            len(self._clipboard_snapshot) > 0 and not has_tasks
+        )
         self.duplicate_action.set_enabled(has_selection and not has_tasks)
         self.remove_action.set_enabled(has_selection and not has_tasks)
-        self.machine_settings_action.set_enabled(can_edit_machine_settings)
-
-        # Update button sensitivity
-        self.export_button.set_sensitive(can_export)
-        export_tooltip = _("Generate G-code")
-        if not config.machine:
-            export_tooltip = _("Select a machine to enable G-code export")
-        elif not self.doc.has_workpiece():
-            export_tooltip = _(
-                "Add a workpiece to the document to enable export"
-            )
-        elif has_tasks:
-            export_tooltip = _(
-                "Cannot export while operations are being generated"
-            )
-        self.export_button.set_tooltip_text(export_tooltip)
-
-        self.home_button.set_sensitive(device_status == DeviceStatus.IDLE)
-
-        can_frame = (
-            config.machine
-            and config.machine.can_frame()
-            and self.doc.has_result()
-            and device_status == DeviceStatus.IDLE
-            and not has_tasks
-        )
-        self.frame_button.set_sensitive(can_frame)
-        self.frame_button.set_tooltip_text(
-            _("Cannot frame while operations are being generated")
-            if has_tasks
-            else _("Cycle laser head around the occupied area")
-        )
-
-        send_sensitive = True
-        send_tooltip = _("Send to machine")
-        if driver_mgr.driver.__class__ is NoDeviceDriver:
-            send_tooltip = _("Send to machine (select driver to enable)")
-            send_sensitive = False
-        elif not (driver_mgr.driver and driver_mgr.driver.did_setup):
-            send_tooltip = _("Send to machine (configure driver to enable)")
-            send_sensitive = False
-        elif conn_status != TransportStatus.CONNECTED:
-            send_tooltip = _("Send to machine (connect to enable)")
-            send_sensitive = False
-        elif has_tasks:
-            send_tooltip = _(
-                "Send to machine (wait for calculations to finish)"
-            )
-            send_sensitive = False
-        elif not self.doc.has_result():
-            send_sensitive = False
-        self.send_button.set_sensitive(send_sensitive)
-        self.send_button.set_tooltip_text(send_tooltip)
-
-        hold_sensitive = device_status in (DeviceStatus.RUN, DeviceStatus.HOLD)
-        self.hold_button.set_sensitive(hold_sensitive)
-        self.hold_button.set_active(device_status == DeviceStatus.HOLD)
-
-        cancel_sensitive = device_status in (
-            DeviceStatus.RUN,
-            DeviceStatus.HOLD,
-            DeviceStatus.JOG,
-            DeviceStatus.CYCLE,
-        )
-        self.cancel_button.set_sensitive(cancel_sensitive)
-
-        # Laser dot
-        connected = conn_status == TransportStatus.CONNECTED
-        self.surface.set_laser_dot_visible(connected)
-        if not state:
-            return
-        x, y = state.machine_pos[:2]
-        if x is not None and y is not None:
-            self.surface.set_laser_dot_position(x, y)
 
     def _on_machine_warning_clicked(self, *args):
         """Opens the machine settings dialog for the current machine."""
-        current_machine = config.machine
-        if not current_machine:
+        if not config.machine:
             return
-
-        dialog = MachineSettingsDialog(machine=current_machine)
+        dialog = MachineSettingsDialog(machine=config.machine)
         dialog.present(self)
 
     def on_status_bar_clicked(self, sender):
-        dialog = MachineLogDialog(self)
+        dialog = MachineLogDialog(self, config.machine)
         dialog.notification_requested.connect(self._on_dialog_notification)
         dialog.present(self)
 
@@ -1043,80 +1000,63 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.save(self, None, self.on_save_dialog_response)
 
     def on_home_clicked(self, button):
-        if not driver_mgr.driver:
+        if not config.machine:
             return
-        driver = driver_mgr.driver
+        driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.home())
 
     def on_frame_clicked(self, button):
-        if not driver_mgr.driver:
+        if not config.machine:
             return
 
         async def frame_coro(context: ExecutionContext):
-            if not config.machine:
-                logger.warning(
-                    "Framing requested without a configured machine."
-                )
+            machine = config.machine
+            if not machine:
                 return
 
             try:
-                head = config.machine.heads[0]
+                head = machine.heads[0]
                 if not head.frame_power:
                     return
 
                 ops = await generate_job_ops(
-                    self.doc,
-                    config.machine,
-                    self.surface.ops_generator,
-                    context,
+                    self.doc, machine, self.surface.ops_generator, context
                 )
                 frame = ops.get_frame(
-                    power=head.frame_power,
-                    speed=config.machine.max_travel_speed,
+                    power=head.frame_power, speed=machine.max_travel_speed
                 )
-                frame *= 20  # cycle 20 times
-                if not driver_mgr.driver:
-                    raise RuntimeError("No driver configured for framing.")
-                await driver_mgr.driver.run(frame, config.machine)
+                frame *= 20
+                await machine.driver.run(frame, machine)
             except Exception:
                 logger.error("Failed to execute framing job", exc_info=True)
                 raise
 
-        task_mgr.add_coroutine(
-            frame_coro,
-            key="frame-job",
-        )
+        task_mgr.add_coroutine(frame_coro, key="frame-job")
 
     def on_send_clicked(self, button):
-        if not driver_mgr.driver:
+        if not config.machine:
             return
 
         async def send_coro(context: ExecutionContext):
+            machine = config.machine
+            if not machine:
+                return
+
             try:
-                if not config.machine:
-                    raise RuntimeError("No machine is configured")
                 ops = await generate_job_ops(
-                    self.doc,
-                    config.machine,
-                    self.surface.ops_generator,
-                    context,
+                    self.doc, machine, self.surface.ops_generator, context
                 )
-                if not driver_mgr.driver:
-                    raise RuntimeError("No driver configured to send job.")
-                await driver_mgr.driver.run(ops, config.machine)
+                await machine.driver.run(ops, machine)
             except Exception:
                 logger.error("Failed to send job to machine", exc_info=True)
                 raise
 
-        task_mgr.add_coroutine(
-            send_coro,
-            key="send-job",
-        )
+        task_mgr.add_coroutine(send_coro, key="send-job")
 
     def on_hold_clicked(self, button):
-        if not driver_mgr.driver:
+        if not config.machine:
             return
-        driver = driver_mgr.driver
+        driver = config.machine.driver
         if button.get_active():
             task_mgr.add_coroutine(lambda ctx: driver.set_hold(True))
             button.set_child(self.hold_on_icon)
@@ -1125,9 +1065,9 @@ class MainWindow(Adw.ApplicationWindow):
             button.set_child(self.hold_off_icon)
 
     def on_cancel_clicked(self, button):
-        if not driver_mgr.driver:
+        if not config.machine:
             return
-        driver = driver_mgr.driver
+        driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel())
 
     def on_save_dialog_response(self, dialog, result):
@@ -1146,23 +1086,20 @@ class MainWindow(Adw.ApplicationWindow):
                 f.write(gcode)
 
         async def export_coro(context: ExecutionContext):
-            if not config.machine:
-                logger.error("Export called with no machine configured.")
+            machine = config.machine
+            if not machine:
                 return
 
             try:
                 # 1. Generate Ops (async, reports progress)
                 ops = await generate_job_ops(
-                    self.doc,
-                    config.machine,
-                    self.surface.ops_generator,
-                    context,
+                    self.doc, machine, self.surface.ops_generator, context
                 )
 
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message("Encoding G-code...")
-                encoder = GcodeEncoder.for_machine(config.machine)
-                gcode = encoder.encode(ops, config.machine)
+                encoder = GcodeEncoder.for_machine(machine)
+                gcode = encoder.encode(ops, machine)
 
                 # 3. Write to file (sync, potentially slow, run in thread)
                 context.set_message(f"Saving to {file_path}...")
@@ -1177,10 +1114,7 @@ class MainWindow(Adw.ApplicationWindow):
                 raise  # Re-raise to be caught by the task manager
 
         # Add the coroutine to the task manager
-        task_mgr.add_coroutine(
-            export_coro,
-            key="export-gcode",
-        )
+        task_mgr.add_coroutine(export_coro, key="export-gcode")
 
     def on_file_dialog_response(self, dialog, result):
         try:
@@ -1413,11 +1347,9 @@ class MainWindow(Adw.ApplicationWindow):
 
     def show_machine_settings(self, action, param):
         """Opens the machine settings dialog for the current machine."""
-        current_machine = config.machine
-        if not current_machine:
+        if not config.machine:
             return
-
-        dialog = MachineSettingsDialog(machine=current_machine)
+        dialog = MachineSettingsDialog(machine=config.machine)
         dialog.present(self)
 
     def _on_preferences_dialog_closed(self, dialog):

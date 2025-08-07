@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Iterator,
     Optional,
 )
 from blinker import Signal
@@ -42,6 +43,24 @@ class TaskManager:
             target=self._run_event_loop, args=(self._loop,), daemon=True
         )
         self._thread.start()
+
+    def __len__(self) -> int:
+        """Return the number of active tasks."""
+        with self._lock:
+            return len(self._tasks)
+
+    def __iter__(self) -> Iterator[Task]:
+        """Return an iterator over the active tasks."""
+        with self._lock:
+            # Return an iterator over a copy of the tasks to prevent
+            # "RuntimeError: dictionary changed size during iteration"
+            # if tasks are added/removed while iterating.
+            return iter(list(self._tasks.values()))
+
+    def has_tasks(self) -> bool:
+        """Return True if there are any active tasks, False otherwise."""
+        with self._lock:
+            return bool(self._tasks)
 
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Run the asyncio event loop in a background thread."""

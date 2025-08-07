@@ -3,7 +3,6 @@ from typing import List
 from gi.repository import Gtk, Adw, GLib, Gdk  # type: ignore
 from blinker import Signal
 from ...config import config
-from ..driver import get_driver_cls
 from ...shared.varset.varsetwidget import VarSetWidget, VarSet
 
 logger = logging.getLogger(__name__)
@@ -28,6 +27,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self._error_timeout_id = 0
         self._warning_rows = []
         self._dismissed_warnings = set()
+        self._not_connected_warning_dismissed = False
         self._is_busy = False
 
         self.show_toast = Signal()
@@ -59,15 +59,6 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
             )
         )
         self.main_group.add(self.unsupported_banner)
-
-        self.not_connected_banner = Adw.Banner(
-            title=_("This machine is not active."),
-            button_label=_("Activate Machine"),
-        )
-        self.not_connected_banner.connect(
-            "button-clicked", self._on_activate_clicked
-        )
-        self.main_group.add(self.not_connected_banner)
 
         # Error row with copy and close buttons
         self.error_row = Adw.ActionRow(use_markup=True, activatable=False)
@@ -135,6 +126,9 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         # Signal Connections & Initial State
         self.machine.changed.connect(self._on_machine_config_changed)
         config.changed.connect(self._on_machine_config_changed)
+        self.machine.connection_status_changed.connect(
+            self._on_connection_status_changed
+        )
         self.machine.settings_updated.connect(
             self._on_settings_op_success
         )
@@ -149,6 +143,9 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         logger.debug("on_destroy: Disconnecting signals.")
         self.machine.changed.disconnect(self._on_machine_config_changed)
         config.changed.disconnect(self._on_machine_config_changed)
+        self.machine.connection_status_changed.disconnect(
+            self._on_connection_status_changed
+        )
         self.machine.settings_updated.disconnect(
             self._on_settings_op_success
         )
@@ -159,9 +156,15 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
     def _on_machine_config_changed(self, sender, **kwargs):
         logger.debug("_on_machine_config_changed: Rebuilding UI.")
+        self._not_connected_warning_dismissed = False
         for widget in self._varset_widgets:
             self.remove(widget)
         self._varset_widgets.clear()
+        self._update_ui_state()
+
+    def _on_connection_status_changed(self, sender, **kwargs):
+        logger.debug("_on_connection_status_changed: Updating UI.")
+        self._not_connected_warning_dismissed = False
         self._update_ui_state()
 
     def _rebuild_settings_widgets(self, var_sets: List[VarSet]):
@@ -187,42 +190,42 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
     def _update_ui_state(self):
         logger.debug(f"_update_ui_state: Starting (is_busy={self._is_busy}).")
-        driver_cls = (
-            get_driver_cls(self.machine.driver)
-            if self.machine.driver
-            else None
-        )
-        is_supported = driver_cls is not None and driver_cls.supports_settings
-
-        active_machine = config.machine
-        is_active = active_machine and self.machine.id == active_machine.id
-
-        can_interact = is_supported and is_active
-        has_settings_to_show = can_interact and len(self._varset_widgets) > 0
+        is_supported = self.machine.driver.supports_settings
+        is_connected = self.machine.is_connected()
+        has_settings_to_show = is_supported and len(self._varset_widgets) > 0
 
         # Control banners
         self.unsupported_banner.set_revealed(not is_supported)
-        self.not_connected_banner.set_revealed(is_supported and not is_active)
 
         # Control the state of the single main group
         self.main_group.set_title(
-            self._main_group_title if can_interact else ""
+            self._main_group_title if is_supported else ""
         )
         self.main_group.set_description(
-            self._main_group_desc if can_interact else ""
+            self._main_group_desc if is_supported else ""
         )
-        self.header_box.set_visible(can_interact)
+        self.header_box.set_visible(is_supported)
 
         for row in self._warning_rows:
             row.set_visible(
-                can_interact and row not in self._dismissed_warnings
+                is_supported and row not in self._dismissed_warnings
             )
 
-        has_error = self._current_error is not None
-        self.error_row.set_visible(has_error)
-        if has_error:
+        has_op_error = self._current_error is not None
+        is_not_connected_state = (
+            is_supported
+            and not is_connected
+            and not self._not_connected_warning_dismissed
+        )
+
+        # The error row now also shows connection status.
+        self.error_row.set_visible(has_op_error or is_not_connected_state)
+        if has_op_error:
             self.error_row.set_title(_("Operation failed"))
             self.error_row.set_subtitle(self._current_error or "")
+        elif is_not_connected_state:
+            self.error_row.set_title(_("Machine Not Connected"))
+            self.error_row.set_subtitle(_("The machine is not connected."))
 
         # The main group is visible if any of its contents are.
         is_any_warning_visible = any(
@@ -230,7 +233,6 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         )
         self.main_group.set_visible(
             self.unsupported_banner.get_revealed()
-            or self.not_connected_banner.get_revealed()
             or self.error_row.get_visible()
             or is_any_warning_visible
             or has_settings_to_show
@@ -242,10 +244,10 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
         # Control visibility of prompt group
         show_prompt = (
-            can_interact
+            is_supported
             and not has_settings_to_show
             and not self._is_busy
-            and not has_error
+            and not self.error_row.get_visible()
         )
         self.prompt_group.set_visible(show_prompt)
 
@@ -254,7 +256,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
             self.read_button.set_sensitive(False)
         else:
             self.spinner.stop()
-            self.read_button.set_sensitive(is_active)
+            self.read_button.set_sensitive(is_connected)
         logger.debug("_update_ui_state: Finished.")
 
     def _on_settings_op_success(self, sender, var_sets: List[VarSet]):
@@ -299,6 +301,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self._update_ui_state()
 
     def _on_setting_apply(self, sender: VarSetWidget, key: str):
+        self._not_connected_warning_dismissed = False
         if self._is_busy:
             return
         if self._is_updating_from_model:
@@ -315,6 +318,7 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self.machine.apply_setting(key, new_value)
 
     def _on_read_clicked(self, _button=None):
+        self._not_connected_warning_dismissed = False
         if self._is_busy:
             return
 
@@ -331,6 +335,11 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
 
     def _on_error_dismissed(self, _button):
         """Hides the error row and cancels the auto-hide timer."""
+        # If the reason for the error row is the connection status,
+        # mark it as dismissed by the user.
+        if not self.machine.is_connected():
+            self._not_connected_warning_dismissed = True
+
         self._clear_error_state()
         self._update_ui_state()
 
@@ -359,12 +368,6 @@ class FirmwareSettingsPage(Adw.PreferencesPage):
         self._current_error = None
 
     def _show_error(self, error_message: str):
-        # Do not show a red error row for the "not active" state, as it's
-        # handled by the `not_connected_banner`.
-        if _("Machine is not active") in error_message:
-            logger.debug("Ignoring 'not active' error for error row display.")
-            return
-
         logger.debug(f"_show_error: Displaying '{error_message}'.")
         self._clear_error_state()
         self._current_error = error_message

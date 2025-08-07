@@ -1,6 +1,5 @@
 from gi.repository import Gtk, Adw  # type: ignore
-from ..driver.driver import driver_mgr
-from ..driver import drivers, get_driver_cls
+from ..driver import drivers
 from ...shared.util.adwfix import get_spinrow_int
 from ..models.machine import Machine
 from ...shared.varset.varsetwidget import VarSetWidget
@@ -50,7 +49,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.driver_store = Gtk.StringList()
         for d in drivers:
             self.driver_store.append(d.label)
-        driver_cls = get_driver_cls(machine.driver) if machine.driver else None
+        driver_cls = machine.driver.__class__
 
         self.combo_row = Adw.ComboRow(
             title=_("Select driver"),
@@ -174,8 +173,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.height_row.connect("changed", self.on_height_changed)
         dimensions_group.add(self.height_row)
 
-        # Connect to the global driver manager to get updates
-        driver_mgr.changed.connect(self._on_driver_manager_changed)
+        # Connect to the machine's changed signal to get updates
+        self.machine.changed.connect(self._on_machine_changed)
         self.connect("destroy", self._on_destroy)
 
         # Initial check for errors
@@ -184,28 +183,22 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Initialization is complete.
         self._is_initializing = False
 
-    def _on_driver_manager_changed(self, sender, **kwargs):
+    def _on_machine_changed(self, sender, **kwargs):
         """
-        Handler for the global driver manager's changed signal.
-        This ensures the UI reflects the current driver's state, even if
-        the change was triggered elsewhere.
+        Handler for the machine's changed signal. This is triggered when
+        the driver or its configuration changes, allowing the UI to update.
         """
         self._update_error_state()
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
-        driver_mgr.changed.disconnect(self._on_driver_manager_changed)
+        self.machine.changed.disconnect(self._on_machine_changed)
 
     def _update_error_state(self):
         """Shows or hides the error banner based on driver state."""
-        if not driver_mgr.driver:
-            return
-        is_current_driver = (
-            driver_mgr.driver
-            and driver_mgr.driver.__class__.__name__ == self.machine.driver
-        )
-        if is_current_driver and driver_mgr.driver.setup_error:
-            error_msg = driver_mgr.driver.setup_error
+        driver_instance = self.machine.driver
+        if driver_instance and driver_instance.setup_error:
+            error_msg = driver_instance.setup_error
             self.error_banner.set_title(
                 _("<b>Configuration required:</b> {error}").format(
                     error=error_msg
@@ -250,7 +243,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # update the machine model and clear existing args.
         if (
             not self._is_initializing
-            and self.machine.driver != driver_cls.__name__
+            and self.machine.driver_name != driver_cls.__name__
         ):
             self.machine.set_driver(driver_cls, {})
 

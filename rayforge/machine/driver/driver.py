@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto
-from ...shared.util.glib import idle_add
 from ...core.ops import Ops
 from ...debug import debug_log_manager, LogType
 from ..transport import TransportStatus
@@ -189,13 +188,13 @@ class Driver(ABC):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, message
         )
-        idle_add(self.log_received.send, self, message=message)
+        self.log_received.send(self, message=message)
 
     def _on_state_changed(self):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.STATE_CHANGE, self.state
         )
-        idle_add(self.state_changed.send, self, state=self.state)
+        self.state_changed.send(self, state=self.state)
 
     def _on_settings_read(self, settings: List["VarSet"]):
         num_settings = sum(len(vs) for vs in settings)
@@ -210,7 +209,7 @@ class Driver(ABC):
             LogType.APP_INFO,
             f"Device settings read: {all_values}",
         )
-        idle_add(self.settings_read.send, self, settings=settings)
+        self.settings_read.send(self, settings=settings)
 
     def _on_command_status_changed(
         self, status: TransportStatus, message: Optional[str] = None
@@ -221,12 +220,7 @@ class Driver(ABC):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, log_data
         )
-        idle_add(
-            self.command_status_changed.send,
-            self,
-            status=status,
-            message=message,
-        )
+        self.command_status_changed.send(self, status=status, message=message)
 
     def _on_connection_status_changed(
         self, status: TransportStatus, message: Optional[str] = None
@@ -237,59 +231,6 @@ class Driver(ABC):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, log_data
         )
-        idle_add(
-            self.connection_status_changed.send,
-            self,
-            status=status,
-            message=message,
+        self.connection_status_changed.send(
+            self, status=status, message=message
         )
-
-
-class DriverManager:
-    def __init__(self):
-        self.driver: Optional[Driver] = None
-        self.changed = Signal()
-
-    async def _assign_driver(self, driver: Driver, **args):
-        self.driver = driver
-        try:
-            self.driver.setup(**args)
-        except DriverSetupError as e:
-            self.driver.setup_error = str(e)
-            return
-        finally:
-            self._on_driver_changed()
-        await self.driver.connect()
-
-    async def _reconfigure_driver(self, **args):
-        if not self.driver:
-            return
-        await self.driver.cleanup()
-        try:
-            self.driver.setup(**args)
-        except DriverSetupError as e:
-            self.driver.setup_error = str(e)
-            return
-        finally:
-            self._on_driver_changed()
-        await self.driver.connect()
-
-    async def _switch_driver(self, driver, **args):
-        if self.driver:
-            await self.driver.cleanup()
-            del self.driver
-        await self._assign_driver(driver, **args)
-
-    def _on_driver_changed(self):
-        idle_add(self.changed.send, self, driver=self.driver)
-
-    async def select_by_cls(self, driver_cls, **args):
-        if self.driver and self.driver.__class__ == driver_cls:
-            await self._reconfigure_driver(**args)
-        elif self.driver:
-            await self._switch_driver(driver_cls(), **args)
-        else:
-            await self._assign_driver(driver_cls(), **args)
-
-
-driver_mgr = DriverManager()

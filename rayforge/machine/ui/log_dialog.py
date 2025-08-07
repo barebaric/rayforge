@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Optional
 from gi.repository import Gtk, Adw, GLib, Gio  # type: ignore
 from blinker import Signal
-from ..driver.driver import driver_mgr, TransportStatus
+from ..driver.driver import TransportStatus
+from ..models.machine import Machine
 from ...debug import debug_log_manager, LogEntry, LogType
 
 
@@ -19,7 +20,7 @@ css = """
 class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
     notification_requested = Signal()
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, machine: Optional[Machine], **kwargs):
         super().__init__(**kwargs)
         self.set_presentation_mode(Adw.DialogPresentationMode.BOTTOM_SHEET)
         self.set_title(_("Machine Log"))
@@ -60,8 +61,8 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
 
         self._populate_history()
 
-        driver = driver_mgr.driver
-        if driver:
+        if machine:
+            driver = machine.driver
             driver.log_received.connect(self.on_log_received)
             driver.command_status_changed.connect(
                 self.on_command_status_changed
