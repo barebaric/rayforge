@@ -3,11 +3,11 @@ import logging
 import uuid
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Callable
-from gi.repository import Gtk, Gio, GLib, Gdk, Adw, GObject  # type: ignore
+from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
 from . import __version__
 from .shared.tasker import task_mgr
 from .shared.tasker.context import ExecutionContext
-from .config import config, machine_mgr
+from .config import config
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .icons import get_icon
@@ -35,6 +35,7 @@ from .doceditor.ui.workpiece_properties import WorkpiecePropertiesWidget
 from .workbench.canvas import CanvasElement
 from .undo.ui.undo_button import UndoButton, RedoButton
 from .shared.ui.about import AboutDialog
+from .machine.ui.machine_selector import MachineSelector
 
 
 logger = logging.getLogger(__name__)
@@ -75,15 +76,6 @@ css = """
     font-weight: bold;
 }
 """
-
-
-# This allows the plain Python Machine object to be stored in a Gio.ListStore.
-class MachineListItem(GObject.Object):
-    __gtype_name__ = "MachineListItem"
-
-    def __init__(self, machine: Machine):
-        super().__init__()
-        self.machine = machine
 
 
 class MainWindow(Adw.ApplicationWindow):
@@ -360,8 +352,11 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.append(self.machine_warning_box)
 
         # Add machine selector dropdown
-        self._setup_machine_selector()
-        toolbar.append(self.machine_dropdown)
+        self.machine_selector = MachineSelector()
+        self.machine_selector.machine_selected.connect(
+            self._on_machine_selected_by_selector
+        )
+        toolbar.append(self.machine_selector)
 
         # Create the Paned splitting the window into left and right sections.
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -511,96 +506,17 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self.surface.grab_focus()
 
-    def _setup_machine_selector(self):
-        """Creates the Gtk.DropDown for machine selection."""
-        # The model holds GObject wrappers for our Machine objects.
-        self.machine_model = Gio.ListStore.new(MachineListItem)
-
-        # The Factory for the list items in the popup
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self._on_machine_selector_setup)
-        factory.connect("bind", self._on_machine_selector_bind)
-
-        # The Expression for the main dropdown button
-        expression = Gtk.ClosureExpression.new(
-            str,
-            lambda item: item.machine.name if item else _("Select Machine"),
-            None,
-        )
-
-        # Create the DropDown and set the factory
-        self.machine_dropdown = Gtk.DropDown.new(
-            self.machine_model, expression
-        )
-        self.machine_dropdown.set_factory(factory)
-
-        self.machine_dropdown.set_tooltip_text(_("Select active machine"))
-        self.machine_dropdown.connect(
-            "notify::selected-item", self._on_machine_selected
-        )
-
-        # Connect to the machine manager to keep the list updated.
-        machine_mgr.machine_added.connect(self._update_machine_list)
-        machine_mgr.machine_removed.connect(self._update_machine_list)
-        machine_mgr.machine_updated.connect(self._update_machine_list)
-
-        # Initial population of the list.
-        self._update_machine_list()
-
-    def _on_machine_selector_setup(self, factory, list_item):
-        """Setup a list item for the machine dropdown."""
-        box = Gtk.Box(spacing=6)
-        label = Gtk.Label()
-        box.append(label)
-        list_item.set_child(box)
-
-    def _on_machine_selector_bind(self, factory, list_item):
-        """Bind a machine object to a list item."""
-        box = list_item.get_child()
-        label = box.get_first_child()
-        list_item_obj = list_item.get_item()
-        label.set_text(list_item_obj.machine.name)
-
-    def _update_machine_list(self, *args, **kwargs):
+    def _on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
-        Repopulates the machine dropdown from the machine manager.
+        Handles the 'machine_selected' signal from the MachineSelector widget.
+        The signature is compatible with the blinker library.
         """
-        logger.debug("Updating machine list in dropdown.")
-        machines = sorted(machine_mgr.machines.values(), key=lambda m: m.name)
-
-        # Block the selection signal while we modify the list to avoid
-        # recursion.
-        self.machine_dropdown.handler_block_by_func(self._on_machine_selected)
-
-        try:
-            self.machine_model.remove_all()
-            selected_index = -1
-            for i, machine in enumerate(machines):
-                # Append an instance of the wrapper, not the raw object
-                self.machine_model.append(MachineListItem(machine))
-                if config.machine and machine.id == config.machine.id:
-                    selected_index = i
-
-            if selected_index != -1:
-                self.machine_dropdown.set_selected(selected_index)
-            else:
-                self.machine_dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
-        finally:
-            # Unblock the signal in a finally block to ensure it always runs.
-            self.machine_dropdown.handler_unblock_by_func(
-                self._on_machine_selected
-            )
-
-    def _on_machine_selected(self, dropdown, param):
-        """Handles when a user selects a new machine from the dropdown."""
-        selected_list_item = dropdown.get_selected_item()
-        if selected_list_item:
-            # selected_list_item is the MachineListItem wrapper
-            logger.info(
-                f"User selected machine: {selected_list_item.machine.name}"
-            )
-            config.set_machine(selected_list_item.machine)
-            self.surface.set_machine(selected_list_item.machine)
+        # The widget's signal is the source of truth for user-driven changes.
+        # We just need to update the global config.
+        if config.machine is None or config.machine.id != machine.id:
+            logger.info(f"User selected machine via dropdown: {machine.name}")
+            config.set_machine(machine)
+            self.surface.set_machine(machine)
 
     def _setup_actions(self):
         """Creates all Gio.SimpleActions for the window and application."""
@@ -829,9 +745,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update theme
         self.apply_theme()
-
-        # Ensure dropdown selection is synced with config
-        self._update_machine_list()
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
