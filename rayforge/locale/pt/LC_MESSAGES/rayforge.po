@@ -695,8 +695,8 @@ msgid "Home On Start"
 msgstr "Referenciar ao Iniciar"
 
 #: rayforge/machine/ui/general_preferences_page.py:90
-msgid "Whether Rayforce will send a homing command when it is started"
-msgstr "Se o Rayforce enviará um comando de referenciação ao ser iniciado"
+msgid "Whether Rayforge will send a homing command when it is started"
+msgstr "Se o Rayforge enviará um comando de referenciação ao ser iniciado"
 
 #: rayforge/machine/ui/general_preferences_page.py:100
 msgid "Invert Y Axis Direction"

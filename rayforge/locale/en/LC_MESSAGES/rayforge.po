@@ -697,7 +697,7 @@ msgid "Home On Start"
 msgstr ""
 
 #: rayforge/machine/ui/general_preferences_page.py:90
-msgid "Whether Rayforce will send a homing command when it is started"
+msgid "Whether Rayforge will send a homing command when it is started"
 msgstr ""
 
 #: rayforge/machine/ui/general_preferences_page.py:100

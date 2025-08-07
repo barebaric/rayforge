@@ -87,7 +87,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         home_on_start_row = Adw.SwitchRow()
         home_on_start_row.set_title(_("Home On Start"))
         home_on_start_row.set_subtitle(
-            _("Whether Rayforce will send a homing command when it is started")
+            _("Whether Rayforge will send a homing command when it is started")
         )
         home_on_start_row.set_active(machine.home_on_start)
         home_on_start_row.connect(
