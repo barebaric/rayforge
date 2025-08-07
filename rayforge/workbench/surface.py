@@ -149,7 +149,7 @@ class WorkSurface(Canvas):
         # DotElement size will be set in pixels by WorkSurface
         # Initialize with zero size, size and position will be set in
         # do_size_allocate
-        self._laser_dot = DotElement(0, 0, 0, 0)
+        self._laser_dot = DotElement(0, 0, 5.0)
         self.root.add(self._laser_dot)
 
         # Add scroll event controller for zoom
@@ -484,26 +484,6 @@ class WorkSurface(Canvas):
         self._mouse_pos = x, y
         return super().on_motion(gesture, x, y)
 
-    def _view_mm_to_widget_px(
-        self, x_mm: float, y_mm: float
-    ) -> Tuple[float, float]:
-        """
-        Centralized conversion from panned/zoomed mm (view space) to
-        absolute widget pixel coordinates. This is the only place that
-        should handle the y_axis_down flip.
-        """
-        y_axis_width = self._axis_renderer.get_y_axis_width()
-        x_axis_height = self._axis_renderer.get_x_axis_height()
-        height = self.get_height()
-        top_margin = math.ceil(x_axis_height / 2)
-
-        x_px = x_mm * self.pixels_per_mm_x + y_axis_width
-        if self._axis_renderer.y_axis_down:
-            y_px = y_mm * self.pixels_per_mm_y + top_margin
-        else:
-            y_px = height - x_axis_height - (y_mm * self.pixels_per_mm_y)
-        return x_px, y_px
-
     def _widget_px_to_view_mm(
         self, x_px: float, y_px: float
     ) -> Tuple[float, float]:
@@ -535,14 +515,6 @@ class WorkSurface(Canvas):
             relative_x_mm + self._axis_renderer.pan_x_mm,
             relative_y_mm + self._axis_renderer.pan_y_mm,
         )
-
-    def mm_to_pixel(self, x_mm: float, y_mm: float) -> Tuple[float, float]:
-        """
-        Converts absolute machine mm coordinates to absolute widget pixels.
-        """
-        relative_x_mm = x_mm - self._axis_renderer.pan_x_mm
-        relative_y_mm = y_mm - self._axis_renderer.pan_y_mm
-        return self._view_mm_to_widget_px(relative_x_mm, relative_y_mm)
 
     def workpiece_coords_to_element_coords(
         self, workpiece: WorkPiece
@@ -680,12 +652,6 @@ class WorkSurface(Canvas):
             elem.set_size(content_width, content_height)
         for elem in self.find_by_type(CameraImageElement):
             elem.set_size(content_width, content_height)
-
-        # Update laser dot size based on new pixel dimensions and its mm radius
-        dot_radius_mm = self._laser_dot.radius_mm
-        dot_diameter_px = 2 * dot_radius_mm * self.pixels_per_mm_x
-        self._laser_dot.set_size(dot_diameter_px, dot_diameter_px)
-
         # Re-position laser dot based on new pixel dimensions
         # By storing the dot's mm position, we avoid a fragile pixel->mm->pixel
         # conversion during zoom/pan, which could cause drift. We simply
@@ -781,25 +747,78 @@ class WorkSurface(Canvas):
         self._laser_dot.set_visible(visible)
         self.queue_draw()
 
+    def mm_to_element_coords(
+        self, x_mm: float, y_mm: float, element: CanvasElement
+    ) -> Tuple[float, float]:
+        """
+        Converts absolute machine mm coordinates to pixel coordinates relative
+        to the given element's top-left corner.
+        """
+        # Part 1: Calculate the point's coordinates relative to the root
+        # element.
+        ppm_x = self.pixels_per_mm_x or 1
+        ppm_y = self.pixels_per_mm_y or 1
+
+        # Step 1: Convert the incoming machine coordinates into the `root`
+        # element's canonical Y-up coordinate space.
+        x_mm_canonical: float
+        y_mm_canonical: float
+        if self._axis_renderer.y_axis_down:
+            y_mm_canonical = self.height_mm - y_mm
+        else:
+            y_mm_canonical = y_mm
+        x_mm_canonical = x_mm
+
+        # Step 2: Scale the canonical mm-coordinates to get pixel coordinates
+        # within the root's virtual space. Pan is handled by moving the root
+        # element, so no pan subtraction is needed here.
+        center_x_px = x_mm_canonical * ppm_x
+        center_y_px = y_mm_canonical * ppm_y
+
+        # Step 3: Convert the canonical Y-up pixel coordinates to the root's
+        # internal drawing coordinates, which have their origin at the
+        # top-left.
+        point_x_in_root = center_x_px
+        point_y_in_root = self.root.height - center_y_px
+
+        # Part 2: Calculate the target element's coordinates relative to the
+        # root by walking up the element tree.
+        elem_x_in_root = 0.0
+        elem_y_in_root = 0.0
+        current = element
+        while current and current is not self.root:
+            elem_x_in_root += current.x
+            elem_y_in_root += current.y
+            current = current.parent
+
+        # Part 3: The final coordinates are the point's position in the root
+        # minus the element's position in the root.
+        return (
+            point_x_in_root - elem_x_in_root,
+            point_y_in_root - elem_y_in_root,
+        )
+
     def set_laser_dot_position(self, x_mm: float, y_mm: float):
         """Sets the laser dot position in real-world mm."""
         self._laser_dot_pos_mm = x_mm, y_mm
 
-        # LaserDotElement is sized to represent the dot diameter in pixels.
-        # Its position should be the top-left corner of its bounding box.
-        # We want the center of the dot to be at (x_px, y_px).
-        x_px_abs, y_px_abs = self.mm_to_pixel(x_mm, y_mm)
-        dot_width_px = self._laser_dot.width
+        dot_parent = self._laser_dot.parent
+        if not dot_parent:
+            return  # Cannot position if not in the tree
 
-        # The coordinates from mm_to_pixel are absolute widget coordinates.
-        # The dot is a child of self.root, so its position must be relative
-        # to self.root's top-left corner.
-        center_x_rel = x_px_abs - self.root.x
-        center_y_rel = y_px_abs - self.root.y
+        # Convert machine mm to pixel coordinates relative to the dot's parent.
+        center_x_rel, center_y_rel = self.mm_to_element_coords(
+            x_mm, y_mm, dot_parent
+        )
+
+        # Calculate the top-left corner of the dot's bounding box
+        # from its center point.
+        dot_width_px = self._laser_dot.width
+        dot_height_px = self._laser_dot.height
 
         self._laser_dot.set_pos(
             round(center_x_rel - dot_width_px / 2),
-            round(center_y_rel - dot_width_px / 2),
+            round(center_y_rel - dot_height_px / 2),
         )
         self.queue_draw()
 

@@ -11,24 +11,22 @@ class DotElement(CanvasElement):
     """
     Draws a simple red dot.
     """
-    def __init__(self, x, y, width, height, **kwargs):
+    def __init__(self, x, y, diameter: float = 5.0, **kwargs):
         """
         Initializes a DotElement with pixel dimensions.
 
         Args:
             x: The x-coordinate (pixel) relative to the parent.
             y: The y-coordinate (pixel) relative to the parent.
-            width: The width (pixel).
-            height: The height (pixel).
+            radius: The radius (pixel).
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         # Laser dot is always a circle, so width and height should be equal.
         # We store the radius in mm for rendering purposes.
-        self.radius_mm = 1.0  # Default radius in mm
         super().__init__(x,
                          y,
-                         width,
-                         height,
+                         diameter,
+                         diameter,
                          visible=True,
                          selectable=False,
                          **kwargs)
@@ -44,11 +42,8 @@ class DotElement(CanvasElement):
         ctx.set_hairline(True)
         ctx.set_source_rgb(.9, 0, 0)
 
-        # Calculate radius in pixels based on the stored mm radius
-        radius_px = self.radius_mm * self.canvas.pixels_per_mm_x
-
         # Draw the circle centered within the element's pixel bounds
         center_x = self.width / 2
         center_y = self.height / 2
-        ctx.arc(center_x, center_y, radius_px, 0., 2*math.pi)
+        ctx.arc(center_x, center_y, self.width/2, 0., 2*math.pi)
         ctx.fill()
