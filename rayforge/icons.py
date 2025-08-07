@@ -1,6 +1,6 @@
 import importlib.resources
 import logging
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk, Gio  # type: ignore
 from .resources import icons  # type: ignore
 
 
@@ -18,8 +18,11 @@ def get_icon(icon_name):
     theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
 
     if not theme.has_icon(icon_name):
-        logger.warning(f"Icon '{icon_name}' not found in theme.")
-        return Gtk.Image()  # Return empty image as fallback
+        logger.debug(f"Icon '{icon_name}' not found in theme.")
+        path = get_icon_path(icon_name)
+        icon_file = Gio.File.new_for_path(str(path))
+        icon = Gio.FileIcon.new(icon_file)
+        return Gtk.Image.new_from_gicon(icon)
 
     # Create image with symbolic icon
     image = Gtk.Image.new_from_icon_name(icon_name)
