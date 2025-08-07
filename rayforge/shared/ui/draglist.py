@@ -185,6 +185,16 @@ class DragListBox(Gtk.ListBox):
         # The actual reordering is handled in `on_drag_end`.
         return self.potential_drop_index != -1
 
+    def __iter__(self):
+        """
+        Provides a Pythonic way to iterate over the rows of the ListBox,
+        which is platform-independent.
+        """
+        child = self.get_first_child()
+        while child:
+            yield child
+            child = child.get_next_sibling()
+
 
 if __name__ == "__main__":
     class DragListWindow(Gtk.ApplicationWindow):
