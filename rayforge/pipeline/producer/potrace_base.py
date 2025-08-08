@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, List
+from typing import Tuple, List, Optional, TYPE_CHECKING
 import cairo
 import numpy as np
 import cv2
 import potrace
 from ...core.ops import Ops
 from .base import OpsProducer
+
+if TYPE_CHECKING:
+    from ...importer.renderer import Renderer
 
 BORDER_SIZE = 2
 
@@ -59,6 +62,8 @@ class PotraceProducer(OpsProducer, ABC):
         laser,
         surface: cairo.ImageSurface,
         pixels_per_mm: Tuple[float, float],
+        *,
+        renderer: "Optional[Renderer]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
         """

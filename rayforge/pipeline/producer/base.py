@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import Optional, TYPE_CHECKING
 from ...core.ops import Ops
+
+if TYPE_CHECKING:
+    from ...importer.renderer import Renderer
 
 
 class OpsProducer(ABC):
@@ -13,7 +17,13 @@ class OpsProducer(ABC):
 
     @abstractmethod
     def run(
-        self, laser, surface, pixels_per_mm, y_offset_mm: float = 0.0
+        self,
+        laser,
+        surface,
+        pixels_per_mm,
+        *,
+        renderer: "Optional[Renderer]" = None,
+        y_offset_mm: float = 0.0,
     ) -> Ops:
         pass
 

@@ -848,21 +848,33 @@ class MainWindow(Adw.ApplicationWindow):
             logger.error(f"Error opening file: {e.message}")
 
     def load_file(self, filename: Path, mime_type: Optional[str]):
-        try:
-            renderer = renderer_by_mime_type[mime_type]
-        except KeyError:
-            # On Windows, the file dialog returns not the mime type,
-            # but the file extension instead.
-            try:
-                ext = mime_type.lower() if mime_type else None
-                renderer = renderer_by_extension[ext]
-            except KeyError:
-                logger.error(
-                    f"No renderer found for {mime_type}. "
-                    f"MIME types: {renderer_by_mime_type.keys()} "
-                    f"Extensions: {renderer_by_extension.keys()} "
-                )
-                return
+        renderer = None
+
+        # 1. Try to find a renderer by the provided MIME type.
+        # This is the most reliable method for standard file types.
+        if mime_type:
+            renderer = renderer_by_mime_type.get(mime_type)
+
+        # 2. If no renderer was found by MIME type, fall back to the file's
+        # extension.
+        # This is crucial for:
+        #  a) Custom file types not in the system's MIME database (e.g., .rd).
+        #  b) Incorrect MIME database entries (e.g., .rd as a chemistry file).
+        #  c) Cases where no MIME type is provided.
+        if not renderer:
+            # The key in renderer_by_extension includes the dot (e.g., '.svg').
+            file_extension = filename.suffix.lower()
+            if file_extension:
+                renderer = renderer_by_extension.get(file_extension)
+
+        if not renderer:
+            logger.error(
+                f"No renderer found for '{filename.name}' "
+                f"(MIME type: {mime_type}). "
+                f"Could not determine file type from MIME or extension. "
+                f"Supported extensions: {list(renderer_by_extension.keys())}"
+            )
+            return
 
         wp = WorkPiece.from_file(filename, renderer)
 

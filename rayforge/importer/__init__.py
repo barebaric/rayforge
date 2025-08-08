@@ -4,6 +4,7 @@ from .renderer import Renderer
 from .dxf import DXFRenderer
 from .pdf import PDFRenderer
 from .png import PNGRenderer
+from .ruida import RuidaRenderer
 from .svg import SVGRenderer
 
 def isrenderer(obj):
@@ -27,5 +28,6 @@ __all__ = [
     "DXFRenderer",
     "PDFRenderer",
     "PNGRenderer",
+    "RuidaRenderer",
     "SVGRenderer",
 ]

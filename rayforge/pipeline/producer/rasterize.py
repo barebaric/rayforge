@@ -2,17 +2,23 @@ import cairo
 import numpy as np
 import math
 import logging
+from typing import Optional, TYPE_CHECKING
 from ...core.ops import Ops
 from .base import OpsProducer
+
+if TYPE_CHECKING:
+    from ...importer.renderer import Renderer
 
 logger = logging.getLogger(__name__)
 
 
-def rasterize_horizontally(surface,
-                           ymax,
-                           pixels_per_mm=(10, 10),
-                           raster_size_mm=0.1,
-                           y_offset_mm=0.0):
+def rasterize_horizontally(
+    surface,
+    ymax,
+    pixels_per_mm=(10, 10),
+    raster_size_mm=0.1,
+    y_offset_mm=0.0,
+):
     """
     Generate an engraving path for a Cairo surface, focusing on horizontal
     movement.
@@ -93,9 +99,7 @@ def rasterize_horizontally(surface,
     y_extent_mm = (y_max + 1) / pixels_per_mm_y
 
     # Iterate over rows in millimeters (floating-point) within the bounding box
-    for y_mm in np.arange(
-        y_start_mm, y_extent_mm, raster_size_mm
-    ):
+    for y_mm in np.arange(y_start_mm, y_extent_mm, raster_size_mm):
         # Convert y_mm to pixel coordinates (floating-point)
         y_px = y_mm * pixels_per_mm_y
 
@@ -107,9 +111,9 @@ def rasterize_horizontally(surface,
         row = bw_image[y1, x_min:x_max + 1]
 
         # Find the start and end of black segments in the current row
-        black_segments = np.where(np.diff(
-            np.hstack(([0], row, [0]))
-        ))[0].reshape(-1, 2)
+        black_segments = np.where(
+            np.diff(np.hstack(([0], row, [0])))
+        )[0].reshape(-1, 2)
         for start, end in black_segments:
             if row[start] == 1:  # Only process black segments
                 # Use center-to-center toolpath convention for X-axis.
@@ -137,19 +141,28 @@ class Rasterizer(OpsProducer):
     Generates rastered movements (using only straight lines)
     across filled pixels in the surface.
     """
-    def run(self, laser, surface, pixels_per_mm, *, y_offset_mm: float = 0.0):
+
+    def run(
+        self,
+        laser,
+        surface,
+        pixels_per_mm,
+        *,
+        renderer: "Optional[Renderer]" = None,
+        y_offset_mm: float = 0.0
+    ):
         width = surface.get_width()
         height = surface.get_height()
         logger.debug(f"Rasterizer received surface: {width}x{height} pixels")
         logger.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
 
-        ymax = surface.get_height()/pixels_per_mm[1]
+        ymax = surface.get_height() / pixels_per_mm[1]
         return rasterize_horizontally(
             surface,
             ymax,  # y max for axis inversion
             pixels_per_mm,
             laser.spot_size_mm[1],
-            y_offset_mm=y_offset_mm
+            y_offset_mm=y_offset_mm,
         )
 
     def can_scale(self) -> bool:

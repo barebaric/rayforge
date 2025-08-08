@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generator, Optional, Tuple
+from typing import Generator, Optional, Tuple, cast, TYPE_CHECKING
 import cairo
 import math
 import logging
@@ -8,6 +8,9 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
+
+if TYPE_CHECKING:
+    from ..core.ops import Ops
 
 logger = logging.getLogger(__name__)
 
@@ -164,12 +167,12 @@ class Renderer(ABC):
             )
 
         vips_image = self._render_to_vips_image(width_px, height_px)
-        if not isinstance(vips_image, pyvips.Image):
+        if not vips_image or not isinstance(vips_image, pyvips.Image):
             logger.warning("Failed to load image for chunking.")
             return
 
-        real_width = vips_image.width
-        real_height = vips_image.height
+        real_width = cast(int, vips_image.width)
+        real_height = cast(int, vips_image.height)
         if not real_width or not real_height:
             return
 
@@ -198,7 +201,7 @@ class Renderer(ABC):
 
                 b, g, r, a = chunk[2], chunk[1], chunk[0], chunk[3]
                 bgra_chunk = b.bandjoin([g, r, a])
-                buf: bytes = bgra_chunk.write_to_memory()
+                buf: memoryview = bgra_chunk.write_to_memory()
                 surface = cairo.ImageSurface.create_for_data(
                     buf,
                     cairo.FORMAT_ARGB32,
@@ -207,3 +210,12 @@ class Renderer(ABC):
                     chunk.width * 4,
                 )
                 yield surface, (left, top)
+
+    def get_vector_ops(self) -> "Optional[Ops]":
+        """
+        If the underlying source data is vector-based, this method should
+        return a direct, high-fidelity translation of it into an Ops object.
+
+        For raster-based renderers, this method should return None.
+        """
+        return None
