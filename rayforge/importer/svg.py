@@ -223,7 +223,7 @@ class SVGRenderer(Renderer):
                 render_width, render_height
             )
 
-        if not isinstance(final_image, pyvips.Image):
+        if not final_image or not isinstance(final_image, pyvips.Image):
             return None
 
         if final_image.bands < 4:

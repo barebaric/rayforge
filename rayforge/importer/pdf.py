@@ -99,7 +99,7 @@ class PDFRenderer(Renderer):
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         final_image = self._render_to_vips_image(width, height)
-        if not isinstance(final_image, pyvips.Image):
+        if not final_image or not isinstance(final_image, pyvips.Image):
             return None
         if cast(int, final_image.bands) < 4:
             final_image = final_image.bandjoin(255)

@@ -2,6 +2,7 @@ import io
 import math
 import ezdxf
 from ezdxf import bbox
+from ezdxf import DXFStructureError  # type: ignore[reportPrivateImportUsage]
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -112,21 +113,23 @@ class DXFRenderer(Renderer):
         Parses DXF data and converts its geometric entities into an
         SVG byte string.
         """
-        if isinstance(dxf_data, bytes):
-            try:
-                # Standard-compliant decoding
-                data_str = dxf_data.decode("utf-8")
-            except UnicodeDecodeError:
-                # Fallback for older DXF files with non-standard encodings
-                data_str = dxf_data.decode("ascii", errors="replace")
-            # Normalize line endings
-            data_str = data_str.replace("\r\n", "\n")
-        else:
+        if not isinstance(dxf_data, bytes):
             raise TypeError("Input must be bytes")
 
         try:
-            doc = ezdxf.read(io.StringIO(data_str))
-        except ezdxf.DXFStructureError as e:
+            # Standard-compliant decoding
+            data_str = dxf_data.decode("utf-8")
+        except UnicodeDecodeError:
+            # Fallback for older DXF files with non-standard encodings
+            data_str = dxf_data.decode("ascii", errors="replace")
+        # Normalize line endings
+        data_str = data_str.replace("\r\n", "\n")
+
+        try:
+            doc = ezdxf.read(  # pyright: ignore[reportPrivateImportUsage]
+                io.StringIO(data_str)
+            )
+        except DXFStructureError as e:
             raise ValueError(f"Invalid DXF data: {e}")
 
         bounds = self._get_bounds_mm(doc)
