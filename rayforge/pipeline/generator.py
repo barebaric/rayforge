@@ -262,7 +262,7 @@ class OpsGenerator:
         if not workpiece.get_current_size():
             return
 
-        key = (step.uid, workpiece.uid)
+        key = step.uid, workpiece.uid
         generation_id = self._generation_id_map.get(key, 0) + 1
         self._generation_id_map[key] = generation_id
 
@@ -345,7 +345,7 @@ class OpsGenerator:
         ops cache with the final result, and fires the
         `ops_generation_finished` signal.
         """
-        key = (s_uid, w_uid)
+        key = s_uid, w_uid
         self._active_tasks.pop(key, None)
 
         if (
@@ -414,7 +414,7 @@ class OpsGenerator:
             A deep copy of the scaled Ops object, or None if no
             operations are available in the cache.
         """
-        key = (step.uid, workpiece.uid)
+        key = step.uid, workpiece.uid
         if not workpiece.get_current_size():
             return None
 
