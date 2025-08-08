@@ -43,6 +43,9 @@ dependencies = {file = ["requirements.txt"]}
 [tool.ruff]
 builtins = ["_"]
 
+[tool.pyright]
+stubPath = "typings"
+
 [tool.setuptools.data-files]
 "share/applications" = ["data/com.barebaric.rayforge.desktop"]
 "share/metainfo" = ["data/com.barebaric.rayforge.metainfo.xml"]
