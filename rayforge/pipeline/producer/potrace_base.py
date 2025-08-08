@@ -61,7 +61,7 @@ class PotraceProducer(OpsProducer, ABC):
         self,
         laser,
         surface: cairo.ImageSurface,
-        pixels_per_mm: Tuple[float, float],
+        pixels_per_mm: Optional[Tuple[float, float]],
         *,
         renderer: "Optional[Renderer]" = None,
         y_offset_mm: float = 0.0,
@@ -70,7 +70,10 @@ class PotraceProducer(OpsProducer, ABC):
         Orchestrates the tracing process and calls a hook for filtering
         the results.
         """
-        self.original_surface_height = surface.get_height()
+        # It's possible for pixels_per_mm to be None when we want unscaled
+        # pixel-based output.
+        if surface:
+            self.original_surface_height = surface.get_height()
         self.pixels_per_mm = pixels_per_mm
 
         boolean_image = _prepare_surface_for_potrace(surface)
@@ -112,10 +115,23 @@ class PotraceProducer(OpsProducer, ABC):
         final Ops coordinate space, inverting the Y-axis correctly.
         """
         px, py = p
+
+        # Always remove border and invert Y-axis to get a standard
+        # bottom-left origin coordinate system.
+        ops_px = px - BORDER_SIZE
+        ops_py = self.original_surface_height - (py - BORDER_SIZE)
+
+        # If no scaler is provided, return coordinates in this standardized
+        # pixel space.
+        if self.pixels_per_mm is None:
+            return ops_px, ops_py
+
+        # If a scaler is provided, convert from the standardized pixel space
+        # to millimeters.
         scale_x, scale_y = self.pixels_per_mm
-        ops_x = (px - BORDER_SIZE) / scale_x
-        ops_y = (self.original_surface_height - (py - BORDER_SIZE)) / scale_y
-        return ops_x, ops_y
+        ops_mm_x = ops_px / scale_x
+        ops_mm_y = ops_py / scale_y
+        return ops_mm_x, ops_mm_y
 
     def _process_curve(self, curve: potrace.Curve) -> Ops:
         """Processes a single closed path from Potrace."""
@@ -132,17 +148,30 @@ class PotraceProducer(OpsProducer, ABC):
             ops.line_to(*self._transform_point(segment.c))
             ops.line_to(*self._transform_point(segment.end_point))
         else:
-            self._flatten_bezier_segment(segment, ops)
+            # Only flatten the bezier if we are scaling to mm.
+            # Otherwise, just connect the endpoints with a line.
+            if self.pixels_per_mm is not None:
+                self._flatten_bezier_segment(segment, ops)
+            else:
+                ops.line_to(*self._transform_point(segment.end_point))
 
     def _flatten_bezier_segment(self, segment, ops: Ops, num_steps: int = 20):
         """Approximates a cubic Bézier curve with small line segments."""
         if not ops.commands or not ops.commands[-1].end:
             return
 
+        if self.pixels_per_mm is None or not ops.commands:
+            return
+
         last_cmd = ops.commands[-1]
+        if last_cmd.end is None:
+            return
+
         start_ops_x, start_ops_y = last_cmd.end
         scale_x, scale_y = self.pixels_per_mm
 
+        # Reverse the transform to get back to the original Potrace pixel
+        # coords
         start_px = np.array(
             [
                 (start_ops_x * scale_x) + BORDER_SIZE,

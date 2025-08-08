@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Iterator
+from typing import Any, List, Tuple, Iterator, Optional
 from ..shared.tasker.proxy import ExecutionContextProxy
 
 
@@ -18,6 +18,22 @@ def run_step_in_subprocess(
     settings: dict,
     generation_id: int,
 ):
+    """
+    The main entry point for generating operations for a single
+    (Step, WorkPiece) pair in a background process.
+
+    This function reconstructs the necessary data models from dictionaries,
+    determines whether the operation is vector or raster, and orchestrates the
+    pipeline of producers, modifiers, and transformers.
+
+    For vector operations, it produces unscaled Ops in a "natural" or "pixel"
+    coordinate space and returns them with their dimensions. This allows the
+    calling OpsGenerator to cache the result and perform fast scaling on
+    demand.
+
+    For raster operations, it produces Ops in their final millimeter
+    coordinates, often in chunks, as they are not scalable.
+    """
     import logging
 
     logger = logging.getLogger("rayforge.models.step.run_step_in_subprocess")
@@ -44,9 +60,35 @@ def run_step_in_subprocess(
 
     # Helper functions
     def _trace_and_modify_surface(
-        surface, scaler, *, renderer: Renderer, y_offset_mm=0.0
-    ):
-        """Applies modifiers and runs the OpsProducer on a surface."""
+        surface: Optional[Any],  # cairo.ImageSurface is not pickleable
+        scaler: Optional[Tuple[float, float]],
+        *,
+        renderer: Renderer,
+        y_offset_mm: float = 0.0,
+    ) -> Ops:
+        """
+        Applies image modifiers and runs the OpsProducer on a surface or
+        vector data.
+
+        This is a central part of the pipeline. It first runs all configured
+        modifiers (e.g., ToGrayscale) on the input surface if it exists. Then,
+        it calls the main OpsProducer (e.g., Potrace, Rasterizer) to generate
+        the machine operations.
+
+        Args:
+            surface: The cairo.ImageSurface to process, or None for direct
+                vector paths.
+            scaler: A tuple (pixels_per_mm_x, pixels_per_mm_y) to scale the
+                output to millimeters, or None to get output in pixel
+                coordinates.
+            renderer: The renderer instance, passed to the producer to allow
+                for fast-path vector extraction.
+            y_offset_mm: The vertical offset in mm for the current chunk, used
+                by raster operations.
+
+        Returns:
+            An Ops object containing the generated operations.
+        """
         for modifier in modifiers:
             # Modifiers only work on pixel surfaces, so skip if None
             if surface:
@@ -60,10 +102,27 @@ def run_step_in_subprocess(
             y_offset_mm=y_offset_mm,
         )
 
-    def _execute_vector() -> Iterator[Tuple[Ops, Tuple[int, int], float]]:
+    def _execute_vector() -> Iterator[Tuple[Ops, Tuple[float, float], float]]:
         """
         Handles Ops generation for scalable (vector) operations.
-        This is a synchronous version of the original async method.
+
+        This function has two main paths:
+        1. True Vector: If the workpiece's renderer provides vector data
+           directly (e.g., from an SVG), it is processed without rasterization.
+           The resulting Ops are in the vector's "natural" coordinate system.
+        2. Render-and-Trace: If no direct vector data is available, the
+           workpiece is rendered to a high-resolution bitmap, which is then
+           traced by a producer like Potrace. The resulting Ops are in pixel
+           coordinates.
+
+        In both cases, this function yields the unscaled Ops and the dimensions
+        of their coordinate system, allowing for efficient caching and scaling
+        by the OpsGenerator.
+
+        Yields:
+            A single tuple containing the complete Ops, the dimensions
+            (width, height) of the coordinate system, and a progress value
+            of 1.0.
         """
         size_mm = workpiece.get_current_size()
 
@@ -79,44 +138,32 @@ def run_step_in_subprocess(
             )
             return
 
-        # Check if the renderer can provide vector data directly.
-        # This is the "true" vector path.
+        # Path 1: True vector source (e.g., SVG).
         if workpiece.renderer.get_vector_ops():
             logger.debug(
                 "Vector renderer detected. Using direct vector processing"
             )
-            # The producer (e.g., OutlineTracer) will get the vector ops
-            # from the renderer and filter them. The surface and scaler
-            # are not used in this path.
+            # The producer gets vector data from the renderer. `surface` and
+            # `scaler` are None to indicate a non-pixel, unscaled path.
             geometry_ops = _trace_and_modify_surface(
                 surface=None, scaler=None, renderer=workpiece.renderer
             )
 
-            # The producer returns ops in the renderer's "natural" size.
-            # We must scale them to the workpiece's current size.
+            # Return the unscaled ops along with their "natural" dimensions.
             natural_w, natural_h = workpiece.renderer.get_natural_size()
-            if natural_w and natural_h and natural_w > 0 and natural_h > 0:
-                current_w, current_h = size_mm
-                scale_x = current_w / natural_w
-                scale_y = current_h / natural_h
+            if natural_w is None or natural_h is None:
+                natural_w, natural_h = 1.0, 1.0  # Fallback
 
-                if scale_x != 1.0 or scale_y != 1.0:
-                    geometry_ops.scale(scale_x, scale_y)
-
-            # Yield the final, scaled ops. Pixel size is irrelevant here.
-            yield geometry_ops, (1, 1), 1.0
+            yield geometry_ops, (natural_w, natural_h), 1.0
             return
 
-        # If no direct vector ops were available, fall back to rendering
-        # the vector file to a bitmap and then tracing it.
-        logger.debug(
-            "No direct vector ops. Falling back to render-and-trace."
-        )
+        # Path 2: Vector source that needs to be rendered and traced.
+        logger.debug("No direct vector ops. Falling back to render-and-trace.")
         px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
         target_width = int(size_mm[0] * px_per_mm_x)
         target_height = int(size_mm[1] * px_per_mm_y)
 
-        # Cap resolution
+        # Cap resolution to prevent excessive memory usage.
         num_pixels = target_width * target_height
         if num_pixels > MAX_VECTOR_TRACE_PIXELS:
             scale_factor = (MAX_VECTOR_TRACE_PIXELS / num_pixels) ** 0.5
@@ -130,15 +177,11 @@ def run_step_in_subprocess(
         if not surface:
             return
 
-        actual_px_per_mm_x = surface.get_width() / size_mm[0]
-        actual_px_per_mm_y = surface.get_height() / size_mm[1]
-        pixel_scaler = (actual_px_per_mm_x, actual_px_per_mm_y)
-
-        # The producer (e.g., PotraceProducer) will trace the bitmap and use
-        # the pixel_scaler to generate Ops that are already correctly scaled
-        # to the final workpiece dimensions in millimeters.
+        # The producer (e.g., PotraceProducer) will trace the bitmap.
+        # By passing `scaler=None`, it is expected to return ops in PIXEL
+        # coordinates with a Y-up convention.
         geometry_ops = _trace_and_modify_surface(
-            surface, pixel_scaler, renderer=workpiece.renderer
+            surface, None, renderer=workpiece.renderer
         )
 
         yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
@@ -147,7 +190,16 @@ def run_step_in_subprocess(
     def _execute_raster() -> Iterator[Tuple[Ops, None, float]]:
         """
         Handles Ops generation for non-scalable (raster) operations.
-        This is a synchronous version of the original async method.
+
+        This function renders the workpiece in horizontal chunks to manage
+        memory usage. For each chunk, it generates Ops that are already scaled
+        to final millimeter coordinates and correctly positioned. These chunks
+        are yielded progressively to provide UI feedback.
+
+        Yields:
+            A tuple for each chunk: (chunk_ops, None, progress). `chunk_ops`
+            are in mm, the pixel size is `None` (as they are pre-scaled), and
+            `progress` is a float from 0.0 to 1.0.
         """
         size = workpiece.get_current_size()
 
@@ -161,7 +213,7 @@ def run_step_in_subprocess(
         total_height_px = size[1] * settings["pixels_per_mm"][1]
         px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
 
-        # This iterator is now synchronous.
+        # render_chunk is an iterator that yields surfaces for processing.
         chunk_iter = workpiece.render_chunk(
             px_per_mm_x,
             px_per_mm_y,
@@ -180,7 +232,7 @@ def run_step_in_subprocess(
             # chunks.
             y_offset_from_top_mm = y_offset_px / px_per_mm_y
 
-            # The Rasterizer producer also returns Ops in millimeters.
+            # The Rasterizer producer returns Ops pre-scaled to millimeters.
             chunk_ops = _trace_and_modify_surface(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
@@ -188,6 +240,8 @@ def run_step_in_subprocess(
                 y_offset_mm=y_offset_from_top_mm,
             )
 
+            # The ops are generated at the origin, so translate them to the
+            # correct position within the workpiece.
             y_offset_mm = (
                 size[1] * px_per_mm_y - (surface.get_height() + y_offset_px)
             ) / px_per_mm_y
@@ -197,8 +251,11 @@ def run_step_in_subprocess(
             yield chunk_ops, None, progress
             surface.flush()
 
-    def _create_initial_ops():
-        """Creates and new_configsures the initial Ops object."""
+    def _create_initial_ops() -> Ops:
+        """
+        Creates and configures the initial Ops object with settings from the
+        Step.
+        """
         initial_ops = Ops()
         initial_ops.set_power(settings["power"])
         initial_ops.set_cut_speed(settings["cut_speed"])
@@ -212,6 +269,7 @@ def run_step_in_subprocess(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
     final_ops = _create_initial_ops()
+    final_pixel_size = None
     is_vector = opsproducer.can_scale()
 
     execute_weight = 0.20
@@ -223,8 +281,11 @@ def run_step_in_subprocess(
     )
     execute_iterator = _execute_vector() if is_vector else _execute_raster()
 
-    for chunk, _junk, execute_progress in execute_iterator:
+    for chunk, chunk_pixel_size, execute_progress in execute_iterator:
         execute_ctx.set_progress(execute_progress)
+        if chunk_pixel_size:
+            final_pixel_size = chunk_pixel_size
+
         if chunk:
             # Send intermediate chunks for raster operations
             # to provide responsive UI feedback during long-running jobs.
@@ -263,9 +324,7 @@ def run_step_in_subprocess(
             transformer.run(final_ops, context=transformer_run_proxy)
 
             # Ensure this step's progress is marked as 100% complete before
-            # moving to the next one. This prevents progress from appearing
-            # to jump or stall if a transformer doesn't report its own
-            # completion.
+            # moving to the next one.
             transformer_run_proxy.set_progress(1.0)
 
     if settings["air_assist"]:
@@ -276,7 +335,7 @@ def run_step_in_subprocess(
     )
     proxy.set_progress(1.0)
 
-    # Return None for the pixel size. This signals to the OpsGenerator
-    # that the returned Ops are already in their final millimeter
-    # coordinate system and do not need to be scaled.
-    return final_ops, None
+    # Return the Ops and the pixel size (if any). The OpsGenerator will use
+    # this to scale the ops correctly. For rasters, pixel size is None, as
+    # they are already in their final millimeter coordinate system.
+    return final_ops, final_pixel_size
