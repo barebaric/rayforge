@@ -15,7 +15,7 @@ from ..undo import (
     ChangePropertyCommand,
 )
 from .canvas import Canvas, CanvasElement
-from .axis import AxisRenderer
+from .axis import AxisImporter
 from .elements.dot import DotElement
 from .elements.step import StepElement
 from .elements.workpiece import WorkPieceElement
@@ -135,7 +135,7 @@ class WorkSurface(Canvas):
         self.root.clip = False
 
         y_axis_down = machine.y_axis_down if machine else False
-        self._axis_renderer = AxisRenderer(
+        self._axis_importer = AxisImporter(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
             zoom_level=self.zoom_level,
@@ -203,21 +203,21 @@ class WorkSurface(Canvas):
     def _update_theme_colors(self):
         """
         Reads the current theme colors from the widget's style context
-        and applies them to the AxisRenderer.
+        and applies them to the AxisImporter.
         """
         style_context = self.get_style_context()
 
         # Get the foreground color for axes and labels
         found, fg_rgba = style_context.lookup_color("view_fg_color")
         if found:
-            self._axis_renderer.set_fg_color(
+            self._axis_importer.set_fg_color(
                 (fg_rgba.red, fg_rgba.green, fg_rgba.blue, fg_rgba.alpha)
             )
 
         # Get the separator color for the grid lines
         found, grid_rgba = style_context.lookup_color("separator_color")
         if found:
-            self._axis_renderer.set_grid_color(
+            self._axis_importer.set_grid_color(
                 (
                     grid_rgba.red,
                     grid_rgba.green,
@@ -429,9 +429,9 @@ class WorkSurface(Canvas):
             self.reset_view()
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
-        """Sets the pan position in mm and updates the axis renderer."""
-        self._axis_renderer.set_pan_x_mm(pan_x_mm)
-        self._axis_renderer.set_pan_y_mm(pan_y_mm)
+        """Sets the pan position in mm and updates the axis importer."""
+        self._axis_importer.set_pan_x_mm(pan_x_mm)
+        self._axis_importer.set_pan_y_mm(pan_y_mm)
         self._recalculate_sizes()
         self.queue_draw()
 
@@ -441,8 +441,8 @@ class WorkSurface(Canvas):
         if not all([width, height_pixels, self.width_mm, self.height_mm]):
             return 1.0, 1.0  # Avoid division by zero at startup
 
-        y_axis_pixels = self._axis_renderer.get_y_axis_width()
-        x_axis_height = self._axis_renderer.get_x_axis_height()
+        y_axis_pixels = self._axis_importer.get_y_axis_width()
+        x_axis_height = self._axis_importer.get_x_axis_height()
         right_margin = math.ceil(y_axis_pixels / 2)
         top_margin = math.ceil(x_axis_height / 2)
         content_width_px = float(width - y_axis_pixels - right_margin)
@@ -458,11 +458,11 @@ class WorkSurface(Canvas):
 
     def set_zoom(self, zoom_level: float):
         """
-        Sets the zoom level and updates the axis renderer.
+        Sets the zoom level and updates the axis importer.
         The caller is responsible for ensuring the zoom_level is clamped.
         """
         self.zoom_level = zoom_level
-        self._axis_renderer.set_zoom(self.zoom_level)
+        self._axis_importer.set_zoom(self.zoom_level)
         self.root.mark_dirty(recursive=True)
         self.do_size_allocate(self.get_width(), self.get_height(), 0)
         self.queue_draw()
@@ -474,8 +474,8 @@ class WorkSurface(Canvas):
         """
         self.width_mm = width_mm
         self.height_mm = height_mm
-        self._axis_renderer.set_width_mm(self.width_mm)
-        self._axis_renderer.set_height_mm(self.height_mm)
+        self._axis_importer.set_width_mm(self.width_mm)
+        self._axis_importer.set_height_mm(self.height_mm)
         self.queue_draw()
 
     def get_size(self) -> Tuple[float, float]:
@@ -494,15 +494,15 @@ class WorkSurface(Canvas):
         mm (view space). This is the only place that should handle the
         y_axis_down flip.
         """
-        y_axis_width = self._axis_renderer.get_y_axis_width()
-        x_axis_height = self._axis_renderer.get_x_axis_height()
+        y_axis_width = self._axis_importer.get_y_axis_width()
+        x_axis_height = self._axis_importer.get_x_axis_height()
         height = self.get_height()
         ppm_x = self.pixels_per_mm_x or 1
         ppm_y = self.pixels_per_mm_y or 1
         top_margin = math.ceil(x_axis_height / 2)
 
         x_mm = (x_px - y_axis_width) / ppm_x
-        if self._axis_renderer.y_axis_down:
+        if self._axis_importer.y_axis_down:
             y_mm = (y_px - top_margin) / ppm_y
         else:
             y_mm = (height - x_axis_height - y_px) / ppm_y
@@ -514,8 +514,8 @@ class WorkSurface(Canvas):
         """
         relative_x_mm, relative_y_mm = self._widget_px_to_view_mm(x_px, y_px)
         return (
-            relative_x_mm + self._axis_renderer.pan_x_mm,
-            relative_y_mm + self._axis_renderer.pan_y_mm,
+            relative_x_mm + self._axis_importer.pan_x_mm,
+            relative_y_mm + self._axis_importer.pan_y_mm,
         )
 
     def workpiece_coords_to_element_coords(
@@ -610,13 +610,13 @@ class WorkSurface(Canvas):
 
         if new_ppm_x > 0 and new_ppm_y > 0:
             # Re-calculate what the view coordinates would be with the new zoom
-            y_axis_width = self._axis_renderer.get_y_axis_width()
-            x_axis_height = self._axis_renderer.get_x_axis_height()
+            y_axis_width = self._axis_importer.get_y_axis_width()
+            x_axis_height = self._axis_importer.get_x_axis_height()
             height = self.get_height()
             top_margin = math.ceil(x_axis_height / 2)
 
             new_view_x_mm = (mouse_x_px - y_axis_width) / new_ppm_x
-            if self._axis_renderer.y_axis_down:
+            if self._axis_importer.y_axis_down:
                 new_view_y_mm = (mouse_y_px - top_margin) / new_ppm_y
             else:
                 new_view_y_mm = (
@@ -633,12 +633,12 @@ class WorkSurface(Canvas):
         self.set_zoom(final_zoom)
 
     def _recalculate_sizes(self):
-        origin_x, origin_y = self._axis_renderer.get_origin()
-        content_width, content_height = self._axis_renderer.get_content_size()
+        origin_x, origin_y = self._axis_importer.get_origin()
+        content_width, content_height = self._axis_importer.get_content_size()
 
         # Set the root element's size directly in pixels
         # The root element's origin is always its top-left corner
-        if self._axis_renderer.y_axis_down:
+        if self._axis_importer.y_axis_down:
             self.root.set_pos(origin_x, origin_y)
         else:
             self.root.set_pos(origin_x, origin_y - content_height)
@@ -646,7 +646,7 @@ class WorkSurface(Canvas):
 
         # Update WorkSurface's internal pixel dimensions based on content area
         self.pixels_per_mm_x, self.pixels_per_mm_y = (
-            self._axis_renderer.get_pixels_per_mm()
+            self._axis_importer.get_pixels_per_mm()
         )
 
         # Update children to match the new content area size
@@ -664,9 +664,9 @@ class WorkSurface(Canvas):
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
         """Handles canvas size allocation in pixels."""
-        # Calculate grid bounds using AxisRenderer
-        self._axis_renderer.set_width_px(width)
-        self._axis_renderer.set_height_px(height)
+        # Calculate grid bounds using AxisImporter
+        self._axis_importer.set_width_px(width)
+        self._axis_importer.set_height_px(height)
         self._recalculate_sizes()
         self.root.allocate()
 
@@ -685,7 +685,7 @@ class WorkSurface(Canvas):
         layer_elem = LayerElement(layer=layer, canvas=self)
 
         # A LayerElement is a container that spans the entire content area
-        content_width, content_height = self._axis_renderer.get_content_size()
+        content_width, content_height = self._axis_importer.get_content_size()
         layer_elem.set_size(content_width, content_height)
 
         self.root.add(layer_elem)
@@ -765,7 +765,7 @@ class WorkSurface(Canvas):
         # element's canonical Y-up coordinate space.
         x_mm_canonical: float
         y_mm_canonical: float
-        if self._axis_renderer.y_axis_down:
+        if self._axis_importer.y_axis_down:
             y_mm_canonical = self.height_mm - y_mm
         else:
             y_mm_canonical = y_mm
@@ -868,7 +868,7 @@ class WorkSurface(Canvas):
         # dimensions or y-axis orientation invalidates the current pan, zoom,
         # and all calculated coordinates.
         size_changed = machine.dimensions != (self.width_mm, self.height_mm)
-        y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
+        y_axis_changed = machine.y_axis_down != self._axis_importer.y_axis_down
 
         if size_changed or y_axis_changed:
             self.reset_view()
@@ -893,7 +893,7 @@ class WorkSurface(Canvas):
         self.set_size(new_dimensions[0], new_dimensions[1])
         self.set_pan(0.0, 0.0)
         self.set_zoom(1.0)
-        self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
+        self._axis_importer.set_y_axis_down(self.machine.y_axis_down)
         # _recalculate_sizes must be called after other properties are set,
         # especially after y_axis_down is changed, as it affects all
         # coordinate calculations.
@@ -951,8 +951,8 @@ class WorkSurface(Canvas):
         ctx = snapshot.append_cairo(bounds)
 
         # Draw grid, axis, and labels first, so they are in the background.
-        self._axis_renderer.draw_grid(ctx)
-        self._axis_renderer.draw_axes_and_labels(ctx)
+        self._axis_importer.draw_grid(ctx)
+        self._axis_importer.draw_axes_and_labels(ctx)
 
         # Use the parent Canvas's recursive rendering.
         super().do_snapshot(snapshot)
@@ -1071,8 +1071,8 @@ class WorkSurface(Canvas):
 
     def on_pan_begin(self, gesture, x: float, y: float):
         self._pan_start = (
-            self._axis_renderer.pan_x_mm,
-            self._axis_renderer.pan_y_mm,
+            self._axis_importer.pan_x_mm,
+            self._axis_importer.pan_y_mm,
         )
 
     def on_pan_update(self, gesture, x: float, y: float):
@@ -1082,7 +1082,7 @@ class WorkSurface(Canvas):
 
         # For Y-panning, dragging down (positive offset.y) should always
         # move the content "up" on screen.
-        if self._axis_renderer.y_axis_down:
+        if self._axis_importer.y_axis_down:
             # In a Y-down view, moving content "up" means panning to lower
             # Y values.
             new_pan_y_mm = self._pan_start[1] - offset.y / self.pixels_per_mm_y

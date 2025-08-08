@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 CAIRO_MAX_DIMENSION = 16384
 
 
-class Renderer(ABC):
+class Importer(ABC):
     """
-    An abstract base class that defines the interface for all renderers.
+    An abstract base class that defines the interface for all importers.
 
-    Each concrete renderer instance is created for a specific piece of
+    Each concrete importer instance is created for a specific piece of
     image data and is responsible for managing its own internal state and
     implementation details.
     """
@@ -216,6 +216,6 @@ class Renderer(ABC):
         If the underlying source data is vector-based, this method should
         return a direct, high-fidelity translation of it into an Ops object.
 
-        For raster-based renderers, this method should return None.
+        For raster-based importers, this method should return None.
         """
         return None

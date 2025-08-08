@@ -5,12 +5,12 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
-from .renderer import Renderer
+from .base import Importer
 
 logger = logging.getLogger(__name__)
 
 
-class PNGRenderer(Renderer):
+class PngImporter(Importer):
     label = 'PNG files'
     mime_types = ('image/png',)
     extensions = ('.png',)

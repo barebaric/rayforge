@@ -46,7 +46,7 @@ def run_step_in_subprocess(
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
     from ..core.ops import Ops, DisableAirAssistCommand
-    from ..importer.renderer import Renderer  # Import for type hinting
+    from ..importer.base import Importer  # Import for type hinting
 
     logger.debug("Imports completed")
 
@@ -63,7 +63,7 @@ def run_step_in_subprocess(
         surface: Optional[Any],  # cairo.ImageSurface is not pickleable
         scaler: Optional[Tuple[float, float]],
         *,
-        renderer: Renderer,
+        importer: Importer,
         y_offset_mm: float = 0.0,
     ) -> Ops:
         """
@@ -81,7 +81,7 @@ def run_step_in_subprocess(
             scaler: A tuple (pixels_per_mm_x, pixels_per_mm_y) to scale the
                 output to millimeters, or None to get output in pixel
                 coordinates.
-            renderer: The renderer instance, passed to the producer to allow
+            importer: The importer instance, passed to the producer to allow
                 for fast-path vector extraction.
             y_offset_mm: The vertical offset in mm for the current chunk, used
                 by raster operations.
@@ -93,12 +93,12 @@ def run_step_in_subprocess(
             # Modifiers only work on pixel surfaces, so skip if None
             if surface:
                 modifier.run(surface)
-        # Pass the renderer to the producer for the vector fast-path
+        # Pass the importer to the producer for the vector fast-path
         return opsproducer.run(
             laser,
             surface,
             scaler,
-            renderer=renderer,
+            importer=importer,
             y_offset_mm=y_offset_mm,
         )
 
@@ -107,7 +107,7 @@ def run_step_in_subprocess(
         Handles Ops generation for scalable (vector) operations.
 
         This function has two main paths:
-        1. True Vector: If the workpiece's renderer provides vector data
+        1. True Vector: If the workpiece's importer provides vector data
            directly (e.g., from an SVG), it is processed without rasterization.
            The resulting Ops are in the vector's "natural" coordinate system.
         2. Render-and-Trace: If no direct vector data is available, the
@@ -139,18 +139,18 @@ def run_step_in_subprocess(
             return
 
         # Path 1: True vector source (e.g., SVG).
-        if workpiece.renderer.get_vector_ops():
+        if workpiece.importer.get_vector_ops():
             logger.debug(
-                "Vector renderer detected. Using direct vector processing"
+                "Vector importer detected. Using direct vector processing"
             )
-            # The producer gets vector data from the renderer. `surface` and
+            # The producer gets vector data from the importer. `surface` and
             # `scaler` are None to indicate a non-pixel, unscaled path.
             geometry_ops = _trace_and_modify_surface(
-                surface=None, scaler=None, renderer=workpiece.renderer
+                surface=None, scaler=None, importer=workpiece.importer
             )
 
             # Return the unscaled ops along with their "natural" dimensions.
-            natural_w, natural_h = workpiece.renderer.get_natural_size()
+            natural_w, natural_h = workpiece.importer.get_natural_size()
             if natural_w is None or natural_h is None:
                 natural_w, natural_h = 1.0, 1.0  # Fallback
 
@@ -171,7 +171,7 @@ def run_step_in_subprocess(
             target_height = int(target_height * scale_factor)
 
         # This is a blocking call, which is fine in a subprocess.
-        surface = workpiece.renderer.render_to_pixels(
+        surface = workpiece.importer.render_to_pixels(
             width=target_width, height=target_height
         )
         if not surface:
@@ -181,7 +181,7 @@ def run_step_in_subprocess(
         # By passing `scaler=None`, it is expected to return ops in PIXEL
         # coordinates with a Y-up convention.
         geometry_ops = _trace_and_modify_surface(
-            surface, None, renderer=workpiece.renderer
+            surface, None, importer=workpiece.importer
         )
 
         yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
@@ -236,7 +236,7 @@ def run_step_in_subprocess(
             chunk_ops = _trace_and_modify_surface(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
-                renderer=workpiece.renderer,
+                importer=workpiece.importer,
                 y_offset_mm=y_offset_from_top_mm,
             )
 

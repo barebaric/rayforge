@@ -7,7 +7,7 @@ import cairo
 logger = logging.getLogger(__name__)
 
 
-class AxisRenderer:
+class AxisImporter:
     """
     Helper class to render the grid, axes, and labels on a Cairo context.
     """

@@ -7,20 +7,20 @@ with warnings.catch_warnings():
     import pyvips
 from pypdf import PdfReader
 from .util import to_mm
-from .renderer import Renderer
+from .base import Importer
 import cairo
 
 logger = logging.getLogger(__name__)
 
 
-class PDFRenderer(Renderer):
+class PdfImporter(Importer):
     label = "PDF files"
     mime_types = ("application/pdf",)
     extensions = (".pdf",)
 
     def __init__(self, data: bytes):
         """
-        Initializes the renderer.
+        Initializes the importer.
         """
         self.raw_data = data
         self._natural_size_cache: Dict[
@@ -69,7 +69,7 @@ class PDFRenderer(Renderer):
     ) -> Optional[pyvips.Image]:
         """
         Renders the PDF to a vips image, caching the result in an instance
-        dictionary. This is the most expensive operation for this renderer.
+        dictionary. This is the most expensive operation for this importer.
         """
         key = width, height
         if key in self._vips_image_cache:

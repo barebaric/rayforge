@@ -8,7 +8,7 @@ from ...core.ops import Ops
 from .base import OpsProducer
 
 if TYPE_CHECKING:
-    from ...importer.renderer import Renderer
+    from ...importer.base import Importer
 
 BORDER_SIZE = 2
 
@@ -63,7 +63,7 @@ class PotraceProducer(OpsProducer, ABC):
         surface: cairo.ImageSurface,
         pixels_per_mm: Optional[Tuple[float, float]],
         *,
-        renderer: "Optional[Renderer]" = None,
+        importer: "Optional[Importer]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
         """

@@ -38,7 +38,7 @@ class WorkPieceElement(CanvasElement):
     def render_to_surface(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        return self.data.renderer.render_to_pixels(
+        return self.data.importer.render_to_pixels(
             width=width,
             height=height,
         )

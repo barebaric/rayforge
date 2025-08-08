@@ -7,7 +7,7 @@ with warnings.catch_warnings():
     import pyvips
 from xml.etree import ElementTree as ET
 from .util import to_mm
-from .renderer import Renderer, CAIRO_MAX_DIMENSION
+from .base import Importer, CAIRO_MAX_DIMENSION
 import cairo
 
 logger = logging.getLogger(__name__)
@@ -22,14 +22,14 @@ def parse_length(s):
     return float(s), "px"
 
 
-class SVGRenderer(Renderer):
+class SvgImporter(Importer):
     label = "SVG files"
     mime_types = ("image/svg+xml",)
     extensions = (".svg",)
 
     def __init__(self, data: bytes):
         """
-        Initializes the renderer.
+        Initializes the importer.
         """
         self.raw_data = data
         self._margin_cache: Optional[Tuple[float, float, float, float]] = None

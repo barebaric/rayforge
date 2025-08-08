@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from rayforge.shared.tasker.task import Task
-from rayforge.importer import SVGRenderer
+from rayforge.importer import SvgImporter
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Laser, Machine
@@ -61,7 +61,7 @@ def real_workpiece():
     <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
     <rect width="10" height="10" />
     </svg>'''
-    workpiece = WorkPiece("real_workpiece", svg_data, SVGRenderer)
+    workpiece = WorkPiece("real_workpiece", svg_data, SvgImporter)
     workpiece.size = 50, 30
     workpiece.pos = 10, 20
     return workpiece

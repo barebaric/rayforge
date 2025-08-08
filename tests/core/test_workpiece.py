@@ -3,8 +3,8 @@ import pytest
 from pathlib import Path
 from typing import Generator, Optional, Tuple
 from rayforge.core.workpiece import WorkPiece
-from rayforge.importer.svg import SVGRenderer
-from rayforge.importer import Renderer  # Base class for type hints
+from rayforge.importer.svg import SvgImporter
+from rayforge.importer import Importer  # Base class for type hints
 from blinker import Signal
 
 
@@ -23,7 +23,7 @@ def sample_svg_data() -> bytes:
 @pytest.fixture
 def workpiece_instance(sample_svg_data: bytes) -> WorkPiece:
     """Creates a default WorkPiece instance for testing."""
-    return WorkPiece("test_rect.svg", sample_svg_data, SVGRenderer)
+    return WorkPiece("test_rect.svg", sample_svg_data, SvgImporter)
 
 
 class TestWorkPiece:
@@ -31,8 +31,8 @@ class TestWorkPiece:
         wp = workpiece_instance
         assert wp.name == "test_rect.svg"
         assert wp._data == sample_svg_data
-        assert wp.renderer_class == SVGRenderer
-        assert isinstance(wp.renderer, SVGRenderer)
+        assert wp.importer_class == SvgImporter
+        assert isinstance(wp.importer, SvgImporter)
         assert wp.pos is None
         assert wp.size is None
         assert wp.angle == 0.0
@@ -45,9 +45,9 @@ class TestWorkPiece:
         wp.set_angle(90)
         data_dict = wp.to_dict()
 
-        # The renderer path must be resolvable in the test environment.
+        # The importer path must be resolvable in the test environment.
         # Here we point to the class in the global scope of this test file.
-        data_dict["renderer"] = f"{__name__}.{SVGRenderer.__name__}"
+        data_dict["importer"] = f"{__name__}.{SvgImporter.__name__}"
 
         new_wp = WorkPiece.from_dict(data_dict)
         assert isinstance(new_wp, WorkPiece)
@@ -55,7 +55,7 @@ class TestWorkPiece:
         assert new_wp.pos == wp.pos
         assert new_wp.size == wp.size
         assert new_wp.angle == wp.angle
-        assert new_wp.renderer_class == wp.renderer_class
+        assert new_wp.importer_class == wp.importer_class
         # The SVG's natural size should be returned, regardless of bounds.
         assert new_wp.get_default_size(
             bounds_width=1000, bounds_height=1000
@@ -64,10 +64,10 @@ class TestWorkPiece:
     def test_from_file(self, tmp_path: Path, sample_svg_data: bytes):
         p = tmp_path / "sample.svg"
         p.write_bytes(sample_svg_data)
-        wp = WorkPiece.from_file(p, SVGRenderer)
+        wp = WorkPiece.from_file(p, SvgImporter)
         assert wp.name == p.name
         assert wp._data == sample_svg_data
-        assert isinstance(wp.renderer, SVGRenderer)
+        assert isinstance(wp.importer, SvgImporter)
 
     def test_setters_and_signals(self, workpiece_instance):
         wp = workpiece_instance
@@ -120,10 +120,10 @@ class TestWorkPiece:
 
     def test_get_default_size_fallback(self):
         """
-        Tests the fallback sizing logic when a renderer has no natural size.
+        Tests the fallback sizing logic when a importer has no natural size.
         """
 
-        class MockNoSizeRenderer(Renderer):
+        class MockNoSizeImporter(Importer):
             def __init__(self, data: bytes):
                 super().__init__(data)
 
@@ -147,7 +147,7 @@ class TestWorkPiece:
             def _render_to_vips_image(self, width: int, height: int):
                 return None
 
-        wp = WorkPiece("nosize.dat", b"", MockNoSizeRenderer)
+        wp = WorkPiece("nosize.dat", b"", MockNoSizeImporter)
         # The size should be calculated based on the provided bounds and
         # aspect ratio.
         assert wp.get_default_size(
@@ -213,5 +213,5 @@ class TestWorkPiece:
         workpiece_instance.dump(indent=1)
         captured = capsys.readouterr()
 
-        expected_output = f"   {workpiece_instance.name} {SVGRenderer.label}\n"
+        expected_output = f"   {workpiece_instance.name} {SvgImporter.label}\n"
         assert captured.out == expected_output

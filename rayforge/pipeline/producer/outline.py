@@ -6,7 +6,7 @@ from .potrace_base import PotraceProducer
 from ...core.ops import Ops, Command
 
 if TYPE_CHECKING:
-    from ...importer.renderer import Renderer
+    from ...importer.base import Importer
 
 
 class OutlineTracer(PotraceProducer):
@@ -21,14 +21,14 @@ class OutlineTracer(PotraceProducer):
         surface,
         pixels_per_mm,
         *,
-        renderer: "Optional[Renderer]" = None,
+        importer: "Optional[Importer]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
-        # Vector fast path: If the renderer provides vector ops, filter them
+        # Vector fast path: If the importer provides vector ops, filter them
         # to get the outline. They are already in the correct millimeter
         # coordinate system.
-        if renderer:
-            vector_ops = renderer.get_vector_ops()
+        if importer:
+            vector_ops = importer.get_vector_ops()
             if vector_ops and len(vector_ops) > 0:
                 return self._filter_vector_ops_xor(vector_ops)
 
@@ -38,7 +38,7 @@ class OutlineTracer(PotraceProducer):
             laser,
             surface,
             pixels_per_mm,
-            renderer=renderer,
+            importer=importer,
             y_offset_mm=y_offset_mm,
         )
 
@@ -46,7 +46,7 @@ class OutlineTracer(PotraceProducer):
         """
         Filters vector paths using a robust XOR rasterization method. This
         correctly handles all nesting, winding order, and complex geometry by
-        simulating a graphics renderer's even-odd fill rule and then
+        simulating a graphics importer's even-odd fill rule and then
         extracting ONLY the external contours.
         """
         all_points = [cmd.end for cmd in ops.commands if cmd.end is not None]

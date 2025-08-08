@@ -1,5 +1,5 @@
-from .renderer import RuidaRenderer
+from .importer import RuidaImporter
 
 __all__ = [
-    "RuidaRenderer",
+    "RuidaImporter",
 ]

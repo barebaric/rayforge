@@ -20,7 +20,7 @@ from .pipeline.steps import (
 )
 from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
-from .importer import renderers, renderer_by_mime_type, renderer_by_extension
+from .importer import importers, importer_by_mime_type, importer_by_extension
 from .undo import HistoryManager, Command, ListItemCommand, ReorderListCommand
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
@@ -606,10 +606,10 @@ class MainWindow(Adw.ApplicationWindow):
         filter_list = Gio.ListStore.new(Gtk.FileFilter)
         all_supported = Gtk.FileFilter()
         all_supported.set_name(_("All supported"))
-        for renderer in renderers:
+        for importer in importers:
             file_filter = Gtk.FileFilter()
-            file_filter.set_name(_(renderer.label))
-            for mime_type in renderer.mime_types:
+            file_filter.set_name(_(importer.label))
+            for mime_type in importer.mime_types:
                 file_filter.add_mime_type(mime_type)
                 all_supported.add_mime_type(mime_type)
             filter_list.append(file_filter)
@@ -848,35 +848,35 @@ class MainWindow(Adw.ApplicationWindow):
             logger.error(f"Error opening file: {e.message}")
 
     def load_file(self, filename: Path, mime_type: Optional[str]):
-        renderer = None
+        importer = None
 
-        # 1. Try to find a renderer by the provided MIME type.
+        # 1. Try to find a importer by the provided MIME type.
         # This is the most reliable method for standard file types.
         if mime_type:
-            renderer = renderer_by_mime_type.get(mime_type)
+            importer = importer_by_mime_type.get(mime_type)
 
-        # 2. If no renderer was found by MIME type, fall back to the file's
+        # 2. If no importer was found by MIME type, fall back to the file's
         # extension.
         # This is crucial for:
         #  a) Custom file types not in the system's MIME database (e.g., .rd).
         #  b) Incorrect MIME database entries (e.g., .rd as a chemistry file).
         #  c) Cases where no MIME type is provided.
-        if not renderer:
-            # The key in renderer_by_extension includes the dot (e.g., '.svg').
+        if not importer:
+            # The key in importer_by_extension includes the dot (e.g., '.svg').
             file_extension = filename.suffix.lower()
             if file_extension:
-                renderer = renderer_by_extension.get(file_extension)
+                importer = importer_by_extension.get(file_extension)
 
-        if not renderer:
+        if not importer:
             logger.error(
-                f"No renderer found for '{filename.name}' "
+                f"No importer found for '{filename.name}' "
                 f"(MIME type: {mime_type}). "
                 f"Could not determine file type from MIME or extension. "
-                f"Supported extensions: {list(renderer_by_extension.keys())}"
+                f"Supported extensions: {list(importer_by_extension.keys())}"
             )
             return
 
-        wp = WorkPiece.from_file(filename, renderer)
+        wp = WorkPiece.from_file(filename, importer)
 
         # Calculate and set a default size and position for the new workpiece
         if wp.pos is None or wp.size is None:

@@ -8,7 +8,7 @@ from rayforge.pipeline.generator import OpsGenerator
 from rayforge.shared.tasker.manager import CancelledError
 from rayforge.pipeline.job import generate_job_ops
 from rayforge.pipeline.steps import create_outline_step
-from rayforge.importer import SVGRenderer
+from rayforge.importer import SvgImporter
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +40,7 @@ def mock_ops_generator():
 
 @pytest.fixture
 def real_workpiece():
-    wp = WorkPiece("wp1", b'<svg width="10" height="10" />', SVGRenderer)
+    wp = WorkPiece("wp1", b'<svg width="10" height="10" />', SvgImporter)
     wp.pos = (10, 20)
     wp.size = (40, 30)
     wp.angle = 90
@@ -100,11 +100,11 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
         step = create_outline_step(layer.workflow)
     layer.workflow.add_step(step)
 
-    wp1 = WorkPiece("wp1", b"", SVGRenderer)
+    wp1 = WorkPiece("wp1", b"", SvgImporter)
     wp1.size = (10, 10)
     wp1.pos = (0, 0)  # FIX: Add position to make workpiece "renderable"
 
-    wp2 = WorkPiece("wp2", b"", SVGRenderer)
+    wp2 = WorkPiece("wp2", b"", SvgImporter)
     wp2.size = (10, 10)
     wp2.pos = (20, 20)  # FIX: Add position to make workpiece "renderable"
 

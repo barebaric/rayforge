@@ -14,7 +14,7 @@ from typing import (
 )
 from blinker import Signal
 from pathlib import Path
-from ..importer import Renderer
+from ..importer import Importer
 if TYPE_CHECKING:
     from .doc import Doc
     from .layer import Layer
@@ -28,20 +28,20 @@ class WorkPiece:
     Represents a real-world workpiece.
 
     It holds the raw source data (e.g., for an SVG or image) and manages
-    a live renderer instance for operations. It also stores its position
+    a live importer instance for operations. It also stores its position
     and size on the canvas.
     """
 
-    def __init__(self, name: str, data: bytes, renderer_class: Type[Renderer]):
+    def __init__(self, name: str, data: bytes, importer_class: Type[Importer]):
         self.layer: Optional['Layer'] = None
         self.name = name
         self.uid = str(uuid.uuid4())
         self._data = data
-        self.renderer_class = renderer_class
+        self.importer_class = importer_class
 
-        # The renderer is a live instance created from the raw data.
-        self.renderer: Renderer = self.renderer_class(self._data)
-        self._renderer_ref_for_pyreverse: Renderer
+        # The importer is a live instance created from the raw data.
+        self.importer: Importer = self.importer_class(self._data)
+        self._importer_ref_for_pyreverse: Importer
 
         self.pos: Optional[Tuple[float, float]] = None  # in mm
         self.size: Optional[Tuple[float, float]] = None  # in mm
@@ -55,28 +55,28 @@ class WorkPiece:
         """
         Prepares the object's state for pickling.
 
-        This method removes live, unpickleable objects like the renderer
-        instance and blinker signals. It also converts the renderer class
+        This method removes live, unpickleable objects like the importer
+        instance and blinker signals. It also converts the importer class
         type into a serializable string path for reconstruction.
         """
         state = self.__dict__.copy()
 
         # Remove live objects that cannot or should not be pickled.
         state.pop("layer", None)
-        state.pop("renderer", None)
-        state.pop("_renderer_ref_for_pyreverse", None)
+        state.pop("importer", None)
+        state.pop("_importer_ref_for_pyreverse", None)
         state.pop("changed", None)
         state.pop("pos_changed", None)
         state.pop("size_changed", None)
         state.pop("angle_changed", None)
 
-        # Convert the renderer class type to a serializable string path.
+        # Convert the importer class type to a serializable string path.
         # The type object itself can be tricky to pickle directly.
-        rclass = self.renderer_class
-        state["_renderer_class_path"] = (
+        rclass = self.importer_class
+        state["_importer_class_path"] = (
             f"{rclass.__module__}.{rclass.__name__}"
         )
-        state.pop("renderer_class", None)
+        state.pop("importer_class", None)
 
         return state
 
@@ -84,21 +84,21 @@ class WorkPiece:
         """
         Restores the object's state from the pickled state.
 
-        This method re-imports the renderer class, re-creates the live
-        renderer instance, and re-initializes the blinker signals.
+        This method re-imports the importer class, re-creates the live
+        importer instance, and re-initializes the blinker signals.
         """
-        # Restore the renderer class from its stored path.
-        renderer_class_path = state.pop("_renderer_class_path")
-        module_path, class_name = renderer_class_path.rsplit(".", 1)
+        # Restore the importer class from its stored path.
+        importer_class_path = state.pop("_importer_class_path")
+        module_path, class_name = importer_class_path.rsplit(".", 1)
         module = importlib.import_module(module_path)
-        self.renderer_class = getattr(module, class_name)
+        self.importer_class = getattr(module, class_name)
 
         # Restore the rest of the pickled attributes.
         self.__dict__.update(state)
 
         # Re-create the live objects that were not included in the pickled
         # state.
-        self.renderer = self.renderer_class(self._data)
+        self.importer = self.importer_class(self._data)
         self.changed = Signal()
         self.pos_changed = Signal()
         self.size_changed = Signal()
@@ -107,10 +107,10 @@ class WorkPiece:
     def to_dict(self) -> Dict[str, Any]:
         """
         Serializes the WorkPiece state to a pickleable dictionary.
-        The live renderer instance is not serialized; instead, the raw
-        data and renderer class path are stored for reconstruction.
+        The live importer instance is not serialized; instead, the raw
+        data and importer class path are stored for reconstruction.
         """
-        rclass = self.renderer_class
+        rclass = self.importer_class
         return {
             "uid": self.uid,
             "name": self.name,
@@ -118,22 +118,22 @@ class WorkPiece:
             "size": self.size,
             "angle": self.angle,
             "data": self._data,
-            "renderer": f"{rclass.__module__}.{rclass.__name__}",
+            "importer": f"{rclass.__module__}.{rclass.__name__}",
         }
 
     @classmethod
     def from_dict(cls, data_dict: Dict[str, Any]) -> "WorkPiece":
         """
         Deserializes a WorkPiece from a dictionary by reconstructing it
-        from its raw data and renderer class.
+        from its raw data and importer class.
         """
-        # Dynamically import the renderer class from its path
-        module_path, class_name = data_dict['renderer'].rsplit('.', 1)
+        # Dynamically import the importer class from its path
+        module_path, class_name = data_dict['importer'].rsplit('.', 1)
         module = importlib.import_module(module_path)
-        renderer_class = getattr(module, class_name)
+        importer_class = getattr(module, class_name)
 
         # Create the WorkPiece instance using the main constructor
-        wp = cls(data_dict['name'], data_dict['data'], renderer_class)
+        wp = cls(data_dict['name'], data_dict['data'], importer_class)
 
         # Restore state
         wp.uid = data_dict.get('uid', uuid.uuid4())
@@ -178,7 +178,7 @@ class WorkPiece:
     ) -> Tuple[float, float]:
         """Calculates a sensible default size based on the content's aspect
         ratio and the provided container bounds."""
-        size = self.renderer.get_natural_size()
+        size = self.importer.get_natural_size()
         if None not in size:
             return cast(Tuple[float, float], size)
 
@@ -196,16 +196,16 @@ class WorkPiece:
         return self.size
 
     def get_default_aspect_ratio(self):
-        return self.renderer.get_aspect_ratio()
+        return self.importer.get_aspect_ratio()
 
     def get_current_aspect_ratio(self) -> Optional[float]:
         return (self.size[0] / self.size[1]
                 if self.size and self.size[1] else None)
 
     @classmethod
-    def from_file(cls, filename: Path, renderer_class: type[Renderer]):
+    def from_file(cls, filename: Path, importer_class: type[Importer]):
         data = filename.read_bytes()
-        wp = cls(filename.name, data, renderer_class)
+        wp = cls(filename.name, data, importer_class)
         return wp
 
     def render_for_ops(
@@ -225,7 +225,7 @@ class WorkPiece:
         target_width_px = int(width_mm * pixels_per_mm_x)
         target_height_px = int(height_mm * pixels_per_mm_y)
 
-        return self.renderer.render_to_pixels(
+        return self.importer.render_to_pixels(
             width=target_width_px, height=target_height_px
         )
 
@@ -247,7 +247,7 @@ class WorkPiece:
         width = int(current_size[0] * pixels_per_mm_x)
         height = int(current_size[1] * pixels_per_mm_y)
 
-        for chunk in self.renderer.render_chunk(
+        for chunk in self.importer.render_chunk(
             width,
             height,
             max_chunk_width=max_chunk_width,
@@ -257,7 +257,7 @@ class WorkPiece:
             yield chunk
 
     def dump(self, indent=0):
-        print("  " * indent, self.name, self.renderer.label)
+        print("  " * indent, self.name, self.importer.label)
 
     @property
     def pos_machine(self) -> Optional[Tuple[float, float]]:

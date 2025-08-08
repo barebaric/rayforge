@@ -4,7 +4,7 @@ from .potrace_base import PotraceProducer
 from ...core.ops import Ops
 
 if TYPE_CHECKING:
-    from ...importer.renderer import Renderer
+    from ...importer.base import Importer
 
 
 class EdgeTracer(PotraceProducer):
@@ -19,14 +19,14 @@ class EdgeTracer(PotraceProducer):
         surface,
         pixels_per_mm,
         *,
-        renderer: "Optional[Renderer]" = None,
+        importer: "Optional[Importer]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
-        # Vector fast path: If the renderer can provide vector ops directly,
+        # Vector fast path: If the importer can provide vector ops directly,
         # use them. They are already in the correct millimeter coordinate
         # system.
-        if renderer:
-            vector_ops = renderer.get_vector_ops()
+        if importer:
+            vector_ops = importer.get_vector_ops()
             if vector_ops:
                 return vector_ops
 
@@ -36,7 +36,7 @@ class EdgeTracer(PotraceProducer):
             laser,
             surface,
             pixels_per_mm,
-            renderer=renderer,
+            importer=importer,
             y_offset_mm=y_offset_mm,
         )
 

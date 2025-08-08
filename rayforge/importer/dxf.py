@@ -10,8 +10,8 @@ with warnings.catch_warnings():
 import xml.etree.ElementTree as ET
 from typing import Generator, Optional, Tuple
 import cairo
-from .svg import SVGRenderer
-from .renderer import Renderer
+from .svg import SvgImporter
+from .base import Importer
 
 # Conversion factors from DXF drawing units to millimeters.
 # See DXF documentation for header variable $INSUNITS.
@@ -28,38 +28,38 @@ units_to_mm = {
 }
 
 
-class DXFRenderer(Renderer):
+class DxfImporter(Importer):
     label = "DXF files (2D)"
     mime_types = ("image/vnd.dxf",)
     extensions = (".dxf",)
 
     def __init__(self, data: bytes):
         """
-        Initializes the renderer by performing an immediate, synchronous
+        Initializes the importer by performing an immediate, synchronous
         conversion of the DXF data to an in-memory SVG representation.
         All subsequent rendering operations are delegated to an internal
-        SVGRenderer instance.
+        SVGImporter instance.
         """
         svg_data = self._convert_dxf_to_svg(data)
-        self._svg_renderer = SVGRenderer(svg_data)
+        self._svg_importer = SvgImporter(svg_data)
 
     def get_natural_size(
         self, px_factor: float = 0.0
     ) -> Tuple[Optional[float], Optional[float]]:
-        return self._svg_renderer.get_natural_size(px_factor)
+        return self._svg_importer.get_natural_size(px_factor)
 
     def get_aspect_ratio(self) -> float:
-        return self._svg_renderer.get_aspect_ratio()
+        return self._svg_importer.get_aspect_ratio()
 
     def render_to_pixels(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        return self._svg_renderer.render_to_pixels(width, height)
+        return self._svg_importer.render_to_pixels(width, height)
 
     def _render_to_vips_image(
         self, width: int, height: int
     ) -> Optional[pyvips.Image]:
-        return self._svg_renderer._render_to_vips_image(width, height)
+        return self._svg_importer._render_to_vips_image(width, height)
 
     def render_chunk(
         self,
@@ -71,7 +71,7 @@ class DXFRenderer(Renderer):
         overlap_x: int = 1,
         overlap_y: int = 0,
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
-        return self._svg_renderer.render_chunk(
+        return self._svg_importer.render_chunk(
             width_px,
             height_px,
             max_chunk_width,

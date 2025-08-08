@@ -10,12 +10,12 @@ with warnings.catch_warnings():
 from ...core.ops import Ops
 from .parser import RuidaParser
 from .job import RuidaJob
-from ..renderer import Renderer, CAIRO_MAX_DIMENSION
+from ..base import Importer, CAIRO_MAX_DIMENSION
 
 logger = logging.getLogger(__name__)
 
 
-class RuidaRenderer(Renderer):
+class RuidaImporter(Importer):
     label = "Ruida files"
     mime_types = ("application/x-rd-file", "application/octet-stream")
     extensions = (".rd",)
@@ -185,7 +185,7 @@ class RuidaRenderer(Renderer):
             buf, surface.get_width(), surface.get_height(), 4, "uchar"
         )
 
-        # The base renderer's chunking logic expects an RGBA image.
+        # The base importer's chunking logic expects an RGBA image.
         # Cairo's ARGB32 format is BGRA in memory on little-endian systems.
         # We need to reorder the bands from BGRA to RGBA.
         b, g, r, a = bgra_img[0], bgra_img[1], bgra_img[2], bgra_img[3]
