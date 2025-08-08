@@ -53,8 +53,17 @@ class OutlineTracer(PotraceProducer):
         if not all_points:
             return Ops()
 
-        # 1. Determine the bounding box and a safe scaling factor
-        points_array = np.array(all_points, dtype=np.float32)
+        # Capture the Z from the first point to re-apply later. This assumes a
+        # constant Z for the purpose of this 2D outlining algorithm.
+        first_z = (
+            all_points[0][2]
+            if len(all_points[0]) > 2 and all_points[0][2] is not None
+            else 0.0
+        )
+
+        # 1. Determine the bounding box and a safe scaling factor from the XY
+        # plane
+        points_array = np.array([p[:2] for p in all_points], dtype=np.float32)
         min_x, min_y = points_array.min(axis=0)
         max_x, max_y = points_array.max(axis=0)
 
@@ -92,8 +101,10 @@ class OutlineTracer(PotraceProducer):
             if len(poly_points) < 3:
                 continue
 
-            # Scale and translate points to fit the canvas
-            scaled_poly = np.array(poly_points, dtype=np.float32)
+            # Scale and translate XY points to fit the canvas
+            scaled_poly = np.array(
+                [p[:2] for p in poly_points], dtype=np.float32
+            )
             scaled_poly[:, 0] = (scaled_poly[:, 0] - min_x) * scale + 1
             scaled_poly[:, 1] = (scaled_poly[:, 1] - min_y) * scale + 1
 
@@ -133,9 +144,9 @@ class OutlineTracer(PotraceProducer):
 
             # Add commands to trace this contour
             start_x, start_y = final_points[0]
-            final_ops.move_to(start_x, start_y)
+            final_ops.move_to(start_x, start_y, z=first_z)
             for x, y in final_points[1:]:
-                final_ops.line_to(x, y)
+                final_ops.line_to(x, y, z=first_z)
             final_ops.close_path()  # Ensure the shape is closed
 
         return final_ops

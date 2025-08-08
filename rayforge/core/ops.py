@@ -45,11 +45,11 @@ class Command:
 
     def __init__(
         self,
-        end: Optional[Tuple[float, float]] = None,
+        end: Optional[Tuple[float, float, float]] = None,
         state: Optional[State] = None,
     ) -> None:
-        # x/y of the end position. Is None for state commands
-        self.end: Optional[Tuple[float, float]] = end
+        # x/y/z of the end position. Is None for state commands
+        self.end: Optional[Tuple[float, float, float]] = end
         self.state: Optional[State] = state  # Intended state during execution
         self._state_ref_for_pyreverse: State
 
@@ -72,7 +72,7 @@ class Command:
 
 
 class MovingCommand(Command):
-    end: Tuple[float, float]  # type: ignore[reportRedeclaration]
+    end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
 
 
 class MoveToCommand(MovingCommand):
@@ -88,7 +88,7 @@ class LineToCommand(MovingCommand):
 class ArcToCommand(MovingCommand):
     def __init__(
         self,
-        end: Tuple[float, float],
+        end: Tuple[float, float, float],
         center_offset: Tuple[float, float],
         clockwise: bool,
     ) -> None:
@@ -162,7 +162,7 @@ class Ops:
     def __init__(self) -> None:
         self.commands: List[Command] = []
         self._commands_ref_for_pyreverse: Command
-        self.last_move_to: Tuple[float, float] = (0.0, 0.0)
+        self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
     def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)
@@ -207,13 +207,13 @@ class Ops:
     def add(self, command: Command) -> None:
         self.commands.append(command)
 
-    def move_to(self, x: float, y: float) -> None:
-        self.last_move_to = float(x), float(y)
+    def move_to(self, x: float, y: float, z: float = 0.0) -> None:
+        self.last_move_to = (float(x), float(y), float(z))
         cmd = MoveToCommand(self.last_move_to)
         self.commands.append(cmd)
 
-    def line_to(self, x: float, y: float) -> None:
-        cmd = LineToCommand((float(x), float(y)))
+    def line_to(self, x: float, y: float, z: float = 0.0) -> None:
+        cmd = LineToCommand((float(x), float(y), float(z)))
         self.commands.append(cmd)
 
     def close_path(self) -> None:
@@ -224,7 +224,13 @@ class Ops:
         self.line_to(*self.last_move_to)
 
     def arc_to(
-        self, x: float, y: float, i: float, j: float, clockwise: bool = True
+        self,
+        x: float,
+        y: float,
+        i: float,
+        j: float,
+        clockwise: bool = True,
+        z: float = 0.0,
     ) -> None:
         """
         Adds an arc command with specified endpoint, center offsets,
@@ -232,7 +238,9 @@ class Ops:
         """
         self.commands.append(
             ArcToCommand(
-                (float(x), float(y)), (float(i), float(j)), bool(clockwise)
+                (float(x), float(y), float(z)),
+                (float(i), float(j)),
+                bool(clockwise),
             )
         )
 
@@ -281,10 +289,10 @@ class Ops:
     def rect(self) -> Tuple[float, float, float, float]:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
-        occupied area.
+        occupied area in the XY plane.
         """
-        occupied_points: List[Tuple[float, float]] = []
-        last_point: Optional[Tuple[float, float]] = None
+        occupied_points: List[Tuple[float, float, float]] = []
+        last_point: Optional[Tuple[float, float, float]] = None
         for cmd in self.commands:
             if cmd.is_travel_command() and cmd.end:
                 last_point = cmd.end
@@ -333,38 +341,44 @@ class Ops:
 
     def distance(self) -> float:
         """
-        Calculates the total distance of all moves. Mostly exists to help
-        debug the optimize() method.
+        Calculates the total 2D distance of all moves in the XY plane.
+        Mostly exists to help debug the optimize() method.
         """
         total = 0.0
 
-        last: Optional[Tuple[float, float]] = None
+        last: Optional[Tuple[float, float, float]] = None
         for cmd in self.commands:
             if cmd.is_travel_command():
                 if last is not None and cmd.end is not None:
-                    total += math.dist(cmd.end, last)
+                    total += math.hypot(
+                        cmd.end[0] - last[0], cmd.end[1] - last[1]
+                    )
                 last = cmd.end
             elif cmd.is_cutting_command():
                 # treating arcs as lines is probably good enough
                 if last is not None and cmd.end is not None:
-                    total += math.dist(cmd.end, last)
+                    total += math.hypot(
+                        cmd.end[0] - last[0], cmd.end[1] - last[1]
+                    )
                 last = cmd.end
         return total
 
     def cut_distance(self) -> float:
         """
-        Like distance(), but only counts cut distance.
+        Like distance(), but only counts 2D cut distance.
         """
         total = 0.0
 
-        last: Optional[Tuple[float, float]] = None
+        last: Optional[Tuple[float, float, float]] = None
         for cmd in self.commands:
             if cmd.is_travel_command():
                 last = cmd.end
             elif cmd.is_cutting_command():
                 # treating arcs as lines is probably good enough
                 if last is not None and cmd.end is not None:
-                    total += math.dist(cmd.end, last)
+                    total += math.hypot(
+                        cmd.end[0] - last[0], cmd.end[1] - last[1]
+                    )
                 last = cmd.end
         return total
 
@@ -390,27 +404,27 @@ class Ops:
         if segment:
             yield segment
 
-    def translate(self, dx: float, dy: float) -> Ops:
+    def translate(self, dx: float, dy: float, dz: float = 0.0) -> Ops:
         """Translate geometric commands while preserving relative offsets"""
         for cmd in self.commands:
             if cmd.end is not None:
                 # Translate endpoint only.
                 # Arcs need no offset adjustment needed because
                 # I/J are relative to start point
-                x, y = cmd.end
-                cmd.end = (x + dx, y + dy)
+                x, y, z = cmd.end
+                cmd.end = (x + dx, y + dy, z + dz)
 
         # Update last known position
-        last_x, last_y = self.last_move_to
-        self.last_move_to = (last_x + dx, last_y + dy)
+        last_x, last_y, last_z = self.last_move_to
+        self.last_move_to = (last_x + dx, last_y + dy, last_z + dz)
         return self
 
-    def scale(self, sx: float, sy: float) -> Ops:
+    def scale(self, sx: float, sy: float, sz: float = 1.0) -> Ops:
         """Scale both absolute positions and relative offsets"""
         for cmd in self.commands:
             if cmd.end is not None:
-                x, y = cmd.end
-                cmd.end = (x * sx, y * sy)
+                x, y, z = cmd.end
+                cmd.end = (x * sx, y * sy, z * sz)
 
             if isinstance(cmd, ArcToCommand):
                 # Scale relative offsets
@@ -418,26 +432,28 @@ class Ops:
                 cmd.center_offset = (i * sx, j * sy)
 
         # Scale last known position
-        last_x, last_y = self.last_move_to
-        self.last_move_to = last_x * sx, last_y * sy
+        last_x, last_y, last_z = self.last_move_to
+        self.last_move_to = (last_x * sx, last_y * sy, last_z * sz)
         return self
 
     def rotate(self, angle_deg: float, cx: float, cy: float) -> Ops:
-        """Rotates all points around a center (cx, cy)."""
+        """Rotates all points around a center (cx, cy) in the XY plane."""
         angle_rad = math.radians(angle_deg)
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
 
-        def _rotate_point(p: Tuple[float, float]) -> Tuple[float, float]:
-            x, y = p
+        def _rotate_point(
+            p: Tuple[float, float, float],
+        ) -> Tuple[float, float, float]:
+            x, y, z = p
             # Translate point to origin
             translated_x = x - cx
             translated_y = y - cy
             # Rotate
             rotated_x = translated_x * cos_a - translated_y * sin_a
             rotated_y = translated_x * sin_a + translated_y * cos_a
-            # Translate back
-            return rotated_x + cx, rotated_y + cy
+            # Translate back and return with original Z
+            return rotated_x + cx, rotated_y + cy, z
 
         def _rotate_vector(v: Tuple[float, float]) -> Tuple[float, float]:
             x, y = v
@@ -473,79 +489,76 @@ class Ops:
 
     def _clip_segment(
         self,
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
+        p1: Tuple[float, float, float],
+        p2: Tuple[float, float, float],
         rect: Tuple[float, float, float, float],
-    ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+    ) -> Optional[
+        Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+    ]:
         """
         Clips a line segment to a rectangle using Cohen-Sutherland.
-        Returns the clipped segment or None if it's outside.
+        Returns the clipped segment or None if it's outside. Z is interpolated.
         """
         x_min, y_min, x_max, y_max = rect
-        x1, y1 = p1
-        x2, y2 = p2
+        (x1, y1, z1), (x2, y2, z2) = p1, p2
         outcode1 = self._compute_outcode(x1, y1, rect)
         outcode2 = self._compute_outcode(x2, y2, rect)
+        dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
 
         while True:
             if not (outcode1 | outcode2):  # Trivial accept
-                return (x1, y1), (x2, y2)
+                return (x1, y1, z1), (x2, y2, z2)
             if outcode1 & outcode2:  # Trivial reject
                 return None
 
             outcode_out = outcode1 if outcode1 else outcode2
-            x, y = 0.0, 0.0
+            x, y, z = 0.0, 0.0, 0.0
 
-            # Calculate intersection points, handling
-            # horizontal and vertical cases.
             if outcode_out & _TOP:
                 y = y_max
-                if y1 != y2:
-                    x = x1 + (x2 - x1) * (y_max - y1) / (y2 - y1)
-                else:
-                    x = x1
+                x = x1 + dx * (y_max - y1) / dy if dy != 0 else x1
+                z = z1 + dz * (y_max - y1) / dy if dy != 0 else z1
             elif outcode_out & _BOTTOM:
                 y = y_min
-                if y1 != y2:
-                    x = x1 + (x2 - x1) * (y_min - y1) / (y2 - y1)
-                else:
-                    x = x1
+                x = x1 + dx * (y_min - y1) / dy if dy != 0 else x1
+                z = z1 + dz * (y_min - y1) / dy if dy != 0 else z1
             elif outcode_out & _RIGHT:
                 x = x_max
-                if x1 != x2:
-                    y = y1 + (y2 - y1) * (x_max - x1) / (x2 - x1)
-                else:
-                    y = y1
+                y = y1 + dy * (x_max - x1) / dx if dx != 0 else y1
+                z = z1 + dz * (x_max - x1) / dx if dx != 0 else z1
             elif outcode_out & _LEFT:
                 x = x_min
-                if x1 != x2:
-                    y = y1 + (y2 - y1) * (x_min - x1) / (x2 - x1)
-                else:
-                    y = y1
+                y = y1 + dy * (x_min - x1) / dx if dx != 0 else y1
+                z = z1 + dz * (x_min - x1) / dx if dx != 0 else z1
 
             if outcode_out == outcode1:
-                x1, y1 = x, y
+                x1, y1, z1 = x, y, z
                 outcode1 = self._compute_outcode(x1, y1, rect)
             else:
-                x2, y2 = x, y
+                x2, y2, z2 = x, y, z
                 outcode2 = self._compute_outcode(x2, y2, rect)
 
     def _linearize_arc(
-        self, arc_cmd: ArcToCommand, start_point: Tuple[float, float]
-    ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
+        self, arc_cmd: ArcToCommand, start_point: Tuple[float, float, float]
+    ) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
         """Converts an ArcToCommand into a list of line segments."""
-        segments: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
+        segments: List[
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+        ] = []
         p0 = start_point
         p1 = arc_cmd.end
         if p1 is None:
             return []
+        z0, z1 = p0[2], p1[2]
+
         center = (
             p0[0] + arc_cmd.center_offset[0],
             p0[1] + arc_cmd.center_offset[1],
         )
-        radius = math.dist(p0, center)
+        radius = math.dist(p0[:2], center)
         if radius == 0:
-            return []
+            # If radius is zero, it's just a line from p0 to p1
+            return [(p0, p1)]
 
         start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
         end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
@@ -565,10 +578,13 @@ class Ops:
 
         prev_pt = p0
         for i in range(1, num_segments + 1):
-            angle = start_angle + angle_range * (i / num_segments)
+            t = i / num_segments
+            angle = start_angle + angle_range * t
+            z = z0 + (z1 - z0) * t
             next_pt = (
                 center[0] + radius * math.cos(angle),
                 center[1] + radius * math.sin(angle),
+                z,
             )
             segments.append((prev_pt, next_pt))
             prev_pt = next_pt
@@ -576,10 +592,12 @@ class Ops:
 
     def _add_clipped_segment_to_ops(
         self,
-        segment: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
+        segment: Optional[
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+        ],
         new_ops: Ops,
-        current_pen_pos: Optional[Tuple[float, float]],
-    ) -> Optional[Tuple[float, float]]:
+        current_pen_pos: Optional[Tuple[float, float, float]],
+    ) -> Optional[Tuple[float, float, float]]:
         """
         Processes a single clipped segment, adding MoveTo/LineTo commands
         to the new_ops object as needed.
@@ -590,6 +608,7 @@ class Ops:
             p1_clipped, p2_clipped = segment
 
             # A new move is needed if the pen is up (None) or if there's a gap.
+            # Using 3D distance for this check is correct.
             dist_to_start = (
                 math.dist(current_pen_pos, p1_clipped)
                 if current_pen_pos
@@ -598,9 +617,9 @@ class Ops:
 
             # Use a small tolerance for floating point comparisons
             if dist_to_start > 1e-6:
-                new_ops.move_to(p1_clipped[0], p1_clipped[1])
+                new_ops.move_to(*p1_clipped)
 
-            new_ops.line_to(p2_clipped[0], p2_clipped[1])
+            new_ops.line_to(*p2_clipped)
             # The new pen position is the end of the clipped segment
             return p2_clipped
         else:
@@ -616,10 +635,10 @@ class Ops:
         if not self.commands:
             return new_ops
 
-        last_point: Tuple[float, float] = (0.0, 0.0)
+        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         # Tracks the last known position of the pen *within the clipped area*.
         # None means the pen is "up" or outside the clip rect.
-        clipped_pen_pos: Optional[Tuple[float, float]] = None
+        clipped_pen_pos: Optional[Tuple[float, float, float]] = None
 
         for cmd in self.commands:
             if cmd.is_state_command():
@@ -636,7 +655,7 @@ class Ops:
 
             # Linearize the command into one or more line segments
             segments_to_clip: List[
-                Tuple[Tuple[float, float], Tuple[float, float]]
+                Tuple[Tuple[float, float, float], Tuple[float, float, float]]
             ] = []
             if isinstance(cmd, LineToCommand):
                 segments_to_clip.append((last_point, cmd.end))

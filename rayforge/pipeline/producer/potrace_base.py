@@ -167,7 +167,9 @@ class PotraceProducer(OpsProducer, ABC):
         if last_cmd.end is None:
             return
 
-        start_ops_x, start_ops_y = last_cmd.end
+        # last_cmd.end is a 3D point (x, y, z), but we only need x and y for
+        # the 2D reverse-transform calculation.
+        start_ops_x, start_ops_y = last_cmd.end[:2]
         scale_x, scale_y = self.pixels_per_mm
 
         # Reverse the transform to get back to the original Potrace pixel

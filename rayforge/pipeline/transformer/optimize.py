@@ -2,13 +2,18 @@ import numpy as np
 import math
 import logging
 from copy import copy
-from typing import Optional, List, cast, Dict, Any
+from typing import Optional, List, cast, Dict, Any, Tuple
 from ...core.ops import Ops, State, ArcToCommand, Command, MovingCommand
 from .base import OpsTransformer
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
 
 
 logger = logging.getLogger(__name__)
+
+
+def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
+    """Helper for 2D distance calculation on n-dimensional points."""
+    return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 
 def split_long_segments(operations: List[Command]) -> List[List[Command]]:
@@ -27,7 +32,7 @@ def split_long_segments(operations: List[Command]) -> List[List[Command]]:
     segments = [[operations[0]]]
     last_state = operations[0].state
     for op in operations[1:]:
-        if last_state.allow_rapid_change(op.state):
+        if last_state and op.state and last_state.allow_rapid_change(op.state):
             segments[-1].append(op)
         else:
             # If rapid state change is not allowed, add
@@ -99,19 +104,20 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
         if isinstance(new_cmd, ArcToCommand) and i > 0:
             # Get original arc (prev op in original segment)
             orig_cmd = cast(ArcToCommand, segment[i + 1])
-            x_end, y_end = orig_cmd.end
+            x_end, y_end, _ = orig_cmd.end
             i_orig, j_orig = orig_cmd.center_offset
 
-            # Calculate center and new offsets
-            x_start, y_start = new_cmd.end
+            # Calculate center and new offsets.
+            # new_cmd.end holds the start point of the original arc.
+            x_start, y_start, z_start = new_cmd.end
             center_x = x_start + i_orig
             center_y = y_start + j_orig
             new_i = center_x - x_end
             new_j = center_y - y_end
 
             # Update arc parameters
-            new_cmd.end = x_start, y_start
-            new_cmd.center_offset = new_i, new_j
+            new_cmd.end = (x_start, y_start, z_start)
+            new_cmd.center_offset = (new_i, new_j)
             new_cmd.clockwise = not orig_cmd.clockwise
 
         new_segment.append(new_cmd)
@@ -151,8 +157,8 @@ def greedy_order_segments(
         # Command that adds the smalles amount of travel distance.
         starts = np.array([seg[0].end for seg in remaining])
         ends = np.array([seg[-1].end for seg in remaining])
-        d_starts = np.linalg.norm(starts - current_pos, axis=1)
-        d_ends = np.linalg.norm(ends - current_pos, axis=1)
+        d_starts = np.linalg.norm(starts[:, :2] - current_pos[:2], axis=1)
+        d_ends = np.linalg.norm(ends[:, :2] - current_pos[:2], axis=1)
         candidate_dists = np.minimum(d_starts, d_ends)
         best_idx = int(np.argmin(candidate_dists))
         best_seg = remaining.pop(best_idx)
@@ -188,15 +194,15 @@ def flip_segments(
             # +travel distance to next segment)
             prev_segment_end = ordered[i - 1][-1].end
             segment = ordered[i]
-            cost = math.dist(prev_segment_end, segment[0].end)
+            cost = _dist_2d(prev_segment_end, segment[0].end)
             if i < len(ordered) - 1:
-                cost += math.dist(segment[-1].end, ordered[i + 1][0].end)
+                cost += _dist_2d(segment[-1].end, ordered[i + 1][0].end)
 
             # Flip and calculate the flipped cost.
             flipped = flip_segment(segment)
-            flipped_cost = math.dist(prev_segment_end, flipped[0].end)
+            flipped_cost = _dist_2d(prev_segment_end, flipped[0].end)
             if i < len(ordered) - 1:
-                flipped_cost += math.dist(
+                flipped_cost += _dist_2d(
                     flipped[-1].end, ordered[i + 1][0].end
                 )
 
@@ -235,15 +241,15 @@ def two_opt(
                 e_end = ordered[j][-1]
                 if j < n - 1:
                     f_start = ordered[j + 1][0]
-                    curr_cost = math.dist(a_end.end, b_start.end) + math.dist(
-                        e_end.end, f_start.end
-                    )
-                    new_cost = math.dist(a_end.end, e_end.end) + math.dist(
-                        b_start.end, f_start.end
-                    )
+                    curr_cost = _dist_2d(
+                        a_end.end, b_start.end
+                    ) + _dist_2d(e_end.end, f_start.end)
+                    new_cost = _dist_2d(
+                        a_end.end, e_end.end
+                    ) + _dist_2d(b_start.end, f_start.end)
                 else:
-                    curr_cost = math.dist(a_end.end, b_start.end)
-                    new_cost = math.dist(a_end.end, e_end.end)
+                    curr_cost = _dist_2d(a_end.end, b_start.end)
+                    new_cost = _dist_2d(a_end.end, e_end.end)
                 if new_cost < curr_cost:
                     sub = ordered[i + 1:j + 1]
                     # Reverse order and flip each segment.
@@ -287,6 +293,7 @@ class Optimize(OpsTransformer):
 
     5. Re-assemble the Ops object.
     """
+
     @property
     def label(self) -> str:
         return _("Optimize Path")
@@ -322,8 +329,7 @@ class Optimize(OpsTransformer):
         # This context covers the main optimization loop over all
         # long_segments.
         optimize_ctx = context.sub_context(
-            base_progress=0.0,
-            progress_range=optimize_weight
+            base_progress=0.0, progress_range=optimize_weight
         )
 
         result = []
@@ -367,8 +373,7 @@ class Optimize(OpsTransformer):
             # First, order them using a greedy algorithm
             context.set_message(_("Ordering paths..."))
             greedy_ctx = segment_ctx.sub_context(
-                base_progress=current_base,
-                progress_range=greedy_weight
+                base_progress=current_base, progress_range=greedy_weight
             )
             segments = greedy_order_segments(greedy_ctx, segments)
             current_base += greedy_weight
@@ -443,12 +448,12 @@ class Optimize(OpsTransformer):
         return super().to_dict()
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Optimize':
+    def from_dict(cls, data: Dict[str, Any]) -> "Optimize":
         """Creates an Optimize instance from a dictionary."""
-        if data.get('name') != cls.__name__:
+        if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"
                 f" got {data.get('name')}"
             )
         # This transformer has no configurable parameters other than 'enabled'
-        return cls(enabled=data.get('enabled', True))
+        return cls(enabled=data.get("enabled", True))

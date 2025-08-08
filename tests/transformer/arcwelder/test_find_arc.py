@@ -9,6 +9,7 @@ def generate_arc_points(center, radius, start_angle, end_angle, num_points):
         (
             center[0] + radius * np.cos(theta),
             center[1] + radius * np.sin(theta),
+            0.0,
         )
         for theta in angles
     ]
@@ -33,7 +34,7 @@ def test_find_perfect_arc():
 def test_reject_straight_line():
     """Test colinear points should return None"""
     welder = ArcWeld(tolerance=1.0, min_points=3)  # Loose tolerance
-    points = [(x, 0.0) for x in np.linspace(0, 10, 10)]
+    points = [(x, 0.0, 0.0) for x in np.linspace(0, 10, 10)]
 
     best_arc, best_end = welder._find_longest_valid_arc(points, 0)
 
@@ -48,7 +49,7 @@ def test_find_partial_arc():
     # First 15 points: valid arc
     valid_points = generate_arc_points((0, 0), 5, 0, np.pi / 2, 15)
     # Next 5 points: straight line
-    invalid_points = [(x, 5.0) for x in np.linspace(5, 10, 5)]
+    invalid_points = [(x, 5.0, 0.0) for x in np.linspace(5, 10, 5)]
     combined = valid_points + invalid_points
 
     best_arc, best_end = welder._find_longest_valid_arc(combined, 0)
@@ -90,7 +91,7 @@ def test_find_latest_valid_arc():
 
     # First 10 points: noisy line
     invalid_points = [
-        (x, 0.1 * np.random.rand()) for x in np.linspace(0, 10, 10)
+        (x, 0.1 * np.random.rand(), 0.0) for x in np.linspace(0, 10, 10)
     ]
     # Last 8 points: valid arc
     valid_points = generate_arc_points((5, 0), 2, 0, np.pi, 8)
@@ -115,7 +116,7 @@ def test_error_threshold_enforcement():
 
     # Shift all points outward by 0.06mm (exceeding tolerance)
     point = noisy_points[10]
-    noisy_points[10] = (point[0] + 0.25, point[1])
+    noisy_points[10] = (point[0] + 0.25, point[1], point[2])
 
     best_arc, best_end = welder._find_longest_valid_arc(noisy_points, 0)
     assert best_end == 10
@@ -131,16 +132,18 @@ def test_radius_constraints():
 
     # Large radius test
     welder_large = ArcWeld(tolerance=1.0, min_points=5)
-    large_points = generate_arc_points((0, 0), 150, 0, 0.1, 10)  # Huge radius
+    large_points = generate_arc_points(
+        (0, 0), 15000, 0, 0.1, 10
+    )  # Huge radius
     arc_large, _ = welder_large._find_longest_valid_arc(large_points, 0)
-    assert arc_large is None  # Reject radius > 100mm
+    assert arc_large is None  # Reject radius > 10000mm
 
 
 def test_find_longest_valid_arc_line_crosses_circle():
     welder = ArcWeld(tolerance=0.1, min_points=5)
 
     segment = [  # 5 points in a semi circle
-        (5 * np.cos(theta), 5 * np.sin(theta))
+        (5 * np.cos(theta), 5 * np.sin(theta), 0.0)
         for theta in np.linspace(0, 0.7 * np.pi, 5)
     ]
     assert len(segment) == 5
@@ -148,7 +151,7 @@ def test_find_longest_valid_arc_line_crosses_circle():
     # 5 straight lines cross the circle in such a way that point 6
     # hits the circle on the other side. That point should not
     # be removed just because it happens to hit the new arc.
-    segment += [(x, x * 0.1) for x in np.linspace(5, 10, 5)]
+    segment += [(x, x * 0.1, 0.0) for x in np.linspace(5, 10, 5)]
     assert len(segment) == 10
 
     arc, end = welder._find_longest_valid_arc(segment, 0)

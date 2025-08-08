@@ -105,7 +105,7 @@ class TestOpsGenerator:
 
         # Act
         expected_ops = Ops()
-        expected_ops.commands.append(LineToCommand((1, 1)))
+        expected_ops.commands.append(LineToCommand((1, 1, 0)))
         expected_pixel_size = (100, 100)
         expected_result = (expected_ops, expected_pixel_size)
 

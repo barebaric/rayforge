@@ -81,8 +81,8 @@ def arc_direction(points, center):
     xc, yc = center
     cross_sum = 0.0
     for i in range(len(points) - 1):
-        x0, y0 = points[i]
-        x1, y1 = points[i + 1]
+        x0, y0 = points[i][:2]
+        x1, y1 = points[i + 1][:2]
         dx0 = x0 - xc
         dy0 = y0 - yc
         dx1 = x1 - xc
@@ -141,8 +141,8 @@ def arc_to_polyline_deviation(points, center, radius):
 
     for i in range(len(points) - 1):
         p1, p2 = points[i], points[i + 1]
-        x1, y1 = p1
-        x2, y2 = p2
+        x1, y1 = p1[:2]
+        x2, y2 = p2[:2]
         dx = x2 - x1
         dy = y2 - y1
         segment_length = math.hypot(dx, dy)
@@ -281,7 +281,9 @@ class ArcWeld(OpsTransformer):
 
         for segment in segments:
             if contains_command(segment, LineToCommand):
-                self.process_segment([cmd.end for cmd in segment], ops)
+                self.process_segment(
+                    [cmd.end for cmd in segment if cmd.end is not None], ops
+                )
             else:
                 for command in segment:
                     ops.add(command)
@@ -308,7 +310,7 @@ class ArcWeld(OpsTransformer):
 
             if colinear_points:
                 ops.line_to(*segment[index+colinear_points-2])
-                index += colinear_points
+                index += colinear_points - 1
                 continue
 
             # Try to find an arc that fits the points starting at index.
@@ -322,7 +324,7 @@ class ArcWeld(OpsTransformer):
                                                       *arc[:2])
                 if deviation <= self.tolerance:
                     self._add_arc_command(segment, index-1, arc_end, arc, ops)
-                    index = arc_end  # Move to the last point of the arc
+                    index = arc_end  # Move to the point *after* the arc
                     continue
 
             # Ending up here, no fitting arc was found at the current index.
@@ -344,7 +346,7 @@ class ArcWeld(OpsTransformer):
         return found
 
     def _add_arc_command(self, segment, start, end, arc, ops):
-        center, radius, _ = arc
+        center, _, _ = arc
         start_point = segment[start]
         end_point = segment[end-1]
 
@@ -353,19 +355,18 @@ class ArcWeld(OpsTransformer):
         j = start_point[1] - center[1]  # Inverted Y-axis
 
         clockwise = arc_direction(segment[start:end], center)
-
-        ops.arc_to(end_point[0], end_point[1], i, j, clockwise)
+        ops.arc_to(end_point[0], end_point[1], i, j, clockwise, z=end_point[2])
 
     def _find_longest_valid_arc(self, segment, start_index):
-        max_search = min(len(segment)-start_index, self.max_points)
+        max_search = min(len(segment), start_index + self.max_points)
 
-        for length in range(max_search, self.min_points-1, -1):
-            end = start_index+length
-            assert end - start_index >= self.min_points
-            subsegment = segment[start_index:end]
+        for end_index in range(
+            max_search, start_index + self.min_points - 1, -1
+        ):
+            subsegment = segment[start_index:end_index]
             arc = fit_circle(subsegment)
             if self._is_valid_arc(subsegment, arc):
-                return arc, end
+                return arc, end_index
 
         return None, start_index
 
@@ -373,12 +374,13 @@ class ArcWeld(OpsTransformer):
         if arc is None:
             return False
         center, radius, error = arc
-        if error > self.tolerance or radius < 1 or radius > 100:
+        if error > self.tolerance or radius < 1 or radius > 10000:
             return False
 
         # Angular continuity checks
         prev_angle = None
-        for x, y in subsegment:
+        for point in subsegment:
+            x, y = point[:2]
             dx = x - center[0]
             dy = y - center[1]
             angle = math.atan2(dy, dx)

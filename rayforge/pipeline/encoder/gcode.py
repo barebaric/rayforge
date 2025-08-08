@@ -13,6 +13,7 @@ from ...core.ops import (
 )
 from ...machine.models.dialect import GcodeDialect, get_dialect
 from .base import OpsEncoder
+
 if TYPE_CHECKING:
     from ...machine.models.machine import Machine
 
@@ -27,6 +28,7 @@ class GcodeEncoder(OpsEncoder):
         self.travel_speed = None  # Current travel speed (mm/min)
         self.air_assist = False  # Air assist state
         self.laser_active = False  # Laser on/off state
+        self.current_z = 0.0  # Current Z position
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -79,7 +81,7 @@ class GcodeEncoder(OpsEncoder):
                 self._handle_line_to(gcode, *cmd.end)
             case ArcToCommand():
                 self._handle_arc_to(
-                    gcode, *cmd.end, *cmd.center_offset, cmd.clockwise
+                    gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
 
     def _update_power(self, gcode: list, power: float, machine: "Machine"):
@@ -104,39 +106,56 @@ class GcodeEncoder(OpsEncoder):
         if cmd:
             gcode.append(cmd)
 
-    def _handle_move_to(self, gcode: list, x: float, y: float):
+    def _handle_move_to(self, gcode: list, x: float, y: float, z: float):
         """Rapid movement with laser safety"""
         self._laser_off(gcode)
-        if self.travel_speed:
-            cmd = self.dialect.travel_move_with_speed.format(
-                x=x, y=y, speed=self.travel_speed
-            )
-        else:
-            cmd = self.dialect.travel_move.format(x=x, y=y)
-        gcode.append(cmd)
 
-    def _handle_line_to(self, gcode: list, x: float, y: float):
+        template = (
+            self.dialect.travel_move_with_speed
+            if self.travel_speed
+            else self.dialect.travel_move
+        )
+        base_cmd = template.format(x=x, y=y, speed=self.travel_speed)
+
+        # Conditionally append the Z move
+        final_cmd = base_cmd
+        if abs(z - self.current_z) > 1e-6:
+            final_cmd += f" Z{z:.3f}"
+            self.current_z = z
+
+        gcode.append(final_cmd)
+
+    def _handle_line_to(self, gcode: list, x: float, y: float, z: float):
         """Cutting movement with laser activation"""
         self._laser_on(gcode)
-        if self.cut_speed:
-            cmd = self.dialect.linear_move_with_speed.format(
-                x=x, y=y, speed=self.cut_speed
-            )
-        else:
-            cmd = self.dialect.linear_move.format(x=x, y=y)
-        gcode.append(cmd)
+
+        template = (
+            self.dialect.linear_move_with_speed
+            if self.cut_speed
+            else self.dialect.linear_move
+        )
+        base_cmd = template.format(x=x, y=y, speed=self.cut_speed)
+
+        # Conditionally append the Z move
+        final_cmd = base_cmd
+        if abs(z - self.current_z) > 1e-6:
+            final_cmd += f" Z{z:.3f}"
+            self.current_z = z
+
+        gcode.append(final_cmd)
 
     def _handle_arc_to(
         self,
         gcode: list,
-        x: float,
-        y: float,
-        i: float,
-        j: float,
+        end: tuple,
+        center_offset: tuple,
         clockwise: bool,
     ):
         """Cutting movement with laser activation"""
         self._laser_on(gcode)
+        x, y, z = end
+        i, j = center_offset
+
         if clockwise:
             template = (
                 self.dialect.arc_cw_with_speed
@@ -149,8 +168,16 @@ class GcodeEncoder(OpsEncoder):
                 if self.cut_speed
                 else self.dialect.arc_ccw
             )
-        cmd = template.format(x=x, y=y, i=i, j=j, speed=self.cut_speed)
-        gcode.append(cmd)
+
+        base_cmd = template.format(x=x, y=y, i=i, j=j, speed=self.cut_speed)
+
+        # Conditionally append the Z move
+        final_cmd = base_cmd
+        if abs(z - self.current_z) > 1e-6:
+            final_cmd += f" Z{z:.3f}"
+            self.current_z = z
+
+        gcode.append(final_cmd)
 
     def _laser_on(self, gcode: list):
         """Activate laser if not already on"""

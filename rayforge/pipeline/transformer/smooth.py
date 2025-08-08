@@ -129,7 +129,7 @@ class Smooth(OpsTransformer):
             if context and context.is_cancelled():
                 return
 
-            points_to_smooth: Optional[List[Tuple[float, float]]] = None
+            points_to_smooth: Optional[List[Tuple[float, float, float]]] = None
             if self._is_line_only_segment(segment):
                 # Extract points. The `end` property may be typed as Optional.
                 points_to_smooth = [cmd.end for cmd in segment
@@ -156,19 +156,21 @@ class Smooth(OpsTransformer):
             and all(isinstance(c, LineToCommand) for c in segment[1:])
         )
 
-    def _is_closed(self, points: List[Tuple[float, float]], tol=1e-6) -> bool:
+    def _is_closed(
+        self, points: List[Tuple[float, float, float]], tol=1e-6
+    ) -> bool:
         """Checks if a path is closed by comparing start and end points."""
         return len(points) >= 3 and self._distance(points[0], points[-1]) < tol
 
     def _distance(
-        self, p1: Tuple[float, float], p2: Tuple[float, float]
+        self, p1: Tuple[float, float, float], p2: Tuple[float, float, float]
     ) -> float:
-        """Calculates the Euclidean distance between two points."""
+        """Calculates the 2D Euclidean distance between two points."""
         return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 
     def _subdivide_path(
-        self, points: List[Tuple[float, float]], is_closed: bool
-    ) -> List[Tuple[float, float]]:
+        self, points: List[Tuple[float, float, float]], is_closed: bool
+    ) -> List[Tuple[float, float, float]]:
         """Resamples a path, adding points to increase density.
 
         The density is proportional to the smoothing sigma, ensuring that
@@ -195,7 +197,8 @@ class Smooth(OpsTransformer):
                     # Linear interpolation to create new points.
                     px = p1[0] * (1 - t) + p2[0] * t
                     py = p1[1] * (1 - t) + p2[1] * t
-                    new_points.append((px, py))
+                    # Z is constant at this stage, so we can just take p1's Z
+                    new_points.append((px, py, p1[2]))
 
             # Add the original endpoint, avoiding duplication for closed paths.
             if not (is_closed and i == num_segments - 1):
@@ -204,11 +207,11 @@ class Smooth(OpsTransformer):
         return new_points
 
     def _smooth_sub_segment(
-        self, sub_points: List[Tuple[float, float]]
-    ) -> List[Tuple[float, float]]:
+        self, sub_points: List[Tuple[float, float, float]]
+    ) -> List[Tuple[float, float, float]]:
         """Applies the Gaussian kernel to a single, open list of points.
 
-        The endpoints of the sub-segment are preserved.
+        The endpoints of the sub-segment are preserved. Z is passed through.
         """
         assert self._kernel is not None, "Kernel must be pre-computed."
         num_pts = len(sub_points)
@@ -227,14 +230,15 @@ class Smooth(OpsTransformer):
                 point = sub_points[p_idx]
                 new_x += point[0] * k_weight
                 new_y += point[1] * k_weight
-            smoothed.append((new_x, new_y))
+            # Z is preserved from the original point at this index
+            smoothed.append((new_x, new_y, sub_points[i][2]))
 
         smoothed.append(sub_points[-1])  # Preserve the end point.
         return smoothed
 
     def _smooth_segment(
-        self, points: List[Tuple[float, float]]
-    ) -> List[Tuple[float, float]]:
+        self, points: List[Tuple[float, float, float]]
+    ) -> List[Tuple[float, float, float]]:
         """Orchestrates the full smoothing process for one segment."""
         # A kernel of length 1 means no smoothing.
         if self._kernel is None or len(self._kernel) <= 1 or len(points) < 3:
@@ -314,8 +318,8 @@ class Smooth(OpsTransformer):
             return final_points
 
     def _smooth_circularly(
-        self, points: List[Tuple[float, float]]
-    ) -> List[Tuple[float, float]]:
+        self, points: List[Tuple[float, float, float]]
+    ) -> List[Tuple[float, float, float]]:
         """Applies a wrapping Gaussian filter to a closed loop."""
         assert self._kernel is not None, "Kernel must be pre-computed."
         num_pts = len(points)
@@ -331,7 +335,8 @@ class Smooth(OpsTransformer):
                 point = points[p_idx]
                 new_x += point[0] * k_weight
                 new_y += point[1] * k_weight
-            smoothed.append((new_x, new_y))
+            # Z is preserved from the original point
+            smoothed.append((new_x, new_y, points[i][2]))
 
         if smoothed:
             smoothed.append(smoothed[0])  # Close the path.
@@ -339,11 +344,14 @@ class Smooth(OpsTransformer):
 
     def _angle_between(
         self,
-        p0: Tuple[float, float],
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
+        p0: Tuple[float, float, float],
+        p1: Tuple[float, float, float],
+        p2: Tuple[float, float, float],
     ) -> float:
-        """Calculates the internal angle of the corner at point p1."""
+        """
+        Calculates the internal angle of the corner at point p1 in the
+        XY plane.
+        """
         # Create vectors from p1 to p0 and p1 to p2.
         v1x, v1y = p0[0] - p1[0], p0[1] - p1[1]
         v2x, v2y = p2[0] - p1[0], p2[1] - p1[1]

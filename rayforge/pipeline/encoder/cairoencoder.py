@@ -35,31 +35,35 @@ class CairoEncoder(OpsEncoder):
         ctx.set_hairline(True)
         ctx.move_to(0, ymax)
 
-        prev_point = 0, ymax
+        prev_point_2d = 0, ymax
         for segment in ops.segments():
             for cmd in segment:
-                match cmd, cmd.end:
-                    case MoveToCommand(), (x, y):
-                        adjusted_y = ymax - y
+                if cmd.end is None:
+                    continue
 
+                x, y, z = cmd.end
+                adjusted_y = ymax - y
+
+                match cmd:
+                    case MoveToCommand():
                         # Paint the travel move. We do not have to worry that
                         # there may be any unpainted path before it, because
                         # Ops.segments() ensures that each travel move opens
                         # a new segment.
                         if show_travel_moves:
                             ctx.set_source_rgb(.9, .9, .9)
-                            ctx.move_to(*prev_point)
+                            ctx.move_to(*prev_point_2d)
                             ctx.line_to(x, adjusted_y)
                             ctx.stroke()
 
                         ctx.move_to(x, adjusted_y)
+                        prev_point_2d = x, adjusted_y
 
-                    case LineToCommand(), (x, y):
-                        adjusted_y = ymax-y
+                    case LineToCommand():
                         ctx.line_to(x, adjusted_y)
-                        prev_point = x, adjusted_y
+                        prev_point_2d = x, adjusted_y
 
-                    case ArcToCommand(), (x, y):
+                    case ArcToCommand():
                         # Start point is the x, y of the previous operation.
                         start_x, start_y = ctx.get_current_point()
                         ctx.set_source_rgb(1, 0, 1)
@@ -71,7 +75,6 @@ class CairoEncoder(OpsEncoder):
                         i, j = cmd.center_offset
                         center_x = start_x+i
                         center_y = start_y+j
-                        adjusted_y = ymax-y
                         radius = math.dist((start_x, start_y),
                                            (center_x, center_y))
                         angle1 = math.atan2(start_y - center_y,
@@ -91,7 +94,7 @@ class CairoEncoder(OpsEncoder):
                         ctx.set_source_rgb(0, 0, 1)
                         ctx.stroke()
                         ctx.move_to(x, adjusted_y)
-                        prev_point = x, adjusted_y
+                        prev_point_2d = x, adjusted_y
 
                     case _:
                         pass  # ignore unsupported operations

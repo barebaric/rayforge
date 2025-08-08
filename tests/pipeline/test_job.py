@@ -83,12 +83,12 @@ async def test_generate_job_ops_assembles_correctly(
     move_cmds = [c for c in final_ops.commands if isinstance(c, MoveToCommand)]
     line_cmds = [c for c in final_ops.commands if isinstance(c, LineToCommand)]
 
-    assert move_cmds[0].end == pytest.approx((15, 95))
-    assert line_cmds[0].end == pytest.approx((15, 105))
+    assert move_cmds[0].end == pytest.approx((15, 95, 0.0))
+    assert line_cmds[0].end == pytest.approx((15, 105, 0.0))
 
     # Verify the second pass is identical
-    assert move_cmds[1].end == pytest.approx((15, 95))
-    assert line_cmds[1].end == pytest.approx((15, 105))
+    assert move_cmds[1].end == pytest.approx((15, 95, 0.0))
+    assert line_cmds[1].end == pytest.approx((15, 105, 0.0))
 
 
 @pytest.mark.asyncio
