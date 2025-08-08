@@ -79,9 +79,11 @@ def main():
             # Import the window here to avoid module-level side-effects
             from rayforge.mainwindow import MainWindow
             win = MainWindow(application=self)
-            if self.args.filename:
-                mime_type, _ = mimetypes.guess_type(self.args.filename)
-                win.load_file(Path(self.args.filename), mime_type)
+            # self.args.filenames will be a list of paths
+            if self.args.filenames:
+                for filename in self.args.filenames:
+                    mime_type, _ = mimetypes.guess_type(filename)
+                    win.load_file(Path(filename), mime_type)
             win.present()
 
     # Import version for the --version flag.
@@ -97,9 +99,9 @@ def main():
         version=f'%(prog)s {__version__}'
     )
     parser.add_argument(
-        "filename",
-        help=_("Path to the input SVG or image file."),
-        nargs='?'
+        "filenames",
+        help=_("Paths to one or more input SVG or image files."),
+        nargs='*'
     )
     parser.add_argument(
         '--loglevel',
