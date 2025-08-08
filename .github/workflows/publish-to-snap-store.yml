@@ -8,6 +8,7 @@ on:
 
 jobs:
   lint-test:
+    if: github.repository == 'barebaric/rayforge'
     uses: ./.github/workflows/lint-test.yml
 
   build-publish-snap:
