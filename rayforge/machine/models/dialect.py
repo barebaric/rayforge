@@ -2,6 +2,34 @@ from dataclasses import dataclass, field
 from typing import List, Dict
 
 
+_DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
+
+
+def register_dialect(dialect: "GcodeDialect"):
+    """Adds a dialect to the central registry, keyed by its unique `name`."""
+    if dialect.name in _DIALECT_REGISTRY:
+        raise ValueError(
+            f"Dialect with name '{dialect.name}' is already registered."
+        )
+    _DIALECT_REGISTRY[dialect.name] = dialect
+
+
+def get_dialect(name: str) -> "GcodeDialect":
+    """Retrieves a GcodeDialect instance from the registry by its name."""
+    dialect = _DIALECT_REGISTRY.get(name.lower())
+    if not dialect:
+        raise ValueError(
+            f"Unknown or unsupported G-code dialect name: '{name}'"
+        )
+    return dialect
+
+
+def get_available_dialects() -> List["GcodeDialect"]:
+    """Returns a list of all registered GcodeDialect instances."""
+    # Sort by display name for consistent UI presentation
+    return sorted(_DIALECT_REGISTRY.values(), key=lambda d: d.label)
+
+
 @dataclass
 class GcodeDialect:
     """
@@ -9,34 +37,24 @@ class GcodeDialect:
     specific hardware dialect (e.g., GRBL, Marlin, Smoothieware).
     """
 
-    name: str
+    name: str  # Stable, programmatic identifier (e.g., "grbl", "marlin")
+    label: str  # User-facing name for UI (e.g., "GRBL")
     description: str
 
     # Command Templates
-    # These templates will be used with .format() to generate G-code lines.
-    # Common variables: {power}, {speed}, {x}, {y}, {i}, {j}
-    laser_on: str  # e.g., "M4 S{power}" or "M3 S{power}"
-    laser_off: str  # e.g., "M5"
-    travel_move: str  # e.g., "G0 X{x:.3f} Y{y:.3f}"
-    travel_move_with_speed: str  # e.g., "G0 X{x:.3f} Y{y:.3f} F{speed}"
-    linear_move: str  # e.g., "G1 X{x:.3f} Y{y:.3f}"
-    linear_move_with_speed: str  # e.g., "G1 X{x:.3f} Y{y:.3f} F{speed}"
-    arc_cw: str  # e.g., "G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}"
-    arc_cw_with_speed: (
-        str  # e.g., "G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}"
-    )
-    arc_ccw: str  # e.g., "G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}"
-    arc_ccw_with_speed: (
-        str  # e.g., "G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}"
-    )
+    laser_on: str
+    laser_off: str
+    set_speed: str
+    travel_move: str
+    linear_move: str
+    arc_cw: str
+    arc_ccw: str
 
     # Air Assist Control
-    air_assist_on: str  # e.g., "M8"
-    air_assist_off: str  # e.g., "M9"
+    air_assist_on: str
+    air_assist_off: str
 
     # Preamble & Postscript
-    # Default sequences for this dialect. The user can override them in the
-    # Machine settings.
     default_preamble: List[str] = field(default_factory=list)
     default_postscript: List[str] = field(default_factory=list)
 
@@ -47,27 +65,48 @@ class GcodeDialect:
         """
         return int(power)
 
+    def __post_init__(self):
+        """Automatically register the dialect instance after it's created."""
+        register_dialect(self)
 
-# Concrete Dialect Implementations
+
 GRBL_DIALECT = GcodeDialect(
-    name="GRBL",
+    name="grbl",
+    label=_("GRBL"),
     description=_("Standard GRBL for most diode lasers and hobby CNCs."),
-    laser_on="M4 S{power}",  # Dynamic power mode for better grayscale
+    laser_on="M4 S{power}",
     laser_off="M5",
-    travel_move="G0 X{x:.3f} Y{y:.3f}",
-    travel_move_with_speed="G0 X{x:.3f} Y{y:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f}",
-    linear_move_with_speed="G1 X{x:.3f} Y{y:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_cw_with_speed="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_ccw_with_speed="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    set_speed="",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=[
-        "G21 ; Set units to mm",
-        "G90 ; Absolute positioning",
+    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
+    default_postscript=[
+        "M5 ; Ensure laser is off",
+        "G0 X0 Y0 ; Return to origin",
     ],
+)
+
+GRBL_DIALECT_NOZ = GcodeDialect(
+    name="grbl_noz",
+    label=_("GRBL (no Z axis)"),
+    description=_(
+        "Standard GRBL that ignores Z axis commands."
+        " Can be slightly more space efficient if your machine has no Z axis."
+    ),
+    laser_on="M4 S{power}",
+    laser_off="M5",
+    set_speed="",
+    travel_move="G0 X{x:.3f} Y{y:.3f} F{speed}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} F{speed}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    air_assist_on="M8",
+    air_assist_off="M9",
+    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
     default_postscript=[
         "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
@@ -75,25 +114,19 @@ GRBL_DIALECT = GcodeDialect(
 )
 
 SMOOTHIEWARE_DIALECT = GcodeDialect(
-    name="Smoothieware",
+    name="smoothieware",
+    label=_("Smoothieware"),
     description=_("G-code dialect for Smoothieware-based controllers."),
-    # Smoothieware is mostly GRBL-compatible for laser operations
-    laser_on="M3 S{power}",  # Often uses M3
+    laser_on="M3 S{power}",
     laser_off="M5",
-    travel_move="G0 X{x:.3f} Y{y:.3f}",
-    travel_move_with_speed="G0 X{x:.3f} Y{y:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f}",
-    linear_move_with_speed="G1 X{x:.3f} Y{y:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_cw_with_speed="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_ccw_with_speed="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    set_speed="",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=[
-        "G21 ; Set units to mm",
-        "G90 ; Absolute positioning",
-    ],
+    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
     default_postscript=[
         "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
@@ -101,47 +134,23 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
 )
 
 MARLIN_DIALECT = GcodeDialect(
-    name="Marlin",
+    name="marlin",
+    label=_("Marlin"),
     description=_(
         "G-code for Marlin-based controllers, common in 3D printers."
     ),
-    # Marlin uses M3/M4 for inline laser power control, similar to GRBL.
-    # M4 is preferred for dynamic power adjustment with speed changes.
     laser_on="M4 S{power}",
     laser_off="M5",
-    travel_move="G0 X{x:.3f} Y{y:.3f}",
-    travel_move_with_speed="G0 X{x:.3f} Y{y:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f}",
-    linear_move_with_speed="G1 X{x:.3f} Y{y:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_cw_with_speed="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}",
-    arc_ccw_with_speed="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    set_speed="",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=[
-        "G21 ; Set units to mm",
-        "G90 ; Absolute positioning",
-    ],
+    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
     default_postscript=[
         "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
     ],
 )
-
-
-DIALECTS: Dict[str, GcodeDialect] = {
-    "GRBL": GRBL_DIALECT,
-    "Smoothieware": SMOOTHIEWARE_DIALECT,
-    "Marlin": MARLIN_DIALECT,
-}
-
-
-def get_dialect(name: str) -> GcodeDialect:
-    """
-    Retrieves a GcodeDialect instance from the registry by name.
-    """
-    dialect = DIALECTS.get(name)
-    if not dialect:
-        raise ValueError(f"Unknown or unsupported G-code dialect: '{name}'")
-    return dialect

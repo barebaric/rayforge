@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw  # type: ignore
-from ..models.dialect import DIALECTS, get_dialect
+from ..models.dialect import get_available_dialects, get_dialect
 
 
 logger = logging.getLogger(__name__)
@@ -22,19 +22,24 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         )
         self.add(dialect_group)
 
-        self.dialect_names = list(DIALECTS.keys())
-        dialect_store = Gtk.StringList.new(self.dialect_names)
+        # Get all available dialects from the registry
+        self.available_dialects = get_available_dialects()
+        dialect_display_names = [
+            d.label for d in self.available_dialects
+        ]
+        dialect_names = [d.name for d in self.available_dialects]
+        dialect_store = Gtk.StringList.new(dialect_display_names)
         self.dialect_combo_row = Adw.ComboRow(
             title=_("G-Code Dialect"), model=dialect_store
         )
         try:
-            selected_index = self.dialect_names.index(
-                self.machine.dialect_name
-            )
+            selected_index = dialect_names.index(self.machine.dialect_name)
             self.dialect_combo_row.set_selected(selected_index)
-        except ValueError:
+        except (ValueError, AttributeError):
+            # Default to the first dialect if not set or invalid
             self.dialect_combo_row.set_selected(0)
-            self.machine.set_dialect_name(self.dialect_names[0])
+            if self.available_dialects:
+                self.machine.set_dialect_name(self.available_dialects[0].name)
 
         self.dialect_combo_row.connect(
             "notify::selected", self.on_dialect_changed
@@ -163,8 +168,9 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
     def on_dialect_changed(self, combo_row, _):
         """Update the machine's dialect when the selection changes."""
         selected_index = combo_row.get_selected()
-        new_dialect_name = self.dialect_names[selected_index]
-        self.machine.set_dialect_name(new_dialect_name)
+        if 0 <= selected_index < len(self.available_dialects):
+            new_dialect = self.available_dialects[selected_index]
+            self.machine.set_dialect_name(new_dialect.name)
 
     def on_preamble_override_toggled(self, switch, _):
         """Show or hide the preamble editor box based on the switch state."""
@@ -196,7 +202,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
                 (current_text + "\n" + new_text) if current_text else new_text
             )
             buffer.set_text(final_text, -1)
-        except ValueError as e:
+        except (ValueError, AttributeError) as e:
             logger.error(f"Error getting dialect: {e}")
 
     def on_append_postscript_clicked(self, button):
@@ -217,7 +223,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
                 (current_text + "\n" + new_text) if current_text else new_text
             )
             buffer.set_text(final_text, -1)
-        except ValueError as e:
+        except (ValueError, AttributeError) as e:
             logger.error(f"Error getting dialect: {e}")
 
     def on_preamble_changed(self, buffer):
