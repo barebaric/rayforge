@@ -101,7 +101,7 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
         new_cmd.end = cmd.end
 
         # Fix arc_to parameters
-        if isinstance(new_cmd, ArcToCommand) and i > 0:
+        if isinstance(new_cmd, ArcToCommand):
             # Get original arc (prev op in original segment)
             orig_cmd = cast(ArcToCommand, segment[i + 1])
             x_end, y_end, _ = orig_cmd.end
