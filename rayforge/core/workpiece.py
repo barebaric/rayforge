@@ -1,7 +1,6 @@
 import logging
 import uuid
 import cairo
-import importlib
 from typing import (
     Generator,
     Optional,
@@ -14,7 +13,7 @@ from typing import (
 )
 from blinker import Signal
 from pathlib import Path
-from ..importer import Importer
+from ..importer import Importer, importer_by_name
 
 if TYPE_CHECKING:
     from .doc import Doc
@@ -63,7 +62,7 @@ class WorkPiece:
 
         This method removes live, unpickleable objects like the importer
         instance and blinker signals. It also converts the importer class
-        type into a serializable string path for reconstruction.
+        type into a serializable string name for reconstruction.
         """
         state = self.__dict__.copy()
 
@@ -76,12 +75,10 @@ class WorkPiece:
         state.pop("size_changed", None)
         state.pop("angle_changed", None)
 
-        # Convert the importer class type to a serializable string path.
-        # The type object itself can be tricky to pickle directly.
+        # Convert the importer class type to a serializable string name.
+        # The class object itself can be tricky to pickle directly.
         rclass = self.importer_class
-        state["_importer_class_path"] = (
-            f"{rclass.__module__}.{rclass.__name__}"
-        )
+        state["_importer_class_name"] = rclass.__name__
         state.pop("importer_class", None)
 
         return state
@@ -90,14 +87,13 @@ class WorkPiece:
         """
         Restores the object's state from the pickled state.
 
-        This method re-imports the importer class, re-creates the live
-        importer instance, and re-initializes the blinker signals.
+        This method re-creates the importer class from its name,
+        re-creates the live importer instance, and re-initializes the
+        blinker signals.
         """
-        # Restore the importer class from its stored path.
-        importer_class_path = state.pop("_importer_class_path")
-        module_path, class_name = importer_class_path.rsplit(".", 1)
-        module = importlib.import_module(module_path)
-        self.importer_class = getattr(module, class_name)
+        # Restore the importer class from its stored name using the registry.
+        importer_class_name = state.pop("_importer_class_name")
+        self.importer_class = importer_by_name[importer_class_name]
 
         # Restore the rest of the pickled attributes.
         self.__dict__.update(state)
@@ -114,7 +110,7 @@ class WorkPiece:
         """
         Serializes the WorkPiece state to a pickleable dictionary.
         The live importer instance is not serialized; instead, the raw
-        data and importer class path are stored for reconstruction.
+        data and importer class name are stored for reconstruction.
         """
         rclass = self.importer_class
         return {
@@ -124,7 +120,7 @@ class WorkPiece:
             "size": self.size,
             "angle": self.angle,
             "data": self._data,
-            "importer": f"{rclass.__module__}.{rclass.__name__}",
+            "importer": rclass.__name__,
         }
 
     @classmethod
@@ -133,10 +129,8 @@ class WorkPiece:
         Deserializes a WorkPiece from a dictionary by reconstructing it
         from its raw data and importer class.
         """
-        # Dynamically import the importer class from its path
-        module_path, class_name = data_dict["importer"].rsplit(".", 1)
-        module = importlib.import_module(module_path)
-        importer_class = getattr(module, class_name)
+        # Look up the importer class from its name via the central registry.
+        importer_class = importer_by_name[data_dict["importer"]]
 
         # Create the WorkPiece instance using the main constructor
         wp = cls(data_dict["name"], data_dict["data"], importer_class)

@@ -14,6 +14,8 @@ def isimporter(obj):
 
 importers = [obj for name, obj in list(locals().items()) if isimporter(obj)]
 
+importer_by_name = {imp.__name__: imp for imp in importers}
+
 importer_by_mime_type = dict()
 for base in importers:
     for mime_type in base.mime_types:
