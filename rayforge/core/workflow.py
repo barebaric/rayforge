@@ -11,6 +11,7 @@ from .step import Step
 
 if TYPE_CHECKING:
     from .layer import Layer
+    from .doc import Doc
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class Workflow:
             name: The user-facing name for the work plan.
         """
         self.layer = layer
-        self.doc = layer.doc
+        self.doc: Doc = layer.doc
         self.uid: str = str(uuid.uuid4())
         self.name: str = name
         self.steps: List[Step] = []
@@ -46,6 +47,7 @@ class Workflow:
         self.descendant_added = Signal()
         self.descendant_removed = Signal()
         self.descendant_updated = Signal()
+        self.post_step_transformer_changed = Signal()
 
     def __iter__(self):
         """Allows iteration over the work steps."""
@@ -66,15 +68,39 @@ class Workflow:
         self.descendant_updated.send(self, origin=step)
         self.changed.send(self)
 
+    def _on_post_step_transformer_changed(self, step: Step):
+        """
+        Handles changes to post-step transformers. This only bubbles up the
+        specific `post_step_transformer_changed` signal.
+
+        It deliberately does NOT fire the generic `changed` signal, as that
+        would trigger a full, expensive UI refresh. This specific signal is
+        intended for lightweight consumers (like a job preview) that can
+        update without blocking the UI.
+        """
+        logger.debug(
+            f"Workflow '{self.name}': Notified of post-assembly change from "
+            f"step '{step.name}'. Bubbling up specific signal."
+        )
+        # Only bubble up the specific signal. The sender is the workflow
+        # itself.
+        self.post_step_transformer_changed.send(self)
+
     def _connect_step_signals(self, step: Step):
         """Connects the work plan's handlers to a step's signals."""
         logger.debug(f"Connecting 'changed' signal for step '{step.name}'.")
         step.changed.connect(self._on_step_changed)
+        step.post_step_transformer_changed.connect(
+            self._on_post_step_transformer_changed
+        )
 
     def _disconnect_step_signals(self, step: Step):
         """Disconnects the work plan's handlers from a step's signals."""
         # This is safe; blinker's disconnect is a no-op if not connected.
         step.changed.disconnect(self._on_step_changed)
+        step.post_step_transformer_changed.disconnect(
+            self._on_post_step_transformer_changed
+        )
 
     def add_step(self, step: Step):
         """
@@ -107,6 +133,8 @@ class Workflow:
         Args:
             step: The Step instance to remove.
         """
+        if step not in self.steps:
+            return
         self._disconnect_step_signals(step)
         self.steps.remove(step)
         step.workflow = None

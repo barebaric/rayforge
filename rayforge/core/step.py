@@ -34,17 +34,21 @@ class Step(ABC):
         self.name = name or self.typelabel
         self.visible = True
 
-        # Configuration for the pipeline, stored as dictionaries
+        # Configuration for the pipeline, stored as dictionaries.
+        # - ops-transformers are used per single workpiece.
+        # - post-step transformers are applied on the combined ops
+        #   of all workpieces of this step.
         self.modifiers_dicts: List[Dict[str, Any]] = []
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
         self.opstransformers_dicts: List[Dict[str, Any]] = []
+        self.post_step_transformers_dicts: List[Dict[str, Any]] = []
         self.laser_dict: Optional[Dict[str, Any]] = None
 
-        self.passes: int = 1
         self.pixels_per_mm = 50, 50
 
         # Signals for notifying of model changes
         self.changed = Signal()
+        self.post_step_transformer_changed = Signal()
         self.visibility_changed = Signal()
 
         # Default machine-dependent values. These will be overwritten by
@@ -61,10 +65,6 @@ class Step(ABC):
     def doc(self) -> Optional["Doc"]:
         """The parent Doc object, accessed via the Workflow."""
         return self.workflow.doc if self.workflow else None
-
-    def set_passes(self, passes: int):
-        self.passes = int(passes)
-        self.changed.send(self)
 
     def set_visible(self, visible: bool):
         self.visible = visible

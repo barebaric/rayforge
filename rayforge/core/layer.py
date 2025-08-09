@@ -51,12 +51,16 @@ class Layer:
 
         # Signals for notifying other parts of the application of changes.
         self.changed = Signal()
+        self.post_step_transformer_changed = Signal()
         self.descendant_added = Signal()
         self.descendant_removed = Signal()
         self.descendant_updated = Signal()
 
         # Connect to signals from child objects.
         self.workflow.changed.connect(self._on_workflow_changed)
+        self.workflow.post_step_transformer_changed.connect(
+            self._on_workflow_post_transformer_changed
+        )
         self.workflow.descendant_added.connect(self._on_descendant_added)
         self.workflow.descendant_removed.connect(self._on_descendant_removed)
         self.workflow.descendant_updated.connect(self._on_descendant_updated)
@@ -77,6 +81,12 @@ class Layer:
             f"Layer '{self.name}': Noticed workflow change, bubbling up."
         )
         self.changed.send(self)
+
+    def _on_workflow_post_transformer_changed(self, sender):
+        """
+        Bubbles up the post_transformer_changed signal from the workflow.
+        """
+        self.post_step_transformer_changed.send(self)
 
     def _on_descendant_added(self, sender, *, origin):
         """Bubbles up the descendant_added signal."""

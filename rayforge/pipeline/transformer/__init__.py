@@ -1,7 +1,8 @@
 # flake8: noqa:F401
 import inspect
 from .base import OpsTransformer
-from ...pipeline.transformer.arcwelder import ArcWeld
+from .multipass import MultiPassTransformer
+from .arcwelder import ArcWeld
 from .optimize import Optimize
 from .smooth import Smooth
 
@@ -14,6 +15,7 @@ transformer_by_name = dict(
 
 __all__ = [
     "OpsTransformer",
+    "MultiPassTransformer",
     "ArcWeld",
     "Optimize",
     "Smooth",

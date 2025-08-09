@@ -9,6 +9,7 @@ from rayforge.pipeline.generator import OpsGenerator
 from rayforge.shared.tasker.manager import CancelledError
 from rayforge.pipeline.job import generate_job_ops
 from rayforge.pipeline.steps import create_outline_step
+from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 from rayforge.importer import SvgImporter
 
 
@@ -29,6 +30,7 @@ def machine():
 @pytest.fixture
 def doc():
     d = Doc()
+    # Start with a clean slate for tests
     d.layers[0].workflow.set_steps([])
     return d
 
@@ -60,7 +62,11 @@ async def test_generate_job_ops_assembles_correctly(
     layer = doc.layers[0]
     with patch("rayforge.pipeline.steps.config", MagicMock()):
         step = create_outline_step(layer.workflow)
-    step.passes = 2
+
+    # The new way to specify passes is via a post-assembly transformer
+    multi_pass_transformer = MultiPassTransformer(passes=2)
+    step.post_step_transformers_dicts = [multi_pass_transformer.to_dict()]
+
     layer.workflow.add_step(step)
     layer.add_workpiece(real_workpiece)
 
@@ -103,12 +109,13 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
 
     wp1 = WorkPiece(Path("wp1"), b"", SvgImporter)
     wp1.size = (10, 10)
-    wp1.pos = (0, 0)  # FIX: Add position to make workpiece "renderable"
+    wp1.pos = (0, 0)
 
     wp2 = WorkPiece(Path("wp2"), b"", SvgImporter)
     wp2.size = (10, 10)
-    wp2.pos = (20, 20)  # FIX: Add position to make workpiece "renderable"
+    wp2.pos = (20, 20)
 
+    # There are two workpieces, so total_items = 2
     layer.add_workpiece(wp1)
     layer.add_workpiece(wp2)
 
@@ -126,4 +133,7 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
     # After the exception is caught, verify what happened before the
     # cancellation.
     mock_ops_generator.get_ops.assert_called_once_with(step, wp1)
-    mock_context.set_progress.assert_called_once_with(0.0 / 2.0)
+
+    # Verify progress was set for the first item (processed_items = 1).
+    # Progress is 1 / total_items (2) = 0.5
+    mock_context.set_progress.assert_called_once_with(0.5)

@@ -5,7 +5,7 @@ from ..config import config
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import OutlineTracer, EdgeTracer, Rasterizer
-from .transformer import Optimize, Smooth
+from .transformer import Optimize, Smooth, MultiPassTransformer
 
 if TYPE_CHECKING:
     from ..core.workflow import Workflow
@@ -29,6 +29,9 @@ def create_outline_step(
     step.opstransformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         Optimize(enabled=True).to_dict(),
+    ]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.laser_dict = config.machine.heads[0].to_dict()
     step.max_cut_speed = config.machine.max_cut_speed
@@ -55,6 +58,9 @@ def create_contour_step(
         Smooth(enabled=False, amount=20).to_dict(),
         Optimize(enabled=True).to_dict(),
     ]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+    ]
     step.laser_dict = config.machine.heads[0].to_dict()
     step.max_cut_speed = config.machine.max_cut_speed
     step.max_travel_speed = config.machine.max_travel_speed
@@ -78,6 +84,9 @@ def create_raster_step(
     ]
     step.opstransformers_dicts = [
         Optimize(enabled=True).to_dict(),
+    ]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.laser_dict = config.machine.heads[0].to_dict()
     step.max_cut_speed = config.machine.max_cut_speed

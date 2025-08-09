@@ -21,6 +21,7 @@ class Doc:
         self.descendant_added = Signal()
         self.descendant_removed = Signal()
         self.descendant_updated = Signal()
+        self.job_assembly_invalidated = Signal()
 
         self.layers: List[Layer] = []
         self._layer_ref_for_pyreverse: Layer
@@ -71,6 +72,13 @@ class Doc:
         """A single handler for generic changes in layers."""
         self.changed.send(self)
 
+    def _on_layer_post_transformer_changed(self, sender):
+        """
+        Handles post-transformer changes from a layer. This invalidates the
+        final job assembly without triggering a full ops regeneration.
+        """
+        self.job_assembly_invalidated.send(self)
+
     def _on_descendant_added(self, sender, *, origin):
         self.descendant_added.send(self, origin=origin)
 
@@ -80,12 +88,29 @@ class Doc:
     def _on_descendant_updated(self, sender, *, origin):
         self.descendant_updated.send(self, origin=origin)
 
-    def add_layer(self, layer: Layer):
-        self.layers.append(layer)
+    def _connect_layer_signals(self, layer: Layer):
+        """Connects all relevant signals from a layer to the doc's handlers."""
         layer.changed.connect(self._on_layer_changed)
+        layer.post_step_transformer_changed.connect(
+            self._on_layer_post_transformer_changed
+        )
         layer.descendant_added.connect(self._on_descendant_added)
         layer.descendant_removed.connect(self._on_descendant_removed)
         layer.descendant_updated.connect(self._on_descendant_updated)
+
+    def _disconnect_layer_signals(self, layer: Layer):
+        """Disconnects all relevant signals from a layer."""
+        layer.changed.disconnect(self._on_layer_changed)
+        layer.post_step_transformer_changed.disconnect(
+            self._on_layer_post_transformer_changed
+        )
+        layer.descendant_added.disconnect(self._on_descendant_added)
+        layer.descendant_removed.disconnect(self._on_descendant_removed)
+        layer.descendant_updated.disconnect(self._on_descendant_updated)
+
+    def add_layer(self, layer: Layer):
+        self.layers.append(layer)
+        self._connect_layer_signals(layer)
         self.descendant_added.send(self, origin=layer)
         self.changed.send(self)
 
@@ -93,10 +118,7 @@ class Doc:
         # Prevent removing the last layer.
         if layer not in self.layers or len(self.layers) <= 1:
             return
-        layer.changed.disconnect(self._on_layer_changed)
-        layer.descendant_added.disconnect(self._on_descendant_added)
-        layer.descendant_removed.disconnect(self._on_descendant_removed)
-        layer.descendant_updated.disconnect(self._on_descendant_updated)
+        self._disconnect_layer_signals(layer)
         self.layers.remove(layer)
         self.descendant_removed.send(self, origin=layer)
 
@@ -124,17 +146,11 @@ class Doc:
             new_active_index = 0  # Default to first layer
 
         for layer in old_layers:
-            layer.changed.disconnect(self._on_layer_changed)
-            layer.descendant_added.disconnect(self._on_descendant_added)
-            layer.descendant_removed.disconnect(self._on_descendant_removed)
-            layer.descendant_updated.disconnect(self._on_descendant_updated)
+            self._disconnect_layer_signals(layer)
 
         self.layers = list(layers)
         for layer in self.layers:
-            layer.changed.connect(self._on_layer_changed)
-            layer.descendant_added.connect(self._on_descendant_added)
-            layer.descendant_removed.connect(self._on_descendant_removed)
-            layer.descendant_updated.connect(self._on_descendant_updated)
+            self._connect_layer_signals(layer)
 
         for layer in old_layers - new_layers:
             self.descendant_removed.send(self, origin=layer)
