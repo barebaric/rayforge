@@ -98,31 +98,27 @@ class OpsGenerator:
 
     def pause(self):
         """
-        Temporarily stops listening to model changes.
+        Temporarily stops triggering new generations.
 
         This is used to prevent storms of regeneration events during
-        continuous UI operations like resizing a workpiece, where the model
-        changes rapidly. The UI is responsible for calling `resume()` or
-        `resume_and_reconcile()` when the operation is complete.
+        continuous UI operations like resizing a workpiece. While paused, the
+        generator still listens for model changes and invalidates its cache
+        accordingly, but it does not start new generation tasks.
         """
         if self._is_paused:
             return
         logger.debug("OpsGenerator paused.")
-        self._disconnect_signals()
         self._is_paused = True
 
     def resume(self):
         """
-        Resumes listening to model changes without an immediate update.
-
-        This is used after operations that do not invalidate the cached Ops,
-        such as moving or rotating a workpiece.
+        Resumes triggering generations and reconciles any changes made while
+        paused.
         """
         if not self._is_paused:
             return
         logger.debug("OpsGenerator resumed.")
         self._is_paused = False
-        self._connect_signals()
         self.reconcile_all()
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
@@ -185,15 +181,28 @@ class OpsGenerator:
             self._cleanup_key(key)
 
     def _on_descendant_updated(self, sender, *, origin):
-        """Handles updates to an existing model object's data."""
-        if self._is_paused:
-            return
+        """
+        Handles updates to an existing model object's data. If paused, it
+        invalidates the cache instead of triggering regeneration.
+        """
         logger.debug(
             f"OpsGenerator: Noticed updated {origin.__class__.__name__}"
         )
         if isinstance(origin, Step):
+            # When paused, don't trigger generation. Instead, invalidate the
+            # cache so that `reconcile_all()` upon resume will pick it up.
+            if self._is_paused:
+                if origin.workflow and origin.workflow.layer:
+                    for wp in origin.workflow.layer.workpieces:
+                        self._ops_cache[(origin.uid, wp.uid)] = None, None
+                return
             self._update_ops_for_step(origin)
         elif isinstance(origin, WorkPiece):
+            if self._is_paused:
+                if origin.layer:
+                    for step in origin.layer.workflow:
+                        self._ops_cache[(step.uid, origin.uid)] = None, None
+                return
             self._update_ops_for_workpiece(origin)
 
     def _cleanup_key(self, key: Tuple[str, str]):
@@ -209,9 +218,8 @@ class OpsGenerator:
         Synchronizes the generator's state with the document.
 
         This method compares the complete set of (Step, WorkPiece) pairs in
-        the document with its internal cache and running tasks. It starts
-        generation for any new or modified items and cancels/cleans up any
-        tasks or cache entries that are no longer present in the document.
+        the document with its internal cache. It starts generation for any new
+        or invalidated items and cleans up tasks/cache for obsolete items.
         """
         if self._is_paused:
             return
@@ -228,11 +236,18 @@ class OpsGenerator:
         for s_uid, w_uid in cached_pairs - all_current_pairs:
             self._cleanup_key((s_uid, w_uid))
 
-        # Trigger generation for all current items
+        # Trigger generation only for items that are not already
+        # valid in the cache. This makes `reconcile_all` an efficient operation
+        # that only fills in missing pieces, rather than regenerating
+        # everything.
         for layer in self.doc.layers:
             for step in layer.workflow.steps:
                 for workpiece in layer.workpieces:
-                    self._trigger_ops_generation(step, workpiece)
+                    key = (step.uid, workpiece.uid)
+                    # An item needs generation if it's not in the cache or if
+                    # its cache entry has been invalidated (ops is None).
+                    if self._ops_cache.get(key, (None, None))[0] is None:
+                        self._trigger_ops_generation(step, workpiece)
 
     def _update_ops_for_step(self, step: Step):
         """Triggers ops generation for a single step across all workpieces."""
