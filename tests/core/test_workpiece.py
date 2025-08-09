@@ -45,10 +45,6 @@ class TestWorkPiece:
         wp.set_angle(90)
         data_dict = wp.to_dict()
 
-        # The importer path must be resolvable in the test environment.
-        # Here we point to the class in the global scope of this test file.
-        data_dict["importer"] = f"{__name__}.{SvgImporter.__name__}"
-
         new_wp = WorkPiece.from_dict(data_dict)
         assert isinstance(new_wp, WorkPiece)
         assert new_wp.source_file == wp.source_file
