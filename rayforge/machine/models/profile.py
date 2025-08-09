@@ -1,6 +1,11 @@
+import logging
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple, Optional
 from .machine import Machine, Laser
+from ..driver import get_driver_cls
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,8 +39,18 @@ class MachineProfile:
         m = Machine()
         m.name = self.name
 
-        if self.driver_class_name is not None:
-            m.driver = self.driver_class_name
+        if self.driver_class_name:
+            try:
+                driver_cls = get_driver_cls(self.driver_class_name)
+                m.set_driver(driver_cls, self.driver_args)
+            except (ValueError, ImportError):
+                # If driver class not found, we fall back to the default
+                # NoDeviceDriver, which is a safe state.
+                logger.error(
+                    f"failed to create driver {self.driver_class_name}"
+                    f" with args {self.driver_args}"
+                )
+
         if self.dialect_name is not None:
             m.dialect_name = self.dialect_name
         if self.dimensions is not None:
@@ -52,8 +67,6 @@ class MachineProfile:
         if self.postscript is not None:
             m.postscript = self.postscript.copy()
             m.use_custom_postscript = True
-        if self.driver_args is not None:
-            m.driver_args = self.driver_args.copy()
         if self.home_on_start is not None:
             m.home_on_start = self.home_on_start
 
@@ -72,9 +85,6 @@ class MachineProfile:
                 # Laser.from_dict can parse, such as "max_power",
                 # "frame_power", and "spot_size_mm".
                 m.add_head(Laser.from_dict(head_profile))
-        else:
-            # If no heads are specified in the profile, add a default one.
-            m.add_head(Laser())
 
         return m
 
