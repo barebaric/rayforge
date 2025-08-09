@@ -72,7 +72,7 @@ class GcodeDialect:
 
 GRBL_DIALECT = GcodeDialect(
     name="grbl",
-    label=_("GRBL"),
+    label=_("GRBL (universal)"),
     description=_("Standard GRBL for most diode lasers and hobby CNCs."),
     laser_on="M4 S{power}",
     laser_off="M5",
@@ -94,8 +94,8 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     name="grbl_noz",
     label=_("GRBL (no Z axis)"),
     description=_(
-        "Standard GRBL that ignores Z axis commands."
-        " Can be slightly more space efficient if your machine has no Z axis."
+        "Standard GRBL, but removes Z axis commands "
+        "for more efficient G-code."
     ),
     laser_on="M4 S{power}",
     laser_off="M5",
