@@ -18,11 +18,13 @@ It supports Linux and Windows.
 | Multi layer support          | Perform different operations on different workpieces                |
 | Multi step operations        | For example, first engrave, then cut                                |
 | Multiple operation types     | Contour, External Outline, Raster Engraving                         |
+| 2.5D support                 | Starting with Rayforge 0.20, step down between passes is supported  |
 | Multi machine support        | Easily switch between multiple machines in a second                 |
+| Device Settings support      | Read and write firmware parameters on GRBL based devices            |
 | Powerful canvas              | All the tools you expect: Alignment, transformation, zoom, pan, ... |
 | High quality path generation | Interpolation based on spot size, path optimization                 |
 | Path post processing         | Travel time optimization and path smoothing                         |
-| Multiple input formats       | SVG, DXF, PDF, and PNG import are supported                         |
+| Multiple input formats       | SVG, DXF, PDF, PNG, and Ruida import are supported                  |
 | Open development             | Easily [add support for your own laser](docs/driver.md)             |
 | Cross-platform               | Support for Linux and Windows                                       |
 | Camera support               | Live camera feed, de-distortion, alignment                          |
@@ -39,12 +41,26 @@ It supports Linux and Windows.
 | GRBL (serial port based)    | Since version 0.13, serial GRBL based machines are supported |
 | Smoothieware (Telnet based) | Starting with version 0.15                                   |
 
-### Screenshots
+## Screenshots
 
+![Contour Settings](docs/contour-settings.png)
+
+### Machine Settings
+
+![General Settings](docs/machine-settings.png)
+![Device Settings](docs/machine-device.png)
+![Advanced Settings](docs/machine-advanced.png)
+![Laser Settings](docs/machine-laser.png)
+
+### Camera Support
+
+![Camera Settings](docs/machine-camera.png)
 ![Camera Alignment](docs/camera-alignment.png)
 ![Camera Image](docs/camera-image.png)
+
+The camera is then overlayed over your worksurface:
+
 ![Camera Overlay](docs/camera-overlay.png)
-![Camera Settings](docs/camera-settings.png)
 
 ## Installation
 
