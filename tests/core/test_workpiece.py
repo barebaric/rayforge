@@ -23,13 +23,13 @@ def sample_svg_data() -> bytes:
 @pytest.fixture
 def workpiece_instance(sample_svg_data: bytes) -> WorkPiece:
     """Creates a default WorkPiece instance for testing."""
-    return WorkPiece("test_rect.svg", sample_svg_data, SvgImporter)
+    return WorkPiece(Path("test_rect.svg"), sample_svg_data, SvgImporter)
 
 
 class TestWorkPiece:
     def test_initialization(self, workpiece_instance, sample_svg_data):
         wp = workpiece_instance
-        assert wp.name == "test_rect.svg"
+        assert wp.source_file == Path("test_rect.svg")
         assert wp._data == sample_svg_data
         assert wp.importer_class == SvgImporter
         assert isinstance(wp.importer, SvgImporter)
@@ -51,7 +51,7 @@ class TestWorkPiece:
 
         new_wp = WorkPiece.from_dict(data_dict)
         assert isinstance(new_wp, WorkPiece)
-        assert new_wp.name == wp.name
+        assert new_wp.source_file == wp.source_file
         assert new_wp.pos == wp.pos
         assert new_wp.size == wp.size
         assert new_wp.angle == wp.angle
@@ -65,7 +65,7 @@ class TestWorkPiece:
         p = tmp_path / "sample.svg"
         p.write_bytes(sample_svg_data)
         wp = WorkPiece.from_file(p, SvgImporter)
-        assert wp.name == p.name
+        assert wp.source_file == p
         assert wp._data == sample_svg_data
         assert isinstance(wp.importer, SvgImporter)
 
@@ -147,7 +147,7 @@ class TestWorkPiece:
             def _render_to_vips_image(self, width: int, height: int):
                 return None
 
-        wp = WorkPiece("nosize.dat", b"", MockNoSizeImporter)
+        wp = WorkPiece(Path("nosize.dat"), b"", MockNoSizeImporter)
         # The size should be calculated based on the provided bounds and
         # aspect ratio.
         assert wp.get_default_size(
@@ -213,5 +213,5 @@ class TestWorkPiece:
         workpiece_instance.dump(indent=1)
         captured = capsys.readouterr()
 
-        expected_output = f"   {workpiece_instance.name} {SvgImporter.label}\n"
-        assert captured.out == expected_output
+        expected = f"   {workpiece_instance.source_file} {SvgImporter.label}\n"
+        assert captured.out == expected

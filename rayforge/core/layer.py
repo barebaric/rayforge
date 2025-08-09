@@ -94,7 +94,7 @@ class Layer:
         """Handles workpiece size changes by firing the changed signal."""
         logger.debug(
             f"Layer '{self.name}': Noticed size change for "
-            f"'{workpiece.name}', bubbling up."
+            f"'{workpiece.source_file}', bubbling up."
         )
         self.descendant_updated.send(self, origin=workpiece)
         self.changed.send(self)

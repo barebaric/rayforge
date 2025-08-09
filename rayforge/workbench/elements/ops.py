@@ -26,7 +26,8 @@ class WorkPieceOpsElement(CanvasElement):
     ):
         if not workpiece.size:
             raise AttributeError(
-                f"attempt to add workpiece {workpiece.name} with no size"
+                f"attempt to add workpiece {workpiece.source_file}"
+                " with no size"
             )
         super().__init__(
             0,

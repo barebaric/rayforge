@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
@@ -40,7 +41,7 @@ def mock_ops_generator():
 
 @pytest.fixture
 def real_workpiece():
-    wp = WorkPiece("wp1", b'<svg width="10" height="10" />', SvgImporter)
+    wp = WorkPiece(Path("wp1"), b'<svg width="10" height="10" />', SvgImporter)
     wp.pos = (10, 20)
     wp.size = (40, 30)
     wp.angle = 90
@@ -100,11 +101,11 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
         step = create_outline_step(layer.workflow)
     layer.workflow.add_step(step)
 
-    wp1 = WorkPiece("wp1", b"", SvgImporter)
+    wp1 = WorkPiece(Path("wp1"), b"", SvgImporter)
     wp1.size = (10, 10)
     wp1.pos = (0, 0)  # FIX: Add position to make workpiece "renderable"
 
-    wp2 = WorkPiece("wp2", b"", SvgImporter)
+    wp2 = WorkPiece(Path("wp2"), b"", SvgImporter)
     wp2.size = (10, 10)
     wp2.pos = (20, 20)  # FIX: Add position to make workpiece "renderable"
 

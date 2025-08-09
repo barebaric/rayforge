@@ -928,7 +928,7 @@ class MainWindow(Adw.ApplicationWindow):
         history = self.doc.history_manager
         with history.transaction(_("Cut workpiece(s)")) as t:
             for wp in workpieces:
-                cmd_name = _("Cut {name}").format(name=wp.name)
+                cmd_name = _("Cut {name}").format(name=wp.source_file.name)
                 command = ListItemCommand(
                     owner_obj=self.doc,
                     item=wp,
@@ -983,7 +983,9 @@ class MainWindow(Adw.ApplicationWindow):
                         original_pos[0] + offset_x, original_pos[1] + offset_y
                     )
 
-                cmd_name = _("Paste {name}").format(name=new_wp.name)
+                cmd_name = _("Paste {name}").format(
+                    name=new_wp.source_file.name
+                )
                 command = ListItemCommand(
                     owner_obj=self.doc.active_layer,
                     item=new_wp,
@@ -1017,7 +1019,7 @@ class MainWindow(Adw.ApplicationWindow):
                 new_wp.uid = str(uuid.uuid4())
                 newly_duplicated_workpieces.append(new_wp)
 
-                cmd_name = _("Duplicate {name}").format(name=new_wp.name)
+                cmd_name = _(f"Duplicate {new_wp.source_file.name}")
                 command = ListItemCommand(
                     owner_obj=self.doc,
                     item=new_wp,
@@ -1052,7 +1054,7 @@ class MainWindow(Adw.ApplicationWindow):
         history = self.doc.history_manager
         with history.transaction(_("Remove workpiece(s)")) as t:
             for wp in workpieces:
-                cmd_name = _("Remove {name}").format(name=wp.name)
+                cmd_name = _("Remove {name}").format(name=wp.source_file.name)
                 command = ListItemCommand(
                     owner_obj=self.doc,
                     item=wp,

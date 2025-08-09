@@ -1,10 +1,12 @@
 import logging
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw, Gio  # type: ignore
 from typing import Optional, Tuple, List
+from pathlib import Path
 from ...shared.ui.expander import Expander  # Import the new custom expander
 from ...config import config
 from ...core.workpiece import WorkPiece
 from ...shared.util.adwfix import get_spinrow_float
+from ...icons import get_icon
 from ...undo import (
     ChangePropertyCommand,
     SetterCommand,
@@ -37,6 +39,21 @@ class WorkpiecePropertiesWidget(Expander):
         rows_container = Gtk.ListBox()
         rows_container.set_selection_mode(Gtk.SelectionMode.NONE)
         self.set_child(rows_container)
+
+        # Source File Row
+        self.source_file_row = Adw.ActionRow(
+            title=_("Source File"),
+            visible=False,  # Hidden by default
+        )
+        self.open_source_button = Gtk.Button()
+        self.open_source_button.set_child(get_icon("open-in-new-symbolic"))
+        self.open_source_button.set_valign(Gtk.Align.CENTER)
+        self.open_source_button.set_tooltip_text(_("Show in File Browser"))
+        self.open_source_button.connect(
+            "clicked", self._on_open_source_file_clicked
+        )
+        self.source_file_row.add_suffix(self.open_source_button)
+        rows_container.append(self.source_file_row)
 
         # X Position Entry
         self.x_row = Adw.SpinRow(
@@ -378,6 +395,23 @@ class WorkpiecePropertiesWidget(Expander):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
         return False
 
+    def _on_open_source_file_clicked(self, button):
+        if len(self.workpieces) != 1:
+            return
+
+        workpiece = self.workpieces[0]
+        file_path = Path(workpiece.source_file)
+
+        if file_path.is_file():
+            try:
+                # Use Gio.FileLauncher for the modern, correct way to show a
+                # file in the user's file browser.
+                gio_file = Gio.File.new_for_path(str(file_path.resolve()))
+                launcher = Gtk.FileLauncher.new(gio_file)
+                launcher.open_containing_folder(self.get_root(), None, None)
+            except Exception as e:
+                logger.error(f"Failed to show file in browser: {e}")
+
     def _on_reset_aspect_clicked(self, button):
         if not self.workpieces:
             return
@@ -579,5 +613,20 @@ class WorkpiecePropertiesWidget(Expander):
 
         logger.debug(f"Updating UI: angle={angle}")
         self.angle_row.set_value(angle)
+
+        # Update source file row, using `workpiece.name` as the path.
+        if len(self.workpieces) != 1:
+            self.source_file_row.set_visible(False)
+        else:
+            try:
+                # Interpret the name as a path and check if it's a file.
+                file_path = Path(workpiece.source_file)
+                if file_path.is_file():
+                    self.source_file_row.set_visible(True)
+                    self.source_file_row.set_subtitle(file_path.name)
+                    self.open_source_button.set_sensitive(True)
+            except (TypeError, ValueError):
+                # workpiece.name might not be a valid path component.
+                pass
 
         self._in_update = False

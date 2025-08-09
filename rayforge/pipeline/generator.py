@@ -382,8 +382,9 @@ class OpsGenerator:
             self._handle_completed_task(task, key, step, workpiece)
         else:
             logger.warning(
-                f"Ops generation for '{step.name}' / '{workpiece.name}' "
-                f"failed. Status: {task.get_status()}."
+                f"Ops generation for '{step.name}' / "
+                f"'{workpiece.source_file}' failed. "
+                f"Status: {task.get_status()}."
             )
             self._ops_cache[key] = (None, None)
 
@@ -406,7 +407,7 @@ class OpsGenerator:
         except Exception as e:
             logger.error(
                 f"Error getting result for '{step.name}' on "
-                f"'{workpiece.name}': {e}",
+                f"'{workpiece.source_file}': {e}",
                 exc_info=True,
             )
             self._ops_cache[key] = (None, None)

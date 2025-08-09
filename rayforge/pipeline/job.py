@@ -69,7 +69,7 @@ async def generate_job_ops(
             context.set_progress(i / total_items)
             context.set_message(
                 _("Processing '{workpiece}' in '{step}'").format(
-                    workpiece=workpiece.name, step=step.name
+                    workpiece=workpiece.source_file.name, step=step.name
                 )
             )
             await asyncio.sleep(0)

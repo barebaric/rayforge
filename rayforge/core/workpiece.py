@@ -15,6 +15,7 @@ from typing import (
 from blinker import Signal
 from pathlib import Path
 from ..importer import Importer
+
 if TYPE_CHECKING:
     from .doc import Doc
     from .layer import Layer
@@ -32,9 +33,14 @@ class WorkPiece:
     and size on the canvas.
     """
 
-    def __init__(self, name: str, data: bytes, importer_class: Type[Importer]):
-        self.layer: Optional['Layer'] = None
-        self.name = name
+    def __init__(
+        self,
+        source_file: Path,
+        data: bytes,
+        importer_class: Type[Importer],
+    ):
+        self.layer: Optional["Layer"] = None
+        self.source_file = source_file
         self.uid = str(uuid.uuid4())
         self._data = data
         self.importer_class = importer_class
@@ -113,7 +119,7 @@ class WorkPiece:
         rclass = self.importer_class
         return {
             "uid": self.uid,
-            "name": self.name,
+            "name": self.source_file,
             "pos": self.pos,
             "size": self.size,
             "angle": self.angle,
@@ -128,18 +134,18 @@ class WorkPiece:
         from its raw data and importer class.
         """
         # Dynamically import the importer class from its path
-        module_path, class_name = data_dict['importer'].rsplit('.', 1)
+        module_path, class_name = data_dict["importer"].rsplit(".", 1)
         module = importlib.import_module(module_path)
         importer_class = getattr(module, class_name)
 
         # Create the WorkPiece instance using the main constructor
-        wp = cls(data_dict['name'], data_dict['data'], importer_class)
+        wp = cls(data_dict["name"], data_dict["data"], importer_class)
 
         # Restore state
-        wp.uid = data_dict.get('uid', uuid.uuid4())
-        wp.pos = data_dict.get('pos')
-        wp.size = data_dict.get('size')
-        wp.angle = data_dict.get('angle', 0.0)
+        wp.uid = data_dict.get("uid", uuid.uuid4())
+        wp.pos = data_dict.get("pos")
+        wp.size = data_dict.get("size")
+        wp.angle = data_dict.get("angle", 0.0)
 
         return wp
 
@@ -199,20 +205,21 @@ class WorkPiece:
         return self.importer.get_aspect_ratio()
 
     def get_current_aspect_ratio(self) -> Optional[float]:
-        return (self.size[0] / self.size[1]
-                if self.size and self.size[1] else None)
+        return (
+            self.size[0] / self.size[1] if self.size and self.size[1] else None
+        )
 
     @classmethod
     def from_file(cls, filename: Path, importer_class: type[Importer]):
         data = filename.read_bytes()
-        wp = cls(filename.name, data, importer_class)
+        wp = cls(filename, data, importer_class)
         return wp
 
     def render_for_ops(
         self,
         pixels_per_mm_x: float,
         pixels_per_mm_y: float,
-        size: Optional[Tuple[float, float]] = None
+        size: Optional[Tuple[float, float]] = None,
     ) -> Optional[cairo.ImageSurface]:
         """Renders to a pixel surface at the workpiece's current size, or a
         provided override size. Returns None if no size is available."""
@@ -257,7 +264,7 @@ class WorkPiece:
             yield chunk
 
     def dump(self, indent=0):
-        print("  " * indent, self.name, self.importer.label)
+        print("  " * indent, self.source_file, self.importer.label)
 
     @property
     def pos_machine(self) -> Optional[Tuple[float, float]]:

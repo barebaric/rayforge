@@ -130,7 +130,7 @@ class StepElement(CanvasElement):
             Optional[WorkPieceOpsElement], self.find_by_data(workpiece)
         )
         if not elem:
-            logger.debug(f"Adding workpiece to step: {workpiece.name}")
+            logger.debug(f"Adding workpiece to step: {workpiece.source_file}")
             elem = self.add_workpiece(workpiece)
         return elem
 
@@ -147,7 +147,7 @@ class StepElement(CanvasElement):
 
         logger.debug(
             f"StepElem '{sender.name}': Received ops_generation_starting "
-            f"for {workpiece.name}"
+            f"for {workpiece.source_file}"
         )
         assert self.canvas and self.parent and self.parent.data, (
             "Received ops_start, but element has no canvas or parent context"
@@ -176,7 +176,8 @@ class StepElement(CanvasElement):
 
         logger.debug(
             f"StepElem '{sender.name}': Received ops_chunk_available for "
-            f"{workpiece.name} (chunk size: {len(chunk)}, pos={workpiece.pos})"
+            f"{workpiece.source_file} (chunk size: {len(chunk)}, "
+            f"pos={workpiece.pos})"
         )
         assert self.canvas and self.parent and self.parent.data, (
             "Received update, but element has no canvas or parent context"
@@ -207,7 +208,7 @@ class StepElement(CanvasElement):
 
         logger.debug(
             f"StepElem '{sender.name}': Received ops_generation_finished "
-            f"for {workpiece.name}"
+            f"for {workpiece.source_file}"
         )
         assert self.canvas and self.parent and self.parent.data, (
             "Received ops_finished, but element has no canvas or parent "
