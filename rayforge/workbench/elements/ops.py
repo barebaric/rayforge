@@ -136,7 +136,8 @@ class WorkPieceOpsElement(CanvasElement):
         ):
             logger.debug(
                 f"Ignoring stale final ops (gen {generation_id}) for "
-                f"'{self.data.name}', current is {self._ops_generation_id}"
+                f"'{self.data.source_file}', "
+                f"current is {self._ops_generation_id}"
             )
             return
         if generation_id is not None:
@@ -163,7 +164,7 @@ class WorkPieceOpsElement(CanvasElement):
         if generation_id > self._ops_generation_id:
             logger.debug(
                 f"New generation chunk (gen {generation_id}) for "
-                f"'{self.data.name}', replacing current (gen "
+                f"'{self.data.source_file}', replacing current (gen "
                 f"{self._ops_generation_id})."
             )
             self._ops_generation_id = generation_id
@@ -176,7 +177,8 @@ class WorkPieceOpsElement(CanvasElement):
         if generation_id < self._ops_generation_id:
             logger.debug(
                 f"Ignoring stale ops chunk (gen {generation_id}) for "
-                f"'{self.data.name}', current is {self._ops_generation_id}"
+                f"'{self.data.source_file}', "
+                f"current is {self._ops_generation_id}"
             )
             return
 
