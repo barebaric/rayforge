@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Optional, Tuple
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango  # type: ignore
@@ -37,12 +38,14 @@ class Canvas3D(Gtk.GLArea):
         self.sphere_renderer: Optional[SphereRenderer] = None
         self._pending_ops: Optional[Ops] = None
         self._is_orbiting = False
+        self._is_z_rotating = False
         self._gl_initialized = False
 
         # State for interactions
         self._last_pan_offset: Optional[Tuple[float, float]] = None
         self._rotation_pivot: Optional[np.ndarray] = None
         self._last_orbit_pos: Optional[Tuple[float, float]] = None
+        self._last_z_rotate_screen_pos: Optional[Tuple[float, float]] = None
 
         self.set_has_depth_buffer(True)
         self.set_focusable(True)
@@ -88,12 +91,21 @@ class Canvas3D(Gtk.GLArea):
 
     def _setup_interactions(self):
         """Connects GTK4 gesture and event controllers for interaction."""
-        drag = Gtk.GestureDrag.new()
-        drag.set_button(Gdk.BUTTON_MIDDLE)
-        drag.connect("drag-begin", self.on_drag_begin)
-        drag.connect("drag-update", self.on_drag_update)
-        drag.connect("drag-end", self.on_drag_end)
-        self.add_controller(drag)
+        # Middle mouse drag for Pan/Orbit
+        drag_middle = Gtk.GestureDrag.new()
+        drag_middle.set_button(Gdk.BUTTON_MIDDLE)
+        drag_middle.connect("drag-begin", self.on_drag_begin)
+        drag_middle.connect("drag-update", self.on_drag_update)
+        drag_middle.connect("drag-end", self.on_drag_end)
+        self.add_controller(drag_middle)
+
+        # Left mouse drag for Z-axis rotation
+        drag_left = Gtk.GestureDrag.new()
+        drag_left.set_button(Gdk.BUTTON_PRIMARY)
+        drag_left.connect("drag-begin", self.on_z_rotate_begin)
+        drag_left.connect("drag-update", self.on_z_rotate_update)
+        drag_left.connect("drag-end", self.on_z_rotate_end)
+        self.add_controller(drag_left)
 
         scroll = Gtk.EventControllerScroll.new(
             Gtk.EventControllerScrollFlags.VERTICAL
@@ -104,6 +116,15 @@ class Canvas3D(Gtk.GLArea):
         key_controller = Gtk.EventControllerKey.new()
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.add_controller(key_controller)
+
+    def _clear_drag_state(self):
+        """Resets all state variables related to any drag operation."""
+        self._is_orbiting = False
+        self._is_z_rotating = False
+        self._last_pan_offset = None
+        self._rotation_pivot = None
+        self._last_orbit_pos = None
+        self._last_z_rotate_screen_pos = None
 
     def on_key_pressed(self, controller, keyval, keycode, state):
         """Handles key press events for the canvas."""
@@ -142,12 +163,7 @@ class Canvas3D(Gtk.GLArea):
         self.camera.up = new_up
 
         # A view reset can interrupt a drag operation, leaving stale state.
-        # This state must be cleared to prevent the next drag from failing.
-        self._is_orbiting = False
-        self._last_pan_offset = None
-        self._rotation_pivot = None
-        self._last_orbit_pos = None
-
+        self._clear_drag_state()
         self.queue_render()
 
     def reset_view_iso(self):
@@ -178,6 +194,9 @@ class Canvas3D(Gtk.GLArea):
         self.camera.position = new_pos
         self.camera.target = new_target
         self.camera.up = new_up
+
+        # A view reset can interrupt a drag operation, leaving stale state.
+        self._clear_drag_state()
         self.queue_render()
 
     def on_realize(self, area) -> None:
@@ -427,12 +446,61 @@ class Canvas3D(Gtk.GLArea):
 
     def on_drag_end(self, gesture, offset_x, offset_y):
         """Handles the end of a drag operation."""
-        self._last_pan_offset = None
-        if self._is_orbiting:
-            self._is_orbiting = False
-            self._last_orbit_pos = None
-            self._rotation_pivot = None
-            self.queue_render()
+        self._clear_drag_state()
+        self.queue_render()
+
+    def on_z_rotate_begin(self, gesture, x: float, y: float):
+        """
+        Handles the start of a left-mouse-button drag for Z-axis rotation.
+        """
+        if not self.camera:
+            return
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        self._is_z_rotating = True
+        self._last_z_rotate_screen_pos = None  # Will be set on first update
+
+    def on_z_rotate_update(self, gesture, offset_x: float, offset_y: float):
+        """Handles updates during a Z-axis 'turntable' rotation."""
+        if not self.camera or not self._is_z_rotating:
+            return
+
+        event = gesture.get_last_event()
+        if not event:
+            return
+        _, x_curr, y_curr = event.get_position()
+
+        if self._last_z_rotate_screen_pos is None:
+            self._last_z_rotate_screen_pos = (x_curr, y_curr)
+            return
+
+        x_prev, y_prev = self._last_z_rotate_screen_pos
+        self._last_z_rotate_screen_pos = (x_curr, y_curr)
+
+        # Use the center of the widget as the screen-space pivot
+        pivot_x = self.get_width() / 2.0
+        pivot_y = self.get_height() / 2.0
+
+        # Calculate angle of the previous and current mouse positions
+        # relative to the screen pivot.
+        angle_prev = math.atan2(y_prev - pivot_y, x_prev - pivot_x)
+        angle_curr = math.atan2(y_curr - pivot_y, x_curr - pivot_x)
+        delta_angle = angle_curr - angle_prev
+
+        # Handle atan2 wrap-around from -pi to pi
+        if delta_angle > math.pi:
+            delta_angle -= 2 * math.pi
+        elif delta_angle < -math.pi:
+            delta_angle += 2 * math.pi
+
+        axis_z = np.array([0, 0, 1], dtype=np.float64)
+        pivot_world = self.camera.target  # Rotate around the look-at point
+        self.camera.orbit(pivot_world, axis_z, delta_angle)
+        self.queue_render()
+
+    def on_z_rotate_end(self, gesture, offset_x, offset_y):
+        """Handles the end of a Z-axis rotation drag."""
+        self._clear_drag_state()
+        self.queue_render()
 
     def on_scroll(self, controller, dx, dy):
         """Handles the mouse scroll wheel for zooming."""
