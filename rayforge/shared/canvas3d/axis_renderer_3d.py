@@ -3,7 +3,7 @@ Renders a 3D grid and axes for a scene.
 
 This module provides the AxisRenderer3D class, which is responsible for
 creating and drawing a grid on the XY plane, along with labeled X and Y
-axes. It also includes text rendering for the axis labels.
+axes. It uses a composed PlaneRenderer for the background.
 """
 
 from __future__ import annotations
@@ -13,12 +13,13 @@ import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
 from .text_renderer_3d import TextRenderer3D
+from .plane_renderer import PlaneRenderer
 
 logger = logging.getLogger(__name__)
 
 
 class AxisRenderer3D(BaseRenderer):
-    """Renders a 3D grid with axes and numeric labels on the XY plane."""
+    """Renders a 3D grid with axes, background, and labels on the XY plane."""
 
     def __init__(
         self, width_mm: float, height_mm: float, grid_size_mm: float = 10.0
@@ -35,21 +36,31 @@ class AxisRenderer3D(BaseRenderer):
         self.height_mm = float(height_mm)
         self.grid_size_mm = float(grid_size_mm)
 
-        self.grid_vao: int = 0
-        self.axis_vao: int = 0
-        self.grid_vbo: int = 0
-        self.axis_vbo: int = 0
-        self.grid_vertex_count: int = 0
-        self.axis_vertex_count: int = 0
-        self.text_renderer: Optional[TextRenderer3D] = None
-        self.grid_color: Tuple[float, float, float, float] = 0.4, 0.4, 0.4, 1.0
-        self.axis_color: Tuple[float, float, float, float] = 1.0, 1.0, 1.0, 1.0
-        self.label_color: Tuple[float, float, float, float] = (
-            0.9,
-            0.9,
-            0.9,
-            1.0,
+        # Colors
+        self.background_color = 0.8, 0.8, 0.8, 0.1
+        self.grid_color = 0.4, 0.4, 0.4, 1.0
+        self.axis_color = 1.0, 1.0, 1.0, 1.0
+        self.label_color = 0.9, 0.9, 0.9, 1.0
+
+        # Composition
+        self.background_renderer = PlaneRenderer(
+            width=self.width_mm,
+            height=self.height_mm,
+            color=self.background_color,
+            z_offset=-0.002,
         )
+        self._add_child_renderer(self.background_renderer)
+
+        self.text_renderer: Optional[TextRenderer3D] = None
+
+        # Grid and Axes resources
+        self.grid_vao, self.grid_vbo, self.grid_vertex_count = 0, 0, 0
+        self.axes_vao, self.axes_vbo, self.axes_vertex_count = 0, 0, 0
+
+    def set_background_color(self, color: Tuple[float, float, float, float]):
+        """Sets the color for the background plane."""
+        self.background_color = color
+        self.background_renderer.color = color
 
     def set_grid_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the grid lines."""
@@ -64,74 +75,63 @@ class AxisRenderer3D(BaseRenderer):
         self.label_color = color
 
     def init_gl(self) -> None:
-        """Initializes OpenGL resources for rendering the grid and axes."""
-        grid_vertices, axis_vertices = [], []
+        """Initializes OpenGL resources for all components."""
+        # Delegate initialization to child renderers
+        self.background_renderer.init_gl()
 
-        # A small negative Z offset prevents z-fighting with objects on grid
-        z_pos = -0.001
-
-        # Define vertices for the grid lines on the XY plane
-        # Lines parallel to Y-axis (constant X)
-        x_ticks = np.arange(
-            self.grid_size_mm, self.width_mm, self.grid_size_mm
-        )
-        for x in x_ticks:
-            grid_vertices.extend([x, 0.0, z_pos, x, self.height_mm, z_pos])
-
-        # Lines parallel to X-axis (constant Y)
-        y_ticks = np.arange(
-            self.grid_size_mm, self.height_mm, self.grid_size_mm
-        )
-        for y in y_ticks:
-            grid_vertices.extend([0.0, y, z_pos, self.width_mm, y, z_pos])
-        self.grid_vertex_count = len(grid_vertices) // 3
-
-        # Define vertices for the main axis lines
-        # X-Axis at Y=0
-        axis_vertices.extend([0.0, 0.0, 0.0, self.width_mm, 0.0, 0.0])
-        # Y-Axis at X=0
-        axis_vertices.extend([0.0, 0.0, 0.0, 0.0, self.height_mm, 0.0])
-        self.axis_vertex_count = len(axis_vertices) // 3
-
-        # Create and configure OpenGL objects with strict state isolation.
-        # This prevents side effects when interacting with other renderers.
-        self._create_gl_objects(grid_vertices, axis_vertices)
-
-        # Initialize the text renderer now that the GL state is clean
         self.text_renderer = TextRenderer3D()
         self.text_renderer.init_gl()
+        self._add_child_renderer(self.text_renderer)
 
-    def _create_gl_objects(
-        self, grid_vertices: list[float], axis_vertices: list[float]
-    ) -> None:
-        """Creates VAOs and VBOs and uploads vertex data to the GPU."""
+        # Initialize self-managed components using base class helpers
+        self._init_grid_and_axes()
+
+    def _init_grid_and_axes(self):
+        """Creates VAOs/VBOs for the grid and axis lines."""
+        grid_z_pos = -0.001
+        w, h = self.width_mm, self.height_mm
+
+        # Grid vertices
+        grid_verts = []
+        for x in np.arange(self.grid_size_mm, w, self.grid_size_mm):
+            grid_verts.extend([x, 0.0, grid_z_pos, x, h, grid_z_pos])
+        for y in np.arange(self.grid_size_mm, h, self.grid_size_mm):
+            grid_verts.extend([0.0, y, grid_z_pos, w, y, grid_z_pos])
+
+        # Axis vertices
+        axis_verts = [0.0, 0.0, 0.0, w, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, h, 0.0]
+
         # Create Grid resources
-        self.grid_vao = GL.glGenVertexArrays(1)
-        self.grid_vbo = GL.glGenBuffers(1)
+        self.grid_vao = self._create_vao()
+        self.grid_vbo = self._create_vbo()
+        self.grid_vertex_count = len(grid_verts) // 3
         GL.glBindVertexArray(self.grid_vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.grid_vbo)
-        grid_data = np.array(grid_vertices, dtype=np.float32)
         GL.glBufferData(
-            GL.GL_ARRAY_BUFFER, grid_data.nbytes, grid_data, GL.GL_STATIC_DRAW
+            GL.GL_ARRAY_BUFFER,
+            np.array(grid_verts, dtype=np.float32).nbytes,
+            np.array(grid_verts, dtype=np.float32),
+            GL.GL_STATIC_DRAW,
         )
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
         # Create Axis resources
-        self.axis_vao = GL.glGenVertexArrays(1)
-        self.axis_vbo = GL.glGenBuffers(1)
-        GL.glBindVertexArray(self.axis_vao)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.axis_vbo)
-        axis_data = np.array(axis_vertices, dtype=np.float32)
+        self.axes_vao = self._create_vao()
+        self.axes_vbo = self._create_vbo()
+        self.axes_vertex_count = len(axis_verts) // 3
+        GL.glBindVertexArray(self.axes_vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.axes_vbo)
         GL.glBufferData(
-            GL.GL_ARRAY_BUFFER, axis_data.nbytes, axis_data, GL.GL_STATIC_DRAW
+            GL.GL_ARRAY_BUFFER,
+            np.array(axis_verts, dtype=np.float32).nbytes,
+            np.array(axis_verts, dtype=np.float32),
+            GL.GL_STATIC_DRAW,
         )
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
-        # Unbind all buffers and vertex arrays to leave a clean state
         GL.glBindVertexArray(0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def render(
         self,
@@ -141,36 +141,40 @@ class AxisRenderer3D(BaseRenderer):
         view_matrix: np.ndarray,
     ) -> None:
         """
-        Renders the grid, axes, and labels.
+        Orchestrates the rendering of all components in the correct order.
 
         Args:
-            line_shader: The shader program to use for drawing lines.
+            line_shader: The shader program to use for drawing lines/solids.
             text_shader: The shader program to use for drawing text.
             mvp: The combined Model-View-Projection matrix.
             view_matrix: The view matrix, used for billboarding text.
         """
-        if not (self.grid_vao and self.axis_vao and self.text_renderer):
+        if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
 
+        # Enable blending for transparent objects
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
-        line_shader.set_mat4("uMVP", mvp)
 
-        # Draw grid lines
-        GL.glLineWidth(1.0)
+        GL.glDepthMask(GL.GL_FALSE)
+        self.background_renderer.render(line_shader, mvp)
+        GL.glDepthMask(GL.GL_TRUE)
+
         line_shader.set_vec4("uColor", self.grid_color)
+        GL.glLineWidth(1.0)
         GL.glBindVertexArray(self.grid_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.grid_vertex_count)
 
-        # Draw main axes
-        GL.glLineWidth(2.0)
-        GL.glBindVertexArray(self.axis_vao)
         line_shader.set_vec4("uColor", self.axis_color)
-        GL.glDrawArrays(GL.GL_LINES, 0, self.axis_vertex_count)
+        GL.glLineWidth(2.0)
+        GL.glBindVertexArray(self.axes_vao)
+        GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
         GL.glBindVertexArray(0)
 
-        # Draw text labels for the axes
         self._render_axis_labels(text_shader, mvp, view_matrix)
+        GL.glDisable(GL.GL_BLEND)
 
     def _render_axis_labels(
         self,
@@ -181,61 +185,31 @@ class AxisRenderer3D(BaseRenderer):
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
             return
-
-        label_color = self.label_color
         label_scale = 0.1
         label_offset = label_scale * 20
-
-        # X-axis labels
-        x_ticks = np.arange(
+        for x in np.arange(
             self.grid_size_mm, self.width_mm + 1e-5, self.grid_size_mm
-        )
-        for x in x_ticks:
-            position = np.array([x, -label_offset, 0.0])
+        ):
+            pos = np.array([x, -label_offset, 0.0])
             self.text_renderer.render_text(
-                shader=text_shader,
-                text=str(int(x)),
-                position=position,
-                scale=label_scale,
-                color=label_color,
-                mvp_matrix=mvp_matrix,
-                view_matrix=view_matrix,
+                text_shader,
+                str(int(x)),
+                pos,
+                label_scale,
+                self.label_color,
+                mvp_matrix,
+                view_matrix,
             )
-
-        # Y-axis labels
-        y_ticks = np.arange(
+        for y in np.arange(
             self.grid_size_mm, self.height_mm + 1e-5, self.grid_size_mm
-        )
-        for y in y_ticks:
-            position = np.array([-label_offset, y, 0])
+        ):
+            pos = np.array([-label_offset, y, 0.0])
             self.text_renderer.render_text(
-                shader=text_shader,
-                text=str(int(y)),
-                position=position,
-                scale=label_scale,
-                color=label_color,
-                mvp_matrix=mvp_matrix,
-                view_matrix=view_matrix,
+                text_shader,
+                str(int(y)),
+                pos,
+                label_scale,
+                self.label_color,
+                mvp_matrix,
+                view_matrix,
             )
-
-    def cleanup(self) -> None:
-        """Releases all OpenGL resources used by the renderer."""
-        if self.text_renderer:
-            self.text_renderer.cleanup()
-
-        try:
-            # Collect all valid VAO and VBO handles
-            vaos_to_delete = [
-                vao for vao in [self.grid_vao, self.axis_vao] if vao
-            ]
-            if vaos_to_delete:
-                GL.glDeleteVertexArrays(len(vaos_to_delete), vaos_to_delete)
-
-            vbos_to_delete = [
-                vbo for vbo in [self.grid_vbo, self.axis_vbo] if vbo
-            ]
-            if vbos_to_delete:
-                GL.glDeleteBuffers(len(vbos_to_delete), vbos_to_delete)
-        except Exception:
-            # Log error but don't crash, as this is often called on exit
-            logger.exception("Error during axis renderer cleanup")

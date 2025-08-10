@@ -7,12 +7,7 @@ import math
 from typing import Union
 import numpy as np
 from OpenGL import GL
-from .gl_utils import (
-    BaseRenderer,
-    Shader,
-    gl_gen_buffers,
-    gl_gen_vertex_arrays,
-)
+from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +18,13 @@ class SphereRenderer(BaseRenderer):
     def __init__(
         self, radius: float, latitude_segments: int, longitude_segments: int
     ):
-        """
-        Initializes the SphereRenderer.
-
-        Args:
-            radius: The radius of the sphere.
-            latitude_segments: The number of horizontal divisions.
-            longitude_segments: The number of vertical divisions.
-        """
+        """Initializes the SphereRenderer."""
         super().__init__()
         self.radius = radius
         self.latitude_segments = latitude_segments
         self.longitude_segments = longitude_segments
+        self.vao: int = 0
+        self.vbo: int = 0
         self.vertex_count = 0
 
     def init_gl(self) -> None:
@@ -67,8 +57,8 @@ class SphereRenderer(BaseRenderer):
         self.vertex_count = len(vertices) // 3
         vertex_data = np.array(vertices, dtype=np.float32)
 
-        self.vao = gl_gen_vertex_arrays(1)[0]
-        self.vbo = gl_gen_buffers(1)[0]
+        self.vao = self._create_vao()
+        self.vbo = self._create_vbo()
 
         GL.glBindVertexArray(self.vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)

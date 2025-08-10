@@ -6,12 +6,7 @@ import math
 from typing import List, Optional, Tuple
 import numpy as np
 from OpenGL import GL
-from .gl_utils import (
-    BaseRenderer,
-    Shader,
-    gl_gen_buffers,
-    gl_gen_vertex_arrays,
-)
+from .gl_utils import BaseRenderer, Shader
 from ...core.ops import (
     ArcToCommand,
     Command,
@@ -28,22 +23,20 @@ class OpsRenderer(BaseRenderer):
         """Initializes the OpsRenderer."""
         super().__init__()
         self.cut_vao: int = 0
-        self.cut_vbo: int = 0
         self.travel_vao: int = 0
-        self.travel_vbo: int = 0
         self.cut_vertex_count: int = 0
         self.travel_vertex_count: int = 0
-        self._owns_shader = False
 
     def init_gl(self):
         """Initializes OpenGL resources for rendering."""
-        self.cut_vao = gl_gen_vertex_arrays(1)[0]
-        self.cut_vbo = gl_gen_buffers(1)[0]
-        self.travel_vao = gl_gen_vertex_arrays(1)[0]
-        self.travel_vbo = gl_gen_buffers(1)[0]
+        self.cut_vao = self._create_vao()
+        self.cut_vbo = self._create_vbo()
+        self.travel_vao = self._create_vao()
+        self.travel_vbo = self._create_vbo()
 
     def update_ops(self, ops: Ops):
-        """Processes an Ops object and updates the vertex buffers.
+        """
+        Processes an Ops object and updates the vertex buffers.
 
         Args:
             ops: The operations object to process.
@@ -113,15 +106,6 @@ class OpsRenderer(BaseRenderer):
         )
 
         GL.glBindVertexArray(0)
-
-    def cleanup(self):
-        """Cleans up OpenGL resources."""
-        vaos_to_delete = [self.cut_vao, self.travel_vao]
-        vbos_to_delete = [self.cut_vbo, self.travel_vbo]
-        if any(vaos_to_delete):
-            GL.glDeleteVertexArrays(len(vaos_to_delete), vaos_to_delete)
-        if any(vbos_to_delete):
-            GL.glDeleteBuffers(len(vbos_to_delete), vbos_to_delete)
 
     def _tessellate_arc(
         self,

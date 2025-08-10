@@ -4,7 +4,7 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, final
 
 import numpy as np
 from OpenGL import GL
@@ -13,45 +13,12 @@ from OpenGL.GL import shaders
 logger = logging.getLogger(__name__)
 
 
-def gl_gen_vertex_arrays(n: int = 1) -> np.ndarray:
-    """Generates one or more vertex array objects (VAOs).
-
-    This is a wrapper around glGenVertexArrays that ensures a
-    consistent return type (a NumPy array of IDs).
-
-    Args:
-        n: The number of vertex array objects to generate.
-
-    Returns:
-        A numpy array of VAO IDs.
-    """
-    arr_ids = GL.glGenVertexArrays(n)
-    # Ensure the result is always a NumPy array for consistency.
-    return np.array([arr_ids], dtype=np.uint32) if n == 1 else arr_ids
-
-
-def gl_gen_buffers(n: int = 1) -> np.ndarray:
-    """Generates one or more buffer objects (VBOs, EBOs, etc.).
-
-    This is a wrapper around glGenBuffers that ensures a
-    consistent return type (a NumPy array of IDs).
-
-    Args:
-        n: The number of buffer objects to generate.
-
-    Returns:
-        A numpy array of buffer IDs.
-    """
-    buffer_ids = GL.glGenBuffers(n)
-    # Ensure the result is always a NumPy array for consistency.
-    return np.array([buffer_ids], dtype=np.uint32) if n == 1 else buffer_ids
-
-
 class Shader:
     """Manages a GLSL shader program, including compilation and uniforms."""
 
     def __init__(self, vertex_source: str, fragment_source: str):
-        """Compiles and links the vertex and fragment shader sources.
+        """
+        Compiles and links the vertex and fragment shader sources.
 
         Args:
             vertex_source: The source code for the vertex shader.
@@ -60,13 +27,10 @@ class Shader:
         Raises:
             Exception: If shader compilation or linking fails.
         """
-        self._owns_shader = True
         try:
             self.program = shaders.compileProgram(
                 shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
-                shaders.compileShader(
-                    fragment_source, GL.GL_FRAGMENT_SHADER
-                ),
+                shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
             )
         except Exception as e:
             logger.error(f"Shader Compilation Failed: {e}", exc_info=True)
@@ -77,7 +41,8 @@ class Shader:
         GL.glUseProgram(self.program)
 
     def set_mat4(self, name: str, mat: np.ndarray) -> None:
-        """Sets a mat4 uniform in the shader.
+        """
+        Sets a mat4 uniform in the shader.
 
         The matrix is expected to be in row-major format, which is the
         default for NumPy arrays.
@@ -91,7 +56,8 @@ class Shader:
             GL.glUniformMatrix4fv(loc, 1, GL.GL_TRUE, mat)
 
     def set_mat3(self, name: str, mat: np.ndarray) -> None:
-        """Sets a mat3 uniform in the shader.
+        """
+        Sets a mat3 uniform in the shader.
 
         Args:
             name: The name of the uniform variable in the shader.
@@ -102,7 +68,8 @@ class Shader:
             GL.glUniformMatrix3fv(loc, 1, GL.GL_TRUE, mat)
 
     def set_vec2(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
-        """Sets a vec2 uniform in the shader.
+        """
+        Sets a vec2 uniform in the shader.
 
         Args:
             name: The name of the uniform variable in the shader.
@@ -110,8 +77,7 @@ class Shader:
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            arr = np.asarray(vec, dtype=np.float32)
-            GL.glUniform2fv(loc, 1, arr)
+            GL.glUniform2fv(loc, 1, np.asarray(vec, dtype=np.float32))
 
     def set_vec3(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
         """Sets a vec3 uniform in the shader.
@@ -122,8 +88,7 @@ class Shader:
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            arr = np.asarray(vec, dtype=np.float32)
-            GL.glUniform3fv(loc, 1, arr)
+            GL.glUniform3fv(loc, 1, np.asarray(vec, dtype=np.float32))
 
     def set_vec4(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
         """Sets a vec4 uniform in the shader.
@@ -134,8 +99,7 @@ class Shader:
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            arr = np.asarray(vec, dtype=np.float32)
-            GL.glUniform4fv(loc, 1, arr)
+            GL.glUniform4fv(loc, 1, np.asarray(vec, dtype=np.float32))
 
     def cleanup(self) -> None:
         """Deletes the shader program from GPU context to free resources."""
@@ -145,23 +109,59 @@ class Shader:
 
 
 class BaseRenderer:
-    """A base class for an OpenGL renderer."""
+    """A base class for an OpenGL renderer that manages its own resources."""
 
     def __init__(self):
-        """Initializes renderer state with null OpenGL object IDs."""
+        """Initializes the resource tracking lists."""
         self.shader: Optional[Shader] = None
-        self.vao: int = 0
-        self.vbo: int = 0
+        self._owned_vaos: list[int] = []
+        self._owned_vbos: list[int] = []
+        self._owned_textures: list[int] = []  # <-- ADDED
+        self._owned_renderers: list[BaseRenderer] = []
 
+    def _create_vao(self) -> int:
+        """Creates a VAO and registers it for automatic cleanup."""
+        vao = GL.glGenVertexArrays(1)
+        self._owned_vaos.append(vao)
+        return vao
+
+    def _create_vbo(self) -> int:
+        """Creates a VBO and registers it for automatic cleanup."""
+        vbo = GL.glGenBuffers(1)
+        self._owned_vbos.append(vbo)
+        return vbo
+
+    def _create_texture(self) -> int:  # <-- ADDED
+        """Creates a Texture and registers it for automatic cleanup."""
+        texture = GL.glGenTextures(1)
+        self._owned_textures.append(texture)
+        return texture
+
+    def _add_child_renderer(self, renderer: "BaseRenderer"):
+        """Adds a child renderer to be cleaned up automatically."""
+        self._owned_renderers.append(renderer)
+
+    @final
     def cleanup(self) -> None:
-        """Cleans up all associated OpenGL resources (VAO, VBO)."""
+        """Cleans up all tracked OpenGL resources."""
         try:
+            for renderer in self._owned_renderers:
+                renderer.cleanup()
+
             if self.shader:
                 self.shader.cleanup()
-            if self.vao:
-                GL.glDeleteVertexArrays(1, (self.vao,))
-            if self.vbo:
-                GL.glDeleteBuffers(1, (self.vbo,))
+
+            if self._owned_textures:  # <-- ADDED
+                GL.glDeleteTextures(self._owned_textures)
+                self._owned_textures.clear()
+
+            if self._owned_vaos:
+                GL.glDeleteVertexArrays(
+                    len(self._owned_vaos), self._owned_vaos
+                )
+                self._owned_vaos.clear()
+            if self._owned_vbos:
+                GL.glDeleteBuffers(len(self._owned_vbos), self._owned_vbos)
+                self._owned_vbos.clear()
         except Exception:
-            # OpenGL context might already be destroyed.
             logger.exception("Error during renderer cleanup")

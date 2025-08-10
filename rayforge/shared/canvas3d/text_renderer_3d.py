@@ -11,21 +11,23 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 from OpenGL import GL
 from PIL import Image, ImageDraw, ImageFont
-from .gl_utils import Shader, gl_gen_buffers, gl_gen_vertex_arrays
+from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)
 
 
-class TextRenderer3D:
+class TextRenderer3D(BaseRenderer):
     """Renders billboarded text in a 3D scene."""
 
     def __init__(self, font_path: Optional[str] = None, font_size: int = 32):
-        """Initializes the text renderer on the CPU.
+        """
+        Initializes the text renderer on the CPU.
 
         Args:
             font_path: Path to TTF font. If None, uses a system default.
             font_size: The size of the font for the texture atlas.
         """
+        super().__init__()
         self.char_data: Dict[str, Dict[str, Union[float, int]]] = {}
         self.texture_id: int = 0
         self.atlas_width: int = 0
@@ -107,19 +109,12 @@ class TextRenderer3D:
             self._upload_atlas_to_gpu()
             self._atlas_image = None  # Release CPU memory
 
-        self.vao = gl_gen_vertex_arrays(1)[0]
-        self.vbo = gl_gen_buffers(1)[0]
+        self.vao = self._create_vao()
+        self.vbo = self._create_vbo()
 
         GL.glBindVertexArray(self.vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
-
-        # Allocate buffer for a single dynamic quad (4 vertices * 4 floats)
-        # We use GL_DYNAMIC_DRAW because we update it for every character.
-        vertex_size_bytes = 16 * 4
-        GL.glBufferData(
-            GL.GL_ARRAY_BUFFER, vertex_size_bytes, None, GL.GL_DYNAMIC_DRAW
-        )
-
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, 16 * 4, None, GL.GL_DYNAMIC_DRAW)
         GL.glEnableVertexAttribArray(0)
         GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glBindVertexArray(0)
@@ -128,8 +123,7 @@ class TextRenderer3D:
         """Helper to create and configure the OpenGL texture."""
         if not self._atlas_image:
             return
-
-        self.texture_id = GL.glGenTextures(1)
+        self.texture_id = self._create_texture()
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_id)
         GL.glTexImage2D(
             GL.GL_TEXTURE_2D,
@@ -189,9 +183,7 @@ class TextRenderer3D:
         billboard_matrix = np.transpose(view_matrix[:3, :3])
         total_text_width = (
             sum(
-                self.char_data[c]["width"]
-                for c in text
-                if c in self.char_data
+                self.char_data[c]["width"] for c in text if c in self.char_data
             )
             * scale
         )
@@ -234,12 +226,3 @@ class TextRenderer3D:
             current_x += char_width
 
         GL.glBindVertexArray(0)
-
-    def cleanup(self) -> None:
-        """Releases all allocated OpenGL resources."""
-        if self.texture_id:
-            GL.glDeleteTextures(1, (self.texture_id,))
-        if self.vao:
-            GL.glDeleteVertexArrays(1, (self.vao,))
-        if self.vbo:
-            GL.glDeleteBuffers(1, (self.vbo,))

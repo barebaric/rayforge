@@ -273,8 +273,10 @@ class Canvas3D(Gtk.GLArea):
                 fg_rgba.alpha,
             )
             # Grid color is derived from fg color to be less prominent
-            grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.25
+            grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.5
+            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.2
 
+            self.axis_renderer.set_background_color(bg_plane_color)
             self.axis_renderer.set_axis_color(axis_color)
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
