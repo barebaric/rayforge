@@ -35,11 +35,24 @@ def process_target_wrapper(
     print("process_target_wrapper() called")
     import logging
 
+    # Force reconfiguration of logging for this new process. This is critical
+    # because logging.basicConfig() is a no-op if handlers are already
+    # configured. By removing existing handlers, we ensure the new
+    # configuration is always applied.
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
     logger = logging.getLogger("rayforge.tasker.process_target_wrapper")
-    logger.setLevel(log_level)
     logger.info(
-        f"Subprocess started with user function {user_func.__name__},"
-        f"log level {log_level}",
+        f"Subprocess started for '{user_func.__name__}' with log level "
+        f"{logging.getLevelName(log_level)}."
     )
 
     import traceback
