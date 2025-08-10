@@ -3,7 +3,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
 import math
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
@@ -43,7 +43,7 @@ class OpsRenderer(BaseRenderer):
         """
         cut_vertices: List[float] = []
         travel_vertices: List[float] = []
-        last_point: Optional[Tuple[float, float, float]] = None
+        last_point: Tuple[float, float, float] = 0.0, 0.0, 0.0
 
         for command in getattr(ops, "commands", []):
             if not isinstance(command, Command) or command.end is None:
@@ -55,7 +55,7 @@ class OpsRenderer(BaseRenderer):
                 float(command.end[1]),
                 float(command.end[2]),
             )
-            start_point = last_point if last_point else end_point
+            start_point = last_point
 
             if isinstance(command, MoveToCommand):
                 if not np.allclose(start_point, end_point):
@@ -94,7 +94,7 @@ class OpsRenderer(BaseRenderer):
             self.cut_vbo,
             self.cut_vertex_count,
             shader,
-            [1.0, 1.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0, 1.0],
         )
         # Draw travel moves
         self._draw_buffer(
@@ -102,7 +102,7 @@ class OpsRenderer(BaseRenderer):
             self.travel_vbo,
             self.travel_vertex_count,
             shader,
-            [0.2, 0.5, 0.8, 1.0],
+            [1.0, 0.4, 0.0, 0.7],
         )
 
         GL.glBindVertexArray(0)
