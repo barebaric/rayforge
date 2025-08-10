@@ -961,10 +961,16 @@ class WorkSurface(Canvas):
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
         """Handles key press events for the work surface."""
-        # Reset pan and zoom with '1'
         if keyval == Gdk.KEY_1:
+            # Reset pan and zoom with '1'
             self.reset_view()
             return True  # Event handled
+
+        elif keyval == Gdk.KEY_Escape:
+            # If any elements are selected, unselect them.
+            if self.get_selected_elements():
+                self.unselect_all()
+                return True  # Event handled
 
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 

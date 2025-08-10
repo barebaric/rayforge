@@ -971,6 +971,21 @@ class Canvas(Gtk.DrawingArea):
     def get_selected_elements(self) -> List[CanvasElement]:
         return list(self.root.get_selected())
 
+    def unselect_all(self):
+        """
+        Deselects all elements on the canvas.
+
+        This clears the active element and any multi-selection group, and
+        triggers the appropriate signals for a selection change.
+        """
+        # Do nothing if there's no selection to clear, to avoid
+        # unnecessary state changes and signal emissions.
+        if not self.get_selected_elements():
+            return
+
+        self.root.unselect_all()
+        self._finalize_selection_state()
+
     def dump(self):
         """Prints a representation of the entire element hierarchy."""
         self.root.dump()
