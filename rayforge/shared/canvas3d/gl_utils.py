@@ -44,28 +44,31 @@ class Shader:
         """
         Sets a mat4 uniform in the shader.
 
-        The matrix is expected to be in row-major format, which is the
-        default for NumPy arrays.
+        The matrix is expected to be in column-major format (or a transposed
+        NumPy array).
 
         Args:
             name: The name of the uniform variable in the shader.
-            mat: A 4x4 NumPy array.
+            mat: A 4x4 NumPy array, column-major.
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            GL.glUniformMatrix4fv(loc, 1, GL.GL_TRUE, mat)
+            GL.glUniformMatrix4fv(loc, 1, GL.GL_FALSE, mat)
 
     def set_mat3(self, name: str, mat: np.ndarray) -> None:
         """
         Sets a mat3 uniform in the shader.
 
+        The matrix is expected to be in column-major format (or a transposed
+        NumPy array).
+
         Args:
             name: The name of the uniform variable in the shader.
-            mat: A 3x3 NumPy array.
+            mat: A 3x3 NumPy array, column-major.
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            GL.glUniformMatrix3fv(loc, 1, GL.GL_TRUE, mat)
+            GL.glUniformMatrix3fv(loc, 1, GL.GL_FALSE, mat)
 
     def set_vec2(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
         """
@@ -106,6 +109,15 @@ class Shader:
         if getattr(self, "program", None):
             GL.glDeleteProgram(self.program)
             self.program = None
+
+    def get_uniform_location(self, name: str) -> int:
+        """Gets the location of a uniform variable."""
+        return GL.glGetUniformLocation(self.program, name)
+
+    # You could also add a set_float method for cleaner code:
+    def set_float(self, name: str, value: float) -> None:
+        """Sets a float uniform."""
+        GL.glUniform1f(self.get_uniform_location(name), value)
 
 
 class BaseRenderer:

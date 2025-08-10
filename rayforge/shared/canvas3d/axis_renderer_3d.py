@@ -22,7 +22,11 @@ class AxisRenderer3D(BaseRenderer):
     """Renders a 3D grid with axes, background, and labels on the XY plane."""
 
     def __init__(
-        self, width_mm: float, height_mm: float, grid_size_mm: float = 10.0
+        self,
+        width_mm: float,
+        height_mm: float,
+        grid_size_mm: float = 10.0,
+        font_family: Optional[str] = None,
     ):
         """Initializes the AxisRenderer3D with scene dimensions.
 
@@ -30,11 +34,14 @@ class AxisRenderer3D(BaseRenderer):
             width_mm: The total width of the grid along the X-axis in mm.
             height_mm: The total height of the grid along the Y-axis in mm.
             grid_size_mm: The spacing between grid lines in mm.
+            font_family: The name of the font to use for labels
+            (e.g. "Cantarell").
         """
         super().__init__()
         self.width_mm = float(width_mm)
         self.height_mm = float(height_mm)
         self.grid_size_mm = float(grid_size_mm)
+        self.font_family = font_family
 
         # Colors
         self.background_color = 0.8, 0.8, 0.8, 0.1
@@ -79,7 +86,7 @@ class AxisRenderer3D(BaseRenderer):
         # Delegate initialization to child renderers
         self.background_renderer.init_gl()
 
-        self.text_renderer = TextRenderer3D()
+        self.text_renderer = TextRenderer3D(font_family=self.font_family)
         self.text_renderer.init_gl()
         self._add_child_renderer(self.text_renderer)
 
@@ -185,31 +192,38 @@ class AxisRenderer3D(BaseRenderer):
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
             return
-        label_scale = 0.1
-        label_offset = label_scale * 20
+        # This scale now represents the desired height in world units (mm).
+        label_height_mm = 2.5
+        # Offsets are in world units (mm).
+        x_axis_label_y_offset = label_height_mm * 1.2
+        y_axis_label_x_offset = label_height_mm * 0.6
+
+        # X-axis labels (centered below the axis)
         for x in np.arange(
             self.grid_size_mm, self.width_mm + 1e-5, self.grid_size_mm
         ):
-            pos = np.array([x, -label_offset, 0.0])
+            pos = np.array([x, -x_axis_label_y_offset, 0.0])
             self.text_renderer.render_text(
                 text_shader,
                 str(int(x)),
                 pos,
-                label_scale,
+                label_height_mm,
                 self.label_color,
                 mvp_matrix,
                 view_matrix,
             )
+        # Y-axis labels (right-aligned to the left of the axis)
         for y in np.arange(
             self.grid_size_mm, self.height_mm + 1e-5, self.grid_size_mm
         ):
-            pos = np.array([-label_offset, y, 0.0])
+            pos = np.array([-y_axis_label_x_offset, y, 0.0])
             self.text_renderer.render_text(
                 text_shader,
                 str(int(y)),
                 pos,
-                label_scale,
+                label_height_mm,
                 self.label_color,
                 mvp_matrix,
                 view_matrix,
+                align="right",
             )

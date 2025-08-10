@@ -10,7 +10,8 @@ import logging
 from typing import Dict, Optional, Tuple, Union
 import numpy as np
 from OpenGL import GL
-from PIL import Image, ImageDraw, ImageFont
+import cairo
+from gi.repository import Pango, PangoCairo  # type: ignore
 from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)
@@ -19,12 +20,14 @@ logger = logging.getLogger(__name__)
 class TextRenderer3D(BaseRenderer):
     """Renders billboarded text in a 3D scene."""
 
-    def __init__(self, font_path: Optional[str] = None, font_size: int = 32):
+    def __init__(
+        self, font_family: Optional[str] = None, font_size: int = 128
+    ):
         """
         Initializes the text renderer on the CPU.
 
         Args:
-            font_path: Path to TTF font. If None, uses a system default.
+            font_family: The name of the font to use (e.g. "Arial").
             font_size: The size of the font for the texture atlas.
         """
         super().__init__()
@@ -34,80 +37,129 @@ class TextRenderer3D(BaseRenderer):
         self.atlas_height: int = 0
         self.vao: int = 0
         self.vbo: int = 0
-        self._font_size: int = font_size
-        self._atlas_image: Optional[Image.Image] = None
+        self._font_size_px = font_size
+        self._atlas_buffer: Optional[bytes] = None
 
-        try:
-            # A common default font path for Debian/Ubuntu systems.
-            if font_path is None:
-                font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-            self.font = ImageFont.truetype(font_path, font_size)
-            logger.info(f"Loaded font: {font_path}")
-        except (IOError, TypeError):
-            logger.warning(
-                f"Font not found at '{font_path}'. Falling back to default."
-            )
-            self.font = ImageFont.load_default()
+        # This part no longer loads a font object, it just stores the
+        # description
+        self.font_desc = Pango.FontDescription()
+        font_name = font_family if font_family else "sans-serif"
+        self.font_desc.set_family(font_name)
+        self.font_desc.set_size(self._font_size_px * Pango.SCALE)
+        logger.info(
+            f"Using Pango font description: {self.font_desc.to_string()}"
+        )
 
-        self._prepare_texture_atlas()
+        self._prepare_texture_atlas_pango()
 
-    def _prepare_texture_atlas(self) -> None:
-        """Creates a texture atlas for numeric characters on the CPU."""
+    def _prepare_texture_atlas_pango(self) -> None:
+        """
+        Creates a texture atlas for numeric characters using Pango and Cairo.
+        """
         chars_to_render = "0123456789"
-        total_width, max_height = 0, 0
+        padding_px = 2
 
-        # First pass: calculate atlas dimensions.
+        # Create a dummy Cairo surface to create a context for font metric
+        # calculations
+        dummy_surface = cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)
+        cr = cairo.Context(dummy_surface)
+        layout = PangoCairo.create_layout(cr)
+        layout.set_font_description(self.font_desc)
+
+        char_metrics = {}
+        total_advance_px = 0
+        max_ink_height = 0
+
         for char in chars_to_render:
-            try:
-                # Pillow >= 9.2.0 uses getbbox (left, top, right, bottom)
-                bbox = self.font.getbbox(char)
-                total_width += bbox[2] - bbox[0]
-                max_height = max(max_height, bbox[3] - bbox[1])
-            except AttributeError:
-                # Fallback for Pillow < 9.2.0.
-                width, height = self.font.getsize(char)  # type: ignore
-                total_width += width
-                max_height = max(max_height, height)
+            layout.set_text(char, -1)
+            ink_rect, logical_rect = layout.get_pixel_extents()
+            # Pango's advance is in Pango units, so we get pixel size from the
+            # logical rect
+            advance_px = logical_rect.width
+            char_metrics[char] = {
+                "ink_rect": ink_rect,
+                "advance_px": advance_px,
+            }
+            total_advance_px += advance_px + padding_px
+            max_ink_height = max(max_ink_height, ink_rect.height)
+            logger.debug(
+                f"Char '{char}': advance={advance_px}px, ink_rect={ink_rect}"
+            )
 
-        self.atlas_width = int(total_width)
-        self.atlas_height = int(max_height or self._font_size)
+        self.atlas_width = int(total_advance_px)
+        self.atlas_height = max_ink_height
 
-        atlas_img = Image.new("L", (self.atlas_width, self.atlas_height), 0)
-        draw = ImageDraw.Draw(atlas_img)
-        x_offset = 0
+        if self.atlas_width <= 0 or self.atlas_height <= 0:
+            logger.error(
+                "Failed to calculate valid atlas size: %dx%d",
+                self.atlas_width,
+                self.atlas_height,
+            )
+            return
 
-        # Second pass: draw characters and store rendering metadata.
+        # Create the real surface for the atlas. FORMAT_A8 is a single 8-bit
+        # alpha channel,
+        # perfect for a grayscale font texture.
+        atlas_surface = cairo.ImageSurface(
+            cairo.FORMAT_A8, self.atlas_width, self.atlas_height
+        )
+        cr = cairo.Context(atlas_surface)
+        layout = PangoCairo.create_layout(cr)
+        layout.set_font_description(self.font_desc)
+        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)  # Draw in white
+
+        x_cursor = 0
         for char in chars_to_render:
-            try:
-                bbox = self.font.getbbox(char)
-                char_width = bbox[2] - bbox[0]
-                char_height = bbox[3] - bbox[1]
-                y_offset = -bbox[1]  # Vertical offset to align baseline
-            except AttributeError:
-                char_width, char_height = self.font.getsize(  # type: ignore
-                    char
-                )
-                y_offset = 0
+            metrics = char_metrics[char]
+            ink_rect = metrics["ink_rect"]
+            advance_px = metrics["advance_px"]
 
-            draw.text((x_offset, y_offset), char, font=self.font, fill=255)
+            cr.move_to(x_cursor - ink_rect.x, -ink_rect.y)
+            layout.set_text(char, -1)
+            PangoCairo.show_layout(cr, layout)
 
             self.char_data[char] = {
-                "u0": x_offset / self.atlas_width,
-                "v0": 0,
-                "u1": (x_offset + char_width) / self.atlas_width,
-                "v1": char_height / self.atlas_height,
-                "width": char_width,
-                "height": char_height,
+                "u0": x_cursor / self.atlas_width,
+                "v0": 0.0,
+                "u1": min((x_cursor + advance_px) / self.atlas_width, 1.0),
+                "v1": 1.0,
+                "width_px": advance_px,
+                "height_px": float(self.atlas_height),
             }
-            x_offset += char_width
+            x_cursor += advance_px + padding_px
 
-        self._atlas_image = atlas_img
+        # Get the raw byte data and stride from the Cairo surface
+        atlas_surface.flush()
+        buffer = atlas_surface.get_data()
+        stride = atlas_surface.get_stride()
+
+        # The stride is the number of bytes per row. If it's not equal to the
+        # width, it means there's padding that OpenGL won't understand by
+        # default.
+        # We create a new, tightly-packed buffer by copying row by row.
+        if stride != self.atlas_width:
+            logger.debug(
+                f"Atlas stride ({stride}) != width ({self.atlas_width}). "
+                "Repacking buffer."
+            )
+            unpacked_buffer = bytearray(self.atlas_width * self.atlas_height)
+            for i in range(self.atlas_height):
+                row_start_in = i * stride
+                row_end_in = row_start_in + self.atlas_width
+                row_start_out = i * self.atlas_width
+                unpacked_buffer[
+                    row_start_out:row_start_out + self.atlas_width
+                ] = buffer[row_start_in:row_end_in]
+            self._atlas_buffer = bytes(unpacked_buffer)
+        else:
+            # Buffer is already tightly packed
+            self._atlas_buffer = bytes(buffer)
 
     def init_gl(self) -> None:
         """Initializes all OpenGL resources."""
-        if self._atlas_image:
+        if self._atlas_buffer:
             self._upload_atlas_to_gpu()
-            self._atlas_image = None  # Release CPU memory
+            self._atlas_buffer = None  # Free CPU memory
 
         self.vao = self._create_vao()
         self.vbo = self._create_vbo()
@@ -116,26 +168,36 @@ class TextRenderer3D(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
         GL.glBufferData(GL.GL_ARRAY_BUFFER, 16 * 4, None, GL.GL_DYNAMIC_DRAW)
         GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 16, None)
         GL.glBindVertexArray(0)
 
     def _upload_atlas_to_gpu(self) -> None:
         """Helper to create and configure the OpenGL texture."""
-        if not self._atlas_image:
+        if not self._atlas_buffer:
             return
         self.texture_id = self._create_texture()
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_id)
+
+        # Tell OpenGL how to unpack the pixel data. We have 1-byte alignment
+        # since we manually created a tightly-packed buffer.
+        old_alignment = GL.glGetIntegerv(GL.GL_UNPACK_ALIGNMENT)
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+
         GL.glTexImage2D(
             GL.GL_TEXTURE_2D,
             0,
-            GL.GL_R8,
+            GL.GL_R8,  # Internal format: 8-bit red channel
             self.atlas_width,
             self.atlas_height,
             0,
-            GL.GL_RED,
+            GL.GL_RED,  # Source fmt: also red (from our single-channel data)
             GL.GL_UNSIGNED_BYTE,
-            self._atlas_image.tobytes(),
+            self._atlas_buffer,
         )
+
+        # Restore the original alignment
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, old_alignment)
+
         GL.glTexParameteri(
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE
         )
@@ -154,66 +216,113 @@ class TextRenderer3D(BaseRenderer):
         shader: Shader,
         text: str,
         position: np.ndarray,
-        scale: float,
+        height_in_world_units: float,
         color: Tuple[float, float, float, float],
         mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
+        align: str = "center",
     ) -> None:
         """
-        Renders a string of text at a given 3D position.
+        Renders a string of text at a given 3D position, facing the camera.
+        The entire string billboards as a single unit.
 
         Args:
             shader: The shader program to use for rendering text.
-            text: The string to render (must contain '0'-'9').
-            position: A numpy array (vec3) for the center of the text.
-            scale: A float to scale the size of the text.
+            text: The string to render (must contain characters of the atlas).
+            position: A numpy array (vec3) for the text's anchor point.
+            height_in_world_units: Desired height of the text in world units.
             color: A tuple (r, g, b, a) for the text color.
-            mvp_matrix: The combined Model-View-Projection matrix.
-            view_matrix: The camera's view matrix for billboarding.
+            mvp_matrix: The column-major Model-View-Projection matrix.
+            view_matrix: The camera's view matrix (row-major).
+            align: Horizontal alignment ('left', 'center', 'right').
         """
-        if not self.vao:
+        if not self.vao or not text or self.atlas_height < 1:
             return
 
         shader.use()
-        shader.set_vec4("uTextColor", color)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_id)
         GL.glBindVertexArray(self.vao)
 
-        billboard_matrix = np.transpose(view_matrix[:3, :3])
-        total_text_width = (
-            sum(
-                self.char_data[c]["width"] for c in text if c in self.char_data
+        # --- UNIFORMS CONSTANT FOR THE ENTIRE STRING ---
+        shader.set_vec4("uTextColor", color)
+        shader.set_mat4("uMVP", mvp_matrix)
+
+        # Pass the string's anchor position. This is the pivot for the
+        # billboard.
+        shader.set_vec3("uTextWorldPos", position)
+
+        # Get the camera's rotation matrix to billboard the text.
+        try:
+            inv_view = np.linalg.inv(view_matrix)
+            camera_rotation_matrix_row_major = inv_view[:3, :3]
+            u = camera_rotation_matrix_row_major[:, 0]
+            u /= np.linalg.norm(u)
+            v = camera_rotation_matrix_row_major[:, 1]
+            v -= np.dot(v, u) * u
+            v /= np.linalg.norm(v)
+            w = np.cross(u, v)
+            camera_rotation_matrix_row_major = np.column_stack((u, v, w))
+        except np.linalg.LinAlgError:
+            logger.warning(
+                "View matrix inversion failed, using identity for billboard."
             )
-            * scale
+            camera_rotation_matrix_row_major = np.identity(3)
+
+        billboard_matrix_col_major = camera_rotation_matrix_row_major.T
+        shader.set_mat3("uBillboard", billboard_matrix_col_major)
+
+        # --- CALCULATE LAYOUT AND RENDER CHARACTERS ---
+        pixel_to_world_scale = height_in_world_units / self.atlas_height
+        total_text_width_px = sum(
+            self.char_data[c]["width_px"] for c in text if c in self.char_data
         )
-        current_x = -total_text_width / 2.0
+        total_text_width_world = total_text_width_px * pixel_to_world_scale
+
+        if align == "right":
+            current_x_local = -total_text_width_world
+        elif align == "left":
+            current_x_local = 0.0
+        else:  # 'center'
+            current_x_local = -total_text_width_world / 2.0
 
         for char in text:
             if char not in self.char_data:
                 continue
 
             char_info = self.char_data[char]
-            char_width = char_info["width"] * scale
-            char_height = char_info["height"] * scale
-            char_center_offset = billboard_matrix @ np.array(
-                [current_x + char_width / 2, char_height / 2, 0]
+            char_width_world = char_info["width_px"] * pixel_to_world_scale
+            char_height_world = char_info["height_px"] * pixel_to_world_scale
+
+            # Send the character's size and its offset from the string's
+            # anchor.
+            shader.set_vec2("uQuadSize", (char_width_world, char_height_world))
+            GL.glUniform1f(
+                shader.get_uniform_location("uCharOffsetX"), current_x_local
             )
-            world_pos = position + char_center_offset
 
-            shader.set_mat4("uMVP", mvp_matrix)
-            shader.set_mat3("uBillboard", billboard_matrix)
-            shader.set_vec3("uTextWorldPos", world_pos)
-            shader.set_vec2("uQuadSize", (char_width, char_height))
-
+            # The vertex data is the same for every character (a unit quad).
+            # The shader now does all the work of positioning it.
             u0, v0 = char_info["u0"], char_info["v0"]
             u1, v1 = char_info["u1"], char_info["v1"]
             vertices = np.array(
                 [
-                    -0.5, 0.5, u0, v0,
-                    -0.5, -0.5, u0, v1,
-                    0.5, 0.5, u1, v0,
-                    0.5, -0.5, u1, v1,
+                    -0.5,
+                    0.5,
+                    u0,
+                    v0,  # Top-left
+                    -0.5,
+                    -0.5,
+                    u0,
+                    v1,  # Bottom-left
+                    0.5,
+                    0.5,
+                    u1,
+                    v0,  # Top-right
+                    0.5,
+                    -0.5,
+                    u1,
+                    v1,  # Bottom-right
                 ],
                 dtype=np.float32,
             )
@@ -223,6 +332,7 @@ class TextRenderer3D(BaseRenderer):
                 GL.GL_ARRAY_BUFFER, 0, vertices.nbytes, vertices
             )
             GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
-            current_x += char_width
+
+            current_x_local += char_width_world
 
         GL.glBindVertexArray(0)

@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Tuple
 import numpy as np
-from gi.repository import Gdk, Gtk  # type: ignore
+from gi.repository import Gdk, Gtk, Pango  # type: ignore
 from OpenGL import GL
 from .camera import Camera
 from .gl_utils import Shader
@@ -231,7 +231,24 @@ class Canvas3D(Gtk.GLArea):
             )
             self.text_shader = Shader(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
 
-            self.axis_renderer = AxisRenderer3D(self.width_mm, self.depth_mm)
+            # Get the theme's default font family from GTK
+            font_family = "sans-serif"  # A safe fallback
+            settings = Gtk.Settings.get_default()
+            if settings:
+                font_name_str = settings.get_property("gtk-font-name")
+                logger.debug(f"Gtk uses font {font_name_str}")
+                if font_name_str:
+                    # Use Pango to reliably parse the string
+                    # (e.g., "Ubuntu Sans")
+                    font_desc = Pango.FontDescription.from_string(
+                        font_name_str
+                    )
+                    font_family = font_desc.get_family()
+                    logger.debug(f"Pango normalized font to {font_family}")
+
+            self.axis_renderer = AxisRenderer3D(
+                self.width_mm, self.depth_mm, font_family=font_family
+            )
             self.axis_renderer.init_gl()
             self.ops_renderer = OpsRenderer()
             self.ops_renderer.init_gl()
@@ -300,15 +317,18 @@ class Canvas3D(Gtk.GLArea):
             view_matrix = self.camera.get_view_matrix()
             mvp_matrix = proj_matrix @ view_matrix
 
+            # Convert to column-major for OpenGL
+            mvp_matrix_gl = mvp_matrix.T
+
             if self.axis_renderer and self.main_shader and self.text_shader:
                 self.axis_renderer.render(
                     self.main_shader,
                     self.text_shader,
-                    mvp_matrix,
+                    mvp_matrix_gl,
                     view_matrix,
                 )
             if self.ops_renderer and self.main_shader:
-                self.ops_renderer.render(self.main_shader, mvp_matrix)
+                self.ops_renderer.render(self.main_shader, mvp_matrix_gl)
 
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
