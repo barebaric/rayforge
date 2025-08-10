@@ -87,7 +87,6 @@ def main():
             win.present()
 
     # Import version for the --version flag.
-    # This is safe to do early as it has no heavy dependencies.
     from rayforge import __version__
 
     parser = argparse.ArgumentParser(
@@ -117,9 +116,13 @@ def main():
     logging.getLogger().setLevel(log_level)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
+    # ===================================================================
+    # SECTION 3: PLATFORM SPECIFIC INITIALIZATION
+    # ===================================================================
+
     # When running on Windows, spawned subprocesses do not
     # know where to find the necessary DLLs (for cairo, rsvg, etc.).
-    # We must explicitly add the executable's directory (_MEIPASS) to the
+    # We must explicitly add the executable's directory to the
     # DLL search path *before* any subprocesses are created.
     # This must be done inside the main() guard.
     if sys.platform == "win32":
@@ -127,6 +130,13 @@ def main():
             f"Windows build detected. Adding '{base_dir}' to DLL search path."
         )
         os.add_dll_directory(str(base_dir))
+
+    # Set the PyOpenGL platform before importing anything that uses OpenGL.
+    # 'egl' is generally the best choice for GTK4 on modern Linux (Wayland/X11).
+    # On Windows and macOS, letting PyOpenGL auto-detect is more reliable.
+    if sys.platform.startswith("linux"):
+        logger.info("Linux detected. Setting PYOPENGL_PLATFORM=egl")
+        os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 
     # Print PyCairo version
     import cairo
@@ -141,6 +151,14 @@ def main():
     gi.require_version('cairo', '1.0')
     gi.require_version('Gtk', '4.0')
     gi.require_version('GdkPixbuf', '2.0')
+
+    # Initialize the 3D canvas module to check for OpenGL availability.
+    # This must be done after setting the platform env var and after
+    # making Gtk available in gi, as the canvas uses Gtk.
+    # The rest of the app can now check `rayforge.canvas3d.initialized`.
+    # It is safe to import other modules that depend on canvas3d after this.
+    from rayforge.shared import canvas3d
+    canvas3d.initialize()
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker

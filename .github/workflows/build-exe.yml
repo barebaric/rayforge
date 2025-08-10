@@ -76,6 +76,8 @@ jobs:
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-platformdirs
             mingw-w64-x86_64-python-poetry-core
+            mingw-w64-x86_64-python-pyopengl
+            mingw-w64-x86_64-python-pyopengl-accelerate
             mingw-w64-x86_64-python-pytest-asyncio
             mingw-w64-x86_64-python-pytest-cov
             mingw-w64-x86_64-python-pytest-mock

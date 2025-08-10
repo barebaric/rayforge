@@ -23,6 +23,9 @@ class ActionManager:
         self._add_action("preferences", self.win.show_preferences)
         self._add_action("machine_settings", self.win.show_machine_settings)
 
+        # View Actions
+        self._add_action("show_3d_view", self.win.on_show_3d_view)
+
         # Edit & Clipboard Actions
         self._add_action(
             "undo", lambda a, p: self.win.doc.history_manager.undo()

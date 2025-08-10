@@ -36,6 +36,10 @@ from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
+from .shared.canvas3d import (
+    Canvas3DDialog,
+    initialized as canvas3d_initialized,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -289,6 +293,28 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def on_show_3d_view(self, action, param):
+        """Handles the 'show_3d_view' action to open the 3D canvas dialog."""
+        if not canvas3d_initialized:
+            logger.warning(
+                "Attempted to open 3D view, but it is not available."
+            )
+            toast = Adw.Toast.new(
+                _("3D view is not available due to missing dependencies.")
+            )
+            self.toast_overlay.add_toast(toast)
+            return
+        if not config.machine:
+            return
+
+        # Create a new dialog, passing the main window as transient_for
+        dialog = Canvas3DDialog(
+            doc=self.doc,
+            transient_for=self,
+            machine=config.machine,
+        )
+        dialog.present()
 
     def _initialize_document(self):
         """
