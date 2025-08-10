@@ -314,7 +314,40 @@ class MainWindow(Adw.ApplicationWindow):
             transient_for=self,
             machine=config.machine,
         )
+
+        async def load_ops_coro(context: ExecutionContext):
+            """Coroutine to generate and load ops into the 3D view."""
+            machine = config.machine
+            if not machine:
+                return
+
+            try:
+                logger.debug("Creating 3D preview")
+                context.set_message("Generating path preview...")
+                ops = await generate_job_ops(
+                    self.doc, machine, self.surface.ops_generator, context
+                )
+
+                # The task manager runs coroutines in a way that allows
+                # safe interaction with GTK widgets.
+                dialog.set_ops(ops)
+                logger.debug("Preview ready")
+
+                context.set_message("Path preview loaded.")
+                context.set_progress(1.0)
+            except Exception:
+                logger.error(
+                    "Failed to generate ops for 3D view", exc_info=True
+                )
+                toast = Adw.Toast.new(_("Failed to generate path preview."))
+                self.toast_overlay.add_toast(toast)
+                raise  # Re-raise to be handled by the task manager
+
         dialog.present()
+
+        # Run the coroutine to load the ops. This will show progress in the
+        # main window's status bar.
+        task_mgr.add_coroutine(load_ops_coro, key="load-3d-preview")
 
     def _initialize_document(self):
         """

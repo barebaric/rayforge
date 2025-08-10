@@ -1,6 +1,7 @@
 from gi.repository import Gtk, Adw  # type: ignore
 from .canvas3d import Canvas3D
 from ...core.doc import Doc
+from ...core.ops import Ops
 from ...machine.models.machine import Machine
 
 
@@ -36,8 +37,12 @@ class Canvas3DDialog(Adw.Window):
         box.append(label)
 
         # The canvas itself
-        canvas = Canvas3D(doc, machine, vexpand=True)
-        box.append(canvas)
+        self.canvas = Canvas3D(doc, machine, vexpand=True)
+        box.append(self.canvas)
+
+    def set_ops(self, ops: Ops):
+        """Passes the generated ops to the underlying canvas."""
+        self.canvas.set_ops(ops)
 
     def _get_initial_size(self, machine: Machine) -> tuple[int, int]:
         """

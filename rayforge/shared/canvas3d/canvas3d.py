@@ -35,6 +35,7 @@ class Canvas3D(Gtk.GLArea):
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.ops_renderer: Optional[OpsRenderer] = None
         self.sphere_renderer: Optional[SphereRenderer] = None
+        self._pending_ops: Optional[Ops] = None
         self._is_orbiting = False
         self._gl_initialized = False
 
@@ -256,7 +257,6 @@ class Canvas3D(Gtk.GLArea):
                 self.sphere_renderer.init_gl()
 
             self._gl_initialized = True
-            self.update_from_doc()
         except Exception as e:
             logger.error(f"OpenGL Initialization Error: {e}", exc_info=True)
             self._gl_initialized = False
@@ -291,7 +291,7 @@ class Canvas3D(Gtk.GLArea):
             )
             # Grid color is derived from fg color to be less prominent
             grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.5
-            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.2
+            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.25
 
             self.axis_renderer.set_background_color(bg_plane_color)
             self.axis_renderer.set_axis_color(axis_color)
@@ -306,6 +306,14 @@ class Canvas3D(Gtk.GLArea):
             return False
 
         self._update_theme_colors()
+
+        # If there are new ops waiting, upload them to the GPU.
+        # This handles the race condition where set_ops is called before
+        # the GL context is initialized.
+        if self._pending_ops and self.ops_renderer:
+            logger.debug("Processing pending ops in on_render.")
+            self.ops_renderer.update_ops(self._pending_ops)
+            self._pending_ops = None  # Consume the pending ops
 
         try:
             GL.glViewport(0, 0, self.camera.width, self.camera.height)
@@ -432,18 +440,9 @@ class Canvas3D(Gtk.GLArea):
             self.camera.dolly(dy)
             self.queue_render()
 
-    def update_from_doc(self):
-        """Updates the ops renderer with new data and redraws."""
+    def set_ops(self, ops: Ops):
+        """Stores the given operations and schedules a redraw."""
+        logger.debug("Received new ops. Storing and queueing render.")
+        self._pending_ops = ops
         if self.ops_renderer and self._gl_initialized:
-            self.ops_renderer.update_ops(self.create_sample_ops())
             self.queue_render()
-
-    def create_sample_ops(self):
-        """Creates a sample set of operations for visualization."""
-        ops = Ops()
-        ops.move_to(10, 10, 5)
-        ops.line_to(90, 10, 0)
-        ops.line_to(90, 90, 0)
-        ops.line_to(10, 90, 0)
-        ops.line_to(10, 10, 0)
-        return ops
