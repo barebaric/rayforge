@@ -65,6 +65,8 @@ class CairoEncoder(OpsEncoder):
                     case ArcToCommand():
                         # Start point is the x, y of the previous operation.
                         start_x, start_y = ctx.get_current_point()
+                        # Stroke any preceding line segments before drawing
+                        # the arc
                         ctx.set_source_rgb(*cut_color)
                         ctx.stroke()
 
@@ -72,17 +74,29 @@ class CairoEncoder(OpsEncoder):
                         # x, y: absolute values
                         # i, j: relative pos of arc center from start point.
                         i, j = cmd.center_offset
+
+                        # The center point must also be calculated in the
+                        # Y-down system
                         center_x = start_x + i
-                        center_y = start_y + j
+                        center_y = start_y - j
+
                         radius = math.dist((start_x, start_y),
                                            (center_x, center_y))
                         angle1 = math.atan2(start_y - center_y,
                                             start_x - center_x)
                         angle2 = math.atan2(adjusted_y - center_y,
                                             x - center_x)
+
+                        # To draw a CCW arc (clockwise=False) on a flipped
+                        # canvas, we must use Cairo's CW function
+                        # (arc_negative).
                         if cmd.clockwise:
+                            # A CW arc in the source becomes CCW when Y-axis
+                            # is flipped.
                             ctx.arc(center_x, center_y, radius, angle1, angle2)
                         else:
+                            # A CCW arc (like from DXF) becomes CW when Y-axis
+                            # is flipped.
                             ctx.arc_negative(
                                 center_x,
                                 center_y,
@@ -90,7 +104,7 @@ class CairoEncoder(OpsEncoder):
                                 angle1,
                                 angle2
                             )
-                        # ctx.set_source_rgb(0, 0, 1)
+
                         ctx.stroke()
                         ctx.move_to(x, adjusted_y)
                         prev_point_2d = x, adjusted_y
