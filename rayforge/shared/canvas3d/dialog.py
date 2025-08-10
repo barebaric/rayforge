@@ -47,9 +47,22 @@ class Canvas3DDialog(Adw.Window):
     def _get_initial_size(self, machine: Machine) -> tuple[int, int]:
         """
         Calculate the initial window size to match the machine's aspect ratio,
-        fitting within a maximum bounding box.
+        fitting within a maximum bounding box. The bounding box is 90% of the
+        parent window's size, or a default size if no parent is available.
         """
-        MAX_WIDTH, MAX_HEIGHT = 1024, 768
+        MAX_WIDTH, MAX_HEIGHT = 1024, 768  # Default max size
+
+        parent = self.get_transient_for()
+        if parent:
+            parent_w = parent.get_width()
+            parent_h = parent.get_height()
+            # Ensure we have valid dimensions before overriding defaults
+            if parent_w > 1 and parent_h > 1:
+                # Use max(1, ...) to avoid sizes of 0, which would cause
+                # a division-by-zero error.
+                MAX_WIDTH = max(1, int(parent_w * 0.9))
+                MAX_HEIGHT = max(1, int(parent_h * 0.9))
+
         DEFAULT_SIZE = MAX_WIDTH, MAX_HEIGHT
 
         machine_w, machine_h = machine.dimensions
