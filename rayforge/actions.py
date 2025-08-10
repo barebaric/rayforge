@@ -77,6 +77,7 @@ class ActionManager:
         app.set_accels_for_action("win.paste", ["<Primary>v"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
+        app.set_accels_for_action("win.show_3d_view", ["F12"])
         app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])
