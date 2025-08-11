@@ -141,9 +141,8 @@ class WorkpiecePropertiesWidget(Expander):
         rows_container.append(self.reset_buttons_row)
 
         for workpiece in self.workpieces:
-            workpiece.size_changed.connect(self._on_workpiece_size_changed)
-            workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
+            workpiece.changed.connect(self._on_workpiece_changed)
+            workpiece.transform_changed.connect(self._on_workpiece_changed)
         self._update_ui_from_workpieces()
 
     def _calculate_new_size_with_ratio(
@@ -527,20 +526,22 @@ class WorkpiecePropertiesWidget(Expander):
                 )
                 t.execute(cmd)
 
-    def _on_workpiece_size_changed(self, workpiece):
+    def _on_workpiece_changed(self, workpiece):
+        """
+        Handles any change from the WorkPiece model and updates the UI.
+        This covers size, position, and angle.
+        """
         if self._in_update:
             return
-        logger.debug(f"Workpiece size changed: {workpiece.size}")
+        logger.debug(f"Workpiece model changed: {workpiece.name}")
         self._update_ui_from_workpieces()
 
     def set_workpieces(self, workpieces: Optional[List[WorkPiece]]):
         self._in_update = True
         for workpiece in self.workpieces:
-            workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
-            workpiece.pos_changed.disconnect(self._on_workpiece_pos_changed)
-            workpiece.angle_changed.disconnect(
-                self._on_workpiece_angle_changed
-            )
+            workpiece.changed.disconnect(self._on_workpiece_changed)
+            workpiece.transform_changed.disconnect(self._on_workpiece_changed)
+
         self.workpieces = workpieces or []
 
         # Update the subtitle with the number of selected items
@@ -552,22 +553,10 @@ class WorkpiecePropertiesWidget(Expander):
             self.set_subtitle(_(f"{count} items selected"))
 
         for workpiece in self.workpieces:
-            workpiece.size_changed.connect(self._on_workpiece_size_changed)
-            workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-            workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
+            workpiece.changed.connect(self._on_workpiece_changed)
+            workpiece.transform_changed.connect(self._on_workpiece_changed)
+
         self._in_update = False
-        self._update_ui_from_workpieces()
-
-    def _on_workpiece_pos_changed(self, workpiece):
-        if self._in_update:
-            return
-        logger.debug(f"Workpiece position changed: {workpiece.pos}")
-        self._update_ui_from_workpieces()
-
-    def _on_workpiece_angle_changed(self, workpiece):
-        if self._in_update:
-            return
-        logger.debug(f"Workpiece angle changed: {workpiece.angle}")
         self._update_ui_from_workpieces()
 
     def _update_ui_from_workpieces(self):

@@ -199,8 +199,8 @@ class OpsGenerator:
             self._update_ops_for_step(origin)
         elif isinstance(origin, WorkPiece):
             if self._is_paused:
-                if origin.layer:
-                    for step in origin.layer.workflow:
+                if origin.parent:
+                    for step in origin.parent.workflow:
                         self._ops_cache[(step.uid, origin.uid)] = None, None
                 return
             self._update_ops_for_workpiece(origin)
@@ -257,8 +257,8 @@ class OpsGenerator:
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for a single workpiece across all steps."""
-        if workpiece.layer:
-            for step in workpiece.layer.workflow:
+        if workpiece.parent:
+            for step in workpiece.parent.workflow:
                 self._trigger_ops_generation(step, workpiece)
 
     def _trigger_ops_generation(self, step: Step, workpiece: WorkPiece):

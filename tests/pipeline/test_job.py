@@ -44,8 +44,8 @@ def mock_ops_generator():
 @pytest.fixture
 def real_workpiece():
     wp = WorkPiece(Path("wp1"), b'<svg width="10" height="10" />', SvgImporter)
-    wp.pos = (10, 20)
-    wp.size = (40, 30)
+    wp.pos = 10, 20
+    wp.set_size(40, 30)
     wp.angle = 90
     return wp
 
@@ -55,8 +55,8 @@ async def test_generate_job_ops_assembles_correctly(
     doc, machine, mock_ops_generator, real_workpiece
 ):
     """
-    Test that generate_job_ops correctly rotates, translates, and
-    transforms Ops from the generator into the final job.
+    Test that generate_job_ops correctly applies the workpiece's world
+    transform matrix and then converts to machine coordinates.
     """
     # Arrange
     layer = doc.layers[0]
@@ -83,10 +83,20 @@ async def test_generate_job_ops_assembles_correctly(
     assert len([c for c in final_ops.commands if c.is_cutting_command()]) == 2
 
     # Verify transformations on the first pass
-    # Initial: (0,0) -> (10,0)
-    # Rotated -90deg around (20,15): (5,35) -> (5,25)
-    # Translated by (10,20): (15,55) -> (15,45)
-    # Y-flipped for machine: (15, 95) -> (15, 105)
+    # Workpiece: pos=(10,20), size=(40,30), angle=90.
+    # The get_world_transform() method now uses -angle to preserve the
+    # visual clockwise rotation convention. So, it applies a -90deg rotation.
+    # Initial Ops points: (0,0) -> (10,0)
+    #
+    # 1. World Transform (Y-up, canonical space):
+    #    The world matrix rotates -90deg (CW) around the center (20,15) and
+    #    translates by (10,20).
+    #    Point (0,0) -> (15, 55)
+    #    Point (10,0) -> (15, 45)
+    #
+    # 2. Machine Transform (Y-down, height=150):
+    #    (15, 55) -> scale(1,-1) -> (15, -55) -> translate(0,150) -> (15, 95)
+    #    (15, 45) -> scale(1,-1) -> (15, -45) -> translate(0,150) -> (15, 105)
     move_cmds = [c for c in final_ops.commands if isinstance(c, MoveToCommand)]
     line_cmds = [c for c in final_ops.commands if isinstance(c, LineToCommand)]
 
@@ -108,12 +118,12 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
     layer.workflow.add_step(step)
 
     wp1 = WorkPiece(Path("wp1"), b"", SvgImporter)
-    wp1.size = (10, 10)
-    wp1.pos = (0, 0)
+    wp1.set_size(10, 10)
+    wp1.pos = 0, 0
 
     wp2 = WorkPiece(Path("wp2"), b"", SvgImporter)
-    wp2.size = (10, 10)
-    wp2.pos = (20, 20)
+    wp2.set_size(10, 10)
+    wp2.pos = 20, 20
 
     # There are two workpieces, so total_items = 2
     layer.add_workpiece(wp1)

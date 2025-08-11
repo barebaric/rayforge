@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from pathlib import Path
 from rayforge.shared.tasker.task import Task
 from rayforge.importer import SvgImporter
 from rayforge.core.workpiece import WorkPiece
@@ -57,12 +58,12 @@ def mock_task_mgr(mocker):
 
 @pytest.fixture
 def real_workpiece():
-    svg_data = b'''
+    svg_data = b"""
     <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
     <rect width="10" height="10" />
-    </svg>'''
-    workpiece = WorkPiece("real_workpiece", svg_data, SvgImporter)
-    workpiece.size = 50, 30
+    </svg>"""
+    workpiece = WorkPiece(Path("real_workpiece.svg"), svg_data, SvgImporter)
+    workpiece.set_size(50, 30)
     workpiece.pos = 10, 20
     return workpiece
 
@@ -163,4 +164,64 @@ class TestOpsGenerator:
         step.set_power(500)
 
         # Assert
+        mock_task_mgr.run_process.assert_called_once()
+
+    def test_workpiece_pos_change_does_not_regenerate(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = doc.layers[0]
+        step = create_contour_step(layer.workflow)
+        layer.workflow.add_step(step)
+        layer.add_workpiece(real_workpiece)
+        OpsGenerator(doc)  # Initial generation
+
+        mock_task_mgr.run_process.reset_mock()
+
+        # Act
+        real_workpiece.pos = 50, 50
+
+        # Assert
+        # The `descendant_updated` signal should not have been fired for a
+        # position change, so the generator should not trigger.
+        mock_task_mgr.run_process.assert_not_called()
+
+    def test_workpiece_angle_change_does_not_regenerate(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = doc.layers[0]
+        step = create_contour_step(layer.workflow)
+        layer.workflow.add_step(step)
+        layer.add_workpiece(real_workpiece)
+        OpsGenerator(doc)  # Initial generation
+
+        mock_task_mgr.run_process.reset_mock()
+
+        # Act
+        real_workpiece.angle = 45
+
+        # Assert
+        # The `descendant_updated` signal should not have been fired for an
+        # angle change, so the generator should not trigger.
+        mock_task_mgr.run_process.assert_not_called()
+
+    def test_workpiece_size_change_triggers_regeneration(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = doc.layers[0]
+        step = create_contour_step(layer.workflow)
+        layer.workflow.add_step(step)
+        layer.add_workpiece(real_workpiece)
+        OpsGenerator(doc)  # Initial generation
+
+        mock_task_mgr.run_process.reset_mock()
+
+        # Act
+        real_workpiece.set_size(10, 10)
+
+        # Assert
+        # The `changed` signal from set_size bubbles up to
+        # `descendant_updated`, which the generator listens to.
         mock_task_mgr.run_process.assert_called_once()

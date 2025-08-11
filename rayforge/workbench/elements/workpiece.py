@@ -31,9 +31,8 @@ class WorkPieceElement(CanvasElement):
             pixel_perfect_hit=True,
             **kwargs,
         )
-        workpiece.size_changed.connect(self._on_workpiece_size_changed)
-        workpiece.pos_changed.connect(self._on_workpiece_pos_changed)
-        workpiece.angle_changed.connect(self._on_workpiece_angle_changed)
+        workpiece.changed.connect(self._on_model_changed)
+        workpiece.transform_changed.connect(self._on_model_changed)
 
     def render_to_surface(
         self, width: int, height: int
@@ -124,29 +123,18 @@ class WorkPieceElement(CanvasElement):
             return
         self._in_update = True
         try:
-            self.data.set_angle(angle)
+            self.data.angle = angle
         finally:
             self._in_update = False
 
-    def _on_workpiece_size_changed(self, workpiece):
+    def _on_model_changed(self, workpiece):
+        """
+        Handles any model change (size, pos, angle) by re-syncing the
+        element's geometry from the model.
+        """
         if self._in_update:
             return
         self.allocate()
-
-    def _on_workpiece_pos_changed(self, workpiece):
-        if self._in_update or not self.parent:
-            return
-        # This is a cheap operation, no re-render needed.
-        self.allocate()
-        if self.parent:
-            self.parent.mark_dirty()
-        if self.canvas:
-            self.canvas.queue_draw()
-
-    def _on_workpiece_angle_changed(self, workpiece):
-        if self._in_update:
-            return
-        self.set_angle(workpiece.angle)
         if self.parent:
             self.parent.mark_dirty()
         if self.canvas:

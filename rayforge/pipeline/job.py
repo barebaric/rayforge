@@ -46,27 +46,22 @@ def _transform_and_clip_workpiece_ops(
     clip_rect: tuple[float, float, float, float],
 ) -> Ops:
     """
-    Applies workpiece-specific transforms (rotation, translation),
-    machine-coordinate conversion, and clips the result.
+    Applies workpiece-specific transforms using its world matrix,
+    converts to machine coordinates, and clips the result.
     """
-    # 1. Rotate the ops around its local center.
-    wp_angle = workpiece.angle
-    if wp_angle != 0 and workpiece.size:
-        wp_w, wp_h = workpiece.size
-        cx, cy = wp_w / 2, wp_h / 2
-        ops.rotate(-wp_angle, cx, cy)
+    # 1. Apply the workpiece's world transformation matrix. This single
+    # operation handles the translation and rotation to place the workpiece
+    # correctly in the canonical (Y-up) world space.
+    world_matrix = workpiece.get_world_transform()
+    ops.transform(world_matrix)
 
-    # 2. Translate to final canonical position on the work area
-    if workpiece.pos:
-        ops.translate(*workpiece.pos)
-
-    # 3. Convert from canonical (Y-up) to machine-native coords
+    # 2. Convert from canonical (Y-up) to machine-native coords
     if machine.y_axis_down:
         machine_height = machine.dimensions[1]
         ops.scale(1, -1)
         ops.translate(0, machine_height)
 
-    # 4. Clip to machine boundaries
+    # 3. Clip to machine boundaries
     return ops.clip(clip_rect)
 
 

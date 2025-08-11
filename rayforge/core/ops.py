@@ -4,7 +4,7 @@ import logging
 from copy import copy, deepcopy
 from typing import Iterator, List, Optional, Tuple, Generator
 from dataclasses import dataclass
-
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -403,6 +403,52 @@ class Ops:
 
         if segment:
             yield segment
+
+    def transform(self, matrix: "np.ndarray") -> "Ops":
+        """
+        Applies a transformation matrix to all geometric commands.
+
+        Args:
+            matrix: A 4x4 NumPy transformation matrix.
+
+        Returns:
+            The Ops object itself for chaining.
+        """
+        for cmd in self.commands:
+            # We only need to transform commands that have geometric data.
+            if isinstance(cmd, MovingCommand):
+                # The 'end' attribute is a point. We use homogeneous
+                # coordinates [x, y, z, 1] for a full point transform.
+                point_vec = np.array([cmd.end[0], cmd.end[1], cmd.end[2], 1.0])
+                transformed_vec = matrix @ point_vec
+                cmd.end = tuple(transformed_vec[:3])
+
+                if isinstance(cmd, ArcToCommand):
+                    # The 'center_offset' is a direction vector, so we use a
+                    # direction transform which ignores the matrix's
+                    # translation component by using the top-left 3x3 part.
+                    offset_vec_3d = np.array(
+                        [cmd.center_offset[0], cmd.center_offset[1], 0]
+                    )
+                    rot_scale_matrix = matrix[:3, :3]
+                    new_offset_vec_3d = rot_scale_matrix @ offset_vec_3d
+                    cmd.center_offset = (
+                        new_offset_vec_3d[0],
+                        new_offset_vec_3d[1],
+                    )
+
+        # The last known move_to position must also be transformed.
+        last_move_vec = np.array(
+            [
+                self.last_move_to[0],
+                self.last_move_to[1],
+                self.last_move_to[2],
+                1.0,
+            ]
+        )
+        transformed_last_move_vec = matrix @ last_move_vec
+        self.last_move_to = tuple(transformed_last_move_vec[:3])
+        return self
 
     def translate(self, dx: float, dy: float, dz: float = 0.0) -> Ops:
         """Translate geometric commands while preserving relative offsets"""

@@ -48,8 +48,8 @@ class Doc:
 
     def remove_workpiece(self, workpiece: WorkPiece):
         """Removes a workpiece from the layer that owns it."""
-        if workpiece.layer and workpiece.layer in self.layers:
-            workpiece.layer.remove_workpiece(workpiece)
+        if workpiece.parent and workpiece.parent in self.layers:
+            workpiece.parent.remove_workpiece(workpiece)
 
     @property
     def active_layer(self) -> Layer:

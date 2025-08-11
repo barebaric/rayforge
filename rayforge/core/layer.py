@@ -100,11 +100,14 @@ class Layer:
         """Bubbles up the descendant_updated signal."""
         self.descendant_updated.send(self, origin=origin)
 
-    def _on_workpiece_size_changed(self, workpiece: WorkPiece):
-        """Handles workpiece size changes by firing the changed signal."""
+    def _on_workpiece_changed(self, workpiece: WorkPiece):
+        """
+        Handles data-changing signals from a workpiece (e.g., size change)
+        that require ops regeneration.
+        """
         logger.debug(
-            f"Layer '{self.name}': Noticed size change for "
-            f"'{workpiece.source_file}', bubbling up."
+            f"Layer '{self.name}': Noticed model change for "
+            f"'{workpiece.name}', bubbling up."
         )
         self.descendant_updated.send(self, origin=workpiece)
         self.changed.send(self)
@@ -139,9 +142,9 @@ class Layer:
             workpiece: The workpiece to add.
         """
         if workpiece not in self.workpieces:
-            workpiece.layer = self
+            workpiece.parent = self
             self.workpieces.append(workpiece)
-            workpiece.size_changed.connect(self._on_workpiece_size_changed)
+            workpiece.changed.connect(self._on_workpiece_changed)
             self.descendant_added.send(self, origin=workpiece)
             self.changed.send(self)
 
@@ -152,8 +155,8 @@ class Layer:
             workpiece: The workpiece to remove.
         """
         if workpiece in self.workpieces:
-            workpiece.layer = None
-            workpiece.size_changed.disconnect(self._on_workpiece_size_changed)
+            workpiece.parent = None
+            workpiece.changed.disconnect(self._on_workpiece_changed)
             self.workpieces.remove(workpiece)
             self.descendant_removed.send(self, origin=workpiece)
             self.changed.send(self)
@@ -171,14 +174,14 @@ class Layer:
 
         # Disconnect and clean up workpieces that are being removed.
         for wp in old_set - new_set:
-            wp.layer = None
-            wp.size_changed.disconnect(self._on_workpiece_size_changed)
+            wp.parent = None
+            wp.changed.disconnect(self._on_workpiece_changed)
             self.descendant_removed.send(self, origin=wp)
 
         # Connect new workpieces.
         for wp in new_set - old_set:
-            wp.layer = self
-            wp.size_changed.connect(self._on_workpiece_size_changed)
+            wp.parent = self
+            wp.changed.connect(self._on_workpiece_changed)
             self.descendant_added.send(self, origin=wp)
 
         self.workpieces = list(workpieces)
@@ -196,7 +199,7 @@ class Layer:
             return []
         items = []
         for workpiece in self.workpieces:
-            if not workpiece.pos or not workpiece.size:
+            if not workpiece.size:
                 continue
             for step in self.workflow.steps:
                 if step.visible:

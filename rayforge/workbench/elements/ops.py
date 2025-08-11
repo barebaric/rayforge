@@ -45,29 +45,24 @@ class WorkPieceOpsElement(CanvasElement):
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
-        workpiece.pos_changed.connect(self._on_pos_changed)
-        workpiece.size_changed.connect(self.allocate)
-        workpiece.angle_changed.connect(self._on_angle_changed)
+        # Connect to the new signals from the DocItem base class
+        workpiece.changed.connect(self._on_changed)
+        workpiece.transform_changed.connect(self._on_transform_changed)
 
-    def _on_pos_changed(self, workpiece: WorkPiece):
-        """A lightweight handler for position changes. Does not re-render."""
+    def _on_changed(self, workpiece: WorkPiece):
+        """Handles data changes (e.g., size) that require re-rendering ops."""
+        self.allocate()
+
+    def _on_transform_changed(self, workpiece: WorkPiece):
+        """A lightweight handler for transform (pos/angle) changes."""
         if not self.canvas or not self.parent:
             return
 
         # Recalculate pixel position based on the new mm position.
         pos_px, _ = self.canvas.workpiece_coords_to_element_coords(self.data)
-
-        # set_pos is cheap, it just updates coordinates and marks the parent
-        # dirty.
-        # This is all that's needed for a move operation.
         self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
 
-    def _on_angle_changed(self, workpiece: WorkPiece):
-        """A lightweight handler for angle changes. Does not re-render."""
-        if not self.canvas:
-            return
-
-        # set_angle is cheap, it just updates the angle property.
+        # Update angle
         self.set_angle(self.data.angle)
 
     def allocate(self, force: bool = False):

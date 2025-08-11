@@ -359,14 +359,14 @@ class WorkSurface(Canvas):
 
         # After the click, check if a new workpiece is active.
         active_wp = self.get_active_workpiece()
-        if active_wp and active_wp.layer:
+        if active_wp and active_wp.parent:
             # If the workpiece's layer is not the document's active layer,
             # create an undoable command to change it.
-            if active_wp.layer != self.doc.active_layer:
+            if active_wp.parent != self.doc.active_layer:
                 cmd = ChangePropertyCommand(
                     target=self.doc,
                     property_name="active_layer",
-                    new_value=active_wp.layer,
+                    new_value=active_wp.parent,
                     name=_("Select Layer"),
                 )
                 # Using execute() adds it to the undo stack.
@@ -986,7 +986,7 @@ class WorkSurface(Canvas):
             if len(layers) <= 1:
                 return True
 
-            current_layer = selected_wps[0].layer
+            current_layer = selected_wps[0].parent
             if not current_layer:
                 return True
 

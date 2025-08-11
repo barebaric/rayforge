@@ -1,6 +1,8 @@
 import logging
 import uuid
+import math
 import cairo
+import numpy as np
 from typing import (
     Generator,
     Optional,
@@ -10,26 +12,28 @@ from typing import (
     Any,
     Type,
     TYPE_CHECKING,
+    List,
 )
 from blinker import Signal
 from pathlib import Path
 from ..importer import Importer, importer_by_name
+from .item import DocItem
 
 if TYPE_CHECKING:
-    from .doc import Doc
     from .layer import Layer
 
 
 logger = logging.getLogger(__name__)
 
 
-class WorkPiece:
+class WorkPiece(DocItem):
     """
     Represents a real-world workpiece.
 
     It holds the raw source data (e.g., for an SVG or image) and manages
-    a live importer instance for operations. It also stores its position
-    and size on the canvas.
+    a live importer instance for operations. Its position, rotation, and size
+    are managed through a single transformation matrix, which serves as the
+    single source of truth for its placement on the canvas.
     """
 
     def __init__(
@@ -38,9 +42,8 @@ class WorkPiece:
         data: bytes,
         importer_class: Type[Importer],
     ):
-        self.layer: Optional["Layer"] = None
+        super().__init__(name=source_file.name)
         self.source_file = source_file
-        self.uid = str(uuid.uuid4())
         self._data = data
         self.importer_class = importer_class
 
@@ -48,13 +51,152 @@ class WorkPiece:
         self.importer: Importer = self.importer_class(self._data)
         self._importer_ref_for_pyreverse: Importer
 
-        self.pos: Optional[Tuple[float, float]] = None  # in mm
+        # Geometric properties. The matrix is the source of truth for position
+        # and angle. Size is stored directly as it's needed for pre-transform
+        # rendering and ops generation.
         self.size: Optional[Tuple[float, float]] = None  # in mm
-        self.angle: float = 0.0  # in degrees
-        self.changed: Signal = Signal()
-        self.pos_changed: Signal = Signal()
-        self.size_changed: Signal = Signal()
-        self.angle_changed: Signal = Signal()
+        self.matrix: np.ndarray = np.identity(4)
+        self._rebuild_matrix((0.0, 0.0), 0.0, None)
+
+    @property
+    def layer(self) -> Optional["Layer"]:
+        return self.parent
+
+    @layer.setter
+    def layer(self, value: Optional["Layer"]):
+        self.parent = value
+
+    def _rebuild_matrix(
+        self,
+        pos: Tuple[float, float],
+        angle_deg: float,
+        size: Optional[Tuple[float, float]],
+    ):
+        """
+        Constructs the world transformation matrix from pos, angle, and size,
+        and sets it as the instance's authoritative matrix.
+        """
+        # A positive angle in the UI/model corresponds to a clockwise
+        # rotation. Standard math libs use positive for counter-clockwise,
+        # so we must negate the angle here to match the visual convention.
+        angle_rad = math.radians(-angle_deg)
+
+        # Start with a pure rotation matrix around the origin (0,0).
+        c = math.cos(angle_rad)
+        s = math.sin(angle_rad)
+        matrix = np.array(
+            [
+                [c, -s, 0, 0],
+                [s, c, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ],
+            dtype=float,
+        )
+
+        # When an object with size is rotated "in-place" around its center,
+        # its local origin (0,0) is displaced. We need to calculate this
+        # displacement and add it to the final world translation.
+        if size:
+            cx, cy = size[0] / 2, size[1] / 2
+
+            # The vector from the local origin to the center.
+            center_vec = np.array([cx, cy, 0, 1])
+
+            # Find where the center point would land if it were rotated
+            # around the origin.
+            rotated_center_vec = matrix @ center_vec
+
+            # The displacement required to move the object back so that its
+            # center aligns with its original un-rotated position is the
+            # difference between the original center and the rotated center.
+            dx = cx - rotated_center_vec[0]
+            dy = cy - rotated_center_vec[1]
+
+            # The final translation is the object's world position plus this
+            # calculated rotational displacement.
+            final_tx = pos[0] + dx
+            final_ty = pos[1] + dy
+            matrix[0, 3] = final_tx
+            matrix[1, 3] = final_ty
+        else:
+            # If there is no size, the center is the origin, so there is no
+            # rotational displacement. The translation is just the world
+            # position.
+            matrix[0, 3] = pos[0]
+            matrix[1, 3] = pos[1]
+
+        self.matrix = matrix
+
+    @property
+    def pos(self) -> Tuple[float, float]:
+        """
+        The position (in mm) of the workpiece's top-left corner, as if it
+        were un-rotated. This is decomposed from the transformation matrix.
+        """
+        angle_rad = math.atan2(self.matrix[1, 0], self.matrix[0, 0])
+        rot_matrix = np.array(
+            [
+                [math.cos(angle_rad), -math.sin(angle_rad), 0, 0],
+                [math.sin(angle_rad), math.cos(angle_rad), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ],
+            dtype=float,
+        )
+
+        dx, dy = 0.0, 0.0
+        if self.size:
+            cx, cy = self.size[0] / 2, self.size[1] / 2
+            center_vec = np.array([cx, cy, 0, 1])
+            rotated_center_vec = rot_matrix @ center_vec
+            dx = cx - rotated_center_vec[0]
+            dy = cy - rotated_center_vec[1]
+
+        final_tx = self.matrix[0, 3]
+        final_ty = self.matrix[1, 3]
+
+        return final_tx - dx, final_ty - dy
+
+    @pos.setter
+    def pos(self, new_pos: Tuple[float, float]):
+        """Sets the position and rebuilds the transformation matrix."""
+        new_pos_float = float(new_pos[0]), float(new_pos[1])
+        if new_pos_float == self.pos:
+            return
+        self._rebuild_matrix(new_pos_float, self.angle, self.size)
+        self.transform_changed.send(self)
+
+    @property
+    def angle(self) -> float:
+        """
+        The clockwise rotation angle (in degrees) of the workpiece.
+        This is decomposed from the transformation matrix.
+        """
+        # The matrix stores rotation for a negative angle, so we negate the
+        # result to get the user-facing positive angle.
+        angle_rad = math.atan2(self.matrix[1, 0], self.matrix[0, 0])
+        return -math.degrees(angle_rad) % 360
+
+    @angle.setter
+    def angle(self, new_angle: float):
+        """Sets the angle and rebuilds the transformation matrix."""
+        new_angle_float = float(new_angle % 360)
+        if new_angle_float == self.angle:
+            return
+        self._rebuild_matrix(self.pos, new_angle_float, self.size)
+        self.transform_changed.send(self)
+
+    def get_world_transform(self) -> "np.ndarray":
+        """
+        Returns the transformation matrix for this workpiece. The matrix is
+        the single source of truth for position and rotation.
+        """
+        return self.matrix
+
+    def get_all_workpieces(self) -> List["WorkPiece"]:
+        """For a single WorkPiece, this just returns itself in a list."""
+        return [self]
 
     def __getstate__(self) -> Dict[str, Any]:
         """
@@ -67,19 +209,20 @@ class WorkPiece:
         state = self.__dict__.copy()
 
         # Remove live objects that cannot or should not be pickled.
-        state.pop("layer", None)
+        state.pop("_parent", None)
         state.pop("importer", None)
         state.pop("_importer_ref_for_pyreverse", None)
         state.pop("changed", None)
-        state.pop("pos_changed", None)
-        state.pop("size_changed", None)
-        state.pop("angle_changed", None)
+        state.pop("transform_changed", None)
 
         # Convert the importer class type to a serializable string name.
         # The class object itself can be tricky to pickle directly.
         rclass = self.importer_class
         state["_importer_class_name"] = rclass.__name__
         state.pop("importer_class", None)
+
+        # Convert numpy matrix to a list for serialization
+        state["matrix"] = state["matrix"].tolist()
 
         return state
 
@@ -98,13 +241,15 @@ class WorkPiece:
         # Restore the rest of the pickled attributes.
         self.__dict__.update(state)
 
+        # Convert list back to numpy matrix
+        self.matrix = np.array(self.matrix)
+
         # Re-create the live objects that were not included in the pickled
         # state.
         self.importer = self.importer_class(self._data)
         self.changed = Signal()
-        self.pos_changed = Signal()
-        self.size_changed = Signal()
-        self.angle_changed = Signal()
+        self.transform_changed = Signal()
+        self._parent = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -116,9 +261,8 @@ class WorkPiece:
         return {
             "uid": self.uid,
             "name": self.source_file,
-            "pos": self.pos,
             "size": self.size,
-            "angle": self.angle,
+            "matrix": self.matrix.tolist(),
             "data": self._data,
             "importer": rclass.__name__,
         }
@@ -136,42 +280,38 @@ class WorkPiece:
         wp = cls(data_dict["name"], data_dict["data"], importer_class)
 
         # Restore state
-        wp.uid = data_dict.get("uid", uuid.uuid4())
-        wp.pos = data_dict.get("pos")
+        wp.uid = data_dict.get("uid", str(uuid.uuid4()))
+        wp.name = data_dict.get("name") or wp.source_file.name
         wp.size = data_dict.get("size")
-        wp.angle = data_dict.get("angle", 0.0)
+
+        # Restore matrix, with backward compatibility for old format
+        if "matrix" in data_dict:
+            wp.matrix = np.array(data_dict["matrix"])
+        else:
+            # Default state if no transform info is present
+            wp._rebuild_matrix((0.0, 0.0), 0.0, wp.size)
 
         return wp
 
-    @property
-    def doc(self) -> Optional["Doc"]:
-        if not self.layer:
-            return None
-        return self.layer.doc
-
     def set_pos(self, x_mm: float, y_mm: float):
-        new_pos = float(x_mm), float(y_mm)
-        if new_pos == self.pos:
-            return
-        self.pos = new_pos
-        self.changed.send(self)
-        self.pos_changed.send(self)
+        """Legacy method, use property `pos` instead."""
+        self.pos = (x_mm, y_mm)
 
     def set_size(self, width_mm: float, height_mm: float):
         new_size = float(width_mm), float(height_mm)
         if new_size == self.size:
             return
+        # Get pos/angle before changing size, as they depend on it
+        current_pos = self.pos
+        current_angle = self.angle
         self.size = new_size
+        # Rebuild matrix with the new size
+        self._rebuild_matrix(current_pos, current_angle, self.size)
         self.changed.send(self)
-        self.size_changed.send(self)
 
     def set_angle(self, angle: float):
-        new_angle = float(angle % 360)
-        if new_angle == self.angle:
-            return
-        self.angle = new_angle
-        self.changed.send(self)
-        self.angle_changed.send(self)
+        """Legacy method, use property `angle` instead."""
+        self.angle = angle
 
     def get_default_size(
         self, bounds_width: float, bounds_height: float
@@ -266,7 +406,8 @@ class WorkPiece:
         Gets the workpiece's anchor position in the machine's native
         coordinate system.
         """
-        if self.pos is None or self.size is None:
+        current_pos = self.pos
+        if current_pos is None or self.size is None:
             return None
 
         from ..config import config
@@ -274,7 +415,7 @@ class WorkPiece:
         if config.machine is None:
             return None
 
-        model_x, model_y = self.pos  # Canonical: Y-up, bottom-left
+        model_x, model_y = current_pos  # Canonical: Y-up, bottom-left
 
         if config.machine.y_axis_down:
             # Convert to machine: Y-down, top-left
@@ -284,7 +425,7 @@ class WorkPiece:
             return model_x, machine_y
         else:
             # Machine is Y-up, same as model
-            return self.pos
+            return current_pos
 
     @pos_machine.setter
     def pos_machine(self, pos: Tuple[float, float]):
@@ -314,4 +455,4 @@ class WorkPiece:
             # Machine is Y-up, same as model
             model_pos = machine_x, machine_y
 
-        self.set_pos(model_pos[0], model_pos[1])
+        self.pos = model_pos

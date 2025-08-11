@@ -1,5 +1,6 @@
 import pytest
 import math
+import numpy as np
 from rayforge.core.ops import (
     Ops,
     MoveToCommand,
@@ -12,6 +13,47 @@ from rayforge.core.ops import (
     DisableAirAssistCommand,
     State,
 )
+
+
+def _create_translate_matrix(x, y, z):
+    """Creates a NumPy translation matrix."""
+    return np.array(
+        [
+            [1, 0, 0, x],
+            [0, 1, 0, y],
+            [0, 0, 1, z],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+
+
+def _create_scale_matrix(sx, sy, sz):
+    """Creates a NumPy scaling matrix."""
+    return np.array(
+        [
+            [sx, 0, 0, 0],
+            [0, sy, 0, 0],
+            [0, 0, sz, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+
+
+def _create_z_rotate_matrix(angle_rad):
+    """Creates a NumPy Z-axis rotation matrix."""
+    c = math.cos(angle_rad)
+    s = math.sin(angle_rad)
+    return np.array(
+        [
+            [c, -s, 0, 0],
+            [s, c, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
 
 
 @pytest.fixture
@@ -388,3 +430,107 @@ def test_clip_arc_reentering_visible_area(clip_rect):
         if not cmd.is_state_command():
             assert 0 <= cmd.end[0] <= 100
             assert 0 <= cmd.end[1] <= 100.000001
+
+
+def test_transform_identity():
+    ops = Ops()
+    ops.move_to(10, 20, 30)
+    ops.arc_to(50, 60, i=5, j=7, z=40)
+    original_ops = ops.copy()
+
+    # The constructor with no arguments creates an identity matrix.
+    identity_matrix = np.identity(4, dtype=float)
+    ops.transform(identity_matrix)
+
+    assert ops.commands[0].end == original_ops.commands[0].end
+    assert ops.commands[1].end == original_ops.commands[1].end
+    assert (
+        ops.commands[1].center_offset == original_ops.commands[1].center_offset
+    )
+    assert ops.last_move_to == original_ops.last_move_to
+
+
+def test_transform_translate():
+    ops = Ops()
+    ops.move_to(10, 20, 30)
+    ops.arc_to(50, 60, i=5, j=7, z=40)
+
+    # Use the factory function from the Matrix44 class
+    translate_matrix = _create_translate_matrix(10, -5, 15)
+    ops.transform(translate_matrix)
+
+    # End points should be translated
+    assert ops.commands[0].end == (20, 15, 45)
+    assert ops.commands[1].end == (60, 55, 55)
+
+    # Center offset is a vector and should NOT be translated
+    assert ops.commands[1].center_offset == (5, 7)
+    assert ops.last_move_to == (20, 15, 45)
+
+
+def test_transform_scale():
+    ops = Ops()
+    ops.move_to(10, 20, 5)
+    ops.arc_to(50, 60, i=5, j=7, z=-10)
+    scale_matrix = _create_scale_matrix(2, 3, 4)
+    ops.transform(scale_matrix)
+
+    assert ops.commands[0].end == (20, 60, 20)
+    assert ops.commands[1].end == (100, 180, -40)
+    assert ops.commands[1].center_offset == (10, 21)
+    assert ops.last_move_to == (20, 60, 20)
+
+
+def test_transform_rotate():
+    ops = Ops()
+    ops.move_to(10, 0, -5)
+    ops.arc_to(20, 0, i=5, j=0, z=-5)
+    rotate_matrix = _create_z_rotate_matrix(math.radians(90))
+    ops.transform(rotate_matrix)
+
+    # Check move_to end point
+    x0, y0, z0 = ops.commands[0].end
+    assert x0 == pytest.approx(0)
+    assert y0 == pytest.approx(10)
+    assert z0 == -5
+
+    # Check arc_to end point
+    x1, y1, z1 = ops.commands[1].end
+    assert x1 == pytest.approx(0)
+    assert y1 == pytest.approx(20)
+    assert z1 == -5
+
+    # Check arc_to center offset vector
+    i, j = ops.commands[1].center_offset
+    assert i == pytest.approx(0)
+    assert j == pytest.approx(5)
+
+
+def test_transform_shear():
+    """Tests a combined scale and rotate matrix which results in shear."""
+    ops = Ops()
+    ops.move_to(10, 0, 0)
+    ops.line_to(10, 10, 0)
+    ops.arc_to(20, 10, i=5, j=0, z=0)
+
+    # Create a shear-inducing matrix by scaling then rotating
+    scale_m = _create_scale_matrix(2, 1, 1)
+    rotate_m = _create_z_rotate_matrix(math.radians(45))
+    shear_m = rotate_m @ scale_m  # Apply scale first, then rotate
+
+    # Manually calculate expected points for clarity
+    p0_vec = shear_m @ np.array([10, 0, 0, 1])
+    p1_vec = shear_m @ np.array([10, 10, 0, 1])
+    p2_vec = shear_m @ np.array([20, 10, 0, 1])
+    offset_vec = shear_m[:3, :3] @ np.array([5, 0, 0])
+
+    ops.transform(shear_m)
+
+    assert ops.commands[0].end[0] == pytest.approx(p0_vec[0])
+    assert ops.commands[0].end[1] == pytest.approx(p0_vec[1])
+    assert ops.commands[1].end[0] == pytest.approx(p1_vec[0])
+    assert ops.commands[1].end[1] == pytest.approx(p1_vec[1])
+    assert ops.commands[2].end[0] == pytest.approx(p2_vec[0])
+    assert ops.commands[2].end[1] == pytest.approx(p2_vec[1])
+    assert ops.commands[2].center_offset[0] == pytest.approx(offset_vec[0])
+    assert ops.commands[2].center_offset[1] == pytest.approx(offset_vec[1])

@@ -22,7 +22,7 @@ def test_add_workpiece_to_layer_fires_changed(layer):
 
     # Using a mock workpiece as its implementation is not relevant here
     mock_workpiece = MagicMock(spec=WorkPiece)
-    mock_workpiece.size_changed = MagicMock()  # Mock the signal attribute
+    mock_workpiece.changed = MagicMock()  # Mock the signal attribute
     mock_workpiece.layer = None
 
     layer.add_workpiece(mock_workpiece)
@@ -37,7 +37,7 @@ def test_add_workpiece_fires_descendant_added(layer):
     layer.descendant_added.connect(handler)
 
     mock_workpiece = MagicMock(spec=WorkPiece)
-    mock_workpiece.size_changed = MagicMock()
+    mock_workpiece.changed = MagicMock()
     mock_workpiece.layer = None
 
     layer.add_workpiece(mock_workpiece)
