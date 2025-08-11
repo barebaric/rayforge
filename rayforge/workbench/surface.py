@@ -15,7 +15,7 @@ from ..undo import (
     ChangePropertyCommand,
 )
 from .canvas import Canvas, CanvasElement
-from .axis import AxisImporter
+from .axis import AxisRenderer
 from .elements.dot import DotElement
 from .elements.step import StepElement
 from .elements.workpiece import WorkPieceElement
@@ -135,7 +135,7 @@ class WorkSurface(Canvas):
         self.root.clip = False
 
         y_axis_down = machine.y_axis_down if machine else False
-        self._axis_importer = AxisImporter(
+        self._axis_importer = AxisRenderer(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
             zoom_level=self.zoom_level,
