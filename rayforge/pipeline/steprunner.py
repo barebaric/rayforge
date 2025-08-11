@@ -124,14 +124,9 @@ def run_step_in_subprocess(
             (width, height) of the coordinate system, and a progress value
             of 1.0.
         """
-        size_mm = workpiece.get_current_size()
+        size_mm = workpiece.size
 
-        if (
-            not size_mm
-            or None in size_mm
-            or size_mm[0] <= 0
-            or size_mm[1] <= 0
-        ):
+        if not size_mm or size_mm[0] <= 0 or size_mm[1] <= 0:
             logger.warning(
                 f"Cannot generate vector ops for '{workpiece.source_file}' "
                 "without a valid, positive size. Skipping."
@@ -201,9 +196,9 @@ def run_step_in_subprocess(
             are in mm, the pixel size is `None` (as they are pre-scaled), and
             `progress` is a float from 0.0 to 1.0.
         """
-        size = workpiece.get_current_size()
+        size = workpiece.size
 
-        if not size or None in size:
+        if not size or size[0] <= 0 or size[1] <= 0:
             logger.warning(
                 f"Cannot generate raster ops for '{workpiece.source_file}' "
                 "without a defined size. Skipping."
@@ -217,7 +212,6 @@ def run_step_in_subprocess(
         chunk_iter = workpiece.render_chunk(
             px_per_mm_x,
             px_per_mm_y,
-            size=size,
             max_memory_size=10 * 1024 * 1024,
         )
 

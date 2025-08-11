@@ -31,8 +31,8 @@ class WorkPieceElement(CanvasElement):
             pixel_perfect_hit=True,
             **kwargs,
         )
-        workpiece.changed.connect(self._on_model_changed)
-        workpiece.transform_changed.connect(self._on_model_changed)
+        workpiece.changed.connect(self._on_model_data_changed)
+        workpiece.transform_changed.connect(self._on_transform_changed)
 
     def render_to_surface(
         self, width: int, height: int
@@ -82,7 +82,7 @@ class WorkPieceElement(CanvasElement):
 
         self._in_update = True
         try:
-            self.data.set_pos(*new_pos_mm)
+            self.data.pos = new_pos_mm
         finally:
             self._in_update = False
 
@@ -112,8 +112,11 @@ class WorkPieceElement(CanvasElement):
 
         self._in_update = True
         try:
-            self.data.set_pos(*new_pos_mm)
+            # Update the model atomically by changing pos and size together.
+            # We set size first, as the workpiece's `pos` property might
+            # depend on its size for pivot calculations.
             self.data.set_size(*new_size_mm)
+            self.data.pos = new_pos_mm
         finally:
             self._in_update = False
 
@@ -127,15 +130,34 @@ class WorkPieceElement(CanvasElement):
         finally:
             self._in_update = False
 
-    def _on_model_changed(self, workpiece):
+    def _on_model_data_changed(self, workpiece: WorkPiece):
         """
-        Handles any model change (size, pos, angle) by re-syncing the
-        element's geometry from the model.
+        Handles data-only changes (like size) from the model. This is an
+        expensive operation that triggers a full reallocation and re-render.
         """
         if self._in_update:
             return
-        self.allocate()
+        self.allocate(force=True)  # Force re-render for size changes
         if self.parent:
             self.parent.mark_dirty()
         if self.canvas:
             self.canvas.queue_draw()
+
+    def _on_transform_changed(self, workpiece: WorkPiece):
+        """
+        Handles transform-only changes (pos/angle). This is a lightweight
+        update that only repositions the element without re-rendering its
+        buffered surface.
+        """
+        if self._in_update or not self.canvas:
+            return
+
+        # Just update position and angle, do not call allocate()
+        new_pos_px, _ = self.canvas.workpiece_coords_to_element_coords(
+            self.data
+        )
+        super().set_pos(*new_pos_px)
+        super().set_angle(self.data.angle)
+        if self.parent:
+            self.parent.mark_dirty()
+        self.canvas.queue_draw()

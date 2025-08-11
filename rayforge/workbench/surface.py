@@ -1,5 +1,6 @@
 import math
 import logging
+import numpy as np
 from blinker import Signal
 from typing import Optional, Tuple, cast, Dict, List
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
@@ -8,12 +9,7 @@ from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..machine.models.machine import Machine
 from ..pipeline.generator import OpsGenerator
-from ..undo import (
-    SetterCommand,
-    ListItemCommand,
-    Command,
-    ChangePropertyCommand,
-)
+from ..undo import ListItemCommand, Command, ChangePropertyCommand
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.dot import DotElement
@@ -184,11 +180,11 @@ class WorkSurface(Canvas):
 
         # Connect to undo/redo signals from the canvas
         self.move_begin.connect(self._on_any_transform_begin)
-        self.move_end.connect(self._on_move_end)
+        self.move_end.connect(self._on_transform_end)
         self.resize_begin.connect(self._on_resize_begin)
-        self.resize_end.connect(self._on_resize_end)
+        self.resize_end.connect(self._on_transform_end)
         self.rotate_begin.connect(self._on_any_transform_begin)
-        self.rotate_end.connect(self._on_rotate_end)
+        self.rotate_end.connect(self._on_transform_end)
         self.elements_deleted.connect(self._on_elements_deleted)
 
         # Initialize
@@ -236,16 +232,14 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
-        """Saves the initial state of elements before any transformation."""
+        """Saves the initial matrix of elements before any transformation."""
         self._transform_start_states.clear()
         for element in elements:
             if not isinstance(element.data, WorkPiece):
                 continue
             workpiece: WorkPiece = element.data
             self._transform_start_states[element] = {
-                "pos": workpiece.pos,
-                "size": workpiece.size,
-                "angle": workpiece.angle,
+                "matrix": workpiece.matrix.copy()
             }
 
     def _on_resize_begin(self, sender, elements: List[CanvasElement]):
@@ -253,9 +247,17 @@ class WorkSurface(Canvas):
         self._on_any_transform_begin(sender, elements)
         self.ops_generator.pause()
 
-    def _on_move_end(self, sender, elements: List[CanvasElement]):
+    def _on_transform_end(self, sender, elements: List[CanvasElement]):
+        """
+        Creates a single, atomic undo command for the entire transformation
+        by recording the change in the workpiece's matrix.
+        """
+        # Check if this transform was a resize, which requires resuming the
+        # OpsGenerator.
+        is_resize = self._resizing
+
         history = self.doc.history_manager
-        with history.transaction(_("Move workpiece(s)")) as t:
+        with history.transaction(_("Transform workpiece(s)")) as t:
             for element in elements:
                 if (
                     not isinstance(element.data, WorkPiece)
@@ -264,72 +266,26 @@ class WorkSurface(Canvas):
                     continue
                 workpiece: WorkPiece = element.data
                 start_state = self._transform_start_states[element]
-                if workpiece.pos and start_state["pos"] != workpiece.pos:
-                    t.add(
-                        SetterCommand(
-                            workpiece,
-                            "set_pos",
-                            workpiece.pos,
-                            start_state["pos"],
-                        )
+                start_matrix = start_state["matrix"]
+
+                # Use numpy's allclose for robust floating-point comparison
+                if not np.allclose(start_matrix, workpiece.matrix):
+                    cmd = ChangePropertyCommand(
+                        target=workpiece,
+                        property_name="matrix",
+                        new_value=workpiece.matrix.copy(),
+                        old_value=start_matrix,
+                        name=_("Transform workpiece"),
                     )
+                    # Add the already-executed command to the transaction
+                    t.add(cmd)
 
         self._transform_start_states.clear()
 
-    def _on_rotate_end(self, sender, elements: List[CanvasElement]):
-        history = self.doc.history_manager
-        with history.transaction(_("Rotate workpiece(s)")) as t:
-            for element in elements:
-                if (
-                    not isinstance(element.data, WorkPiece)
-                    or element not in self._transform_start_states
-                ):
-                    continue
-                workpiece: WorkPiece = element.data
-                start_state = self._transform_start_states[element]
-                if start_state["angle"] != workpiece.angle:
-                    t.add(
-                        SetterCommand(
-                            workpiece,
-                            "set_angle",
-                            (workpiece.angle,),
-                            (start_state["angle"],),
-                        )
-                    )
-
-        self._transform_start_states.clear()
-
-    def _on_resize_end(self, sender, elements: List[CanvasElement]):
-        history = self.doc.history_manager
-        with history.transaction(_("Resize workpiece(s)")) as t:
-            for element in elements:
-                if (
-                    not isinstance(element.data, WorkPiece)
-                    or element not in self._transform_start_states
-                ):
-                    continue
-                workpiece: WorkPiece = element.data
-                start_state = self._transform_start_states[element]
-                if workpiece.pos and start_state["pos"] != workpiece.pos:
-                    t.add(
-                        SetterCommand(
-                            workpiece,
-                            "set_pos",
-                            workpiece.pos,
-                            start_state["pos"],
-                        )
-                    )
-                if workpiece.size and start_state["size"] != workpiece.size:
-                    t.add(
-                        SetterCommand(
-                            workpiece,
-                            "set_size",
-                            workpiece.size,
-                            start_state["size"],
-                        )
-                    )
-        self._transform_start_states.clear()
-        self.ops_generator.resume()
+        # If it was a resize, the ops are now stale. Resume the generator to
+        # trigger regeneration.
+        if is_resize:
+            self.ops_generator.resume()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
         workpieces_to_delete = [
@@ -525,8 +481,8 @@ class WorkSurface(Canvas):
         Converts workpiece model data (Y-up) to element coords
         (top-left, px) relative to the content area.
         """
-        pos_mm = workpiece.pos or (0, 0)
-        size_mm = workpiece.size or (0, 0)
+        pos_mm = workpiece.pos
+        size_mm = workpiece.size
         ppm_x = self.pixels_per_mm_x or 1
         ppm_y = self.pixels_per_mm_y or 1
 
@@ -1055,20 +1011,27 @@ class WorkSurface(Canvas):
                 return True  # Consume event but do nothing
 
             history = self.doc.history_manager
-            with history.transaction(_("Move the workpiece")) as t:
+            with history.transaction(_("Move workpiece(s)")) as t:
                 for wp in selected_wps:
-                    old_pos = wp.pos
-                    if old_pos:
-                        # Arrow keys always manipulate the canonical model
-                        # coordinates. "Up" arrow always increases the Y value.
-                        new_pos = (
-                            old_pos[0] + move_amount_x_mm,
-                            old_pos[1] + move_amount_y_mm,
-                        )
-                        cmd = SetterCommand(
-                            wp, "set_pos", new_args=new_pos, old_args=old_pos
-                        )
-                        t.execute(cmd)
+                    old_matrix = wp.matrix.copy()
+                    current_pos = wp.pos
+                    # Arrow keys always manipulate the canonical model
+                    # coordinates. "Up" arrow always increases the Y value.
+                    new_pos = (
+                        current_pos[0] + move_amount_x_mm,
+                        current_pos[1] + move_amount_y_mm,
+                    )
+                    # This assignment triggers the setter, which rebuilds the
+                    # matrix and fires transform_changed.
+                    wp.pos = new_pos
+                    # Create the undo command *after* the change is made.
+                    cmd = ChangePropertyCommand(
+                        target=wp,
+                        property_name="matrix",
+                        new_value=wp.matrix.copy(),
+                        old_value=old_matrix,
+                    )
+                    t.add(cmd)
             return True
 
         # Propagate to parent Canvas for its default behavior (e.g., Shift/

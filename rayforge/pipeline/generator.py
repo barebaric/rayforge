@@ -274,7 +274,7 @@ class OpsGenerator:
             step: The Step configuration to apply.
             workpiece: The WorkPiece to process.
         """
-        if not workpiece.get_current_size():
+        if any(s <= 0 for s in workpiece.size):
             return
 
         key = step.uid, workpiece.uid
@@ -431,7 +431,7 @@ class OpsGenerator:
             operations are available in the cache.
         """
         key = step.uid, workpiece.uid
-        if not workpiece.get_current_size():
+        if any(s <= 0 for s in workpiece.size):
             return None
 
         raw_ops, pixel_size = self._ops_cache.get(key, (None, None))
@@ -453,7 +453,7 @@ class OpsGenerator:
         current physical size in millimeters.
         """
         traced_width_px, traced_height_px = px_size
-        size = workpiece.get_current_size()
+        size = workpiece.size
         if not size:
             return
 

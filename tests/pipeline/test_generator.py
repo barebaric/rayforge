@@ -182,8 +182,8 @@ class TestOpsGenerator:
         real_workpiece.pos = 50, 50
 
         # Assert
-        # The `descendant_updated` signal should not have been fired for a
-        # position change, so the generator should not trigger.
+        # The `descendant_transform_changed` signal should fire, but the
+        # OpsGenerator should NOT listen to it.
         mock_task_mgr.run_process.assert_not_called()
 
     def test_workpiece_angle_change_does_not_regenerate(
@@ -202,8 +202,8 @@ class TestOpsGenerator:
         real_workpiece.angle = 45
 
         # Assert
-        # The `descendant_updated` signal should not have been fired for an
-        # angle change, so the generator should not trigger.
+        # The `descendant_transform_changed` signal should fire, but the
+        # OpsGenerator should NOT listen to it.
         mock_task_mgr.run_process.assert_not_called()
 
     def test_workpiece_size_change_triggers_regeneration(

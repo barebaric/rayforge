@@ -406,7 +406,9 @@ class Ops:
 
     def transform(self, matrix: "np.ndarray") -> "Ops":
         """
-        Applies a transformation matrix to all geometric commands.
+        Applies a transformation matrix to all geometric commands. If the
+        transform is non-uniform (contains non-uniform scaling or shear),
+        arcs will be linearized to preserve their shape.
 
         Args:
             matrix: A 4x4 NumPy transformation matrix.
@@ -414,19 +416,41 @@ class Ops:
         Returns:
             The Ops object itself for chaining.
         """
+        # Check for non-uniform scaling or shear by comparing the length of
+        # transformed basis vectors.
+        v_x = matrix @ np.array([1, 0, 0, 0])
+        v_y = matrix @ np.array([0, 1, 0, 0])
+        len_x = np.linalg.norm(v_x[:2])
+        len_y = np.linalg.norm(v_y[:2])
+        is_non_uniform = not np.isclose(len_x, len_y)
+
+        transformed_commands: List[Command] = []
+        last_point_untransformed: Optional[Tuple[float, float, float]] = None
+
         for cmd in self.commands:
-            # We only need to transform commands that have geometric data.
-            if isinstance(cmd, MovingCommand):
-                # The 'end' attribute is a point. We use homogeneous
-                # coordinates [x, y, z, 1] for a full point transform.
-                point_vec = np.array([cmd.end[0], cmd.end[1], cmd.end[2], 1.0])
+            original_cmd_end = (
+                cmd.end if isinstance(cmd, MovingCommand) else None
+            )
+
+            if isinstance(cmd, ArcToCommand) and is_non_uniform:
+                # Use the last known untransformed point as the start for
+                # linearization
+                start_point = last_point_untransformed or (0.0, 0.0, 0.0)
+                segments = self._linearize_arc(cmd, start_point)
+                for p1, p2 in segments:
+                    point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
+                    transformed_vec = matrix @ point_vec
+                    transformed_commands.append(
+                        LineToCommand(tuple(transformed_vec[:3]))
+                    )
+            elif isinstance(cmd, MovingCommand):
+                point_vec = np.array([*cmd.end, 1.0])
                 transformed_vec = matrix @ point_vec
                 cmd.end = tuple(transformed_vec[:3])
 
                 if isinstance(cmd, ArcToCommand):
-                    # The 'center_offset' is a direction vector, so we use a
-                    # direction transform which ignores the matrix's
-                    # translation component by using the top-left 3x3 part.
+                    # For uniform transforms, we transform the center offset
+                    # vector by the 3x3 rotation/scaling part of the matrix.
                     offset_vec_3d = np.array(
                         [cmd.center_offset[0], cmd.center_offset[1], 0]
                     )
@@ -436,8 +460,16 @@ class Ops:
                         new_offset_vec_3d[0],
                         new_offset_vec_3d[1],
                     )
+                transformed_commands.append(cmd)
+            else:
+                transformed_commands.append(cmd)
 
-        # The last known move_to position must also be transformed.
+            # Crucially, update the last_point tracker with the endpoint
+            # from BEFORE the transformation for the next iteration.
+            if original_cmd_end is not None:
+                last_point_untransformed = original_cmd_end
+
+        self.commands = transformed_commands
         last_move_vec = np.array(
             [
                 self.last_move_to[0],
@@ -452,35 +484,19 @@ class Ops:
 
     def translate(self, dx: float, dy: float, dz: float = 0.0) -> Ops:
         """Translate geometric commands while preserving relative offsets"""
-        for cmd in self.commands:
-            if cmd.end is not None:
-                # Translate endpoint only.
-                # Arcs need no offset adjustment needed because
-                # I/J are relative to start point
-                x, y, z = cmd.end
-                cmd.end = (x + dx, y + dy, z + dz)
-
-        # Update last known position
-        last_x, last_y, last_z = self.last_move_to
-        self.last_move_to = (last_x + dx, last_y + dy, last_z + dz)
-        return self
+        matrix = np.identity(4)
+        matrix[0, 3] = dx
+        matrix[1, 3] = dy
+        matrix[2, 3] = dz
+        return self.transform(matrix)
 
     def scale(self, sx: float, sy: float, sz: float = 1.0) -> Ops:
-        """Scale both absolute positions and relative offsets"""
-        for cmd in self.commands:
-            if cmd.end is not None:
-                x, y, z = cmd.end
-                cmd.end = (x * sx, y * sy, z * sz)
-
-            if isinstance(cmd, ArcToCommand):
-                # Scale relative offsets
-                i, j = cmd.center_offset
-                cmd.center_offset = (i * sx, j * sy)
-
-        # Scale last known position
-        last_x, last_y, last_z = self.last_move_to
-        self.last_move_to = (last_x * sx, last_y * sy, last_z * sz)
-        return self
+        """
+        Scales both absolute positions and relative offsets by creating a
+        scaling matrix and calling transform().
+        """
+        matrix = np.diag([sx, sy, sz, 1.0])
+        return self.transform(matrix)
 
     def rotate(self, angle_deg: float, cx: float, cy: float) -> Ops:
         """Rotates all points around a center (cx, cy) in the XY plane."""

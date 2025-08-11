@@ -55,6 +55,7 @@ class Layer:
         self.descendant_added = Signal()
         self.descendant_removed = Signal()
         self.descendant_updated = Signal()
+        self.descendant_transform_changed = Signal()
 
         # Connect to signals from child objects.
         self.workflow.changed.connect(self._on_workflow_changed)
@@ -112,6 +113,14 @@ class Layer:
         self.descendant_updated.send(self, origin=workpiece)
         self.changed.send(self)
 
+    def _on_workpiece_transform_changed(self, workpiece: WorkPiece):
+        """
+        Handles transform-only changes from a workpiece. This bubbles up a
+        specific signal that the Doc can use to mark itself as dirty, but
+        that the LayerElement can ignore to prevent slow UI updates.
+        """
+        self.descendant_transform_changed.send(self, origin=workpiece)
+
     def set_name(self, name: str):
         """Sets the name of the layer.
 
@@ -145,6 +154,9 @@ class Layer:
             workpiece.parent = self
             self.workpieces.append(workpiece)
             workpiece.changed.connect(self._on_workpiece_changed)
+            workpiece.transform_changed.connect(
+                self._on_workpiece_transform_changed
+            )
             self.descendant_added.send(self, origin=workpiece)
             self.changed.send(self)
 
@@ -157,6 +169,9 @@ class Layer:
         if workpiece in self.workpieces:
             workpiece.parent = None
             workpiece.changed.disconnect(self._on_workpiece_changed)
+            workpiece.transform_changed.disconnect(
+                self._on_workpiece_transform_changed
+            )
             self.workpieces.remove(workpiece)
             self.descendant_removed.send(self, origin=workpiece)
             self.changed.send(self)
@@ -176,12 +191,18 @@ class Layer:
         for wp in old_set - new_set:
             wp.parent = None
             wp.changed.disconnect(self._on_workpiece_changed)
+            wp.transform_changed.disconnect(
+                self._on_workpiece_transform_changed
+            )
             self.descendant_removed.send(self, origin=wp)
 
         # Connect new workpieces.
         for wp in new_set - old_set:
             wp.parent = self
             wp.changed.connect(self._on_workpiece_changed)
+            wp.transform_changed.connect(
+                self._on_workpiece_transform_changed
+            )
             self.descendant_added.send(self, origin=wp)
 
         self.workpieces = list(workpieces)
@@ -199,7 +220,7 @@ class Layer:
             return []
         items = []
         for workpiece in self.workpieces:
-            if not workpiece.size:
+            if any(s <= 0 for s in workpiece.size):
                 continue
             for step in self.workflow.steps:
                 if step.visible:

@@ -24,11 +24,6 @@ class WorkPieceOpsElement(CanvasElement):
     def __init__(
         self, workpiece: WorkPiece, show_travel_moves: bool = False, **kwargs
     ):
-        if not workpiece.size:
-            raise AttributeError(
-                f"attempt to add workpiece {workpiece.source_file}"
-                " with no size"
-            )
         super().__init__(
             0,
             0,
@@ -74,9 +69,9 @@ class WorkPieceOpsElement(CanvasElement):
         if not self.canvas or not self.parent:
             return
 
-        current_mm_size = self.data.get_current_size()
+        current_mm_size = self.data.size
 
-        if not current_mm_size:
+        if not current_mm_size or any(s <= 0 for s in current_mm_size):
             self.width, self.height = 0.0, 0.0
             self.width_mm, self.height_mm = 0.0, 0.0
             self.clear_ops()

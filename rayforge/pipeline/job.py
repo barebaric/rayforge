@@ -4,6 +4,7 @@ Handles the final assembly of machine operations for an entire job.
 
 import asyncio
 import logging
+import numpy as np
 from typing import Optional, List, Dict
 from ..machine.models.machine import Machine
 from ..shared.tasker.context import ExecutionContext
@@ -49,9 +50,21 @@ def _transform_and_clip_workpiece_ops(
     Applies workpiece-specific transforms using its world matrix,
     converts to machine coordinates, and clips the result.
     """
+    # The ops from the generator are already scaled to the workpiece's
+    # final size in millimeters, but located at the origin.
+    # The workpiece's world matrix transforms from a [0,1]x[0,1] unit
+    # space. To correctly apply rotation and translation without
+    # re-applying scale, we first map the mm-space ops into the
+    # unit space, then apply the full world matrix.
+    w, h = workpiece.size
+    if w > 1e-9 and h > 1e-9:
+        S_inv = np.diag([1 / w, 1 / h, 1, 1])
+        ops.transform(S_inv)
+
     # 1. Apply the workpiece's world transformation matrix. This single
-    # operation handles the translation and rotation to place the workpiece
-    # correctly in the canonical (Y-up) world space.
+    # operation handles the scaling from unit space, rotation, and
+    # translation to place the workpiece correctly in the canonical
+    # (Y-up) world space.
     world_matrix = workpiece.get_world_transform()
     ops.transform(world_matrix)
 

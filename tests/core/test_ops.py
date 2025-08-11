@@ -1,6 +1,7 @@
 import pytest
 import math
 import numpy as np
+from typing import cast
 from rayforge.core.ops import (
     Ops,
     MoveToCommand,
@@ -12,6 +13,7 @@ from rayforge.core.ops import (
     EnableAirAssistCommand,
     DisableAirAssistCommand,
     State,
+    MovingCommand,
 )
 
 
@@ -217,7 +219,7 @@ def test_get_frame(sample_ops):
     ]
 
     frame_points = [
-        cmd.end for cmd in frame.commands if not cmd.is_state_command()
+        cmd.end for cmd in frame.commands if isinstance(cmd, MovingCommand)
     ]
     assert frame_points == expected_points
 
@@ -283,6 +285,7 @@ def test_preload_state_application():
     ops.preload_state()
 
     line_cmd = ops.commands[1]
+    assert line_cmd.state is not None
     assert line_cmd.state.power == 300
 
     state_commands = [cmd for cmd in ops.commands if cmd.is_state_command()]
@@ -299,26 +302,44 @@ def test_translate_3d():
     ops.move_to(10, 20, 30)
     ops.line_to(30, 40, 50)
     ops.translate(5, 10, -20)
-    assert ops.commands[0].end == (15, 30, 10)
-    assert ops.commands[1].end == (35, 50, 30)
-    assert ops.last_move_to == (15, 30, 10)
+    assert ops.commands[0].end is not None
+    assert ops.commands[0].end == pytest.approx((15, 30, 10))
+    assert ops.commands[1].end is not None
+    assert ops.commands[1].end == pytest.approx((35, 50, 30))
+    assert ops.last_move_to == pytest.approx((15, 30, 10))
 
 
 def test_scale_3d():
     ops = Ops()
     ops.move_to(10, 20, 5)
-    ops.arc_to(50, 60, 5, 7, z=-10)
-    ops.scale(2, 3, 4)
-    assert ops.commands[0].end == (20, 60, 20)
-    assert ops.commands[1].end == (100, 180, -40)
-    assert ops.commands[1].center_offset == (10, 21)
-    assert ops.last_move_to == (20, 60, 20)
+    # Use a valid arc where start and end points have the same distance to
+    # center start=(10,20), center=(15,27), end=(22,22), r^2=74
+    ops.arc_to(22, 22, 5, 7, z=-10)
+    ops.scale(2, 3, 4)  # Non-uniform scale
+
+    # First command is the scaled move_to
+    assert ops.commands[0].end is not None
+    assert ops.commands[0].end == pytest.approx((20, 60, 20))
+
+    # Non-uniform scale linearizes the arc into LineToCommands
+    assert isinstance(ops.commands[1], LineToCommand)
+
+    # The final point of the arc should be the scaled original end point
+    final_cmd = ops.commands[-1]
+    assert final_cmd.end is not None
+    final_point = final_cmd.end
+    expected_final_point = (22 * 2, 22 * 3, -10 * 4)
+    assert final_point == pytest.approx(expected_final_point)
+
+    # last_move_to should also be scaled
+    assert ops.last_move_to == pytest.approx((20, 60, 20))
 
 
 def test_rotate_preserves_z():
     ops = Ops()
     ops.move_to(10, 10, -5)
     ops.rotate(90, 0, 0)
+    assert ops.commands[0].end is not None
     x, y, z = ops.commands[0].end
     assert z == -5
     assert x == pytest.approx(-10)
@@ -341,7 +362,8 @@ def test_clip_fully_inside(clip_rect):
     assert len(clipped_ops.commands) == 2
     assert isinstance(clipped_ops.commands[0], MoveToCommand)
     assert isinstance(clipped_ops.commands[1], LineToCommand)
-    assert clipped_ops.commands[1].end == (90.0, 90.0, -1.0)
+    assert clipped_ops.commands[1].end is not None
+    assert clipped_ops.commands[1].end == pytest.approx((90.0, 90.0, -1.0))
 
 
 def test_clip_fully_outside(clip_rect):
@@ -358,7 +380,8 @@ def test_clip_line_crossing_one_boundary(clip_rect):
     ops.line_to(150, 50, 0)  # Exits right
     clipped_ops = ops.clip(clip_rect)
     assert len(clipped_ops.commands) == 2
-    assert clipped_ops.commands[1].end == (100.0, 50.0, 0.0)
+    assert clipped_ops.commands[1].end is not None
+    assert clipped_ops.commands[1].end == pytest.approx((100.0, 50.0, 0.0))
 
 
 def test_clip_line_crossing_two_boundaries(clip_rect):
@@ -367,8 +390,10 @@ def test_clip_line_crossing_two_boundaries(clip_rect):
     ops.line_to(150, 50, 0)  # Exits right
     clipped_ops = ops.clip(clip_rect)
     assert len(clipped_ops.commands) == 2
-    assert clipped_ops.commands[0].end == (0.0, 50.0, 0.0)
-    assert clipped_ops.commands[1].end == (100.0, 50.0, 0.0)
+    assert clipped_ops.commands[0].end is not None
+    assert clipped_ops.commands[1].end is not None
+    assert clipped_ops.commands[0].end == pytest.approx((0.0, 50.0, 0.0))
+    assert clipped_ops.commands[1].end == pytest.approx((100.0, 50.0, 0.0))
 
 
 def test_clip_interpolates_z(clip_rect):
@@ -377,15 +402,13 @@ def test_clip_interpolates_z(clip_rect):
     ops.line_to(50, 150, 10)  # Exits above
     clipped_ops = ops.clip(clip_rect)
     assert len(clipped_ops.commands) == 2
-    assert clipped_ops.commands[0].end == (
-        50.0,
-        0.0,
-        -5.0,
+    assert clipped_ops.commands[0].end is not None
+    assert clipped_ops.commands[1].end is not None
+    assert clipped_ops.commands[0].end == pytest.approx(
+        (50.0, 0.0, -5.0)
     )  # Z should be halfway
-    assert clipped_ops.commands[1].end == (
-        50.0,
-        100.0,
-        5.0,
+    assert clipped_ops.commands[1].end == pytest.approx(
+        (50.0, 100.0, 5.0)
     )  # Z should be 3/4 of the way
 
 
@@ -397,9 +420,11 @@ def test_clip_arc_partially_inside(clip_rect):
     # Result will be a series of line segments
     assert len(clipped_ops.commands) > 2
     all_points_in = all(
-        0 <= c.end[0] <= 100.001 and 0 <= c.end[1] <= 100.001
+        c.end is not None
+        and 0 <= c.end[0] <= 100.001
+        and 0 <= c.end[1] <= 100.001
         for c in clipped_ops.commands
-        if not c.is_state_command()
+        if isinstance(c, MovingCommand)
     )
     assert all_points_in
 
@@ -427,8 +452,9 @@ def test_clip_arc_reentering_visible_area(clip_rect):
     ]
     assert len(move_tos) == 2
     for cmd in clipped_ops.commands:
-        if not cmd.is_state_command():
-            assert 0 <= cmd.end[0] <= 100
+        if isinstance(cmd, MovingCommand):
+            assert cmd.end is not None
+            assert 0 <= cmd.end[0] <= 100.000001
             assert 0 <= cmd.end[1] <= 100.000001
 
 
@@ -442,12 +468,13 @@ def test_transform_identity():
     identity_matrix = np.identity(4, dtype=float)
     ops.transform(identity_matrix)
 
-    assert ops.commands[0].end == original_ops.commands[0].end
-    assert ops.commands[1].end == original_ops.commands[1].end
-    assert (
-        ops.commands[1].center_offset == original_ops.commands[1].center_offset
-    )
-    assert ops.last_move_to == original_ops.last_move_to
+    arc_cmd = cast(ArcToCommand, ops.commands[1])
+    orig_arc_cmd = cast(ArcToCommand, original_ops.commands[1])
+
+    assert ops.commands[0].end == pytest.approx(original_ops.commands[0].end)
+    assert arc_cmd.end == pytest.approx(orig_arc_cmd.end)
+    assert arc_cmd.center_offset == pytest.approx(orig_arc_cmd.center_offset)
+    assert ops.last_move_to == pytest.approx(original_ops.last_move_to)
 
 
 def test_transform_translate():
@@ -455,30 +482,37 @@ def test_transform_translate():
     ops.move_to(10, 20, 30)
     ops.arc_to(50, 60, i=5, j=7, z=40)
 
-    # Use the factory function from the Matrix44 class
+    # Use the factory function
     translate_matrix = _create_translate_matrix(10, -5, 15)
     ops.transform(translate_matrix)
+    arc_cmd = cast(ArcToCommand, ops.commands[1])
 
     # End points should be translated
-    assert ops.commands[0].end == (20, 15, 45)
-    assert ops.commands[1].end == (60, 55, 55)
+    assert ops.commands[0].end == pytest.approx((20, 15, 45))
+    assert arc_cmd.end == pytest.approx((60, 55, 55))
 
     # Center offset is a vector and should NOT be translated
-    assert ops.commands[1].center_offset == (5, 7)
-    assert ops.last_move_to == (20, 15, 45)
+    assert arc_cmd.center_offset == pytest.approx((5, 7))
+    assert ops.last_move_to == pytest.approx((20, 15, 45))
 
 
 def test_transform_scale():
     ops = Ops()
     ops.move_to(10, 20, 5)
-    ops.arc_to(50, 60, i=5, j=7, z=-10)
+    # Use a valid arc where start and end points have the same distance to
+    # center start=(10,20), center=(15,27), end=(22,22), r^2=74
+    ops.arc_to(22, 22, i=5, j=7, z=-10)
     scale_matrix = _create_scale_matrix(2, 3, 4)
     ops.transform(scale_matrix)
 
-    assert ops.commands[0].end == (20, 60, 20)
-    assert ops.commands[1].end == (100, 180, -40)
-    assert ops.commands[1].center_offset == (10, 21)
-    assert ops.last_move_to == (20, 60, 20)
+    assert ops.commands[0].end == pytest.approx((20, 60, 20))
+    # Arcs are linearized on non-uniform scale, so there are many line commands
+    assert isinstance(ops.commands[1], LineToCommand)
+    final_cmd = ops.commands[-1]
+    assert final_cmd.end is not None
+    final_point = final_cmd.end
+    expected_final_point = (22 * 2, 22 * 3, -10 * 4)
+    assert final_point == pytest.approx(expected_final_point)
 
 
 def test_transform_rotate():
@@ -487,21 +521,24 @@ def test_transform_rotate():
     ops.arc_to(20, 0, i=5, j=0, z=-5)
     rotate_matrix = _create_z_rotate_matrix(math.radians(90))
     ops.transform(rotate_matrix)
+    arc_cmd = cast(ArcToCommand, ops.commands[1])
 
     # Check move_to end point
+    assert ops.commands[0].end is not None
     x0, y0, z0 = ops.commands[0].end
     assert x0 == pytest.approx(0)
     assert y0 == pytest.approx(10)
     assert z0 == -5
 
     # Check arc_to end point
-    x1, y1, z1 = ops.commands[1].end
+    assert arc_cmd.end is not None
+    x1, y1, z1 = arc_cmd.end
     assert x1 == pytest.approx(0)
     assert y1 == pytest.approx(20)
     assert z1 == -5
 
     # Check arc_to center offset vector
-    i, j = ops.commands[1].center_offset
+    i, j = arc_cmd.center_offset
     assert i == pytest.approx(0)
     assert j == pytest.approx(5)
 
@@ -522,15 +559,19 @@ def test_transform_shear():
     p0_vec = shear_m @ np.array([10, 0, 0, 1])
     p1_vec = shear_m @ np.array([10, 10, 0, 1])
     p2_vec = shear_m @ np.array([20, 10, 0, 1])
-    offset_vec = shear_m[:3, :3] @ np.array([5, 0, 0])
 
     ops.transform(shear_m)
 
+    assert ops.commands[0].end is not None
+    assert ops.commands[1].end is not None
     assert ops.commands[0].end[0] == pytest.approx(p0_vec[0])
     assert ops.commands[0].end[1] == pytest.approx(p0_vec[1])
     assert ops.commands[1].end[0] == pytest.approx(p1_vec[0])
     assert ops.commands[1].end[1] == pytest.approx(p1_vec[1])
-    assert ops.commands[2].end[0] == pytest.approx(p2_vec[0])
-    assert ops.commands[2].end[1] == pytest.approx(p2_vec[1])
-    assert ops.commands[2].center_offset[0] == pytest.approx(offset_vec[0])
-    assert ops.commands[2].center_offset[1] == pytest.approx(offset_vec[1])
+    # Arc is linearized into many LineToCommands
+    assert isinstance(ops.commands[2], LineToCommand)
+    final_cmd = ops.commands[-1]
+    assert final_cmd.end is not None
+    final_point = final_cmd.end
+    assert final_point[0] == pytest.approx(p2_vec[0])
+    assert final_point[1] == pytest.approx(p2_vec[1])

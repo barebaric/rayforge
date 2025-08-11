@@ -72,6 +72,15 @@ class Doc:
         """A single handler for generic changes in layers."""
         self.changed.send(self)
 
+    def _on_layer_transform_bubbled(self, sender, *, origin):
+        """
+        Handles a transform-only change bubbled up from a layer.
+        This fires the document's generic changed signal so that the app
+        knows the document is dirty (e.g., for enabling the save button),
+        but avoids heavier updates.
+        """
+        self.changed.send(self)
+
     def _on_layer_post_transformer_changed(self, sender):
         """
         Handles post-transformer changes from a layer. This invalidates the
@@ -91,6 +100,9 @@ class Doc:
     def _connect_layer_signals(self, layer: Layer):
         """Connects all relevant signals from a layer to the doc's handlers."""
         layer.changed.connect(self._on_layer_changed)
+        layer.descendant_transform_changed.connect(
+            self._on_layer_transform_bubbled
+        )
         layer.post_step_transformer_changed.connect(
             self._on_layer_post_transformer_changed
         )
@@ -101,6 +113,9 @@ class Doc:
     def _disconnect_layer_signals(self, layer: Layer):
         """Disconnects all relevant signals from a layer."""
         layer.changed.disconnect(self._on_layer_changed)
+        layer.descendant_transform_changed.disconnect(
+            self._on_layer_transform_bubbled
+        )
         layer.post_step_transformer_changed.disconnect(
             self._on_layer_post_transformer_changed
         )

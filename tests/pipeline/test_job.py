@@ -13,11 +13,6 @@ from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 from rayforge.importer import SvgImporter
 
 
-@pytest.fixture(autouse=True)
-def setup_job_test(mocker):
-    mocker.patch("builtins._", lambda s: s, create=True)
-
-
 @pytest.fixture
 def machine():
     m = Machine()
@@ -31,7 +26,8 @@ def machine():
 def doc():
     d = Doc()
     # Start with a clean slate for tests
-    d.layers[0].workflow.set_steps([])
+    if d.layers:
+        d.layers[0].workflow.set_steps([])
     return d
 
 
@@ -44,8 +40,12 @@ def mock_ops_generator():
 @pytest.fixture
 def real_workpiece():
     wp = WorkPiece(Path("wp1"), b'<svg width="10" height="10" />', SvgImporter)
-    wp.pos = 10, 20
+    # Set properties in an order that is predictable and on-canvas.
+    # 1. Set size first, which will adjust position to keep center at origin.
     wp.set_size(40, 30)
+    # 2. Now explicitly set the position.
+    wp.pos = (50, 60)
+    # 3. Finally, set the angle.
     wp.angle = 90
     return wp
 
@@ -80,32 +80,30 @@ async def test_generate_job_ops_assembles_correctly(
 
     # Assert
     mock_ops_generator.get_ops.assert_called_once_with(step, real_workpiece)
+    # The MultiPassTransformer with passes=2 should double the cutting
+    # commands.
     assert len([c for c in final_ops.commands if c.is_cutting_command()]) == 2
 
-    # Verify transformations on the first pass
-    # Workpiece: pos=(10,20), size=(40,30), angle=90.
-    # The get_world_transform() method now uses -angle to preserve the
-    # visual clockwise rotation convention. So, it applies a -90deg rotation.
-    # Initial Ops points: (0,0) -> (10,0)
-    #
-    # 1. World Transform (Y-up, canonical space):
-    #    The world matrix rotates -90deg (CW) around the center (20,15) and
-    #    translates by (10,20).
-    #    Point (0,0) -> (15, 55)
-    #    Point (10,0) -> (15, 45)
-    #
-    # 2. Machine Transform (Y-down, height=150):
-    #    (15, 55) -> scale(1,-1) -> (15, -55) -> translate(0,150) -> (15, 95)
-    #    (15, 45) -> scale(1,-1) -> (15, -45) -> translate(0,150) -> (15, 105)
+    # Verify the coordinates of the transformed and y-flipped points.
     move_cmds = [c for c in final_ops.commands if isinstance(c, MoveToCommand)]
     line_cmds = [c for c in final_ops.commands if isinstance(c, LineToCommand)]
 
-    assert move_cmds[0].end == pytest.approx((15, 95, 0.0))
-    assert line_cmds[0].end == pytest.approx((15, 105, 0.0))
+    # --- Trace the expected final coordinates ---
+    # Point (0,0) from base_ops:
+    # 1. In unit space, this is (0,0).
+    # 2. After world transform: `world_matrix @ [0,0,0,1]` -> (55, 95).
+    # 3. After y-flip to machine coords: (55, 150-95) = (55, 55).
+    assert move_cmds[0].end == pytest.approx((55.0, 55.0, 0.0))
+
+    # Point (10,0) from base_ops:
+    # 1. In unit space, this is (10/40, 0/30) = (0.25, 0).
+    # 2. After world transform: `world_matrix @ [0.25,0,0,1]` -> (55, 85).
+    # 3. After y-flip to machine coords: (55, 150-85) = (55, 65).
+    assert line_cmds[0].end == pytest.approx((55.0, 65.0, 0.0))
 
     # Verify the second pass is identical
-    assert move_cmds[1].end == pytest.approx((15, 95, 0.0))
-    assert line_cmds[1].end == pytest.approx((15, 105, 0.0))
+    assert move_cmds[1].end == move_cmds[0].end
+    assert line_cmds[1].end == line_cmds[0].end
 
 
 @pytest.mark.asyncio
@@ -119,11 +117,11 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
 
     wp1 = WorkPiece(Path("wp1"), b"", SvgImporter)
     wp1.set_size(10, 10)
-    wp1.pos = 0, 0
+    wp1.pos = (0, 0)
 
     wp2 = WorkPiece(Path("wp2"), b"", SvgImporter)
     wp2.set_size(10, 10)
-    wp2.pos = 20, 20
+    wp2.pos = (20, 20)
 
     # There are two workpieces, so total_items = 2
     layer.add_workpiece(wp1)
