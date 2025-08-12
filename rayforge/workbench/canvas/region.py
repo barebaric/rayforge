@@ -20,29 +20,47 @@ class ElementRegion(Enum):
 
 
 def get_region_rect(
-    region: ElementRegion, width: float, height: float, base_handle_size: float
+    region: ElementRegion,
+    width: float,
+    height: float,
+    base_handle_size: float,
+    max_handle_size: float = 20.0,
+    scale_compensation: float = 1.0,
 ) -> Tuple[float, float, float, float]:
     """
     A generic function to calculate the rectangle (x, y, w, h) for a given
     region, relative to a bounding box of a given width and height.
 
+    It compensates for scale to keep handle sizes visually consistent.
+
     Args:
         region: The ElementRegion to calculate.
         width: The width of the bounding box.
         height: The height of the bounding box.
-        base_handle_size: The desired size of the handles in pixels.
+        base_handle_size: The desired base size of the handles in pixels.
+        max_handle_size: The maximum visual size of the handles in pixels.
+        scale_compensation: The scale factor of the context the handles
+                            will be drawn on.
 
     Returns:
         A tuple (x, y, width, height) for the region's rectangle.
     """
     w, h = width, height
+    # To keep the visual size constant, we calculate the required size in
+    # the element's local space.
+    # Formula: local_size = min(base_size, max_size / scale)
+    # This caps the visual growth while allowing shrinking.
+    local_handle_size = min(
+        base_handle_size, max_handle_size / scale_compensation
+    )
+
     # Dynamically calculate handle size to prevent overlap on small elements.
     # If the element is very small, this can result in a size of 0, which
     # correctly hides the handles.
-    effective_hs = min(base_handle_size, w / 3.0, h / 3.0)
+    effective_hs = min(local_handle_size, w / 3.0, h / 3.0)
 
     if region == ElementRegion.ROTATION_HANDLE:
-        handle_dist = 20.0
+        handle_dist = 20.0 / scale_compensation  # Keep distance constant too
         cx = w / 2.0
         # The rotation handle also uses the effective size to scale down.
         return (
@@ -104,7 +122,9 @@ def check_region_hit(
     Checks which interactive region is hit by a point in LOCAL coordinates.
     This function does not need to handle rotation or translation.
     """
-    # Check handles first, as they are on the periphery.
+    # For simplicity in this context, we will use the base size for hit
+    # detection, as it provides a consistent target for the user.
+    # A more complex implementation might pass the scale here as well.
     regions_to_check = [
         ElementRegion.ROTATION_HANDLE,
         ElementRegion.TOP_LEFT,
@@ -117,6 +137,7 @@ def check_region_hit(
         ElementRegion.MIDDLE_RIGHT,
     ]
     for region in regions_to_check:
+        # Use a fixed scale for hit testing for a consistent feel
         rx, ry, rw, rh = get_region_rect(
             region, width, height, base_handle_size
         )

@@ -1,7 +1,15 @@
 from __future__ import annotations
 import os
 import logging
-from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generator,
+    List,
+    Tuple,
+    Optional,
+    Union,
+)
 import cairo
 from gi.repository import GLib  # type: ignore
 from copy import deepcopy
@@ -15,13 +23,21 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-max_workers = max(
-    1, (os.cpu_count() or 1) - 2
-)  # Reserve 2 threads for UI responsiveness
+# Reserve 2 threads for UI responsiveness
+max_workers = max(1, (os.cpu_count() or 1) - 2)
 
 
 class CanvasElement:
-    # A shared thread pool for all element updates.
+    """
+    The base class for all objects rendered on a Canvas.
+
+    This class provides a hierarchical structure (parent-child),
+    matrix-based transformations (translation, rotation, scale),
+    asynchronous off-thread rendering for performance ("buffering"),
+    and basic UI interaction logic like hit-testing.
+    """
+
+    # A shared thread pool for all element background updates.
     _executor = ThreadPoolExecutor(
         max_workers=max_workers, thread_name_prefix="CanvasElementWorker"
     )
@@ -45,6 +61,34 @@ class CanvasElement:
         angle: float = 0.0,
         pixel_perfect_hit: bool = False,
     ):
+        """
+        Initializes a new CanvasElement.
+
+        Args:
+            x: The x-coordinate relative to the parent.
+            y: The y-coordinate relative to the parent.
+            width: The width of the element.
+            height: The height of the element.
+            selected: The initial selection state.
+            selectable: If the element can be selected by the user.
+            visible: If the element is drawn.
+            background: The background color (r, g, b, a).
+            canvas: The root Canvas this element belongs to.
+            parent: The parent element in the hierarchy.
+            data: Arbitrary user data associated with the element.
+            clip: If True, drawing is clipped to the element's
+                bounding box.
+            buffered: If True, the element is rendered to an
+                off-screen surface in a background thread. This is
+                ideal for complex, static elements. If False, the
+                element is drawn directly on every frame.
+            debounce_ms: The delay in milliseconds before a
+                background render is triggered after a change.
+            angle: The local rotation angle in degrees.
+            pixel_perfect_hit: If True (and buffered=True),
+                hit-testing will check the transparency of the
+                pixel on the element's surface.
+        """
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
             f"height={height}"
@@ -54,6 +98,8 @@ class CanvasElement:
         self.y: float = float(y)
         self.width: float = float(width)
         self.height: float = float(height)
+        self.scale_x: float = 1.0
+        self.scale_y: float = 1.0
         self.selected: bool = selected
         self.selectable: bool = selectable
         self.visible: bool = visible
@@ -72,14 +118,16 @@ class CanvasElement:
         self.angle: float = angle
         self.pixel_perfect_hit = pixel_perfect_hit
 
-        # New matrix-based transform properties
+        # Matrix for local scale and rotation.
         self.local_transform: Matrix = Matrix.identity()
+        # Cached matrix for the full transform to world space.
         self._world_transform: Matrix = Matrix.identity()
         self._transform_dirty: bool = True
 
         if self.pixel_perfect_hit and not self.buffered:
             raise ValueError(
-                "pixel perfect hit cannot be used on unbuffered elements"
+                "pixel perfect hit cannot be used on unbuffered "
+                "elements"
             )
 
         # UI interaction state
@@ -91,24 +139,44 @@ class CanvasElement:
 
     def _rebuild_local_transform(self):
         """
-        Builds a matrix that ONLY handles transformations within the element's
-        local space (e.g., rotation around its center). It does NOT include
-        the element's x/y position.
+        Builds the local transformation matrix.
+
+        This matrix handles scale and rotation around the element's
+        center `(width/2, height/2)`. It does NOT include the
+        element's x/y position (translation), which is handled
+        separately during rendering and world transform calculation.
+
+        The order of operations applied to a point is:
+        1. Scale
+        2. Rotate
         """
         center_x, center_y = self.width / 2, self.height / 2
 
-        # This matrix now only contains the rotation around the local center.
-        self.local_transform = Matrix.rotation(
-            self.angle, center=(center_x, center_y)
-        )
+        m_scale = Matrix.scale(self.scale_x, self.scale_y)
+        m_rotate = Matrix.rotation(self.angle, center=(center_x, center_y))
 
-        # The dirty flag cascade remains correct.
+        # The effective local transform is Rotate @ Scale.
+        # This means a point is first scaled, then rotated.
+        self.local_transform = m_rotate @ m_scale
+
         self.mark_dirty(ancestors=False, recursive=True)
 
     def get_world_transform(self) -> Matrix:
         """
-        Calculates the full world transformation matrix for this element,
-        which maps its local (0,0) origin to its final place on the canvas.
+        Calculates the full world transformation matrix.
+
+        This matrix maps a point from this element's local coordinate
+        space to the final canvas (world) coordinate space. It caches
+        the result and only recalculates when the transform is "dirty".
+
+        The final matrix is composed as:
+        `Local @ Translate @ ParentWorld`
+
+        This means the order of operations to transform a point from
+        the parent's space into world space is:
+        1. Apply parent's world transform.
+        2. Apply this element's translation (x, y).
+        3. Apply this element's local transform (scale, rotation).
         """
         if not self._transform_dirty:
             return self._world_transform
@@ -117,13 +185,10 @@ class CanvasElement:
         if isinstance(self.parent, CanvasElement):
             parent_world_transform = self.parent.get_world_transform()
 
-        # The element's own contribution to the transform:
-        # Its translation (x,y) from its parent's origin.
         m_trans = Matrix.translation(self.x, self.y)
 
-        # The transformation order must match the render path:
-        # Parent -> Translate -> Local (Rotation)
-        # With the custom __matmul__, this is written as L @ T @ P.
+        # The transformation order is:
+        # Parent -> Translate -> Local (Rotate @ Scale)
         self._world_transform = (
             self.local_transform @ m_trans @ parent_world_transform
         )
@@ -132,7 +197,13 @@ class CanvasElement:
         return self._world_transform
 
     def trigger_update(self):
-        """Schedules render_to_surface to be run in the thread pool."""
+        """
+        Schedules a background render of the element's surface.
+
+        If called multiple times in quick succession, the calls are
+        debounced to prevent excessive updates. This has no effect
+        on unbuffered elements.
+        """
         if not self.buffered:
             return
 
@@ -147,7 +218,9 @@ class CanvasElement:
             )
 
     def _start_update(self) -> bool:
-        """Submits the rendering task to the thread pool."""
+        """
+        Submits the rendering task to the background thread pool.
+        """
         self._debounce_timer_id = None
 
         if self._update_future and not self._update_future.done():
@@ -168,8 +241,13 @@ class CanvasElement:
 
     def _on_update_complete(self, future: Future):
         """
-        Callback executed by the worker thread when render_to_surface is done.
-        It schedules the UI update to happen on the main GTK thread.
+        Callback executed when the background render is finished.
+
+        It schedules the final UI update to happen on the main GTK
+        thread to ensure thread safety.
+
+        Args:
+            future: The Future object from the completed task.
         """
         if future.cancelled():
             logger.debug(f"Update for {self.__class__.__name__} cancelled.")
@@ -177,8 +255,8 @@ class CanvasElement:
 
         if exc := future.exception():
             logger.error(
-                f"Error in background update for {self.__class__.__name__}: "
-                f"{exc}",
+                f"Error in background update for "
+                f"{self.__class__.__name__}: {exc}",
                 exc_info=exc,
             )
             return
@@ -186,13 +264,20 @@ class CanvasElement:
         # The result is the new cairo surface
         new_surface = future.result()
 
-        # IMPORTANT: Schedule the UI-modifying part to run on the main thread
+        # Schedule the UI-modifying part to run on the main thread
         GLib.idle_add(self._apply_surface, new_surface)
 
     def _apply_surface(
         self, new_surface: Optional[cairo.ImageSurface]
     ) -> bool:
-        """Applies the new surface. Runs on the main GTK thread."""
+        """
+        Applies the newly rendered surface from the background task.
+
+        This method runs on the main GTK thread via `GLib.idle_add`.
+
+        Args:
+            new_surface: The new surface to apply, or None.
+        """
         self.surface = new_surface
         self.mark_dirty(ancestors=True)
         if self.canvas:
@@ -205,9 +290,19 @@ class CanvasElement:
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """
-        Performs the rendering to a new surface. This method is run in a
-        background thread and should be overridden by subclasses for custom,
-        long-running drawing logic. It must be thread-safe.
+        Performs rendering to a new surface in a background thread.
+
+        Subclasses should override this method for custom, long-running
+        drawing logic. It MUST be thread-safe. The base implementation
+        simply creates a surface and fills it with the background
+        color.
+
+        Args:
+            width: The integer width of the surface to create.
+            height: The integer height of the surface to create.
+
+        Returns:
+            A new `cairo.ImageSurface` or `None` if size is invalid.
         """
         if width <= 0 or height <= 0:
             return None
@@ -220,39 +315,68 @@ class CanvasElement:
         return surface
 
     def get_region_rect(
-        self, region: ElementRegion
+        self,
+        region: ElementRegion,
+        base_handle_size: float,
+        max_handle_size: float,
+        scale_compensation: float = 1.0,
     ) -> Tuple[float, float, float, float]:
         """
-        Returns the rectangle (x, y, w, h) for a given region in
-        local coordinates by calling the generic utility function.
+        Gets the rect (x, y, w, h) for a region in local coordinates.
+
+        Args:
+            region: The `ElementRegion` to query (e.g., a handle).
+            base_handle_size: The base pixel size for the handle.
+            max_handle_size: The max pixel size for the handle.
+            scale_compensation: The element's visual scale factor.
+
+        Returns:
+            A tuple (x, y, width, height) in local coordinates.
         """
         return get_region_rect(
-            region, self.width, self.height, self.handle_size
+            region,
+            self.width,
+            self.height,
+            base_handle_size,
+            max_handle_size,
+            scale_compensation,
         )
 
     def check_region_hit(self, x_abs: float, y_abs: float) -> ElementRegion:
         """
-        Checks which region is hit by transforming the absolute point into
-        the element's local coordinate space.
-        """
-        # 1. Get the full world transform of this element.
-        world_transform = self.get_world_transform()
+        Checks which region is hit at an absolute canvas position.
 
-        # 2. Get its inverse to map world points back to local space.
+        It transforms the absolute point into the element's local
+        coordinate space to perform the hit check.
+
+        Args:
+            x_abs: The absolute x-coordinate on the canvas.
+            y_abs: The absolute y-coordinate on the canvas.
+
+        Returns:
+            The `ElementRegion` that was hit (e.g., BODY, HANDLE_SE).
+        """
+        world_transform = self.get_world_transform()
         try:
             inv_world = world_transform.invert()
-        except Exception:  # Catch potential numpy LinAlgError
-            return ElementRegion.NONE  # Not invertible, cannot be hit.
+        except Exception:
+            return ElementRegion.NONE
 
-        # 3. Transform the absolute mouse point into the element's local space.
         local_x, local_y = inv_world.transform_point((x_abs, y_abs))
-
-        # 4. Use the new, simple, local-space checker.
+        # For hit testing, use a consistent base size for a better feel.
+        base_hit_size = 15.0
         return check_region_hit(
-            local_x, local_y, self.width, self.height, self.handle_size
+            local_x, local_y, self.width, self.height, base_hit_size
         )
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
+        """
+        Flags the element and its transforms as needing an update.
+
+        Args:
+            ancestors: If True, marks all parent elements as dirty.
+            recursive: If True, marks all child elements as dirty.
+        """
         self.dirty = True
         self._transform_dirty = True
         if ancestors and isinstance(self.parent, CanvasElement):
@@ -262,9 +386,19 @@ class CanvasElement:
                 child.mark_dirty(ancestors=False, recursive=True)
 
     def copy(self) -> CanvasElement:
+        """Creates a deep copy of the element."""
         return deepcopy(self)
 
     def add(self, elem: CanvasElement):
+        """
+        Adds a child element.
+
+        The element is added to the end of the children list. If the
+        element already has a parent, it is removed from it first.
+
+        Args:
+            elem: The `CanvasElement` to add.
+        """
         if elem.parent:
             elem.parent.remove_child(elem)
         self.children.append(elem)
@@ -276,6 +410,13 @@ class CanvasElement:
             self.canvas.queue_draw()
 
     def insert(self, index: int, elem: CanvasElement):
+        """
+        Inserts a child element at a specific index.
+
+        Args:
+            index: The index at which to insert the element.
+            elem: The `CanvasElement` to insert.
+        """
         if elem.parent:
             elem.parent.remove_child(elem)
         self.children.insert(index, elem)
@@ -287,12 +428,22 @@ class CanvasElement:
             self.canvas.queue_draw()
 
     def set_visible(self, visible: bool = True):
+        """Sets the visibility of the element."""
         self.visible = visible
         self.mark_dirty()
         if self.canvas:
             self.canvas.queue_draw()
 
     def find_by_data(self, data: Any) -> Optional[CanvasElement]:
+        """
+        Finds the first element (self or descendant) with matching data.
+
+        Args:
+            data: The data to search for.
+
+        Returns:
+            The matching `CanvasElement` or `None`.
+        """
         if data == self.data:
             return self
         for child in self.children:
@@ -304,7 +455,15 @@ class CanvasElement:
     def find_by_type(
         self, thetype: Any
     ) -> Generator[CanvasElement, None, None]:
-        # Searches itself and children recursively
+        """
+        Finds all elements (self or descendant) of a given type.
+
+        Args:
+            thetype: The class/type to search for.
+
+        Yields:
+            Matching `CanvasElement` instances.
+        """
         if isinstance(self, thetype):
             yield self
         for child in self.children[:]:
@@ -313,6 +472,15 @@ class CanvasElement:
                 yield elem
 
     def data_by_type(self, thetype: Any) -> Generator[Any, None, None]:
+        """
+        Finds all data from elements of a given type.
+
+        Args:
+            thetype: The class/type to search for.
+
+        Yields:
+            The `data` attribute of matching elements.
+        """
         for elem in self.find_by_type(thetype):
             yield elem.data
 
@@ -327,7 +495,7 @@ class CanvasElement:
             yield from child.get_all_children_recursive()
 
     def remove_all(self):
-        """Removes all children"""
+        """Removes all children from this element."""
         children = self.children
         self.children = []
         if self.canvas is not None:
@@ -336,12 +504,16 @@ class CanvasElement:
         self.mark_dirty()
 
     def remove(self):
+        """Removes this element from its parent."""
         assert self.parent is not None
         self.parent.remove_child(self)
 
     def remove_child(self, elem: CanvasElement):
         """
-        Not recursive.
+        Removes a direct child element. This is not recursive.
+
+        Args:
+            elem: The child element to remove.
         """
         for child in self.children[:]:
             if child == elem:
@@ -350,7 +522,8 @@ class CanvasElement:
                     self.canvas.elem_removed.send(self, child=child)
         self.mark_dirty()
 
-    def get_selected(self):
+    def get_selected(self) -> Generator[CanvasElement, None, None]:
+        """Recursively finds and yields all selected elements."""
         if self.selected:
             yield self
         for child in self.children[:]:
@@ -358,11 +531,13 @@ class CanvasElement:
             for elem in result:
                 yield elem
 
-    def get_selected_data(self):
+    def get_selected_data(self) -> Generator[Any, None, None]:
+        """Recursively finds and yields data of selected elements."""
         for elem in self.get_selected():
             yield elem.data
 
     def remove_selected(self):
+        """Recursively finds and removes all selected elements."""
         for child in self.children[:]:
             if child.selected:
                 self.children.remove(child)
@@ -373,6 +548,7 @@ class CanvasElement:
         self.mark_dirty()
 
     def unselect_all(self):
+        """Recursively unselects this element and all descendants."""
         for child in self.children:
             child.unselect_all()
         if self.selected:
@@ -380,27 +556,49 @@ class CanvasElement:
             self.mark_dirty()
 
     def set_pos(self, x: float, y: float):
+        """
+        Sets the element's position relative to its parent.
+
+        Args:
+            x: The new x-coordinate.
+            y: The new y-coordinate.
+        """
         if self.x != x or self.y != y:
             self.x, self.y = x, y
-            self._rebuild_local_transform()
+            # Only need to mark the transform as dirty.
+            self.mark_dirty()
             if isinstance(self.parent, CanvasElement):
                 self.parent.mark_dirty()
 
     def pos(self) -> Tuple[float, float]:
+        """Gets the element's position relative to its parent."""
         return self.x, self.y
 
     def pos_abs(self) -> Tuple[float, float]:
         """
-        Returns the absolute position by extracting it from the world matrix.
+        Gets the absolute position on the canvas.
+
+        This is calculated by extracting the translation component from
+        the element's world transformation matrix.
         """
         world_transform = self.get_world_transform()
-        # The absolute position is the translation component of the matrix.
         return world_transform.get_translation()
 
     def size(self) -> Tuple[float, float]:
+        """Gets the element's size (width, height)."""
         return self.width, self.height
 
     def set_size(self, width: float, height: float):
+        """
+        Sets the element's size.
+
+        This rebuilds the local transform, re-allocates the backing
+        surface (if buffered), and triggers a redraw.
+
+        Args:
+            width: The new width.
+            height: The new height.
+        """
         width = float(width)
         height = float(height)
         if width != self.width or height != self.height:
@@ -412,21 +610,51 @@ class CanvasElement:
             if self.canvas:
                 self.canvas.queue_draw()
 
+    def set_scale(self, scale_x: float, scale_y: float):
+        """
+        Sets the scale factor of the element.
+
+        Args:
+            scale_x: The horizontal scale factor.
+            scale_y: The vertical scale factor.
+        """
+        if self.scale_x != scale_x or self.scale_y != scale_y:
+            self.scale_x, self.scale_y = scale_x, scale_y
+            self._rebuild_local_transform()
+            self.mark_dirty()
+            if self.canvas:
+                self.canvas.queue_draw()
+
     def rect(self) -> Tuple[float, float, float, float]:
-        """returns x, y, width, height"""
+        """
+        Gets the local rect (x, y, width, height).
+        """
         return self.x, self.y, self.width, self.height
 
     def rect_abs(self) -> Tuple[float, float, float, float]:
+        """
+        Gets the absolute rect (x, y, width, height).
+
+        The x and y are the absolute position of the top-left corner.
+        The width and height are the element's local size, not the
+        size of the transformed bounding box.
+        """
         x, y = self.pos_abs()
         return x, y, self.width, self.height
 
     def get_aspect_ratio(self) -> float:
+        """Calculates the width-to-height aspect ratio."""
         if self.height == 0:
-            return 0.0  # Avoid division by zero
+            return 0.0
         return self.width / self.height
 
     def set_angle(self, angle: float):
-        """Sets the rotation angle in degrees."""
+        """
+        Sets the local rotation angle in degrees.
+
+        Args:
+            angle: The angle in degrees (0-360).
+        """
         if self.angle == angle:
             return
         self.angle = angle % 360
@@ -435,79 +663,95 @@ class CanvasElement:
             self.parent.mark_dirty()
 
     def get_angle(self) -> float:
-        """Gets the rotation angle in degrees."""
+        """Gets the local rotation angle in degrees."""
         return self.angle
 
     def get_world_angle(self) -> float:
-        """Returns the total world angle by decomposing the world matrix."""
+        """
+        Gets the total rotation angle in world coordinates.
+
+        This is calculated by decomposing the world transformation
+        matrix.
+        """
         world_transform = self.get_world_transform()
         return world_transform.get_rotation()
 
     def get_world_center(self) -> Tuple[float, float]:
         """
-        Calculates the element's center point in world coordinates,
-        accounting for all parent transformations.
+        Calculates the element's center point in world coordinates.
         """
-        # The local center is simple
         local_center = (self.width / 2, self.height / 2)
-        # The world transform correctly maps this local point to world space
         return self.get_world_transform().transform_point(local_center)
 
     def allocate(self, force: bool = False):
+        """
+        Allocates or re-allocates resources, like the backing surface.
+
+        For buffered elements, this triggers a surface update if the
+        element's size has changed or if `force` is True.
+
+        Args:
+            force: If True, forces reallocation even if size is same.
+        """
         for child in self.children:
             child.allocate(force)
 
-        # If not buffered, there is no surface to allocate.
         if not self.buffered:
             self.surface = None
             return
 
-        # If the size didn't change, do nothing.
-        if (
-            self.surface is not None
-            and not force
-            and self.surface.get_width() == round(self.width)
-            and self.surface.get_height() == round(self.height)
-        ):
+        size_changed = (
+            self.surface is None
+            or self.surface.get_width() != round(self.width)
+            or self.surface.get_height() != round(self.height)
+        )
+
+        if not size_changed and not force:
             return
 
         if self.width > 0 and self.height > 0:
-            # The surface is now created by the update process.
-            # We can trigger an update here to generate it.
+            # Trigger an update to generate the new surface.
             self.trigger_update()
         else:
-            self.surface = None  # Cannot create surface with zero size
+            self.surface = None
 
     def render(self, ctx: cairo.Context):
         """
-        Renders the element using a hybrid approach:
-        1. Use cairo to translate to the element's x,y position.
-        2. Use the matrix to apply local transformations like rotation.
+        Renders the element and its children to the cairo context.
+
+        This method applies the element's transformations before
+        drawing. It uses a hybrid approach:
+        1. `ctx.translate` for the element's x,y position.
+        2. `ctx.transform` with a matrix for local scale and rotation.
+
+        This ensures children correctly inherit the full transform.
+
+        Args:
+            ctx: The cairo context to draw on.
         """
         if not self.visible:
             return
 
         ctx.save()
 
-        # 1. Perform the simple translation to the element's position.
+        # 1. Translate to the element's position in parent's frame.
         ctx.translate(self.x, self.y)
 
-        # 2. Apply the local transformation matrix (which is just rotation).
+        # 2. Apply local scale and rotation via the matrix.
         m = self.local_transform.m
         cairo_matrix = cairo.Matrix(
             m[0, 0], m[1, 0], m[0, 1], m[1, 1], m[0, 2], m[1, 2]
         )
         ctx.transform(cairo_matrix)
 
-        # The rest of the logic operates in the element's simple,
-        # un-rotated local space, where its top-left is at (0, 0).
+        # The rest of the drawing operates in the element's simple,
+        # untransformed local space (top-left at 0,0).
         if self.clip:
             ctx.rectangle(0, 0, self.width, self.height)
             ctx.clip()
 
         self.draw(ctx)
 
-        # Child rendering now correctly inherits the full transform.
         for child in self.children:
             child.render(ctx)
 
@@ -515,29 +759,32 @@ class CanvasElement:
 
     def draw(self, ctx: cairo.Context):
         """
-        Draws the element's content to the given context. For buffered
-        elements, it paints the internal surface. For unbuffered elements,
-        it just paints the background. Subclasses should override this
-        for unbuffered custom drawing.
+        Draws the element's own content.
+
+        - For buffered elements, this paints the internal surface.
+        - For unbuffered elements, this is the hook for subclasses to
+          implement custom drawing logic. The base implementation just
+          draws the background color.
+
+        Args:
+            ctx: The cairo context, already transformed to local space.
         """
         if not self.buffered or not self.surface:
-            # Unbuffered: just draw the background. Subclasses will draw
-            # on top.
+            # Unbuffered: just draw the background.
             ctx.set_source_rgba(*self.background)
             ctx.rectangle(0, 0, self.width, self.height)
             ctx.fill()
             return
 
-        # Draw the element by scaling its current surface. This is fast and
-        # provides responsive feedback.
-        source_w, source_h = (
-            self.surface.get_width(),
-            self.surface.get_height(),
-        )
+        source_w = self.surface.get_width()
+        source_h = self.surface.get_height()
+
         if source_w <= 0 or source_h <= 0:
             return
 
-        scale_x, scale_y = self.width / source_w, self.height / source_h
+        # Draw by scaling the current surface. This is fast.
+        scale_x = self.width / source_w
+        scale_y = self.height / source_h
 
         ctx.save()
         ctx.scale(scale_x, scale_y)
@@ -546,10 +793,20 @@ class CanvasElement:
         ctx.paint()
         ctx.restore()
 
+    def draw_selection_frame(self, ctx: cairo.Context):
+        """
+        Draws the visual selection frame for this element.
+        The cairo context is assumed to be already transformed
+        so that (0,0) is the top-left of the element.
+        Line width, dash, and color are also assumed to be set
+        by the caller (the Canvas).
+        """
+        ctx.rectangle(0, 0, self.width, self.height)
+        ctx.stroke()
+
     def clear_surface(self):
         """
-        Clears the internal surface, if it exists. This is useful for
-        buffered elements to reset their content.
+        Clears the internal surface of a buffered element.
         """
         if self.surface:
             ctx = cairo.Context(self.surface)
@@ -559,6 +816,7 @@ class CanvasElement:
             self.mark_dirty()
 
     def has_dirty_children(self) -> bool:
+        """Checks if this element or any descendant is dirty."""
         if self.dirty:
             return True
         for child in self.children:
@@ -570,53 +828,51 @@ class CanvasElement:
         self, x: float, y: float, selectable: bool = False
     ) -> Optional[CanvasElement]:
         """
-        Check if the point (x, y) hits this elem or any of its children.
-        Coordinates are relative to the current element's top-left frame.
+        Checks for a hit on this element or its children.
+
+        The check is performed recursively, starting with the top-most
+        child. The incoming coordinates are relative to this element's
+        local, untransformed coordinate space.
+
+        Args:
+            x: The x-coordinate in this element's local space.
+            y: The y-coordinate in this element's local space.
+            selectable: If True, only selectable elements are checked.
+
+        Returns:
+            The `CanvasElement` that was hit, or `None`.
         """
-        # --- Part 1: Check children first (top-most are checked first) ---
+        # Part 1: Check children first (top-most are last in list).
         for child in reversed(self.children):
-            # The transformation from child-local space to parent-local
-            # space is:
-            # 1. Apply the child's local rotation/scale (child.local_transform)
-            # 2. Translate by the child's position (child.x, child.y)
-            # With our custom matmul, the order is reversed: L @ T
+            # Create matrix to transform from child-local to parent-local
             transform_child_to_parent = (
                 child.local_transform @ Matrix.translation(child.x, child.y)
             )
-
-            # To go from parent-local to child-local, we need the inverse.
+            # Invert to go from parent-local to child-local
             transform_parent_to_child = transform_child_to_parent.invert()
 
-            # Transform the hit point (which is in our local space) into the
-            # child's local space.
+            # Transform the hit point into the child's local space.
             child_x, child_y = transform_parent_to_child.transform_point(
                 (x, y)
             )
 
-            # Recursively call hit-testing on the child with its own local
-            # coords.
+            # Recursively call hit-testing on the child.
             hit = child.get_elem_hit(child_x, child_y, selectable)
             if hit:
                 return hit
 
-        # --- Part 2: If no children were hit, check this element itself ---
+        # Part 2: If no children were hit, check this element.
         if selectable and not self.selectable:
             return None
 
-        # The incoming coordinates (x, y) are already in our local,
-        # untransformed frame. We just need to check if they fall within our
-        # geometry.
-        # We use the generic, simplified check_region_hit from region.py.
+        # Check if hit is within the bounding box.
         hit_region = check_region_hit(
             x, y, self.width, self.height, self.handle_size
         )
-
         if hit_region == ElementRegion.NONE:
-            return None  # Not within this element's bounding box at all
+            return None
 
-        # If pixel-perfect hit is required, perform the check.
-        # This requires transforming the local point to a surface pixel
-        # coordinate.
+        # For pixel-perfect hits, check surface transparency.
         if self.pixel_perfect_hit:
             if self.is_pixel_opaque(x, y):
                 return self
@@ -626,8 +882,17 @@ class CanvasElement:
 
     def is_pixel_opaque(self, local_x: float, local_y: float) -> bool:
         """
-        Checks if the pixel at the given LOCAL coordinates is opaque on the
-        element's surface. Returns True if opaque, False if transparent.
+        Checks if the pixel at local coordinates is opaque.
+
+        For buffered elements, this reads the alpha channel from the
+        backing surface. For unbuffered elements, it returns True.
+
+        Args:
+            local_x: The x-coordinate in local space.
+            local_y: The y-coordinate in local space.
+
+        Returns:
+            True if the pixel is considered a hit (alpha > 0).
         """
         if not self.buffered or not self.surface:
             # Cannot perform pixel check on non-buffered elements or if the
@@ -642,8 +907,6 @@ class CanvasElement:
             return False
 
         # Scale local coordinates to surface pixel coordinates.
-        # This handles cases where the element's size and the buffered
-        # surface's resolution are different.
         surface_x = int(local_x * (surface_w / self.width))
         surface_y = int(local_y * (surface_h / self.height))
 
@@ -655,8 +918,7 @@ class CanvasElement:
         data = self.surface.get_data()
         stride = self.surface.get_stride()
 
-        # Pixel format is ARGB32, but often stored as BGRA in memory.
-        # The alpha channel is the 4th byte in the 4-byte pixel group.
+        # Format is ARGB32, often BGRA in memory. Alpha is 4th byte.
         pixel_offset = surface_y * stride + surface_x * 4
         alpha = data[pixel_offset + 3]
 
@@ -667,8 +929,20 @@ class CanvasElement:
         self, ancestor: Union["Canvas", CanvasElement]
     ) -> Tuple[float, float]:
         """
-        Calculates and returns the (x, y) pixel position of the current element
-        relative to the top-left corner of the specified ancestor.
+        Calculates the (x, y) position relative to an ancestor.
+
+        This method sums the local `x` and `y` properties up the
+        hierarchy. It does NOT account for rotation or scaling.
+
+        Args:
+            ancestor: The ancestor to measure relative to.
+
+        Returns:
+            The (x, y) position relative to the ancestor.
+
+        Raises:
+            ValueError: If the specified ancestor is not in this
+                        element's parent chain.
         """
         if self == ancestor:
             return 0.0, 0.0
@@ -685,17 +959,14 @@ class CanvasElement:
             current = current.parent
 
         if current.parent != ancestor:
-            # This should not happen if ancestor is in the parent chain
             raise ValueError("Ancestor is not in the element's parent chain")
 
-        # Add the position relative to the direct parent (which is the
-        # ancestor)
         pos_x += current.x
         pos_y += current.y
         return pos_x, pos_y
 
     def dump(self, indent: int = 0):
-        """Prints a representation of the element and its children."""
+        """Prints a debug representation of the element and children."""
         pad = "  " * indent
         print(f"{pad}{self.__class__.__name__}: (Data: {self.data})")
         print(f"{pad}  Visible: {self.visible}, Selected: {self.selected}")

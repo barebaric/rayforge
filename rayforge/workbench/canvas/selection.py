@@ -25,7 +25,6 @@ class MultiSelectionGroup:
         self._bounding_box: Tuple[float, float, float, float] = (0, 0, 0, 0)
         self._center: Tuple[float, float] = (0, 0)
         self.angle: float = 0.0
-        self.handle_size: float = 30.0
         self.initial_states: List[Dict[str, Any]] = []
         self.initial_center: Tuple[float, float] = (0, 0)
 
@@ -104,10 +103,19 @@ class MultiSelectionGroup:
             )
 
     def get_region_rect(
-        self, region: ElementRegion
+        self,
+        region: ElementRegion,
+        base_handle_size: float,
+        max_handle_size: float,
+        scale_compensation: float = 1.0,
     ) -> Tuple[float, float, float, float]:
         return get_region_rect(
-            region, self.width, self.height, self.handle_size
+            region,
+            self.width,
+            self.height,
+            base_handle_size,
+            max_handle_size,
+            scale_compensation,
         )
 
     def check_region_hit(self, x: float, y: float) -> ElementRegion:
@@ -120,12 +128,14 @@ class MultiSelectionGroup:
         local_x = x - self.x
         local_y = y - self.y
 
+        # For hit testing, use a consistent base size for a better feel.
+        base_hit_size = 15.0
         return check_region_hit(
             local_x,
             local_y,
             self.width,
             self.height,
-            self.handle_size,
+            base_hit_size,
         )
 
     def apply_move(self, dx: float, dy: float):
