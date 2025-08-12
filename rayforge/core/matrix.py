@@ -33,25 +33,56 @@ class Matrix:
                 raise ValueError(f"Could not create Matrix from data: {e}")
 
     def __matmul__(self, other: "Matrix") -> "Matrix":
+        """
+        Performs matrix multiplication: self @ other.
+
+        Note: Matrix multiplication is not commutative. The order matters.
+        If M = R @ T, applying M to a point is equivalent to first applying T,
+        then applying R. This is because the operation is on the right:
+        M*p = (R*T)*p.
+
+        Args:
+            other: The matrix to multiply with on the right.
+
+        Returns:
+            The resulting new Matrix.
+        """
         if not isinstance(other, Matrix):
             return NotImplemented
+        # The order is np.dot(other.m, self.m) to match the mathematical
+        # convention for transformations: if M = M1 @ M2, then
+        # M(p) = M2(M1(p)).
+        # However, our transform_point does self.m @ vec, so to have
+        # (M1 @ M2).transform(p) be "apply M1, then M2", we need
+        # `other.m @ self.m`.
         return Matrix(np.dot(other.m, self.m))
 
     def __eq__(self, other: Any) -> bool:
+        """
+        Checks for equality between two matrices.
+
+        Uses np.allclose for floating-point comparisons.
+        """
         if not isinstance(other, Matrix):
             return False
         return np.allclose(self.m, other.m)
 
     def __repr__(self) -> str:
+        """Returns a developer-friendly, evaluatable string representation."""
         return f"Matrix({self.m.tolist()})"
 
     def __str__(self) -> str:
+        """Returns a human-readable string representation of the matrix."""
         return str(self.m)
 
     def __copy__(self) -> "Matrix":
+        """Creates a shallow copy of the matrix."""
         return Matrix(self)
 
     def __deepcopy__(self, memo: dict) -> "Matrix":
+        """Creates a deep copy of the matrix."""
+        # Since self.m is a numpy array of simple types, a regular
+        # copy is sufficient.
         return Matrix(self)
 
     @staticmethod
@@ -166,11 +197,30 @@ class Matrix:
         return m
 
     def invert(self) -> "Matrix":
+        """
+        Computes the inverse of the matrix.
+
+        The inverse matrix can be used to reverse a transformation.
+        Will raise a `numpy.linalg.LinAlgError` if the matrix is singular
+        (i.e., not invertible), for example, a scale of zero.
+
+        Returns:
+            A new Matrix that is the inverse of this one.
+        """
         return Matrix(np.linalg.inv(self.m))
 
     def transform_point(
         self, point: Tuple[float, float]
     ) -> Tuple[float, float]:
+        """
+        Applies the full affine transformation to a 2D point.
+
+        Args:
+            point: An (x, y) tuple representing the point to transform.
+
+        Returns:
+            A new (x, y) tuple of the transformed point.
+        """
         vec = np.array([point[0], point[1], 1])
         res_vec = np.dot(self.m, vec)
         return (res_vec[0], res_vec[1])
