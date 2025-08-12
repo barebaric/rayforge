@@ -1,5 +1,4 @@
 from __future__ import annotations
-import logging
 import math
 from typing import Any, Generator, List, Tuple, Optional, Set
 import cairo
@@ -9,6 +8,7 @@ from .element import CanvasElement
 from .region import ElementRegion
 from .cursor import get_cursor_for_region
 from .selection import MultiSelectionGroup
+from ...core.matrix import Matrix
 
 
 class Canvas(Gtk.DrawingArea):
@@ -167,40 +167,55 @@ class Canvas(Gtk.DrawingArea):
     def _render_single_selection(
         self, ctx: cairo.Context, elem: CanvasElement
     ):
-        """Draws the selection frame and handles for a single element."""
+        """
+        Draws the selection frame and handles for a single element by applying
+        its exact world transformation matrix to the context. This ensures
+        perfect alignment with the rendered element.
+        """
         ctx.save()
 
-        abs_x, abs_y = elem.pos_abs()
-        angle = elem.get_angle()
+        # 1. Get the element's final world transform. This is the single source
+        #    of truth for its position, rotation, and scale on the canvas.
+        world_transform = elem.get_world_transform()
 
-        # Apply rotation to the context
-        if angle != 0:
-            ctx.translate(abs_x + elem.width / 2, abs_y + elem.height / 2)
-            ctx.rotate(math.radians(angle))
-            ctx.translate(
-                -(abs_x + elem.width / 2), -(abs_y + elem.height / 2)
-            )
+        # 2. Convert the numpy-based matrix to a cairo.Matrix and apply it.
+        #    The cairo matrix arguments are (xx, yx, xy, yy, x0, y0).
+        m = world_transform.m
+        cairo_matrix = cairo.Matrix(
+            m[0, 0], m[1, 0], m[0, 1], m[1, 1], m[0, 2], m[1, 2]
+        )
+        ctx.transform(cairo_matrix)
 
-        # Draw the dashed selection box
+        # 3. The context is now perfectly aligned with the element's local
+        #    space. All subsequent drawing operations are done as if the
+        #    element is at (0, 0) with no rotation.
+
+        # Draw the dashed selection box around the element's local geometry.
         ctx.set_source_rgb(0.4, 0.4, 0.4)
         ctx.set_dash((5, 5))
         ctx.set_line_width(1)
-        ctx.rectangle(abs_x, abs_y, elem.width, elem.height)
+        ctx.rectangle(0, 0, elem.width, elem.height)
         ctx.stroke()
-        ctx.set_dash([])
+        ctx.set_dash([])  # Reset dash pattern
 
-        # Draw handles if not currently transforming
+        # 4. Draw handles if not currently performing a transform.
         if not (self._moving or self._resizing or self._rotating):
+            # We still need the absolute mouse coordinates to check for hover,
+            # as check_region_hit correctly works in world space.
             x, y = self._last_mouse_x, self._last_mouse_y
             is_hovered = elem.check_region_hit(x, y) != ElementRegion.NONE
+
+            # Render the handles. Because we've transformed the context, the
+            # handles are drawn relative to the element's local (0, 0) origin.
             self._render_selection_handles(
                 ctx,
                 target=elem,
-                abs_x=abs_x,
-                abs_y=abs_y,
+                abs_x=0,  # CRITICAL: We are now drawing in local space
+                abs_y=0,  # CRITICAL: We are now drawing in local space
                 is_fully_hovered=is_hovered,
                 specific_hovered_region=self._hovered_region,
             )
+
         ctx.restore()
 
     def _render_multi_selection(
@@ -443,10 +458,10 @@ class Canvas(Gtk.DrawingArea):
         cursor_angle = 0.0
         selected_elems = self.get_selected_elements()
         if self._selection_group:
+            # The multi-selection frame is never rotated, so 0 is correct.
             cursor_angle = self._selection_group.angle
         elif selected_elems:
-            # Use the single selected element for cursor angle
-            cursor_angle = selected_elems[0].get_angle()
+            cursor_angle = selected_elems[0].get_world_angle()
 
         cursor = get_cursor_for_region(self._hovered_region, cursor_angle)
         self.set_cursor(cursor)
@@ -504,13 +519,26 @@ class Canvas(Gtk.DrawingArea):
                 self.queue_draw()
         elif self._active_elem:
             if self._moving:
+                parent = self._active_elem.parent
+                parent_transform_inv = Matrix.identity()
+                if isinstance(parent, CanvasElement):
+                    parent_transform_inv = (
+                        parent.get_world_transform().invert()
+                    )
+
+                # Transform screen-space delta into parent's local-space delta
+                local_delta_x, local_delta_y = (
+                    parent_transform_inv.transform_vector((offset_x, offset_y))
+                )
+
                 elem_start_x, elem_start_y, _, _ = self._active_origin
                 self._active_elem.set_pos(
-                    elem_start_x + offset_x, elem_start_y + offset_y
+                    elem_start_x + local_delta_x, elem_start_y + local_delta_y
                 )
                 self.queue_draw()
             elif self._resizing:
                 self._resize_active_element(offset_x, offset_y)
+                self.queue_draw()
             elif self._rotating:
                 ok, start_x, start_y = self._drag_gesture.get_start_point()
                 if not ok:
@@ -635,10 +663,7 @@ class Canvas(Gtk.DrawingArea):
         if not self._active_elem:
             return
 
-        abs_x, abs_y = self._active_elem.pos_abs()
-        center_x = abs_x + self._active_elem.width / 2
-        center_y = abs_y + self._active_elem.height / 2
-
+        center_x, center_y = self._active_elem.get_world_center()
         current_angle = math.degrees(
             math.atan2(current_y - center_y, current_x - center_x)
         )
@@ -989,40 +1014,3 @@ class Canvas(Gtk.DrawingArea):
     def dump(self):
         """Prints a representation of the entire element hierarchy."""
         self.root.dump()
-
-
-if __name__ == "__main__":
-    # To see debug logs
-    logging.basicConfig(level=logging.DEBUG)
-
-    class CanvasApp(Gtk.Application):
-        def __init__(self):
-            super().__init__(application_id="com.example.CanvasApp")
-
-        def do_activate(self):
-            win = Gtk.ApplicationWindow(application=self)
-            win.set_default_size(800, 800)
-
-            canvas = Canvas()
-            win.set_child(canvas)
-
-            group = CanvasElement(50, 50, 400, 300, background=(0, 1, 1, 1))
-            group.add(
-                CanvasElement(
-                    50, 50, 200, 150, background=(0, 0, 1, 1), selectable=False
-                )
-            )
-            # Buffered element to test threaded updates
-            group.add(
-                CanvasElement(
-                    100, 100, 150, 150, background=(0, 1, 0, 1), buffered=True
-                )
-            )
-            group.add(
-                CanvasElement(50, 100, 250, 250, background=(1, 0, 1, 1))
-            )
-            canvas.add(group)
-            win.present()
-
-    app = CanvasApp()
-    app.run([])

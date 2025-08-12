@@ -59,6 +59,12 @@ class Matrix:
         """Returns a new identity matrix."""
         return Matrix()
 
+    def get_translation(self) -> Tuple[float, float]:
+        """
+        Extracts the translation component (tx, ty) from the matrix.
+        """
+        return (self.m[0, 2], self.m[1, 2])
+
     @staticmethod
     def translation(tx: float, ty: float) -> "Matrix":
         """Creates a translation matrix."""
@@ -69,6 +75,20 @@ class Matrix:
                 [0, 0, 1],
             ]
         )
+
+    def get_scale(self) -> Tuple[float, float]:
+        """
+        Extracts the scale components (sx, sy) from the matrix.
+
+        This computes the magnitude of the new basis vectors (the first
+        two columns). It doesn't handle negative scaling correctly, as it
+        will always return positive magnitudes.
+        """
+        # sx is the length of the first column vector (the new x-axis)
+        sx = np.linalg.norm(self.m[0:2, 0])
+        # sy is the length of the second column vector (the new y-axis)
+        sy = np.linalg.norm(self.m[0:2, 1])
+        return float(sx), float(sy)
 
     @staticmethod
     def scale(
@@ -100,6 +120,17 @@ class Matrix:
         # If no center is provided, return the matrix that scales around the
         # origin.
         return m
+
+    def get_rotation(self) -> float:
+        """
+        Extracts the rotation angle in degrees from the matrix.
+
+        This computes the angle of the transformed x-axis. It assumes that
+        there is no negative scaling (flipping) on the y-axis.
+        """
+        # The rotation is encoded in the top-left 2x2 submatrix.
+        # atan2(m10, m00) gives the angle of the new x-axis vector.
+        return math.degrees(math.atan2(self.m[1, 0], self.m[0, 0]))
 
     @staticmethod
     def rotation(
@@ -141,5 +172,17 @@ class Matrix:
         self, point: Tuple[float, float]
     ) -> Tuple[float, float]:
         vec = np.array([point[0], point[1], 1])
+        res_vec = np.dot(self.m, vec)
+        return (res_vec[0], res_vec[1])
+
+    def transform_vector(
+        self, vector: Tuple[float, float]
+    ) -> Tuple[float, float]:
+        """
+        Applies the transformation to a 2D vector, ignoring translation.
+        Useful for transforming direction or delta values.
+        """
+        # Use 0 for the homogeneous coordinate to ignore translation
+        vec = np.array([vector[0], vector[1], 0])
         res_vec = np.dot(self.m, vec)
         return (res_vec[0], res_vec[1])

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import math
 from enum import Enum, auto
 from typing import Tuple
 
@@ -95,51 +94,17 @@ def get_region_rect(
 
 
 def check_region_hit(
-    x: float,
-    y: float,
-    bounding_box_x: float,
-    bounding_box_y: float,
+    local_x: float,
+    local_y: float,
     width: float,
     height: float,
-    angle: float,
-    center_x: float,
-    center_y: float,
     base_handle_size: float,
 ) -> ElementRegion:
     """
-    Generic function to check which interactive region is hit by a point.
-    It accounts for the object's rotation.
-
-    Args:
-        x: The absolute x-coordinate of the hit point (e.g., mouse cursor).
-        y: The absolute y-coordinate of the hit point.
-        bounding_box_x: The absolute x-coordinate of the object's bounding box
-         top-left.
-        bounding_box_y: The absolute y-coordinate of the object's bounding box
-         top-left.
-        width: The width of the object's bounding box.
-        height: The height of the object's bounding box.
-        angle: The rotation of the object in degrees.
-        center_x: The absolute x-coordinate of the object's rotation center.
-        center_y: The absolute y-coordinate of the object's rotation center.
-        base_handle_size: The desired size of the handles in pixels.
-
-    Returns:
-        The ElementRegion that was hit.
+    Checks which interactive region is hit by a point in LOCAL coordinates.
+    This function does not need to handle rotation or translation.
     """
-    # 1. Un-rotate the hit point if there's an angle
-    if angle != 0:
-        angle_rad = math.radians(-angle)
-        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-        rot_x = center_x + (x - center_x) * cos_a - (y - center_y) * sin_a
-        rot_y = center_y + (x - center_x) * sin_a + (y - center_y) * cos_a
-        x, y = rot_x, rot_y
-
-    # 2. Convert absolute, un-rotated coordinates to be local to the bounding
-    # box
-    local_x, local_y = x - bounding_box_x, y - bounding_box_y
-
-    # 3. Check handles first
+    # Check handles first, as they are on the periphery.
     regions_to_check = [
         ElementRegion.ROTATION_HANDLE,
         ElementRegion.TOP_LEFT,
@@ -163,11 +128,8 @@ def check_region_hit(
         ):
             return region
 
-    # 4. If no handle is hit, check the body
-    bx, by, bw, bh = get_region_rect(
-        ElementRegion.BODY, width, height, base_handle_size
-    )
-    if bx <= local_x < bx + bw and by <= local_y < by + bh:
+    # If no handle is hit, check the body (the entire 0,0,w,h area).
+    if 0 <= local_x < width and 0 <= local_y < height:
         return ElementRegion.BODY
 
     return ElementRegion.NONE

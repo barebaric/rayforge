@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import copy
-from rayforge.shared.matrix import Matrix
+from rayforge.core.matrix import Matrix
 
 
 class TestMatrix:

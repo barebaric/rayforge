@@ -1,13 +1,13 @@
 from __future__ import annotations
 import os
 import logging
-import math
 from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Optional, Union
 import cairo
 from gi.repository import GLib  # type: ignore
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
 from .region import ElementRegion, get_region_rect, check_region_hit
+from ...core.matrix import Matrix
 
 # Forward declaration for type hinting
 if TYPE_CHECKING:
@@ -72,6 +72,11 @@ class CanvasElement:
         self.angle: float = angle
         self.pixel_perfect_hit = pixel_perfect_hit
 
+        # New matrix-based transform properties
+        self.local_transform: Matrix = Matrix.identity()
+        self._world_transform: Matrix = Matrix.identity()
+        self._transform_dirty: bool = True
+
         if self.pixel_perfect_hit and not self.buffered:
             raise ValueError(
                 "pixel perfect hit cannot be used on unbuffered elements"
@@ -80,6 +85,51 @@ class CanvasElement:
         # UI interaction state
         self.hovered: bool = False
         self.handle_size: float = 15.0
+
+        # Initial synchronization
+        self._rebuild_local_transform()
+
+    def _rebuild_local_transform(self):
+        """
+        Builds a matrix that ONLY handles transformations within the element's
+        local space (e.g., rotation around its center). It does NOT include
+        the element's x/y position.
+        """
+        center_x, center_y = self.width / 2, self.height / 2
+
+        # This matrix now only contains the rotation around the local center.
+        self.local_transform = Matrix.rotation(
+            self.angle, center=(center_x, center_y)
+        )
+
+        # The dirty flag cascade remains correct.
+        self.mark_dirty(ancestors=False, recursive=True)
+
+    def get_world_transform(self) -> Matrix:
+        """
+        Calculates the full world transformation matrix for this element,
+        which maps its local (0,0) origin to its final place on the canvas.
+        """
+        if not self._transform_dirty:
+            return self._world_transform
+
+        parent_world_transform = Matrix.identity()
+        if isinstance(self.parent, CanvasElement):
+            parent_world_transform = self.parent.get_world_transform()
+
+        # The element's own contribution to the transform:
+        # Its translation (x,y) from its parent's origin.
+        m_trans = Matrix.translation(self.x, self.y)
+
+        # The transformation order must match the render path:
+        # Parent -> Translate -> Local (Rotation)
+        # With the custom __matmul__, this is written as L @ T @ P.
+        self._world_transform = (
+            self.local_transform @ m_trans @ parent_world_transform
+        )
+
+        self._transform_dirty = False
+        return self._world_transform
 
     def trigger_update(self):
         """Schedules render_to_surface to be run in the thread pool."""
@@ -182,28 +232,29 @@ class CanvasElement:
 
     def check_region_hit(self, x_abs: float, y_abs: float) -> ElementRegion:
         """
-        Checks which region is hit at absolute canvas coordinates (x, y) by
-        calling the generic utility function.
+        Checks which region is hit by transforming the absolute point into
+        the element's local coordinate space.
         """
-        abs_x, abs_y = self.pos_abs()
-        center_x = abs_x + self.width / 2
-        center_y = abs_y + self.height / 2
+        # 1. Get the full world transform of this element.
+        world_transform = self.get_world_transform()
 
+        # 2. Get its inverse to map world points back to local space.
+        try:
+            inv_world = world_transform.invert()
+        except Exception:  # Catch potential numpy LinAlgError
+            return ElementRegion.NONE  # Not invertible, cannot be hit.
+
+        # 3. Transform the absolute mouse point into the element's local space.
+        local_x, local_y = inv_world.transform_point((x_abs, y_abs))
+
+        # 4. Use the new, simple, local-space checker.
         return check_region_hit(
-            x_abs,
-            y_abs,
-            abs_x,
-            abs_y,
-            self.width,
-            self.height,
-            self.get_angle(),
-            center_x,
-            center_y,
-            self.handle_size,
+            local_x, local_y, self.width, self.height, self.handle_size
         )
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
         self.dirty = True
+        self._transform_dirty = True
         if ancestors and isinstance(self.parent, CanvasElement):
             self.parent.mark_dirty(ancestors=ancestors)
         if recursive:
@@ -331,6 +382,7 @@ class CanvasElement:
     def set_pos(self, x: float, y: float):
         if self.x != x or self.y != y:
             self.x, self.y = x, y
+            self._rebuild_local_transform()
             if isinstance(self.parent, CanvasElement):
                 self.parent.mark_dirty()
 
@@ -338,10 +390,12 @@ class CanvasElement:
         return self.x, self.y
 
     def pos_abs(self) -> Tuple[float, float]:
-        parent_x, parent_y = 0.0, 0.0
-        if isinstance(self.parent, CanvasElement):
-            parent_x, parent_y = self.parent.pos_abs()
-        return self.x + parent_x, self.y + parent_y
+        """
+        Returns the absolute position by extracting it from the world matrix.
+        """
+        world_transform = self.get_world_transform()
+        # The absolute position is the translation component of the matrix.
+        return world_transform.get_translation()
 
     def size(self) -> Tuple[float, float]:
         return self.width, self.height
@@ -351,6 +405,7 @@ class CanvasElement:
         height = float(height)
         if width != self.width or height != self.height:
             self.width, self.height = width, height
+            self._rebuild_local_transform()
             self.allocate()
             self.mark_dirty()
             self.trigger_update()
@@ -375,12 +430,28 @@ class CanvasElement:
         if self.angle == angle:
             return
         self.angle = angle % 360
+        self._rebuild_local_transform()
         if isinstance(self.parent, CanvasElement):
             self.parent.mark_dirty()
 
     def get_angle(self) -> float:
         """Gets the rotation angle in degrees."""
         return self.angle
+
+    def get_world_angle(self) -> float:
+        """Returns the total world angle by decomposing the world matrix."""
+        world_transform = self.get_world_transform()
+        return world_transform.get_rotation()
+
+    def get_world_center(self) -> Tuple[float, float]:
+        """
+        Calculates the element's center point in world coordinates,
+        accounting for all parent transformations.
+        """
+        # The local center is simple
+        local_center = (self.width / 2, self.height / 2)
+        # The world transform correctly maps this local point to world space
+        return self.get_world_transform().transform_point(local_center)
 
     def allocate(self, force: bool = False):
         for child in self.children:
@@ -409,32 +480,34 @@ class CanvasElement:
 
     def render(self, ctx: cairo.Context):
         """
-        Renders the element and its children to the given Cairo context.
-        This method handles visibility, transformation, clipping, and
-        recursive rendering of children.
+        Renders the element using a hybrid approach:
+        1. Use cairo to translate to the element's x,y position.
+        2. Use the matrix to apply local transformations like rotation.
         """
         if not self.visible:
             return
 
         ctx.save()
-        # Translate to the element's local coordinates
+
+        # 1. Perform the simple translation to the element's position.
         ctx.translate(self.x, self.y)
 
-        # Rotate around the center of the element
-        if self.angle != 0:
-            ctx.translate(self.width / 2, self.height / 2)
-            ctx.rotate(math.radians(self.angle))
-            ctx.translate(-self.width / 2, -self.height / 2)
+        # 2. Apply the local transformation matrix (which is just rotation).
+        m = self.local_transform.m
+        cairo_matrix = cairo.Matrix(
+            m[0, 0], m[1, 0], m[0, 1], m[1, 1], m[0, 2], m[1, 2]
+        )
+        ctx.transform(cairo_matrix)
 
-        # Apply clipping if enabled
+        # The rest of the logic operates in the element's simple,
+        # un-rotated local space, where its top-left is at (0, 0).
         if self.clip:
             ctx.rectangle(0, 0, self.width, self.height)
             ctx.clip()
 
-        # Draw the element's own content (background, buffered surface, etc.)
         self.draw(ctx)
 
-        # Recursively render children
+        # Child rendering now correctly inherits the full transform.
         for child in self.children:
             child.render(ctx)
 
@@ -498,100 +571,96 @@ class CanvasElement:
     ) -> Optional[CanvasElement]:
         """
         Check if the point (x, y) hits this elem or any of its children.
-        Coordinates are relative to the current element's top-left.
-        Incorporates pixel-perfect hit detection if enabled for an element.
+        Coordinates are relative to the current element's top-left frame.
         """
-        # Check children (child-to-parent order)
+        # --- Part 1: Check children first (top-most are checked first) ---
         for child in reversed(self.children):
-            # Translate the coordinates to the child's local coordinate system
-            child_x = x - child.x
-            child_y = y - child.y
+            # The transformation from child-local space to parent-local
+            # space is:
+            # 1. Apply the child's local rotation/scale (child.local_transform)
+            # 2. Translate by the child's position (child.x, child.y)
+            # With our custom matmul, the order is reversed: L @ T
+            transform_child_to_parent = (
+                child.local_transform @ Matrix.translation(child.x, child.y)
+            )
+
+            # To go from parent-local to child-local, we need the inverse.
+            transform_parent_to_child = transform_child_to_parent.invert()
+
+            # Transform the hit point (which is in our local space) into the
+            # child's local space.
+            child_x, child_y = transform_parent_to_child.transform_point(
+                (x, y)
+            )
+
+            # Recursively call hit-testing on the child with its own local
+            # coords.
             hit = child.get_elem_hit(child_x, child_y, selectable)
             if hit:
                 return hit
 
-        # Check self. 'x' and 'y' are already local coordinates.
+        # --- Part 2: If no children were hit, check this element itself ---
         if selectable and not self.selectable:
             return None
 
-        # Reconstruct absolute coordinates to use the generic hit check
-        # function, which is needed for both bbox and pixel checks.
-        abs_self_x, abs_self_y = self.pos_abs()
-        abs_hit_x, abs_hit_y = abs_self_x + x, abs_self_y + y
-
-        # First, a quick check against the bounding box. This is always needed
-        # to know if we're even in the vicinity of the element.
-        hit_region = self.check_region_hit(abs_hit_x, abs_hit_y)
+        # The incoming coordinates (x, y) are already in our local,
+        # untransformed frame. We just need to check if they fall within our
+        # geometry.
+        # We use the generic, simplified check_region_hit from region.py.
+        hit_region = check_region_hit(
+            x, y, self.width, self.height, self.handle_size
+        )
 
         if hit_region == ElementRegion.NONE:
-            return None  # Not within the bounding box at all
-        if not self.pixel_perfect_hit:
-            return self
+            return None  # Not within this element's bounding box at all
 
-        # If pixel-perfect checking is enabled, perform the more expensive
-        # check.
-        # NOTE: For this to be effective, the element must be `buffered=True`
-        # and have transparent areas on its surface.
-        if self.is_pixel_opaque(abs_hit_x, abs_hit_y):
-            return self  # Hit on an opaque pixel
-        return None  # Inside bounding box, but on a transparent pixel
+        # If pixel-perfect hit is required, perform the check.
+        # This requires transforming the local point to a surface pixel
+        # coordinate.
+        if self.pixel_perfect_hit:
+            if self.is_pixel_opaque(x, y):
+                return self
+            return None
 
-    def is_pixel_opaque(self, canvas_x: float, canvas_y: float) -> bool:
+        return self
+
+    def is_pixel_opaque(self, local_x: float, local_y: float) -> bool:
         """
-        Checks if the pixel at the given absolute canvas coordinates is opaque
-        on the element's surface. Returns True if opaque, False if transparent.
+        Checks if the pixel at the given LOCAL coordinates is opaque on the
+        element's surface. Returns True if opaque, False if transparent.
         """
         if not self.buffered or not self.surface:
-            # Cannot perform pixel check on non-buffered elements,
-            # or if surface doesn't exist. Default to treating it as opaque.
+            # Cannot perform pixel check on non-buffered elements or if the
+            # surface doesn't exist. Default to treating it as opaque.
             return True
 
-        # 1. Transform absolute canvas coordinates to local surface coordinates
-        abs_x, abs_y, w, h = self.rect_abs()
-        center_x, center_y = abs_x + w / 2, abs_y + h / 2
+        surface_w = self.surface.get_width()
+        surface_h = self.surface.get_height()
 
-        # Un-rotate the point
-        angle_rad = math.radians(-self.get_angle())
-        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-        rot_x = (
-            center_x
-            + (canvas_x - center_x) * cos_a
-            - (canvas_y - center_y) * sin_a
-        )
-        rot_y = (
-            center_y
-            + (canvas_x - center_x) * sin_a
-            + (canvas_y - center_y) * cos_a
-        )
-
-        # Convert to local element coordinates (0,0 at top-left)
-        local_x = rot_x - abs_x
-        local_y = rot_y - abs_y
-
-        # Scale to surface coordinates
-        surface_w, surface_h = (
-            self.surface.get_width(),
-            self.surface.get_height(),
-        )
-        if w <= 0 or h <= 0:
+        # Check if the local point is even within the element's bounds.
+        if not (0 <= local_x < self.width and 0 <= local_y < self.height):
             return False
 
-        surface_x = int(local_x * (surface_w / w))
-        surface_y = int(local_y * (surface_h / h))
+        # Scale local coordinates to surface pixel coordinates.
+        # This handles cases where the element's size and the buffered
+        # surface's resolution are different.
+        surface_x = int(local_x * (surface_w / self.width))
+        surface_y = int(local_y * (surface_h / self.height))
 
-        # 2. Check pixel data
+        # Check if the calculated pixel is within the surface's bounds.
         if not (0 <= surface_x < surface_w and 0 <= surface_y < surface_h):
-            return False  # Point is outside the surface bounds
+            return False
 
+        # Read the alpha value from the cairo surface data buffer.
         data = self.surface.get_data()
         stride = self.surface.get_stride()
 
-        # Pixel format is ARGB32, but endianness means it's often read as BGRA.
-        # The alpha channel is the 4th byte in the pixel group.
+        # Pixel format is ARGB32, but often stored as BGRA in memory.
+        # The alpha channel is the 4th byte in the 4-byte pixel group.
         pixel_offset = surface_y * stride + surface_x * 4
         alpha = data[pixel_offset + 3]
 
-        # Consider any non-zero alpha as opaque for hit-testing purposes.
+        # Consider any non-zero alpha as a "hit".
         return alpha > 0
 
     def get_position_in_ancestor(
