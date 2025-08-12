@@ -4,8 +4,10 @@ import cairo
 from gi.repository import Gdk, GLib  # type: ignore
 from .region import ElementRegion
 
-# A module-level cache for custom-rendered cursors to avoid recreating them.
+# Module-level caches for custom-rendered cursors to avoid recreating them.
 _cursor_cache: Dict[int, Gdk.Cursor] = {}
+_arc_cursor_cache: Dict[int, Gdk.Cursor] = {}
+
 _region_angles = {
     ElementRegion.MIDDLE_RIGHT: 0,
     ElementRegion.TOP_RIGHT: 45,
@@ -86,6 +88,94 @@ def get_rotated_cursor(angle_deg: float) -> Gdk.Cursor:
     return cursor
 
 
+def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
+    """
+    Creates or retrieves from cache a custom rotation cursor (arc with arrows)
+    rotated to the given angle.
+
+    Args:
+        angle_deg: The desired rotation of the cursor in degrees.
+
+    Returns:
+        A Gdk.Cursor object.
+    """
+    angle_key = round(angle_deg)
+    if angle_key in _arc_cursor_cache:
+        return _arc_cursor_cache[angle_key]
+
+    size = 33
+    hotspot = size // 2
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    ctx = cairo.Context(surface)
+    ctx.translate(hotspot, hotspot)
+    ctx.rotate(-math.radians(angle_deg))
+
+    ctx.set_line_width(2)
+    ctx.set_source_rgb(0, 0, 0)
+
+    radius = 14
+    start_angle = math.radians(225)  # Top-left
+    end_angle = math.radians(315)  # Top-right
+
+    # Draw the main arc path
+    ctx.arc(0, 0, radius, start_angle, end_angle)
+
+    def draw_arrowhead(point_angle: float, is_start_arrow: bool = False):
+        """Draws a symmetric arrowhead at a given angle on the circle."""
+        arrow_length = 5
+        arrow_width = 5
+
+        ctx.save()
+
+        px = radius * math.cos(point_angle)
+        py = radius * math.sin(point_angle)
+        ctx.translate(px, py)
+
+        # Rotate to match the arc's tangent (clockwise direction)
+        tangent_angle = point_angle + math.pi / 2.0
+        ctx.rotate(tangent_angle)
+
+        # *** THE FIX: Flip the start arrow 180 degrees to point it outward ***
+        if is_start_arrow:
+            ctx.rotate(math.pi)
+
+        # Draw a standard V-shape arrowhead pointing away from the tip.
+        # The rotation of the context makes it point in the correct direction.
+        ctx.move_to(0, 0)
+        ctx.line_to(-arrow_length, -arrow_width)
+        ctx.move_to(0, 0)
+        ctx.line_to(-arrow_length, arrow_width)
+
+        ctx.restore()
+
+    # Draw arrowheads at the start and end of the arc
+    draw_arrowhead(start_angle, is_start_arrow=True)
+    draw_arrowhead(end_angle, is_start_arrow=False)
+
+    ctx.stroke_preserve()
+
+    # White inner fill
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.set_line_width(1)
+    ctx.stroke()
+
+    # Convert Cairo surface to Gdk.Texture
+    data = surface.get_data()
+    bytes_data = GLib.Bytes.new(data)
+    texture = Gdk.MemoryTexture.new(
+        size,
+        size,
+        Gdk.MemoryFormat.B8G8R8A8_PREMULTIPLIED,
+        bytes_data,
+        surface.get_stride(),
+    )
+
+    cursor = Gdk.Cursor.new_from_texture(texture, hotspot, hotspot)
+    _arc_cursor_cache[angle_key] = cursor
+    return cursor
+
+
 def get_cursor_for_region(
     region: Optional[ElementRegion], additional_angle: float
 ) -> Gdk.Cursor:
@@ -94,7 +184,8 @@ def get_cursor_for_region(
     elif region == ElementRegion.BODY:
         return Gdk.Cursor.new_from_name("move")
     elif region == ElementRegion.ROTATION_HANDLE:
-        return Gdk.Cursor.new_from_name("crosshair")
+        # Use the new, custom arc cursor for rotation
+        return get_rotated_arc_cursor(-additional_angle)
     else:  # must be a resize region
         # Create a custom rotated cursor
         base_angle = _region_angles.get(region, 0)

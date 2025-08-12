@@ -1,6 +1,6 @@
 from __future__ import annotations
-import math
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any
+import logging
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Union
 from .region import ElementRegion, get_region_rect, check_region_hit
 from . import element
 from ...core.matrix import Matrix
@@ -10,6 +10,8 @@ from ...core.matrix import Matrix
 if TYPE_CHECKING:
     from .canvas import Canvas
     from .element import CanvasElement
+
+logger = logging.getLogger(__name__)
 
 
 class MultiSelectionGroup:
@@ -27,6 +29,10 @@ class MultiSelectionGroup:
         self.angle: float = 0.0
         self.initial_states: List[Dict[str, Any]] = []
         self.initial_center: Tuple[float, float] = (0, 0)
+
+        # The transformation matrix for the entire group, applied during a
+        # drag operation.
+        self.transform: Matrix = Matrix.identity()
 
         self._calculate_bounding_box()
 
@@ -72,209 +78,156 @@ class MultiSelectionGroup:
 
     def store_initial_states(self):
         """
-        Stores the state of only the top-most elements in the selection.
-        This prevents transformations from being applied to both a parent
-        and its child, which would cause a "double transform".
+        Stores the initial state of each top-level selected element.
+        This includes its world transform and its parent's inverse world
+        transform, which is crucial for recalculating its new local
+        properties after a group transform.
         """
         self.initial_states.clear()
         self._calculate_bounding_box()
         self.initial_center = self.center
+        self.transform = Matrix.identity()
 
         selected_set = set(self.elements)
         top_level_elements = []
 
         for elem in self.elements:
             is_top_level = True
-            if isinstance(elem.parent, element.CanvasElement):
-                if elem.parent in selected_set:
+            parent = elem.parent
+            while isinstance(parent, element.CanvasElement):
+                if parent in selected_set:
                     is_top_level = False
-
+                    break
+                parent = parent.parent
             if is_top_level:
                 top_level_elements.append(elem)
 
         for elem in top_level_elements:
+            parent_inv_world = Matrix.identity()
+            if isinstance(elem.parent, element.CanvasElement):
+                parent_inv_world = elem.parent.get_world_transform().invert()
+
             self.initial_states.append(
                 {
                     "elem": elem,
-                    "rect": elem.rect(),
-                    "world_center": elem.get_world_center(),
-                    "world_angle": elem.get_world_angle(),
+                    "initial_world": elem.get_world_transform(),
+                    "parent_inv_world": parent_inv_world,
                 }
             )
+
+    def _update_element_transforms(self):
+        """
+        Applies the group's `self.transform` to each element's initial
+        state to calculate and set its new properties.
+        """
+        for state in self.initial_states:
+            elem: CanvasElement = state["elem"]
+
+            # Calculate the element's new world transform by applying the
+            # group's delta transform to its initial state.
+            new_world_transform = self.transform @ state["initial_world"]
+
+            # To get the new local properties (pos, angle, scale), we must
+            # convert this new world transform back into the element's
+            # parent-relative coordinate space.
+            new_transform_in_parent_space = (
+                state["parent_inv_world"] @ new_world_transform
+            )
+
+            # Decompose the resulting matrix to get the element's new
+            # local properties.
+            try:
+                (
+                    pos_x,
+                    pos_y,
+                    angle,
+                    scale_x,
+                    scale_y,
+                ) = new_transform_in_parent_space.decompose()
+
+                # Set the new properties on the element. This will trigger
+                # a rebuild of its internal matrices.
+                elem.set_pos(pos_x, pos_y)
+                elem.set_angle(angle)
+                elem.set_scale(scale_x, scale_y)
+            except Exception as e:
+                logger.warning(
+                    f"Could not decompose matrix for element update: {e}"
+                )
 
     def get_region_rect(
         self,
         region: ElementRegion,
         base_handle_size: float,
-        max_handle_size: float,
-        scale_compensation: float = 1.0,
+        scale_compensation: Union[float, Tuple[float, float]] = 1.0,
     ) -> Tuple[float, float, float, float]:
         return get_region_rect(
             region,
             self.width,
             self.height,
             base_handle_size,
-            max_handle_size,
             scale_compensation,
         )
 
     def check_region_hit(self, x: float, y: float) -> ElementRegion:
-        """
-        Checks which region is hit by a point. The group's selection frame
-        is always unrotated in world space, so we can use local coordinates.
-        """
-        # Convert absolute world coordinates to be local to the group's
-        # bounding box.
         local_x = x - self.x
         local_y = y - self.y
+        base_hit_size = self.canvas.BASE_HANDLE_SIZE
 
-        # For hit testing, use a consistent base size for a better feel.
-        base_hit_size = 15.0
+        # Pass the scale_compensation argument. For a group, the scale is
+        # always 1.0.
         return check_region_hit(
             local_x,
             local_y,
             self.width,
             self.height,
             base_hit_size,
+            scale_compensation=1.0,
         )
 
     def apply_move(self, dx: float, dy: float):
-        """Moves all elements in the group by a delta, correctly handling
-        different parent coordinate systems for each element.
         """
-        screen_delta = (dx, dy)
-
-        for state in self.initial_states:
-            elem: CanvasElement = state["elem"]
-            initial_x, initial_y, _, _ = state["rect"]
-
-            parent_transform_inv = Matrix.identity()
-            if isinstance(elem.parent, element.CanvasElement):
-                parent_transform_inv = (
-                    elem.parent.get_world_transform().invert()
-                )
-
-            local_dx, local_dy = parent_transform_inv.transform_vector(
-                screen_delta
-            )
-            elem.set_pos(initial_x + local_dx, initial_y + local_dy)
+        Sets the group transform to a simple translation and updates
+        elements.
+        """
+        self.transform = Matrix.translation(dx, dy)
+        self._update_element_transforms()
 
     def apply_resize(
         self,
         new_box: Tuple[float, float, float, float],
         original_box: Tuple[float, float, float, float],
     ):
+        """
+        Calculates a scale/translate transform that maps the original
+        bounding box to the new one, and applies it to the group.
+        """
         orig_x, orig_y, orig_w, orig_h = original_box
         new_x, new_y, new_w, new_h = new_box
 
-        if orig_w <= 1 or orig_h <= 1:
+        if orig_w <= 1e-6 or orig_h <= 1e-6:
             return
 
-        scale_x, scale_y = new_w / orig_w, new_h / orig_h
+        scale_x = new_w / orig_w
+        scale_y = new_h / orig_h
 
-        for state in self.initial_states:
-            elem: CanvasElement = state["elem"]
-            initial_rect = state["rect"]
-            initial_world_center = state["world_center"]
-            initial_world_angle_deg = state["world_angle"]
-            initial_w, initial_h = initial_rect[2], initial_rect[3]
+        # This transform scales the box around its top-left corner, then
+        # translates it to the new position.
+        # 1. Translate to origin
+        t_to_origin = Matrix.translation(-orig_x, -orig_y)
+        # 2. Scale
+        s_around_origin = Matrix.scale(scale_x, scale_y)
+        # 3. Translate to new top-left position
+        t_to_new = Matrix.translation(new_x, new_y)
 
-            # --- Angle and Size calculations are correct and unchanged ---
-            rel_center_x = (initial_world_center[0] - orig_x) / orig_w
-            rel_center_y = (initial_world_center[1] - orig_y) / orig_h
-            new_abs_center_x = new_x + (rel_center_x * new_w)
-            new_abs_center_y = new_y + (rel_center_y * new_h)
-
-            initial_world_angle_rad = math.radians(initial_world_angle_deg)
-            cos_a, sin_a = (
-                math.cos(initial_world_angle_rad),
-                math.sin(initial_world_angle_rad),
-            )
-            vec_w_dir, vec_h_dir = (cos_a, sin_a), (-sin_a, cos_a)
-            new_vec_w = (vec_w_dir[0] * scale_x, vec_w_dir[1] * scale_y)
-            new_vec_h = (vec_h_dir[0] * scale_x, vec_h_dir[1] * scale_y)
-            new_elem_w = math.hypot(*new_vec_w) * initial_w
-            new_elem_h = math.hypot(*new_vec_h) * initial_h
-
-            new_world_angle_rad = math.atan2(new_vec_w[1], new_vec_w[0])
-            parent_world_angle = 0
-            if isinstance(elem.parent, element.CanvasElement):
-                parent_world_angle = elem.parent.get_world_angle()
-
-            elem.set_angle(
-                math.degrees(new_world_angle_rad) - parent_world_angle
-            )
-            elem.set_size(new_elem_w, new_elem_h)
-
-            # Calculate the positional change of the element's center in world
-            # space.
-            world_delta_x = new_abs_center_x - initial_world_center[0]
-            world_delta_y = new_abs_center_y - initial_world_center[1]
-
-            # Convert this world-space delta into the parent's local-space
-            # delta.
-            parent_transform_inv = Matrix.identity()
-            if isinstance(elem.parent, element.CanvasElement):
-                parent_transform_inv = (
-                    elem.parent.get_world_transform().invert()
-                )
-            local_delta_x, local_dy = parent_transform_inv.transform_vector(
-                (world_delta_x, world_delta_y)
-            )
-
-            # Apply this local-space delta to the element's initial
-            # local position.
-            initial_x, initial_y = initial_rect[0], initial_rect[1]
-            elem.set_pos(initial_x + local_delta_x, initial_y + local_dy)
+        # The combined transform is applied from right to left
+        self.transform = t_to_new @ s_around_origin @ t_to_origin
+        self._update_element_transforms()
 
     def apply_rotate(self, angle_delta: float):
-        group_center_x, group_center_y = self.initial_center
-        angle_rad = math.radians(angle_delta)
-        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-
-        for state in self.initial_states:
-            elem: CanvasElement = state["elem"]
-            initial_world_angle = state["world_angle"]
-            initial_world_center = state["world_center"]
-            initial_rect = state["rect"]
-
-            # --- Angle calculation is correct and unchanged ---
-            parent_world_angle = 0
-            if isinstance(elem.parent, element.CanvasElement):
-                parent_world_angle = elem.parent.get_world_angle()
-            elem.set_angle(
-                (initial_world_angle + angle_delta) - parent_world_angle
-            )
-
-            # Calculate the new world center by rotating the initial one
-            # around the group center.
-            ox = initial_world_center[0] - group_center_x
-            oy = initial_world_center[1] - group_center_y
-            new_ox, new_oy = ox * cos_a - oy * sin_a, ox * sin_a + oy * cos_a
-            new_center_x, new_center_y = (
-                group_center_x + new_ox,
-                group_center_y + new_oy,
-            )
-
-            # Calculate the positional change of the element's center in
-            # world space.
-            world_delta_x = new_center_x - initial_world_center[0]
-            world_delta_y = new_center_y - initial_world_center[1]
-
-            # Convert this world-space delta into the parent's local-space
-            # delta.
-            parent_transform_inv = Matrix.identity()
-            if isinstance(elem.parent, element.CanvasElement):
-                parent_transform_inv = (
-                    elem.parent.get_world_transform().invert()
-                )
-            local_delta_x, local_delta_y = (
-                parent_transform_inv.transform_vector(
-                    (world_delta_x, world_delta_y)
-                )
-            )
-
-            # Apply this local-space delta to the element's initial
-            # local position.
-            initial_x, initial_y = initial_rect[0], initial_rect[1]
-            elem.set_pos(initial_x + local_delta_x, initial_y + local_delta_y)
+        """
+        Sets the group transform to a rotation around the group's initial
+        center and updates elements.
+        """
+        self.transform = Matrix.rotation(angle_delta, self.initial_center)
+        self._update_element_transforms()

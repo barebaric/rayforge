@@ -21,8 +21,7 @@ class Canvas(Gtk.DrawingArea):
     and framing).
     """
 
-    BASE_HANDLE_SIZE = 15.0
-    MAX_HANDLE_SIZE = 20.0
+    BASE_HANDLE_SIZE = 20.0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -202,9 +201,9 @@ class Canvas(Gtk.DrawingArea):
         )
         ctx.transform(cairo_matrix)
 
-        # Calculate an average scale from the matrix to compensate line
-        # widths and dash patterns, so they appear consistent regardless
-        # of the element's scale.
+        # Calculate scale factors from the matrix to compensate line
+        # widths, dash patterns, and handle sizes, so they appear
+        # consistent regardless of the element's scale.
         sx = math.hypot(m[0, 0], m[1, 0])
         sy = math.hypot(m[0, 1], m[1, 1])
         avg_scale = (sx + sy) / 2.0 if sx > 1e-6 and sy > 1e-6 else 1.0
@@ -228,7 +227,9 @@ class Canvas(Gtk.DrawingArea):
                 abs_y=0,
                 is_fully_hovered=is_hovered,
                 specific_hovered_region=self._hovered_region,
-                scale_compensation_factor=avg_scale,
+                # Pass both sx and sy to correctly calculate handle shapes
+                # for non-uniform scaling.
+                scale_compensation_factor=(sx, sy),
             )
 
         ctx.restore()
@@ -272,7 +273,7 @@ class Canvas(Gtk.DrawingArea):
         abs_y: float,
         is_fully_hovered: bool,
         specific_hovered_region: ElementRegion,
-        scale_compensation_factor: float,
+        scale_compensation_factor: Union[float, Tuple[float, float]],
     ):
         """
         Generic helper to draw interactive handles for a target, which can
@@ -293,7 +294,6 @@ class Canvas(Gtk.DrawingArea):
                 rx, ry, rw, rh = target.get_region_rect(
                     region,
                     self.BASE_HANDLE_SIZE,
-                    self.MAX_HANDLE_SIZE,
                     scale_compensation_factor,
                 )
                 if rw > 0 and rh > 0:
@@ -301,7 +301,15 @@ class Canvas(Gtk.DrawingArea):
                     if region == ElementRegion.ROTATION_HANDLE:
                         ctx.save()
                         ctx.set_source_rgba(0.4, 0.4, 0.4, 0.9)
-                        ctx.set_line_width(1.0 / scale_compensation_factor)
+                        # For line width, a single average scale is fine.
+                        avg_scale = 1.0
+                        if isinstance(scale_compensation_factor, tuple):
+                            sx, sy = scale_compensation_factor
+                            if sx > 1e-6 and sy > 1e-6:
+                                avg_scale = (sx + sy) / 2.0
+                        else:
+                            avg_scale = scale_compensation_factor
+                        ctx.set_line_width(1.0 / avg_scale)
                         ctx.move_to(abs_x + target.width / 2, abs_y + ry + rh)
                         ctx.line_to(abs_x + target.width / 2, abs_y)
                         ctx.stroke()
@@ -321,7 +329,6 @@ class Canvas(Gtk.DrawingArea):
             rx, ry, rw, rh = target.get_region_rect(
                 specific_hovered_region,
                 self.BASE_HANDLE_SIZE,
-                self.MAX_HANDLE_SIZE,
                 scale_compensation_factor,
             )
             if rw > 0 and rh > 0:
@@ -750,9 +757,7 @@ class Canvas(Gtk.DrawingArea):
         local_delta_x = current_local[0] - start_local[0]
         local_delta_y = current_local[1] - start_local[1]
 
-        # 3. Determine change in visual size. The local delta must be
-        #    scaled by the starting scale factor to find its contribution
-        #    to the final visual size.
+        # 3. Determine change in visual size.
         is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
@@ -774,6 +779,9 @@ class Canvas(Gtk.DrawingArea):
             ElementRegion.BOTTOM_RIGHT,
         }
 
+        # `dw` and `dh` are the desired CHANGE IN VISUAL SIZE.
+        # We convert the geometry-space delta (local_delta_x) to a
+        # visual-space delta by multiplying by the starting scale.
         dw, dh = 0.0, 0.0
         if is_left:
             dw = -local_delta_x * start_sx
@@ -820,22 +828,50 @@ class Canvas(Gtk.DrawingArea):
             anchor_norm_x, anchor_norm_y = 0.5, 0.5
 
         anchor_geom = (anchor_norm_x * base_w, anchor_norm_y * base_h)
-        m_rot = Matrix.rotation(
-            self._active_elem.angle, center=(base_w / 2, base_h / 2)
+
+        # Get the element's world transform at the start of the drag.
+        initial_world_transform = self._initial_inv_world.invert()
+        anchor_world_before = initial_world_transform.transform_point(
+            anchor_geom
         )
 
-        t_old = m_rot @ Matrix.scale(start_sx, start_sy)
-        anchor_old = t_old.transform_point(anchor_geom)
-        t_new = m_rot @ Matrix.scale(new_scale_x, new_scale_y)
-        anchor_new = t_new.transform_point(anchor_geom)
-        correction = (
-            anchor_old[0] - anchor_new[0],
-            anchor_old[1] - anchor_new[1],
+        # Build the hypothetical new world transform without any position
+        # correction, using the new scale.
+        parent_world = Matrix.identity()
+        if isinstance(self._active_elem.parent, CanvasElement):
+            parent_world = self._active_elem.parent.get_world_transform()
+
+        # Replicate the logic from _rebuild_local_transform to create a
+        # temporary matrix for the new scale and existing rotation.
+        center_x, center_y = base_w / 2, base_h / 2
+        t_to_origin = Matrix.translation(-center_x, -center_y)
+        m_scale = Matrix.scale(new_scale_x, new_scale_y)
+        m_rotate = Matrix.rotation(self._active_elem.angle)
+        t_from_origin = Matrix.translation(center_x, center_y)
+        new_local_transform = t_from_origin @ m_rotate @ m_scale @ t_to_origin
+
+        hypothetical_new_world = (
+            parent_world
+            @ Matrix.translation(start_x, start_y)
+            @ new_local_transform
         )
+        anchor_world_after = hypothetical_new_world.transform_point(
+            anchor_geom
+        )
+
+        # The world-space correction vector is the difference.
+        world_correction = (
+            anchor_world_before[0] - anchor_world_after[0],
+            anchor_world_before[1] - anchor_world_after[1],
+        )
+
+        # Transform this world-space correction into the parent's local space.
+        parent_inv_world = parent_world.invert()
+        local_correction = parent_inv_world.transform_vector(world_correction)
 
         # 7. Apply all changes.
         self._active_elem.set_pos(
-            start_x + correction[0], start_y + correction[1]
+            start_x + local_correction[0], start_y + local_correction[1]
         )
         self._active_elem.set_scale(new_scale_x, new_scale_y)
 

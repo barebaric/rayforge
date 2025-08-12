@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import math
 import logging
 from typing import (
     TYPE_CHECKING,
@@ -126,8 +127,7 @@ class CanvasElement:
 
         if self.pixel_perfect_hit and not self.buffered:
             raise ValueError(
-                "pixel perfect hit cannot be used on unbuffered "
-                "elements"
+                "pixel perfect hit cannot be used on unbuffered elements"
             )
 
         # UI interaction state
@@ -142,22 +142,25 @@ class CanvasElement:
         Builds the local transformation matrix.
 
         This matrix handles scale and rotation around the element's
-        center `(width/2, height/2)`. It does NOT include the
-        element's x/y position (translation), which is handled
-        separately during rendering and world transform calculation.
-
-        The order of operations applied to a point is:
-        1. Scale
-        2. Rotate
+        geometric center. It uses a standard T-S-R-T sequence to ensure
+        transformations are applied correctly around the center pivot.
         """
         center_x, center_y = self.width / 2, self.height / 2
 
+        # 1. Translate the element's center to the origin
+        t_to_origin = Matrix.translation(-center_x, -center_y)
+        # 2. Scale around the origin
         m_scale = Matrix.scale(self.scale_x, self.scale_y)
-        m_rotate = Matrix.rotation(self.angle, center=(center_x, center_y))
+        # 3. Rotate around the origin
+        m_rotate = Matrix.rotation(self.angle)
+        # 4. Translate the element back to its original center
+        t_back_from_origin = Matrix.translation(center_x, center_y)
 
-        # The effective local transform is Rotate @ Scale.
-        # This means a point is first scaled, then rotated.
-        self.local_transform = m_rotate @ m_scale
+        # The final transform is composed from right to left:
+        # T_back @ R @ S @ T_to_origin
+        self.local_transform = (
+            t_back_from_origin @ m_rotate @ m_scale @ t_to_origin
+        )
 
         self.mark_dirty(ancestors=False, recursive=True)
 
@@ -170,13 +173,13 @@ class CanvasElement:
         the result and only recalculates when the transform is "dirty".
 
         The final matrix is composed as:
-        `Local @ Translate @ ParentWorld`
+        `ParentWorld @ Translate @ Local`
 
         This means the order of operations to transform a point from
-        the parent's space into world space is:
-        1. Apply parent's world transform.
+        local space into world space is:
+        1. Apply this element's local transform (scale, rotation).
         2. Apply this element's translation (x, y).
-        3. Apply this element's local transform (scale, rotation).
+        3. Apply parent's world transform.
         """
         if not self._transform_dirty:
             return self._world_transform
@@ -187,10 +190,10 @@ class CanvasElement:
 
         m_trans = Matrix.translation(self.x, self.y)
 
-        # The transformation order is:
+        # Correct pre-multiplication order:
         # Parent -> Translate -> Local (Rotate @ Scale)
         self._world_transform = (
-            self.local_transform @ m_trans @ parent_world_transform
+            parent_world_transform @ m_trans @ self.local_transform
         )
 
         self._transform_dirty = False
@@ -318,8 +321,7 @@ class CanvasElement:
         self,
         region: ElementRegion,
         base_handle_size: float,
-        max_handle_size: float,
-        scale_compensation: float = 1.0,
+        scale_compensation: Union[float, Tuple[float, float]] = 1.0,
     ) -> Tuple[float, float, float, float]:
         """
         Gets the rect (x, y, w, h) for a region in local coordinates.
@@ -327,7 +329,6 @@ class CanvasElement:
         Args:
             region: The `ElementRegion` to query (e.g., a handle).
             base_handle_size: The base pixel size for the handle.
-            max_handle_size: The max pixel size for the handle.
             scale_compensation: The element's visual scale factor.
 
         Returns:
@@ -338,7 +339,6 @@ class CanvasElement:
             self.width,
             self.height,
             base_handle_size,
-            max_handle_size,
             scale_compensation,
         )
 
@@ -363,10 +363,19 @@ class CanvasElement:
             return ElementRegion.NONE
 
         local_x, local_y = inv_world.transform_point((x_abs, y_abs))
-        # For hit testing, use a consistent base size for a better feel.
-        base_hit_size = 15.0
+
+        # Use the single source of truth from the canvas for handle size.
+        # Fallback to a default if the element is not on a canvas.
+        base_hit_size = self.canvas.BASE_HANDLE_SIZE if self.canvas else 15.0
+
+        # Calculate the visual scale from the world transform matrix to pass
+        # to the hit-testing function. This makes hit-testing scale-aware.
+        m = world_transform.m
+        sx = math.hypot(m[0, 0], m[1, 0])
+        sy = math.hypot(m[0, 1], m[1, 1])
+
         return check_region_hit(
-            local_x, local_y, self.width, self.height, base_hit_size
+            local_x, local_y, self.width, self.height, base_hit_size, (sx, sy)
         )
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):
@@ -844,9 +853,11 @@ class CanvasElement:
         """
         # Part 1: Check children first (top-most are last in list).
         for child in reversed(self.children):
-            # Create matrix to transform from child-local to parent-local
+            # The transform from the child's local space to the parent's
+            # local space is: Translate -> LocalTransform.
+            # This must match the order in get_world_transform and render.
             transform_child_to_parent = (
-                child.local_transform @ Matrix.translation(child.x, child.y)
+                Matrix.translation(child.x, child.y) @ child.local_transform
             )
             # Invert to go from parent-local to child-local
             transform_parent_to_child = transform_child_to_parent.invert()

@@ -36,10 +36,9 @@ class Matrix:
         """
         Performs matrix multiplication: self @ other.
 
-        Note: Matrix multiplication is not commutative. The order matters.
-        If M = R @ T, applying M to a point is equivalent to first applying T,
-        then applying R. This is because the operation is on the right:
-        M*p = (R*T)*p.
+        This implements standard pre-multiplication, where (A @ B) @ p is
+        equivalent to applying transform A, then transform B.
+        M_combined = M_second @ M_first.
 
         Args:
             other: The matrix to multiply with on the right.
@@ -49,13 +48,9 @@ class Matrix:
         """
         if not isinstance(other, Matrix):
             return NotImplemented
-        # The order is np.dot(other.m, self.m) to match the mathematical
-        # convention for transformations: if M = M1 @ M2, then
-        # M(p) = M2(M1(p)).
-        # However, our transform_point does self.m @ vec, so to have
-        # (M1 @ M2).transform(p) be "apply M1, then M2", we need
-        # `other.m @ self.m`.
-        return Matrix(np.dot(other.m, self.m))
+        # Standard pre-multiplication: self.m is the first transform,
+        # other.m is the second.
+        return Matrix(np.dot(self.m, other.m))
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -146,10 +141,8 @@ class Matrix:
             t_to_origin = Matrix.translation(-cx, -cy)
             t_back = Matrix.translation(cx, cy)
             # Translate to origin, scale, then translate back
-            return t_to_origin @ m @ t_back
+            return t_back @ m @ t_to_origin
 
-        # If no center is provided, return the matrix that scales around the
-        # origin.
         return m
 
     def get_rotation(self) -> float:
@@ -190,10 +183,8 @@ class Matrix:
             t_to_origin = Matrix.translation(-cx, -cy)
             t_back = Matrix.translation(cx, cy)
             # Translate to origin, rotate, then translate back
-            return t_to_origin @ m @ t_back
+            return t_back @ m @ t_to_origin
 
-        # If no center is provided, return the matrix that rotates around the
-        # origin.
         return m
 
     def invert(self) -> "Matrix":
@@ -236,3 +227,24 @@ class Matrix:
         vec = np.array([vector[0], vector[1], 0])
         res_vec = np.dot(self.m, vec)
         return (res_vec[0], res_vec[1])
+
+    def decompose(self) -> Tuple[float, float, float, float, float]:
+        """
+        Decomposes the matrix into translation, rotation, and scale.
+
+        Returns:
+            A tuple (tx, ty, angle_deg, sx, sy).
+        """
+        # Translation is the last column
+        tx = self.m[0, 2]
+        ty = self.m[1, 2]
+
+        # Scale is the norm of the first two columns
+        sx = np.linalg.norm(self.m[0:2, 0])
+        sy = np.linalg.norm(self.m[0:2, 1])
+
+        # Rotation is the angle of the normalized first column vector
+        angle_rad = math.atan2(self.m[1, 0] / sx, self.m[0, 0] / sx)
+        angle_deg = math.degrees(angle_rad)
+
+        return float(tx), float(ty), float(angle_deg), float(sx), float(sy)
