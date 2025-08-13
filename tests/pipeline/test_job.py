@@ -89,17 +89,17 @@ async def test_generate_job_ops_assembles_correctly(
     line_cmds = [c for c in final_ops.commands if isinstance(c, LineToCommand)]
 
     # --- Trace the expected final coordinates ---
-    # Point (0,0) from base_ops:
-    # 1. In unit space, this is (0,0).
-    # 2. After world transform: `world_matrix @ [0,0,0,1]` -> (55, 95).
-    # 3. After y-flip to machine coords: (55, 150-95) = (55, 55).
-    assert move_cmds[0].end == pytest.approx((55.0, 55.0, 0.0))
+    # Point (0,0) from base_ops (in mm) is mapped to unit space (0,0).
+    # 1. World transf.: T(50,60) @ R(90,c=(20,15)) @ S(40,30) applied to (0,0)
+    #    -> World coordinate (85, 55).
+    # 2. Y-flip to machine coords: (85, 150-55) = (85, 95).
+    assert move_cmds[0].end == pytest.approx((85.0, 95.0, 0.0))
 
-    # Point (10,0) from base_ops:
-    # 1. In unit space, this is (10/40, 0/30) = (0.25, 0).
-    # 2. After world transform: `world_matrix @ [0.25,0,0,1]` -> (55, 85).
-    # 3. After y-flip to machine coords: (55, 150-85) = (55, 65).
-    assert line_cmds[0].end == pytest.approx((55.0, 65.0, 0.0))
+    # Point (10,0) from base_ops (in mm) is mapped to unit space (0.25, 0).
+    # 1. World transform applied to (0.25, 0)
+    #    -> World coordinate (85, 65).
+    # 2. Y-flip to machine coords: (85, 150-65) = (85, 85).
+    assert line_cmds[0].end == pytest.approx((85.0, 85.0, 0.0))
 
     # Verify the second pass is identical
     assert move_cmds[1].end == move_cmds[0].end

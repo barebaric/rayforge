@@ -66,6 +66,17 @@ class TestMatrix:
         p = (123, 456)
         assert ident.transform_point(p) == pytest.approx(p)
 
+    def test_is_identity(self):
+        """Test the is_identity() method."""
+        assert Matrix.identity().is_identity() is True
+        assert Matrix().is_identity() is True
+        # Test near-identity for floating point robustness
+        m_near = Matrix([[1, 0, 1e-10], [0, 1, 0], [0, 0, 1]])
+        assert m_near.is_identity() is True
+        # Test non-identity
+        assert Matrix.translation(1, 0).is_identity() is False
+        assert Matrix.rotation(1).is_identity() is False
+
     def test_translation(self):
         m = Matrix.translation(50, -30)
         assert m.transform_point((0, 0)) == pytest.approx((50, -30))
@@ -96,20 +107,55 @@ class TestMatrix:
         assert m_center.transform_point((20, 15)) == pytest.approx((30, 25))
 
     def test_get_scale(self):
+        """Tests the modified get_scale() which returns signed scales."""
+        # Simple positive scale
         m1 = Matrix.scale(2.5, 5.0)
         assert m1.get_scale() == pytest.approx((2.5, 5.0))
 
-        # Test with rotation.
+        # Test with rotation
         m2 = Matrix.rotation(30) @ Matrix.scale(2, 3)
         assert m2.get_scale() == pytest.approx((2.0, 3.0))
 
-        # A more complex transform
+        # Test with negative scale (reflection)
+        m3 = Matrix.scale(4, -5)
+        # sx is positive, sy is negative
+        assert m3.get_scale() == pytest.approx((4.0, -5.0))
+
+        # Test with negative scale and rotation
+        m4 = (
+            Matrix.translation(10, 20)
+            @ Matrix.rotation(45)
+            @ Matrix.scale(-2, 3)
+        )
+        # The scale factors are (2, -3) because the decomposition finds
+        # the rotation of the transformed x-axis (-135 deg) and sx is positive.
+        sx, sy = m4.get_scale()
+        assert sx == pytest.approx(2.0)
+        assert sy == pytest.approx(-3.0)
+
+        # Test with two negative scales (is a rotation, not a flip)
+        m5 = Matrix.scale(-2, -3)
+        # Note: A scale(-x, -y) is identical to rotate(180) @ scale(x, y).
+        # The decomposition will find angle=180, sx=2, sy=3.
+        assert m5.get_scale() == pytest.approx((2.0, 3.0))
+
+    def test_get_abs_scale(self):
+        """Tests the new get_abs_scale() method."""
+        # Positive scale
+        m1 = Matrix.scale(2.5, 5.0)
+        assert m1.get_abs_scale() == pytest.approx((2.5, 5.0))
+
+        # Negative scale
+        m2 = Matrix.scale(-4, 5)
+        assert m2.get_abs_scale() == pytest.approx((4.0, 5.0))
+
+        # Complex transform with negative scale
         m3 = (
             Matrix.translation(10, 20)
             @ Matrix.rotation(45)
-            @ Matrix.scale(4, 5)
+            @ Matrix.scale(2, -3)
         )
-        assert m3.get_scale() == pytest.approx((4.0, 5.0))
+        assert m3.get_abs_scale() == pytest.approx((2.0, 3.0))
 
     def test_rotation(self):
         # Rotate around origin
@@ -125,20 +171,59 @@ class TestMatrix:
         assert m_center.transform_point((20, 10)) == pytest.approx((10, 20))
 
     def test_get_rotation(self):
+        """Tests the modified get_rotation() which is robust to shear."""
         m1 = Matrix.rotation(30)
         assert m1.get_rotation() == pytest.approx(30)
 
         m2 = Matrix.rotation(-135)
         assert m2.get_rotation() == pytest.approx(-135)
 
-        # Uniform scale does not affect rotation extraction
-        m3 = Matrix.rotation(60) @ Matrix.scale(2, 2)
+        # Non-uniform scale should not affect rotation extraction
+        m3 = Matrix.rotation(60) @ Matrix.scale(2, 5)
         assert m3.get_rotation() == pytest.approx(60)
 
-        # Non-uniform scale applied before rotation will also not affect
-        # get_rotation, which correctly finds the angle of the new x-axis.
-        m4 = Matrix.rotation(45) @ Matrix.scale(2, 5)
-        assert m4.get_rotation() == pytest.approx(45)
+        # Test robustness against shear
+        R = Matrix.rotation(45)
+        # Shear matrix: x' = x + 0.5y, y' = y
+        Shear = Matrix([[1, 0.5, 0], [0, 1, 0], [0, 0, 1]])
+        M_sheared = R @ Shear
+        # get_rotation should extract the original rotation angle
+        assert M_sheared.get_rotation() == pytest.approx(45)
+
+    def test_get_determinant_2x2(self):
+        """Tests the new get_determinant_2x2() method."""
+        # Identity
+        assert Matrix.identity().get_determinant_2x2() == pytest.approx(1.0)
+        # Simple scale
+        assert Matrix.scale(2, 3).get_determinant_2x2() == pytest.approx(6.0)
+        # Rotation (cos*cos - sin*(-sin) = cos^2+sin^2 = 1)
+        assert Matrix.rotation(30).get_determinant_2x2() == pytest.approx(1.0)
+        # Flipped scale
+        assert Matrix.scale(-2, 3).get_determinant_2x2() == pytest.approx(-6.0)
+        # Complex transform
+        M = Matrix.rotation(45) @ Matrix.scale(2, 3)
+        assert M.get_determinant_2x2() == pytest.approx(6.0)
+
+    def test_is_flipped(self):
+        """Tests the new is_flipped() method."""
+        assert not Matrix.identity().is_flipped()
+        assert not Matrix.scale(2, 3).is_flipped()
+        assert not Matrix.rotation(45).is_flipped()
+
+        # Flipped on one axis
+        assert Matrix.scale(-1, 1).is_flipped()
+        assert Matrix.scale(1, -1).is_flipped()
+
+        # Flipped on both axes is a rotation, not a flip
+        assert not Matrix.scale(-1, -1).is_flipped()
+
+        # Complex transform with a flip
+        M = Matrix.rotation(30) @ Matrix.scale(-2, 3)
+        assert M.is_flipped()
+
+        # Complex transform without a flip
+        M2 = Matrix.rotation(30) @ Matrix.scale(-2, -3)
+        assert not M2.is_flipped()
 
     def test_matrix_multiplication(self):
         # Order of operations: T @ R means apply R first, then apply T.
@@ -250,8 +335,6 @@ class TestMatrix:
         assert tx == pytest.approx(10)
         assert ty == pytest.approx(20)
         assert angle == pytest.approx(45)
-        # Scale values should be affected by the composition, but can be
-        # checked for correctness based on the decomposition's properties
         assert sx == pytest.approx(2)
         # The sy value is not simply 3 anymore because R*S*K is complex.
         # But the skew angle should be correctly extracted.
@@ -267,9 +350,13 @@ class TestMatrix:
 
         tx, ty, angle, sx, sy, skew = M.decompose()
 
+        # The new decomposition is stable. The transformed x-axis is
+        # (-2,0) rotated by 45 deg, which is a vector at -135 deg.
+        # The sx is the length of that vector (2), and the flip is
+        # represented in sy.
         assert tx == pytest.approx(10)
         assert ty == pytest.approx(20)
-        assert angle == pytest.approx(45)
-        assert sx == pytest.approx(-2)
-        assert sy == pytest.approx(3)
+        assert angle == pytest.approx(-135)
+        assert sx == pytest.approx(2)
+        assert sy == pytest.approx(-3)
         assert skew == pytest.approx(0)

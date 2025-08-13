@@ -103,6 +103,32 @@ class Matrix:
         """
         return np.allclose(self.m, np.identity(3))
 
+    def get_determinant_2x2(self) -> float:
+        """
+        Calculates the determinant of the top-left 2x2 sub-matrix.
+
+        This represents the determinant of the linear transformation part
+        (scaling, rotation, shear), ignoring translation. A negative
+        determinant indicates a reflection (a "flip").
+
+        Returns:
+            The determinant value.
+        """
+        # ad - bc for M = [[a, c], [b, d]]
+        return self.m[0, 0] * self.m[1, 1] - self.m[0, 1] * self.m[1, 0]
+
+    def is_flipped(self) -> bool:
+        """
+        Checks if the matrix includes a reflection (flip).
+
+        This is determined by checking if the determinant of the linear
+        transformation part is negative.
+
+        Returns:
+            True if the coordinate system is flipped, False otherwise.
+        """
+        return self.get_determinant_2x2() < 0
+
     def get_translation(self) -> Tuple[float, float]:
         """
         Extracts the translation component (tx, ty) from the matrix.
@@ -132,17 +158,32 @@ class Matrix:
 
     def get_scale(self) -> Tuple[float, float]:
         """
-        Extracts the scale components (sx, sy) from the matrix.
+        Extracts the signed scale components (sx, sy) from the matrix.
 
-        This computes the magnitude of the new basis vectors (the first
-        two columns). It doesn't handle negative scaling correctly, as it
-        will always return positive magnitudes.
+        This method is robust against rotation and shear. A negative value
+        for sx or sy indicates a reflection (flip) along that axis.
+        Note: Per the decomposition algorithm, `sx` will always be positive,
+        and `sy` will be negative in the case of a reflection.
+
+        Returns:
+            A tuple (sx, sy) representing the scale factors.
         """
-        # sx is the length of the first column vector (the new x-axis)
-        sx = np.linalg.norm(self.m[0:2, 0])
-        # sy is the length of the second column vector (the new y-axis)
-        sy = np.linalg.norm(self.m[0:2, 1])
-        return float(sx), float(sy)
+        # This now uses decompose for a more robust result that includes sign.
+        _, _, _, sx, sy, _ = self.decompose()
+        return (sx, sy)
+
+    def get_abs_scale(self) -> Tuple[float, float]:
+        """
+        Extracts the absolute scale components (sx, sy) from the matrix.
+
+        This is useful for calculations where the direction of scaling
+        (reflection) does not matter, such as checking for zero scale.
+
+        Returns:
+            A tuple (sx, sy) of the absolute scale factors.
+        """
+        sx, sy = self.get_scale()
+        return (abs(sx), abs(sy))
 
     @staticmethod
     def scale(
@@ -177,12 +218,15 @@ class Matrix:
         """
         Extracts the rotation angle in degrees from the matrix.
 
-        This computes the angle of the transformed x-axis. It assumes that
-        there is no negative scaling (flipping) on the y-axis.
+        This method uses a full decomposition, making it robust against
+        shear and non-uniform scaling.
+
+        Returns:
+            The rotation angle in degrees.
         """
-        # The rotation is encoded in the top-left 2x2 submatrix.
-        # atan2(m10, m00) gives the angle of the new x-axis vector.
-        return math.degrees(math.atan2(self.m[1, 0], self.m[0, 0]))
+        # This now uses decompose for a more robust result.
+        _, _, angle_deg, _, _, _ = self.decompose()
+        return angle_deg
 
     @staticmethod
     def rotation(
@@ -262,6 +306,9 @@ class Matrix:
         This implementation is robust against shear and reflection. It assumes
         a composition order of: Rotate, then Scale, then Shear.
 
+        The decomposition is stable: sx will always be positive, and any
+        reflection is represented by a negative sy.
+
         Returns:
             A tuple (tx, ty, angle_deg, sx, sy, skew_angle_deg).
         """
@@ -273,32 +320,22 @@ class Matrix:
         a, b = self.m[0, 0], self.m[1, 0]  # First column
         c, d = self.m[0, 1], self.m[1, 1]  # Second column
 
-        # The X scale is the length of the first column vector
+        # The X scale is the length of the first column vector (always > 0)
         sx = math.hypot(a, b)
 
         # The rotation is the angle of the first column vector
         angle_rad = math.atan2(b, a)
+        angle_deg = math.degrees(angle_rad)
 
         # Shear and Y Scale
-        # Compute the determinant to detect reflections
+        # We find sy by `det(R*S*K) = det(R)*det(S)*det(K) = 1 * (sx*sy) * 1`
+        # So, sy = det(M) / sx. This carries the sign of the reflection.
         det = a * d - b * c
         if sx != 0:
             sy = det / sx
         else:
-            sy = math.hypot(c, d)  # Degenerate case, sx=0
-
-        # Check for reflection (negative determinant indicates a flip)
-        if det < 0:
-            # If there's a reflection, adjust the rotation angle
-            # A reflection flips the coordinate system, adding 180 degrees to
-            # the angle
-            angle_rad = (
-                angle_rad + math.pi if angle_rad <= 0 else angle_rad - math.pi
-            )
-            sx = -sx  # Correct the x-scale to reflect the negative scaling
-            sy = -sy  # Correct the y-scale if necessary
-
-        angle_deg = math.degrees(angle_rad)
+            # Degenerate case, sx=0. sy is the length of the second column.
+            sy = math.hypot(c, d)
 
         # Solve for the shear factor 'm' in a shear matrix K = [[1, m], [0, 1]]
         # We know L = R * S * K. So R_inv * L = S * K

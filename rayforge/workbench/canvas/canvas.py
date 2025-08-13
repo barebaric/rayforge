@@ -343,25 +343,18 @@ class Canvas(Gtk.DrawingArea):
             != ElementRegion.NONE
         )
 
-        m = transform_to_screen.m
-
-        # First, calculate absolute scale factors.
-        sx_abs = math.hypot(m[0, 0], m[1, 0])
-        sy_abs = math.hypot(m[0, 1], m[1, 1])
+        # Get scale factors and flip status from the matrix.
+        sx_abs, sy_abs = transform_to_screen.get_abs_scale()
+        is_view_flipped = transform_to_screen.is_flipped()
 
         # Check for zero scale using absolute values to prevent incorrect exit.
         if sx_abs < 1e-6 or sy_abs < 1e-6:
             # This is a valid exit, e.g., if the element is scaled to nothing.
             return
 
-        # Now, determine the signed scale for geometry calculations.
-        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
-        is_view_flipped = det < 0
-
-        sx_signed = sx_abs
-        sy_signed = -sy_abs if is_view_flipped else sy_abs
-
-        scale_compensation = (sx_signed, sy_signed)
+        # The handle rendering logic expects the scale compensation factor for
+        # the y-axis to be negative if the view is flipped.
+        scale_compensation = (sx_abs, -sy_abs if is_view_flipped else sy_abs)
         ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
 
         # --- Drawing Helper ---
@@ -750,9 +743,7 @@ class Canvas(Gtk.DrawingArea):
         }
 
         # Determine if the view's Y-axis is flipped.
-        m = self.view_transform.m
-        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
-        is_view_flipped = det < 0
+        is_view_flipped = self.view_transform.is_flipped()
 
         if self._ctrl_pressed:  # Center-out resize
             dw, dh = 0.0, 0.0
@@ -925,9 +916,9 @@ class Canvas(Gtk.DrawingArea):
         base_w, base_h = self._active_elem.width, self._active_elem.height
 
         # Determine the effective scale from the element's local geometry
-        # to world space.
+        # to world space. Use absolute scale for calculating minimum sizes.
         world_scale_x, world_scale_y = (
-            self._initial_world_transform.get_scale()
+            self._initial_world_transform.get_abs_scale()
         )
         min_size_local_x = (
             min_size_world / world_scale_x if world_scale_x > 1e-6 else 0
@@ -961,9 +952,7 @@ class Canvas(Gtk.DrawingArea):
         # 2. Bridge the semantic-geometric gap.
         # The geometric edge corresponding to a visual handle depends on
         # the view. We check if the view's coordinate system is flipped.
-        m = self.view_transform.m
-        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
-        is_view_flipped = det < 0
+        is_view_flipped = self.view_transform.is_flipped()
 
         if is_view_flipped:
             # In a flipped view, the visual 'top' handle is at the geometric

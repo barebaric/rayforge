@@ -86,7 +86,7 @@ class WorkPiece(DocItem):
 
         # Use Matrix class methods to build transformations
         S = Matrix.scale(w, h)
-        # The angle is negated to match the clockwise rotation convention.
+        # The angle is a standard counter-clockwise rotation.
         R = Matrix.rotation(angle_deg, center=(cx, cy))
         T = Matrix.translation(pos[0], pos[1])
 
@@ -97,11 +97,10 @@ class WorkPiece(DocItem):
     @property
     def size(self) -> Tuple[float, float]:
         """
-        The world-space size (width, height) in mm, decomposed from the
-        matrix's scaling components.
+        The world-space size (width, height) in mm, as absolute values,
+        decomposed from the matrix's scaling components.
         """
-        sx, sy = self.matrix.get_scale()
-        return abs(sx), abs(sy)
+        return self.matrix.get_abs_scale()
 
     def set_size(self, width_mm: float, height_mm: float):
         """
@@ -143,7 +142,7 @@ class WorkPiece(DocItem):
         angle = self.angle
 
         S = Matrix.scale(w, h)
-        R = Matrix.rotation(-angle, center=(w / 2, h / 2))
+        R = Matrix.rotation(angle, center=(w / 2, h / 2))
         # This matrix represents the combined scale and centered rotation
         M_rs = R @ S
 
@@ -170,7 +169,7 @@ class WorkPiece(DocItem):
     @property
     def angle(self) -> float:
         """
-        The clockwise rotation angle (in degrees) of the workpiece.
+        The rotation angle (in degrees) of the workpiece.
         This is decomposed from the transformation matrix.
         """
         return self.matrix.get_rotation() % 360

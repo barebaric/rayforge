@@ -244,30 +244,34 @@ class TestWorkPiece:
 
     def test_get_world_transform_rotation(self, workpiece_instance):
         wp = workpiece_instance
-        # set_size preserves center, pos becomes (-9.5, -4.5)
+        # set_size preserves center. Initial center (0.5, 0.5) moves to a pos
+        # that keeps it at the same world coords, so pos becomes (-9.5, -4.5).
         wp.set_size(20, 10)
-        # angle.setter does NOT preserve center, it rotates around current pos.
+        # angle.setter rebuilds the matrix, rotating around the scaled center.
         wp.angle = 90
         matrix = wp.get_world_transform()
         p_in = (0, 0)  # Local origin
         p_out = matrix.transform_point(p_in)
-        # Expected: T(-9.5,-4.5) * Rot(90, center=(10,5)) * S(20,10) * p_in
-        # Rotated local origin (0,0) becomes (5, 15) relative to scaled space
-        # Translated becomes (5-9.5, 15-4.5) = (-4.5, 10.5)
-        assert p_out == pytest.approx((-4.5, 10.5))
+        # Calculation: M = T(-9.5, -4.5) @ R(90, center=(10,5)) @ S(20,10)
+        # S(0,0) -> (0,0)
+        # R(0,0) -> rotating (0,0) around (10,5) by 90deg -> (15, -5)
+        # T(15,-5) -> (15-9.5, -5-4.5) -> (5.5, -9.5)
+        assert p_out == pytest.approx((5.5, -9.5))
 
     def test_get_world_transform_all(self, workpiece_instance):
         wp = workpiece_instance
         wp.set_size(20, 10)  # pos becomes (-9.5, -4.5)
         wp.pos = (100, 200)  # pos is now (100, 200)
-        wp.angle = 90  # rotates around (100, 200)
+        wp.angle = 90  # rebuilds matrix with new angle
         matrix = wp.get_world_transform()
 
         p_in = (0, 0)
         p_out = matrix.transform_point(p_in)
-        # Rotated local origin (0,0) becomes (5, 15) relative to scaled space
-        # Final pos is T(100,200) * (RotatedPoint)
-        assert p_out == pytest.approx((100 + 5, 200 + 15))
+        # Calculation: M = T(100, 200) @ R(90, center=(10,5)) @ S(20,10)
+        # S(0,0) -> (0,0)
+        # R(0,0) -> rotating (0,0) around (10,5) by 90deg -> (15, -5)
+        # T(15,-5) -> (15+100, -5+200) -> (115, 195)
+        assert p_out == pytest.approx((115, 195))
 
     def test_decomposed_properties_consistency(self, workpiece_instance):
         wp = workpiece_instance
