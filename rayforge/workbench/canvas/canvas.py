@@ -35,15 +35,17 @@ class Canvas(Gtk.DrawingArea):
         )
         self._active_elem: Optional[CanvasElement] = None
 
-        # Stores the state of an element or group at the start of a
-        # transform. The structure varies depending on the operation.
+        # Stores the state of an element or group at the start of a transform
         self._active_origin: Optional[
             Union[
                 Tuple[float, float, float, float],  # Group bbox (x,y,w,h)
-                Tuple[float, float, float, float, float, float],  # Rect+scale
+                Tuple[float, float, float, float],  # Legacy move rect
             ]
         ] = None
-        self._initial_inv_world: Optional[Matrix] = None
+        # Stores the initial transform of a single element being transformed
+        self._initial_transform: Optional[Matrix] = None
+        self._initial_world_transform: Optional[Matrix] = None
+
         self._setup_interactions()
 
         # --- Interaction State ---
@@ -64,7 +66,6 @@ class Canvas(Gtk.DrawingArea):
         self._rotating: bool = False
 
         # --- Rotation State ---
-        self._original_elem_angle: float = 0.0
         self._drag_start_angle: float = 0.0
 
         # --- Signals ---
@@ -463,20 +464,17 @@ class Canvas(Gtk.DrawingArea):
         elif self._active_region != ElementRegion.NONE:  # Any other handle
             self._resizing = True
             self.resize_begin.send(self, elements=selected_elements)
-            if self._active_elem:
-                # Store inverse matrix for stable resizing.
-                self._initial_inv_world = (
-                    self._active_elem.get_world_transform().invert()
-                )
 
         # Store initial state for the transform.
         if isinstance(target, MultiSelectionGroup):
             self._active_origin = target._bounding_box
             target.store_initial_states()
         elif isinstance(target, CanvasElement):
-            x, y, w, h = target.rect()
-            sx, sy = target.scale_x, target.scale_y
-            self._active_origin = (x, y, w, h, sx, sy)
+            # For single-element transforms, store the matrices.
+            self._initial_transform = target.transform.copy()
+            self._initial_world_transform = target.get_world_transform().copy()
+            # Also store legacy properties for move operation.
+            self._active_origin = target.rect()
 
         self.queue_draw()
 
@@ -520,6 +518,29 @@ class Canvas(Gtk.DrawingArea):
         self.queue_draw()
         self.set_cursor(Gdk.Cursor.new_from_name("default"))
 
+    def _move_active_element(self, offset_x: float, offset_y: float):
+        """Moves a single selected element using a matrix-native approach."""
+        if not self._active_elem or not self._initial_world_transform:
+            return
+
+        # Create a delta translation matrix in world space
+        delta_translation = Matrix.translation(offset_x, offset_y)
+
+        # Apply this delta to the initial world transform
+        new_world_transform = delta_translation @ self._initial_world_transform
+
+        # Convert back to the element's local space
+        parent_inv_world = Matrix.identity()
+        if isinstance(self._active_elem.parent, CanvasElement):
+            parent_inv_world = (
+                self._active_elem.parent.get_world_transform().invert()
+            )
+
+        new_local_transform = parent_inv_world @ new_world_transform
+
+        # Set the final transform, preserving all components
+        self._active_elem.set_transform(new_local_transform)
+
     def on_mouse_drag(self, gesture, offset_x: float, offset_y: float):
         """
         Handles an active drag, dispatching to transform-specific methods.
@@ -540,9 +561,6 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
             return
 
-        if not self._active_origin:
-            return
-
         if self._selection_group:
             if self._moving:
                 self._selection_group.apply_move(offset_x, offset_y)
@@ -553,33 +571,16 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
         elif self._active_elem:
             if self._moving:
-                parent = self._active_elem.parent
-                parent_transform_inv = Matrix.identity()
-                if isinstance(parent, CanvasElement):
-                    parent_transform_inv = (
-                        parent.get_world_transform().invert()
-                    )
-                # Transform screen-space delta to parent's local space.
-                delta = parent_transform_inv.transform_vector(
-                    (offset_x, offset_y)
-                )
-                start_x, start_y = (
-                    self._active_origin[0],
-                    self._active_origin[1],
-                )
-                self._active_elem.set_pos(
-                    start_x + delta[0], start_y + delta[1]
-                )
+                self._move_active_element(offset_x, offset_y)
             elif self._resizing:
-                ok, sx, sy = self._drag_gesture.get_start_point()
-                if ok:
-                    self._resize_active_element(
-                        sx, sy, sx + offset_x, sy + offset_y
-                    )
+                self._resize_active_element(offset_x, offset_y)
             elif self._rotating:
-                ok, sx, sy = self._drag_gesture.get_start_point()
-                if ok:
-                    self._rotate_active_element(sx + offset_x, sy + offset_y)
+                ok, start_x, start_y = self._drag_gesture.get_start_point()
+                if not ok:
+                    return
+                current_x = start_x + offset_x
+                current_y = start_y + offset_y
+                self._rotate_active_element(current_x, current_y)
             self.queue_draw()
 
     def _apply_group_resize(self, offset_x: float, offset_y: float):
@@ -680,9 +681,6 @@ class Canvas(Gtk.DrawingArea):
     ):
         """Stores the initial state for a rotation operation."""
         is_group = isinstance(target, MultiSelectionGroup)
-        self._original_elem_angle = (
-            target.angle if is_group else target.get_angle()
-        )
 
         center_x, center_y = (
             target.center if is_group else target.get_world_center()
@@ -692,16 +690,46 @@ class Canvas(Gtk.DrawingArea):
         )
 
     def _rotate_active_element(self, current_x: float, current_y: float):
-        """Rotates a single element based on cursor drag."""
-        if not self._active_elem:
+        """
+        Rotates a single element using a matrix-native approach to preserve
+        all existing transformations, including shear.
+        """
+        if not self._active_elem or not self._initial_world_transform:
             return
 
-        center_x, center_y = self._active_elem.get_world_center()
-        current_angle = math.degrees(
-            math.atan2(current_y - center_y, current_x - center_x)
+        # 1. Use the initial world transform to find the stable center point.
+        elem_center_world = self._initial_world_transform.transform_point(
+            (self._active_elem.width / 2, self._active_elem.height / 2)
         )
+
+        # 2. Calculate the angle of the current mouse position.
+        current_angle = math.degrees(
+            math.atan2(
+                current_y - elem_center_world[1],
+                current_x - elem_center_world[0],
+            )
+        )
+
+        # 3. Find the change in angle since the drag started.
         angle_diff = current_angle - self._drag_start_angle
-        self._active_elem.set_angle(self._original_elem_angle + angle_diff)
+
+        # 4. Create a delta rotation matrix around the world-space center.
+        delta_rotation = Matrix.rotation(angle_diff, center=elem_center_world)
+
+        # 5. Apply this delta to the element's initial world state.
+        new_world_transform = delta_rotation @ self._initial_world_transform
+
+        # 6. Convert the new world transform back to a local transform.
+        parent_inv_world = Matrix.identity()
+        if isinstance(self._active_elem.parent, CanvasElement):
+            parent_inv_world = (
+                self._active_elem.parent.get_world_transform().invert()
+            )
+        new_local_transform = parent_inv_world @ new_world_transform
+
+        # 7. Set the new matrix directly. This preserves shear and
+        # avoids jumps.
+        self._active_elem.set_transform(new_local_transform)
 
     def _rotate_selection_group(self, offset_x: float, offset_y: float):
         """Rotates the entire selection group based on cursor drag."""
@@ -719,45 +747,22 @@ class Canvas(Gtk.DrawingArea):
         angle_diff = current_angle - self._drag_start_angle
         self._selection_group.apply_rotate(angle_diff)
 
-    def _resize_active_element(
-        self,
-        start_abs_x: float,
-        start_abs_y: float,
-        current_abs_x: float,
-        current_abs_y: float,
-    ):
+    def _resize_active_element(self, offset_x: float, offset_y: float):
         """
-        Resizes an element by calculating the change in a stable
-        coordinate space, which correctly handles resizing elements that
-        are already scaled or rotated.
+        Resizes a single element using a fully matrix-native approach that
+        prevents unwanted shear by scaling in the element's local space.
         """
         if (
             not self._active_elem
-            or not self._active_origin
-            or not self._initial_inv_world
-            or len(self._active_origin) != 6
+            or not self._initial_transform
+            or not self._initial_world_transform
         ):
             return
 
-        start_x, start_y, base_w, base_h, start_sx, start_sy = (
-            self._active_origin
-        )
         min_size = 20.0
+        base_w, base_h = self._active_elem.width, self._active_elem.height
 
-        # 1. Get start and current positions in the element's stable
-        #    local space (using the inverse matrix from drag start).
-        start_local = self._initial_inv_world.transform_point(
-            (start_abs_x, start_abs_y)
-        )
-        current_local = self._initial_inv_world.transform_point(
-            (current_abs_x, current_abs_y)
-        )
-
-        # 2. Calculate the drag delta in this stable local space.
-        local_delta_x = current_local[0] - start_local[0]
-        local_delta_y = current_local[1] - start_local[1]
-
-        # 3. Determine change in visual size.
+        # 1. Determine which handles are being dragged.
         is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
@@ -779,27 +784,33 @@ class Canvas(Gtk.DrawingArea):
             ElementRegion.BOTTOM_RIGHT,
         }
 
-        # `dw` and `dh` are the desired CHANGE IN VISUAL SIZE.
-        # We convert the geometry-space delta (local_delta_x) to a
-        # visual-space delta by multiplying by the starting scale.
+        # 2. Transform the screen-space drag offset into the element's
+        #    initial local coordinate system (unrotated frame of reference).
+        initial_world_no_trans = self._initial_world_transform.copy()
+        initial_world_no_trans.m[0, 2] = initial_world_no_trans.m[1, 2] = 0.0
+        inv_rot_scale = initial_world_no_trans.invert()
+        local_delta_x, local_delta_y = inv_rot_scale.transform_vector(
+            (offset_x, offset_y)
+        )
+
+        # 3. Calculate desired change in size (dw, dh) in local space.
         dw, dh = 0.0, 0.0
         if is_left:
-            dw = -local_delta_x * start_sx
+            dw = -local_delta_x
         elif is_right:
-            dw = local_delta_x * start_sx
+            dw = local_delta_x
         if is_top:
-            dh = -local_delta_y * start_sy
+            dh = -local_delta_y
         elif is_bottom:
-            dh = local_delta_y * start_sy
+            dh = local_delta_y
 
         if self._ctrl_pressed:
             dw *= 2.0
             dh *= 2.0
 
-        # 4. Handle aspect ratio constraint using the visual deltas.
-        visual_start_w, visual_start_h = base_w * start_sx, base_h * start_sy
-        if self._shift_pressed and visual_start_w > 0 and visual_start_h > 0:
-            aspect = visual_start_w / visual_start_h
+        # 4. Handle aspect ratio constraint (Shift key).
+        if self._shift_pressed and base_w > 0 and base_h > 0:
+            aspect = base_w / base_h
             is_corner = (is_left or is_right) and (is_top or is_bottom)
             if is_corner:
                 if abs(dw) * aspect > abs(dh):
@@ -811,13 +822,13 @@ class Canvas(Gtk.DrawingArea):
             elif is_top or is_bottom:
                 dw = dh * aspect
 
-        # 5. Calculate new visual size and scale, enforcing minimums.
-        new_visual_w = max(min_size, visual_start_w + dw)
-        new_visual_h = max(min_size, visual_start_h + dh)
-        new_scale_x = new_visual_w / base_w if base_w > 0 else 1.0
-        new_scale_y = new_visual_h / base_h if base_h > 0 else 1.0
+        # 5. Calculate new size and the scale factors to apply.
+        new_w = max(min_size, base_w + dw)
+        new_h = max(min_size, base_h + dh)
+        scale_x = new_w / base_w if base_w > 0 else 1.0
+        scale_y = new_h / base_h if base_h > 0 else 1.0
 
-        # 6. Calculate position correction to keep anchor point stable.
+        # 6. Define the fixed anchor point in the element's LOCAL GEOMETRY.
         anchor_norm_x = (
             0.5 if not (is_left or is_right) else (1.0 if is_left else 0.0)
         )
@@ -827,53 +838,23 @@ class Canvas(Gtk.DrawingArea):
         if self._ctrl_pressed:
             anchor_norm_x, anchor_norm_y = 0.5, 0.5
 
-        anchor_geom = (anchor_norm_x * base_w, anchor_norm_y * base_h)
+        anchor_local_geom = (anchor_norm_x * base_w, anchor_norm_y * base_h)
 
-        # Get the element's world transform at the start of the drag.
-        initial_world_transform = self._initial_inv_world.invert()
-        anchor_world_before = initial_world_transform.transform_point(
-            anchor_geom
+        # 7. Construct the delta transform: a scale around the LOCAL anchor.
+        t_to_origin = Matrix.translation(
+            -anchor_local_geom[0], -anchor_local_geom[1]
         )
-
-        # Build the hypothetical new world transform without any position
-        # correction, using the new scale.
-        parent_world = Matrix.identity()
-        if isinstance(self._active_elem.parent, CanvasElement):
-            parent_world = self._active_elem.parent.get_world_transform()
-
-        # Replicate the logic from _rebuild_local_transform to create a
-        # temporary matrix for the new scale and existing rotation.
-        center_x, center_y = base_w / 2, base_h / 2
-        t_to_origin = Matrix.translation(-center_x, -center_y)
-        m_scale = Matrix.scale(new_scale_x, new_scale_y)
-        m_rotate = Matrix.rotation(self._active_elem.angle)
-        t_from_origin = Matrix.translation(center_x, center_y)
-        new_local_transform = t_from_origin @ m_rotate @ m_scale @ t_to_origin
-
-        hypothetical_new_world = (
-            parent_world
-            @ Matrix.translation(start_x, start_y)
-            @ new_local_transform
+        m_scale = Matrix.scale(scale_x, scale_y)
+        t_from_origin = Matrix.translation(
+            anchor_local_geom[0], anchor_local_geom[1]
         )
-        anchor_world_after = hypothetical_new_world.transform_point(
-            anchor_geom
-        )
+        delta_transform_local = t_from_origin @ m_scale @ t_to_origin
 
-        # The world-space correction vector is the difference.
-        world_correction = (
-            anchor_world_before[0] - anchor_world_after[0],
-            anchor_world_before[1] - anchor_world_after[1],
-        )
+        # 8. Apply this local delta to the element's initial local transform.
+        new_local_transform = self._initial_transform @ delta_transform_local
 
-        # Transform this world-space correction into the parent's local space.
-        parent_inv_world = parent_world.invert()
-        local_correction = parent_inv_world.transform_vector(world_correction)
-
-        # 7. Apply all changes.
-        self._active_elem.set_pos(
-            start_x + local_correction[0], start_y + local_correction[1]
-        )
-        self._active_elem.set_scale(new_scale_x, new_scale_y)
+        # 9. Apply the new, complete transform matrix to the element.
+        self._active_elem.set_transform(new_local_transform)
 
     def on_button_release(self, gesture, x: float, y: float):
         """Handles the end of a drag operation, finalizing transforms."""
@@ -903,6 +884,8 @@ class Canvas(Gtk.DrawingArea):
 
         self._resizing, self._moving, self._rotating = False, False, False
         self._active_region = ElementRegion.NONE
+        self._initial_transform = None
+        self._initial_world_transform = None
 
     def on_click_released(self, gesture, n_press: int, x: float, y: float):
         """

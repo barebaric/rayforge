@@ -74,6 +74,13 @@ class Matrix:
         """Creates a shallow copy of the matrix."""
         return Matrix(self)
 
+    def copy(self) -> "Matrix":
+        """
+        Creates a new Matrix instance with a copy of the internal data.
+        This is a convenience method for `copy.copy(self)`.
+        """
+        return Matrix(self)
+
     def __deepcopy__(self, memo: dict) -> "Matrix":
         """Creates a deep copy of the matrix."""
         # Since self.m is a numpy array of simple types, a regular
@@ -101,6 +108,16 @@ class Matrix:
                 [0, 0, 1],
             ]
         )
+
+    def set_translation(self, tx: float, ty: float) -> "Matrix":
+        """
+        Returns a new matrix with the same rotation, scale, and shear,
+        but with a new translation component.
+        """
+        new_matrix = self.copy()
+        new_matrix.m[0, 2] = tx
+        new_matrix.m[1, 2] = ty
+        return new_matrix
 
     def get_scale(self) -> Tuple[float, float]:
         """
@@ -228,23 +245,68 @@ class Matrix:
         res_vec = np.dot(self.m, vec)
         return (res_vec[0], res_vec[1])
 
-    def decompose(self) -> Tuple[float, float, float, float, float]:
+    def decompose(self) -> Tuple[float, float, float, float, float, float]:
         """
-        Decomposes the matrix into translation, rotation, and scale.
+        Decomposes the matrix into translation, rotation, scale, and skew.
+        This implementation is robust against shear and reflection. It assumes
+        a composition order of: Rotate, then Scale, then Shear.
 
         Returns:
-            A tuple (tx, ty, angle_deg, sx, sy).
+            A tuple (tx, ty, angle_deg, sx, sy, skew_angle_deg).
         """
-        # Translation is the last column
+        # Translation is always the last column
         tx = self.m[0, 2]
         ty = self.m[1, 2]
 
-        # Scale is the norm of the first two columns
-        sx = np.linalg.norm(self.m[0:2, 0])
-        sy = np.linalg.norm(self.m[0:2, 1])
+        # Extract the 2x2 linear transformation part
+        a, b = self.m[0, 0], self.m[1, 0]  # First column
+        c, d = self.m[0, 1], self.m[1, 1]  # Second column
 
-        # Rotation is the angle of the normalized first column vector
-        angle_rad = math.atan2(self.m[1, 0] / sx, self.m[0, 0] / sx)
+        # The X scale is the length of the first column vector
+        sx = math.hypot(a, b)
+
+        # The rotation is the angle of the first column vector
+        angle_rad = math.atan2(b, a)
+
+        # Shear and Y Scale
+        # Compute the determinant to detect reflections
+        det = a * d - b * c
+        if sx != 0:
+            sy = det / sx
+        else:
+            sy = math.hypot(c, d)  # Degenerate case, sx=0
+
+        # Check for reflection (negative determinant indicates a flip)
+        if det < 0:
+            # If there's a reflection, adjust the rotation angle
+            # A reflection flips the coordinate system, adding 180 degrees to
+            # the angle
+            angle_rad = (
+                angle_rad + math.pi if angle_rad <= 0 else angle_rad - math.pi
+            )
+            sx = -sx  # Correct the x-scale to reflect the negative scaling
+            sy = -sy  # Correct the y-scale if necessary
+
         angle_deg = math.degrees(angle_rad)
 
-        return float(tx), float(ty), float(angle_deg), float(sx), float(sy)
+        # Solve for the shear factor 'm' in a shear matrix K = [[1, m], [0, 1]]
+        # We know L = R * S * K. So R_inv * L = S * K
+        # The top-right element of S*K is sx * m
+        # The top-right element of R_inv * L is (cos_r * c + sin_r * d)
+        cos_r = math.cos(angle_rad)
+        sin_r = math.sin(angle_rad)
+        if sx != 0:
+            shear_factor = (cos_r * c + sin_r * d) / sx
+            skew_rad = math.atan(shear_factor)
+            skew_angle_deg = math.degrees(skew_rad)
+        else:
+            skew_angle_deg = 0.0
+
+        return (
+            float(tx),
+            float(ty),
+            float(angle_deg),
+            float(sx),
+            float(sy),
+            float(skew_angle_deg),
+        )

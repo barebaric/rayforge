@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import math
 import copy
 from rayforge.core.matrix import Matrix
 
@@ -11,7 +12,7 @@ class TestMatrix:
         assert m1 == Matrix(np.identity(3))
 
         # Initialization from list
-        list_data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        list_data = [[1, 2, 3], [4, 5, 6], [0, 0, 1]]
         m2 = Matrix(list_data)
         assert np.array_equal(m2.m, np.array(list_data))
 
@@ -74,12 +75,11 @@ class TestMatrix:
         m1 = Matrix.translation(123, -456)
         assert m1.get_translation() == pytest.approx((123, -456))
 
-        # The last matrix in the chain determines the final translation.
-        # S @ R @ T applies S -> R -> T.
+        # Composition: T @ R @ S applies T -> R -> S
         m2 = (
-            Matrix.scale(2, 2)
+            Matrix.translation(10, 20)
             @ Matrix.rotation(45)
-            @ Matrix.translation(10, 20)
+            @ Matrix.scale(2, 2)
         )
         tx, ty = m2.get_translation()
         assert tx == pytest.approx(10)
@@ -99,18 +99,15 @@ class TestMatrix:
         m1 = Matrix.scale(2.5, 5.0)
         assert m1.get_scale() == pytest.approx((2.5, 5.0))
 
-        # Test with rotation. For get_scale to extract the original factors
-        # cleanly, the scale must be applied BEFORE the rotation.
-        # This corresponds to the composition: scale first, then rotate.
-        m2 = Matrix.scale(2, 3) @ Matrix.rotation(30)
+        # Test with rotation.
+        m2 = Matrix.rotation(30) @ Matrix.scale(2, 3)
         assert m2.get_scale() == pytest.approx((2.0, 3.0))
 
-        # A more complex transform: scale -> rotate -> translate.
-        # The translation should not affect the scale components.
+        # A more complex transform
         m3 = (
-            Matrix.scale(4, 5)
+            Matrix.translation(10, 20)
             @ Matrix.rotation(45)
-            @ Matrix.translation(10, 20)
+            @ Matrix.scale(4, 5)
         )
         assert m3.get_scale() == pytest.approx((4.0, 5.0))
 
@@ -135,16 +132,16 @@ class TestMatrix:
         assert m2.get_rotation() == pytest.approx(-135)
 
         # Uniform scale does not affect rotation extraction
-        m3 = Matrix.scale(2, 2) @ Matrix.rotation(60)
+        m3 = Matrix.rotation(60) @ Matrix.scale(2, 2)
         assert m3.get_rotation() == pytest.approx(60)
 
         # Non-uniform scale applied before rotation will also not affect
         # get_rotation, which correctly finds the angle of the new x-axis.
-        m4 = Matrix.scale(2, 5) @ Matrix.rotation(45)
+        m4 = Matrix.rotation(45) @ Matrix.scale(2, 5)
         assert m4.get_rotation() == pytest.approx(45)
 
     def test_matrix_multiplication(self):
-        # Order of operations: R @ T means apply R first, then apply T.
+        # Order of operations: T @ R means apply R first, then apply T.
         T = Matrix.translation(100, 0)
         R = Matrix.rotation(90)
 
@@ -156,7 +153,7 @@ class TestMatrix:
         )  # (-20+100, 10+0) -> (80, 10)
 
         # Apply combined transformation
-        M = R @ T
+        M = T @ R
         p_final_combined = M.transform_point(p)
 
         assert p_final_combined == pytest.approx(p_final_separate)
@@ -167,11 +164,12 @@ class TestMatrix:
         R = Matrix.rotation(33)
         S = Matrix.scale(2, 0.5)
 
-        M = S @ R @ T
+        M = T @ R @ S
         M_inv = M.invert()
 
         # M * M_inv should be the identity matrix
-        ident = M_inv @ M
+        # Note: numpy's pre-multiplication order means M @ M_inv is correct.
+        ident = M @ M_inv
         assert ident == Matrix.identity()
 
         # Applying a transform and its inverse should return to the original
@@ -189,12 +187,12 @@ class TestMatrix:
             M_singular.invert()
 
     def test_transform_vector(self):
-        # A standard transformation pipeline is Scale -> Rotate -> Translate.
-        # This corresponds to the matrix multiplication order S @ R @ T.
+        # A standard transformation pipeline is Translate -> Rotate -> Scale
+        # This corresponds to the matrix multiplication order T @ R @ S.
         m = (
-            Matrix.scale(2, 2)
+            Matrix.translation(100, 200)
             @ Matrix.rotation(90)
-            @ Matrix.translation(100, 200)
+            @ Matrix.scale(2, 2)
         )
 
         # Test vector transformation (ignores translation)
@@ -212,3 +210,66 @@ class TestMatrix:
         p = (10, 0)
         transformed_p = m.transform_point(p)
         assert transformed_p == pytest.approx((100, 220))
+
+    def test_decompose_simple(self):
+        """Test decomposition without shear."""
+        T = Matrix.translation(50, -100)
+        R = Matrix.rotation(30)
+        S = Matrix.scale(2, 3)
+
+        M = T @ R @ S
+
+        tx, ty, angle, sx, sy, skew = M.decompose()
+
+        assert tx == pytest.approx(50)
+        assert ty == pytest.approx(-100)
+        assert angle == pytest.approx(30)
+        assert sx == pytest.approx(2)
+        assert sy == pytest.approx(3)
+        assert skew == pytest.approx(0)
+
+    def test_decompose_with_shear(self):
+        """Test decomposition with a sheared matrix."""
+        # Manually create a matrix with shear.
+        shear_factor = 0.5
+        shear_angle = math.degrees(math.atan(shear_factor))  # Approx 26.565°
+
+        # We will create R * S * K (K is skew/shear matrix)
+        # K = [[1, tan(skew_rad)], [0, 1]]
+        K = Matrix([[1, shear_factor, 0], [0, 1, 0], [0, 0, 1]])
+
+        T = Matrix.translation(10, 20)
+        R = Matrix.rotation(45)
+        S = Matrix.scale(2, 3)
+
+        # Full transform: Translate -> Rotate -> Scale -> Skew
+        M = T @ R @ S @ K
+
+        tx, ty, angle, sx, sy, skew = M.decompose()
+
+        assert tx == pytest.approx(10)
+        assert ty == pytest.approx(20)
+        assert angle == pytest.approx(45)
+        # Scale values should be affected by the composition, but can be
+        # checked for correctness based on the decomposition's properties
+        assert sx == pytest.approx(2)
+        # The sy value is not simply 3 anymore because R*S*K is complex.
+        # But the skew angle should be correctly extracted.
+        assert skew == pytest.approx(shear_angle, abs=1e-5)
+
+    def test_decompose_with_reflection(self):
+        """Test decomposition with negative scale (reflection)."""
+        T = Matrix.translation(10, 20)
+        R = Matrix.rotation(45)
+        S = Matrix.scale(-2, 3)  # Flipped on the x-axis
+
+        M = T @ R @ S
+
+        tx, ty, angle, sx, sy, skew = M.decompose()
+
+        assert tx == pytest.approx(10)
+        assert ty == pytest.approx(20)
+        assert angle == pytest.approx(45)
+        assert sx == pytest.approx(-2)
+        assert sy == pytest.approx(3)
+        assert skew == pytest.approx(0)

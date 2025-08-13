@@ -118,7 +118,8 @@ class MultiSelectionGroup:
     def _update_element_transforms(self):
         """
         Applies the group's `self.transform` to each element's initial
-        state to calculate and set its new properties.
+        state to calculate its new local transform matrix, which is then
+        set directly on the element. This preserves shear.
         """
         for state in self.initial_states:
             elem: CanvasElement = state["elem"]
@@ -127,33 +128,16 @@ class MultiSelectionGroup:
             # group's delta transform to its initial state.
             new_world_transform = self.transform @ state["initial_world"]
 
-            # To get the new local properties (pos, angle, scale), we must
-            # convert this new world transform back into the element's
-            # parent-relative coordinate space.
+            # To get the new local transform, we must convert this new
+            # world transform back into the element's parent-relative
+            # coordinate space.
             new_transform_in_parent_space = (
                 state["parent_inv_world"] @ new_world_transform
             )
 
-            # Decompose the resulting matrix to get the element's new
-            # local properties.
-            try:
-                (
-                    pos_x,
-                    pos_y,
-                    angle,
-                    scale_x,
-                    scale_y,
-                ) = new_transform_in_parent_space.decompose()
-
-                # Set the new properties on the element. This will trigger
-                # a rebuild of its internal matrices.
-                elem.set_pos(pos_x, pos_y)
-                elem.set_angle(angle)
-                elem.set_scale(scale_x, scale_y)
-            except Exception as e:
-                logger.warning(
-                    f"Could not decompose matrix for element update: {e}"
-                )
+            # Set the new matrix directly on the element. This avoids
+            # destructive decomposition and preserves shear.
+            elem.set_transform(new_transform_in_parent_space)
 
     def get_region_rect(
         self,
