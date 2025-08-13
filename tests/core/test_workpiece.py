@@ -1,10 +1,10 @@
 import cairo
 import pytest
-import numpy as np
 from pathlib import Path
 from typing import Generator, Optional
 from unittest.mock import MagicMock
 from rayforge.core.item import DocItem
+from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.importer.svg import SvgImporter
 from rayforge.importer import Importer
@@ -38,8 +38,8 @@ class TestWorkPiece:
         # Default size is 1x1mm at the origin
         assert wp.size == pytest.approx((1.0, 1.0))
         assert wp.angle == pytest.approx(0.0)
-        # A 1x1mm object at the origin is an identity matrix.
-        assert np.allclose(wp.matrix, np.identity(4))
+        # A 1x1mm object at the origin results in an identity matrix.
+        assert wp.matrix == Matrix.identity()
         assert isinstance(wp.changed, Signal)
         assert isinstance(wp.transform_changed, Signal)
 
@@ -69,7 +69,7 @@ class TestWorkPiece:
         assert new_wp.pos == pytest.approx(wp.pos)
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
-        assert np.allclose(new_wp.matrix, wp.matrix)
+        assert new_wp.matrix == wp.matrix
         assert new_wp.importer_class == wp.importer_class
         assert new_wp.get_default_size(
             bounds_width=1000, bounds_height=1000
@@ -118,13 +118,13 @@ class TestWorkPiece:
         wp.set_size(150, 75)
         assert wp.size == pytest.approx((150.0, 75.0))
         assert len(changed_events) == 1
-        assert len(transform_events) == 1  # Should not have increased
+        assert len(transform_events) == 2
 
         # set_angle should fire transform_changed, NOT changed.
         wp.angle = 45
         assert wp.angle == pytest.approx(45.0)
         assert len(changed_events) == 1
-        assert len(transform_events) == 2
+        assert len(transform_events) == 3
 
     def test_sizing_and_aspect_ratio(self, workpiece_instance):
         wp = workpiece_instance
@@ -226,9 +226,9 @@ class TestWorkPiece:
         wp.pos = (10, 20)
         matrix = wp.get_world_transform()
 
-        p_in = np.array([0, 0, 0, 1])
-        p_out = matrix @ p_in
-        assert p_out[:2] == pytest.approx([10, 20])
+        p_in = (0, 0)
+        p_out = matrix.transform_point(p_in)
+        assert p_out == pytest.approx((10, 20))
 
     def test_get_world_transform_scale(self, workpiece_instance):
         wp = workpiece_instance
@@ -236,11 +236,11 @@ class TestWorkPiece:
         # New pos will be (0.5-10, 0.5-5) = (-9.5, -4.5)
         wp.set_size(20, 10)
         matrix = wp.get_world_transform()
-        p_in = np.array([1, 1, 0, 1])  # Local corner
-        p_out = matrix @ p_in
+        p_in = (1, 1)  # Local corner
+        p_out = matrix.transform_point(p_in)
         # Expected is T(-9.5,-4.5) * R(0, center=(10,5)) * S(20,10) * p_in
         # = T(-9.5,-4.5) * [20, 10] = [10.5, 5.5]
-        assert p_out[:2] == pytest.approx([10.5, 5.5])
+        assert p_out == pytest.approx((10.5, 5.5))
 
     def test_get_world_transform_rotation(self, workpiece_instance):
         wp = workpiece_instance
@@ -249,13 +249,12 @@ class TestWorkPiece:
         # angle.setter does NOT preserve center, it rotates around current pos.
         wp.angle = 90
         matrix = wp.get_world_transform()
-        p_in = np.array([0, 0, 0, 1])  # Local origin
-        p_out = matrix @ p_in
+        p_in = (0, 0)  # Local origin
+        p_out = matrix.transform_point(p_in)
         # Expected: T(-9.5,-4.5) * Rot(90, center=(10,5)) * S(20,10) * p_in
         # Rotated local origin (0,0) becomes (5, 15) relative to scaled space
         # Translated becomes (5-9.5, 15-4.5) = (-4.5, 10.5)
-        assert p_out[0] == pytest.approx(-4.5)
-        assert p_out[1] == pytest.approx(10.5)
+        assert p_out == pytest.approx((-4.5, 10.5))
 
     def test_get_world_transform_all(self, workpiece_instance):
         wp = workpiece_instance
@@ -264,12 +263,11 @@ class TestWorkPiece:
         wp.angle = 90  # rotates around (100, 200)
         matrix = wp.get_world_transform()
 
-        p_in = np.array([0, 0, 0, 1])
-        p_out = matrix @ p_in
+        p_in = (0, 0)
+        p_out = matrix.transform_point(p_in)
         # Rotated local origin (0,0) becomes (5, 15) relative to scaled space
         # Final pos is T(100,200) * (RotatedPoint)
-        assert p_out[0] == pytest.approx(100 + 5)
-        assert p_out[1] == pytest.approx(200 + 15)
+        assert p_out == pytest.approx((100 + 5, 200 + 15))
 
     def test_decomposed_properties_consistency(self, workpiece_instance):
         wp = workpiece_instance

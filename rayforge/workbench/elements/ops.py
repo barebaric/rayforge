@@ -3,6 +3,7 @@ import cairo
 from typing import Optional
 from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...core.ops import Ops
+from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ..canvas import CanvasElement
 
@@ -18,7 +19,8 @@ CAIRO_MAX_DIMENSION = 30000
 
 class WorkPieceOpsElement(CanvasElement):
     """
-    Displays the generated Ops for a single WorkPiece.
+    Displays the generated Ops for a single WorkPiece. Its transform is
+    driven by the WorkPiece model.
     """
 
     def __init__(
@@ -34,81 +36,73 @@ class WorkPieceOpsElement(CanvasElement):
             buffered=True,
             **kwargs,
         )
-        self.width_mm = 0.0
-        self.height_mm = 0.0
         self._accumulated_ops = Ops()
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
-        # Connect to the new signals from the DocItem base class
-        workpiece.changed.connect(self._on_changed)
-        workpiece.transform_changed.connect(self._on_transform_changed)
-
-    def _on_changed(self, workpiece: WorkPiece):
-        """Handles data changes (e.g., size) that require re-rendering ops."""
-        self.allocate()
-
-    def _on_transform_changed(self, workpiece: WorkPiece):
-        """A lightweight handler for transform (pos/angle) changes."""
-        if not self.canvas or not self.parent:
-            return
-
-        # Recalculate pixel position based on the new mm position.
-        pos_px, _ = self.canvas.workpiece_coords_to_element_coords(self.data)
-        self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
-
-        # Update angle
-        self.set_angle(self.data.angle)
-
-    def allocate(self, force: bool = False):
-        """
-        Updates position and size. Triggers a re-render. If the workpiece's
-        size in millimeters changes, the current ops are cleared. A simple
-        canvas zoom will not clear the ops.
-        """
-        if not self.canvas or not self.parent:
-            return
-
-        current_mm_size = self.data.size
-
-        if not current_mm_size or any(s <= 0 for s in current_mm_size):
-            self.width, self.height = 0.0, 0.0
-            self.width_mm, self.height_mm = 0.0, 0.0
-            self.clear_ops()
-            return
-
-        pos_px, size_px = self.canvas.workpiece_coords_to_element_coords(
-            self.data
+        # Connect to the signals from the WorkPiece model
+        workpiece.changed.connect(self._on_workpiece_changed)
+        workpiece.transform_changed.connect(
+            self._on_workpiece_transform_changed
         )
 
-        # Check if the fundamental size in mm has changed by comparing against
-        # the values stored in this class.
-        mm_size_changed = (self.width_mm, self.height_mm) != current_mm_size
+        # Set initial state
+        self._on_workpiece_transform_changed(workpiece)
+        self.trigger_update()
 
-        new_width = size_px[0] + 2 * OPS_MARGIN_PX
-        new_height = size_px[1] + 2 * OPS_MARGIN_PX
+    def _on_workpiece_changed(self, workpiece: WorkPiece):
+        """
+        Handles data changes (e.g., size) that require ops to be regenerated.
+        We clear our current ops; the OpsGenerator will provide new ones.
+        """
+        self.clear_ops()
 
-        pixel_size_changed = round(self.width) != round(new_width) or round(
-            self.height
-        ) != round(new_height)
-
-        # Update position and angle here as well, to ensure they are correct
-        # after a size change.
-        self.set_pos(pos_px[0] - OPS_MARGIN_PX, pos_px[1] - OPS_MARGIN_PX)
-        self.set_angle(self.data.angle)
-
-        if not pixel_size_changed and not force:
+    def _on_workpiece_transform_changed(self, workpiece: WorkPiece):
+        """
+        A lightweight handler for transform (pos/angle/size) changes.
+        It updates the element's matrix and local geometry to match the model.
+        """
+        if not self.canvas or not self.parent:
             return
 
-        # If the workpiece's actual mm size changed, the existing ops are
-        # invalid and must be cleared. This will NOT trigger on a canvas zoom.
-        if mm_size_changed:
-            self.clear_ops()
+        # 1. The ops element's transform is based on the workpiece's transform,
+        #    but shifted by a margin.
+        w, h = workpiece.size
+        world_transform = workpiece.get_world_transform()
 
-        # Update the state in this class.
-        self.width_mm, self.height_mm = current_mm_size
-        self.width, self.height = new_width, new_height
-        super().allocate(force)
+        # Convert the pixel margin to local (mm) units using the matrix scale.
+        sx, sy = world_transform.get_scale()
+        # To get the transform's scale factor, we need to divide by the local
+        # geometry's size (w,h)
+        scale_x_factor = sx / w if w > 0 else 1.0
+        scale_y_factor = sy / h if h > 0 else 1.0
+
+        margin_x_mm = (
+            OPS_MARGIN_PX / scale_x_factor if scale_x_factor > 0 else 0
+        )
+        margin_y_mm = (
+            OPS_MARGIN_PX / scale_y_factor if scale_y_factor > 0 else 0
+        )
+
+        # Create a local transform to apply the margin offset.
+        # This translates the element left/up by the margin amount.
+        offset_transform = Matrix.translation(-margin_x_mm, -margin_y_mm)
+
+        # The final transform is the workpiece's world transform composed
+        # with our local offset.
+        self.set_transform(world_transform @ offset_transform)
+
+        # 2. The element's local geometry must now include the margin.
+        new_width = w + (2 * margin_x_mm)
+        new_height = h + (2 * margin_y_mm)
+        size_changed = self.width != new_width or self.height != new_height
+
+        if size_changed:
+            self.width, self.height = new_width, new_height
+            # A size change invalidates the buffer, so we must re-render.
+            self.trigger_update()
+
+        self.canvas.queue_draw()
 
     def clear_ops(self, generation_id: Optional[int] = None):
         """Clears ops. If a generation_id is provided, it is stored."""
@@ -188,8 +182,8 @@ class WorkPieceOpsElement(CanvasElement):
 
     def draw(self, ctx: cairo.Context):
         """
-        Custom draw method to handle intermediate scaling correctly.
-        It preserves the pixel margin by scaling only the content area.
+        Draws the buffered surface. Since the transform is already handled
+        by the parent render() method, we just need to paint the surface.
         """
         if not self.surface:
             # Draw background if no surface, then stop.
@@ -210,38 +204,13 @@ class WorkPieceOpsElement(CanvasElement):
         ):
             return
 
-        # If the surface and element size are identical, we can use the fast
-        # default drawing method.
-        if round(self.width) == source_w and round(self.height) == source_h:
-            super().draw(ctx)
-            return
-
-        # --- Smart scaling logic for intermediate drawing ---
-
-        # Calculate the dimensions of the actual content, excluding the margin.
-        source_content_w = source_w - 2 * OPS_MARGIN_PX
-        source_content_h = source_h - 2 * OPS_MARGIN_PX
-        dest_content_w = self.width - 2 * OPS_MARGIN_PX
-        dest_content_h = self.height - 2 * OPS_MARGIN_PX
-
-        if source_content_w <= 0 or source_content_h <= 0:
-            return  # Cannot scale if source content has no area.
-
-        # Calculate the scaling factor based on the content areas.
-        scale_x = dest_content_w / source_content_w
-        scale_y = dest_content_h / source_content_h
-
+        # The parent render method has already applied the transform.
+        # We draw into the local geometry space (0,0) to (width, height).
         ctx.save()
-        # 1. Translate to the destination content's top-left corner.
-        ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
-        # 2. Scale the context to match the content area's new size.
+        scale_x = self.width / source_w
+        scale_y = self.height / source_h
         ctx.scale(scale_x, scale_y)
-        # 3. Set the source surface, but shift it left/up by the margin.
-        #    This aligns the source content's top-left (which is at
-        #    (margin, margin) on the surface) with the current origin (0,0)
-        #    of our translated and scaled context.
-        ctx.set_source_surface(self.surface, -OPS_MARGIN_PX, -OPS_MARGIN_PX)
-
+        ctx.set_source_surface(self.surface, 0, 0)
         ctx.get_source().set_filter(cairo.FILTER_GOOD)
         ctx.paint()
         ctx.restore()
@@ -250,7 +219,8 @@ class WorkPieceOpsElement(CanvasElement):
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """
-        Renders the accumulated ops to a new surface.
+        Renders the accumulated ops to a new surface. The margin is handled
+        by transforming the ops before rendering.
         """
         if width <= 0 or height <= 0:
             return None
@@ -258,10 +228,6 @@ class WorkPieceOpsElement(CanvasElement):
         render_width, render_height = width, height
         scale_factor = 1.0
 
-        # If the requested render size exceeds Cairo's hard limit, we must
-        # scale it down to prevent a crash. The UI layer will scale the
-        # resulting (smaller) surface back up, resulting in pixelation,
-        # which is an acceptable trade-off at extreme zoom levels.
         if (
             render_width > CAIRO_MAX_DIMENSION
             or render_height > CAIRO_MAX_DIMENSION
@@ -273,11 +239,8 @@ class WorkPieceOpsElement(CanvasElement):
                     scale_factor, CAIRO_MAX_DIMENSION / render_height
                 )
 
-            new_width = int(render_width * scale_factor)
-            new_height = int(render_height * scale_factor)
-
-            render_width = max(1, new_width)
-            render_height = max(1, new_height)
+            render_width = max(1, int(render_width * scale_factor))
+            render_height = max(1, int(render_height * scale_factor))
 
         surface = cairo.ImageSurface(
             cairo.FORMAT_ARGB32, render_width, render_height
@@ -288,28 +251,30 @@ class WorkPieceOpsElement(CanvasElement):
         ctx.paint()
 
         render_ops = self._accumulated_ops.copy()
-        if (
-            not render_ops
-            or not self.canvas
-            or not self.canvas.pixels_per_mm_x
-        ):
+        if not render_ops or not self.canvas:
             return surface
 
-        px_per_mm_x = self.canvas.pixels_per_mm_x or 1
-        px_per_mm_y = self.canvas.pixels_per_mm_y or 1
+        # The ops need to be drawn with a margin inside the buffer.
+        # We use the element's current scale to convert the fixed pixel
+        # margin into local (mm) units for the transformation.
+        sx, sy = self.transform.get_scale()
+        scale_x_factor = sx / self.width if self.width > 0 else 1.0
+        scale_y_factor = sy / self.height if self.height > 0 else 1.0
 
-        # This translation of the millimeter-based Ops data is correct for
-        # the final render, as the CairoEncoder will scale this mm value
-        # by the ppm, resulting in a constant pixel margin.
-        margin_mm_x = OPS_MARGIN_PX / px_per_mm_x
-        margin_mm_y = OPS_MARGIN_PX / px_per_mm_y
-        render_ops.translate(margin_mm_x, margin_mm_y)
+        margin_x_mm = (
+            OPS_MARGIN_PX / scale_x_factor if scale_x_factor > 0 else 0
+        )
+        margin_y_mm = (
+            OPS_MARGIN_PX / scale_y_factor if scale_y_factor > 0 else 0
+        )
+        render_ops.translate(margin_x_mm, margin_y_mm)
 
-        # We must scale the pixels_per_mm value by the same factor we scaled
-        # the surface, otherwise the toolpaths will be drawn too large.
+        # The pixels_per_mm for the CairoEncoder needs to be the element's
+        # world scale factor, adjusted by any down-scaling we did to avoid
+        # the Cairo surface limit.
         scaled_pixels_per_mm = (
-            px_per_mm_x * scale_factor,
-            px_per_mm_y * scale_factor,
+            scale_x_factor * scale_factor,
+            scale_y_factor * scale_factor,
         )
 
         encoder = CairoEncoder()

@@ -1,12 +1,11 @@
-import math
 import logging
-import numpy as np
 from blinker import Signal
-from typing import Optional, Tuple, cast, Dict, List
+from typing import Optional, Tuple, cast, Dict, List, Type
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
+from ..core.matrix import Matrix
 from ..machine.models.machine import Machine
 from ..pipeline.generator import OpsGenerator
 from ..undo import ListItemCommand, Command, ChangePropertyCommand
@@ -17,7 +16,17 @@ from .elements.step import StepElement
 from .elements.workpiece import WorkPieceElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
-from .aligner import Aligner
+from ..doceditor.layout import (
+    LayoutStrategy,
+    BboxAlignLeftStrategy,
+    BboxAlignCenterStrategy,
+    BboxAlignRightStrategy,
+    BboxAlignTopStrategy,
+    BboxAlignMiddleStrategy,
+    BboxAlignBottomStrategy,
+    SpreadHorizontallyStrategy,
+    SpreadVerticallyStrategy,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -115,32 +124,30 @@ class WorkSurface(Canvas):
         self.machine = None  # will be assigned by set_machine() below
         self.ops_generator = OpsGenerator(doc)
         self.zoom_level = 1.0
+        self.pan_x_mm = 0.0
+        self.pan_y_mm = 0.0
         self._show_travel_moves = False
         self._workpieces_visible = True
         self.width_mm, self.height_mm = (
             machine.dimensions if machine else (100.0, 100.0)
         )
-        self.pixels_per_mm_x = 0.0
-        self.pixels_per_mm_y = 0.0
         self._cam_visible = cam_visible
         self._laser_dot_pos_mm = 0.0, 0.0
         self._transform_start_states: Dict[CanvasElement, dict] = {}
 
-        # The root element itself should not clip, allowing its children
-        # to draw outside its bounds.
+        # The root element is now static and sized in world units (mm).
+        self.root.set_size(self.width_mm, self.height_mm)
         self.root.clip = False
 
         y_axis_down = machine.y_axis_down if machine else False
-        self._axis_importer = AxisRenderer(
+        self._axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
-            zoom_level=self.zoom_level,
             y_axis_down=y_axis_down,
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
 
-        # Set theme colors for axis and grid. This will be called on each
-        # redraw as well, to handle live theme changes.
+        # Set theme colors for axis and grid.
         self._update_theme_colors()
 
         # DotElement size will be set in pixels by WorkSurface
@@ -189,7 +196,6 @@ class WorkSurface(Canvas):
 
         # Initialize
         self.set_machine(machine)
-        self.aligner = Aligner(self)
 
         # Connect to the history manager's changed signal to sync the view
         # globally, which is necessary for undo/redo actions triggered
@@ -199,21 +205,21 @@ class WorkSurface(Canvas):
     def _update_theme_colors(self):
         """
         Reads the current theme colors from the widget's style context
-        and applies them to the AxisImporter.
+        and applies them to the AxisRenderer.
         """
         style_context = self.get_style_context()
 
         # Get the foreground color for axes and labels
         found, fg_rgba = style_context.lookup_color("view_fg_color")
         if found:
-            self._axis_importer.set_fg_color(
+            self._axis_renderer.set_fg_color(
                 (fg_rgba.red, fg_rgba.green, fg_rgba.blue, fg_rgba.alpha)
             )
 
         # Get the separator color for the grid lines
         found, grid_rgba = style_context.lookup_color("separator_color")
         if found:
-            self._axis_importer.set_grid_color(
+            self._axis_renderer.set_grid_color(
                 (
                     grid_rgba.red,
                     grid_rgba.green,
@@ -235,9 +241,13 @@ class WorkSurface(Canvas):
         """Saves the initial matrix of elements before any transformation."""
         self._transform_start_states.clear()
         for element in elements:
+            # We only care about WorkPiece elements for this undo logic
             if not isinstance(element.data, WorkPiece):
                 continue
+
             workpiece: WorkPiece = element.data
+            # IMPORTANT: Store the pure geometry matrix from the model, not
+            # the element's visual matrix.
             self._transform_start_states[element] = {
                 "matrix": workpiece.matrix.copy()
             }
@@ -249,13 +259,10 @@ class WorkSurface(Canvas):
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
-        Creates a single, atomic undo command for the entire transformation
-        by recording the change in the workpiece's matrix.
+        Creates a single, atomic undo command for the entire transformation.
+        This method pushes the final geometric state of the view back to the
+        model.
         """
-        # Check if this transform was a resize, which requires resuming the
-        # OpsGenerator.
-        is_resize = self._resizing
-
         history = self.doc.history_manager
         with history.transaction(_("Transform workpiece(s)")) as t:
             for element in elements:
@@ -264,27 +271,33 @@ class WorkSurface(Canvas):
                     or element not in self._transform_start_states
                 ):
                     continue
-                workpiece: WorkPiece = element.data
-                start_state = self._transform_start_states[element]
-                start_matrix = start_state["matrix"]
 
-                # Use numpy's allclose for robust floating-point comparison
-                if not np.allclose(start_matrix, workpiece.matrix):
+                workpiece: WorkPiece = element.data
+                start_matrix = self._transform_start_states[element]["matrix"]
+
+                # 1. Get the final geometric world transform from the element.
+                #    This is now generically correct and contains no content
+                #    orientation.
+                final_model_matrix = element.get_world_transform().copy()
+
+                # 2. Compare the initial model state with the final
+                # model state.
+                if start_matrix != final_model_matrix:
+                    # Create a command to apply the pure geometry change
+                    # to the model.
                     cmd = ChangePropertyCommand(
                         target=workpiece,
                         property_name="matrix",
-                        new_value=workpiece.matrix.copy(),
+                        new_value=final_model_matrix,
                         old_value=start_matrix,
                         name=_("Transform workpiece"),
                     )
-                    # Add the already-executed command to the transaction
-                    t.add(cmd)
+                    t.execute(cmd)
 
         self._transform_start_states.clear()
 
-        # If it was a resize, the ops are now stale. Resume the generator to
-        # trigger regeneration.
-        if is_resize:
+        # If it was a resize, the ops are now stale. Resume the generator.
+        if self._resizing:
             self.ops_generator.resume()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
@@ -308,9 +321,8 @@ class WorkSurface(Canvas):
                 t.add(cmd)
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
-        # Let the parent Canvas handle the event first. It will update the
-        # selection, set self._active_elem, and determine if a resize is
-        # starting.
+        # The base Canvas class handles the conversion from widget (pixel)
+        # coordinates to world coordinates. We pass them on directly.
         super().on_button_press(gesture, n_press, x, y)
 
         # After the click, check if a new workpiece is active.
@@ -331,13 +343,11 @@ class WorkSurface(Canvas):
         # If a resize operation has started on a WorkPieceElement, hide the
         # corresponding ops elements to improve performance.
         if self._resizing and (self._active_elem or self._selection_group):
-            elements_in_transform = self.get_selected_elements()
-            for element in elements_in_transform:
+            for element in self.get_selected_elements():
                 if not isinstance(element.data, WorkPiece):
                     continue
-                workpiece_data = element.data
                 for step_elem in self.find_by_type(StepElement):
-                    ops_elem = step_elem.find_by_data(workpiece_data)
+                    ops_elem = step_elem.find_by_data(element.data)
                     if ops_elem:
                         ops_elem.set_visible(False)
 
@@ -346,8 +356,7 @@ class WorkSurface(Canvas):
         # was in progress on a WorkPieceElement.
         workpieces_to_update = []
         if self._resizing and (self._active_elem or self._selection_group):
-            elements_in_transform = self.get_selected_elements()
-            for element in elements_in_transform:
+            for element in self.get_selected_elements():
                 if isinstance(element.data, WorkPiece):
                     workpieces_to_update.append(element.data)
 
@@ -386,31 +395,10 @@ class WorkSurface(Canvas):
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis importer."""
-        self._axis_importer.set_pan_x_mm(pan_x_mm)
-        self._axis_importer.set_pan_y_mm(pan_y_mm)
-        self._recalculate_sizes()
+        self.pan_x_mm = pan_x_mm
+        self.pan_y_mm = pan_y_mm
+        self._rebuild_view_transform()
         self.queue_draw()
-
-    def _get_base_pixels_per_mm(self) -> Tuple[float, float]:
-        """Calculates the pixels/mm for a zoom level of 1.0 (fit-to-view)."""
-        width, height_pixels = self.get_width(), self.get_height()
-        if not all([width, height_pixels, self.width_mm, self.height_mm]):
-            return 1.0, 1.0  # Avoid division by zero at startup
-
-        y_axis_pixels = self._axis_importer.get_y_axis_width()
-        x_axis_height = self._axis_importer.get_x_axis_height()
-        right_margin = math.ceil(y_axis_pixels / 2)
-        top_margin = math.ceil(x_axis_height / 2)
-        content_width_px = float(width - y_axis_pixels - right_margin)
-        content_height_px = float(height_pixels - x_axis_height - top_margin)
-
-        base_ppm_x = (
-            content_width_px / self.width_mm if self.width_mm > 0 else 0
-        )
-        base_ppm_y = (
-            content_height_px / self.height_mm if self.height_mm > 0 else 0
-        )
-        return base_ppm_x, base_ppm_y
 
     def set_zoom(self, zoom_level: float):
         """
@@ -418,9 +406,7 @@ class WorkSurface(Canvas):
         The caller is responsible for ensuring the zoom_level is clamped.
         """
         self.zoom_level = zoom_level
-        self._axis_importer.set_zoom(self.zoom_level)
-        self.root.mark_dirty(recursive=True)
-        self.do_size_allocate(self.get_width(), self.get_height(), 0)
+        self._rebuild_view_transform()
         self.queue_draw()
 
     def set_size(self, width_mm: float, height_mm: float):
@@ -430,8 +416,10 @@ class WorkSurface(Canvas):
         """
         self.width_mm = width_mm
         self.height_mm = height_mm
-        self._axis_importer.set_width_mm(self.width_mm)
-        self._axis_importer.set_height_mm(self.height_mm)
+        self.root.set_size(width_mm, height_mm)
+        self._axis_renderer.set_width_mm(self.width_mm)
+        self._axis_renderer.set_height_mm(self.height_mm)
+        self._rebuild_view_transform()
         self.queue_draw()
 
     def get_size(self) -> Tuple[float, float]:
@@ -442,114 +430,25 @@ class WorkSurface(Canvas):
         self._mouse_pos = x, y
         return super().on_motion(gesture, x, y)
 
-    def _widget_px_to_view_mm(
-        self, x_px: float, y_px: float
-    ) -> Tuple[float, float]:
-        """
-        Centralized conversion from absolute widget pixels to panned/zoomed
-        mm (view space). This is the only place that should handle the
-        y_axis_down flip.
-        """
-        y_axis_width = self._axis_importer.get_y_axis_width()
-        x_axis_height = self._axis_importer.get_x_axis_height()
-        height = self.get_height()
-        ppm_x = self.pixels_per_mm_x or 1
-        ppm_y = self.pixels_per_mm_y or 1
-        top_margin = math.ceil(x_axis_height / 2)
-
-        x_mm = (x_px - y_axis_width) / ppm_x
-        if self._axis_importer.y_axis_down:
-            y_mm = (y_px - top_margin) / ppm_y
-        else:
-            y_mm = (height - x_axis_height - y_px) / ppm_y
-        return x_mm, y_mm
-
-    def pixel_to_mm(self, x_px: float, y_px: float) -> Tuple[float, float]:
-        """
-        Converts absolute widget pixel coordinates to absolute machine mm.
-        """
-        relative_x_mm, relative_y_mm = self._widget_px_to_view_mm(x_px, y_px)
-        return (
-            relative_x_mm + self._axis_importer.pan_x_mm,
-            relative_y_mm + self._axis_importer.pan_y_mm,
-        )
-
-    def workpiece_coords_to_element_coords(
-        self, workpiece: WorkPiece
-    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
-        """
-        Converts workpiece model data (Y-up) to element coords
-        (top-left, px) relative to the content area.
-        """
-        pos_mm = workpiece.pos
-        size_mm = workpiece.size
-        ppm_x = self.pixels_per_mm_x or 1
-        ppm_y = self.pixels_per_mm_y or 1
-
-        # Convert size
-        width_px = size_mm[0] * ppm_x
-        height_px = size_mm[1] * ppm_y
-
-        # Get workpiece top-left corner in absolute canonical (Y-up) mm
-        top_left_x_mm = pos_mm[0]
-        top_left_y_mm = pos_mm[1] + size_mm[1]
-
-        # Convert absolute canonical mm to content-relative pixels
-        x_px = top_left_x_mm * ppm_x
-        y_px = self.root.height - (top_left_y_mm * ppm_y)
-
-        return (x_px, y_px), (width_px, height_px)
-
-    def element_coords_to_workpiece_coords(
-        self, pos_px: Tuple[float, float], size_px: Tuple[float, float]
-    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
-        """
-        Converts element coords (top-left, content-relative px) to workpiece
-        model coords (bottom-left, canonical Y-up mm).
-        """
-        ppm_x = self.pixels_per_mm_x or 1
-        ppm_y = self.pixels_per_mm_y or 1
-
-        # Convert size
-        width_mm = size_px[0] / ppm_x
-        height_mm = size_px[1] / ppm_y
-
-        # Convert content-relative top-left pixel to absolute canonical mm
-        abs_tl_x_mm = pos_px[0] / ppm_x
-        abs_tl_y_mm = (self.root.height - pos_px[1]) / ppm_y
-
-        # Convert absolute top-left mm to absolute bottom-left mm
-        x_mm = abs_tl_x_mm
-        y_mm = abs_tl_y_mm - height_mm
-
-        return (x_mm, y_mm), (width_mm, height_mm)
-
     def on_scroll(self, controller, dx: float, dy: float):
         """Handles the scroll event for zoom."""
         zoom_speed = 0.1
-
         # 1. Calculate a desired new zoom level based on scroll direction
-        if dy > 0:  # Scroll down - zoom out
-            desired_zoom = self.zoom_level * (1 - zoom_speed)
-        else:  # Scroll up - zoom in
-            desired_zoom = self.zoom_level * (1 + zoom_speed)
-
+        desired_zoom = self.zoom_level * (
+            (1 - zoom_speed) if dy > 0 else (1 + zoom_speed)
+        )
         # 2. Get the base "fit-to-view" pixel density (for zoom = 1.0)
-        base_ppm_x, base_ppm_y = self._get_base_pixels_per_mm()
-        if base_ppm_x <= 0 or base_ppm_y <= 0:
-            return  # Cannot calculate zoom limits yet (e.g., at startup)
-
-        # Use the smaller base density for consistent limit calculations
-        base_ppm = min(base_ppm_x, base_ppm_y)
-
+        base_ppm = self._axis_renderer.get_base_pixels_per_mm(
+            self.get_width(), self.get_height()
+        )
+        if base_ppm <= 0:
+            return
         # 3. Calculate the pixel density limits
         min_ppm = base_ppm * self.MIN_ZOOM_FACTOR
         max_ppm = self.MAX_PIXELS_PER_MM
 
         # 4. Calculate the target density and clamp it within our limits
-        target_ppm = base_ppm * desired_zoom
-        clamped_ppm = max(min_ppm, min(target_ppm, max_ppm))
-
+        clamped_ppm = max(min_ppm, min(base_ppm * desired_zoom, max_ppm))
         # 5. Convert the valid, clamped density back into a final zoom level
         final_zoom = clamped_ppm / base_ppm
         if abs(final_zoom - self.zoom_level) < 1e-9:
@@ -557,74 +456,89 @@ class WorkSurface(Canvas):
 
         # 6. Calculate pan adjustment to zoom around the mouse cursor
         mouse_x_px, mouse_y_px = self._mouse_pos
-        # The real-world point under the cursor before the zoom
-        focus_x_mm, focus_y_mm = self.pixel_to_mm(mouse_x_px, mouse_y_px)
-
-        # Temporarily update ppm to calculate the new view coordinates
-        new_ppm_x = base_ppm_x * final_zoom
-        new_ppm_y = base_ppm_y * final_zoom
-
-        if new_ppm_x > 0 and new_ppm_y > 0:
-            # Re-calculate what the view coordinates would be with the new zoom
-            y_axis_width = self._axis_importer.get_y_axis_width()
-            x_axis_height = self._axis_importer.get_x_axis_height()
-            height = self.get_height()
-            top_margin = math.ceil(x_axis_height / 2)
-
-            new_view_x_mm = (mouse_x_px - y_axis_width) / new_ppm_x
-            if self._axis_importer.y_axis_down:
-                new_view_y_mm = (mouse_y_px - top_margin) / new_ppm_y
-            else:
-                new_view_y_mm = (
-                    height - x_axis_height - mouse_y_px
-                ) / new_ppm_y
-
-            # The new pan is the difference between the fixed world point
-            # and its new panned position
-            new_pan_x_mm = focus_x_mm - new_view_x_mm
-            new_pan_y_mm = focus_y_mm - new_view_y_mm
-            self.set_pan(new_pan_x_mm, new_pan_y_mm)
-
-        # 7. Apply the final, clamped zoom level.
+        focus_x_mm, focus_y_mm = self._get_world_coords(mouse_x_px, mouse_y_px)
         self.set_zoom(final_zoom)
+        new_mouse_x_mm, new_mouse_y_mm = self._get_world_coords(
+            mouse_x_px, mouse_y_px
+        )
+        new_pan_x_mm = self.pan_x_mm + (focus_x_mm - new_mouse_x_mm)
+        new_pan_y_mm = self.pan_y_mm + (focus_y_mm - new_mouse_y_mm)
+        self.set_pan(new_pan_x_mm, new_pan_y_mm)
 
-    def _recalculate_sizes(self):
-        origin_x, origin_y = self._axis_importer.get_origin()
-        content_width, content_height = self._axis_importer.get_content_size()
+    def do_size_allocate(self, width: int, height: int, baseline: int):
+        # Let the parent Canvas/Gtk.DrawingArea do its work first. This will
+        # call self.root.set_size() with pixel dimensions, which we will
+        # immediately correct.
+        super().do_size_allocate(width, height, baseline)
 
-        # Set the root element's size directly in pixels
-        # The root element's origin is always its top-left corner
-        if self._axis_importer.y_axis_down:
-            self.root.set_pos(origin_x, origin_y)
-        else:
-            self.root.set_pos(origin_x, origin_y - content_height)
-        self.root.set_size(content_width, content_height)
+        # THE FIX: Enforce the correct world (mm) dimensions on the root
+        # element, overriding the pixel-based sizing from the parent class.
+        # This ensures the canvas's world coordinate system is always stable
+        # and measured in millimeters.
+        if (
+            self.root.width != self.width_mm
+            or self.root.height != self.height_mm
+        ):
+            self.root.set_size(self.width_mm, self.height_mm)
 
-        # Update WorkSurface's internal pixel dimensions based on content area
-        self.pixels_per_mm_x, self.pixels_per_mm_y = (
-            self._axis_importer.get_pixels_per_mm()
+        # Rebuild the view transform, which depends on the widget's new pixel
+        # dimensions to calculate the correct pan/zoom/scale matrix.
+        self._rebuild_view_transform()
+
+    def _rebuild_view_transform(self):
+        """
+        Constructs the world-to-view transformation matrix from pan, zoom,
+        and machine/widget dimensions. This is the single source of truth
+        for the canvas view.
+        """
+        widget_w, widget_h = self.get_width(), self.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return
+
+        content_x, content_y, content_w, content_h = (
+            self._axis_renderer.get_content_layout(widget_w, widget_h)
         )
 
-        # Update children to match the new content area size
-        for elem in self.find_by_type(LayerElement):
-            elem.set_size(content_width, content_height)
-        for elem in self.find_by_type(CameraImageElement):
-            elem.set_size(content_width, content_height)
-        # Re-position laser dot based on new pixel dimensions
-        # By storing the dot's mm position, we avoid a fragile pixel->mm->pixel
-        # conversion during zoom/pan, which could cause drift. We simply
-        # re-apply the true mm position to the newly sized/panned view.
+        # Base scale to map mm to the unzoomed content area pixels
+        scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+        scale_y = content_h / self.height_mm if self.height_mm > 0 else 1
+
+        # The sequence of transformations is critical and is applied
+        # from right-to-left (bottom to top in this code).
+
+        # 5. Final Offset: Translate the transformed content to its
+        #    final position within the widget.
+        m_offset = Matrix.translation(content_x, content_y)
+
+        # 4. Zoom: Scale the content around its top-left corner (0,0).
+        m_zoom = Matrix.scale(self.zoom_level, self.zoom_level)
+
+        # 3. Y-Axis and Pan transformation
+        # We combine pan and the y-flip into one matrix. This ensures panning
+        # feels correct regardless of the axis orientation.
+        pan_transform = Matrix.translation(-self.pan_x_mm, -self.pan_y_mm)
+
+        # The world is ALWAYS Y-up. The view is ALWAYS Y-down.
+        # Therefore, we ALWAYS need to flip the Y-axis. This matrix scales
+        # the world to pixels and flips it into the view's coordinate system.
+        m_scale = Matrix.translation(0, content_h) @ Matrix.scale(
+            scale_x, -scale_y
+        )
+
+        # Compose final matrix (read operations from bottom to top):
+        # Transformation order:
+        #   Pan the world
+        #   -> Scale&Flip it
+        #   -> Zoom it
+        #   -> Offset to final position.
+        final_transform = m_offset @ m_zoom @ m_scale @ pan_transform
+
+        # CRITICAL: Update the base Canvas's view_transform
+        self.view_transform = final_transform
+
         self.set_laser_dot_position(
             self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]
         )
-
-    def do_size_allocate(self, width: int, height: int, baseline: int):
-        """Handles canvas size allocation in pixels."""
-        # Calculate grid bounds using AxisImporter
-        self._axis_importer.set_width_px(width)
-        self._axis_importer.set_height_px(height)
-        self._recalculate_sizes()
-        self.root.allocate()
 
     def set_show_travel_moves(self, show: bool):
         """Sets whether to display travel moves and triggers re-rendering."""
@@ -639,11 +553,6 @@ class WorkSurface(Canvas):
         """Creates a new LayerElement and adds it to the canvas root."""
         logger.debug(f"Adding new LayerElement for '{layer.name}'")
         layer_elem = LayerElement(layer=layer, canvas=self)
-
-        # A LayerElement is a container that spans the entire content area
-        content_width, content_height = self._axis_importer.get_content_size()
-        layer_elem.set_size(content_width, content_height)
-
         self.root.add(layer_elem)
 
         # Now populate the new layer element with its children
@@ -705,78 +614,17 @@ class WorkSurface(Canvas):
         self._laser_dot.set_visible(visible)
         self.queue_draw()
 
-    def mm_to_element_coords(
-        self, x_mm: float, y_mm: float, element: CanvasElement
-    ) -> Tuple[float, float]:
-        """
-        Converts absolute machine mm coordinates to pixel coordinates relative
-        to the given element's top-left corner.
-        """
-        # Part 1: Calculate the point's coordinates relative to the root
-        # element.
-        ppm_x = self.pixels_per_mm_x or 1
-        ppm_y = self.pixels_per_mm_y or 1
-
-        # Step 1: Convert the incoming machine coordinates into the `root`
-        # element's canonical Y-up coordinate space.
-        x_mm_canonical: float
-        y_mm_canonical: float
-        if self._axis_importer.y_axis_down:
-            y_mm_canonical = self.height_mm - y_mm
-        else:
-            y_mm_canonical = y_mm
-        x_mm_canonical = x_mm
-
-        # Step 2: Scale the canonical mm-coordinates to get pixel coordinates
-        # within the root's virtual space. Pan is handled by moving the root
-        # element, so no pan subtraction is needed here.
-        center_x_px = x_mm_canonical * ppm_x
-        center_y_px = y_mm_canonical * ppm_y
-
-        # Step 3: Convert the canonical Y-up pixel coordinates to the root's
-        # internal drawing coordinates, which have their origin at the
-        # top-left.
-        point_x_in_root = center_x_px
-        point_y_in_root = self.root.height - center_y_px
-
-        # Part 2: Calculate the target element's coordinates relative to the
-        # root by walking up the element tree.
-        elem_x_in_root = 0.0
-        elem_y_in_root = 0.0
-        current = element
-        while current and current is not self.root:
-            elem_x_in_root += current.x
-            elem_y_in_root += current.y
-            current = current.parent
-
-        # Part 3: The final coordinates are the point's position in the root
-        # minus the element's position in the root.
-        return (
-            point_x_in_root - elem_x_in_root,
-            point_y_in_root - elem_y_in_root,
-        )
-
     def set_laser_dot_position(self, x_mm: float, y_mm: float):
         """Sets the laser dot position in real-world mm."""
         self._laser_dot_pos_mm = x_mm, y_mm
-
-        dot_parent = self._laser_dot.parent
-        if not dot_parent:
-            return  # Cannot position if not in the tree
-
-        # Convert machine mm to pixel coordinates relative to the dot's parent.
-        center_x_rel, center_y_rel = self.mm_to_element_coords(
-            x_mm, y_mm, dot_parent
+        # We now have to use the Canvas's transform to find the pixel position
+        center_x_px, center_y_px = self.view_transform.transform_point(
+            (x_mm, y_mm)
         )
-
-        # Calculate the top-left corner of the dot's bounding box
-        # from its center point.
-        dot_width_px = self._laser_dot.width
-        dot_height_px = self._laser_dot.height
-
+        dot_w = self._laser_dot.width
+        dot_h = self._laser_dot.height
         self._laser_dot.set_pos(
-            round(center_x_rel - dot_width_px / 2),
-            round(center_y_rel - dot_height_px / 2),
+            round(center_x_px - dot_w / 2), round(center_y_px - dot_h / 2)
         )
         self.queue_draw()
 
@@ -824,7 +672,7 @@ class WorkSurface(Canvas):
         # dimensions or y-axis orientation invalidates the current pan, zoom,
         # and all calculated coordinates.
         size_changed = machine.dimensions != (self.width_mm, self.height_mm)
-        y_axis_changed = machine.y_axis_down != self._axis_importer.y_axis_down
+        y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
 
         if size_changed or y_axis_changed:
             self.reset_view()
@@ -849,12 +697,11 @@ class WorkSurface(Canvas):
         self.set_size(new_dimensions[0], new_dimensions[1])
         self.set_pan(0.0, 0.0)
         self.set_zoom(1.0)
-        self._axis_importer.set_y_axis_down(self.machine.y_axis_down)
+        self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
         # _recalculate_sizes must be called after other properties are set,
         # especially after y_axis_down is changed, as it affects all
         # coordinate calculations.
-        self._recalculate_sizes()
-
+        self._rebuild_view_transform()
         new_ratio = (
             new_dimensions[0] / new_dimensions[1]
             if new_dimensions[1] > 0
@@ -871,11 +718,8 @@ class WorkSurface(Canvas):
             cast(CameraImageElement, elem).camera: elem
             for elem in self.find_by_type(CameraImageElement)
         }
-        new_cameras = machine.cameras
-
         cameras_on_canvas = set(current_camera_elements.keys())
-        cameras_in_model = set(new_cameras)
-
+        cameras_in_model = set(machine.cameras)
         # If there are no changes, do nothing.
         if cameras_on_canvas == cameras_in_model:
             return
@@ -884,17 +728,16 @@ class WorkSurface(Canvas):
 
         # Add new camera elements
         for camera in cameras_in_model - cameras_on_canvas:
-            camera_image_elem = CameraImageElement(camera)
-            camera_image_elem.set_visible(self._cam_visible and camera.enabled)
-            self.root.insert(0, camera_image_elem)
+            elem = CameraImageElement(camera)
+            elem.set_visible(self._cam_visible and camera.enabled)
+            self.root.insert(0, elem)
             logger.debug(f"Added CameraImageElement for camera {camera.name}")
 
         # Remove camera elements that no longer exist in the machine
-        for camera_instance in cameras_on_canvas - cameras_in_model:
-            elem = current_camera_elements[camera_instance]
-            elem.remove()
+        for camera in cameras_on_canvas - cameras_in_model:
+            current_camera_elements[camera].remove()
             logger.debug(
-                f"Removed CameraImageElement for camera {camera_instance.name}"
+                f"Removed CameraImageElement for camera {camera.name}"
             )
 
     def do_snapshot(self, snapshot):
@@ -903,14 +746,16 @@ class WorkSurface(Canvas):
 
         # Create a Cairo context for the snapshot
         width, height = self.get_width(), self.get_height()
-        bounds = Graphene.Rect().init(0, 0, width, height)
-        ctx = snapshot.append_cairo(bounds)
+        ctx = snapshot.append_cairo(Graphene.Rect().init(0, 0, width, height))
 
-        # Draw grid, axis, and labels first, so they are in the background.
-        self._axis_importer.draw_grid(ctx)
-        self._axis_importer.draw_axes_and_labels(ctx)
+        # Draw grid and axes first, in pixel space, before any transformations.
+        self._axis_renderer.draw_grid_and_labels(
+            ctx, self.view_transform, width, height
+        )
 
-        # Use the parent Canvas's recursive rendering.
+        # Now, delegate to the base Canvas's snapshot implementation, which
+        # will correctly apply the view_transform and render all elements
+        # and selection handles.
         super().do_snapshot(snapshot)
 
     def on_key_pressed(
@@ -926,9 +771,14 @@ class WorkSurface(Canvas):
             # If any elements are selected, unselect them.
             if self.get_selected_elements():
                 self.unselect_all()
-                return True  # Event handled
+                return True
+
+        # The base class now expects world coordinates, which this is.
+        # However, the key events like arrow keys should not be transformed.
+        # We need to handle them here directly.
 
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         # Handle moving workpiece to another layer
         if is_ctrl and (
@@ -979,13 +829,8 @@ class WorkSurface(Canvas):
                     )
                     return True
             elif keyval == Gdk.KEY_a:
-                # Select all workpieces
-                all_workpieces = self.doc.workpieces
-                if all_workpieces:
-                    self.select_workpieces(all_workpieces)
-
-        # Handle arrow key movement for selected workpieces
-        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+                self.select_workpieces(self.doc.workpieces)
+                return True
 
         move_amount_mm = 1.0
         if is_shift:
@@ -993,45 +838,35 @@ class WorkSurface(Canvas):
         elif is_ctrl:
             move_amount_mm *= 0.1
 
-        move_amount_x_mm = 0.0
-        move_amount_y_mm = 0.0
-
+        move_x, move_y = 0.0, 0.0
         if keyval == Gdk.KEY_Up:
-            move_amount_y_mm = move_amount_mm
+            move_y = move_amount_mm
         elif keyval == Gdk.KEY_Down:
-            move_amount_y_mm = -move_amount_mm
+            move_y = -move_amount_mm
         elif keyval == Gdk.KEY_Left:
-            move_amount_x_mm = -move_amount_mm
+            move_x = -move_amount_mm
         elif keyval == Gdk.KEY_Right:
-            move_amount_x_mm = move_amount_mm
+            move_x = move_amount_mm
 
-        if move_amount_x_mm != 0 or move_amount_y_mm != 0:
+        if move_x != 0 or move_y != 0:
             selected_wps = self.get_selected_workpieces()
             if not selected_wps:
                 return True  # Consume event but do nothing
-
-            history = self.doc.history_manager
-            with history.transaction(_("Move workpiece(s)")) as t:
+            with self.doc.history_manager.transaction(
+                _("Move workpiece(s)")
+            ) as t:
                 for wp in selected_wps:
                     old_matrix = wp.matrix.copy()
-                    current_pos = wp.pos
-                    # Arrow keys always manipulate the canonical model
-                    # coordinates. "Up" arrow always increases the Y value.
-                    new_pos = (
-                        current_pos[0] + move_amount_x_mm,
-                        current_pos[1] + move_amount_y_mm,
-                    )
-                    # This assignment triggers the setter, which rebuilds the
-                    # matrix and fires transform_changed.
-                    wp.pos = new_pos
-                    # Create the undo command *after* the change is made.
+                    # Apply delta translation to the existing matrix
+                    delta = Matrix.translation(move_x, move_y)
+                    new_matrix = delta @ old_matrix
                     cmd = ChangePropertyCommand(
                         target=wp,
                         property_name="matrix",
-                        new_value=wp.matrix.copy(),
+                        new_value=new_matrix,
                         old_value=old_matrix,
                     )
-                    t.add(cmd)
+                    t.execute(cmd)
             return True
 
         # Propagate to parent Canvas for its default behavior (e.g., Shift/
@@ -1039,27 +874,41 @@ class WorkSurface(Canvas):
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x: float, y: float):
-        self._pan_start = (
-            self._axis_importer.pan_x_mm,
-            self._axis_importer.pan_y_mm,
-        )
+        self._pan_start = (self.pan_x_mm, self.pan_y_mm)
 
     def on_pan_update(self, gesture, x: float, y: float):
-        # Calculate pan offset based on drag delta
-        offset = gesture.get_offset()
-        new_pan_x_mm = self._pan_start[0] - offset.x / self.pixels_per_mm_x
+        # Gtk.GestureDrag.get_offset returns a boolean and populates the
+        # provided variables.
+        ok, offset_x, offset_y = gesture.get_offset()
+        if not ok:
+            return
 
-        # For Y-panning, dragging down (positive offset.y) should always
-        # move the content "up" on screen.
-        if self._axis_importer.y_axis_down:
-            # In a Y-down view, moving content "up" means panning to lower
-            # Y values.
-            new_pan_y_mm = self._pan_start[1] - offset.y / self.pixels_per_mm_y
-        else:
-            # In a Y-up view, moving content "up" means panning to higher
-            # Y values.
-            new_pan_y_mm = self._pan_start[1] + offset.y / self.pixels_per_mm_y
-        self.set_pan(new_pan_x_mm, new_pan_y_mm)
+        # We need to convert the pixel offset into a mm delta. This delta
+        # is independent of the pan, so we can calculate it from the scale.
+        widget_w, widget_h = self.get_width(), self.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return
+
+        _, _, content_w, content_h = self._axis_renderer.get_content_layout(
+            widget_w, widget_h
+        )
+
+        base_scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+        base_scale_y = content_h / self.height_mm if self.height_mm > 0 else 1
+
+        delta_x_mm = offset_x / (base_scale_x * self.zoom_level)
+        delta_y_mm = offset_y / (base_scale_y * self.zoom_level)
+
+        # The world-to-view transform is always Y-inverting. To make the
+        # content follow the mouse ("natural" panning), the logic must be
+        # consistent. A rightward drag (positive offset_x) requires a
+        # negative adjustment to pan_x. A downward drag (positive offset_y)
+        # requires a positive adjustment to pan_y because of the Y-inversion
+        # in the transform matrix.
+        new_pan_x = self._pan_start[0] - delta_x_mm
+        new_pan_y = self._pan_start[1] + delta_y_mm
+
+        self.set_pan(new_pan_x, new_pan_y)
 
     def on_pan_end(self, gesture, x: float, y: float):
         pass
@@ -1071,11 +920,11 @@ class WorkSurface(Canvas):
         return None
 
     def get_selected_workpieces(self) -> List[WorkPiece]:
-        selected_workpieces = []
-        for elem in self.get_selected_elements():
-            if isinstance(elem.data, WorkPiece):
-                selected_workpieces.append(elem.data)
-        return selected_workpieces
+        return [
+            elem.data
+            for elem in self.get_selected_elements()
+            if isinstance(elem.data, WorkPiece)
+        ]
 
     def select_workpieces(self, workpieces_to_select: List[WorkPiece]):
         """
@@ -1100,13 +949,43 @@ class WorkSurface(Canvas):
         self._finalize_selection_state()
         self.queue_draw()
 
+    def _execute_layout_strategy(
+        self, strategy_class: Type[LayoutStrategy], transaction_name: str
+    ):
+        """
+        A generic helper to execute a layout strategy and wrap the changes
+        in a single undoable transaction.
+        """
+        selected_wps = self.get_selected_workpieces()
+        if not selected_wps:
+            return
+
+        strategy = strategy_class(selected_wps, self)
+        deltas = strategy.calculate_deltas()
+        if not deltas:
+            return
+
+        with self.doc.history_manager.transaction(transaction_name) as t:
+            for wp, delta_matrix in deltas.items():
+                old_matrix = wp.matrix.copy()
+                new_matrix = delta_matrix @ old_matrix
+                cmd = ChangePropertyCommand(
+                    target=wp,
+                    property_name="matrix",
+                    new_value=new_matrix,
+                    old_value=old_matrix,
+                )
+                t.execute(cmd)
+
     def center_horizontally(self):
         """
         Horizontally aligns selected workpieces.
         - One item: centered on the canvas.
         - Multiple items: centered on their collective bounding box center.
         """
-        self.aligner.center_horizontally()
+        self._execute_layout_strategy(
+            BboxAlignCenterStrategy, _("Center Horizontally")
+        )
 
     def center_vertically(self):
         """
@@ -1114,7 +993,9 @@ class WorkSurface(Canvas):
         - One item: centered on the canvas.
         - Multiple items: centered on their collective bounding box center.
         """
-        self.aligner.center_vertically()
+        self._execute_layout_strategy(
+            BboxAlignMiddleStrategy, _("Center Vertically")
+        )
 
     def align_left(self):
         """
@@ -1122,7 +1003,7 @@ class WorkSurface(Canvas):
         - One item: aligned to the left edge of the canvas.
         - Multiple items: aligned to the left edge of their collective bbox.
         """
-        self.aligner.align_left()
+        self._execute_layout_strategy(BboxAlignLeftStrategy, _("Align Left"))
 
     def align_right(self):
         """
@@ -1130,7 +1011,7 @@ class WorkSurface(Canvas):
         - One item: aligned to the right edge of the canvas.
         - Multiple items: aligned to the right edge of their collective bbox.
         """
-        self.aligner.align_right()
+        self._execute_layout_strategy(BboxAlignRightStrategy, _("Align Right"))
 
     def align_top(self):
         """
@@ -1138,7 +1019,7 @@ class WorkSurface(Canvas):
         - One item: aligned to the top edge of the canvas.
         - Multiple items: aligned to the top edge of their collective bbox.
         """
-        self.aligner.align_top()
+        self._execute_layout_strategy(BboxAlignTopStrategy, _("Align Top"))
 
     def align_bottom(self):
         """
@@ -1146,16 +1027,22 @@ class WorkSurface(Canvas):
         - One item: aligned to the bottom edge of the canvas.
         - Multiple items: aligned to the bottom edge of their collective bbox.
         """
-        self.aligner.align_bottom()
+        self._execute_layout_strategy(
+            BboxAlignBottomStrategy, _("Align Bottom")
+        )
 
     def spread_horizontally(self):
         """
-        Horizontally distributes selected items evenly over the work surface.
+        Distributes selected workpieces evenly in the horizontal direction.
         """
-        self.aligner.spread_horizontally()
+        self._execute_layout_strategy(
+            SpreadHorizontallyStrategy, _("Spread Horizontally")
+        )
 
     def spread_vertically(self):
         """
-        Vertically distributes selected items evenly over the work surface.
+        Distributes selected workpieces evenly in the vertical direction.
         """
-        self.aligner.spread_vertically()
+        self._execute_layout_strategy(
+            SpreadVerticallyStrategy, _("Spread Vertically")
+        )

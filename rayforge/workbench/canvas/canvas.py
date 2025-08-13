@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import logging
 from typing import Any, Generator, List, Tuple, Optional, Set, Union
 import cairo
 from gi.repository import Gtk, Gdk, Graphene  # type: ignore
@@ -9,6 +10,8 @@ from .region import ElementRegion
 from .cursor import get_cursor_for_region
 from .selection import MultiSelectionGroup
 from ...core.matrix import Matrix
+
+logger = logging.getLogger(__name__)
 
 
 class Canvas(Gtk.DrawingArea):
@@ -33,6 +36,7 @@ class Canvas(Gtk.DrawingArea):
             canvas=self,
             parent=self,
         )
+        self.view_transform: Matrix = Matrix.identity()
         self._active_elem: Optional[CanvasElement] = None
 
         # Stores the state of an element or group at the start of a transform
@@ -106,6 +110,21 @@ class Canvas(Gtk.DrawingArea):
         """Gets the (width, height) of the canvas."""
         return self.root.size()
 
+    def _get_world_coords(
+        self, widget_x: float, widget_y: float
+    ) -> Tuple[float, float]:
+        """
+        Converts widget pixel coordinates to canvas world coordinates using
+        the active view_transform.
+        """
+        try:
+            return self.view_transform.invert().transform_point(
+                (widget_x, widget_y)
+            )
+        except Exception:
+            # Fallback to 1:1 if matrix is non-invertible
+            return widget_x, widget_y
+
     def _setup_interactions(self):
         """Initializes and attaches all GTK event controllers."""
         self._click_gesture = Gtk.GestureClick()
@@ -168,173 +187,260 @@ class Canvas(Gtk.DrawingArea):
         width, height = self.get_width(), self.get_height()
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
-        self.render(ctx)
 
-    def _render_selection(self, ctx: cairo.Context, elem: CanvasElement):
-        """
-        Renders selection frames and handles by dispatching to specialized
-        helpers for single or multi-selection.
-        """
-        is_multi_select = self._selection_group is not None
-
-        if elem.selected and not is_multi_select:
-            self._render_single_selection(ctx, elem)
-
-        for child in elem.children:
-            self._render_selection(ctx, child)
-
-        if elem is self.root and self._selection_group:
-            self._render_multi_selection(ctx, self._selection_group)
-
-    def _render_single_selection(
-        self, ctx: cairo.Context, elem: CanvasElement
-    ):
-        """
-        Draws the selection frame for a single element by applying its
-        world transformation matrix, ensuring perfect alignment.
-        """
+        # Render world content first
+        # Apply the view transform to render all elements in world space.
         ctx.save()
-
-        world_transform = elem.get_world_transform()
-        m = world_transform.m
+        m = self.view_transform.m
         cairo_matrix = cairo.Matrix(
             m[0, 0], m[1, 0], m[0, 1], m[1, 1], m[0, 2], m[1, 2]
         )
         ctx.transform(cairo_matrix)
-
-        # Calculate scale factors from the matrix to compensate line
-        # widths, dash patterns, and handle sizes, so they appear
-        # consistent regardless of the element's scale.
-        sx = math.hypot(m[0, 0], m[1, 0])
-        sy = math.hypot(m[0, 1], m[1, 1])
-        avg_scale = (sx + sy) / 2.0 if sx > 1e-6 and sy > 1e-6 else 1.0
-
-        ctx.set_line_width(1.0 / avg_scale)
-        ctx.set_dash([d / avg_scale for d in (5, 5)])
-
-        ctx.set_source_rgb(0.4, 0.4, 0.4)
-        ctx.rectangle(0, 0, elem.width, elem.height)
-        ctx.stroke()
-        ctx.set_dash([])
-
-        if not (self._moving or self._resizing or self._rotating):
-            x, y = self._last_mouse_x, self._last_mouse_y
-            is_hovered = elem.check_region_hit(x, y) != ElementRegion.NONE
-
-            self._render_selection_handles(
-                ctx,
-                target=elem,
-                abs_x=0,
-                abs_y=0,
-                is_fully_hovered=is_hovered,
-                specific_hovered_region=self._hovered_region,
-                # Pass both sx and sy to correctly calculate handle shapes
-                # for non-uniform scaling.
-                scale_compensation_factor=(sx, sy),
-            )
-
+        self.root.render(ctx)
         ctx.restore()
 
-    def _render_multi_selection(
-        self, ctx: cairo.Context, group: MultiSelectionGroup
+        # After restoring the context, we are now in pure pixel space.
+        # All overlays are drawn here so they are not affected by
+        # view zoom/pan.
+        self._render_overlays(ctx)
+
+    def _render_overlays(self, ctx: cairo.Context):
+        """Renders all non-content overlays in pixel space."""
+        # Draw selection frames and handles on top of everything.
+        self._render_selection_overlay(ctx, self.root)
+
+        # Draw the framing rectangle if we are in framing mode.
+        if self._framing_selection and self._selection_frame_rect:
+            ctx.save()
+            x, y, w, h = self._selection_frame_rect
+            # A semi-transparent blue fill
+            ctx.set_source_rgba(0.2, 0.5, 0.8, 0.3)
+            ctx.rectangle(x, y, w, h)
+            ctx.fill_preserve()
+            # A solid blue, dashed border
+            ctx.set_source_rgb(0.2, 0.5, 0.8)
+            ctx.set_line_width(1)
+            ctx.set_dash((4, 4))
+            ctx.stroke()
+            ctx.restore()
+
+    def _render_selection_overlay(
+        self, ctx: cairo.Context, elem: CanvasElement
     ):
         """
-        Draws the selection frame and handles for a multi-selection group.
+        Recursively orchestrates the drawing of selection overlays in pixel
+        space.
         """
-        group._calculate_bounding_box()
-        abs_x, abs_y, w, h = group.x, group.y, group.width, group.height
+        is_multi_select = self._selection_group is not None
 
+        if elem.selected and not is_multi_select:
+            self._render_single_selection_overlay(ctx, elem)
+
+        for child in elem.children:
+            self._render_selection_overlay(ctx, child)
+
+        if elem is self.root and self._selection_group:
+            self._render_multi_selection_overlay(ctx, self._selection_group)
+
+    def _render_single_selection_overlay(
+        self, ctx: cairo.Context, elem: CanvasElement
+    ):
+        """Draws the selection frame for a single element in pixel space."""
         ctx.save()
-        # Draw the dashed selection box (group frame is not rotated).
+
+        # Get the matrix that transforms from the element's local space
+        # directly to screen (pixel) space.
+        screen_transform = self.view_transform @ elem.get_world_transform()
+
+        # Transform the four local corners of the element to screen space.
+        w, h = elem.width, elem.height
+        corners_local = [(0, 0), (w, 0), (w, h), (0, h)]
+        corners_screen = [
+            screen_transform.transform_point(p) for p in corners_local
+        ]
+
+        # Draw the dashed outline connecting the screen-space corners.
+        # Line width and dash pattern are now in fixed pixels.
         ctx.set_source_rgb(0.4, 0.4, 0.4)
+        ctx.set_line_width(1.0)
         ctx.set_dash((5, 5))
-        ctx.set_line_width(1)
-        ctx.rectangle(abs_x, abs_y, w, h)
+
+        ctx.move_to(*corners_screen[0])
+        ctx.line_to(*corners_screen[1])
+        ctx.line_to(*corners_screen[2])
+        ctx.line_to(*corners_screen[3])
+        ctx.close_path()
         ctx.stroke()
         ctx.set_dash([])
 
         # Draw handles if not currently transforming.
         if not (self._moving or self._resizing or self._rotating):
-            self._render_selection_handles(
-                ctx,
-                target=group,
-                abs_x=abs_x,
-                abs_y=abs_y,
-                is_fully_hovered=self._group_hovered,
-                specific_hovered_region=self._hovered_region,
-                scale_compensation_factor=1.0,  # No scale for group box
-            )
+            self._render_handles_overlay(ctx, elem, screen_transform)
+
         ctx.restore()
 
-    def _render_selection_handles(
+    def _render_multi_selection_overlay(
+        self, ctx: cairo.Context, group: MultiSelectionGroup
+    ):
+        """Draws the selection frame for a group in pixel space."""
+        ctx.save()
+        group._calculate_bounding_box()
+
+        # Get the group's axis-aligned bounding box in world space.
+        x, y, w, h = group.x, group.y, group.width, group.height
+        corners_world = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+
+        # Transform the world-space corners to screen space.
+        corners_screen = [
+            self.view_transform.transform_point(p) for p in corners_world
+        ]
+
+        # Draw the dashed outline in fixed pixels.
+        ctx.set_source_rgb(0.4, 0.4, 0.4)
+        ctx.set_line_width(1.0)
+        ctx.set_dash((5, 5))
+
+        ctx.move_to(*corners_screen[0])
+        ctx.line_to(*corners_screen[1])
+        ctx.line_to(*corners_screen[2])
+        ctx.line_to(*corners_screen[3])
+        ctx.close_path()
+        ctx.stroke()
+        ctx.set_dash([])
+
+        # Draw handles if not currently transforming.
+        if not (self._moving or self._resizing or self._rotating):
+            # Define a transform that maps the group's "local" space
+            # (a w x h box at origin 0,0) to the screen. This is done
+            # by first translating to the group's world position, and
+            # then applying the main view transform.
+            group_offset_transform = Matrix.translation(group.x, group.y)
+            transform_to_screen = self.view_transform @ group_offset_transform
+            self._render_handles_overlay(ctx, group, transform_to_screen)
+
+        ctx.restore()
+
+    def _render_handles_overlay(
         self,
         ctx: cairo.Context,
         target: Union[CanvasElement, MultiSelectionGroup],
-        abs_x: float,
-        abs_y: float,
-        is_fully_hovered: bool,
-        specific_hovered_region: ElementRegion,
-        scale_compensation_factor: Union[float, Tuple[float, float]],
+        transform_to_screen: Matrix,
     ):
         """
-        Generic helper to draw interactive handles for a target, which can
-        be a single element or a multi-selection group.
+        The definitive helper to draw handles. It uses get_region_rect to
+        determine handle geometry in local space and then draws the
+        resulting polygon in the pixel-space overlay.
         """
+        # --- Setup ---
+        world_x, world_y = self._get_world_coords(
+            self._last_mouse_x, self._last_mouse_y
+        )
+        is_group = isinstance(target, MultiSelectionGroup)
+        is_hovered = (
+            self._group_hovered
+            if is_group
+            else target.check_region_hit(world_x, world_y)
+            != ElementRegion.NONE
+        )
+
+        m = transform_to_screen.m
+
+        # First, calculate absolute scale factors.
+        sx_abs = math.hypot(m[0, 0], m[1, 0])
+        sy_abs = math.hypot(m[0, 1], m[1, 1])
+
+        # Check for zero scale using absolute values to prevent incorrect exit.
+        if sx_abs < 1e-6 or sy_abs < 1e-6:
+            # This is a valid exit, e.g., if the element is scaled to nothing.
+            return
+
+        # Now, determine the signed scale for geometry calculations.
+        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        is_view_flipped = det < 0
+
+        sx_signed = sx_abs
+        sy_signed = -sy_abs if is_view_flipped else sy_abs
+
+        scale_compensation = (sx_signed, sy_signed)
         ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
 
-        # Draw corner and rotation handles if mouse is over the target.
-        if is_fully_hovered:
-            handle_regions = [
+        # --- Drawing Helper ---
+        def draw_local_rect_as_overlay(
+            rect_local: Tuple[float, float, float, float],
+        ):
+            lx, ly, lw, lh = rect_local
+            if lw <= 0 or lh <= 0:
+                return
+
+            local_corners = [
+                (lx, ly),
+                (lx + lw, ly),
+                (lx + lw, ly + lh),
+                (lx, ly + lh),
+            ]
+            screen_corners = [
+                transform_to_screen.transform_point(p) for p in local_corners
+            ]
+            ctx.move_to(*screen_corners[0])
+            for i in range(1, 4):
+                ctx.line_to(*screen_corners[i])
+            ctx.close_path()
+            ctx.fill()
+
+        # --- Render Handles and Rotation Line ---
+        if is_hovered:
+            regions_to_draw = [
                 ElementRegion.ROTATION_HANDLE,
                 ElementRegion.TOP_LEFT,
                 ElementRegion.TOP_RIGHT,
                 ElementRegion.BOTTOM_LEFT,
                 ElementRegion.BOTTOM_RIGHT,
             ]
-            for region in handle_regions:
-                rx, ry, rw, rh = target.get_region_rect(
-                    region,
-                    self.BASE_HANDLE_SIZE,
-                    scale_compensation_factor,
+            for region in regions_to_draw:
+                handle_rect = target.get_region_rect(
+                    region, self.BASE_HANDLE_SIZE, scale_compensation
                 )
-                if rw > 0 and rh > 0:
-                    # Draw the line for the rotation handle.
-                    if region == ElementRegion.ROTATION_HANDLE:
-                        ctx.save()
-                        ctx.set_source_rgba(0.4, 0.4, 0.4, 0.9)
-                        # For line width, a single average scale is fine.
-                        avg_scale = 1.0
-                        if isinstance(scale_compensation_factor, tuple):
-                            sx, sy = scale_compensation_factor
-                            if sx > 1e-6 and sy > 1e-6:
-                                avg_scale = (sx + sy) / 2.0
-                        else:
-                            avg_scale = scale_compensation_factor
-                        ctx.set_line_width(1.0 / avg_scale)
-                        ctx.move_to(abs_x + target.width / 2, abs_y + ry + rh)
-                        ctx.line_to(abs_x + target.width / 2, abs_y)
-                        ctx.stroke()
-                        ctx.restore()
+                draw_local_rect_as_overlay(handle_rect)
 
-                    ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
-                    ctx.fill()
+            # Draw rotation line
+            top_middle_local_y = target.height if is_view_flipped else 0.0
+            top_middle_local = (target.width / 2, top_middle_local_y)
+            rot_handle_rect = target.get_region_rect(
+                ElementRegion.ROTATION_HANDLE,
+                self.BASE_HANDLE_SIZE,
+                scale_compensation,
+            )
+            # Anchor to the middle of the handle edge closest to the element.
+            rot_anchor_x = rot_handle_rect[0] + rot_handle_rect[2] / 2
+            rot_anchor_y = (
+                rot_handle_rect[1]
+                if is_view_flipped
+                else (rot_handle_rect[1] + rot_handle_rect[3])
+            )
+            rot_anchor_local = (rot_anchor_x, rot_anchor_y)
 
-        # Draw edge handles only when the mouse is directly over them.
+            p1_screen = transform_to_screen.transform_point(top_middle_local)
+            p2_screen = transform_to_screen.transform_point(rot_anchor_local)
+
+            ctx.save()
+            ctx.set_source_rgba(0.4, 0.4, 0.4, 0.9)
+            ctx.set_line_width(1.0)
+            ctx.move_to(*p1_screen)
+            ctx.line_to(*p2_screen)
+            ctx.stroke()
+            ctx.restore()
+
         edge_regions = [
             ElementRegion.TOP_MIDDLE,
             ElementRegion.BOTTOM_MIDDLE,
             ElementRegion.MIDDLE_LEFT,
             ElementRegion.MIDDLE_RIGHT,
         ]
-        if specific_hovered_region in edge_regions:
-            rx, ry, rw, rh = target.get_region_rect(
-                specific_hovered_region,
-                self.BASE_HANDLE_SIZE,
-                scale_compensation_factor,
+        if self._hovered_region in edge_regions:
+            handle_rect = target.get_region_rect(
+                self._hovered_region, self.BASE_HANDLE_SIZE, scale_compensation
             )
-            if rw > 0 and rh > 0:
-                ctx.rectangle(abs_x + rx, abs_y + ry, rw, rh)
-                ctx.fill()
+            draw_local_rect_as_overlay(handle_rect)
 
     def _update_hover_state(self, x: float, y: float) -> bool:
         """
@@ -344,6 +450,10 @@ class Canvas(Gtk.DrawingArea):
         checks for hits in a specific order:
         1. Resize/rotation handles on the current selection.
         2. Body of any selectable element under the cursor.
+
+        Args:
+            x: The x-coordinate in WORLD space.
+            y: The y-coordinate in WORLD space.
 
         Returns:
             True if the hover state changed and a redraw is needed.
@@ -404,7 +514,8 @@ class Canvas(Gtk.DrawingArea):
         framing operations.
         """
         self.grab_focus()
-        self._update_hover_state(x, y)
+        world_x, world_y = self._get_world_coords(x, y)
+        self._update_hover_state(world_x, world_y)
 
         self._active_region = self._hovered_region
         hit = self._hovered_elem
@@ -460,7 +571,7 @@ class Canvas(Gtk.DrawingArea):
         elif self._active_region == ElementRegion.ROTATION_HANDLE:
             self._rotating = True
             self.rotate_begin.send(self, elements=selected_elements)
-            self._start_rotation(target, x, y)
+            self._start_rotation(target, world_x, world_y)
         elif self._active_region != ElementRegion.NONE:  # Any other handle
             self._resizing = True
             self.resize_begin.send(self, elements=selected_elements)
@@ -482,23 +593,34 @@ class Canvas(Gtk.DrawingArea):
         """
         Handles mouse movement, updating hover state and cursor icon.
         """
+        # Store raw pixel coordinates for selection frame rendering
         self._last_mouse_x = x
         self._last_mouse_y = y
+
+        world_x, world_y = self._get_world_coords(x, y)
         if not (self._moving or self._resizing or self._rotating):
-            if self._update_hover_state(x, y):
+            if self._update_hover_state(world_x, world_y):
                 self.queue_draw()
 
         if self._moving:
             self.set_cursor(Gdk.Cursor.new_from_name("move"))
             return
 
-        # Determine cursor rotation based on selection.
+        # Determine the final visual rotation angle for the cursor.
         cursor_angle = 0.0
         selected_elems = self.get_selected_elements()
         if self._selection_group:
-            cursor_angle = self._selection_group.angle
+            # For a group, the visual rotation is determined solely by the
+            # view_transform.
+            total_transform = self.view_transform
+            cursor_angle = total_transform.get_rotation()
         elif selected_elems:
-            cursor_angle = selected_elems[0].get_world_angle()
+            # For an element, the final visual rotation is the composition of
+            # its own transform and the view_transform.
+            total_transform = (
+                self.view_transform @ selected_elems[0].get_world_transform()
+            )
+            cursor_angle = total_transform.get_rotation()
 
         cursor = get_cursor_for_region(self._hovered_region, cursor_angle)
         self.set_cursor(cursor)
@@ -561,30 +683,40 @@ class Canvas(Gtk.DrawingArea):
             self.queue_draw()
             return
 
+        # Calculate drag delta in WORLD coordinates
+        ok, start_x, start_y = self._drag_gesture.get_start_point()
+        if not ok:
+            return
+        current_x, current_y = start_x + offset_x, start_y + offset_y
+        start_world_x, start_world_y = self._get_world_coords(start_x, start_y)
+        current_world_x, current_world_y = self._get_world_coords(
+            current_x, current_y
+        )
+        world_dx = current_world_x - start_world_x
+        world_dy = current_world_y - start_world_y
+
         if self._selection_group:
             if self._moving:
-                self._selection_group.apply_move(offset_x, offset_y)
+                self._selection_group.apply_move(world_dx, world_dy)
             elif self._resizing:
-                self._apply_group_resize(offset_x, offset_y)
+                self._apply_group_resize(world_dx, world_dy)
             elif self._rotating:
-                self._rotate_selection_group(offset_x, offset_y)
+                self._rotate_selection_group(current_world_x, current_world_y)
             self.queue_draw()
         elif self._active_elem:
             if self._moving:
-                self._move_active_element(offset_x, offset_y)
+                self._move_active_element(world_dx, world_dy)
             elif self._resizing:
-                self._resize_active_element(offset_x, offset_y)
+                self._resize_active_element(world_dx, world_dy)
             elif self._rotating:
-                ok, start_x, start_y = self._drag_gesture.get_start_point()
-                if not ok:
-                    return
-                current_x = start_x + offset_x
-                current_y = start_y + offset_y
-                self._rotate_active_element(current_x, current_y)
+                self._rotate_active_element(current_world_x, current_world_y)
             self.queue_draw()
 
     def _apply_group_resize(self, offset_x: float, offset_y: float):
-        """Calculates new group bounding box based on the drag offset."""
+        """
+        Calculates new group bounding box based on the drag offset.
+        The offset is now in WORLD coordinates.
+        """
         if (
             not self._selection_group
             or not isinstance(self._active_origin, tuple)
@@ -617,16 +749,29 @@ class Canvas(Gtk.DrawingArea):
             ElementRegion.BOTTOM_RIGHT,
         }
 
+        # Determine if the view's Y-axis is flipped.
+        m = self.view_transform.m
+        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        is_view_flipped = det < 0
+
         if self._ctrl_pressed:  # Center-out resize
             dw, dh = 0.0, 0.0
             if is_left:
                 dw = -offset_x
             elif is_right:
                 dw = offset_x
-            if is_top:
-                dh = -offset_y
-            elif is_bottom:
-                dh = offset_y
+
+            # The change in height (dh) depends on the view orientation.
+            if is_view_flipped:
+                if is_top:
+                    dh = offset_y  # Drag down (visual) = offset_y < 0
+                elif is_bottom:
+                    dh = -offset_y  # Drag down (visual) = offset_y < 0
+            else:  # Normal Y-down
+                if is_top:
+                    dh = -offset_y
+                elif is_bottom:
+                    dh = offset_y
 
             dw *= 2
             dh *= 2
@@ -643,14 +788,25 @@ class Canvas(Gtk.DrawingArea):
             new_y = orig_y - (new_h - orig_h) / 2
         else:  # Anchor-based resize
             new_x, new_y, new_w, new_h = orig_x, orig_y, orig_w, orig_h
+            # X-axis logic is independent of Y-flip.
             if is_left:
                 new_x, new_w = orig_x + offset_x, orig_w - offset_x
             elif is_right:
                 new_w = orig_w + offset_x
-            if is_top:
-                new_y, new_h = orig_y + offset_y, orig_h - offset_y
-            elif is_bottom:
-                new_h = orig_h + offset_y
+
+            # Y-axis logic must account for the flipped coordinate system.
+            if is_view_flipped:
+                # In a Y-up world, orig_y is the bottom.
+                if is_top:  # Dragging top edge; anchor is bottom (orig_y).
+                    new_h = orig_h + offset_y
+                elif is_bottom:  # Dragging bottom; anchor is top.
+                    new_y = orig_y + offset_y
+                    new_h = orig_h - offset_y
+            else:  # Normal Y-down world.
+                if is_top:  # Dragging top edge; anchor is bottom.
+                    new_y, new_h = orig_y + offset_y, orig_h - offset_y
+                elif is_bottom:  # Dragging bottom edge; anchor is top.
+                    new_h = orig_h + offset_y
 
             if self._shift_pressed and orig_w > 0 and orig_h > 0:
                 aspect = orig_w / orig_h
@@ -667,6 +823,8 @@ class Canvas(Gtk.DrawingArea):
                 if is_left:
                     new_x = orig_x + orig_w - new_w
                 if is_top:
+                    # In both coordinate systems, if the top handle is
+                    # dragged, the element's origin_y changes.
                     new_y = orig_y + orig_h - new_h
 
         new_w, new_h = max(new_w, min_size), max(new_h, min_size)
@@ -679,7 +837,10 @@ class Canvas(Gtk.DrawingArea):
         x: float,
         y: float,
     ):
-        """Stores the initial state for a rotation operation."""
+        """
+        Stores the initial state for a rotation operation.
+        The x and y coordinates are in WORLD space.
+        """
         is_group = isinstance(target, MultiSelectionGroup)
 
         center_x, center_y = (
@@ -693,6 +854,7 @@ class Canvas(Gtk.DrawingArea):
         """
         Rotates a single element using a matrix-native approach to preserve
         all existing transformations, including shear.
+        The current_x, current_y are in WORLD coordinates.
         """
         if not self._active_elem or not self._initial_world_transform:
             return
@@ -731,15 +893,14 @@ class Canvas(Gtk.DrawingArea):
         # avoids jumps.
         self._active_elem.set_transform(new_local_transform)
 
-    def _rotate_selection_group(self, offset_x: float, offset_y: float):
-        """Rotates the entire selection group based on cursor drag."""
+    def _rotate_selection_group(self, current_x: float, current_y: float):
+        """
+        Rotates the entire selection group based on cursor drag.
+        The coordinates are in WORLD space.
+        """
         if not self._selection_group:
             return
-        ok, start_x, start_y = self._drag_gesture.get_start_point()
-        if not ok:
-            return
 
-        current_x, current_y = start_x + offset_x, start_y + offset_y
         center_x, center_y = self._selection_group.initial_center
         current_angle = math.degrees(
             math.atan2(current_y - center_y, current_x - center_x)
@@ -751,6 +912,7 @@ class Canvas(Gtk.DrawingArea):
         """
         Resizes a single element using a fully matrix-native approach that
         prevents unwanted shear by scaling in the element's local space.
+        The offset_x, offset_y are now deltas in WORLD coordinates.
         """
         if (
             not self._active_elem
@@ -759,32 +921,65 @@ class Canvas(Gtk.DrawingArea):
         ):
             return
 
-        min_size = 20.0
+        min_size_world = 2.0
         base_w, base_h = self._active_elem.width, self._active_elem.height
 
-        # 1. Determine which handles are being dragged.
-        is_left = self._active_region in {
+        # Determine the effective scale from the element's local geometry
+        # to world space.
+        world_scale_x, world_scale_y = (
+            self._initial_world_transform.get_scale()
+        )
+        min_size_local_x = (
+            min_size_world / world_scale_x if world_scale_x > 1e-6 else 0
+        )
+        min_size_local_y = (
+            min_size_world / world_scale_y if world_scale_y > 1e-6 else 0
+        )
+
+        # 1. Determine which VISUAL (semantic) handles are being dragged.
+        semantic_is_left = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.MIDDLE_LEFT,
             ElementRegion.BOTTOM_LEFT,
         }
-        is_right = self._active_region in {
+        semantic_is_right = self._active_region in {
             ElementRegion.TOP_RIGHT,
             ElementRegion.MIDDLE_RIGHT,
             ElementRegion.BOTTOM_RIGHT,
         }
-        is_top = self._active_region in {
+        semantic_is_top = self._active_region in {
             ElementRegion.TOP_LEFT,
             ElementRegion.TOP_MIDDLE,
             ElementRegion.TOP_RIGHT,
         }
-        is_bottom = self._active_region in {
+        semantic_is_bottom = self._active_region in {
             ElementRegion.BOTTOM_LEFT,
             ElementRegion.BOTTOM_MIDDLE,
             ElementRegion.BOTTOM_RIGHT,
         }
 
-        # 2. Transform the screen-space drag offset into the element's
+        # 2. Bridge the semantic-geometric gap.
+        # The geometric edge corresponding to a visual handle depends on
+        # the view. We check if the view's coordinate system is flipped.
+        m = self.view_transform.m
+        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        is_view_flipped = det < 0
+
+        if is_view_flipped:
+            # In a flipped view, the visual 'top' handle is at the geometric
+            # 'bottom' (y=h) of the element, and vice-versa.
+            is_top = semantic_is_bottom
+            is_bottom = semantic_is_top
+        else:
+            # In a normal view, visual and geometric handles align.
+            is_top = semantic_is_top
+            is_bottom = semantic_is_bottom
+
+        # X-axis is not affected by the Y-flip.
+        is_left = semantic_is_left
+        is_right = semantic_is_right
+
+        # 3. Transform the world-space drag offset into the element's
         #    initial local coordinate system (unrotated frame of reference).
         initial_world_no_trans = self._initial_world_transform.copy()
         initial_world_no_trans.m[0, 2] = initial_world_no_trans.m[1, 2] = 0.0
@@ -793,7 +988,9 @@ class Canvas(Gtk.DrawingArea):
             (offset_x, offset_y)
         )
 
-        # 3. Calculate desired change in size (dw, dh) in local space.
+        # 4. Calculate desired change in size (dw, dh) in local space.
+        # This logic is now purely geometric and correct because 'is_top' and
+        # 'is_bottom' refer to the correct geometric edges.
         dw, dh = 0.0, 0.0
         if is_left:
             dw = -local_delta_x
@@ -808,7 +1005,7 @@ class Canvas(Gtk.DrawingArea):
             dw *= 2.0
             dh *= 2.0
 
-        # 4. Handle aspect ratio constraint (Shift key).
+        # 5. Handle aspect ratio constraint (Shift key).
         if self._shift_pressed and base_w > 0 and base_h > 0:
             aspect = base_w / base_h
             is_corner = (is_left or is_right) and (is_top or is_bottom)
@@ -822,13 +1019,14 @@ class Canvas(Gtk.DrawingArea):
             elif is_top or is_bottom:
                 dw = dh * aspect
 
-        # 5. Calculate new size and the scale factors to apply.
-        new_w = max(min_size, base_w + dw)
-        new_h = max(min_size, base_h + dh)
+        # 6. Calculate new size and the scale factors to apply.
+        new_w = max(min_size_local_x, base_w + dw)
+        new_h = max(min_size_local_y, base_h + dh)
         scale_x = new_w / base_w if base_w > 0 else 1.0
         scale_y = new_h / base_h if base_h > 0 else 1.0
 
-        # 6. Define the fixed anchor point in the element's LOCAL GEOMETRY.
+        # 7. Define the fixed anchor point in the element's LOCAL GEOMETRY.
+        # This logic is also geometric and is now correct.
         anchor_norm_x = (
             0.5 if not (is_left or is_right) else (1.0 if is_left else 0.0)
         )
@@ -840,7 +1038,7 @@ class Canvas(Gtk.DrawingArea):
 
         anchor_local_geom = (anchor_norm_x * base_w, anchor_norm_y * base_h)
 
-        # 7. Construct the delta transform: a scale around the LOCAL anchor.
+        # 8. Construct the delta transform: a scale around the LOCAL anchor.
         t_to_origin = Matrix.translation(
             -anchor_local_geom[0], -anchor_local_geom[1]
         )
@@ -850,10 +1048,10 @@ class Canvas(Gtk.DrawingArea):
         )
         delta_transform_local = t_from_origin @ m_scale @ t_to_origin
 
-        # 8. Apply this local delta to the element's initial local transform.
+        # 9. Apply this local delta to the element's initial local transform.
         new_local_transform = self._initial_transform @ delta_transform_local
 
-        # 9. Apply the new, complete transform matrix to the element.
+        # 10. Apply the new, complete transform matrix to the element.
         self._active_elem.set_transform(new_local_transform)
 
     def on_button_release(self, gesture, x: float, y: float):
@@ -955,13 +1153,19 @@ class Canvas(Gtk.DrawingArea):
             return
 
         frame_x, frame_y, frame_w, frame_h = self._selection_frame_rect
+        world_tl = self._get_world_coords(frame_x, frame_y)
+        world_br = self._get_world_coords(frame_x + frame_w, frame_y + frame_h)
+        world_frame_x = min(world_tl[0], world_br[0])
+        world_frame_y = min(world_tl[1], world_br[1])
+        world_frame_w = abs(world_br[0] - world_tl[0])
+        world_frame_h = abs(world_br[1] - world_tl[1])
 
         # Avoid selection changes from a simple click (zero-area frame).
-        if frame_w < 2 and frame_h < 2:
+        if world_frame_w < 2 and world_frame_h < 2:
             return
 
         selection_rect = Graphene.Rect().init(
-            frame_x, frame_y, frame_w, frame_h
+            world_frame_x, world_frame_y, world_frame_w, world_frame_h
         )
         selection_changed = False
 

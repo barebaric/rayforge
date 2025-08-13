@@ -3,6 +3,7 @@ import logging
 import cairo
 import cv2
 import numpy as np
+from gi.repository import GLib  # type: ignore
 from ...camera.models.camera import Camera
 from ..canvas import CanvasElement
 
@@ -16,7 +17,11 @@ MAX_PROCESSING_DIMENSION = 2048
 
 class CameraImageElement(CanvasElement):
     def __init__(self, camera: Camera, **kwargs):
-        super().__init__(x=0, y=0, width=0, height=0, **kwargs)
+        # The element is NOT buffered in the traditional sense. We manage
+        # our own surface cache to prevent flicker from the live feed.
+        super().__init__(
+            x=0, y=0, width=1.0, height=1.0, buffered=False, **kwargs
+        )
         self.selectable = False
         self.camera = camera
         self.camera.image_captured.connect(self._on_state_changed)
@@ -79,28 +84,46 @@ class CameraImageElement(CanvasElement):
 
     def draw(self, ctx: cairo.Context):
         assert self.canvas, "Canvas must be set before drawing"
-        super().draw(ctx)
 
         # 1. Always draw the last valid computed surface to prevent flicker.
         if self._cached_surface:
             ctx.save()
-            cached_width = self._cached_surface.get_width()
-            cached_height = self._cached_surface.get_height()
-            if cached_width > 0 and cached_height > 0:
-                scale_x = self.width / cached_width
-                scale_y = self.height / cached_height
+            source_w = self._cached_surface.get_width()
+            source_h = self._cached_surface.get_height()
+
+            if (
+                source_w > 0
+                and source_h > 0
+                and self.width > 0
+                and self.height > 0
+            ):
+                # This logic is equivalent to the standard way of drawing a
+                # surface onto a rectangle in the base CanvasElement, but is
+                # reimplemented here as this element manages its own cache.
+
+                # Scale the context so that drawing a (source_w x source_h)
+                # area will fill the element's (width x height) rectangle.
+                scale_x = self.width / source_w
+                scale_y = self.height / source_h
                 ctx.scale(scale_x, scale_y)
+
+                # The world is Y-up, but the cairo surface is Y-down.
+                # Flip the Y axis to match.
+                ctx.translate(0, source_h)
+                ctx.scale(1, -1)
+
+                # Set the cached surface as the source and paint.
                 ctx.set_source_surface(self._cached_surface, 0, 0)
+                ctx.get_source().set_filter(cairo.FILTER_GOOD)
                 ctx.paint()
+
             ctx.restore()
 
         # 2. Determine if a new, updated surface needs to be computed.
-        output_width = round(
-            self.canvas.root.width if self.canvas else self.width
-        )
-        output_height = round(
-            self.canvas.root.height if self.canvas else self.height
-        )
+        # The output size for the recomputation should be the pixel dimensions
+        # of the canvas widget itself, not the mm dimensions of the work area.
+        output_width = self.canvas.get_width()
+        output_height = self.canvas.get_height()
 
         if (
             self.camera.image_data is None
@@ -124,7 +147,7 @@ class CameraImageElement(CanvasElement):
             self.camera.transparency,
         )
 
-        # 3. Recompute if needed.
+        # 3. Recompute if needed, but in a non-blocking way.
         if self._cached_key != current_key:
             self._recompute_surface(current_key)
 
@@ -137,13 +160,19 @@ class CameraImageElement(CanvasElement):
         if self._recomputing:
             return
         self._recomputing = True
+
+        # Schedule the expensive work to run when the UI is idle.
+        GLib.idle_add(self._process_and_update_cache, key_for_this_job)
+
+    def _process_and_update_cache(self, key_for_this_job: tuple) -> bool:
+        """The actual work, to be run by GLib.idle_add."""
         try:
             image_data = self.camera.image_data
             img_data_id, width, height, p_area, transp = key_for_this_job
 
             if image_data is None or id(image_data) != img_data_id:
                 # A newer frame has already arrived; this job is stale.
-                return
+                return False  # Stop the idle add
 
             # Generate both the surface and its data buffer.
             result = self._generate_surface(
@@ -163,6 +192,9 @@ class CameraImageElement(CanvasElement):
             logger.error(f"Failed to recompute camera surface: {e}")
         finally:
             self._recomputing = False
+
+        # This function should only run once per schedule.
+        return False
 
     def _generate_surface(
         self,

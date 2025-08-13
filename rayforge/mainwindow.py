@@ -937,28 +937,16 @@ class MainWindow(Adw.ApplicationWindow):
 
         wp = WorkPiece.from_file(filename, importer)
 
-        # Calculate and set a default size and position for the new workpiece
-        if wp.pos is None or wp.size is None:
-            wswidth_mm, wsheight_mm = self.surface.get_size()
-            wp_width_nat_mm, wp_height_nat_mm = wp.get_default_size(
-                wswidth_mm, wsheight_mm
-            )
+        # The workpiece is created with a sensible size but is positioned
+        # near the origin. We now center it on the work surface.
+        wswidth_mm, wsheight_mm = self.surface.get_size()
+        wp_width_mm, wp_height_mm = wp.size
 
-            # Determine the size to use in mm, scaling down if necessary to fit
-            width_mm = wp_width_nat_mm
-            height_mm = wp_height_nat_mm
-            if width_mm > wswidth_mm or height_mm > wsheight_mm:
-                scale_w = wswidth_mm / width_mm if width_mm > 0 else 1
-                scale_h = wsheight_mm / height_mm if height_mm > 0 else 1
-                scale = min(scale_w, scale_h)
-                width_mm *= scale
-                height_mm *= scale
-
-            # Set the workpiece's size and centered position in mm
-            wp.set_size(width_mm, height_mm)
-            x_mm = (wswidth_mm - width_mm) / 2
-            y_mm = (wsheight_mm - height_mm) / 2
-            wp.set_pos(x_mm, y_mm)
+        # Center the workpiece on the surface.
+        x_mm = (wswidth_mm - wp_width_mm) / 2
+        y_mm = (wsheight_mm - wp_height_mm) / 2
+        # Using the property setter correctly rebuilds the matrix.
+        wp.pos = (x_mm, y_mm)
 
         cmd_name = _("Import {name}").format(name=filename.name)
         command = ListItemCommand(
@@ -970,7 +958,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc.history_manager.execute(command)
 
-        # No workpiece is active after loading a new document,
+        # A workpiece is not selected by default on import,
         # so ensure the properties widget is hidden.
         self.workpiece_revealer.set_reveal_child(False)
 
@@ -1036,11 +1024,13 @@ class MainWindow(Adw.ApplicationWindow):
                 new_wp.uid = str(uuid.uuid4())
                 newly_pasted_workpieces.append(new_wp)
 
-                original_pos = wp_dict.get("pos")
-                if original_pos:
-                    new_wp.set_pos(
-                        original_pos[0] + offset_x, original_pos[1] + offset_y
-                    )
+                # Decompose position from the restored matrix, apply offset,
+                # and rebuild the matrix by setting the 'pos' property.
+                original_pos = new_wp.pos
+                new_wp.pos = (
+                    original_pos[0] + offset_x,
+                    original_pos[1] + offset_y,
+                )
 
                 cmd_name = _("Paste {name}").format(
                     name=new_wp.source_file.name

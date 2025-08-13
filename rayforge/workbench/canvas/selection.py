@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 import logging
 from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Union
 from .region import ElementRegion, get_region_rect, check_region_hit
@@ -26,7 +27,6 @@ class MultiSelectionGroup:
         self.canvas: Canvas = canvas
         self._bounding_box: Tuple[float, float, float, float] = (0, 0, 0, 0)
         self._center: Tuple[float, float] = (0, 0)
-        self.angle: float = 0.0
         self.initial_states: List[Dict[str, Any]] = []
         self.initial_center: Tuple[float, float] = (0, 0)
 
@@ -154,19 +154,47 @@ class MultiSelectionGroup:
         )
 
     def check_region_hit(self, x: float, y: float) -> ElementRegion:
-        local_x = x - self.x
-        local_y = y - self.y
-        base_hit_size = self.canvas.BASE_HANDLE_SIZE
+        # The group's bounding box is (min_x, min_y, width, height) in world
+        # coords. Our handle geometry logic in get_region_rect adapts to the
+        # coordinate system (Y-down vs Y-up) based on the view transform. We
+        # must convert the world mouse coordinate (x,y) into the group's
+        # local AABB coordinate space, preserving the Y-axis orientation.
+        min_x, min_y, width, height = self._bounding_box
 
-        # Pass the scale_compensation argument. For a group, the scale is
-        # always 1.0.
+        # local_x is the distance from the left edge of the AABB.
+        local_x = x - min_x
+
+        # For local_y, we provide a coordinate relative to the AABB's origin
+        # (min_x, min_y). - For a normal Y-down view, min_y is the top edge,
+        # so this creates a Y-down local coordinate (distance from top). - For
+        # a flipped Y-up view, min_y is the bottom edge, so this creates a
+        # Y-up local coordinate (distance from bottom). This single
+        # calculation produces the local coordinate space that
+        # get_region_rect expects for both cases.
+        local_y = y - min_y
+
+        # Now we determine if the view is flipped to pass this info to the
+        # geometry calculation function.
+        m = self.canvas.view_transform.m
+        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+
+        # The scale compensation must account for the canvas's view transform.
+        sx = math.hypot(m[0, 0], m[1, 0])
+        sy = math.hypot(m[0, 1], m[1, 1])
+        if det < 0:
+            sy = -sy  # Use signed scale for get_region_rect
+        scale_compensation = (sx, sy)
+
+        # check_region_hit from region.py will use the local coordinates and
+        # the scale_compensation (which indicates if the view is flipped) to
+        # correctly test against the handle geometry.
         return check_region_hit(
             local_x,
             local_y,
             self.width,
             self.height,
-            base_hit_size,
-            scale_compensation=1.0,
+            self.canvas.BASE_HANDLE_SIZE,
+            scale_compensation=scale_compensation,
         )
 
     def apply_move(self, dx: float, dy: float):

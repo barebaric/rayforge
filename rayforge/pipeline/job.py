@@ -61,20 +61,24 @@ def _transform_and_clip_workpiece_ops(
         S_inv = np.diag([1 / w, 1 / h, 1, 1])
         ops.transform(S_inv)
 
-    # 1. Apply the workpiece's world transformation matrix. This single
-    # operation handles the scaling from unit space, rotation, and
-    # translation to place the workpiece correctly in the canonical
-    # (Y-up) world space.
-    world_matrix = workpiece.get_world_transform()
-    ops.transform(world_matrix)
+    # 1. Get the workpiece's 3x3 world transformation matrix from the model.
+    world_matrix_3x3 = workpiece.get_world_transform()
 
-    # 2. Convert from canonical (Y-up) to machine-native coords
+    # 2. Convert the 3x3 Matrix object to a 4x4 NumPy array for the Ops class.
+    # This is the bridge between the 2D model and 3D ops.
+    m = world_matrix_3x3.m
+    world_matrix_4x4 = np.identity(4)
+    world_matrix_4x4[0:2, 0:2] = m[0:2, 0:2]  # Copy rotation/scale
+    world_matrix_4x4[0:2, 3] = m[0:2, 2]  # Copy translation
+    ops.transform(world_matrix_4x4)
+
+    # 3. Convert from canonical (Y-up) to machine-native coords
     if machine.y_axis_down:
         machine_height = machine.dimensions[1]
         ops.scale(1, -1)
         ops.translate(0, machine_height)
 
-    # 3. Clip to machine boundaries
+    # 4. Clip to machine boundaries
     return ops.clip(clip_rect)
 
 

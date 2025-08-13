@@ -30,16 +30,17 @@ def get_region_rect(
     A generic function to calculate the rectangle (x, y, w, h) for a given
     region, relative to a bounding box of a given width and height.
 
-    It compensates for scale to keep handle sizes visually consistent.
+    It compensates for scale to keep handle sizes visually consistent and
+    adapts to flipped coordinate systems by checking the sign of the
+    scale_compensation.
+
     Args:
         region: The ElementRegion to calculate.
         width: The width of the bounding box.
         height: The height of the bounding box.
         base_handle_size: The desired base size of the handles in pixels.
-        scale_compensation: The scale factor(s) of the context. Can be a
-                            single float for uniform scale or a tuple (sx, sy)
-                            for non-uniform scale to ensure handles remain
-                            square.
+        scale_compensation: The signed scale factor(s) of the context.
+                            A negative y-scale indicates a flipped axis.
     """
     w, h = width, height
 
@@ -48,66 +49,86 @@ def get_region_rect(
     else:
         scale_x = scale_y = scale_compensation
 
-    # Avoid division by zero for extremely small or invalid scales
-    if abs(scale_x) < 1e-6 or abs(scale_y) < 1e-6:
+    # Check for a flipped Y-axis BEFORE taking the absolute value.
+    is_flipped_y = scale_y < 0
+
+    # Use absolute scale for calculating handle *dimensions*.
+    abs_scale_x = abs(scale_x)
+    abs_scale_y = abs(scale_y)
+
+    if abs_scale_x < 1e-6 or abs_scale_y < 1e-6:
         return (0.0, 0.0, 0.0, 0.0)
 
     # Calculate local handle dimensions by dividing the desired
     # visual size by the scale factors.
-    local_handle_w = base_handle_size / scale_x
-    local_handle_h = base_handle_size / scale_y
+    local_handle_w = base_handle_size / abs_scale_x
+    local_handle_h = base_handle_size / abs_scale_y
 
     # Dynamically calculate handle size to prevent overlap on small elements.
     effective_hw = min(local_handle_w, w / 3.0)
     effective_hh = min(local_handle_h, h / 3.0)
 
-    avg_scale = (scale_x + scale_y) / 2.0
+    # Use average scale for distance calculation of rotation handle
+    avg_abs_scale = (abs_scale_x + abs_scale_y) / 2.0
+
+    # Conditionally calculate Y positions based on the axis orientation.
+    if is_flipped_y:
+        # In a flipped system (like WorkSurface), the visual "top" starts
+        # at y=h.
+        y_start_top = h - effective_hh
+        # And the visual "bottom" starts at y=0.
+        y_start_bottom = 0.0
+    else:
+        # In a standard Y-down system, the visual "top" is at y=0.
+        y_start_top = 0.0
+        # And the visual "bottom" is at y=h.
+        y_start_bottom = h - effective_hh
+
+    # Side handles always start below the top corner handle's space.
+    y_start_middle = effective_hh
+    middle_height = h - 2.0 * effective_hh
+    if middle_height < 0:
+        middle_height = 0
 
     if region == ElementRegion.ROTATION_HANDLE:
-        handle_dist = 20.0 / avg_scale  # Keep distance visually constant
+        handle_dist = 20.0 / avg_abs_scale
         cx = w / 2.0
-        # The rotation handle also uses the effective sizes to appear square.
+        # Position is visually "above" the top edge.
+        if is_flipped_y:
+            y_rot_handle = h + handle_dist
+        else:
+            y_rot_handle = -handle_dist - effective_hh
         return (
             cx - effective_hw / 2.0,
-            -handle_dist - effective_hh,
+            y_rot_handle,
             effective_hw,
             effective_hh,
         )
 
     # Corner regions are rectangles that will appear square after scaling
     if region == ElementRegion.TOP_LEFT:
-        return 0.0, 0.0, effective_hw, effective_hh
+        return 0.0, y_start_top, effective_hw, effective_hh
     if region == ElementRegion.TOP_RIGHT:
-        return w - effective_hw, 0.0, effective_hw, effective_hh
+        return w - effective_hw, y_start_top, effective_hw, effective_hh
     if region == ElementRegion.BOTTOM_LEFT:
-        return 0.0, h - effective_hh, effective_hw, effective_hh
+        return 0.0, y_start_bottom, effective_hw, effective_hh
     if region == ElementRegion.BOTTOM_RIGHT:
-        return (
-            w - effective_hw,
-            h - effective_hh,
-            effective_hw,
-            effective_hh,
-        )
+        return w - effective_hw, y_start_bottom, effective_hw, effective_hh
 
     # Edge regions are between the corners
     if region == ElementRegion.TOP_MIDDLE:
-        return effective_hw, 0.0, w - 2.0 * effective_hw, effective_hh
+        return effective_hw, y_start_top, w - 2.0 * effective_hw, effective_hh
     if region == ElementRegion.BOTTOM_MIDDLE:
         return (
             effective_hw,
-            h - effective_hh,
+            y_start_bottom,
             w - 2.0 * effective_hw,
             effective_hh,
         )
     if region == ElementRegion.MIDDLE_LEFT:
-        return 0.0, effective_hh, effective_hw, h - 2.0 * effective_hh
+        return 0.0, y_start_middle, effective_hw, middle_height
     if region == ElementRegion.MIDDLE_RIGHT:
-        return (
-            w - effective_hw,
-            effective_hh,
-            effective_hw,
-            h - 2.0 * effective_hh,
-        )
+        return w - effective_hw, y_start_middle, effective_hw, middle_height
 
     if region == ElementRegion.BODY:
         return 0.0, 0.0, w, h

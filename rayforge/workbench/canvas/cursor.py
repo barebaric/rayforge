@@ -8,6 +8,8 @@ from .region import ElementRegion
 _cursor_cache: Dict[int, Gdk.Cursor] = {}
 _arc_cursor_cache: Dict[int, Gdk.Cursor] = {}
 
+# This map defines the base angle for each resize handle, using a standard
+# counter-clockwise (CCW) convention where 0 degrees is to the right.
 _region_angles = {
     ElementRegion.MIDDLE_RIGHT: 0,
     ElementRegion.TOP_RIGHT: 45,
@@ -26,7 +28,7 @@ def get_rotated_cursor(angle_deg: float) -> Gdk.Cursor:
     rotated to the given angle.
 
     Args:
-        angle_deg: The desired rotation of the cursor in degrees.
+        angle_deg: The desired mathematical rotation (CCW) of the cursor.
 
     Returns:
         A Gdk.Cursor object.
@@ -43,7 +45,7 @@ def get_rotated_cursor(angle_deg: float) -> Gdk.Cursor:
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surface)
     ctx.translate(hotspot, hotspot)
-    ctx.rotate(-math.radians(angle_deg))
+    ctx.rotate(math.radians(angle_deg))
 
     # Draw a white arrow with a black outline for visibility
     ctx.set_line_width(2)
@@ -67,7 +69,7 @@ def get_rotated_cursor(angle_deg: float) -> Gdk.Cursor:
     ctx.stroke_preserve()  # Keep path for white fill
 
     # White inner fill
-    ctx.set_source_rgb(1, 1, 1)  # White
+    ctx.set_source_rgb(1, 1, 1)
     ctx.set_line_width(1)
     ctx.stroke()
 
@@ -94,7 +96,7 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
     rotated to the given angle.
 
     Args:
-        angle_deg: The desired rotation of the cursor in degrees.
+        angle_deg: The desired mathematical rotation (CCW) of the cursor.
 
     Returns:
         A Gdk.Cursor object.
@@ -109,14 +111,15 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surface)
     ctx.translate(hotspot, hotspot)
-    ctx.rotate(-math.radians(angle_deg))
+    # Negate the mathematical angle to get the correct visual rotation (CW)
+    ctx.rotate(math.radians(angle_deg))
 
     ctx.set_line_width(2)
     ctx.set_source_rgb(0, 0, 0)
 
     radius = 14
-    start_angle = math.radians(225)  # Top-left
-    end_angle = math.radians(315)  # Top-right
+    start_angle = math.radians(225)
+    end_angle = math.radians(315)
 
     # Draw the main arc path
     ctx.arc(0, 0, radius, start_angle, end_angle)
@@ -136,12 +139,10 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
         tangent_angle = point_angle + math.pi / 2.0
         ctx.rotate(tangent_angle)
 
-        # *** THE FIX: Flip the start arrow 180 degrees to point it outward ***
         if is_start_arrow:
             ctx.rotate(math.pi)
 
         # Draw a standard V-shape arrowhead pointing away from the tip.
-        # The rotation of the context makes it point in the correct direction.
         ctx.move_to(0, 0)
         ctx.line_to(-arrow_length, -arrow_width)
         ctx.move_to(0, 0)
@@ -184,10 +185,10 @@ def get_cursor_for_region(
     elif region == ElementRegion.BODY:
         return Gdk.Cursor.new_from_name("move")
     elif region == ElementRegion.ROTATION_HANDLE:
-        # Use the new, custom arc cursor for rotation
-        return get_rotated_arc_cursor(-additional_angle)
+        return get_rotated_arc_cursor(additional_angle)
     else:  # must be a resize region
-        # Create a custom rotated cursor
         base_angle = _region_angles.get(region, 0)
-        cursor_angle = base_angle - additional_angle
+        # The final visual angle of the cursor is the handle's base angle
+        # plus the element's total world rotation angle.
+        cursor_angle = -base_angle + additional_angle
         return get_rotated_cursor(cursor_angle)

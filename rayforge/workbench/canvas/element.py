@@ -61,6 +61,7 @@ class CanvasElement:
         debounce_ms: int = 50,
         angle: float = 0.0,
         pixel_perfect_hit: bool = False,
+        matrix: Optional[Matrix] = None,
     ):
         """
         Initializes a new CanvasElement.
@@ -89,6 +90,9 @@ class CanvasElement:
             pixel_perfect_hit: If True (and buffered=True),
                 hit-testing will check the transparency of the
                 pixel on the element's surface.
+            matrix: An optional transformation matrix. If provided,
+                it overrides x, y, angle, and scale properties on
+                initialization.
         """
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -122,8 +126,10 @@ class CanvasElement:
         self._update_future: Optional[Future] = None
         self.pixel_perfect_hit = pixel_perfect_hit
 
-        # This is now the single source of truth for the local transform.
+        # This is the single source of truth for the local GEOMETRIC transform.
         self.transform: Matrix = Matrix.identity()
+        # This new matrix handles content orientation relative to the geometry.
+        self.content_transform: Matrix = Matrix.identity()
         # Cached matrix for the full transform to world space.
         self._world_transform: Matrix = Matrix.identity()
         self._transform_dirty: bool = True
@@ -136,8 +142,11 @@ class CanvasElement:
         # UI interaction state
         self.hovered: bool = False
 
-        # Initial synchronization from primitive properties on creation
-        self._rebuild_transform()
+        if matrix is not None:
+            self.set_transform(matrix)
+        else:
+            # Initial synchronization from primitive properties on creation
+            self._rebuild_transform()
 
     def _rebuild_transform(self):
         """
@@ -385,11 +394,20 @@ class CanvasElement:
         # Fallback to a default if the element is not on a canvas.
         base_hit_size = self.canvas.BASE_HANDLE_SIZE if self.canvas else 15.0
 
-        # Calculate the visual scale from the world transform matrix to pass
-        # to the hit-testing function. This makes hit-testing scale-aware.
-        m = world_transform.m
+        # This MUST match the calculation in Canvas._render_handles_overlay
+        # to ensure the hit-test geometry aligns with the rendered geometry.
+        if self.canvas:
+            transform_to_screen = self.canvas.view_transform @ world_transform
+        else:
+            transform_to_screen = world_transform
+
+        m = transform_to_screen.m
         sx = math.hypot(m[0, 0], m[1, 0])
         sy = math.hypot(m[0, 1], m[1, 1])
+        # A negative determinant of the 2x2 transform part indicates a flip.
+        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        if det < 0:
+            sy = -sy
 
         return check_region_hit(
             local_x, local_y, self.width, self.height, base_hit_size, (sx, sy)
@@ -415,6 +433,12 @@ class CanvasElement:
         """Creates a deep copy of the element."""
         return deepcopy(self)
 
+    def _set_canvas_recursive(self, canvas: Optional["Canvas"]):
+        """Recursively sets the canvas for self and all children."""
+        self.canvas = canvas
+        for child in self.children:
+            child._set_canvas_recursive(canvas)
+
     def add(self, elem: CanvasElement):
         """
         Adds a child element.
@@ -428,8 +452,10 @@ class CanvasElement:
         if elem.parent:
             elem.parent.remove_child(elem)
         self.children.append(elem)
-        elem.canvas = self.canvas
         elem.parent = self
+        # Recursively propagate the canvas reference to the new
+        # child and all of its descendants.
+        elem._set_canvas_recursive(self.canvas)
         elem.allocate()
         self.mark_dirty()
         if self.canvas:
@@ -763,35 +789,49 @@ class CanvasElement:
         """
         Draws the element's own content.
 
-        The cairo context is assumed to be fully transformed, so this
-        method must draw the element's geometry in its simple,
-        untransformed local coordinate space.
+        The cairo context is assumed to be in the element's geometric
+        coordinate space. This method applies the `content_transform` before
+        drawing the final content.
 
         Args:
             ctx: The cairo context, already transformed.
         """
+        ctx.save()
+
+        # Apply the content_transform relative to the local geometry.
+        m_content = self.content_transform.m
+        cairo_content_matrix = cairo.Matrix(
+            m_content[0, 0],
+            m_content[1, 0],
+            m_content[0, 1],
+            m_content[1, 1],
+            m_content[0, 2],
+            m_content[1, 2],
+        )
+        ctx.transform(cairo_content_matrix)
+
+        # --- The rest of the drawing logic is now inside this transform ---
         if not self.buffered or not self.surface:
             # Unbuffered: just draw the background.
             ctx.set_source_rgba(*self.background)
             ctx.rectangle(0, 0, self.width, self.height)
             ctx.fill()
-            return
+        else:
+            source_w = self.surface.get_width()
+            source_h = self.surface.get_height()
 
-        source_w = self.surface.get_width()
-        source_h = self.surface.get_height()
+            if source_w > 0 and source_h > 0:
+                # Draw the buffered surface. We need to scale it to fit the
+                # element's width and height.
+                ctx.save()
+                scale_x = self.width / source_w
+                scale_y = self.height / source_h
+                ctx.scale(scale_x, scale_y)
+                ctx.set_source_surface(self.surface, 0, 0)
+                ctx.get_source().set_filter(cairo.FILTER_GOOD)
+                ctx.paint()
+                ctx.restore()
 
-        if source_w <= 0 or source_h <= 0:
-            return
-
-        # Draw the buffered surface. We need to scale it to fit the element's
-        # width and height.
-        ctx.save()
-        scale_x = self.width / source_w
-        scale_y = self.height / source_h
-        ctx.scale(scale_x, scale_y)
-        ctx.set_source_surface(self.surface, 0, 0)
-        ctx.get_source().set_filter(cairo.FILTER_GOOD)
-        ctx.paint()
         ctx.restore()
 
     def clear_surface(self):
@@ -873,12 +913,11 @@ class CanvasElement:
         """
         Checks if the pixel at local geometry coordinates is opaque.
 
-        For buffered elements, this reads the alpha channel from the
-        backing surface. For unbuffered elements, it returns True.
+        This method is now fully generic, accounting for the content_transform.
 
         Args:
-            local_x: The x-coordinate in local geometry space.
-            local_y: The y-coordinate in local geometry space.
+            local_x: The x-coordinate in the element's local GEOMETRY space.
+            local_y: The y-coordinate in the element's local GEOMETRY space.
 
         Returns:
             True if the pixel is considered a hit (alpha > 0).
@@ -890,14 +929,30 @@ class CanvasElement:
 
         surface_w = self.surface.get_width()
         surface_h = self.surface.get_height()
-
-        # Check if the local point is even within the element's bounds.
-        if not (0 <= local_x < self.width and 0 <= local_y < self.height):
+        if surface_w <= 0 or surface_h <= 0:
             return False
 
-        # Scale local coordinates to surface pixel coordinates.
-        surface_x = int(local_x * (surface_w / self.width))
-        surface_y = int(local_y * (surface_h / self.height))
+        # The received coordinates are in the element's GEOMETRIC space.
+        # We must transform them into the CONTENT's space before sampling
+        # the surface.
+        content_x, content_y = local_x, local_y
+        if not self.content_transform.is_identity():
+            try:
+                # We need to map the geometric point to the content's
+                # coordinate system. This requires the inverse of the
+                # content_transform.
+                inv_content = self.content_transform.invert()
+                content_x, content_y = inv_content.transform_point(
+                    (local_x, local_y)
+                )
+            except Exception:
+                # If matrix is non-invertible, we can't do the hit-test.
+                # Default to a hit, as the user is inside the bounding box.
+                return True
+
+        # Scale CONTENT coordinates to surface pixel coordinates.
+        surface_x = int(content_x * (surface_w / self.width))
+        surface_y = int(content_y * (surface_h / self.height))
 
         # Check if the calculated pixel is within the surface's bounds.
         if not (0 <= surface_x < surface_w and 0 <= surface_y < surface_h):

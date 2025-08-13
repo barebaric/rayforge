@@ -92,6 +92,17 @@ class Matrix:
         """Returns a new identity matrix."""
         return Matrix()
 
+    def is_identity(self) -> bool:
+        """
+        Checks if the matrix is an identity matrix.
+
+        Uses np.allclose for robust floating-point comparisons.
+
+        Returns:
+            True if the matrix is close to an identity matrix, False otherwise.
+        """
+        return np.allclose(self.m, np.identity(3))
+
     def get_translation(self) -> Tuple[float, float]:
         """
         Extracts the translation component (tx, ty) from the matrix.

@@ -1,8 +1,6 @@
 import logging
 import uuid
-import math
 import cairo
-import numpy as np
 from typing import (
     Generator,
     Optional,
@@ -18,6 +16,7 @@ from blinker import Signal
 from pathlib import Path
 from ..importer import Importer, importer_by_name
 from .item import DocItem
+from .matrix import Matrix
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -52,28 +51,8 @@ class WorkPiece(DocItem):
         self._importer_ref_for_pyreverse: Importer
 
         # The matrix is the single source of truth. A new workpiece starts
-        # as a 1x1mm object at the origin.
-        self._matrix: np.ndarray = np.identity(4)
+        # as a 1x1mm object at the origin. _matrix is inherited from DocItem.
         self._rebuild_matrix((0.0, 0.0), 0.0, (1.0, 1.0))
-
-    @property
-    def matrix(self) -> np.ndarray:
-        """
-        The 4x4 transformation matrix that defines the workpiece's position,
-        rotation, and scale in world space.
-        """
-        return self._matrix
-
-    @matrix.setter
-    def matrix(self, value: np.ndarray):
-        """
-        Sets the transformation matrix. This is a transform-only operation
-        that fires the `transform_changed` signal.
-        """
-        if np.allclose(self._matrix, value):
-            return
-        self._matrix = value
-        self.transform_changed.send(self)
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -96,39 +75,24 @@ class WorkPiece(DocItem):
         size, rotation, and position.
 
         The final matrix is a composition of:
-        M = T_pos @ T_rot_center @ R @ T_inv_rot_center @ S
+        M = T_pos @ R_center @ S
         Where:
         - S: Scales the unit object to the target `size`.
-        - T_inv_rot_center: Translates the scaled object's center to the
-            origin.
-        - R: Rotates the object around the origin.
-        - T_rot_center: Translates the object back.
+        - R_center: Rotates the scaled object around its center.
         - T_pos: Translates the object to its final world `pos`.
         """
         w, h = size
-        angle_rad = math.radians(-angle_deg)
-        c, s = math.cos(angle_rad), math.sin(angle_rad)
         cx, cy = w / 2, h / 2
 
-        # Final translation to move the object's top-left corner
-        T_pos = np.array(
-            [[1, 0, 0, pos[0]], [0, 1, 0, pos[1]], [0, 0, 1, 0], [0, 0, 0, 1]]
-        )
+        # Use Matrix class methods to build transformations
+        S = Matrix.scale(w, h)
+        # The angle is negated to match the clockwise rotation convention.
+        R = Matrix.rotation(angle_deg, center=(cx, cy))
+        T = Matrix.translation(pos[0], pos[1])
 
-        # Scale
-        S = np.diag([w, h, 1, 1])
-
-        # Rotation around the object's center (cx, cy)
-        T_to_origin = np.array(
-            [[1, 0, 0, -cx], [0, 1, 0, -cy], [0, 0, 1, 0], [0, 0, 0, 1]]
-        )
-        R = np.array([[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        T_from_origin = np.array(
-            [[1, 0, 0, cx], [0, 1, 0, cy], [0, 0, 1, 0], [0, 0, 0, 1]]
-        )
-        M_rot_center = T_from_origin @ R @ T_to_origin
-
-        self._matrix = T_pos @ M_rot_center @ S
+        # Compose the final matrix. Order is critical: scale first,
+        # then rotate around center, then translate to final position.
+        self._matrix = T @ R @ S
 
     @property
     def size(self) -> Tuple[float, float]:
@@ -136,9 +100,8 @@ class WorkPiece(DocItem):
         The world-space size (width, height) in mm, decomposed from the
         matrix's scaling components.
         """
-        scale_x = np.linalg.norm(self._matrix[:3, 0])
-        scale_y = np.linalg.norm(self._matrix[:3, 1])
-        return float(scale_x), float(scale_y)
+        sx, sy = self.matrix.get_scale()
+        return abs(sx), abs(sy)
 
     def set_size(self, width_mm: float, height_mm: float):
         """
@@ -151,13 +114,13 @@ class WorkPiece(DocItem):
             return
 
         # 1. Get current world-space center of the unit object
-        old_center_world = self._matrix @ np.array([0.5, 0.5, 0, 1])
+        old_center_world = self.matrix.transform_point((0.5, 0.5))
 
         # 2. Rebuild a temporary matrix with the new size at the origin to find
         #    where its center would land.
-        temp_matrix = np.copy(self._matrix)
+        temp_matrix = self.matrix.copy()
         self._rebuild_matrix((0, 0), self.angle, new_size)
-        new_center_at_origin = self._matrix @ np.array([0.5, 0.5, 0, 1])
+        new_center_at_origin = self.matrix.transform_point((0.5, 0.5))
         self._matrix = temp_matrix  # Restore original matrix for now
 
         # 3. Calculate the required top-left `pos` to move the new center to
@@ -168,6 +131,7 @@ class WorkPiece(DocItem):
         # 4. Rebuild the final matrix with the correct new size and position.
         self._rebuild_matrix((new_pos_x, new_pos_y), self.angle, new_size)
         self.changed.send(self)
+        self.transform_changed.send(self)
 
     @property
     def pos(self) -> Tuple[float, float]:
@@ -175,24 +139,21 @@ class WorkPiece(DocItem):
         The position (in mm) of the workpiece's top-left corner, as if it
         were un-rotated. This is decomposed from the transformation matrix.
         """
-        # Decompose size and angle first, as they are needed to reconstruct
-        # the rotation-and-scale-only part of the matrix (M_sr).
         w, h = self.size
-        angle_deg = self.angle
-        angle_rad = math.radians(-angle_deg)
-        c, s = math.cos(angle_rad), math.sin(angle_rad)
+        angle = self.angle
 
-        # Reconstruct the translation component of the M_sr matrix. This
-        # represents the displacement caused by rotating around the center.
-        cx, cy = w / 2, h / 2
-        # This is the (I - R) @ center calculation
-        msr_tx = cx - c * cx + s * cy
-        msr_ty = cy - s * cx - c * cy
+        S = Matrix.scale(w, h)
+        R = Matrix.rotation(-angle, center=(w / 2, h / 2))
+        # This matrix represents the combined scale and centered rotation
+        M_rs = R @ S
 
-        # The final matrix is M = T_pos @ M_sr. The translation part of M is
-        # T_pos + (translation part of M_sr).
-        # So, T_pos = M_trans - M_sr_trans.
-        return self._matrix[0, 3] - msr_tx, self._matrix[1, 3] - msr_ty
+        # The final matrix is M = T @ M_rs.
+        # The translation of M is T_trans + M_rs_trans.
+        # So, T_trans = M_trans - M_rs_trans.
+        m_tx, m_ty = self.matrix.get_translation()
+        mrs_tx, mrs_ty = M_rs.get_translation()
+
+        return (m_tx - mrs_tx, m_ty - mrs_ty)
 
     @pos.setter
     def pos(self, new_pos: Tuple[float, float]):
@@ -212,13 +173,7 @@ class WorkPiece(DocItem):
         The clockwise rotation angle (in degrees) of the workpiece.
         This is decomposed from the transformation matrix.
         """
-        scale_x = np.linalg.norm(self._matrix[:3, 0])
-        if scale_x == 0:
-            return 0.0
-        # Reconstruct the rotation matrix part by un-scaling the columns
-        unscaled_x_axis = self._matrix[:2, 0] / scale_x
-        angle_rad = math.atan2(unscaled_x_axis[1], unscaled_x_axis[0])
-        return -math.degrees(angle_rad) % 360
+        return self.matrix.get_rotation() % 360
 
     @angle.setter
     def angle(self, new_angle: float):
@@ -227,17 +182,23 @@ class WorkPiece(DocItem):
         transform-only operation and fires the `transform_changed` signal.
         """
         new_angle_float = float(new_angle % 360)
-        if math.isclose(new_angle_float, self.angle, abs_tol=1e-9):
+        # Use a small tolerance for floating point comparison of angles
+        current_angle = self.angle
+        if abs(new_angle_float - current_angle) < 1e-9 or abs(
+            new_angle_float - current_angle - 360
+        ) < 1e-9:
             return
         self._rebuild_matrix(self.pos, new_angle_float, self.size)
         self.transform_changed.send(self)
 
-    def get_world_transform(self) -> "np.ndarray":
+    def get_world_transform(self) -> "Matrix":
         """
         Returns the transformation matrix for this workpiece. The matrix is
         the single source of truth for position, size, and rotation.
         """
-        return self._matrix
+        # The parent (Layer) is not a DocItem, so world transform is just the
+        # local matrix. This correctly overrides DocItem's implementation.
+        return self.matrix
 
     def get_all_workpieces(self) -> List["WorkPiece"]:
         """For a single WorkPiece, this just returns itself in a list."""
@@ -256,7 +217,7 @@ class WorkPiece(DocItem):
         rclass = self.importer_class
         state["_importer_class_name"] = rclass.__name__
         state.pop("importer_class", None)
-        state["matrix"] = self._matrix.tolist()
+        state["matrix"] = self._matrix.m.tolist()
         state.pop("_matrix", None)
         return state
 
@@ -266,7 +227,7 @@ class WorkPiece(DocItem):
         """
         importer_class_name = state.pop("_importer_class_name")
         self.importer_class = importer_by_name[importer_class_name]
-        self._matrix = np.array(state.pop("matrix"))
+        self._matrix = Matrix(state.pop("matrix"))
         self.__dict__.update(state)
         self.importer = self.importer_class(self._data)
         self.changed = Signal()
@@ -282,7 +243,7 @@ class WorkPiece(DocItem):
         return {
             "uid": self.uid,
             "name": self.source_file,
-            "matrix": self._matrix.tolist(),
+            "matrix": self._matrix.m.tolist(),
             "data": self._data,
             "importer": rclass.__name__,
         }
@@ -298,7 +259,7 @@ class WorkPiece(DocItem):
         wp.name = data_dict.get("name") or wp.source_file.name
 
         if "matrix" in data_dict:
-            wp._matrix = np.array(data_dict["matrix"])
+            wp._matrix = Matrix(data_dict["matrix"])
         # Backward compatibility for old format with 'size'
         elif "size" in data_dict and data_dict["size"] is not None:
             pos = data_dict.get("pos", (0.0, 0.0))

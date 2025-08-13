@@ -1,5 +1,4 @@
 import logging
-import numpy as np
 from gi.repository import Gtk, Adw, Gio  # type: ignore
 from typing import Optional, Tuple, List
 from pathlib import Path
@@ -184,7 +183,7 @@ class WorkpiecePropertiesWidget(Expander):
         new_matrix = workpiece.matrix.copy()
 
         # If the matrix didn't actually change, do nothing.
-        if np.allclose(old_matrix, new_matrix):
+        if old_matrix == new_matrix:
             return
 
         cmd = ChangePropertyCommand(
@@ -309,7 +308,7 @@ class WorkpiecePropertiesWidget(Expander):
                     workpiece.pos_machine = (new_x, pos_machine[1])
                     new_matrix = workpiece.matrix.copy()
 
-                    if np.allclose(old_matrix, new_matrix):
+                    if old_matrix == new_matrix:
                         continue
 
                     cmd = ChangePropertyCommand(
@@ -339,7 +338,7 @@ class WorkpiecePropertiesWidget(Expander):
                     workpiece.pos_machine = (pos_machine[0], new_y)
                     new_matrix = workpiece.matrix.copy()
 
-                    if np.allclose(old_matrix, new_matrix):
+                    if old_matrix == new_matrix:
                         continue
 
                     cmd = ChangePropertyCommand(
@@ -369,7 +368,7 @@ class WorkpiecePropertiesWidget(Expander):
                     workpiece.angle = new_angle
                     new_matrix = workpiece.matrix.copy()
 
-                    if np.allclose(old_matrix, new_matrix):
+                    if old_matrix == new_matrix:
                         continue
 
                     cmd = ChangePropertyCommand(
