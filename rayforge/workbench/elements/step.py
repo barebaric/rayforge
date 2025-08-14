@@ -43,7 +43,14 @@ class StepElement(CanvasElement):
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         super().__init__(
-            x, y, width, height, data=step, selectable=False, **kwargs
+            x,
+            y,
+            width,
+            height,
+            data=step,
+            selectable=False,
+            clip=False,
+            **kwargs,
         )
         self.show_travel_moves = show_travel_moves
         self.ops_generator = ops_generator
@@ -208,7 +215,7 @@ class StepElement(CanvasElement):
 
         logger.debug(
             f"StepElem '{sender.name}': Received ops_generation_finished "
-            f"for {workpiece.source_file}"
+            f"for {workpiece.source_file} (gen ID: {generation_id})"
         )
         assert self.canvas and self.parent and self.parent.data, (
             "Received ops_finished, but element has no canvas or parent "
@@ -223,4 +230,9 @@ class StepElement(CanvasElement):
 
         elem = self._find_or_add_workpiece_elem(workpiece)
         final_ops = self.ops_generator.get_ops(sender, workpiece)
+        ops_len = len(final_ops.commands) if final_ops else "None"
+        logger.debug(
+            f"StepElem '{sender.name}': Passing {ops_len} final ops to "
+            f"WorkPieceOpsElement for '{workpiece.source_file}'."
+        )
         elem.set_ops(final_ops, generation_id=generation_id)

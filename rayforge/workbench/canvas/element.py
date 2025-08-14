@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 # Reserve 2 threads for UI responsiveness
 max_workers = max(1, (os.cpu_count() or 1) - 2)
+# Define a maximum dimension for our rendering buffers to prevent cairo errors.
+MAX_BUFFER_DIM = 30000
 
 
 class CanvasElement:
@@ -227,39 +229,69 @@ class CanvasElement:
 
     def trigger_update(self):
         """
-        Schedules a background render of the element's surface.
+        Schedules a background render of the element's surface and recursively
+        triggers updates for all children.
 
         If called multiple times in quick succession, the calls are
-        debounced to prevent excessive updates. This has no effect
-        on unbuffered elements.
+        debounced to prevent excessive updates. For unbuffered elements, this
+        method simply passes the update call to its children.
         """
-        if not self.buffered:
-            return
+        # If this element is buffered, schedule its own surface update.
+        if self.buffered:
+            if self._debounce_timer_id is not None:
+                GLib.source_remove(self._debounce_timer_id)
 
-        if self._debounce_timer_id is not None:
-            GLib.source_remove(self._debounce_timer_id)
+            if self.debounce_ms <= 0:
+                self._start_update()
+            else:
+                self._debounce_timer_id = GLib.timeout_add(
+                    self.debounce_ms, self._start_update
+                )
 
-        if self.debounce_ms <= 0:
-            self._start_update()
-        else:
-            self._debounce_timer_id = GLib.timeout_add(
-                self.debounce_ms, self._start_update
-            )
+        # Always recursively trigger updates for all children, as they might
+        # be buffered even if this parent element is not.
+        for child in self.children:
+            child.trigger_update()
 
     def _start_update(self) -> bool:
         """
         Submits the rendering task to the background thread pool.
+        This now calculates the correct pixel dimensions for the buffer.
         """
         self._debounce_timer_id = None
 
         if self._update_future and not self._update_future.done():
             self._update_future.cancel()
 
-        render_width, render_height = round(self.width), round(self.height)
-        if render_width <= 0 or render_height <= 0:
+        if not self.canvas:
             return False
 
-        # Submit the thread-safe part to the executor
+        # Calculate the total transformation from this element's local space
+        # to the final screen (pixel) space.
+        transform_to_screen = (
+            self.canvas.view_transform @ self.get_world_transform()
+        )
+
+        # The absolute scale of this matrix tells us how many pixels one
+        # local unit of the element occupies on screen.
+        scale_x, scale_y = transform_to_screen.get_abs_scale()
+
+        # Calculate the required buffer dimensions in pixels.
+        render_width = round(self.width * scale_x)
+        render_height = round(self.height * scale_y)
+
+        # Clamp the render dimensions to the maximum allowed size
+        render_width = min(render_width, MAX_BUFFER_DIM)
+        render_height = min(render_height, MAX_BUFFER_DIM)
+
+        if render_width <= 0 or render_height <= 0:
+            # Don't try to render to a zero or negative size surface.
+            self.surface = None  # Ensure any old surface is cleared
+            if self.canvas:
+                self.canvas.queue_draw()
+            return False
+
+        # Submit the thread-safe part to the executor with correct pixel dims.
         self._update_future = self._executor.submit(
             self.render_to_surface, render_width, render_height
         )

@@ -16,6 +16,7 @@ from .elements.step import StepElement
 from .elements.workpiece import WorkPieceElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
+from .elements.ops import WorkPieceOpsElement
 from ..doceditor.layout import (
     LayoutStrategy,
     BboxAlignLeftStrategy,
@@ -426,9 +427,59 @@ class WorkSurface(Canvas):
         """Returns the size of the work surface in mm."""
         return self.width_mm, self.height_mm
 
+    def get_view_scale(self) -> Tuple[float, float]:
+        """
+        Returns the current effective pixels-per-millimeter scale of the view,
+        taking into account the base scale, zoom, and widget size.
+        """
+        widget_w, widget_h = self.get_width(), self.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return 1.0, 1.0
+
+        _, _, content_w, content_h = self._axis_renderer.get_content_layout(
+            widget_w, widget_h
+        )
+
+        base_scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+        base_scale_y = content_h / self.height_mm if self.height_mm > 0 else 1
+
+        return base_scale_x * self.zoom_level, base_scale_y * self.zoom_level
+
     def on_motion(self, gesture, x: float, y: float):
         self._mouse_pos = x, y
-        return super().on_motion(gesture, x, y)
+
+        # Let the base canvas handle the interactive transform of selected
+        # elements. It will return True if it handled the motion (i.e. a
+        # drag was in progress).
+        was_handled_by_parent = super().on_motion(gesture, x, y)
+
+        # If a transform was in progress, sync the dependent ops elements.
+        # The parent's on_motion sets _moving, _resizing, _rotating flags.
+        if self._moving or self._resizing or self._rotating:
+            for element in self.get_selected_elements():
+                if isinstance(element, WorkPieceElement):
+                    workpiece_data = element.data
+
+                    # Find all StepElements on the canvas
+                    for step_elem in self.find_by_type(StepElement):
+                        # Find the specific WorkPieceOpsElement for this
+                        # workpiece
+                        ops_elem = step_elem.find_by_data(workpiece_data)
+                        if ops_elem and isinstance(
+                            ops_elem, WorkPieceOpsElement
+                        ):
+                            # Pass the WorkPieceElement's *current* world
+                            # transform to the ops element for a transient
+                            # update. The ops elem will not queue its own
+                            # draw, as the canvas drag loop already handles
+                            # it.
+                            elem_transform = element.get_world_transform()
+                            ops_elem._on_workpiece_transform_changed(
+                                workpiece_data,
+                                transient_world_transform=elem_transform,
+                            )
+
+        return was_handled_by_parent
 
     def on_scroll(self, controller, dx: float, dy: float):
         """Handles the scroll event for zoom."""
@@ -533,8 +584,22 @@ class WorkSurface(Canvas):
         #   -> Offset to final position.
         final_transform = m_offset @ m_zoom @ m_scale @ pan_transform
 
-        # CRITICAL: Update the base Canvas's view_transform
+        # Update the base Canvas's view_transform
         self.view_transform = final_transform
+
+        # Propagate the view change to elements that depend on it.
+
+        # WorkPieceElement's buffer needs to be re-rendered on zoom to
+        # avoid blurriness. Calling trigger_update invalidates the buffer.
+        for elem in self.find_by_type(WorkPieceElement):
+            elem.trigger_update()
+
+        # WorkPieceOpsElement's geometry is dependent on the view scale to
+        # maintain a constant pixel margin.
+        for elem in self.find_by_type(WorkPieceOpsElement):
+            elem = cast(WorkPieceOpsElement, elem)
+            # Tell the element to recalculate its transform and size.
+            elem._on_workpiece_transform_changed(elem.data)
 
         self.set_laser_dot_position(
             self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]

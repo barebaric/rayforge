@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 from ..canvas.element import CanvasElement
 from .workpiece import WorkPieceElement
 from .step import StepElement
@@ -159,10 +159,3 @@ class LayerElement(CanvasElement):
         self.sort_children_by_z_order()
 
         self.canvas.queue_draw()
-
-    def get_elem_hit(
-        self, x: float, y: float, selectable: bool = False
-    ) -> Optional[CanvasElement]:
-        if not self.visible:
-            return None
-        return super().get_elem_hit(x, y, selectable)

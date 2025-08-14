@@ -69,7 +69,7 @@ class OpsGenerator:
         Args:
             doc: The top-level Doc object to monitor for changes.
         """
-        self.doc = doc
+        self._doc: Doc = Doc()
         self._ops_cache: OpsGenerator.OpsCacheType = {}
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
         self._active_tasks: Dict[Tuple[str, str], "Task"] = {}
@@ -80,17 +80,56 @@ class OpsGenerator:
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
 
-        self._connect_signals()
-        self.reconcile_all()
+        # This will trigger the setter, which connects signals and runs the
+        # initial reconciliation.
+        self.doc = doc
+
+    @property
+    def doc(self) -> Doc:
+        """The document model this generator is observing."""
+        return self._doc
+
+    @doc.setter
+    def doc(self, new_doc: Doc):
+        """Sets the document and manages signal connections."""
+        if self._doc is new_doc:
+            return  # No change
+
+        # Disconnect from the old document if it exists
+        if self._doc:
+            self._disconnect_signals()
+            # Clean up state related to the old document
+            # Cancel any running tasks associated with the old doc and clear
+            # caches
+            for key in list(self._active_tasks.keys()):
+                self._cleanup_key(key)
+            # Ensure cache is fully cleared in case some items had no active
+            # tasks
+            self._ops_cache.clear()
+            self._generation_id_map.clear()
+
+        self._doc = new_doc
+
+        # Connect to the new document and reconcile its state
+        if self._doc:
+            logger.debug(
+                f"OpsGenerator assigned new document: {id(self._doc)}"
+            )
+            self._connect_signals()
+            self.reconcile_all()
 
     def _connect_signals(self):
         """Connects to the document's signals."""
+        logger.debug(f"OpsGenerator connecting signals for doc {id(self.doc)}")
         self.doc.descendant_added.connect(self._on_descendant_added)
         self.doc.descendant_removed.connect(self._on_descendant_removed)
         self.doc.descendant_updated.connect(self._on_descendant_updated)
 
     def _disconnect_signals(self):
         """Disconnects from the document's signals."""
+        logger.debug(
+            f"OpsGenerator disconnecting signals for doc {id(self.doc)}"
+        )
         # Blinker's disconnect is safe to call even if not connected.
         self.doc.descendant_added.disconnect(self._on_descendant_added)
         self.doc.descendant_removed.disconnect(self._on_descendant_removed)
@@ -435,14 +474,26 @@ class OpsGenerator:
             return None
 
         raw_ops, pixel_size = self._ops_cache.get(key, (None, None))
+
         if raw_ops is None:
+            logger.debug(f"get_ops for {key}: No ops found in cache.")
             return None
+        else:
+            logger.debug(
+                f"get_ops for {key}: Found raw_ops with "
+                f"{len(raw_ops.commands)} "
+                f"commands. Pixel size: {pixel_size}."
+            )
 
         ops = deepcopy(raw_ops)
 
         if pixel_size:
             self._scale_ops_to_workpiece_size(ops, pixel_size, workpiece)
 
+        logger.debug(
+            f"get_ops for {key}: Returning final ops with {len(ops.commands)} "
+            f"commands. Bbox: {ops.rect()}"
+        )
         return ops
 
     def _scale_ops_to_workpiece_size(
@@ -462,4 +513,5 @@ class OpsGenerator:
         if traced_width_px > 0 and traced_height_px > 0:
             scale_x = final_width_mm / traced_width_px
             scale_y = final_height_mm / traced_height_px
+            logger.debug(f"Scaling ops by ({scale_x}, {scale_y})")
             ops.scale(scale_x, scale_y)

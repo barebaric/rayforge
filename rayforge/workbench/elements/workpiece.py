@@ -56,10 +56,9 @@ class WorkPieceElement(CanvasElement):
         """
         Renders the workpiece's visual data to a pixel buffer.
         """
-        buffer_size = 512
         return self.data.importer.render_to_pixels(
-            width=buffer_size,
-            height=buffer_size,
+            width=width,
+            height=height,
         )
 
     def _on_model_content_changed(self, workpiece: WorkPiece):

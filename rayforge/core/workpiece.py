@@ -62,6 +62,44 @@ class WorkPiece(DocItem):
     def layer(self, value: Optional["Layer"]):
         self.parent = value
 
+    @property
+    def matrix(self) -> "Matrix":
+        """The 3x3 local transformation matrix for this item."""
+        return self._matrix
+
+    @matrix.setter
+    def matrix(self, value: "Matrix"):
+        """
+        Sets the local transformation matrix and fires the appropriate signals.
+
+        This setter intelligently determines if the size (scale) of the
+        workpiece has changed.
+        - If scale changes, it fires `changed` (for ops regeneration) and
+          `transform_changed` (for UI updates).
+        - If only position/rotation changes, it only fires `transform_changed`.
+        """
+        old_matrix = self._matrix
+        if old_matrix == value:
+            return
+
+        old_scale = old_matrix.get_abs_scale()
+        new_scale = value.get_abs_scale()
+
+        self._matrix = value
+
+        # Use a tolerance for floating point comparison of scale.
+        scale_changed = not (
+            abs(old_scale[0] - new_scale[0]) < 1e-9
+            and abs(old_scale[1] - new_scale[1]) < 1e-9
+        )
+
+        # If the size/scale changed, it's a data-level change.
+        if scale_changed:
+            self.changed.send(self)
+
+        # Any geometric change requires a transform update for the UI.
+        self.transform_changed.send(self)
+
     def _rebuild_matrix(
         self,
         pos: Tuple[float, float],
@@ -92,7 +130,7 @@ class WorkPiece(DocItem):
 
         # Compose the final matrix. Order is critical: scale first,
         # then rotate around center, then translate to final position.
-        self._matrix = T @ R @ S
+        self.matrix = T @ R @ S
 
     @property
     def size(self) -> Tuple[float, float]:
@@ -118,6 +156,7 @@ class WorkPiece(DocItem):
         # 2. Rebuild a temporary matrix with the new size at the origin to find
         #    where its center would land.
         temp_matrix = self.matrix.copy()
+        # This will call the new matrix setter, which is fine.
         self._rebuild_matrix((0, 0), self.angle, new_size)
         new_center_at_origin = self.matrix.transform_point((0.5, 0.5))
         self._matrix = temp_matrix  # Restore original matrix for now
@@ -128,9 +167,9 @@ class WorkPiece(DocItem):
         new_pos_y = old_center_world[1] - new_center_at_origin[1]
 
         # 4. Rebuild the final matrix with the correct new size and position.
+        # This will call the matrix.setter, which will fire the correct
+        # signals.
         self._rebuild_matrix((new_pos_x, new_pos_y), self.angle, new_size)
-        self.changed.send(self)
-        self.transform_changed.send(self)
 
     @property
     def pos(self) -> Tuple[float, float]:
@@ -163,8 +202,9 @@ class WorkPiece(DocItem):
         new_pos_float = float(new_pos[0]), float(new_pos[1])
         if new_pos_float == self.pos:
             return
+        # This will call the matrix.setter, which will fire the correct
+        # signals.
         self._rebuild_matrix(new_pos_float, self.angle, self.size)
-        self.transform_changed.send(self)
 
     @property
     def angle(self) -> float:
@@ -183,12 +223,14 @@ class WorkPiece(DocItem):
         new_angle_float = float(new_angle % 360)
         # Use a small tolerance for floating point comparison of angles
         current_angle = self.angle
-        if abs(new_angle_float - current_angle) < 1e-9 or abs(
-            new_angle_float - current_angle - 360
-        ) < 1e-9:
+        if (
+            abs(new_angle_float - current_angle) < 1e-9
+            or abs(new_angle_float - current_angle - 360) < 1e-9
+        ):
             return
+        # This will call the matrix.setter, which will fire the correct
+        # signals.
         self._rebuild_matrix(self.pos, new_angle_float, self.size)
-        self.transform_changed.send(self)
 
     def get_world_transform(self) -> "Matrix":
         """
@@ -258,7 +300,7 @@ class WorkPiece(DocItem):
         wp.name = data_dict.get("name") or wp.source_file.name
 
         if "matrix" in data_dict:
-            wp._matrix = Matrix(data_dict["matrix"])
+            wp.matrix = Matrix(data_dict["matrix"])
         # Backward compatibility for old format with 'size'
         elif "size" in data_dict and data_dict["size"] is not None:
             pos = data_dict.get("pos", (0.0, 0.0))

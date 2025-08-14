@@ -138,6 +138,7 @@ class Canvas(Gtk.DrawingArea):
         self.add_controller(self._motion_controller)
 
         self._drag_gesture = Gtk.GestureDrag()
+        self._drag_gesture.set_button(Gdk.BUTTON_PRIMARY)
         self._drag_gesture.connect("drag-update", self.on_mouse_drag)
         self._drag_gesture.connect("drag-end", self.on_button_release)
         self.add_controller(self._drag_gesture)
@@ -693,6 +694,8 @@ class Canvas(Gtk.DrawingArea):
                 self._selection_group.apply_move(world_dx, world_dy)
             elif self._resizing:
                 self._apply_group_resize(world_dx, world_dy)
+                for elem in self._selection_group.elements:
+                    elem.trigger_update()
             elif self._rotating:
                 self._rotate_selection_group(current_world_x, current_world_y)
             self.queue_draw()
@@ -701,6 +704,7 @@ class Canvas(Gtk.DrawingArea):
                 self._move_active_element(world_dx, world_dy)
             elif self._resizing:
                 self._resize_active_element(world_dx, world_dy)
+                self._active_elem.trigger_update()
             elif self._rotating:
                 self._rotate_active_element(current_world_x, current_world_y)
             self.queue_draw()
@@ -804,6 +808,8 @@ class Canvas(Gtk.DrawingArea):
                 dw, dh = new_w - orig_w, new_h - orig_h
                 is_corner = (is_left or is_right) and (is_top or is_bottom)
 
+                # Recalculate one dimension based on the other to maintain
+                # aspect ratio
                 if (is_corner and abs(dw) > abs(dh) * aspect) or (
                     not is_corner and (is_left or is_right)
                 ):
@@ -811,14 +817,50 @@ class Canvas(Gtk.DrawingArea):
                 else:
                     new_w = new_h * aspect
 
+                # After constraining dimensions, the origin (new_x, new_y)
+                # must be recalculated to keep the anchor point (the opposite
+                # side or center) fixed.
+
+                # Horizontal Anchoring
                 if is_left:
-                    new_x = orig_x + orig_w - new_w
+                    new_x = (orig_x + orig_w) - new_w
+                elif not (is_right or is_left):  # Top/Bottom middle handle
+                    new_x = orig_x + (orig_w - new_w) / 2
+                # If is_right, new_x remains orig_x, which is correct.
+
+                # Vertical Anchoring
                 if is_top:
-                    # In both coordinate systems, if the top handle is
-                    # dragged, the element's origin_y changes.
-                    new_y = orig_y + orig_h - new_h
+                    if not is_view_flipped:  # Y-down, anchor is bottom edge.
+                        new_y = (orig_y + orig_h) - new_h
+                elif is_bottom:
+                    if is_view_flipped:  # Y-up, anchor is top edge.
+                        new_y = (orig_y + orig_h) - new_h
+                else:  # Left/Right middle handle
+                    new_y = orig_y + (orig_h - new_h) / 2
+
+        # Capture the calculated size before applying the minimum constraint.
+        unclamped_w, unclamped_h = new_w, new_h
 
         new_w, new_h = max(new_w, min_size), max(new_h, min_size)
+
+        # If clamping occurred, the origin (new_x, new_y) must be adjusted
+        # to keep the anchor point (the opposite side or center) fixed.
+        if self._ctrl_pressed:
+            # For center-out resize, the origin shifts by half the clamped
+            # amount.
+            new_x += (unclamped_w - new_w) / 2
+            new_y += (unclamped_h - new_h) / 2
+        else:
+            # For anchor-based resize, the origin shifts if it's not the
+            # anchor.
+            if is_left:
+                new_x += unclamped_w - new_w
+
+            if is_top and not is_view_flipped:  # Y-down, anchor is bottom.
+                new_y += unclamped_h - new_h
+            elif is_bottom and is_view_flipped:  # Y-up, anchor is top.
+                new_y += unclamped_h - new_h
+
         new_box = (new_x, new_y, new_w, new_h)
         self._selection_group.apply_resize(new_box, self._active_origin)
 
