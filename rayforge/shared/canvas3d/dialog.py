@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw, Gdk  # type: ignore
 from .canvas3d import Canvas3D
 from ...core.doc import Doc
 from ...core.ops import Ops
@@ -28,10 +28,10 @@ class Canvas3DDialog(Adw.Window):
         )
         box.append(header_bar)
 
-        # Instructions label, similar to the example runner in canvas3d.py
+        # Instructions label with updated controls
         label_text = (
-            "MMB Drag=Arcball Orbit | Shift+MMB Drag=Pan | "
-            "Scroll=Zoom | P=Toggle Projection"
+            "LMB Drag=Z-Rotate | MMB Drag=Orbit | Shift+MMB Drag=Pan | "
+            "Scroll=Zoom | P=Projection | 1=Top | 7=Iso"
         )
         label = Gtk.Label(label=label_text)
         box.append(label)
@@ -39,6 +39,27 @@ class Canvas3DDialog(Adw.Window):
         # The canvas itself
         self.canvas = Canvas3D(doc, machine, vexpand=True)
         box.append(self.canvas)
+
+        # Add key controller for window-level shortcuts
+        key_controller = Gtk.EventControllerKey.new()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        """Handles key press events for the dialog window."""
+        # Check for Ctrl+W
+        is_w = keyval in (Gdk.KEY_w, Gdk.KEY_W)
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        if is_ctrl and is_w:
+            self.close()
+            return True  # Event handled
+
+        # Check for Escape key
+        if keyval == Gdk.KEY_Escape:
+            self.close()
+            return True  # Event handled
+
+        return False  # Event not handled, propagate further
 
     def set_ops(self, ops: Ops):
         """Passes the generated ops to the underlying canvas."""

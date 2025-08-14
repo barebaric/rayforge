@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango  # type: ignore
 from OpenGL import GL
-from .camera import Camera
+from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
 from .ops_renderer import Ops, OpsRenderer
 from .sphere_renderer import SphereRenderer
@@ -54,7 +54,6 @@ class Canvas3D(Gtk.GLArea):
         self.connect("render", self.on_render)
         self.connect("resize", self.on_resize)
         self._setup_interactions()
-        self.reset_view_top()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
@@ -147,20 +146,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to top view.")
-        center_x, center_y = self.width_mm / 2.0, self.depth_mm / 2.0
-        max_dim = max(self.width_mm, self.depth_mm)
-
-        # Look from above (positive Z) down to the XY plane.
-        new_pos = np.array(
-            [center_x, center_y, max_dim * 1.5], dtype=np.float64
-        )
-        new_target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-        new_up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-
-        self.camera.is_perspective = True
-        self.camera.position = new_pos
-        self.camera.target = new_target
-        self.camera.up = new_up
+        self.camera.set_top_view(self.width_mm, self.depth_mm)
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -171,29 +157,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to isometric view.")
-        center_x, center_y = self.width_mm / 2.0, self.depth_mm / 2.0
-        max_dim = max(self.width_mm, self.depth_mm)
-
-        # Target the center of the XY "floor" plane.
-        new_target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-
-        # Position the camera for a view from the top-front-left.
-        # This corresponds to looking from negative x, negative y, and
-        # positive z.
-        direction = np.array([-1.0, -1.0, 1.0])
-        direction = direction / np.linalg.norm(direction)
-
-        distance = max_dim * 1.7  # A bit more distance for perspective
-        new_pos = new_target + direction * distance
-
-        # In a Z-up system, the Z-axis is the natural "up" vector for an
-        # isometric view, making it appear upright.
-        new_up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-
-        self.camera.is_perspective = True
-        self.camera.position = new_pos
-        self.camera.target = new_target
-        self.camera.up = new_up
+        self.camera.set_iso_view(self.width_mm, self.depth_mm)
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -202,21 +166,18 @@ class Canvas3D(Gtk.GLArea):
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
-        center_x, center_y = self.width_mm / 2.0, self.depth_mm / 2.0
-        max_dim = max(self.width_mm, self.depth_mm)
-
-        cam_pos = np.array(
-            [center_x, center_y, max_dim * 1.5], dtype=np.float64
-        )
-        cam_target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-        up_vector = np.array([0, 1, 0], dtype=np.float64)  # Y-axis is "up"
-
+        # Create the camera with placeholder values. The correct initial view
+        # will be set by reset_view_iso() below.
         self.camera = Camera(
-            cam_pos, cam_target, up_vector, self.get_width(), self.get_height()
+            np.array([0.0, 0.0, 1.0]),  # position
+            np.array([0.0, 0.0, 0.0]),  # target
+            np.array([0.0, 1.0, 0.0]),  # up
+            self.get_width(),
+            self.get_height(),
         )
-        self.sphere_renderer = SphereRenderer(1.0, 16, 32)
 
-        self.queue_render()
+        self.sphere_renderer = SphereRenderer(1.0, 16, 32)
+        self.reset_view_iso()
 
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
@@ -375,10 +336,16 @@ class Canvas3D(Gtk.GLArea):
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         if not is_shift and self.camera:
-            self._rotation_pivot = self.get_world_coords_on_plane(
-                x, y, self.camera
-            )
-            if self._rotation_pivot is None:
+            if self.camera.is_perspective:
+                # For perspective, pick a point on the floor plane to orbit.
+                self._rotation_pivot = self.get_world_coords_on_plane(
+                    x, y, self.camera
+                )
+                if self._rotation_pivot is None:
+                    self._rotation_pivot = self.camera.target.copy()
+            else:  # Orthographic
+                # For ortho, always orbit around the camera's current look-at
+                # point. This is stable and intuitive.
                 self._rotation_pivot = self.camera.target.copy()
 
             self._last_orbit_pos = None
@@ -416,31 +383,78 @@ class Canvas3D(Gtk.GLArea):
                 return
 
             prev_x, prev_y = self._last_orbit_pos
+            self._last_orbit_pos = x_curr, y_curr
             delta_x = x_curr - prev_x
             delta_y = y_curr - prev_y
-            self._last_orbit_pos = x_curr, y_curr
 
             sensitivity = 0.004
 
-            # Yaw (Horizontal drag): Rotate around the fixed world Y-axis.
-            if abs(delta_x) > 1e-6:
-                axis_yaw = np.array([0, 1, 0], dtype=np.float64)
-                self.camera.orbit(
-                    self._rotation_pivot, axis_yaw, -delta_x * sensitivity
-                )
-
-            # Pitch (Vertical drag): Rotate around the camera's local
-            # right-axis.
-            if abs(delta_y) > 1e-6:
-                forward = self.camera.target - self.camera.position
-                axis_pitch = np.cross(forward, self.camera.up)
-
-                if np.linalg.norm(axis_pitch) > 1e-6:
+            if self.camera.is_perspective:
+                # Perspective orbit (Turntable Style)
+                if abs(delta_x) > 1e-6:
+                    axis_yaw = np.array([0, 1, 0], dtype=np.float64)
                     self.camera.orbit(
-                        self._rotation_pivot,
-                        axis_pitch,
-                        -delta_y * sensitivity,
+                        self._rotation_pivot, axis_yaw, -delta_x * sensitivity
                     )
+                if abs(delta_y) > 1e-6:
+                    forward = self.camera.target - self.camera.position
+                    axis_pitch = np.cross(forward, self.camera.up)
+                    if np.linalg.norm(axis_pitch) > 1e-6:
+                        self.camera.orbit(
+                            self._rotation_pivot,
+                            axis_pitch,
+                            -delta_y * sensitivity,
+                        )
+            else:
+                # Orthographic orbit (Z-Up Turntable)
+                yaw_angle = -delta_x * sensitivity
+                pitch_angle = -delta_y * sensitivity
+
+                # Yaw Rotation (around World Z axis)
+                if abs(yaw_angle) > 1e-6:
+                    axis_yaw = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+                    rot_yaw = rotation_matrix_from_axis_angle(
+                        axis_yaw, yaw_angle
+                    )
+                    # Apply to position and up vectors
+                    self.camera.position = self._rotation_pivot + rot_yaw @ (
+                        self.camera.position - self._rotation_pivot
+                    )
+                    self.camera.up = rot_yaw @ self.camera.up
+
+                # Pitch Rotation (around Camera's local right axis)
+                if abs(pitch_angle) > 1e-6:
+                    # Get camera's state *after* the yaw rotation
+                    forward_vec = self.camera.target - self.camera.position
+                    world_z_axis = np.array([0.0, 0.0, 1.0])
+
+                    # Gimbal Lock Prevention
+                    norm_fwd = np.linalg.norm(forward_vec)
+                    if norm_fwd > 1e-6:
+                        dot_prod = np.dot(forward_vec / norm_fwd, world_z_axis)
+                        # Stop if looking down and trying to pitch more down
+                        if dot_prod < -0.999 and pitch_angle < 0:
+                            pitch_angle = 0.0
+                        # Stop if looking up and trying to pitch more up
+                        elif dot_prod > 0.999 and pitch_angle > 0:
+                            pitch_angle = 0.0
+
+                    if abs(pitch_angle) > 1e-6:
+                        axis_pitch = np.cross(forward_vec, self.camera.up)
+                        if np.linalg.norm(axis_pitch) > 1e-6:
+                            rot_pitch = rotation_matrix_from_axis_angle(
+                                axis_pitch, pitch_angle
+                            )
+                            # Apply to position and up vectors
+                            self.camera.position = (
+                                self._rotation_pivot
+                                + rot_pitch
+                                @ (self.camera.position - self._rotation_pivot)
+                            )
+                            self.camera.up = rot_pitch @ self.camera.up
+
+                # Ensure target is always correct
+                self.camera.target = self._rotation_pivot
 
         self.queue_render()
 

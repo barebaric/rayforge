@@ -6,7 +6,7 @@ import math
 import numpy as np
 
 
-def _rotation_matrix_from_axis_angle(
+def rotation_matrix_from_axis_angle(
     axis: np.ndarray, angle: float
 ) -> np.ndarray:
     """Creates a rotation matrix from an axis and an angle (Rodrigues)."""
@@ -190,8 +190,41 @@ class Camera:
         if abs(angle) < 1e-6:
             return
 
-        rot_matrix = _rotation_matrix_from_axis_angle(axis, angle)
+        rot_matrix = rotation_matrix_from_axis_angle(axis, angle)
 
         self.position = pivot + rot_matrix @ (self.position - pivot)
         self.target = pivot + rot_matrix @ (self.target - pivot)
         self.up = rot_matrix @ self.up
+
+    def set_top_view(self, world_width: float, world_depth: float):
+        """Configures the camera for a top-down view (Z-up)."""
+        center_x, center_y = world_width / 2.0, world_depth / 2.0
+        max_dim = max(world_width, world_depth)
+
+        # Look from above (positive Z) down to the XY plane.
+        self.position = np.array(
+            [center_x, center_y, max_dim * 1.5], dtype=np.float64
+        )
+        self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
+        self.up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        self.is_perspective = True
+
+    def set_iso_view(self, world_width: float, world_depth: float):
+        """Configures the camera for a standard isometric view (Z-up)."""
+        center_x, center_y = world_width / 2.0, world_depth / 2.0
+        max_dim = max(world_width, world_depth)
+
+        # Target the center of the XY "floor" plane.
+        self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
+
+        # Position the camera for a view from the top-front-left.
+        direction = np.array([-1.0, -1.0, 1.0])
+        direction = direction / np.linalg.norm(direction)
+
+        distance = max_dim * 1.7  # A bit more distance for perspective
+        self.position = self.target + direction * distance
+
+        # In a Z-up system, the Z-axis is the natural "up" vector for an
+        # isometric view, making it appear upright.
+        self.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+        self.is_perspective = True
