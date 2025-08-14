@@ -147,19 +147,28 @@ class WorkPiece(DocItem):
         transformation matrix and fires the `changed` signal.
         """
         new_size = float(width_mm), float(height_mm)
-        if new_size == self.size:
+        current_w, current_h = self.size
+        if (
+            abs(new_size[0] - current_w) < 1e-9
+            and abs(new_size[1] - current_h) < 1e-9
+        ):
             return
 
         # 1. Get current world-space center of the unit object
         old_center_world = self.matrix.transform_point((0.5, 0.5))
 
-        # 2. Rebuild a temporary matrix with the new size at the origin to find
-        #    where its center would land.
-        temp_matrix = self.matrix.copy()
-        # This will call the new matrix setter, which is fine.
-        self._rebuild_matrix((0, 0), self.angle, new_size)
-        new_center_at_origin = self.matrix.transform_point((0.5, 0.5))
-        self._matrix = temp_matrix  # Restore original matrix for now
+        # 2. Build a temporary matrix with the new size and current angle
+        #    at the origin to find its center point. This avoids mutating the
+        #    instance and firing signals prematurely.
+        w, h = new_size
+        cx, cy = w / 2, h / 2
+        S_temp = Matrix.scale(w, h)
+        R_temp = Matrix.rotation(self.angle, center=(cx, cy))
+        # The temporary matrix is composed of scale then rotate around center
+        temp_matrix_at_origin = R_temp @ S_temp
+        new_center_at_origin = temp_matrix_at_origin.transform_point(
+            (0.5, 0.5)
+        )
 
         # 3. Calculate the required top-left `pos` to move the new center to
         #    the old center's location.

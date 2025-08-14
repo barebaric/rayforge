@@ -722,7 +722,14 @@ class Canvas(Gtk.DrawingArea):
             return
 
         orig_x, orig_y, orig_w, orig_h = self._active_origin
-        min_size = 20.0
+
+        # The minimum size of the selection group should be defined in pixels
+        # for a consistent UI feel, regardless of zoom level. We convert
+        # this pixel value to world units (mm) for the calculations below.
+        min_size_px = 20.0
+        scale_x, scale_y = self.view_transform.get_abs_scale()
+        min_size_world_x = min_size_px / scale_x if scale_x > 1e-6 else 0.0
+        min_size_world_y = min_size_px / scale_y if scale_y > 1e-6 else 0.0
 
         # Determine which handles are being dragged.
         is_left = self._active_region in {
@@ -841,7 +848,10 @@ class Canvas(Gtk.DrawingArea):
         # Capture the calculated size before applying the minimum constraint.
         unclamped_w, unclamped_h = new_w, new_h
 
-        new_w, new_h = max(new_w, min_size), max(new_h, min_size)
+        new_w, new_h = (
+            max(new_w, min_size_world_x),
+            max(new_h, min_size_world_y),
+        )
 
         # If clamping occurred, the origin (new_x, new_y) must be adjusted
         # to keep the anchor point (the opposite side or center) fixed.
