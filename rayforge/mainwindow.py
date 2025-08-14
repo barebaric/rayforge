@@ -196,7 +196,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Connect document signals
         self._initialize_document()
-        self.doc.changed.connect(self.on_doc_changed)
+        self.doc.updated.connect(self.on_doc_changed)
+        self.doc.descendant_added.connect(self.on_doc_changed)
+        self.doc.descendant_removed.connect(self.on_doc_changed)
+        self.doc.descendant_updated.connect(self.on_doc_changed)
+        self.doc.descendant_transform_changed.connect(self.on_doc_changed)
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
         self.doc.history_manager.changed.connect(self.on_history_changed)
 
@@ -360,7 +364,7 @@ class MainWindow(Adw.ApplicationWindow):
         first_layer = self.doc.layers[0]
         if not first_layer.workflow.has_steps():
             workflow = first_layer.workflow
-            default_step = create_contour_step(workflow=workflow)
+            default_step = create_contour_step()
             workflow.add_step(default_step)
             logger.info("Added default Contour step to initial document.")
 
@@ -1059,7 +1063,7 @@ class MainWindow(Adw.ApplicationWindow):
 
                 cmd_name = _(f"Duplicate {new_wp.source_file.name}")
                 command = ListItemCommand(
-                    owner_obj=self.doc,
+                    owner_obj=self.doc.active_layer,
                     item=new_wp,
                     undo_command="remove_workpiece",
                     redo_command="add_workpiece",

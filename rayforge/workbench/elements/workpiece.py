@@ -43,12 +43,18 @@ class WorkPieceElement(CanvasElement):
         # DECLARE the content orientation. The base class will handle the rest.
         self.content_transform = self.CONTENT_FLIP_MATRIX
 
-        workpiece.changed.connect(self._on_model_content_changed)
+        workpiece.updated.connect(self._on_model_content_changed)
         workpiece.transform_changed.connect(self._on_transform_changed)
 
         # Set the initial state from the model upon creation.
         self._on_transform_changed(workpiece)
         self.trigger_update()
+
+    def remove(self):
+        """Disconnects signals before removing the element."""
+        self.data.updated.disconnect(self._on_model_content_changed)
+        self.data.transform_changed.disconnect(self._on_transform_changed)
+        super().remove()
 
     def render_to_surface(
         self, width: int, height: int

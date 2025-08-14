@@ -36,10 +36,16 @@ class StepBox(Adw.ActionRow):
         self.add_suffix(button)
         button.connect("clicked", self.on_button_delete_clicked)
 
-        # Connect to the model's changed signal to keep the UI in sync
-        self.step.changed.connect(self.on_step_changed)
+        # Connect to the model's signals to keep the UI in sync
+        self.step.updated.connect(self.on_step_changed)
         self.step.visibility_changed.connect(self.on_step_changed)
         self.on_step_changed(self.step)  # trigger initial UI update
+
+    def do_destroy(self):
+        """Overrides GObject.Object.do_destroy to disconnect signals."""
+        self.step.updated.disconnect(self.on_step_changed)
+        self.step.visibility_changed.disconnect(self.on_step_changed)
+        super().do_destroy()
 
     def set_prefix(self, prefix):
         self.prefix = prefix
@@ -73,7 +79,7 @@ class StepBox(Adw.ActionRow):
             self.doc, self.step, transient_for=parent_window
         )
         dialog.present()
-        dialog.changed.connect(self.on_step_changed)
+        # The dialog signals its own change, no need to connect here
 
     def on_button_delete_clicked(self, button):
         self.delete_clicked.send(self, step=self.step)

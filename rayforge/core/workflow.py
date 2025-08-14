@@ -3,182 +3,104 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 """
 
 from __future__ import annotations
-import uuid
 import logging
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional, TypeVar, Iterable
 from blinker import Signal
+
+from .item import DocItem
 from .step import Step
 
 if TYPE_CHECKING:
-    from .layer import Layer
-    from .doc import Doc
+    from .workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
 
+# For generic type hinting in add_child
+T = TypeVar("T", bound="DocItem")
 
-class Workflow:
+
+class Workflow(DocItem):
     """
     An ordered sequence of Steps that defines a manufacturing process.
 
     Each Layer owns a Workflow. The Workflow holds a list of Step
     objects, which are applied in order to the workpieces in the layer to
-    generate machine operations. It listens for changes in its child steps
-    and propagates a `changed` signal.
+    generate machine operations. It automatically bubbles signals from its
+    child steps.
     """
 
-    def __init__(self, layer: "Layer", name: str):
+    def __init__(self, name: str):
         """
         Initializes the Workflow.
 
         Args:
-            layer: The parent Layer object.
             name: The user-facing name for the work plan.
         """
-        self.layer = layer
-        self.doc: Doc = layer.doc
-        self.uid: str = str(uuid.uuid4())
-        self.name: str = name
-        self.steps: List[Step] = []
-
-        # Ref for static analysis tools to detect class relations.
-        self._step_ref_for_pyreverse: Step
-
-        self.changed = Signal()
-        self.descendant_added = Signal()
-        self.descendant_removed = Signal()
-        self.descendant_updated = Signal()
+        super().__init__(name=name)
         self.post_step_transformer_changed = Signal()
+
+    @property
+    def steps(self) -> List[Step]:
+        """Returns a list of all child items that are Steps."""
+        return [child for child in self.children if isinstance(child, Step)]
 
     def __iter__(self):
         """Allows iteration over the work steps."""
         return iter(self.steps)
 
-    def _on_step_changed(self, step: Step):
-        """
-        Handles data-changing signals from child steps.
-
-        When a child step's `changed` signal is fired, this is interpreted
-        as an update to that step. This method fires the `descendant_updated`
-        signal with the step as the origin, and the general `changed` signal.
-        """
-        logger.debug(
-            f"Workflow '{self.name}': Notified of model change from step "
-            f"'{step.name}'. Firing own signals."
-        )
-        self.descendant_updated.send(self, origin=step)
-        self.changed.send(self)
-
     def _on_post_step_transformer_changed(self, step: Step):
         """
-        Handles changes to post-step transformers. This only bubbles up the
-        specific `post_step_transformer_changed` signal.
-
-        It deliberately does NOT fire the generic `changed` signal, as that
-        would trigger a full, expensive UI refresh. This specific signal is
-        intended for lightweight consumers (like a job preview) that can
-        update without blocking the UI.
+        Handles changes to post-step transformers from a child step and
+        bubbles the signal up.
         """
-        logger.debug(
-            f"Workflow '{self.name}': Notified of post-assembly change from "
-            f"step '{step.name}'. Bubbling up specific signal."
-        )
-        # Only bubble up the specific signal. The sender is the workflow
-        # itself.
         self.post_step_transformer_changed.send(self)
 
-    def _connect_step_signals(self, step: Step):
-        """Connects the work plan's handlers to a step's signals."""
-        logger.debug(f"Connecting 'changed' signal for step '{step.name}'.")
-        step.changed.connect(self._on_step_changed)
-        step.post_step_transformer_changed.connect(
-            self._on_post_step_transformer_changed
-        )
+    def add_child(self, child: T, index: Optional[int] = None) -> T:
+        if isinstance(child, Step):
+            child.post_step_transformer_changed.connect(
+                self._on_post_step_transformer_changed
+            )
+        super().add_child(child, index)
+        return child
 
-    def _disconnect_step_signals(self, step: Step):
-        """Disconnects the work plan's handlers from a step's signals."""
-        # This is safe; blinker's disconnect is a no-op if not connected.
-        step.changed.disconnect(self._on_step_changed)
-        step.post_step_transformer_changed.disconnect(
-            self._on_post_step_transformer_changed
-        )
+    def remove_child(self, child: DocItem):
+        if isinstance(child, Step):
+            child.post_step_transformer_changed.disconnect(
+                self._on_post_step_transformer_changed
+            )
+        super().remove_child(child)
+
+    def set_children(self, new_children: Iterable[DocItem]):
+        old_steps = self.steps
+        for step in old_steps:
+            step.post_step_transformer_changed.disconnect(
+                self._on_post_step_transformer_changed
+            )
+
+        new_steps = [c for c in new_children if isinstance(c, Step)]
+        for step in new_steps:
+            step.post_step_transformer_changed.connect(
+                self._on_post_step_transformer_changed
+            )
+
+        super().set_children(new_children)
 
     def add_step(self, step: Step):
-        """
-        Adds a step to the end of the work plan.
-
-        Appends the step, connects its signals, and notifies listeners
-        that the work plan has changed.
-
-        Args:
-            step: The Step instance to add.
-        """
-        if step in self.steps:
-            return
-        if step.workflow and step.workflow is not self:
-            step.workflow.remove_step(step)
-
-        step.workflow = self
-        self.steps.append(step)
-        self._connect_step_signals(step)
-        self.descendant_added.send(self, origin=step)
-        self.changed.send(self)
+        """Adds a step to the end of the work plan."""
+        self.add_child(step)
 
     def remove_step(self, step: Step):
-        """
-        Removes a step from the work plan.
-
-        Disconnects signals from the step, removes it from the list,
-        and notifies listeners of the change.
-
-        Args:
-            step: The Step instance to remove.
-        """
-        if step not in self.steps:
-            return
-        self._disconnect_step_signals(step)
-        self.steps.remove(step)
-        step.workflow = None
-        self.descendant_removed.send(self, origin=step)
-        self.changed.send(self)
+        """Removes a step from the work plan."""
+        self.remove_child(step)
 
     def set_steps(self, steps: List[Step]):
-        """
-        Replaces the entire list of steps with a new one.
-
-        This method efficiently disconnects all signals from the old steps
-        and connects signals for all the new ones.
-
-        Args:
-            steps: The new list of Step instances.
-        """
-        old_set = set(self.steps)
-        new_set = set(steps)
-
-        for step in old_set - new_set:
-            self._disconnect_step_signals(step)
-            step.workflow = None
-            self.descendant_removed.send(self, origin=step)
-
-        for step in new_set - old_set:
-            if step.workflow and step.workflow is not self:
-                step.workflow.remove_step(step)
-            step.workflow = self
-            self._connect_step_signals(step)
-            self.descendant_added.send(self, origin=step)
-
-        # Ensure workflow is set for all steps in the new list
-        for step in steps:
-            step.workflow = self
-
-        self.steps = list(steps)
-        self.changed.send(self)
+        """Replaces the entire list of steps with a new one."""
+        self.set_children(steps)
 
     def has_steps(self) -> bool:
-        """
-        Checks if the work plan contains any steps.
-
-        Returns:
-            True if the number of steps is greater than zero, False
-            otherwise.
-        """
+        """Checks if the work plan contains any steps."""
         return len(self.steps) > 0
+
+    def get_all_workpieces(self) -> List["WorkPiece"]:
+        """A Workflow is a container for steps, not workpieces."""
+        return []

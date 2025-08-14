@@ -452,7 +452,7 @@ class StepSettingsDialog(Adw.Window):
             key="amount",
             new_value=new_value,
             name=_("Change smoothness"),
-            on_change_callback=lambda: self.step.changed.send(self.step),
+            on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)
@@ -466,7 +466,7 @@ class StepSettingsDialog(Adw.Window):
             key="corner_angle_threshold",
             new_value=new_value,
             name=_("Change corner angle"),
-            on_change_callback=lambda: self.step.changed.send(self.step),
+            on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)
@@ -481,7 +481,7 @@ class StepSettingsDialog(Adw.Window):
             key="enabled",
             new_value=new_value,
             name=_("Toggle '{label}'").format(label=label),
-            on_change_callback=lambda: self.step.changed.send(self.step),
+            on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)

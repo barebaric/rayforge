@@ -1,19 +1,20 @@
 from __future__ import annotations
 import logging
-import uuid
 from abc import ABC
-from typing import List, Optional, TYPE_CHECKING, Dict, Any
+from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast
 from blinker import Signal
 
+from .item import DocItem
+
 if TYPE_CHECKING:
-    from .doc import Doc
     from .workflow import Workflow
+    from .workpiece import WorkPiece
 
 
 logger = logging.getLogger(__name__)
 
 
-class Step(ABC):
+class Step(DocItem, ABC):
     """
     A set of modifiers and an OpsProducer that operate on WorkPieces.
 
@@ -24,14 +25,11 @@ class Step(ABC):
 
     def __init__(
         self,
-        workflow: "Workflow",
         typelabel: str,
         name: Optional[str] = None,
     ):
-        self.workflow: Optional["Workflow"] = workflow
-        self.uid = str(uuid.uuid4())
+        super().__init__(name=name or typelabel)
         self.typelabel = typelabel
-        self.name = name or self.typelabel
         self.visible = True
 
         # Configuration for the pipeline, stored as dictionaries.
@@ -47,7 +45,6 @@ class Step(ABC):
         self.pixels_per_mm = 50, 50
 
         # Signals for notifying of model changes
-        self.changed = Signal()
         self.post_step_transformer_changed = Signal()
         self.visibility_changed = Signal()
 
@@ -62,9 +59,18 @@ class Step(ABC):
         self.air_assist = False
 
     @property
-    def doc(self) -> Optional["Doc"]:
-        """The parent Doc object, accessed via the Workflow."""
-        return self.workflow.doc if self.workflow else None
+    def workflow(self) -> Optional["Workflow"]:
+        """Returns the parent workflow, if it exists."""
+        # Local import to prevent circular dependency at module load time
+        from .workflow import Workflow
+
+        if self.parent and isinstance(self.parent, Workflow):
+            return cast(Workflow, self.parent)
+        return None
+
+    def get_all_workpieces(self) -> List["WorkPiece"]:
+        """A Step is a leaf node and does not contain workpieces itself."""
+        return []
 
     def set_visible(self, visible: bool):
         self.visible = visible
@@ -72,19 +78,19 @@ class Step(ABC):
 
     def set_power(self, power: int):
         self.power = power
-        self.changed.send(self)
+        self.updated.send(self)
 
     def set_cut_speed(self, speed: int):
         self.cut_speed = int(speed)
-        self.changed.send(self)
+        self.updated.send(self)
 
     def set_travel_speed(self, speed: int):
         self.travel_speed = int(speed)
-        self.changed.send(self)
+        self.updated.send(self)
 
     def set_air_assist(self, enabled: bool):
         self.air_assist = bool(enabled)
-        self.changed.send(self)
+        self.updated.send(self)
 
     def get_summary(self) -> str:
         power_percent = (

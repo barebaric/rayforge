@@ -231,14 +231,15 @@ class OpsGenerator:
             # When paused, don't trigger generation. Instead, invalidate the
             # cache so that `reconcile_all()` upon resume will pick it up.
             if self._is_paused:
-                if origin.workflow and origin.workflow.layer:
-                    for wp in origin.workflow.layer.workpieces:
+                workflow = origin.workflow
+                if workflow and isinstance(workflow.parent, Layer):
+                    for wp in workflow.parent.workpieces:
                         self._ops_cache[(origin.uid, wp.uid)] = None, None
                 return
             self._update_ops_for_step(origin)
         elif isinstance(origin, WorkPiece):
             if self._is_paused:
-                if origin.parent:
+                if origin.parent and isinstance(origin.parent, Layer):
                     for step in origin.parent.workflow:
                         self._ops_cache[(step.uid, origin.uid)] = None, None
                 return
@@ -290,13 +291,14 @@ class OpsGenerator:
 
     def _update_ops_for_step(self, step: Step):
         """Triggers ops generation for a single step across all workpieces."""
-        if step.workflow and step.workflow.layer:
-            for workpiece in step.workflow.layer.workpieces:
+        workflow = step.workflow
+        if workflow and isinstance(workflow.parent, Layer):
+            for workpiece in workflow.parent.workpieces:
                 self._trigger_ops_generation(step, workpiece)
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for a single workpiece across all steps."""
-        if workpiece.parent:
+        if workpiece.parent and isinstance(workpiece.parent, Layer):
             for step in workpiece.parent.workflow:
                 self._trigger_ops_generation(step, workpiece)
 

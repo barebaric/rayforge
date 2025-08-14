@@ -103,12 +103,24 @@ class LayerView(Gtk.Box):
         self.visibility_button.connect("clicked", self.on_button_view_click)
         suffix_box.append(self.visibility_button)
 
-        # Connect to both layer and document changes to stay in sync
-        self.layer.changed.connect(self.on_layer_changed)
-        self.doc.changed.connect(self.on_layer_changed)
+        # Connect to model signals to stay in sync
+        self.layer.updated.connect(self.on_layer_changed)
+        self.layer.descendant_added.connect(self.on_layer_changed)
+        self.layer.descendant_removed.connect(self.on_layer_changed)
+        self.layer.descendant_updated.connect(self.on_layer_changed)
+        self.doc.active_layer_changed.connect(self.on_layer_changed)
 
         # Perform initial UI sync
         self.on_layer_changed(self.layer)
+
+    def do_destroy(self):
+        """Overrides GObject.Object.do_destroy to disconnect signals."""
+        self.layer.updated.disconnect(self.on_layer_changed)
+        self.layer.descendant_added.disconnect(self.on_layer_changed)
+        self.layer.descendant_removed.disconnect(self.on_layer_changed)
+        self.layer.descendant_updated.disconnect(self.on_layer_changed)
+        self.doc.active_layer_changed.disconnect(self.on_layer_changed)
+        super().do_destroy()
 
     def on_name_escape_pressed(self, controller, keyval, keycode, state):
         """Handler for the 'key-pressed' signal to catch Escape."""

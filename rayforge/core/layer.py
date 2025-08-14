@@ -4,84 +4,62 @@ workpieces within a document.
 """
 
 from __future__ import annotations
-import uuid
 import logging
-from typing import List, TYPE_CHECKING, Tuple
+from typing import List, Tuple, Optional, TypeVar, Iterable
 from blinker import Signal
 
 from ..core.step import Step
 from ..core.workflow import Workflow
-
-if TYPE_CHECKING:
-    from .workpiece import WorkPiece
-    from .doc import Doc
+from .item import DocItem
+from .workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
 
+# For generic type hinting in add_child
+T = TypeVar("T", bound="DocItem")
 
-class Layer:
+
+class Layer(DocItem):
     """
     Represents a group of workpieces processed by a single workflow.
 
     A Layer acts as a container for `WorkPiece` objects and owns a
-    `Workflow`. It is responsible for triggering, managing, and caching the
-    generation of machine operations (`Ops`) for each workpiece based on the
-    steps in its workflow.
+    `Workflow`. It is a `DocItem` and automatically manages its children
+    and bubbles up signals.
     """
 
-    def __init__(self, doc: "Doc", name: str):
+    def __init__(self, name: str):
         """Initializes a Layer instance.
 
         Args:
-            doc: The parent document object.
             name: The user-facing name of the layer.
         """
-        self.uid: str = str(uuid.uuid4())
-        self.doc: "Doc" = doc
-        self.name: str = name
-        self.workpieces: List[WorkPiece] = []
-        # Reference for static analysis tools to detect class relations.
-        self._workpiece_ref_for_pyreverse: WorkPiece
-
-        self.workflow: Workflow = Workflow(self, f"{name} Workflow")
-        # Reference for static analysis tools to detect class relations.
-        self._workflow_ref_for_pyreverse: Workflow
-
+        super().__init__(name=name)
         self.visible: bool = True
 
         # Signals for notifying other parts of the application of changes.
-        self.changed = Signal()
+        # This one is special and is bubbled manually.
         self.post_step_transformer_changed = Signal()
-        self.descendant_added = Signal()
-        self.descendant_removed = Signal()
-        self.descendant_updated = Signal()
-        self.descendant_transform_changed = Signal()
 
-        # Connect to signals from child objects.
-        self.workflow.changed.connect(self._on_workflow_changed)
-        self.workflow.post_step_transformer_changed.connect(
-            self._on_workflow_post_transformer_changed
-        )
-        self.workflow.descendant_added.connect(self._on_descendant_added)
-        self.workflow.descendant_removed.connect(self._on_descendant_removed)
-        self.workflow.descendant_updated.connect(self._on_descendant_updated)
+        # A new layer gets a workflow automatically.
+        workflow = Workflow(f"{name} Workflow")
+        self.add_child(workflow)
 
     @property
-    def active(self) -> bool:
-        """
-        Returns True if this layer is the currently active layer in the
-        document.
-        """
-        return self.doc.active_layer is self
+    def workpieces(self) -> List[WorkPiece]:
+        """Returns a list of all child items that are WorkPieces."""
+        return [
+            child for child in self.children if isinstance(child, WorkPiece)
+        ]
 
-    def _on_workflow_changed(self, sender):
-        """
-        Handles the 'changed' signal from the Workflow and bubbles it up.
-        """
-        logger.debug(
-            f"Layer '{self.name}': Noticed workflow change, bubbling up."
-        )
-        self.changed.send(self)
+    @property
+    def workflow(self) -> Workflow:
+        """Returns the layer's workflow. A layer must have one workflow."""
+        for child in self.children:
+            if isinstance(child, Workflow):
+                return child
+        # This state should be unreachable if the constructor works correctly.
+        raise RuntimeError("Layer is missing its internal workflow.")
 
     def _on_workflow_post_transformer_changed(self, sender):
         """
@@ -89,37 +67,44 @@ class Layer:
         """
         self.post_step_transformer_changed.send(self)
 
-    def _on_descendant_added(self, sender, *, origin):
-        """Bubbles up the descendant_added signal."""
-        self.descendant_added.send(self, origin=origin)
+    def add_child(self, child: T, index: Optional[int] = None) -> T:
+        if isinstance(child, Workflow):
+            child.post_step_transformer_changed.connect(
+                self._on_workflow_post_transformer_changed
+            )
+        super().add_child(child, index)
+        return child
 
-    def _on_descendant_removed(self, sender, *, origin):
-        """Bubbles up the descendant_removed signal."""
-        self.descendant_removed.send(self, origin=origin)
+    def remove_child(self, child: DocItem):
+        if isinstance(child, Workflow):
+            child.post_step_transformer_changed.disconnect(
+                self._on_workflow_post_transformer_changed
+            )
+        super().remove_child(child)
 
-    def _on_descendant_updated(self, sender, *, origin):
-        """Bubbles up the descendant_updated signal."""
-        self.descendant_updated.send(self, origin=origin)
+    def set_children(self, new_children: Iterable[DocItem]):
+        # Disconnect any existing workflow signal handlers
+        if self.workflow:
+            self.workflow.post_step_transformer_changed.disconnect(
+                self._on_workflow_post_transformer_changed
+            )
 
-    def _on_workpiece_changed(self, workpiece: WorkPiece):
-        """
-        Handles data-changing signals from a workpiece (e.g., size change)
-        that require ops regeneration.
-        """
-        logger.debug(
-            f"Layer '{self.name}': Noticed model change for "
-            f"'{workpiece.name}', bubbling up."
-        )
-        self.descendant_updated.send(self, origin=workpiece)
-        self.changed.send(self)
+        # Connect to the new ones
+        for child in new_children:
+            if isinstance(child, Workflow):
+                child.post_step_transformer_changed.connect(
+                    self._on_workflow_post_transformer_changed
+                )
 
-    def _on_workpiece_transform_changed(self, workpiece: WorkPiece):
+        super().set_children(new_children)
+
+    @property
+    def active(self) -> bool:
         """
-        Handles transform-only changes from a workpiece. This bubbles up a
-        specific signal that the Doc can use to mark itself as dirty, but
-        that the LayerElement can ignore to prevent slow UI updates.
+        Returns True if this layer is the currently active layer in the
+        document.
         """
-        self.descendant_transform_changed.send(self, origin=workpiece)
+        return self.doc.active_layer is self if self.doc else False
 
     def set_name(self, name: str):
         """Sets the name of the layer.
@@ -131,7 +116,7 @@ class Layer:
             return
         self.name = name
         self.workflow.name = f"{name} Workflow"
-        self.changed.send(self)
+        self.updated.send(self)
 
     def set_visible(self, visible: bool):
         """Sets the visibility of the layer.
@@ -142,71 +127,32 @@ class Layer:
         if self.visible == visible:
             return
         self.visible = visible
-        self.changed.send(self)
+        self.updated.send(self)
 
     def add_workpiece(self, workpiece: "WorkPiece"):
-        """Adds a single workpiece to the layer.
-
-        Args:
-            workpiece: The workpiece to add.
-        """
-        if workpiece not in self.workpieces:
-            workpiece.parent = self
-            self.workpieces.append(workpiece)
-            workpiece.changed.connect(self._on_workpiece_changed)
-            workpiece.transform_changed.connect(
-                self._on_workpiece_transform_changed
-            )
-            self.descendant_added.send(self, origin=workpiece)
-            self.changed.send(self)
+        """Adds a single workpiece to the layer."""
+        self.add_child(workpiece)
 
     def remove_workpiece(self, workpiece: "WorkPiece"):
-        """Removes a single workpiece from the layer.
-
-        Args:
-            workpiece: The workpiece to remove.
-        """
-        if workpiece in self.workpieces:
-            workpiece.parent = None
-            workpiece.changed.disconnect(self._on_workpiece_changed)
-            workpiece.transform_changed.disconnect(
-                self._on_workpiece_transform_changed
-            )
-            self.workpieces.remove(workpiece)
-            self.descendant_removed.send(self, origin=workpiece)
-            self.changed.send(self)
+        """Removes a single workpiece from the layer."""
+        self.remove_child(workpiece)
 
     def set_workpieces(self, workpieces: List["WorkPiece"]):
         """
-        Sets the layer's workpieces to a new list.
-
-        Args:
-            workpieces: A list of WorkPiece objects to associate with
-                this layer.
+        Sets the layer's workpieces to a new list, preserving the
+        existing workflow.
         """
-        old_set = set(self.workpieces)
-        new_set = set(workpieces)
+        self.set_children([*workpieces, self.workflow])
 
-        # Disconnect and clean up workpieces that are being removed.
-        for wp in old_set - new_set:
-            wp.parent = None
-            wp.changed.disconnect(self._on_workpiece_changed)
-            wp.transform_changed.disconnect(
-                self._on_workpiece_transform_changed
-            )
-            self.descendant_removed.send(self, origin=wp)
-
-        # Connect new workpieces.
-        for wp in new_set - old_set:
-            wp.parent = self
-            wp.changed.connect(self._on_workpiece_changed)
-            wp.transform_changed.connect(
-                self._on_workpiece_transform_changed
-            )
-            self.descendant_added.send(self, origin=wp)
-
-        self.workpieces = list(workpieces)
-        self.changed.send(self)
+    def get_all_workpieces(self) -> List["WorkPiece"]:
+        """
+        Recursively finds and returns a flattened list of all WorkPiece
+        objects contained within this item.
+        """
+        all_wps = []
+        for child in self.children:
+            all_wps.extend(child.get_all_workpieces())
+        return all_wps
 
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
         """

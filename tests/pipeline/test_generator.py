@@ -81,7 +81,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
 
@@ -96,7 +96,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
 
@@ -127,7 +127,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
 
@@ -150,7 +150,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(
@@ -171,7 +171,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(doc)  # Initial generation
@@ -191,7 +191,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(doc)  # Initial generation
@@ -211,7 +211,7 @@ class TestOpsGenerator:
     ):
         # Arrange
         layer = doc.layers[0]
-        step = create_contour_step(layer.workflow)
+        step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(doc)  # Initial generation
@@ -222,6 +222,6 @@ class TestOpsGenerator:
         real_workpiece.set_size(10, 10)
 
         # Assert
-        # The `changed` signal from set_size bubbles up to
+        # The `updated` signal from set_size bubbles up to
         # `descendant_updated`, which the generator listens to.
         mock_task_mgr.run_process.assert_called_once()

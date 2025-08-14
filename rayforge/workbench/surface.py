@@ -608,9 +608,6 @@ class WorkSurface(Canvas):
         layer_elem = LayerElement(layer=layer, canvas=self)
         self.root.add(layer_elem)
 
-        # Now populate the new layer element with its children
-        layer_elem.sync_with_model(layer)
-
     def update_from_doc(self, doc: Doc):
         """
         Synchronizes the canvas elements with the document model.
@@ -845,7 +842,7 @@ class WorkSurface(Canvas):
             if len(layers) <= 1:
                 return True
 
-            current_layer = selected_wps[0].parent
+            current_layer = cast(Layer, selected_wps[0].parent)
             if not current_layer:
                 return True
 

@@ -1,5 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Optional
+from ...core.item import DocItem
 from ..canvas.element import CanvasElement
 from .workpiece import WorkPieceElement
 from .step import StepElement
@@ -42,7 +43,17 @@ class LayerElement(CanvasElement):
             **kwargs,
         )
         self.data: Layer = layer
-        self.data.changed.connect(self.sync_with_model)
+        self.data.updated.connect(self.sync_with_model)
+        self.data.descendant_added.connect(self.sync_with_model)
+        self.data.descendant_removed.connect(self.sync_with_model)
+        self.sync_with_model(origin=None)
+
+    def remove(self):
+        """Disconnects signals before removing the element."""
+        self.data.updated.disconnect(self.sync_with_model)
+        self.data.descendant_added.disconnect(self.sync_with_model)
+        self.data.descendant_removed.disconnect(self.sync_with_model)
+        super().remove()
 
     def set_size(self, width: float, height: float):
         """Sets the size and propagates it to child StepElements."""
@@ -57,7 +68,9 @@ class LayerElement(CanvasElement):
         """Sorts child elements to maintain correct drawing order."""
         self.children.sort(key=_z_order_sort_key)
 
-    def sync_with_model(self, *args, **kwargs):
+    def sync_with_model(
+        self, *args, origin: Optional[DocItem] = None, **kwargs
+    ):
         """
         Updates the element's properties and reconciles all child elements
         (WorkPieceElement, StepElement) with the state of the Layer model.
@@ -67,7 +80,7 @@ class LayerElement(CanvasElement):
 
         logger.debug(
             f"LayerElement for '{self.data.name}': sync_with_model is"
-            " executing."
+            f" executing, called by {origin}."
         )
         self.set_visible(self.data.visible)
         is_selectable = self.data.visible
@@ -79,22 +92,21 @@ class LayerElement(CanvasElement):
 
         # --- Reconcile WorkPieceElements ---
         model_workpieces = set(self.data.workpieces)
-        current_wp_elements = {
-            child
-            for child in self.children
-            if isinstance(child, WorkPieceElement)
-        }
-        current_wp_data = {elem.data for elem in current_wp_elements}
+        current_wp_elements = self.find_by_type(WorkPieceElement)
 
         # Remove elements for workpieces that are no longer in the layer
-        # and update selectability on the ones that remain.
         for elem in current_wp_elements:
             if elem.data not in model_workpieces:
+                logger.debug(f"Removing workpiece element: {elem}")
                 elem.remove()
             else:
                 elem.selectable = is_selectable
 
         # Add elements for new workpieces in the layer
+        # We must re-query the current elements after removal
+        current_wp_data = {
+            elem.data for elem in self.find_by_type(WorkPieceElement)
+        }
         wps_to_add = model_workpieces - current_wp_data
         for wp_data in wps_to_add:
             wp_elem = WorkPieceElement(
@@ -112,18 +124,13 @@ class LayerElement(CanvasElement):
         current_ws_elements = self.find_by_type(StepElement)
         model_steps = set(self.data.workflow.steps)
 
-        # Create a list of elements to remove first.
-        elements_to_remove = []
+        # Remove StepElements for steps that are no longer in the model
         for elem in current_ws_elements:
             if elem.data not in model_steps:
-                elements_to_remove.append(elem)
+                logger.debug(f"Removing step element: {elem}")
+                elem.remove()
 
-        # Now, iterate over the list to perform the removal.
-        # This avoids modifying the list we are iterating over.
-        for elem in elements_to_remove:
-            elem.remove()
-
-        # Add elements for new steps in the layer's workplan
+        # Add StepElements for new steps
         current_ws_data = {
             elem.data for elem in self.find_by_type(StepElement)
         }
@@ -143,13 +150,10 @@ class LayerElement(CanvasElement):
                 height=self.height,
                 show_travel_moves=show_travel,
                 canvas=self.canvas,
-                parent=self,  # Explicitly set parent
             )
             self.add(ws_elem)
 
-        # Now that the set of StepElements is correct, tell all of them to
-        # reconcile their children against the (possibly changed) workpiece
-        # list.
+        # Now that StepElements are correct, tell them to sync their children
         for elem in self.find_by_type(StepElement):
             elem = cast(StepElement, elem)
             elem._on_step_model_changed(elem.data)
@@ -157,5 +161,4 @@ class LayerElement(CanvasElement):
         # Sort the children to ensure that all StepElements are drawn on
         # top of all WorkPieceElements.
         self.sort_children_by_z_order()
-
         self.canvas.queue_draw()

@@ -20,26 +20,15 @@ def test_doc_initialization(doc):
     assert doc.history_manager is not None  # A good enough check
 
 
-def test_add_layer_fires_changed_signal(doc):
-    """Test that adding a new layer to a document fires its changed signal."""
-    doc_changed_handler = MagicMock()
-    doc.changed.connect(doc_changed_handler)
-
-    new_layer = Layer(doc, "Layer 2")
-    doc.add_layer(new_layer)
-
-    assert len(doc.layers) == 2
-    doc_changed_handler.assert_called_once_with(doc)
-
-
 def test_add_layer_fires_descendant_added(doc):
     """Test adding a layer fires descendant_added with the layer as origin."""
     handler = MagicMock()
     doc.descendant_added.connect(handler)
 
-    new_layer = Layer(doc, "Layer 2")
+    new_layer = Layer("Layer 2")
     doc.add_layer(new_layer)
 
+    assert len(doc.layers) == 2
     handler.assert_called_once_with(doc, origin=new_layer)
 
 
@@ -47,7 +36,7 @@ def test_remove_layer_fires_descendant_removed(doc):
     """
     Test removing a layer fires descendant_removed with the layer as origin.
     """
-    layer_to_remove = Layer(doc, "Layer 2")
+    layer_to_remove = Layer("Layer 2")
     doc.add_layer(layer_to_remove)
 
     handler = MagicMock()
@@ -57,30 +46,6 @@ def test_remove_layer_fires_descendant_removed(doc):
     handler.assert_called_once_with(doc, origin=layer_to_remove)
 
 
-def test_full_signal_chain_bubbles_up_to_doc(doc):
-    """
-    Integration test: A change on a deep child (Step) should bubble
-    all the way up to the top-level Doc.
-    """
-    doc_changed_handler = MagicMock()
-    doc.changed.connect(doc_changed_handler)
-
-    # Arrange: Get to a step deep inside the hierarchy
-    layer = doc.layers[0]
-    workflow = layer.workflow
-    step = Step(workflow, "Test Step")
-    workflow.add_step(step)
-
-    # Reset mock after setup changes
-    doc_changed_handler.reset_mock()
-
-    # Act: Change a property on the step
-    step.set_power(500)
-
-    # Assert: The doc itself was notified
-    doc_changed_handler.assert_called_once_with(doc)
-
-
 def test_descendant_updated_bubbles_up_to_doc(doc):
     """A descendant_updated signal from a Step should bubble up to the Doc."""
     handler = MagicMock()
@@ -88,7 +53,7 @@ def test_descendant_updated_bubbles_up_to_doc(doc):
 
     layer = doc.layers[0]
     workflow = layer.workflow
-    step = Step(workflow, "Test Step")
+    step = Step("Test Step")
     workflow.add_step(step)
     handler.reset_mock()  # Ignore the 'add' event
 
@@ -106,7 +71,7 @@ def test_descendant_added_bubbles_up_to_doc(doc):
 
     layer = doc.layers[0]
     workflow = layer.workflow
-    step = Step(workflow, "Test Step")
+    step = Step("Test Step")
 
     # Act
     workflow.add_step(step)
@@ -119,7 +84,7 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
     """A descendant_removed signal for a step should bubble up to the Doc."""
     layer = doc.layers[0]
     workflow = layer.workflow
-    step = Step(workflow, "Test Step")
+    step = Step("Test Step")
     workflow.add_step(step)
 
     handler = MagicMock()

@@ -59,7 +59,9 @@ class LayerListView(Expander):
         add_button.set_child(button_box)
 
         # Connect to document changes and perform initial population
-        self.doc.changed.connect(self.on_doc_changed)
+        self.doc.updated.connect(self.on_doc_changed)
+        self.doc.descendant_added.connect(self.on_doc_changed)
+        self.doc.descendant_removed.connect(self.on_doc_changed)
         self.on_doc_changed(self.doc)
 
     def on_doc_changed(self, sender, **kwargs):
@@ -109,7 +111,7 @@ class LayerListView(Expander):
                 break
             next_num_to_try += 1
 
-        new_layer = Layer(self.doc, name=new_name)
+        new_layer = Layer(name=new_name)
 
         new_list = self.doc.layers + [new_layer]
         command = ReorderListCommand(

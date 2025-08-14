@@ -56,7 +56,7 @@ class StepElement(CanvasElement):
         self.ops_generator = ops_generator
 
         # Connect to model signals for visibility and structural changes.
-        step.changed.connect(self._on_step_model_changed)
+        step.updated.connect(self._on_step_model_changed)
         step.visibility_changed.connect(self._on_step_model_changed)
 
         # Connect to the OpsGenerator's signals for data pipeline events.
@@ -69,6 +69,23 @@ class StepElement(CanvasElement):
         self.ops_generator.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
+
+    def remove(self):
+        """Disconnects signals before removing the element."""
+        step = cast(Step, self.data)
+        step.updated.disconnect(self._on_step_model_changed)
+        step.visibility_changed.disconnect(self._on_step_model_changed)
+
+        self.ops_generator.ops_generation_starting.disconnect(
+            self._on_ops_generation_starting
+        )
+        self.ops_generator.ops_chunk_available.disconnect(
+            self._on_ops_chunk_available
+        )
+        self.ops_generator.ops_generation_finished.disconnect(
+            self._on_ops_generation_finished
+        )
+        super().remove()
 
     def add_workpiece(self, workpiece) -> WorkPieceOpsElement:
         """

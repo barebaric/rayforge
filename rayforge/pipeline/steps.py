@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 from ..config import config
 from ..core.step import Step
@@ -7,17 +7,11 @@ from .modifier import MakeTransparent, ToGrayscale
 from .producer import OutlineTracer, EdgeTracer, Rasterizer
 from .transformer import Optimize, Smooth, MultiPassTransformer
 
-if TYPE_CHECKING:
-    from ..core.workflow import Workflow
 
-
-def create_outline_step(
-    workflow: "Workflow", name: Optional[str] = None
-) -> Step:
+def create_outline_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure an Outline step."""
     assert config.machine
     step = Step(
-        workflow=workflow,
         typelabel=_("External Outline"),
         name=name,
     )
@@ -39,13 +33,10 @@ def create_outline_step(
     return step
 
 
-def create_contour_step(
-    workflow: "Workflow", name: Optional[str] = None
-) -> Step:
+def create_contour_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Contour step."""
     assert config.machine
     step = Step(
-        workflow=workflow,
         typelabel=_("Contour"),
         name=name,
     )
@@ -67,13 +58,10 @@ def create_contour_step(
     return step
 
 
-def create_raster_step(
-    workflow: "Workflow", name: Optional[str] = None
-) -> Step:
+def create_raster_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Rasterize step."""
     assert config.machine
     step = Step(
-        workflow=workflow,
         typelabel=_("Raster Engrave"),
         name=name,
     )

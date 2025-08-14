@@ -1,37 +1,45 @@
 import logging
-from typing import List
+from typing import List, Optional, TypeVar, Iterable
 from blinker import Signal
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
 from .layer import Layer
+from .item import DocItem
 
 
 logger = logging.getLogger(__name__)
 
+# For generic type hinting in add_child
+T = TypeVar("T", bound="DocItem")
 
-class Doc:
+
+class Doc(DocItem):
     """
-    Represents a loaded Rayforge document.
+    Represents a loaded Rayforge document. Serves as the root of the
+    document's object tree.
     """
 
     def __init__(self):
+        super().__init__()
         self.history_manager = HistoryManager()
-        self.changed = Signal()
         self.active_layer_changed = Signal()
-        self.descendant_added = Signal()
-        self.descendant_removed = Signal()
-        self.descendant_updated = Signal()
         self.job_assembly_invalidated = Signal()
 
-        self.layers: List[Layer] = []
-        self._layer_ref_for_pyreverse: Layer
         self._active_layer_index: int = 0
 
-        # A new document starts with one empty layer. The application
-        # controller (e.g., MainWindow) is responsible for populating it
-        # with a default step.
-        layer = Layer(self, _("Layer 1"))
-        self.add_layer(layer)
+        # A new document starts with one empty layer.
+        layer = Layer(_("Layer 1"))
+        self.add_child(layer)
+
+    @property
+    def doc(self) -> "Doc":
+        """The root Doc object is itself."""
+        return self
+
+    @property
+    def layers(self) -> List[Layer]:
+        """Returns a list of all child items that are Layers."""
+        return [child for child in self.children if isinstance(child, Layer)]
 
     def __iter__(self):
         """Iterates through all workpieces in all layers."""
@@ -42,14 +50,24 @@ class Doc:
         """Returns a list of all workpieces from all layers."""
         return list(self)
 
+    def get_all_workpieces(self) -> List["WorkPiece"]:
+        """
+        Recursively finds and returns a flattened list of all WorkPiece
+        objects contained within this document.
+        """
+        all_wps = []
+        for child in self.children:
+            all_wps.extend(child.get_all_workpieces())
+        return all_wps
+
     def add_workpiece(self, workpiece: WorkPiece):
         """Adds a workpiece to the currently active layer."""
         self.active_layer.add_workpiece(workpiece)
 
     def remove_workpiece(self, workpiece: WorkPiece):
         """Removes a workpiece from the layer that owns it."""
-        if workpiece.parent and workpiece.parent in self.layers:
-            workpiece.parent.remove_workpiece(workpiece)
+        if workpiece.parent and isinstance(workpiece.parent, Layer):
+            workpiece.parent.remove_child(workpiece)
 
     @property
     def active_layer(self) -> Layer:
@@ -63,94 +81,62 @@ class Doc:
             new_index = self.layers.index(layer)
             if self._active_layer_index != new_index:
                 self._active_layer_index = new_index
-                self.changed.send(self)
+                self.updated.send(self)
                 self.active_layer_changed.send(self)
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
-    def _on_layer_changed(self, sender):
-        """A single handler for generic changes in layers."""
-        self.changed.send(self)
-
-    def _on_layer_transform_bubbled(self, sender, *, origin):
-        """
-        Handles a transform-only change bubbled up from a layer.
-        This fires the document's generic changed signal so that the app
-        knows the document is dirty (e.g., for enabling the save button),
-        but avoids heavier updates.
-        """
-        self.changed.send(self)
-
     def _on_layer_post_transformer_changed(self, sender):
-        """
-        Handles post-transformer changes from a layer. This invalidates the
-        final job assembly without triggering a full ops regeneration.
-        """
+        """Special-case bubbling for a non-standard signal."""
         self.job_assembly_invalidated.send(self)
 
-    def _on_descendant_added(self, sender, *, origin):
-        self.descendant_added.send(self, origin=origin)
+    def add_child(self, child: T, index: Optional[int] = None) -> T:
+        if isinstance(child, Layer):
+            child.post_step_transformer_changed.connect(
+                self._on_layer_post_transformer_changed
+            )
+        super().add_child(child, index)
+        return child
 
-    def _on_descendant_removed(self, sender, *, origin):
-        self.descendant_removed.send(self, origin=origin)
+    def remove_child(self, child: DocItem):
+        if isinstance(child, Layer):
+            child.post_step_transformer_changed.disconnect(
+                self._on_layer_post_transformer_changed
+            )
+        super().remove_child(child)
 
-    def _on_descendant_updated(self, sender, *, origin):
-        self.descendant_updated.send(self, origin=origin)
+    def set_children(self, new_children: Iterable[DocItem]):
+        old_layers = self.layers
+        for layer in old_layers:
+            layer.post_step_transformer_changed.disconnect(
+                self._on_layer_post_transformer_changed
+            )
 
-    def _connect_layer_signals(self, layer: Layer):
-        """Connects all relevant signals from a layer to the doc's handlers."""
-        layer.changed.connect(self._on_layer_changed)
-        layer.descendant_transform_changed.connect(
-            self._on_layer_transform_bubbled
-        )
-        layer.post_step_transformer_changed.connect(
-            self._on_layer_post_transformer_changed
-        )
-        layer.descendant_added.connect(self._on_descendant_added)
-        layer.descendant_removed.connect(self._on_descendant_removed)
-        layer.descendant_updated.connect(self._on_descendant_updated)
-
-    def _disconnect_layer_signals(self, layer: Layer):
-        """Disconnects all relevant signals from a layer."""
-        layer.changed.disconnect(self._on_layer_changed)
-        layer.descendant_transform_changed.disconnect(
-            self._on_layer_transform_bubbled
-        )
-        layer.post_step_transformer_changed.disconnect(
-            self._on_layer_post_transformer_changed
-        )
-        layer.descendant_added.disconnect(self._on_descendant_added)
-        layer.descendant_removed.disconnect(self._on_descendant_removed)
-        layer.descendant_updated.disconnect(self._on_descendant_updated)
+        new_layers = [c for c in new_children if isinstance(c, Layer)]
+        for layer in new_layers:
+            layer.post_step_transformer_changed.connect(
+                self._on_layer_post_transformer_changed
+            )
+        super().set_children(new_children)
 
     def add_layer(self, layer: Layer):
-        self.layers.append(layer)
-        self._connect_layer_signals(layer)
-        self.descendant_added.send(self, origin=layer)
-        self.changed.send(self)
+        self.add_child(layer)
 
     def remove_layer(self, layer: Layer):
         # Prevent removing the last layer.
         if layer not in self.layers or len(self.layers) <= 1:
             return
-        self._disconnect_layer_signals(layer)
-        self.layers.remove(layer)
-        self.descendant_removed.send(self, origin=layer)
+        self.remove_child(layer)
 
         # Ensure active_layer_index remains valid
         if self._active_layer_index >= len(self.layers):
             self._active_layer_index = len(self.layers) - 1
             self.active_layer_changed.send(self)
 
-        self.changed.send(self)
-
     def set_layers(self, layers: List[Layer]):
         # A document must always have at least one layer.
         if not layers:
             raise ValueError("Workpiece layer list cannot be empty.")
-
-        old_layers = set(self.layers)
-        new_layers = set(layers)
 
         # Preserve the active layer if it still exists in the new list
         current_active = self.active_layer
@@ -160,20 +146,9 @@ class Doc:
         except ValueError:
             new_active_index = 0  # Default to first layer
 
-        for layer in old_layers:
-            self._disconnect_layer_signals(layer)
-
-        self.layers = list(layers)
-        for layer in self.layers:
-            self._connect_layer_signals(layer)
-
-        for layer in old_layers - new_layers:
-            self.descendant_removed.send(self, origin=layer)
-        for layer in new_layers - old_layers:
-            self.descendant_added.send(self, origin=layer)
+        self.set_children(layers)
 
         self._active_layer_index = new_active_index
-        self.changed.send(self)
         if old_active_index != self._active_layer_index:
             self.active_layer_changed.send(self)
 

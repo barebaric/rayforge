@@ -40,7 +40,7 @@ class TestWorkPiece:
         assert wp.angle == pytest.approx(0.0)
         # A 1x1mm object at the origin results in an identity matrix.
         assert wp.matrix == Matrix.identity()
-        assert isinstance(wp.changed, Signal)
+        assert isinstance(wp.updated, Signal)
         assert isinstance(wp.transform_changed, Signal)
 
     def test_workpiece_is_docitem(self, workpiece_instance):
@@ -85,8 +85,10 @@ class TestWorkPiece:
         mock_config = MagicMock()
         mock_config.machine.dimensions = (400.0, 300.0)
         # The 'config' object is defined in 'rayforge.config' and imported
-        # locally within the from_file method. We must patch it at the source.
-        monkeypatch.setattr("rayforge.config.config", mock_config)
+        # locally within the from_file method. We must patch it at its source.
+        monkeypatch.setattr(
+            "rayforge.config.config", mock_config, raising=False
+        )
 
         p = tmp_path / "sample.svg"
         p.write_bytes(sample_svg_data)
@@ -99,31 +101,31 @@ class TestWorkPiece:
 
     def test_setters_and_signals(self, workpiece_instance):
         wp = workpiece_instance
-        changed_events, transform_events = [], []
+        updated_events, transform_events = [], []
 
-        wp.changed.connect(
-            lambda sender: changed_events.append(sender), weak=False
+        wp.updated.connect(
+            lambda sender: updated_events.append(sender), weak=False
         )
         wp.transform_changed.connect(
             lambda sender: transform_events.append(sender), weak=False
         )
 
-        # set_pos should fire transform_changed, NOT changed.
+        # set_pos should fire transform_changed, NOT updated.
         wp.pos = (10, 20)
         assert wp.pos == pytest.approx((10.0, 20.0))
-        assert len(changed_events) == 0
+        assert len(updated_events) == 0
         assert len(transform_events) == 1
 
-        # set_size should fire changed.
+        # set_size should fire both updated and transform_changed.
         wp.set_size(150, 75)
         assert wp.size == pytest.approx((150.0, 75.0))
-        assert len(changed_events) == 1
+        assert len(updated_events) == 1
         assert len(transform_events) == 2
 
-        # set_angle should fire transform_changed, NOT changed.
+        # set_angle should fire transform_changed, NOT updated.
         wp.angle = 45
         assert wp.angle == pytest.approx(45.0)
-        assert len(changed_events) == 1
+        assert len(updated_events) == 1
         assert len(transform_events) == 3
 
     def test_sizing_and_aspect_ratio(self, workpiece_instance):

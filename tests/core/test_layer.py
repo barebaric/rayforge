@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from blinker import Signal
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
@@ -16,51 +17,33 @@ def layer(doc):
     return doc.layers[0]
 
 
-def test_add_workpiece_to_layer_fires_changed(layer):
-    layer_changed_handler = MagicMock()
-    layer.changed.connect(layer_changed_handler)
+@pytest.fixture
+def mock_workpiece_with_signals():
+    """Provides a MagicMock of a WorkPiece with real Signal objects."""
+    mock_wp = MagicMock(spec=WorkPiece)
+    # DocItem base class expects these signals to exist for connection
+    mock_wp.updated = Signal()
+    mock_wp.transform_changed = Signal()
+    mock_wp.descendant_added = Signal()
+    mock_wp.descendant_removed = Signal()
+    mock_wp.descendant_updated = Signal()
+    mock_wp.descendant_transform_changed = Signal()
+    mock_wp.parent = None
+    mock_wp.name = "Mock WP"
+    return mock_wp
 
-    # Using a mock workpiece as its implementation is not relevant here
-    mock_workpiece = MagicMock(spec=WorkPiece)
-    mock_workpiece.changed = MagicMock()  # Mock the signal attribute
-    mock_workpiece.transform_changed = MagicMock()
-    mock_workpiece.parent = None
 
-    layer.add_workpiece(mock_workpiece)
-
-    layer_changed_handler.assert_called_once_with(layer)
-    assert mock_workpiece in layer.workpieces
-
-
-def test_add_workpiece_fires_descendant_added(layer):
+def test_add_workpiece_fires_descendant_added(
+    layer, mock_workpiece_with_signals
+):
     """Adding a workpiece should fire descendant_added."""
     handler = MagicMock()
     layer.descendant_added.connect(handler)
 
-    mock_workpiece = MagicMock(spec=WorkPiece)
-    mock_workpiece.changed = MagicMock()
-    mock_workpiece.transform_changed = MagicMock()
-    mock_workpiece.parent = None
+    layer.add_workpiece(mock_workpiece_with_signals)
 
-    layer.add_workpiece(mock_workpiece)
-    handler.assert_called_once_with(layer, origin=mock_workpiece)
-
-
-def test_workflow_change_bubbles_up_to_layer(layer):
-    """
-    Integration test: A change on a Workflow should notify its parent Layer.
-    """
-    layer_changed_handler = MagicMock()
-    layer.changed.connect(layer_changed_handler)
-
-    workflow = layer.workflow
-    step = Step(workflow, "Test Step")
-
-    # Act
-    workflow.add_step(step)
-
-    # Assert
-    layer_changed_handler.assert_called_once_with(layer)
+    handler.assert_called_once_with(layer, origin=mock_workpiece_with_signals)
+    assert mock_workpiece_with_signals in layer.workpieces
 
 
 def test_workflow_descendant_added_bubbles_to_layer(layer):
@@ -69,7 +52,7 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     layer.descendant_added.connect(handler)
 
     workflow = layer.workflow
-    step = Step(workflow, "Test Step")
+    step = Step("Test Step")
 
     # Act
     workflow.add_step(step)
@@ -78,56 +61,45 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     handler.assert_called_once_with(layer, origin=step)
 
 
-def test_workpiece_data_change_bubbles_up_to_layer(layer):
+def test_workpiece_data_change_bubbles_up_to_layer(
+    layer, mock_workpiece_with_signals
+):
     """
-    A data change on a workpiece (via .changed) should bubble relevant
-    signals.
+    A data change on a workpiece (via .updated) should bubble a
+    descendant_updated signal.
     """
-    mock_workpiece = MagicMock(spec=WorkPiece)
-    # Fix: The handler accesses .name for logging, so the mock needs it.
-    mock_workpiece.name = "Mock WP"
-    mock_workpiece.changed = MagicMock()
-    mock_workpiece.transform_changed = MagicMock()
-    mock_workpiece.parent = None
-    layer.add_workpiece(mock_workpiece)
+    layer.add_workpiece(mock_workpiece_with_signals)
 
-    layer_changed_handler = MagicMock()
     descendant_updated_handler = MagicMock()
-    layer.changed.connect(layer_changed_handler)
     layer.descendant_updated.connect(descendant_updated_handler)
 
-    # Act: Simulate the .changed signal being fired, which calls
-    # _on_workpiece_changed
-    # The connect call returns the handler function itself.
-    handler_func = mock_workpiece.changed.connect.call_args.args[0]
-    handler_func(mock_workpiece)
+    # Act: Simulate the .updated signal being fired from the child.
+    mock_workpiece_with_signals.updated.send(mock_workpiece_with_signals)
 
-    # Assert: Both descendant_updated and changed signals should fire.
+    # Assert
     descendant_updated_handler.assert_called_once_with(
-        layer, origin=mock_workpiece
+        layer, origin=mock_workpiece_with_signals
     )
-    layer_changed_handler.assert_called_once_with(layer)
 
 
-def test_workpiece_transform_change_bubbles_up_to_layer(layer):
+def test_workpiece_transform_change_bubbles_up_to_layer(
+    layer, mock_workpiece_with_signals
+):
     """
     A transform change on a workpiece (via .transform_changed) should
     bubble a specific signal up.
     """
-    mock_workpiece = MagicMock(spec=WorkPiece)
-    mock_workpiece.changed = MagicMock()
-    mock_workpiece.transform_changed = MagicMock()
-    mock_workpiece.parent = None
-    layer.add_workpiece(mock_workpiece)
+    layer.add_workpiece(mock_workpiece_with_signals)
 
     transform_changed_handler = MagicMock()
     layer.descendant_transform_changed.connect(transform_changed_handler)
 
     # Act: Simulate the .transform_changed signal firing.
-    handler_func = mock_workpiece.transform_changed.connect.call_args.args[0]
-    handler_func(mock_workpiece)
+    mock_workpiece_with_signals.transform_changed.send(
+        mock_workpiece_with_signals
+    )
 
     # Assert
     transform_changed_handler.assert_called_once_with(
-        layer, origin=mock_workpiece
+        layer, origin=mock_workpiece_with_signals
     )

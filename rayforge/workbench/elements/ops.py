@@ -52,6 +52,14 @@ class WorkPieceOpsElement(CanvasElement):
         self._on_workpiece_transform_changed(workpiece)
         self.trigger_update()
 
+    def remove(self):
+        """Disconnects signals before removing the element."""
+        if self.data:
+            self.data.transform_changed.disconnect(
+                self._on_workpiece_transform_changed
+            )
+        super().remove()
+
     def _on_workpiece_transform_changed(
         self,
         workpiece: WorkPiece,

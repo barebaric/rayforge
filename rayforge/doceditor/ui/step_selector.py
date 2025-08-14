@@ -34,7 +34,7 @@ class StepSelector(Gtk.Popover):
         for factory_func in step_factories:
             # Create a temporary, parentless step to get its default label.
             # This is a bit of a hack but keeps the UI decoupled.
-            temp_step = factory_func(workflow=None)
+            temp_step = factory_func()
             label = Gtk.Label(label=temp_step.typelabel)
             label.set_xalign(0)
             label.add_css_class("step-selector-label")

@@ -48,7 +48,6 @@ class WorkPiece(DocItem):
 
         # The importer is a live instance created from the raw data.
         self.importer: Importer = self.importer_class(self._data)
-        self._importer_ref_for_pyreverse: Importer
 
         # The matrix is the single source of truth. A new workpiece starts
         # as a 1x1mm object at the origin. _matrix is inherited from DocItem.
@@ -56,11 +55,10 @@ class WorkPiece(DocItem):
 
     @property
     def layer(self) -> Optional["Layer"]:
-        return self.parent
-
-    @layer.setter
-    def layer(self, value: Optional["Layer"]):
-        self.parent = value
+        """Returns the parent layer, if it exists."""
+        if self.parent and isinstance(self.parent, Layer):
+            return cast(Layer, self.parent)
+        return None
 
     @property
     def matrix(self) -> "Matrix":
@@ -74,7 +72,7 @@ class WorkPiece(DocItem):
 
         This setter intelligently determines if the size (scale) of the
         workpiece has changed.
-        - If scale changes, it fires `changed` (for ops regeneration) and
+        - If scale changes, it fires `updated` (for ops regeneration) and
           `transform_changed` (for UI updates).
         - If only position/rotation changes, it only fires `transform_changed`.
         """
@@ -95,7 +93,7 @@ class WorkPiece(DocItem):
 
         # If the size/scale changed, it's a data-level change.
         if scale_changed:
-            self.changed.send(self)
+            self.updated.send(self)
 
         # Any geometric change requires a transform update for the UI.
         self.transform_changed.send(self)
@@ -144,7 +142,7 @@ class WorkPiece(DocItem):
         """
         Sets the workpiece size in mm while preserving its world-space center
         point. This is a data-changing operation that rebuilds the
-        transformation matrix and fires the `changed` signal.
+        transformation matrix and fires the `updated` signal.
         """
         new_size = float(width_mm), float(height_mm)
         current_w, current_h = self.size
@@ -241,15 +239,6 @@ class WorkPiece(DocItem):
         # signals.
         self._rebuild_matrix(self.pos, new_angle_float, self.size)
 
-    def get_world_transform(self) -> "Matrix":
-        """
-        Returns the transformation matrix for this workpiece. The matrix is
-        the single source of truth for position, size, and rotation.
-        """
-        # The parent (Layer) is not a DocItem, so world transform is just the
-        # local matrix. This correctly overrides DocItem's implementation.
-        return self.matrix
-
     def get_all_workpieces(self) -> List["WorkPiece"]:
         """For a single WorkPiece, this just returns itself in a list."""
         return [self]
@@ -260,10 +249,17 @@ class WorkPiece(DocItem):
         """
         state = self.__dict__.copy()
         state.pop("_parent", None)
+        state.pop("children", None)
         state.pop("importer", None)
-        state.pop("_importer_ref_for_pyreverse", None)
-        state.pop("changed", None)
+
+        # Pop all signals defined in DocItem as they cannot be pickled
+        state.pop("updated", None)
         state.pop("transform_changed", None)
+        state.pop("descendant_added", None)
+        state.pop("descendant_removed", None)
+        state.pop("descendant_updated", None)
+        state.pop("descendant_transform_changed", None)
+
         rclass = self.importer_class
         state["_importer_class_name"] = rclass.__name__
         state.pop("importer_class", None)
@@ -280,9 +276,17 @@ class WorkPiece(DocItem):
         self._matrix = Matrix(state.pop("matrix"))
         self.__dict__.update(state)
         self.importer = self.importer_class(self._data)
-        self.changed = Signal()
+
+        # Re-initialize signals as they are not pickled.
+        self.updated = Signal()
         self.transform_changed = Signal()
+        self.descendant_added = Signal()
+        self.descendant_removed = Signal()
+        self.descendant_updated = Signal()
+        self.descendant_transform_changed = Signal()
+
         self._parent = None
+        self.children = []
 
     def to_dict(self) -> Dict[str, Any]:
         """

@@ -71,7 +71,13 @@ class WorkflowView(Expander):
         if self.workflow:
             try:
                 # Disconnect old handlers
-                self.workflow.changed.disconnect(self.on_workflow_changed)
+                self.workflow.updated.disconnect(self.on_workflow_changed)
+                self.workflow.descendant_added.disconnect(
+                    self.on_workflow_changed
+                )
+                self.workflow.descendant_removed.disconnect(
+                    self.on_workflow_changed
+                )
             except (TypeError, ValueError):
                 pass
 
@@ -79,8 +85,11 @@ class WorkflowView(Expander):
         self.set_visible(bool(self.workflow))
 
         if self.workflow:
-            # Connect new handler to the single 'changed' signal
-            self.workflow.changed.connect(self.on_workflow_changed)
+            # Connect to signals that indicate a change in the workflow's
+            # properties or its list of children.
+            self.workflow.updated.connect(self.on_workflow_changed)
+            self.workflow.descendant_added.connect(self.on_workflow_changed)
+            self.workflow.descendant_removed.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
             self.on_workflow_changed(self.workflow)
 
@@ -158,7 +167,7 @@ class WorkflowView(Expander):
             return
         if popup.selected_factory:
             step_factory = popup.selected_factory
-            new_step = step_factory(workflow=self.workflow)
+            new_step = step_factory()
             command = ListItemCommand(
                 owner_obj=self.workflow,
                 item=new_step,

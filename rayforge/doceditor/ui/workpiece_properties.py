@@ -476,7 +476,10 @@ class WorkpiecePropertiesWidget(Expander):
 
     def set_workpieces(self, workpieces: Optional[List[WorkPiece]]):
         for workpiece in self.workpieces:
-            workpiece.changed.disconnect(self._on_workpiece_data_changed)
+            workpiece.updated.disconnect(self._on_workpiece_data_changed)
+            workpiece.transform_changed.disconnect(
+                self._on_workpiece_data_changed
+            )
 
         self.workpieces = workpieces or []
 
@@ -487,7 +490,10 @@ class WorkpiecePropertiesWidget(Expander):
             self.set_subtitle(_(f"{count} items selected"))
 
         for workpiece in self.workpieces:
-            workpiece.changed.connect(self._on_workpiece_data_changed)
+            workpiece.updated.connect(self._on_workpiece_data_changed)
+            workpiece.transform_changed.connect(
+                self._on_workpiece_data_changed
+            )
 
         self._update_ui_from_workpieces()
 
