@@ -219,7 +219,7 @@ class WorkPiece(DocItem):
         The rotation angle (in degrees) of the workpiece.
         This is decomposed from the transformation matrix.
         """
-        return self.matrix.get_rotation() % 360
+        return self.matrix.get_rotation()
 
     @angle.setter
     def angle(self, new_angle: float):
@@ -227,14 +227,16 @@ class WorkPiece(DocItem):
         Sets the angle and rebuilds the transformation matrix. This is a
         transform-only operation and fires the `transform_changed` signal.
         """
-        new_angle_float = float(new_angle % 360)
-        # Use a small tolerance for floating point comparison of angles
+        new_angle_float = float(new_angle)
         current_angle = self.angle
-        if (
-            abs(new_angle_float - current_angle) < 1e-9
-            or abs(new_angle_float - current_angle - 360) < 1e-9
-        ):
+
+        # Check if the new angle is geometrically equivalent to the current one
+        # (i.e., they differ by a multiple of 360 degrees). This prevents
+        # rebuilding the matrix unnecessarily.
+        diff = new_angle_float - current_angle
+        if abs(diff - round(diff / 360.0) * 360.0) < 1e-9:
             return
+
         # This will call the matrix.setter, which will fire the correct
         # signals.
         self._rebuild_matrix(self.pos, new_angle_float, self.size)

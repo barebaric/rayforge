@@ -107,6 +107,7 @@ class WorkpiecePropertiesWidget(Expander):
         # Angle Entry
         self.angle_row = Adw.SpinRow(
             title=_("Angle"),
+            subtitle=_("Clockwise is positive"),
             adjustment=Gtk.Adjustment.new(0, -360, 360, 1, 10, 0),
             digits=2,
         )
@@ -353,7 +354,9 @@ class WorkpiecePropertiesWidget(Expander):
             return
         self._in_update = True
         try:
-            new_angle = spin_row.get_value()
+            new_angle_from_ui = spin_row.get_value()
+            new_angle = -new_angle_from_ui
+
             doc = self.workpieces[0].doc
             if not doc:
                 for workpiece in self.workpieces:
@@ -536,7 +539,8 @@ class WorkpiecePropertiesWidget(Expander):
             self.y_row.set_value(y)
 
         logger.debug(f"Updating UI: angle={angle}")
-        self.angle_row.set_value(angle)
+        # FIX: Negate angle from model for display in UI
+        self.angle_row.set_value(-angle)
 
         if len(self.workpieces) != 1:
             self.source_file_row.set_visible(False)

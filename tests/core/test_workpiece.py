@@ -310,3 +310,19 @@ class TestWorkPiece:
         final_pos = wp.pos
         wp.pos = final_pos
         assert wp.pos == pytest.approx(final_pos, abs=1e-9)
+
+    def test_negative_angle_preservation(self, workpiece_instance):
+        """
+        Tests that a negative angle is correctly set and retrieved, which
+        was the cause of the '1 -> 359' bug (actually '-1 -> 359').
+        """
+        wp = workpiece_instance
+        wp.angle = -45.0
+        assert wp.angle == pytest.approx(-45.0)
+
+        wp.angle = -10.0
+        assert wp.angle == pytest.approx(-10.0)
+
+        # Also check a positive angle to ensure no regressions.
+        wp.angle = 10.0
+        assert wp.angle == pytest.approx(10.0)
