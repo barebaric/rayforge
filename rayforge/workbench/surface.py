@@ -1,6 +1,6 @@
 import logging
 from blinker import Signal
-from typing import Optional, Tuple, cast, Dict, List, Type
+from typing import Optional, Tuple, cast, Dict, List
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ..core.doc import Doc
 from ..core.layer import Layer
@@ -17,18 +17,6 @@ from .elements.workpiece import WorkPieceElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
 from .elements.ops import WorkPieceOpsElement
-from ..doceditor.layout import (
-    LayoutStrategy,
-    BboxAlignLeftStrategy,
-    BboxAlignCenterStrategy,
-    BboxAlignRightStrategy,
-    BboxAlignTopStrategy,
-    BboxAlignMiddleStrategy,
-    BboxAlignBottomStrategy,
-    SpreadHorizontallyStrategy,
-    SpreadVerticallyStrategy,
-)
-
 
 logger = logging.getLogger(__name__)
 
@@ -1013,101 +1001,3 @@ class WorkSurface(Canvas):
 
         self._finalize_selection_state()
         self.queue_draw()
-
-    def _execute_layout_strategy(
-        self, strategy_class: Type[LayoutStrategy], transaction_name: str
-    ):
-        """
-        A generic helper to execute a layout strategy and wrap the changes
-        in a single undoable transaction.
-        """
-        selected_wps = self.get_selected_workpieces()
-        if not selected_wps:
-            return
-
-        strategy = strategy_class(selected_wps, self)
-        deltas = strategy.calculate_deltas()
-        if not deltas:
-            return
-
-        with self.doc.history_manager.transaction(transaction_name) as t:
-            for wp, delta_matrix in deltas.items():
-                old_matrix = wp.matrix.copy()
-                new_matrix = delta_matrix @ old_matrix
-                cmd = ChangePropertyCommand(
-                    target=wp,
-                    property_name="matrix",
-                    new_value=new_matrix,
-                    old_value=old_matrix,
-                )
-                t.execute(cmd)
-
-    def center_horizontally(self):
-        """
-        Horizontally aligns selected workpieces.
-        - One item: centered on the canvas.
-        - Multiple items: centered on their collective bounding box center.
-        """
-        self._execute_layout_strategy(
-            BboxAlignCenterStrategy, _("Center Horizontally")
-        )
-
-    def center_vertically(self):
-        """
-        Vertically aligns selected workpieces.
-        - One item: centered on the canvas.
-        - Multiple items: centered on their collective bounding box center.
-        """
-        self._execute_layout_strategy(
-            BboxAlignMiddleStrategy, _("Center Vertically")
-        )
-
-    def align_left(self):
-        """
-        Aligns the left edge of selected items.
-        - One item: aligned to the left edge of the canvas.
-        - Multiple items: aligned to the left edge of their collective bbox.
-        """
-        self._execute_layout_strategy(BboxAlignLeftStrategy, _("Align Left"))
-
-    def align_right(self):
-        """
-        Aligns the right edge of selected items.
-        - One item: aligned to the right edge of the canvas.
-        - Multiple items: aligned to the right edge of their collective bbox.
-        """
-        self._execute_layout_strategy(BboxAlignRightStrategy, _("Align Right"))
-
-    def align_top(self):
-        """
-        Aligns the top edge of selected items.
-        - One item: aligned to the top edge of the canvas.
-        - Multiple items: aligned to the top edge of their collective bbox.
-        """
-        self._execute_layout_strategy(BboxAlignTopStrategy, _("Align Top"))
-
-    def align_bottom(self):
-        """
-        Aligns the bottom edge of selected items.
-        - One item: aligned to the bottom edge of the canvas.
-        - Multiple items: aligned to the bottom edge of their collective bbox.
-        """
-        self._execute_layout_strategy(
-            BboxAlignBottomStrategy, _("Align Bottom")
-        )
-
-    def spread_horizontally(self):
-        """
-        Distributes selected workpieces evenly in the horizontal direction.
-        """
-        self._execute_layout_strategy(
-            SpreadHorizontallyStrategy, _("Spread Horizontally")
-        )
-
-    def spread_vertically(self):
-        """
-        Distributes selected workpieces evenly in the vertical direction.
-        """
-        self._execute_layout_strategy(
-            SpreadVerticallyStrategy, _("Spread Vertically")
-        )

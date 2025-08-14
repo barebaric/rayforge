@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, Callable
 from gi.repository import Gtk, Gio, GLib  # type: ignore
-
+from .doceditor import layout_actions
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
@@ -36,19 +36,43 @@ class ActionManager:
         self._add_action("cut", self.win.on_menu_cut)
         self._add_action("copy", self.win.on_menu_copy)
         self._add_action("paste", self.win.on_paste_requested)
+        self._add_action("select_all", self.win.on_select_all)
         self._add_action("duplicate", self.win.on_menu_duplicate)
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
 
         # Alignment Actions
-        self._add_action("align-h-center", self.win.on_align_h_center_clicked)
-        self._add_action("align-v-center", self.win.on_align_v_center_clicked)
-        self._add_action("align-left", self.win.on_align_left_clicked)
-        self._add_action("align-right", self.win.on_align_right_clicked)
-        self._add_action("align-top", self.win.on_align_top_clicked)
-        self._add_action("align-bottom", self.win.on_align_bottom_clicked)
-        self._add_action("spread-h", self.win.on_spread_horizontally_clicked)
-        self._add_action("spread-v", self.win.on_spread_vertically_clicked)
+        self._add_action(
+            "align-h-center",
+            lambda a, p: layout_actions.center_horizontally(self.win),
+        )
+        self._add_action(
+            "align-v-center",
+            lambda a, p: layout_actions.center_vertically(self.win),
+        )
+        self._add_action(
+            "align-left", lambda a, p: layout_actions.align_left(self.win)
+        )
+        self._add_action(
+            "align-right", lambda a, p: layout_actions.align_right(self.win)
+        )
+        self._add_action(
+            "align-top", lambda a, p: layout_actions.align_top(self.win)
+        )
+        self._add_action(
+            "align-bottom", lambda a, p: layout_actions.align_bottom(self.win)
+        )
+        self._add_action(
+            "spread-h",
+            lambda a, p: layout_actions.spread_horizontally(self.win),
+        )
+        self._add_action(
+            "spread-v", lambda a, p: layout_actions.spread_vertically(self.win)
+        )
+        self._add_action(
+            "layout-pixel-perfect",
+            lambda a, p: layout_actions.layout_pixel_perfect(self.win),
+        )
 
         # Machine Control Actions
         self._add_action("home", self.win.on_home_clicked)
@@ -75,9 +99,11 @@ class ActionManager:
         app.set_accels_for_action("win.cut", ["<Primary>x"])
         app.set_accels_for_action("win.copy", ["<Primary>c"])
         app.set_accels_for_action("win.paste", ["<Primary>v"])
+        app.set_accels_for_action("win.select_all", ["<Primary>a"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
         app.set_accels_for_action("win.show_3d_view", ["F12"])
+        app.set_accels_for_action("win.layout-pixel-perfect", ["a"])
         app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
         app.set_accels_for_action("win.about", ["F1"])

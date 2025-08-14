@@ -358,3 +358,17 @@ class Matrix:
             float(sy),
             float(skew_angle_deg),
         )
+
+    def get_cairo(self) -> Tuple[float, float, float, float, float, float]:
+        """
+        Returns the matrix components in the order expected by cairo.Matrix.
+        The order is (xx, yx, xy, yy, x0, y0).
+        """
+        # Our matrix: [[xx, xy, x0], [yx, yy, y0], [0, 0, 1]]
+        xx = self.m[0, 0]
+        xy = self.m[0, 1]
+        x0 = self.m[0, 2]
+        yx = self.m[1, 0]
+        yy = self.m[1, 1]
+        y0 = self.m[1, 2]
+        return (xx, yx, xy, yy, x0, y0)

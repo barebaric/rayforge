@@ -611,28 +611,36 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update actions that don't depend on the machine state
         has_selection = len(self.surface.get_selected_workpieces()) > 0
-        has_tasks = task_mgr.has_tasks()
-        can_edit = not has_tasks
 
         am.get_action("undo").set_enabled(self.doc.history_manager.can_undo())
         am.get_action("redo").set_enabled(self.doc.history_manager.can_redo())
-        am.get_action("cut").set_enabled(has_selection and can_edit)
+        am.get_action("cut").set_enabled(has_selection)
         am.get_action("copy").set_enabled(has_selection)
         am.get_action("paste").set_enabled(
-            len(self._clipboard_snapshot) > 0 and can_edit
+            len(self._clipboard_snapshot) > 0
         )
-        am.get_action("duplicate").set_enabled(has_selection and can_edit)
-        am.get_action("remove").set_enabled(has_selection and can_edit)
+        am.get_action("select_all").set_enabled(
+            self.doc.has_workpiece()
+        )
+        am.get_action("duplicate").set_enabled(has_selection)
+        am.get_action("remove").set_enabled(has_selection)
         am.get_action("clear").set_enabled(
-            self.doc.has_workpiece() and can_edit
+            self.doc.has_workpiece()
         )
 
         # Update sensitivity for all alignment buttons
-        align_sensitive = has_selection and can_edit
-        am.get_action("align-h-center").set_enabled(align_sensitive)
-        am.get_action("align-v-center").set_enabled(align_sensitive)
-        self.toolbar.align_menu_button.set_sensitive(align_sensitive)
-        self.toolbar.distribute_menu_button.set_sensitive(align_sensitive)
+        am.get_action("align-h-center").set_enabled(has_selection)
+        am.get_action("align-v-center").set_enabled(has_selection)
+        self.toolbar.align_menu_button.set_sensitive(has_selection)
+        self.toolbar.distribute_menu_button.set_sensitive(
+            len(self.surface.get_selected_workpieces()) >= 2
+        )
+
+        # Layout
+        am.get_action("layout-pixel-perfect").set_enabled(
+            len(self.surface.get_selected_workpieces()) != 1 and
+            len(self.doc.workpieces) != 1
+        )
 
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
@@ -818,30 +826,6 @@ class MainWindow(Adw.ApplicationWindow):
             return
         driver = config.machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel())
-
-    def on_align_h_center_clicked(self, action, param):
-        self.surface.center_horizontally()
-
-    def on_align_v_center_clicked(self, action, param):
-        self.surface.center_vertically()
-
-    def on_align_left_clicked(self, action, param):
-        self.surface.align_left()
-
-    def on_align_right_clicked(self, action, param):
-        self.surface.align_right()
-
-    def on_align_top_clicked(self, action, param):
-        self.surface.align_top()
-
-    def on_align_bottom_clicked(self, action, param):
-        self.surface.align_bottom()
-
-    def on_spread_horizontally_clicked(self, action, param):
-        self.surface.spread_horizontally()
-
-    def on_spread_vertically_clicked(self, action, param):
-        self.surface.spread_vertically()
 
     def on_save_dialog_response(self, dialog, result):
         try:
@@ -1049,6 +1033,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         if newly_pasted_workpieces:
             self.surface.select_workpieces(newly_pasted_workpieces)
+
+    def on_select_all(self, action, param):
+        """Selects all workpieces in the document."""
+        if self.doc.workpieces:
+            self.surface.select_workpieces(self.doc.workpieces)
 
     def on_duplicate_requested(self, sender, workpieces: List[WorkPiece]):
         """

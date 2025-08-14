@@ -174,6 +174,11 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.distribute_menu_button)
 
+        auto_layout_button = Gtk.Button(child=get_icon("auto-layout-symbolic"))
+        auto_layout_button.set_tooltip_text(_("Auto Layout (pack workpieces)"))
+        auto_layout_button.set_action_name("win.layout-pixel-perfect")
+        self.append(auto_layout_button)
+
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
