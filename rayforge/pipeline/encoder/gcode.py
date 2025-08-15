@@ -135,9 +135,10 @@ class GcodeEncoder(OpsEncoder):
         """Rapid movement with laser safety"""
         self._laser_off(gcode)
         self._emit_modal_speed(gcode, self.travel_speed or 0)
+        f_command = self.dialect.format_feedrate(self.travel_speed)
         gcode.append(
             self.dialect.travel_move.format(
-                x=x, y=y, z=z, speed=self.travel_speed
+                x=x, y=y, z=z, f_command=f_command
             )
         )
 
@@ -147,9 +148,10 @@ class GcodeEncoder(OpsEncoder):
         """Cutting movement with laser activation"""
         self._laser_on(gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
+        f_command = self.dialect.format_feedrate(self.cut_speed)
         gcode.append(
             self.dialect.linear_move.format(
-                x=x, y=y, z=z, speed=self.cut_speed
+                x=x, y=y, z=z, f_command=f_command
             )
         )
 
@@ -166,8 +168,9 @@ class GcodeEncoder(OpsEncoder):
         x, y, z = end
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
+        f_command = self.dialect.format_feedrate(self.cut_speed)
         gcode.append(
-            template.format(x=x, y=y, z=z, i=i, j=j, speed=self.cut_speed)
+            template.format(x=x, y=y, z=z, i=i, j=j, f_command=f_command)
         )
 
     def _laser_on(self, gcode: List[str]) -> None:

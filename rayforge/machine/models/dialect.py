@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
@@ -65,6 +65,13 @@ class GcodeDialect:
         """
         return int(power)
 
+    def format_feedrate(self, speed: Optional[float]) -> str:
+        """
+        Formats the feed rate (F-word) for a command. Returns an empty
+        string if the speed is None, preventing invalid G-code.
+        """
+        return f" F{speed}" if speed is not None else ""
+
     def __post_init__(self):
         """Automatically register the dialect instance after it's created."""
         register_dialect(self)
@@ -77,16 +84,19 @@ GRBL_DIALECT = GcodeDialect(
     laser_on="M4 S{power}",
     laser_off="M5",
     set_speed="",
-    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
+    default_preamble=[
+        "G21 ;Set units to mm",
+        "G90 ;Absolute positioning"
+    ],
     default_postscript=[
-        "M5 ; Ensure laser is off",
-        "G0 X0 Y0 ; Return to origin",
+        "M5 ;Ensure laser is off",
+        "G0 X0 Y0 ;Return to origin",
     ],
 )
 
@@ -100,16 +110,18 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     laser_on="M4 S{power}",
     laser_off="M5",
     set_speed="",
-    travel_move="G0 X{x:.3f} Y{y:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    travel_move="G0 X{x:.3f} Y{y:.3f}{f_command}",
+    linear_move="G1 X{x:.3f} Y{y:.3f}{f_command}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}{f_command}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} I{i:.3f} J{j:.3f}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
+    default_preamble=[
+        "G21 ;Set units to mm",
+        "G90 ;Absolute positioning"],
     default_postscript=[
-        "M5 ; Ensure laser is off",
-        "G0 X0 Y0 ; Return to origin",
+        "M5 ;Ensure laser is off",
+        "G0 X0 Y0 ;Return to origin",
     ],
 )
 
@@ -120,10 +132,10 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     laser_on="M3 S{power}",
     laser_off="M5",
     set_speed="",
-    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
     default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
@@ -142,10 +154,10 @@ MARLIN_DIALECT = GcodeDialect(
     laser_on="M4 S{power}",
     laser_off="M5",
     set_speed="",
-    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f} F{speed}",
-    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
-    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f} F{speed}",
+    travel_move="G0 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    linear_move="G1 X{x:.3f} Y{y:.3f} Z{z:.3f}{f_command}",
+    arc_cw="G2 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
+    arc_ccw="G3 X{x:.3f} Y{y:.3f} Z{z:.3f} I{i:.3f} J{j:.3f}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
     default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
