@@ -215,15 +215,15 @@ class MultiSelectionGroup:
         scale_x = new_w / orig_w
         scale_y = new_h / orig_h
 
-        # Chain transformations in the order they are applied to a point:
-        # 1. Translate original top-left to origin.
-        # 2. Scale.
-        # 3. Translate from origin to new top-left.
+        # To map a point from the old box to the new one, the correct matrix
+        # is T_new * S * T_inv. Assuming post-multiplication (M' = M * Op),
+        # the operations must be chained in the order they should appear in
+        # the final matrix product.
         self.transform = (
             Matrix.identity()
-            .post_translate(-orig_x, -orig_y)
-            .post_scale(scale_x, scale_y)
             .post_translate(new_x, new_y)
+            .post_scale(scale_x, scale_y)
+            .post_translate(-orig_x, -orig_y)
         )
         self._update_element_transforms()
 
