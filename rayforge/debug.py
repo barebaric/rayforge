@@ -46,7 +46,7 @@ class DebugLogEncoder(json.JSONEncoder):
 
     def default(self, o):
         # Local import to avoid circular dependency at module load time.
-        from .driver.driver import DeviceState
+        from .machine.driver.driver import DeviceState
 
         if isinstance(o, LogEntry) or isinstance(o, DeviceState):
             return dataclasses.asdict(o)
