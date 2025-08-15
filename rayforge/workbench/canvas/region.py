@@ -188,25 +188,25 @@ def get_region_rect(
 
     # Rotate/Shear handles (external)
     if region == ElementRegion.ROTATE_TOP_LEFT:
-        y_pos = (
-            h + handle_dist if is_flipped_y else -handle_dist - effective_hh
-        )
-        return -effective_hw - handle_dist, y_pos, effective_hw, effective_hh
+        rot_w = min((base_handle_size * 1.4) / abs_scale_x, w / 2.0)
+        rot_h = min((base_handle_size * 1.4) / abs_scale_y, h / 2.0)
+        center_y = h if is_flipped_y else 0.0
+        return -rot_w / 2, center_y - rot_h / 2, rot_w, rot_h
     if region == ElementRegion.ROTATE_TOP_RIGHT:
-        y_pos = (
-            h + handle_dist if is_flipped_y else -handle_dist - effective_hh
-        )
-        return w + handle_dist, y_pos, effective_hw, effective_hh
+        rot_w = min((base_handle_size * 1.4) / abs_scale_x, w / 2.0)
+        rot_h = min((base_handle_size * 1.4) / abs_scale_y, h / 2.0)
+        center_y = h if is_flipped_y else 0.0
+        return w - rot_w / 2, center_y - rot_h / 2, rot_w, rot_h
     if region == ElementRegion.ROTATE_BOTTOM_LEFT:
-        y_pos = (
-            -effective_hh - handle_dist if is_flipped_y else h + handle_dist
-        )
-        return -effective_hw - handle_dist, y_pos, effective_hw, effective_hh
+        rot_w = min((base_handle_size * 1.4) / abs_scale_x, w / 2.0)
+        rot_h = min((base_handle_size * 1.4) / abs_scale_y, h / 2.0)
+        center_y = 0.0 if is_flipped_y else h
+        return -rot_w / 2, center_y - rot_h / 2, rot_w, rot_h
     if region == ElementRegion.ROTATE_BOTTOM_RIGHT:
-        y_pos = (
-            -effective_hh - handle_dist if is_flipped_y else h + handle_dist
-        )
-        return w + handle_dist, y_pos, effective_hw, effective_hh
+        rot_w = min((base_handle_size * 1.4) / abs_scale_x, w / 2.0)
+        rot_h = min((base_handle_size * 1.4) / abs_scale_y, h / 2.0)
+        center_y = 0.0 if is_flipped_y else h
+        return w - rot_w / 2, center_y - rot_h / 2, rot_w, rot_h
 
     if region == ElementRegion.SHEAR_TOP:
         y_pos = (

@@ -601,6 +601,7 @@ class Canvas(Gtk.DrawingArea):
                 return  # Not a real drag yet, ignore.
 
             # Now that the drag is confirmed, set the state and fire signals.
+            self._was_dragging = True
             selected_elements = self.get_selected_elements()
             if not selected_elements:
                 return
