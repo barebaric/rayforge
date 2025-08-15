@@ -1,6 +1,6 @@
 from __future__ import annotations
 from enum import Enum, auto
-from typing import Tuple, Union, Set
+from typing import Tuple, Union, Set, Optional
 
 
 class ElementRegion(Enum):
@@ -238,16 +238,20 @@ def check_region_hit(
     height: float,
     base_handle_size: float,
     scale_compensation: Union[float, Tuple[float, float]] = 1.0,
+    candidates: Optional[Set[ElementRegion]] = None,
 ) -> ElementRegion:
     """
     Checks which interactive region is hit by a point in LOCAL coordinates.
-    This function does not need to handle rotation or translation.
+    If `candidates` is provided, it will only check against regions in that
+    set.
     """
-    # Check all handle regions first. Since they are non-overlapping, the
-    # iteration order does not matter.
-    for region in ROTATE_SHEAR_HANDLES | RESIZE_HANDLES:
-        # Use the provided scale compensation to calculate the hit rectangle.
-        # This ensures the hit-test area matches the rendered handle size.
+    # Determine which handle regions to check based on the candidates.
+    # The order of _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
+    regions_to_check = candidates if candidates is not None else BBOX_REGIONS
+
+    for region in regions_to_check:
+        # Calculate the hit rectangle for the current region. This ensures
+        # the hit-test area matches the rendered handle size.
         rx, ry, rw, rh = get_region_rect(
             region, width, height, base_handle_size, scale_compensation
         )
@@ -259,8 +263,9 @@ def check_region_hit(
         ):
             return region
 
-    # If no handle is hit, check the body (the entire 0,0,w,h area).
-    if 0 <= local_x < width and 0 <= local_y < height:
-        return ElementRegion.BODY
+    # If no handle is hit, check the body if it's a candidate.
+    if ElementRegion.BODY in regions_to_check:
+        if 0 <= local_x < width and 0 <= local_y < height:
+            return ElementRegion.BODY
 
     return ElementRegion.NONE

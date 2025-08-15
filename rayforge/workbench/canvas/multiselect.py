@@ -1,7 +1,16 @@
 from __future__ import annotations
 import math
 import logging
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Union, Optional
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Tuple,
+    Dict,
+    Any,
+    Union,
+    Optional,
+    Set,
+)
 from .region import ElementRegion, get_region_rect, check_region_hit
 from . import element, transform
 from ...core.matrix import Matrix
@@ -153,7 +162,12 @@ class MultiSelectionGroup:
             scale_compensation,
         )
 
-    def check_region_hit(self, x: float, y: float) -> ElementRegion:
+    def check_region_hit(
+        self,
+        x: float,
+        y: float,
+        candidates: Optional[Set[ElementRegion]] = None,
+    ) -> ElementRegion:
         # The group's bounding box is (min_x, min_y, width, height) in world
         # coords. We convert the world mouse coordinate (x,y) into the group's
         # local AABB coordinate space.
@@ -172,6 +186,7 @@ class MultiSelectionGroup:
             self.height,
             self.canvas.BASE_HANDLE_SIZE,
             scale_compensation=scale_compensation,
+            candidates=candidates,
         )
 
     def apply_move(self, dx: float, dy: float):

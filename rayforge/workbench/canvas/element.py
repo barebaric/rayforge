@@ -9,6 +9,7 @@ from typing import (
     Tuple,
     Optional,
     Union,
+    Set,
 )
 import cairo
 from gi.repository import GLib  # type: ignore
@@ -399,7 +400,12 @@ class CanvasElement:
             scale_compensation,
         )
 
-    def check_region_hit(self, x_abs: float, y_abs: float) -> ElementRegion:
+    def check_region_hit(
+        self,
+        x_abs: float,
+        y_abs: float,
+        candidates: Optional[Set[ElementRegion]] = None,
+    ) -> ElementRegion:
         """
         Checks which region is hit at an absolute canvas position.
 
@@ -409,6 +415,7 @@ class CanvasElement:
         Args:
             x_abs: The absolute x-coordinate on the canvas.
             y_abs: The absolute y-coordinate on the canvas.
+            candidates: An optional set of regions to limit the check to.
 
         Returns:
             The `ElementRegion` that was hit (e.g., BODY, HANDLE_SE).
@@ -432,9 +439,15 @@ class CanvasElement:
         else:
             transform_to_screen = world_transform
 
-        sx, sy = transform_to_screen.get_scale()
+        scale_compensation = transform_to_screen.get_scale()
         return check_region_hit(
-            local_x, local_y, self.width, self.height, base_hit_size, (sx, sy)
+            local_x,
+            local_y,
+            self.width,
+            self.height,
+            base_hit_size,
+            scale_compensation,
+            candidates=candidates,
         )
 
     def mark_dirty(self, ancestors: bool = True, recursive: bool = False):

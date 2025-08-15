@@ -344,33 +344,32 @@ class Canvas(Gtk.DrawingArea):
         new_hovered_region = ElementRegion.NONE
         new_hovered_elem = None
 
-        # Priority 1: Check for handle hits on the current selection.
-        target: Optional[Union[CanvasElement, MultiSelectionGroup]] = None
-        if is_multi_select:
-            target = self._selection_group
-        elif selected_elems:
-            target = selected_elems[0]
+        # Priority 1: Check for a valid handle hit on the current selection.
+        # We build a set of candidate regions based on the current mode.
+        handle_candidates: Optional[Set[ElementRegion]] = None
+        if self._selection_mode == SelectionMode.RESIZE:
+            handle_candidates = RESIZE_HANDLES
+        elif self._selection_mode == SelectionMode.ROTATE_SHEAR:
+            handle_candidates = ROTATE_SHEAR_HANDLES
 
-        if target:
-            region = target.check_region_hit(x, y)
+        if handle_candidates:
+            target: Optional[Union[CanvasElement, MultiSelectionGroup]] = None
+            if is_multi_select:
+                target = self._selection_group
+            elif selected_elems:
+                target = selected_elems[0]
 
-            # Check if the hit region is valid for the current selection mode
-            is_valid_handle = False
-            if (
-                self._selection_mode == SelectionMode.RESIZE
-                and region in RESIZE_HANDLES
-            ):
-                is_valid_handle = True
-            elif (
-                self._selection_mode == SelectionMode.ROTATE_SHEAR
-                and region in ROTATE_SHEAR_HANDLES
-            ):
-                is_valid_handle = True
+            if target:
+                # Pass the candidates to the hit-test function. It will only
+                # return a valid region from this set, or NONE.
+                region = target.check_region_hit(
+                    x, y, candidates=handle_candidates
+                )
 
-            if is_valid_handle:
-                new_hovered_region = region
-                if isinstance(target, CanvasElement):
-                    new_hovered_elem = target
+                if region != ElementRegion.NONE:
+                    new_hovered_region = region
+                    if isinstance(target, CanvasElement):
+                        new_hovered_elem = target
 
         # Priority 2: If no valid handles were hit, find the element body.
         if new_hovered_region == ElementRegion.NONE:
@@ -388,11 +387,20 @@ class Canvas(Gtk.DrawingArea):
         self._hovered_elem = new_hovered_elem
 
         # Update the group hover flag.
-        new_group_hovered = (
-            self._selection_group is not None
-            and self._selection_group.check_region_hit(x, y)
-            != ElementRegion.NONE
-        )
+        new_group_hovered = False
+        if self._selection_group:
+            # Check for body or any handle to set the general group hover flag
+            all_group_regions = (
+                RESIZE_HANDLES | ROTATE_SHEAR_HANDLES | {ElementRegion.BODY}
+            )
+            if (
+                self._selection_group.check_region_hit(
+                    x, y, candidates=all_group_regions
+                )
+                != ElementRegion.NONE
+            ):
+                new_group_hovered = True
+
         if self._group_hovered != new_group_hovered:
             self._group_hovered = new_group_hovered
             needs_redraw = True
@@ -812,7 +820,9 @@ class Canvas(Gtk.DrawingArea):
         hit = self.root.get_elem_hit(world_x, world_y, selectable=True)
         hover_region = ElementRegion.NONE
         if hit and hit.selected:
-            # Re-check region hit to be sure
+            # Re-check region hit to be sure, testing against ALL handles
+            # to allow mode switching from resize handles to rotate handles,
+            # etc.
             target = self._selection_group if self._selection_group else hit
             hover_region = target.check_region_hit(world_x, world_y)
 
