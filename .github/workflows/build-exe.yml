@@ -46,6 +46,7 @@ jobs:
             base-devel
             git
             mingw-w64-x86_64-adwaita-icon-theme
+            mingw-w64-x86_64-angleproject
             mingw-w64-x86_64-cairo
             mingw-w64-x86_64-cython
             mingw-w64-x86_64-gettext
@@ -244,8 +245,8 @@ jobs:
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\glib-2.0\schemas;glib-2.0\schemas" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\icons;share\icons" \
             --add-data "${{ steps.msys2.outputs.msys2-location }}\mingw64\lib\girepository-1.0;gi\repository" \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libEGL-1.dll;." \
-            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libGLESv2-2.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libEGL.dll;." \
+            --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libGLESv2.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
             --collect-submodules potrace \
             --hidden-import gi._gi_cairo \
