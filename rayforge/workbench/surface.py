@@ -139,9 +139,8 @@ class WorkSurface(Canvas):
         # Set theme colors for axis and grid.
         self._update_theme_colors()
 
-        # DotElement size will be set in pixels by WorkSurface
-        # Initialize with zero size, size and position will be set in
-        # do_size_allocate
+        # DotElement size is in world units (mm) and is dynamically
+        # updated to maintain a constant pixel size on screen.
         self._laser_dot = DotElement(0, 0, 5.0)
         self.root.add(self._laser_dot)
 
@@ -610,6 +609,13 @@ class WorkSurface(Canvas):
             # Tell the element to recalculate its transform and size.
             elem._on_workpiece_transform_changed(elem.data)
 
+        # Update laser dot size to maintain a constant size in pixels.
+        scale_x_ppm, _ = self.get_view_scale()
+        desired_diameter_px = 5.0
+        if scale_x_ppm > 1e-9:  # Avoid division by zero
+            diameter_mm = desired_diameter_px / scale_x_ppm
+            self._laser_dot.set_size(diameter_mm, diameter_mm)
+
         self.set_laser_dot_position(
             self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]
         )
@@ -688,15 +694,13 @@ class WorkSurface(Canvas):
     def set_laser_dot_position(self, x_mm: float, y_mm: float):
         """Sets the laser dot position in real-world mm."""
         self._laser_dot_pos_mm = x_mm, y_mm
-        # We now have to use the Canvas's transform to find the pixel position
-        center_x_px, center_y_px = self.view_transform.transform_point(
-            (x_mm, y_mm)
-        )
-        dot_w = self._laser_dot.width
-        dot_h = self._laser_dot.height
-        self._laser_dot.set_pos(
-            round(center_x_px - dot_w / 2), round(center_y_px - dot_h / 2)
-        )
+
+        # The dot is a child of self.root, so its coordinates are in the
+        # world (mm) space. We want to center it on the given mm coords.
+        dot_w_mm = self._laser_dot.width
+        dot_h_mm = self._laser_dot.height
+        self._laser_dot.set_pos(x_mm - dot_w_mm / 2, y_mm - dot_h_mm / 2)
+
         self.queue_draw()
 
     def remove_all(self):

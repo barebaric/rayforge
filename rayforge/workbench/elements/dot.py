@@ -9,41 +9,45 @@ logger = logging.getLogger(__name__)
 
 class DotElement(CanvasElement):
     """
-    Draws a simple red dot.
+    Draws a simple red dot. The dot has a constant size in its local
+    coordinate space.
     """
+
     def __init__(self, x, y, diameter: float = 5.0, **kwargs):
         """
-        Initializes a DotElement with pixel dimensions.
+        Initializes a DotElement.
+
+        The dimensions (x, y, diameter) are in the parent's coordinate
+        system. For WorkSurface, this is typically millimeters.
 
         Args:
-            x: The x-coordinate (pixel) relative to the parent.
-            y: The y-coordinate (pixel) relative to the parent.
-            radius: The radius (pixel).
+            x: The x-coordinate relative to the parent.
+            y: The y-coordinate relative to the parent.
+            diameter: The diameter of the dot.
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         # Laser dot is always a circle, so width and height should be equal.
-        # We store the radius in mm for rendering purposes.
-        super().__init__(x,
-                         y,
-                         diameter,
-                         diameter,
-                         visible=True,
-                         selectable=False,
-                         **kwargs)
+        super().__init__(
+            x,
+            y,
+            diameter,
+            diameter,
+            visible=True,
+            selectable=False,
+            **kwargs,
+        )
 
     def draw(self, ctx: cairo.Context):
-        assert self.canvas, "Canvas must be set before drawing"
-
-        """Renders the dot to the element's surface."""
-        # Clear the surface with the background color.
+        """Renders the dot onto the provided cairo context."""
+        # Let the parent draw its background if any.
         super().draw(ctx)
 
-        # Prepare the context.
-        ctx.set_hairline(True)
-        ctx.set_source_rgb(.9, 0, 0)
+        # Prepare the context for our drawing.
+        ctx.set_source_rgb(0.9, 0, 0)
 
-        # Draw the circle centered within the element's pixel bounds
+        # Draw the circle centered within the element's local bounds.
         center_x = self.width / 2
         center_y = self.height / 2
-        ctx.arc(center_x, center_y, self.width/2, 0., 2*math.pi)
+        radius = self.width / 2
+        ctx.arc(center_x, center_y, radius, 0.0, 2 * math.pi)
         ctx.fill()
