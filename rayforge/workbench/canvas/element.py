@@ -1,6 +1,5 @@
 from __future__ import annotations
 import os
-import math
 import logging
 from typing import (
     TYPE_CHECKING,
@@ -433,14 +432,7 @@ class CanvasElement:
         else:
             transform_to_screen = world_transform
 
-        m = transform_to_screen.m
-        sx = math.hypot(m[0, 0], m[1, 0])
-        sy = math.hypot(m[0, 1], m[1, 1])
-        # A negative determinant of the 2x2 transform part indicates a flip.
-        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
-        if det < 0:
-            sy = -sy
-
+        sx, sy = transform_to_screen.get_scale()
         return check_region_hit(
             local_x, local_y, self.width, self.height, base_hit_size, (sx, sy)
         )
@@ -798,10 +790,7 @@ class CanvasElement:
         ctx.save()
 
         # Apply the entire local transform relative to the parent in one go.
-        m = self.transform.m
-        cairo_matrix = cairo.Matrix(
-            m[0, 0], m[1, 0], m[0, 1], m[1, 1], m[0, 2], m[1, 2]
-        )
+        cairo_matrix = cairo.Matrix(*self.transform.for_cairo())
         ctx.transform(cairo_matrix)
 
         # The context is now fully transformed. All subsequent drawing happens
@@ -831,14 +820,8 @@ class CanvasElement:
         ctx.save()
 
         # Apply the content_transform relative to the local geometry.
-        m_content = self.content_transform.m
         cairo_content_matrix = cairo.Matrix(
-            m_content[0, 0],
-            m_content[1, 0],
-            m_content[0, 1],
-            m_content[1, 1],
-            m_content[0, 2],
-            m_content[1, 2],
+            *self.content_transform.for_cairo()
         )
         ctx.transform(cairo_content_matrix)
 

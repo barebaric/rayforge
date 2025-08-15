@@ -181,6 +181,8 @@ class WorkSurface(Canvas):
         self.resize_end.connect(self._on_transform_end)
         self.rotate_begin.connect(self._on_any_transform_begin)
         self.rotate_end.connect(self._on_transform_end)
+        self.shear_begin.connect(self._on_any_transform_begin)
+        self.shear_end.connect(self._on_transform_end)
         self.elements_deleted.connect(self._on_elements_deleted)
 
         # Initialize
@@ -223,11 +225,15 @@ class WorkSurface(Canvas):
         synchronizer to fix state timing issues. It re-commits the current
         selection state to ensure all listeners are in sync.
         """
-        self._finalize_selection_state()
+        logger.debug(
+            f"History changed, synchronizing selection state. Sender: {sender}"
+        )
+        self._sync_selection_state()
         self.queue_draw()
 
     def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
         """Saves the initial matrix of elements before any transformation."""
+        logger.debug(f"Transform begin for {len(elements)} element(s).")
         self._transform_start_states.clear()
         for element in elements:
             # We only care about WorkPiece elements for this undo logic
@@ -243,6 +249,10 @@ class WorkSurface(Canvas):
 
     def _on_resize_begin(self, sender, elements: List[CanvasElement]):
         """Handles start of a resize, which invalidates Ops."""
+        logger.debug(
+            f"Resize begin for {len(elements)} element(s)."
+            " Pausing ops generator."
+        )
         self._on_any_transform_begin(sender, elements)
         self.ops_generator.pause()
 
@@ -252,6 +262,10 @@ class WorkSurface(Canvas):
         This method pushes the final geometric state of the view back to the
         model.
         """
+        logger.debug(
+            f"Transform end for {len(elements)} element(s)."
+            " Creating undo command."
+        )
         history = self.doc.history_manager
         with history.transaction(_("Transform workpiece(s)")) as t:
             for element in elements:
@@ -290,6 +304,9 @@ class WorkSurface(Canvas):
             self.ops_generator.resume()
 
     def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
+        logger.debug(
+            f"Elements deleted event received for {len(elements)} elements."
+        )
         workpieces_to_delete = [
             elem.data for elem in elements if isinstance(elem.data, WorkPiece)
         ]
@@ -312,6 +329,9 @@ class WorkSurface(Canvas):
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         # The base Canvas class handles the conversion from widget (pixel)
         # coordinates to world coordinates. We pass them on directly.
+        logger.debug(
+            f"Button press: n_press={n_press}, pos=({x:.2f}, {y:.2f})"
+        )
         super().on_button_press(gesture, n_press, x, y)
 
         # After the click, check if a new workpiece is active.
@@ -343,6 +363,7 @@ class WorkSurface(Canvas):
     def on_button_release(self, gesture, x: float, y: float):
         # Before the parent class resets the resizing state, check if a resize
         # was in progress on a WorkPieceElement.
+        logger.debug(f"Button release: pos=({x:.2f}, {y:.2f})")
         workpieces_to_update = []
         if self._resizing and (self._active_elem or self._selection_group):
             for element in self.get_selected_elements():
@@ -443,34 +464,34 @@ class WorkSurface(Canvas):
 
         # If a transform was in progress, sync the dependent ops elements.
         # The parent's on_motion sets _moving, _resizing, _rotating flags.
-        if self._moving or self._resizing or self._rotating:
+        if self._moving or self._resizing or self._rotating or self._shearing:
             for element in self.get_selected_elements():
-                if isinstance(element, WorkPieceElement):
-                    workpiece_data = element.data
+                if not isinstance(element, WorkPieceElement):
+                    continue
+                workpiece_data = element.data
 
-                    # Find all StepElements on the canvas
-                    for step_elem in self.find_by_type(StepElement):
-                        # Find the specific WorkPieceOpsElement for this
-                        # workpiece
-                        ops_elem = step_elem.find_by_data(workpiece_data)
-                        if ops_elem and isinstance(
-                            ops_elem, WorkPieceOpsElement
-                        ):
-                            # Pass the WorkPieceElement's *current* world
-                            # transform to the ops element for a transient
-                            # update. The ops elem will not queue its own
-                            # draw, as the canvas drag loop already handles
-                            # it.
-                            elem_transform = element.get_world_transform()
-                            ops_elem._on_workpiece_transform_changed(
-                                workpiece_data,
-                                transient_world_transform=elem_transform,
-                            )
+                # Find all StepElements on the canvas
+                for step_elem in self.find_by_type(StepElement):
+                    # Find the specific WorkPieceOpsElement for this
+                    # workpiece
+                    ops_elem = step_elem.find_by_data(workpiece_data)
+                    if ops_elem and isinstance(ops_elem, WorkPieceOpsElement):
+                        # Pass the WorkPieceElement's *current* world
+                        # transform to the ops element for a transient
+                        # update. The ops elem will not queue its own
+                        # draw, as the canvas drag loop already handles
+                        # it.
+                        elem_transform = element.get_world_transform()
+                        ops_elem._on_workpiece_transform_changed(
+                            workpiece_data,
+                            transient_world_transform=elem_transform,
+                        )
 
         return was_handled_by_parent
 
     def on_scroll(self, controller, dx: float, dy: float):
         """Handles the scroll event for zoom."""
+        logger.debug(f"Scroll event: dx={dx:.2f}, dy={dy:.2f}")
         zoom_speed = 0.1
         # 1. Calculate a desired new zoom level based on scroll direction
         desired_zoom = self.zoom_level * (
@@ -715,6 +736,10 @@ class WorkSurface(Canvas):
         performs a full view reset. Otherwise, it syncs other properties like
         cameras.
         """
+        logger.debug(
+            "Machine changed signal received: "
+            f"machine={machine.name if machine else 'None'}"
+        )
         if not machine:
             return
 
@@ -812,6 +837,8 @@ class WorkSurface(Canvas):
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
         """Handles key press events for the work surface."""
+        key_name = Gdk.keyval_name(keyval)
+        logger.debug(f"Key pressed: key='{key_name}', state={state}")
         if keyval == Gdk.KEY_1:
             # Reset pan and zoom with '1'
             self.reset_view()
@@ -924,6 +951,7 @@ class WorkSurface(Canvas):
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(self, gesture, x: float, y: float):
+        logger.debug(f"Pan begin at ({x:.2f}, {y:.2f})")
         self._pan_start = (self.pan_x_mm, self.pan_y_mm)
 
     def on_pan_update(self, gesture, x: float, y: float):
@@ -932,6 +960,8 @@ class WorkSurface(Canvas):
         ok, offset_x, offset_y = gesture.get_offset()
         if not ok:
             return
+
+        logger.debug(f"Pan update: offset=({offset_x:.2f}, {offset_y:.2f})")
 
         # We need to convert the pixel offset into a mm delta. This delta
         # is independent of the pan, so we can calculate it from the scale.
@@ -961,6 +991,7 @@ class WorkSurface(Canvas):
         self.set_pan(new_pan_x, new_pan_y)
 
     def on_pan_end(self, gesture, x: float, y: float):
+        logger.debug(f"Pan end at ({x:.2f}, {y:.2f})")
         pass
 
     def get_active_workpiece(self) -> Optional[WorkPiece]:

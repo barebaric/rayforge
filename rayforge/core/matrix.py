@@ -1,6 +1,14 @@
 import math
-from typing import Tuple, Any, Optional
+from typing import Tuple, Any, Optional, Union, Sequence
 import numpy as np
+
+# A type alias for data that can be converted into a 3x3 matrix.
+# This includes another Matrix, a numpy array, or a 3x3 nested sequence.
+MatrixLike = Union[
+    "Matrix",
+    np.ndarray,
+    Sequence[Sequence[float]],
+]
 
 
 class Matrix:
@@ -12,13 +20,16 @@ class Matrix:
     calculations.
     """
 
-    def __init__(self, data: Any = None):
+    def __init__(self, data: Optional[MatrixLike] = None):
         """
         Initializes a 3x3 matrix.
 
         Args:
-            data: Can be another Matrix, a 3x3 list/tuple, a 3x3 numpy
-                  array, or None to create an identity matrix.
+            data: Initialization data. Can be:
+                  - Another `Matrix` instance (a copy is made).
+                  - A 3x3 numpy array.
+                  - A 3x3 nested sequence (e.g., list of lists).
+                  - `None` (default) to create an identity matrix.
         """
         if data is None:
             self.m: np.ndarray = np.identity(3, dtype=float)
@@ -26,10 +37,11 @@ class Matrix:
             self.m = data.m.copy()
         else:
             try:
-                self.m = np.array(data, dtype=float)
-                if self.m.shape != (3, 3):
-                    raise ValueError("Input data must be a 3x3 matrix.")
-            except Exception as e:
+                array_data = np.array(data, dtype=float)
+                if array_data.shape != (3, 3):
+                    raise ValueError("Input data must resolve to a 3x3 shape.")
+                self.m = array_data
+            except (ValueError, TypeError) as e:
                 raise ValueError(f"Could not create Matrix from data: {e}")
 
     def __matmul__(self, other: "Matrix") -> "Matrix":
@@ -37,7 +49,7 @@ class Matrix:
         Performs matrix multiplication: self @ other.
 
         This implements standard pre-multiplication, where (A @ B) @ p is
-        equivalent to applying transform A, then transform B.
+        equivalent to applying transform B first, then transform A.
         M_combined = M_second @ M_first.
 
         Args:
@@ -48,8 +60,8 @@ class Matrix:
         """
         if not isinstance(other, Matrix):
             return NotImplemented
-        # Standard pre-multiplication: self.m is the first transform,
-        # other.m is the second.
+        # Standard pre-multiplication: self is the second transform,
+        # other is the first.
         return Matrix(np.dot(self.m, other.m))
 
     def __eq__(self, other: Any) -> bool:
@@ -146,6 +158,24 @@ class Matrix:
             ]
         )
 
+    def pre_translate(self, tx: float, ty: float) -> "Matrix":
+        """
+        Applies a translation before this matrix's transformation.
+        Equivalent to `Matrix.translation(tx, ty) @ self`.
+        The order of operations is: apply original transform, then translation.
+        """
+        t = Matrix.translation(tx, ty)
+        return t @ self
+
+    def post_translate(self, tx: float, ty: float) -> "Matrix":
+        """
+        Applies a translation after this matrix's transformation.
+        Equivalent to `self @ Matrix.translation(tx, ty)`.
+        The order of operations is: apply translation, then original transform.
+        """
+        t = Matrix.translation(tx, ty)
+        return self @ t
+
     def set_translation(self, tx: float, ty: float) -> "Matrix":
         """
         Returns a new matrix with the same rotation, scale, and shear,
@@ -154,6 +184,16 @@ class Matrix:
         new_matrix = self.copy()
         new_matrix.m[0, 2] = tx
         new_matrix.m[1, 2] = ty
+        return new_matrix
+
+    def without_translation(self) -> "Matrix":
+        """
+        Returns a new matrix with the same linear transformation components
+        (rotation, scale, shear) but with the translation set to zero.
+        """
+        new_matrix = self.copy()
+        new_matrix.m[0, 2] = 0.0
+        new_matrix.m[1, 2] = 0.0
         return new_matrix
 
     def get_scale(self) -> Tuple[float, float]:
@@ -185,6 +225,23 @@ class Matrix:
         sx, sy = self.get_scale()
         return (abs(sx), abs(sy))
 
+    def has_zero_scale(self, tolerance: float = 1e-6) -> bool:
+        """
+        Checks if the transformation collapses space onto a line or point.
+
+        This is true if either of the absolute scale factors is smaller than
+        the given tolerance. Such a matrix is singular and cannot be
+        inverted reliably.
+
+        Args:
+            tolerance: The threshold below which a scale is considered zero.
+
+        Returns:
+            True if the matrix has effectively zero scale on any axis.
+        """
+        sx_abs, sy_abs = self.get_abs_scale()
+        return sx_abs < tolerance or sy_abs < tolerance
+
     @staticmethod
     def scale(
         sx: float, sy: float, center: Optional[Tuple[float, float]] = None
@@ -213,6 +270,32 @@ class Matrix:
             return t_back @ m @ t_to_origin
 
         return m
+
+    def pre_scale(
+        self,
+        sx: float,
+        sy: float,
+        center: Optional[Tuple[float, float]] = None,
+    ) -> "Matrix":
+        """
+        Applies a scale before this matrix's transformation.
+        Equivalent to `Matrix.scale(sx, sy, center) @ self`.
+        """
+        s = Matrix.scale(sx, sy, center)
+        return s @ self
+
+    def post_scale(
+        self,
+        sx: float,
+        sy: float,
+        center: Optional[Tuple[float, float]] = None,
+    ) -> "Matrix":
+        """
+        Applies a scale after this matrix's transformation.
+        Equivalent to `self @ Matrix.scale(sx, sy, center)`.
+        """
+        s = Matrix.scale(sx, sy, center)
+        return self @ s
 
     def get_rotation(self) -> float:
         """
@@ -259,6 +342,80 @@ class Matrix:
 
         return m
 
+    def pre_rotate(
+        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+    ) -> "Matrix":
+        """
+        Applies a rotation before this matrix's transformation.
+        Equivalent to `Matrix.rotation(angle_deg, center) @ self`.
+        """
+        r = Matrix.rotation(angle_deg, center)
+        return r @ self
+
+    def post_rotate(
+        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+    ) -> "Matrix":
+        """
+        Applies a rotation after this matrix's transformation.
+        Equivalent to `self @ Matrix.rotation(angle_deg, center)`.
+        """
+        r = Matrix.rotation(angle_deg, center)
+        return self @ r
+
+    @staticmethod
+    def shear(
+        sh_x: float, sh_y: float, center: Optional[Tuple[float, float]] = None
+    ) -> "Matrix":
+        """
+        Creates a shearing matrix.
+
+        Args:
+            sh_x: Shear factor for the x-axis (x' = x + sh_x * y).
+            sh_y: Shear factor for the y-axis (y' = y + sh_y * x).
+            center: Optional (x, y) point to shear around. If None,
+                    shears around the origin (0, 0).
+        """
+        m = Matrix(
+            [
+                [1, sh_x, 0],
+                [sh_y, 1, 0],
+                [0, 0, 1],
+            ]
+        )
+        if center:
+            cx, cy = center
+            t_to_origin = Matrix.translation(-cx, -cy)
+            t_back = Matrix.translation(cx, cy)
+            # Translate to origin, shear, then translate back
+            return t_back @ m @ t_to_origin
+        return m
+
+    def pre_shear(
+        self,
+        sh_x: float,
+        sh_y: float,
+        center: Optional[Tuple[float, float]] = None,
+    ) -> "Matrix":
+        """
+        Applies a shear before this matrix's transformation.
+        Equivalent to `Matrix.shear(sh_x, sh_y, center) @ self`.
+        """
+        s = Matrix.shear(sh_x, sh_y, center)
+        return s @ self
+
+    def post_shear(
+        self,
+        sh_x: float,
+        sh_y: float,
+        center: Optional[Tuple[float, float]] = None,
+    ) -> "Matrix":
+        """
+        Applies a shear after this matrix's transformation.
+        Equivalent to `self @ Matrix.shear(sh_x, sh_y, center)`.
+        """
+        s = Matrix.shear(sh_x, sh_y, center)
+        return self @ s
+
     def invert(self) -> "Matrix":
         """
         Computes the inverse of the matrix.
@@ -299,6 +456,53 @@ class Matrix:
         vec = np.array([vector[0], vector[1], 0])
         res_vec = np.dot(self.m, vec)
         return (res_vec[0], res_vec[1])
+
+    def transform_rectangle(
+        self, rect: Tuple[float, float, float, float]
+    ) -> Tuple[float, float, float, float]:
+        """
+        Transforms a rectangle and computes its new axis-aligned bounding box.
+
+        Args:
+            rect: A tuple (x, y, width, height) of the rectangle to transform.
+
+        Returns:
+            A tuple (x, y, width, height) of the resulting bounding box.
+        """
+        x, y, w, h = rect
+        corners = [
+            self.transform_point((x, y)),
+            self.transform_point((x + w, y)),
+            self.transform_point((x + w, y + h)),
+            self.transform_point((x, y + h)),
+        ]
+        min_x = min(p[0] for p in corners)
+        min_y = min(p[1] for p in corners)
+        max_x = max(p[0] for p in corners)
+        max_y = max(p[1] for p in corners)
+        return min_x, min_y, max_x - min_x, max_y - min_y
+
+    def get_x_axis_angle(self) -> float:
+        """
+        Calculates the angle of the transformed X-axis in degrees.
+        This represents the visual angle of horizontal lines after
+        transformation.
+        """
+        # The transformed x-axis is represented by the first column of the
+        # matrix
+        xx, yx = self.m[0, 0], self.m[1, 0]
+        return math.degrees(math.atan2(yx, xx))
+
+    def get_y_axis_angle(self) -> float:
+        """
+        Calculates the angle of the transformed Y-axis in degrees.
+        This represents the visual angle of vertical lines after
+        transformation.
+        """
+        # The transformed y-axis is represented by the second column of the
+        # matrix
+        xy, yy = self.m[0, 1], self.m[1, 1]
+        return math.degrees(math.atan2(yy, xy))
 
     def decompose(self) -> Tuple[float, float, float, float, float, float]:
         """
@@ -359,7 +563,7 @@ class Matrix:
             float(skew_angle_deg),
         )
 
-    def get_cairo(self) -> Tuple[float, float, float, float, float, float]:
+    def for_cairo(self) -> Tuple[float, float, float, float, float, float]:
         """
         Returns the matrix components in the order expected by cairo.Matrix.
         The order is (xx, yx, xy, yy, x0, y0).

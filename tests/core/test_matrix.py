@@ -86,7 +86,7 @@ class TestMatrix:
         m1 = Matrix.translation(123, -456)
         assert m1.get_translation() == pytest.approx((123, -456))
 
-        # Composition: T @ R @ S applies T -> R -> S
+        # Composition: T @ R @ S applies S -> R -> T
         m2 = (
             Matrix.translation(10, 20)
             @ Matrix.rotation(45)
@@ -95,6 +95,21 @@ class TestMatrix:
         tx, ty = m2.get_translation()
         assert tx == pytest.approx(10)
         assert ty == pytest.approx(20)
+
+    def test_without_translation(self):
+        """Tests the without_translation() method."""
+        m1 = Matrix.translation(100, 200) @ Matrix.rotation(45)
+        assert m1.get_translation() != (0, 0)
+
+        m2 = m1.without_translation()
+        assert m2.get_translation() == pytest.approx((0, 0))
+
+        # Check that the linear part is unchanged
+        assert np.allclose(m1.m[0:2, 0:2], m2.m[0:2, 0:2])
+
+        # Check against a manually created matrix
+        m_linear_only = Matrix.rotation(45)
+        assert m2 == m_linear_only
 
     def test_scale(self):
         # Scale around origin
@@ -225,6 +240,33 @@ class TestMatrix:
         M2 = Matrix.rotation(30) @ Matrix.scale(-2, -3)
         assert not M2.is_flipped()
 
+    def test_has_zero_scale(self):
+        """Tests the has_zero_scale() method."""
+        # Standard matrices should not have zero scale
+        assert not Matrix.identity().has_zero_scale()
+        assert not Matrix.translation(10, 20).has_zero_scale()
+        assert not Matrix.rotation(45).has_zero_scale()
+        assert not Matrix.scale(0.1, 0.1).has_zero_scale()
+
+        # Matrices with near-zero scale
+        assert Matrix.scale(1, 0).has_zero_scale()
+        assert Matrix.scale(0, 1).has_zero_scale()
+        assert Matrix.scale(1e-7, 1).has_zero_scale()
+        assert not Matrix.scale(1e-5, 1).has_zero_scale()
+
+        # Complex transform with zero scale
+        m_complex = (
+            Matrix.translation(100, -50)
+            @ Matrix.rotation(30)
+            @ Matrix.scale(1, 1e-9)
+        )
+        assert m_complex.has_zero_scale()
+
+        # Test with custom tolerance
+        m_borderline = Matrix.scale(0.01, 1)
+        assert not m_borderline.has_zero_scale()  # Default tol=1e-6
+        assert m_borderline.has_zero_scale(tolerance=0.05)
+
     def test_matrix_multiplication(self):
         # Order of operations: T @ R means apply R first, then apply T.
         T = Matrix.translation(100, 0)
@@ -253,7 +295,6 @@ class TestMatrix:
         M_inv = M.invert()
 
         # M * M_inv should be the identity matrix
-        # Note: numpy's pre-multiplication order means M @ M_inv is correct.
         ident = M @ M_inv
         assert ident == Matrix.identity()
 
@@ -295,6 +336,70 @@ class TestMatrix:
         p = (10, 0)
         transformed_p = m.transform_point(p)
         assert transformed_p == pytest.approx((100, 220))
+
+    def test_transform_rectangle(self):
+        """Tests the transform_rectangle method."""
+        rect = (10, 20, 30, 40)  # x, y, w, h
+
+        # Translation
+        m_trans = Matrix.translation(50, 60)
+        assert m_trans.transform_rectangle(rect) == pytest.approx(
+            (60, 80, 30, 40)
+        )
+
+        # Rotation by 90 degrees around origin (0,0)
+        m_rot90 = Matrix.rotation(90)
+        # Original corners: (10,20), (40,20), (40,60), (10,60)
+        # Rotated corners: (-20,10), (-20,40), (-60,40), (-60,10)
+        # Bbox: min_x=-60, min_y=10, max_x=-20, max_y=40
+        # Bbox rect: (-60, 10, 40, 30)
+        assert m_rot90.transform_rectangle(rect) == pytest.approx(
+            (-60, 10, 40, 30)
+        )
+
+        # Scale
+        m_scale = Matrix.scale(2, 3)
+        # Scaled rect: (20, 60, 60, 120)
+        assert m_scale.transform_rectangle(rect) == pytest.approx(
+            (20, 60, 60, 120)
+        )
+
+    def test_get_axis_angles(self):
+        """Tests the get_x_axis_angle and get_y_axis_angle methods."""
+        # No rotation
+        m_ident = Matrix.identity()
+        assert m_ident.get_x_axis_angle() == pytest.approx(0)
+        assert m_ident.get_y_axis_angle() == pytest.approx(90)
+
+        # Pure rotation
+        m_rot = Matrix.rotation(30)
+        assert m_rot.get_x_axis_angle() == pytest.approx(30)
+        assert m_rot.get_y_axis_angle() == pytest.approx(30 + 90)
+
+        # Rotation and scale
+        m_rs = Matrix.rotation(45) @ Matrix.scale(2, 1)
+        assert m_rs.get_x_axis_angle() == pytest.approx(45)
+        assert m_rs.get_y_axis_angle() == pytest.approx(45 + 90)
+
+        # With shear
+        # x' = x + 0.5y, y' = y
+        m_shear_x = Matrix.shear(0.5, 0)
+        # X-axis (y=0) is unchanged: (1,0) -> (1,0), angle is 0
+        assert m_shear_x.get_x_axis_angle() == pytest.approx(0)
+        # Y-axis (x=0, y=1) -> (0.5, 1), angle is atan2(1, 0.5)
+        assert m_shear_x.get_y_axis_angle() == pytest.approx(
+            math.degrees(math.atan2(1, 0.5))
+        )
+
+        # Rotation then shear
+        m_rot_shear = Matrix.rotation(30) @ Matrix.shear(0, 0.5)
+        # X-axis angle is now affected by shear
+        # Y-axis angle is the base rotation
+        assert m_rot_shear.get_y_axis_angle() == pytest.approx(30 + 90)
+        # Check X-axis angle calculation
+        x_vec = m_rot_shear.transform_vector((1, 0))
+        expected_angle = math.degrees(math.atan2(x_vec[1], x_vec[0]))
+        assert m_rot_shear.get_x_axis_angle() == pytest.approx(expected_angle)
 
     def test_decompose_simple(self):
         """Test decomposition without shear."""
@@ -360,3 +465,169 @@ class TestMatrix:
         assert sx == pytest.approx(2)
         assert sy == pytest.approx(-3)
         assert skew == pytest.approx(0)
+
+    def test_set_translation(self):
+        """Tests the set_translation() method."""
+        m1 = Matrix.rotation(45) @ Matrix.scale(2, 3)
+        m2 = m1.set_translation(100, -200)
+
+        # Check that the new matrix has the correct translation
+        assert m2.get_translation() == pytest.approx((100, -200))
+
+        # Check that the linear part (rotation/scale) is unchanged
+        # Compare the top-left 2x2 submatrices
+        assert np.allclose(m1.m[0:2, 0:2], m2.m[0:2, 0:2])
+
+        # Setting translation on an identity matrix should be like creating one
+        m3 = Matrix.identity().set_translation(50, 60)
+        m4 = Matrix.translation(50, 60)
+        assert m3 == m4
+
+    def test_post_translate(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.post_translate(100, 50)
+        m_manual = m_base @ Matrix.translation(100, 50)
+        assert m_fluent == m_manual
+
+        # Order of operations: translate, then rotate
+        p = (10, 20)
+        p_translated = (10 + 100, 20 + 50)  # (110, 70)
+        p_final = m_base.transform_point(p_translated)  # (-70, 110)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_pre_translate(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.pre_translate(100, 50)
+        m_manual = Matrix.translation(100, 50) @ m_base
+        assert m_fluent == m_manual
+
+        # Order of operations: rotate, then translate
+        p = (10, 20)
+        p_rotated = m_base.transform_point(p)  # (-20, 10)
+        p_final = (p_rotated[0] + 100, p_rotated[1] + 50)  # (80, 60)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_post_rotate(self):
+        m_base = Matrix.rotation(30)
+        m_fluent = m_base.post_rotate(60)
+        m_manual = m_base @ Matrix.rotation(60)
+        assert m_fluent == m_manual
+        # Total rotation should be 30 + 60 = 90
+        assert m_fluent.get_rotation() == pytest.approx(90)
+
+    def test_pre_rotate(self):
+        m_base = Matrix.rotation(30)
+        m_fluent = m_base.pre_rotate(60)
+        m_manual = Matrix.rotation(60) @ m_base
+        assert m_fluent == m_manual
+        # Total rotation should be 60 + 30 = 90
+        assert m_fluent.get_rotation() == pytest.approx(90)
+
+    def test_post_scale(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.post_scale(2, 3)
+        m_manual = m_base @ Matrix.scale(2, 3)
+        assert m_fluent == m_manual
+
+        # Order of operations: scale, then rotate
+        p = (10, 20)
+        p_scaled = (10 * 2, 20 * 3)  # (20, 60)
+        p_final = m_base.transform_point(p_scaled)  # (-60, 20)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_pre_scale(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.pre_scale(2, 3)
+        m_manual = Matrix.scale(2, 3) @ m_base
+        assert m_fluent == m_manual
+
+        # Order of operations: rotate, then scale
+        p = (10, 20)
+        p_rotated = m_base.transform_point(p)  # (-20, 10)
+        p_final = (p_rotated[0] * 2, p_rotated[1] * 3)  # (-40, 30)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_fluent_chaining(self):
+        # Standard T @ R @ S order applies S, then R, then T.
+        # This is built by pre-pending transforms to an identity matrix.
+        m_chain = (
+            Matrix.identity()
+            .pre_scale(2, 2)
+            .pre_rotate(90)
+            .pre_translate(100, 0)
+        )
+        m_manual = (
+            Matrix.translation(100, 0)
+            @ Matrix.rotation(90)
+            @ Matrix.scale(2, 2)
+        )
+        assert m_chain == m_manual
+
+        # Verify the transformation on a point
+        p_start = (10, 20)
+        p_translated = (-40 + 100, 20)  # (60, 20)
+        assert m_chain.transform_point(p_start) == pytest.approx(p_translated)
+
+    def test_shear(self):
+        """Tests the new shear() method."""
+        # Shear along x-axis from origin
+        m_x = Matrix.shear(0.5, 0)
+        # x' = x + 0.5 * y, y' = y
+        assert m_x.transform_point((10, 20)) == pytest.approx(
+            (10 + 0.5 * 20, 20)
+        )  # (20, 20)
+
+        # Shear along y-axis from origin
+        m_y = Matrix.shear(0, 0.2)
+        # x' = x, y' = y + 0.2 * x
+        assert m_y.transform_point((10, 20)) == pytest.approx(
+            (10, 20 + 0.2 * 10)
+        )  # (10, 22)
+
+        # Shear around a center point
+        center = (10, 20)
+        m_center = Matrix.shear(0.5, 0, center=center)
+        # Center point should be invariant
+        assert m_center.transform_point(center) == pytest.approx(center)
+        # Test another point
+        # Point relative to center: (12, 24) - (10, 20) = (2, 4)
+        # Shear relative point: x' = 2 + 0.5*4 = 4, y' = 4
+        # New relative point: (4, 4)
+        # Translate back: (4, 4) + (10, 20) = (14, 24)
+        assert m_center.transform_point((12, 24)) == pytest.approx((14, 24))
+
+    def test_post_shear(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.post_shear(0.5, 0)
+        m_manual = m_base @ Matrix.shear(0.5, 0)
+        assert m_fluent == m_manual
+
+        # Order of operations: shear, then rotate
+        p = (10, 20)
+        p_sheared = Matrix.shear(0.5, 0).transform_point(p)  # (20, 20)
+        p_final = m_base.transform_point(p_sheared)  # (-20, 20)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_pre_shear(self):
+        m_base = Matrix.rotation(90)
+        m_fluent = m_base.pre_shear(0.5, 0)
+        m_manual = Matrix.shear(0.5, 0) @ m_base
+        assert m_fluent == m_manual
+
+        # Order of operations: rotate, then shear
+        p = (10, 20)
+        p_rotated = m_base.transform_point(p)  # (-20, 10)
+        p_final = Matrix.shear(0.5, 0).transform_point(p_rotated)  # (-15, 10)
+        assert m_fluent.transform_point(p) == pytest.approx(p_final)
+
+    def test_get_cairo(self):
+        """Tests the get_cairo() method."""
+        # Cairo matrix format is: (xx, yx, xy, yy, x0, y0)
+        # Our matrix is: [[xx, xy, x0], [yx, yy, y0], [0, 0, 1]]
+        m = Matrix([[1, 2, 3], [4, 5, 6], [0, 0, 1]])
+        assert m.for_cairo() == (1, 4, 2, 5, 3, 6)
+
+        # Test with a transform
+        m_trans = Matrix.translation(50, -60)
+        # [[1, 0, 50], [0, 1, -60], [0, 0, 1]]
+        assert m_trans.for_cairo() == (1, 0, 0, 1, 50, -60)

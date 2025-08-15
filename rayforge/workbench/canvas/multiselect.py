@@ -1,9 +1,9 @@
 from __future__ import annotations
 import math
 import logging
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Union
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Union, Optional
 from .region import ElementRegion, get_region_rect, check_region_hit
-from . import element
+from . import element, transform
 from ...core.matrix import Matrix
 
 
@@ -155,39 +155,16 @@ class MultiSelectionGroup:
 
     def check_region_hit(self, x: float, y: float) -> ElementRegion:
         # The group's bounding box is (min_x, min_y, width, height) in world
-        # coords. Our handle geometry logic in get_region_rect adapts to the
-        # coordinate system (Y-down vs Y-up) based on the view transform. We
-        # must convert the world mouse coordinate (x,y) into the group's
-        # local AABB coordinate space, preserving the Y-axis orientation.
-        min_x, min_y, width, height = self._bounding_box
-
-        # local_x is the distance from the left edge of the AABB.
+        # coords. We convert the world mouse coordinate (x,y) into the group's
+        # local AABB coordinate space.
+        min_x, min_y, _, _ = self._bounding_box
         local_x = x - min_x
-
-        # For local_y, we provide a coordinate relative to the AABB's origin
-        # (min_x, min_y). - For a normal Y-down view, min_y is the top edge,
-        # so this creates a Y-down local coordinate (distance from top). - For
-        # a flipped Y-up view, min_y is the bottom edge, so this creates a
-        # Y-up local coordinate (distance from bottom). This single
-        # calculation produces the local coordinate space that
-        # get_region_rect expects for both cases.
         local_y = y - min_y
 
-        # Now we determine if the view is flipped to pass this info to the
-        # geometry calculation function.
-        m = self.canvas.view_transform.m
-        det = m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        # Use the get_scale() method which correctly returns signed scale
+        # factors, implicitly handling the flip status for the geometry check.
+        scale_compensation = self.canvas.view_transform.get_scale()
 
-        # The scale compensation must account for the canvas's view transform.
-        sx = math.hypot(m[0, 0], m[1, 0])
-        sy = math.hypot(m[0, 1], m[1, 1])
-        if det < 0:
-            sy = -sy  # Use signed scale for get_region_rect
-        scale_compensation = (sx, sy)
-
-        # check_region_hit from region.py will use the local coordinates and
-        # the scale_compensation (which indicates if the view is flipped) to
-        # correctly test against the handle geometry.
         return check_region_hit(
             local_x,
             local_y,
@@ -223,23 +200,144 @@ class MultiSelectionGroup:
         scale_x = new_w / orig_w
         scale_y = new_h / orig_h
 
-        # This transform scales the box around its top-left corner, then
-        # translates it to the new position.
-        # 1. Translate to origin
-        t_to_origin = Matrix.translation(-orig_x, -orig_y)
-        # 2. Scale
-        s_around_origin = Matrix.scale(scale_x, scale_y)
-        # 3. Translate to new top-left position
-        t_to_new = Matrix.translation(new_x, new_y)
-
-        # The combined transform is applied from right to left
-        self.transform = t_to_new @ s_around_origin @ t_to_origin
+        # Chain transformations in the order they are applied to a point:
+        # 1. Translate original top-left to origin.
+        # 2. Scale.
+        # 3. Translate from origin to new top-left.
+        self.transform = (
+            Matrix.identity()
+            .post_translate(-orig_x, -orig_y)
+            .post_scale(scale_x, scale_y)
+            .post_translate(new_x, new_y)
+        )
         self._update_element_transforms()
 
-    def apply_rotate(self, angle_delta: float):
+    def apply_rotate(
+        self, angle_delta: float, center: Optional[Tuple[float, float]] = None
+    ):
         """
         Sets the group transform to a rotation around the group's initial
         center and updates elements.
         """
-        self.transform = Matrix.rotation(angle_delta, self.initial_center)
+        if center is None:
+            center = self.initial_center
+        self.transform = Matrix.rotation(angle_delta, center)
+        self._update_element_transforms()
+
+    def resize_from_drag(
+        self,
+        active_region: ElementRegion,
+        offset_x: float,
+        offset_y: float,
+        active_origin: Tuple[float, float, float, float],
+        ctrl_pressed: bool,
+        shift_pressed: bool,
+    ):
+        """
+        Calculates and applies the new group bounding box by calling the
+        centralized logic in `transform.py`.
+        """
+        # 1. Define minimum size in world units.
+        min_size_px = 20.0
+        scale_x, scale_y = self.canvas.view_transform.get_abs_scale()
+        min_size_world = (
+            min_size_px / scale_x if scale_x > 1e-6 else 0.0,
+            min_size_px / scale_y if scale_y > 1e-6 else 0.0,
+        )
+
+        # 2. Delegate the calculation, passing raw offsets and flip status.
+        # The drag_delta for the world-aligned box is the world mouse offset.
+        new_box = transform.calculate_resized_box(
+            original_box=active_origin,
+            active_region=active_region,
+            drag_delta=(offset_x, offset_y),
+            is_flipped=self.canvas.view_transform.is_flipped(),
+            constrain_aspect=shift_pressed,
+            from_center=ctrl_pressed,
+            min_size=min_size_world,
+        )
+
+        # 3. Apply the result.
+        self.apply_resize(new_box, active_origin)
+
+    def rotate_from_drag(
+        self,
+        current_x: float,
+        current_y: float,
+        rotation_pivot: Tuple[float, float],
+        drag_start_angle: float,
+    ):
+        """
+        Rotates the entire selection group based on cursor drag.
+        The coordinates are in WORLD space.
+        """
+        center_x, center_y = rotation_pivot
+        current_angle = math.degrees(
+            math.atan2(current_y - center_y, current_x - center_x)
+        )
+        angle_diff = current_angle - drag_start_angle
+        # Temporarily override initial_center for the rotate call
+        original_center = self.initial_center
+        self.initial_center = rotation_pivot
+        self.apply_rotate(angle_diff)
+        self.initial_center = original_center
+
+    def shear_from_drag(
+        self,
+        active_region: ElementRegion,
+        world_dx: float,
+        world_dy: float,
+        active_origin: Tuple[float, float, float, float],
+    ):
+        """Shears the entire selection group."""
+        shx, shy = 0.0, 0.0
+        x, y, w, h = active_origin
+        anchor_x, anchor_y = 0.0, 0.0
+
+        is_view_flipped = self.canvas.view_transform.is_flipped()
+        semantic_is_top = active_region == ElementRegion.SHEAR_TOP
+        semantic_is_bottom = active_region == ElementRegion.SHEAR_BOTTOM
+        semantic_is_left = active_region == ElementRegion.SHEAR_LEFT
+        semantic_is_right = active_region == ElementRegion.SHEAR_RIGHT
+
+        if semantic_is_top or semantic_is_bottom:
+            # This logic is confirmed to work correctly in both Y-up and
+            # Y-down.
+            visual_top_y = y + h if is_view_flipped else y
+            visual_bottom_y = y if is_view_flipped else y + h
+            anchor_y = visual_bottom_y if semantic_is_top else visual_top_y
+            anchor_x = x + w / 2
+
+            y_diff = visual_bottom_y - visual_top_y
+            if semantic_is_top:
+                shx = -world_dx / y_diff if abs(y_diff) > 1e-6 else 0.0
+            else:  # semantic_is_bottom
+                shx = world_dx / y_diff if abs(y_diff) > 1e-6 else 0.0
+
+        elif semantic_is_left or semantic_is_right:
+            # Anchor is the edge opposite to the one being dragged.
+            anchor_x = x if semantic_is_right else (x + w)
+            anchor_y = y + h / 2
+
+            # The vertical shear factor `shy` is derived from the transform:
+            # `delta_y = shy * (x_dragged - x_anchor)`.
+            # The `world_dy` already has the correct sign for the drag
+            # regardless of whether the view is Y-up or Y-down. This single
+            # set of formulas works for both cases without modification.
+            if semantic_is_left:
+                # Drag left edge, anchor is on right: x_dragged-x_anchor = -w
+                # shy = delta_y / -w
+                shy = -world_dy / w if w > 1e-6 else 0.0
+            else:  # semantic_is_right
+                # Drag right edge, anchor is on left: x_dragged-x_anchor = +w
+                # shy = delta_y / w
+                shy = world_dy / w if w > 1e-6 else 0.0
+
+        # Construct delta shear matrix around world anchor
+        self.transform = (
+            Matrix.identity()
+            .post_translate(anchor_x, anchor_y)
+            .post_shear(shx, shy)
+            .post_translate(-anchor_x, -anchor_y)
+        )
         self._update_element_transforms()

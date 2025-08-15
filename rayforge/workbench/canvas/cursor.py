@@ -1,8 +1,8 @@
 import math
-from typing import Dict, Optional
+from typing import Dict
 import cairo
 from gi.repository import Gdk, GLib  # type: ignore
-from .region import ElementRegion
+from .region import ElementRegion, ROTATE_HANDLES
 
 # Module-level caches for custom-rendered cursors to avoid recreating them.
 _cursor_cache: Dict[int, Gdk.Cursor] = {}
@@ -19,6 +19,16 @@ _region_angles = {
     ElementRegion.BOTTOM_LEFT: 225,
     ElementRegion.BOTTOM_MIDDLE: 270,
     ElementRegion.BOTTOM_RIGHT: 315,
+    # Rotation handles are arcs with arrows.
+    ElementRegion.ROTATE_TOP_RIGHT: 315,
+    ElementRegion.ROTATE_TOP_LEFT: 45,
+    ElementRegion.ROTATE_BOTTOM_LEFT: 135,
+    ElementRegion.ROTATE_BOTTOM_RIGHT: 225,
+    # Shear handles are bidirectional arrows.
+    ElementRegion.SHEAR_TOP: 0,
+    ElementRegion.SHEAR_BOTTOM: 0,
+    ElementRegion.SHEAR_LEFT: 90,
+    ElementRegion.SHEAR_RIGHT: 90,
 }
 
 
@@ -178,17 +188,20 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
 
 
 def get_cursor_for_region(
-    region: Optional[ElementRegion], additional_angle: float
+    region: ElementRegion,
+    angle: float,
+    absolute: bool = False
 ) -> Gdk.Cursor:
+    base_angle = _region_angles.get(region, 0) if not absolute else 0
     if region is None or region == ElementRegion.NONE:
         return Gdk.Cursor.new_from_name("default")
     elif region == ElementRegion.BODY:
         return Gdk.Cursor.new_from_name("move")
-    elif region == ElementRegion.ROTATION_HANDLE:
-        return get_rotated_arc_cursor(additional_angle)
-    else:  # must be a resize region
-        base_angle = _region_angles.get(region, 0)
+    elif region in ROTATE_HANDLES:
+        cursor_angle = -base_angle + angle
+        return get_rotated_arc_cursor(cursor_angle)
+    else:  # must be a resize or shear region
         # The final visual angle of the cursor is the handle's base angle
         # plus the element's total world rotation angle.
-        cursor_angle = -base_angle + additional_angle
+        cursor_angle = -base_angle + angle
         return get_rotated_cursor(cursor_angle)
