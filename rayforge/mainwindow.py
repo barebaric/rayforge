@@ -12,7 +12,9 @@ from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
 from .core.doc import Doc
+from .core.group import Group
 from .core.workpiece import WorkPiece
+from .core.workflow import Workflow
 from .pipeline.steps import (
     create_contour_step,
     create_outline_step,
@@ -614,23 +616,27 @@ class MainWindow(Adw.ApplicationWindow):
                     self.surface.set_laser_dot_position(x, y)
 
         # Update actions that don't depend on the machine state
-        has_selection = len(self.surface.get_selected_workpieces()) > 0
+        selected_elements = self.surface.get_selected_elements()
+        has_selection = len(selected_elements) > 0
 
         am.get_action("undo").set_enabled(self.doc.history_manager.can_undo())
         am.get_action("redo").set_enabled(self.doc.history_manager.can_redo())
         am.get_action("cut").set_enabled(has_selection)
         am.get_action("copy").set_enabled(has_selection)
-        am.get_action("paste").set_enabled(
-            len(self._clipboard_snapshot) > 0
-        )
-        am.get_action("select_all").set_enabled(
-            self.doc.has_workpiece()
-        )
+        am.get_action("paste").set_enabled(len(self._clipboard_snapshot) > 0)
+        am.get_action("select_all").set_enabled(self.doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
         am.get_action("remove").set_enabled(has_selection)
-        am.get_action("clear").set_enabled(
-            self.doc.has_workpiece()
+        am.get_action("clear").set_enabled(self.doc.has_workpiece())
+
+        # Update sensitivity for Grouping actions
+        can_group = len(selected_elements) >= 2
+        am.get_action("group").set_enabled(can_group)
+
+        can_ungroup = any(
+            isinstance(elem.data, Group) for elem in selected_elements
         )
+        am.get_action("ungroup").set_enabled(can_ungroup)
 
         # Update sensitivity for all alignment buttons
         am.get_action("align-h-center").set_enabled(has_selection)
@@ -642,8 +648,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Layout
         am.get_action("layout-pixel-perfect").set_enabled(
-            len(self.surface.get_selected_workpieces()) != 1 and
-            len(self.doc.workpieces) != 1
+            len(self.surface.get_selected_workpieces()) != 1
+            and len(self.doc.all_workpieces) != 1
         )
 
     def on_machine_warning_clicked(self, sender):
@@ -719,19 +725,23 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(active)
 
     def on_clear_clicked(self, action, param):
-        if not self.doc.workpieces:
+        if not self.doc.has_workpiece():
             return
 
         history = self.doc.history_manager
         with history.transaction(_("Remove all workpieces")) as t:
             for layer in self.doc.layers:
-                if layer.workpieces:
+                # A layer is considered "not empty" if it has any children
+                # besides its mandatory workflow.
+                if any(
+                    not isinstance(child, Workflow) for child in layer.children
+                ):
                     command = ReorderListCommand(
                         target_obj=layer,
-                        list_property_name="workpieces",
-                        new_list=[],
-                        setter_method_name="set_workpieces",
-                        name=_("Clear Layer Workpieces"),
+                        list_property_name="children",
+                        new_list=[layer.workflow],
+                        setter_method_name="set_children",
+                        name=_("Clear Layer Items"),
                     )
                     t.execute(command)
 
@@ -1036,12 +1046,12 @@ class MainWindow(Adw.ApplicationWindow):
         self._paste_counter += 1
 
         if newly_pasted_workpieces:
-            self.surface.select_workpieces(newly_pasted_workpieces)
+            self.surface.select_items(newly_pasted_workpieces)
 
     def on_select_all(self, action, param):
         """Selects all workpieces in the document."""
-        if self.doc.workpieces:
-            self.surface.select_workpieces(self.doc.workpieces)
+        if self.doc.all_workpieces:
+            self.surface.select_items(self.doc.all_workpieces)
 
     def on_duplicate_requested(self, sender, workpieces: List[WorkPiece]):
         """
@@ -1072,7 +1082,7 @@ class MainWindow(Adw.ApplicationWindow):
                 t.execute(command)
 
         if newly_duplicated_workpieces:
-            self.surface.select_workpieces(newly_duplicated_workpieces)
+            self.surface.select_items(newly_duplicated_workpieces)
 
     def on_menu_cut(self, action, param):
         selection = self.surface.get_selected_workpieces()

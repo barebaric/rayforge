@@ -170,10 +170,10 @@ class OpsGenerator:
 
     def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
         """Finds a workpiece anywhere in the document by its UID."""
-        for layer in self.doc.layers:
-            for wp in layer.workpieces:
-                if wp.uid == uid:
-                    return wp
+        # Use the recursive helper on the doc itself.
+        for wp in self.doc.all_workpieces:
+            if wp.uid == uid:
+                return wp
         return None
 
     def _on_descendant_added(self, sender, *, origin):
@@ -228,19 +228,20 @@ class OpsGenerator:
             f"OpsGenerator: Noticed updated {origin.__class__.__name__}"
         )
         if isinstance(origin, Step):
+            workflow = origin.workflow
             # When paused, don't trigger generation. Instead, invalidate the
             # cache so that `reconcile_all()` upon resume will pick it up.
             if self._is_paused:
-                workflow = origin.workflow
                 if workflow and isinstance(workflow.parent, Layer):
-                    for wp in workflow.parent.workpieces:
+                    for wp in workflow.parent.all_workpieces:
                         self._ops_cache[(origin.uid, wp.uid)] = None, None
                 return
             self._update_ops_for_step(origin)
         elif isinstance(origin, WorkPiece):
             if self._is_paused:
-                if origin.parent and isinstance(origin.parent, Layer):
-                    for step in origin.parent.workflow:
+                workpiece_layer = origin.layer
+                if workpiece_layer:
+                    for step in workpiece_layer.workflow:
                         self._ops_cache[(step.uid, origin.uid)] = None, None
                 return
             self._update_ops_for_workpiece(origin)
@@ -267,7 +268,7 @@ class OpsGenerator:
         all_current_pairs = set()
         for layer in self.doc.layers:
             for step in layer.workflow.steps:
-                for workpiece in layer.workpieces:
+                for workpiece in layer.all_workpieces:
                     all_current_pairs.add((step.uid, workpiece.uid))
 
         cached_pairs = set(self._ops_cache.keys())
@@ -282,7 +283,7 @@ class OpsGenerator:
         # everything.
         for layer in self.doc.layers:
             for step in layer.workflow.steps:
-                for workpiece in layer.workpieces:
+                for workpiece in layer.all_workpieces:
                     key = (step.uid, workpiece.uid)
                     # An item needs generation if it's not in the cache or if
                     # its cache entry has been invalidated (ops is None).
@@ -293,13 +294,14 @@ class OpsGenerator:
         """Triggers ops generation for a single step across all workpieces."""
         workflow = step.workflow
         if workflow and isinstance(workflow.parent, Layer):
-            for workpiece in workflow.parent.workpieces:
+            for workpiece in workflow.parent.all_workpieces:
                 self._trigger_ops_generation(step, workpiece)
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for a single workpiece across all steps."""
-        if workpiece.parent and isinstance(workpiece.parent, Layer):
-            for step in workpiece.parent.workflow:
+        workpiece_layer = workpiece.layer
+        if workpiece_layer:
+            for step in workpiece_layer.workflow:
                 self._trigger_ops_generation(step, workpiece)
 
     def _trigger_ops_generation(self, step: Step, workpiece: WorkPiece):
@@ -351,9 +353,14 @@ class OpsGenerator:
             )
             return
 
+        # To ensure the workpiece renders at the correct resolution in the
+        # subprocess (where it has no parent hierarchy), we create a new
+        # instance with its world-transform "baked in" as its local matrix.
+        world_workpiece = workpiece.in_world()
+
         task = task_mgr.run_process(
             run_step_in_subprocess,
-            workpiece.to_dict(),
+            world_workpiece.to_dict(),
             step.opsproducer_dict,
             step.modifiers_dicts,
             step.opstransformers_dicts,

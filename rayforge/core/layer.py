@@ -47,10 +47,21 @@ class Layer(DocItem):
 
     @property
     def workpieces(self) -> List[WorkPiece]:
-        """Returns a list of all child items that are WorkPieces."""
+        """
+        Returns a list of all child items that are WorkPieces.
+        Note: This only returns direct children.
+        """
         return [
             child for child in self.children if isinstance(child, WorkPiece)
         ]
+
+    @property
+    def all_workpieces(self) -> List["WorkPiece"]:
+        """
+        Recursively finds and returns a flattened list of all WorkPiece
+        objects contained within this layer, including those inside groups.
+        """
+        return self.get_descendants(of_type=WorkPiece)
 
     @property
     def workflow(self) -> Workflow:
@@ -144,16 +155,6 @@ class Layer(DocItem):
         """
         self.set_children([*workpieces, self.workflow])
 
-    def get_all_workpieces(self) -> List["WorkPiece"]:
-        """
-        Recursively finds and returns a flattened list of all WorkPiece
-        objects contained within this item.
-        """
-        all_wps = []
-        for child in self.children:
-            all_wps.extend(child.get_all_workpieces())
-        return all_wps
-
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
         """
         Gets a list of all visible step/workpiece pairs for rendering.
@@ -165,7 +166,8 @@ class Layer(DocItem):
         if not self.visible:
             return []
         items = []
-        for workpiece in self.workpieces:
+        # Use the correct recursive method to find all workpieces
+        for workpiece in self.all_workpieces:
             if any(s <= 0 for s in workpiece.size):
                 continue
             for step in self.workflow.steps:

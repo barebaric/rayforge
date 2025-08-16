@@ -227,6 +227,21 @@ class CanvasElement:
         self._transform_dirty = False
         return self._world_transform
 
+    def get_world_bounding_box(self) -> Tuple[float, float, float, float]:
+        """
+        Calculates the element's axis-aligned bounding box in world
+        coordinates.
+        """
+        # The rectangle in an element's local coordinates is defined by its
+        # width and height, with its origin at (0, 0).
+        local_rect = (0, 0, self.width, self.height)
+
+        # Get the matrix that transforms from local space to world space
+        world_transform = self.get_world_transform()
+
+        # Transform the local rectangle to get its world-space bounding box
+        return world_transform.transform_rectangle(local_rect)
+
     def trigger_update(self):
         """
         Schedules a background render of the element's surface and recursively

@@ -170,7 +170,7 @@ def layout_pixel_perfect(win: "MainWindow"):
 
     # If nothing is selected, apply to all workpieces in the document.
     if not workpieces_to_layout:
-        workpieces_to_layout = win.doc.workpieces
+        workpieces_to_layout = win.doc.all_workpieces
 
     if not workpieces_to_layout:
         return

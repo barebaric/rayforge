@@ -46,10 +46,6 @@ class TestWorkPiece:
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
         assert hasattr(workpiece_instance, "get_world_transform")
-        assert hasattr(workpiece_instance, "get_all_workpieces")
-
-    def test_get_all_workpieces(self, workpiece_instance):
-        assert workpiece_instance.get_all_workpieces() == [workpiece_instance]
 
     def test_serialization_deserialization(self, workpiece_instance):
         wp = workpiece_instance
@@ -281,10 +277,13 @@ class TestWorkPiece:
         target_size = (78.9, 101.1)
         target_angle = 33.3
 
-        # Set properties once and check
+        # Set properties once and check. The order matters: operations that
+        # preserve the object's center (set_size, angle) will change the
+        # top-left position. Therefore, pos must be set last to achieve a
+        # predictable final position.
         wp.set_size(*target_size)
-        wp.pos = target_pos
         wp.angle = target_angle
+        wp.pos = target_pos
 
         assert wp.pos == pytest.approx(target_pos, abs=1e-9)
         assert wp.size == pytest.approx(target_size, abs=1e-9)

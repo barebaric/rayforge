@@ -4,14 +4,11 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 
 from __future__ import annotations
 import logging
-from typing import List, TYPE_CHECKING, Optional, TypeVar, Iterable
+from typing import List, Optional, TypeVar, Iterable
 from blinker import Signal
-
 from .item import DocItem
 from .step import Step
 
-if TYPE_CHECKING:
-    from .workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +97,3 @@ class Workflow(DocItem):
     def has_steps(self) -> bool:
         """Checks if the work plan contains any steps."""
         return len(self.steps) > 0
-
-    def get_all_workpieces(self) -> List["WorkPiece"]:
-        """A Workflow is a container for steps, not workpieces."""
-        return []

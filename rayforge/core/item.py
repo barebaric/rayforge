@@ -1,16 +1,25 @@
 from __future__ import annotations
 import uuid
-from abc import ABC, abstractmethod
-from typing import List, Optional, TypeVar, Iterable, TYPE_CHECKING
+from abc import ABC
+from typing import (
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Iterable,
+    TYPE_CHECKING,
+    overload,
+)
 from blinker import Signal
 from .matrix import Matrix
 
 if TYPE_CHECKING:
-    from .workpiece import WorkPiece
     from .doc import Doc
 
 # For generic type hinting in add_child, etc.
 T = TypeVar("T", bound="DocItem")
+# For generic type hinting in get_descendants
+T_Desc = TypeVar("T_Desc", bound="DocItem")
 
 
 class DocItem(ABC):
@@ -118,6 +127,49 @@ class DocItem(ABC):
             self._connect_child_signals(child)
             self.descendant_added.send(self, origin=child)
 
+    def get_depth(self) -> int:
+        """
+        Calculates the depth of this item in the document hierarchy by
+        counting its DocItem ancestors.
+
+        A direct child has a depth of 1.
+        An item inside that item would have a depth of 2, and so on.
+
+        Returns:
+            The integer depth of the item.
+        """
+        depth = 0
+        current_item = self
+        while current_item.parent and isinstance(current_item.parent, DocItem):
+            depth += 1
+            current_item = current_item.parent
+        return depth
+
+    @overload
+    def get_descendants(self) -> List["DocItem"]: ...
+
+    @overload
+    def get_descendants(self, of_type: Type[T_Desc]) -> List[T_Desc]: ...
+
+    def get_descendants(self, of_type: Optional[Type[T_Desc]] = None) -> List:
+        """
+        Recursively finds and returns a flattened list of all descendant
+        DocItems, optionally filtered by type.
+        """
+        all_descendants: List[DocItem] = []
+        for child in self.children:
+            all_descendants.append(child)
+            # This recursive call unambiguously matches the first overload.
+            all_descendants.extend(child.get_descendants())
+
+        if of_type:
+            # The list comprehension correctly narrows the type for the return.
+            return [
+                item for item in all_descendants if isinstance(item, of_type)
+            ]
+
+        return all_descendants
+
     def _connect_child_signals(self, child: DocItem):
         child.updated.connect(self._on_child_updated)
         child.transform_changed.connect(self._on_child_transform_changed)
@@ -180,11 +232,3 @@ class DocItem(ABC):
             parent_transform = self.parent.get_world_transform()
             return parent_transform @ self.matrix
         return self.matrix
-
-    @abstractmethod
-    def get_all_workpieces(self) -> List["WorkPiece"]:
-        """
-        Recursively finds and returns a flattened list of all WorkPiece
-        objects contained within this item.
-        """
-        pass

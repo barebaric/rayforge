@@ -33,6 +33,11 @@ class MainMenu(Gio.Menu):
         clipboard_commands.append(_("Remove"), "win.remove")
         edit_menu.append_section(None, clipboard_commands)
 
+        grouping_commands = Gio.Menu()
+        grouping_commands.append(_("Group"), "win.group")
+        grouping_commands.append(_("Ungroup"), "win.ungroup")
+        edit_menu.append_section(None, grouping_commands)
+
         other_edit_commands = Gio.Menu()
         other_edit_commands.append(_("Preferences…"), "win.preferences")
         edit_menu.append_section(None, other_edit_commands)

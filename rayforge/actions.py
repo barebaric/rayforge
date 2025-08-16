@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Dict, Callable
 from gi.repository import Gtk, Gio, GLib  # type: ignore
 from .doceditor import layout_actions
+from .core.group import Group
+from .doceditor.group_cmd import CreateGroupCommand, UngroupCommand
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
@@ -40,6 +42,10 @@ class ActionManager:
         self._add_action("duplicate", self.win.on_menu_duplicate)
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
+
+        # Grouping Actions
+        self._add_action("group", self.on_group_action)
+        self._add_action("ungroup", self.on_ungroup_action)
 
         # Alignment Actions
         self._add_action(
@@ -102,6 +108,8 @@ class ActionManager:
         app.set_accels_for_action("win.select_all", ["<Primary>a"])
         app.set_accels_for_action("win.duplicate", ["<Primary>d"])
         app.set_accels_for_action("win.remove", ["Delete"])
+        app.set_accels_for_action("win.group", ["<Primary>g"])
+        app.set_accels_for_action("win.ungroup", ["<Primary><Shift>g"])
         app.set_accels_for_action("win.show_3d_view", ["F12"])
         app.set_accels_for_action("win.layout-pixel-perfect", ["a"])
         app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
@@ -111,6 +119,36 @@ class ActionManager:
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
         return self.actions[name]
+
+    def on_group_action(self, action, param):
+        """Handler for the 'group' action."""
+        selected_elements = self.win.surface.get_selected_elements()
+        if len(selected_elements) < 2:
+            return
+
+        items_to_group = [elem.data for elem in selected_elements]
+        # All items must belong to the same layer to be grouped
+        parent_layer = items_to_group[0].parent
+        if not all(item.parent is parent_layer for item in items_to_group):
+            return  # Should not happen with current selection logic
+
+        cmd = CreateGroupCommand(parent_layer, items_to_group)
+        self.win.doc.history_manager.execute(cmd)
+
+    def on_ungroup_action(self, action, param):
+        """Handler for the 'ungroup' action."""
+        selected_elements = self.win.surface.get_selected_elements()
+
+        groups_to_ungroup = [
+            elem.data
+            for elem in selected_elements
+            if isinstance(elem.data, Group)
+        ]
+        if not groups_to_ungroup:
+            return
+
+        cmd = UngroupCommand(groups_to_ungroup)
+        self.win.doc.history_manager.execute(cmd)
 
     def _add_action(
         self, name: str, callback: Callable, param: GLib.VariantType = None

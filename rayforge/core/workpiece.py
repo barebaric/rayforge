@@ -10,7 +10,6 @@ from typing import (
     Any,
     Type,
     TYPE_CHECKING,
-    List,
 )
 from blinker import Signal
 from pathlib import Path
@@ -50,14 +49,19 @@ class WorkPiece(DocItem):
         self.importer: Importer = self.importer_class(self._data)
 
         # The matrix is the single source of truth. A new workpiece starts
-        # as a 1x1mm object at the origin. _matrix is inherited from DocItem.
-        self._rebuild_matrix((0.0, 0.0), 0.0, (1.0, 1.0))
+        # as a 1x1mm object at the origin.
+        self.matrix = Matrix.scale(1.0, 1.0)
 
     @property
     def layer(self) -> Optional["Layer"]:
-        """Returns the parent layer, if it exists."""
-        if self.parent and isinstance(self.parent, Layer):
-            return cast(Layer, self.parent)
+        """Traverses the hierarchy to find the parent Layer."""
+        from .layer import Layer  # Local import to avoid circular dependency
+
+        p = self.parent
+        while p:
+            if isinstance(p, Layer):
+                return p
+            p = p.parent
         return None
 
     @property
@@ -98,120 +102,85 @@ class WorkPiece(DocItem):
         # Any geometric change requires a transform update for the UI.
         self.transform_changed.send(self)
 
-    def _rebuild_matrix(
-        self,
-        pos: Tuple[float, float],
-        angle_deg: float,
-        size: Tuple[float, float],
-    ):
+    def in_world(self) -> "WorkPiece":
         """
-        Constructs the world transformation matrix from high-level properties.
-        This is the single authority for creating the matrix. It transforms a
-        1x1 unit object (defined on [0,1]x[0,1]) into its final world-space
-        size, rotation, and position.
-
-        The final matrix is a composition of:
-        M = T_pos @ R_center @ S
-        Where:
-        - S: Scales the unit object to the target `size`.
-        - R_center: Rotates the scaled object around its center.
-        - T_pos: Translates the object to its final world `pos`.
+        Returns a new, unparented WorkPiece instance whose local
+        transformation matrix is the world transformation matrix of this one.
+        This effectively "bakes" the parent transformations into the object,
+        making it suitable for serialization or use in contexts without a
+        document hierarchy.
         """
-        w, h = size
-        cx, cy = w / 2, h / 2
-
-        # Use Matrix class methods to build transformations
-        S = Matrix.scale(w, h)
-        # The angle is a standard counter-clockwise rotation.
-        R = Matrix.rotation(angle_deg, center=(cx, cy))
-        T = Matrix.translation(pos[0], pos[1])
-
-        # Compose the final matrix. Order is critical: scale first,
-        # then rotate around center, then translate to final position.
-        self.matrix = T @ R @ S
+        # Create a new instance to avoid side effects with signals,
+        # parents, etc.
+        world_wp = WorkPiece(self.source_file, self._data, self.importer_class)
+        world_wp.uid = self.uid  # Preserve UID for tracking
+        world_wp.name = self.name
+        world_wp.matrix = self.get_world_transform()
+        return world_wp
 
     @property
     def size(self) -> Tuple[float, float]:
         """
         The world-space size (width, height) in mm, as absolute values,
-        decomposed from the matrix's scaling components.
+        decomposed from the world transformation matrix.
+        """
+        return self.get_world_transform().get_abs_scale()
+
+    def get_local_size(self) -> Tuple[float, float]:
+        """
+        The local-space size (width, height) in mm, as absolute values,
+        decomposed from the local transformation matrix. This is used for
+        determining rasterization resolution.
         """
         return self.matrix.get_abs_scale()
 
     def set_size(self, width_mm: float, height_mm: float):
         """
         Sets the workpiece size in mm while preserving its world-space center
-        point. This is a data-changing operation that rebuilds the
-        transformation matrix and fires the `updated` signal.
+        point. This manipulates the existing matrix.
         """
-        new_size = float(width_mm), float(height_mm)
         current_w, current_h = self.size
         if (
-            abs(new_size[0] - current_w) < 1e-9
-            and abs(new_size[1] - current_h) < 1e-9
+            abs(width_mm - current_w) < 1e-9
+            and abs(height_mm - current_h) < 1e-9
         ):
             return
 
-        # 1. Get current world-space center of the unit object
-        old_center_world = self.matrix.transform_point((0.5, 0.5))
+        # Calculate scale factors to apply
+        scale_x = width_mm / current_w if current_w > 1e-9 else 0
+        scale_y = height_mm / current_h if current_h > 1e-9 else 0
 
-        # 2. Build a temporary matrix with the new size and current angle
-        #    at the origin to find its center point. This avoids mutating the
-        #    instance and firing signals prematurely.
-        w, h = new_size
-        cx, cy = w / 2, h / 2
-        S_temp = Matrix.scale(w, h)
-        R_temp = Matrix.rotation(self.angle, center=(cx, cy))
-        # The temporary matrix is composed of scale then rotate around center
-        temp_matrix_at_origin = R_temp @ S_temp
-        new_center_at_origin = temp_matrix_at_origin.transform_point(
-            (0.5, 0.5)
+        # Get the world-space center of the 1x1 unit object
+        center_world = self.get_world_transform().transform_point((0.5, 0.5))
+
+        # Apply the scaling around the world-space center
+        self.matrix = self.matrix.post_scale(
+            scale_x, scale_y, center=center_world
         )
-
-        # 3. Calculate the required top-left `pos` to move the new center to
-        #    the old center's location.
-        new_pos_x = old_center_world[0] - new_center_at_origin[0]
-        new_pos_y = old_center_world[1] - new_center_at_origin[1]
-
-        # 4. Rebuild the final matrix with the correct new size and position.
-        # This will call the matrix.setter, which will fire the correct
-        # signals.
-        self._rebuild_matrix((new_pos_x, new_pos_y), self.angle, new_size)
 
     @property
     def pos(self) -> Tuple[float, float]:
         """
-        The position (in mm) of the workpiece's top-left corner, as if it
-        were un-rotated. This is decomposed from the transformation matrix.
+        The position (in mm) of the workpiece's top-left corner in world space.
         """
-        w, h = self.size
-        angle = self.angle
-
-        S = Matrix.scale(w, h)
-        R = Matrix.rotation(angle, center=(w / 2, h / 2))
-        # This matrix represents the combined scale and centered rotation
-        M_rs = R @ S
-
-        # The final matrix is M = T @ M_rs.
-        # The translation of M is T_trans + M_rs_trans.
-        # So, T_trans = M_trans - M_rs_trans.
-        m_tx, m_ty = self.matrix.get_translation()
-        mrs_tx, mrs_ty = M_rs.get_translation()
-
-        return (m_tx - mrs_tx, m_ty - mrs_ty)
+        # The position is the world-space location of the local origin (0,0).
+        return self.get_world_transform().transform_point((0.0, 0.0))
 
     @pos.setter
-    def pos(self, new_pos: Tuple[float, float]):
+    def pos(self, new_pos_world: Tuple[float, float]):
         """
-        Sets the position and rebuilds the transformation matrix. This is a
-        transform-only operation and fires the `transform_changed` signal.
+        Sets the world-space position of the workpiece's top-left corner
+        by manipulating the matrix's translation component.
         """
-        new_pos_float = float(new_pos[0]), float(new_pos[1])
-        if new_pos_float == self.pos:
+        current_pos_world = self.pos
+        delta_x = new_pos_world[0] - current_pos_world[0]
+        delta_y = new_pos_world[1] - current_pos_world[1]
+
+        if abs(delta_x) < 1e-9 and abs(delta_y) < 1e-9:
             return
-        # This will call the matrix.setter, which will fire the correct
-        # signals.
-        self._rebuild_matrix(new_pos_float, self.angle, self.size)
+
+        # Apply the translation in world space
+        self.matrix = self.matrix.pre_translate(delta_x, delta_y)
 
     @property
     def angle(self) -> float:
@@ -222,28 +191,23 @@ class WorkPiece(DocItem):
         return self.matrix.get_rotation()
 
     @angle.setter
-    def angle(self, new_angle: float):
+    def angle(self, new_angle_deg: float):
         """
-        Sets the angle and rebuilds the transformation matrix. This is a
-        transform-only operation and fires the `transform_changed` signal.
+        Sets the rotation angle by applying a delta rotation around the
+        workpiece's world-space center.
         """
-        new_angle_float = float(new_angle)
         current_angle = self.angle
+        delta_angle = new_angle_deg - current_angle
 
-        # Check if the new angle is geometrically equivalent to the current one
-        # (i.e., they differ by a multiple of 360 degrees). This prevents
-        # rebuilding the matrix unnecessarily.
-        diff = new_angle_float - current_angle
-        if abs(diff - round(diff / 360.0) * 360.0) < 1e-9:
+        # Check for geometrically equivalent angles
+        if abs(delta_angle - round(delta_angle / 360.0) * 360.0) < 1e-9:
             return
 
-        # This will call the matrix.setter, which will fire the correct
-        # signals.
-        self._rebuild_matrix(self.pos, new_angle_float, self.size)
+        # Get the world-space center of the 1x1 unit object to rotate around
+        center_world = self.get_world_transform().transform_point((0.5, 0.5))
 
-    def get_all_workpieces(self) -> List["WorkPiece"]:
-        """For a single WorkPiece, this just returns itself in a list."""
-        return [self]
+        # Apply rotation in world space around the center point
+        self.matrix = self.matrix.pre_rotate(delta_angle, center=center_world)
 
     def __getstate__(self) -> Dict[str, Any]:
         """
@@ -318,10 +282,16 @@ class WorkPiece(DocItem):
             wp.matrix = Matrix(data_dict["matrix"])
         # Backward compatibility for old format with 'size'
         elif "size" in data_dict and data_dict["size"] is not None:
+            # Reconstruct matrix from old properties
             pos = data_dict.get("pos", (0.0, 0.0))
             angle = data_dict.get("angle", 0.0)
             size = data_dict["size"]
-            wp._rebuild_matrix(pos, angle, size)
+            w, h = size
+            cx, cy = w / 2, h / 2
+            S = Matrix.scale(w, h)
+            R = Matrix.rotation(angle, center=(cx, cy))
+            T = Matrix.translation(pos[0], pos[1])
+            wp.matrix = T @ R @ S
 
         return wp
 
@@ -386,6 +356,9 @@ class WorkPiece(DocItem):
     ) -> Optional[cairo.ImageSurface]:
         """Renders to a pixel surface at the workpiece's current size.
         Returns None if size is not valid."""
+        # Use the final world-space size for rendering resolution. This is
+        # critical for preserving quality when scaling is applied to a
+        # parent group.
         current_size = self.size
         if not current_size or current_size[0] <= 0 or current_size[1] <= 0:
             return None
@@ -408,6 +381,9 @@ class WorkPiece(DocItem):
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """Renders in chunks at the workpiece's current size.
         Yields nothing if size is not valid."""
+        # Use the final world-space size for rendering resolution. This is
+        # critical for preserving quality when scaling is applied to a
+        # parent group.
         current_size = self.size
         if not current_size or current_size[0] <= 0 or current_size[1] <= 0:
             return

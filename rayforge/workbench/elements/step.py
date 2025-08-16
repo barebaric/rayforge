@@ -130,18 +130,18 @@ class StepElement(CanvasElement):
         self.set_visible(step.visible)
 
         # Sync the child ops elements with the model's workpiece list.
-        # The list of workpieces comes from the parent LayerElement's data.
-        # This is crucial for handling undo/redo of add/remove workpiece,
-        current_wp_elems = {child.data: child for child in self.children}
-        model_workpieces = set(self.parent.data.workpieces)
+        current_wp_elems_data = {child.data for child in self.children}
+        model_workpieces = set(self.parent.data.all_workpieces)
 
         # Remove ops elements for workpieces that are no longer in the model.
-        # Iterate over a copy of the keys to safely modify the underlying
-        # list of children during iteration.
-        for workpiece in list(current_wp_elems.keys()):
-            if workpiece not in model_workpieces:
-                # Get the element from the dictionary and remove it
-                current_wp_elems[workpiece].remove()
+        for workpiece in current_wp_elems_data - model_workpieces:
+            elem = self.find_by_data(workpiece)
+            if elem:
+                elem.remove()
+
+        # Add ops elements for new workpieces
+        for workpiece in model_workpieces - current_wp_elems_data:
+            self._find_or_add_workpiece_elem(workpiece)
 
         if self.canvas:
             self.canvas.queue_draw()
@@ -149,13 +149,16 @@ class StepElement(CanvasElement):
     def _find_or_add_workpiece_elem(
         self, workpiece: WorkPiece
     ) -> WorkPieceOpsElement:
-        """Finds the element for a workpiece, creating if necessary."""
+        """
+        Finds the element for a workpiece, creating and syncing if necessary.
+        """
         elem = cast(
             Optional[WorkPieceOpsElement], self.find_by_data(workpiece)
         )
         if not elem:
-            logger.debug(f"Adding workpiece to step: {workpiece.source_file}")
+            logger.debug(f"Adding ops element for workpiece: {workpiece.name}")
             elem = self.add_workpiece(workpiece)
+            elem._on_workpiece_transform_changed(workpiece)
         return elem
 
     def _on_ops_generation_starting(
@@ -177,7 +180,7 @@ class StepElement(CanvasElement):
             "Received ops_start, but element has no canvas or parent context"
         )
 
-        if workpiece not in self.parent.data.workpieces:
+        if workpiece not in self.parent.data.all_workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()
@@ -207,7 +210,7 @@ class StepElement(CanvasElement):
             "Received update, but element has no canvas or parent context"
         )
 
-        if workpiece not in self.parent.data.workpieces:
+        if workpiece not in self.parent.data.all_workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()
@@ -239,7 +242,7 @@ class StepElement(CanvasElement):
             "context"
         )
 
-        if workpiece not in self.parent.data.workpieces:
+        if workpiece not in self.parent.data.all_workpieces:
             elem = self.find_by_data(workpiece)
             if elem:
                 elem.remove()

@@ -8,7 +8,6 @@ from .item import DocItem
 
 if TYPE_CHECKING:
     from .workflow import Workflow
-    from .workpiece import WorkPiece
 
 
 logger = logging.getLogger(__name__)
@@ -67,10 +66,6 @@ class Step(DocItem, ABC):
         if self.parent and isinstance(self.parent, Workflow):
             return cast(Workflow, self.parent)
         return None
-
-    def get_all_workpieces(self) -> List["WorkPiece"]:
-        """A Step is a leaf node and does not contain workpieces itself."""
-        return []
 
     def set_visible(self, visible: bool):
         self.visible = visible

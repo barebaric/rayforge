@@ -1,5 +1,3 @@
-# --- START OF FILE workpiece.py (Corrected) ---
-
 import logging
 import cairo
 from typing import Optional, TYPE_CHECKING
@@ -78,27 +76,10 @@ class WorkPieceElement(CanvasElement):
         Handles all geometric changes from the model by updating the
         element's GEOMETRIC transformation matrix.
         """
-        if not self.canvas:
+        # Only update the view if the model's matrix is actually
+        # different from the element's current visual transform.
+        if not self.canvas or self.transform == workpiece.matrix:
             return
 
-        # 1. Get the desired world transform from the data model. This
-        #    positions the element's 1x1 bounding box in the Y-up world.
-        model_world_transform = workpiece.get_world_transform()
-
-        # 2. Convert it to a local transform relative to the parent element.
-        parent_inv_world = Matrix.identity()
-        if isinstance(self.parent, CanvasElement):
-            try:
-                parent_inv_world = self.parent.get_world_transform().invert()
-            except Exception:
-                logger.warning("Parent element has a non-invertible matrix.")
-                return
-        model_local_transform = parent_inv_world @ model_world_transform
-
-        # 3. Set the final, geometric transform on the element.
-        #    The `content_transform` handles the visual flip automatically.
-        self.set_transform(model_local_transform)
-
-        if self.parent:
-            self.parent.mark_dirty()
+        self.set_transform(workpiece.matrix)
         self.canvas.queue_draw()

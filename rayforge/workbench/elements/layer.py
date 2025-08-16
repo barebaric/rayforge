@@ -1,9 +1,13 @@
 import logging
-from typing import TYPE_CHECKING, cast, Optional
+from typing import TYPE_CHECKING, cast, Optional, List, Dict, Tuple
 from ...core.item import DocItem
+from ...core.workpiece import WorkPiece
+from ...core.group import Group
 from ..canvas.element import CanvasElement
 from .workpiece import WorkPieceElement
 from .step import StepElement
+from .ops import WorkPieceOpsElement
+from .group import GroupElement
 
 if TYPE_CHECKING:
     from ...core.layer import Layer
@@ -16,8 +20,8 @@ def _z_order_sort_key(element: CanvasElement):
     """
     Sort key to ensure StepElements are drawn on top of WorkPieceElements.
     """
-    if isinstance(element, WorkPieceElement):
-        return 0  # Draw workpieces first (at the bottom)
+    if isinstance(element, (WorkPieceElement, GroupElement)):
+        return 0  # Draw workpieces and groups first (at the bottom)
     if isinstance(element, StepElement):
         return 1  # Draw step ops on top of workpieces
     return 2  # Other elements on top
@@ -43,9 +47,15 @@ class LayerElement(CanvasElement):
             **kwargs,
         )
         self.data: Layer = layer
+        # A cache to track world scales to detect changes from parent
+        # transforms
+        self._wp_scale_cache: Dict[str, Tuple[float, float]] = {}
         self.data.updated.connect(self.sync_with_model)
         self.data.descendant_added.connect(self.sync_with_model)
         self.data.descendant_removed.connect(self.sync_with_model)
+        self.data.descendant_transform_changed.connect(
+            self._on_descendant_transform_changed
+        )
         self.sync_with_model(origin=None)
 
     def remove(self):
@@ -53,7 +63,53 @@ class LayerElement(CanvasElement):
         self.data.updated.disconnect(self.sync_with_model)
         self.data.descendant_added.disconnect(self.sync_with_model)
         self.data.descendant_removed.disconnect(self.sync_with_model)
+        self.data.descendant_transform_changed.disconnect(
+            self._on_descendant_transform_changed
+        )
         super().remove()
+
+    def _on_descendant_transform_changed(
+        self, sender: DocItem, *, origin: DocItem, **kwargs
+    ):
+        """
+        Handles bubbled transform changes from any descendant (e.g., a Group).
+        This ensures that WorkPieceOpsElements are updated when their effective
+        world transform changes, and that ops are regenerated if the scale
+        changed.
+        """
+        affected_wps = [origin]
+        affected_wps.extend(origin.get_descendants(WorkPiece))
+        if not affected_wps:
+            return
+
+        for wp in affected_wps:
+            # Check for world scale change to trigger ops regeneration
+            new_scale = wp.get_world_transform().get_abs_scale()
+            old_scale = self._wp_scale_cache.get(wp.uid)
+
+            # If scale changed, fire the model's updated signal to trigger
+            # a regeneration of the ops content.
+            if old_scale and (
+                abs(old_scale[0] - new_scale[0]) > 1e-9
+                or abs(old_scale[1] - new_scale[1]) > 1e-9
+            ):
+                logger.debug(
+                    f"World scale for {wp.name} changed due to ancestor. "
+                    "Regenerating ops."
+                )
+                wp.updated.send(wp)
+
+            # Always update the cache with the latest scale for the next event
+            self._wp_scale_cache[wp.uid] = new_scale
+
+            # Update the view elements (the ops containers) to match the new
+            # transform.
+            for step_elem in self.find_by_type(StepElement):
+                ops_elem = cast(
+                    WorkPieceOpsElement, step_elem.find_by_data(wp)
+                )
+                if ops_elem:
+                    ops_elem._on_workpiece_transform_changed(wp)
 
     def set_size(self, width: float, height: float):
         """Sets the size and propagates it to child StepElements."""
@@ -73,7 +129,8 @@ class LayerElement(CanvasElement):
     ):
         """
         Updates the element's properties and reconciles all child elements
-        (WorkPieceElement, StepElement) with the state of the Layer model.
+        (WorkPieceElement, GroupElement, StepElement) with the state of the
+        Layer model.
         """
         if not self.data or not self.canvas:
             return
@@ -90,59 +147,81 @@ class LayerElement(CanvasElement):
 
         work_surface = cast(WorkSurface, self.canvas)
 
-        # --- Reconcile WorkPieceElements ---
-        model_workpieces = set(self.data.workpieces)
-        current_wp_elements = self.find_by_type(WorkPieceElement)
+        # --- Reconcile Visual Elements (WorkPieces and Groups) ---
+        model_items = {
+            c for c in self.data.children if isinstance(c, (WorkPiece, Group))
+        }
 
-        # Remove elements for workpieces that are no longer in the layer
-        for elem in current_wp_elements:
-            if elem.data not in model_workpieces:
-                logger.debug(f"Removing workpiece element: {elem}")
+        current_visual_elements: List[CanvasElement] = [
+            elem
+            for elem in self.children
+            if isinstance(elem, (WorkPieceElement, GroupElement))
+        ]
+
+        # Remove elements for items no longer in the layer
+        for elem in current_visual_elements[:]:  # Iterate over a copy
+            if elem.data not in model_items:
+                logger.debug(f"Removing visual element: {elem}")
                 elem.remove()
             else:
                 elem.selectable = is_selectable
 
-        # Add elements for new workpieces in the layer
-        # We must re-query the current elements after removal
-        current_wp_data = {
-            elem.data for elem in self.find_by_type(WorkPieceElement)
+        # Add elements for new items in the layer.
+        current_item_data = {
+            elem.data
+            for elem in self.children
+            if isinstance(elem, (WorkPieceElement, GroupElement))
         }
-        wps_to_add = model_workpieces - current_wp_data
-        for wp_data in wps_to_add:
-            wp_elem = WorkPieceElement(
-                workpiece=wp_data,
-                canvas=self.canvas,
-                selectable=is_selectable,
-                visible=work_surface._workpieces_visible,
-            )
-            self.add(wp_elem)
-            # Position and size the new element based on model data
-            wp_elem.allocate()
+
+        items_to_add = model_items - current_item_data
+        for item_data in items_to_add:
+            new_elem = None
+            if isinstance(item_data, WorkPiece):
+                new_elem = WorkPieceElement(
+                    workpiece=item_data,
+                    canvas=self.canvas,
+                    selectable=is_selectable,
+                    visible=work_surface._workpieces_visible,
+                )
+            elif isinstance(item_data, Group):
+                new_elem = GroupElement(
+                    group=item_data,
+                    canvas=self.canvas,
+                    selectable=is_selectable,
+                )
+
+            if new_elem:
+                self.add(new_elem)
+                if isinstance(new_elem, WorkPieceElement):
+                    new_elem.allocate()
 
         # --- Reconcile StepElements ---
-        # Now add/remove the StepElements themselves.
-        current_ws_elements = self.find_by_type(StepElement)
+        current_step_elements = [
+            elem for elem in self.children if isinstance(elem, StepElement)
+        ]
         model_steps = set(self.data.workflow.steps)
 
         # Remove StepElements for steps that are no longer in the model
-        for elem in current_ws_elements:
+        for elem in current_step_elements:
             if elem.data not in model_steps:
                 logger.debug(f"Removing step element: {elem}")
                 elem.remove()
 
-        # Add StepElements for new steps
-        current_ws_data = {
-            elem.data for elem in self.find_by_type(StepElement)
+        # Add StepElements for new steps.
+        current_step_data = {
+            elem.data
+            for elem in self.children
+            if isinstance(elem, StepElement)
         }
         show_travel = (
             work_surface._show_travel_moves if work_surface else False
         )
         ops_generator = work_surface.ops_generator
 
-        wss_to_add = model_steps - current_ws_data
-        for ws_data in wss_to_add:
-            ws_elem = StepElement(
-                step=ws_data,
+        steps_to_add = model_steps - current_step_data
+        for step_data in steps_to_add:
+            step_elem = StepElement(
+                step=step_data,
                 ops_generator=ops_generator,
                 x=0,
                 y=0,
@@ -151,14 +230,18 @@ class LayerElement(CanvasElement):
                 show_travel_moves=show_travel,
                 canvas=self.canvas,
             )
-            self.add(ws_elem)
+            self.add(step_elem)
 
-        # Now that StepElements are correct, tell them to sync their children
-        for elem in self.find_by_type(StepElement):
-            elem = cast(StepElement, elem)
-            elem._on_step_model_changed(elem.data)
+        # Now that StepElements are correct, tell them to sync their children.
+        for elem in self.children:
+            if isinstance(elem, StepElement):
+                elem._on_step_model_changed(elem.data)
 
-        # Sort the children to ensure that all StepElements are drawn on
-        # top of all WorkPieceElements.
+        # After all reconciliation, prime/update the scale cache.
+        self._wp_scale_cache = {
+            wp.uid: wp.get_world_transform().get_abs_scale()
+            for wp in self.data.all_workpieces
+        }
+
         self.sort_children_by_z_order()
         self.canvas.queue_draw()

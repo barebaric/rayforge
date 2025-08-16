@@ -20,12 +20,15 @@ CAIRO_MAX_DIMENSION = 30000
 class WorkPieceOpsElement(CanvasElement):
     """
     Displays the generated Ops for a single WorkPiece. Its transform is
-    driven by the WorkPiece model.
+    driven by its corresponding WorkPieceElement in the view hierarchy.
+    It is designed to be a perfect overlay for a WorkPieceElement.
     """
 
     def __init__(
         self, workpiece: WorkPiece, show_travel_moves: bool = False, **kwargs
     ):
+        # An Ops element's local geometry is a fixed 1x1 unit square,
+        # just like its corresponding WorkPieceElement.
         super().__init__(
             0,
             0,
@@ -34,30 +37,27 @@ class WorkPieceOpsElement(CanvasElement):
             data=workpiece,
             selectable=False,
             buffered=True,
+            # background=(0, 1, 0, 0.2),
             **kwargs,
         )
         self._accumulated_ops = Ops()
         self._ops_generation_id = -1
         self.show_travel_moves = show_travel_moves
 
-        # Our render_to_surface produces Y-up content. We must declare
-        # a content transform to flip it during the final draw.
+        # All content transformation is handled explicitly during rendering.
+        # The base class should not apply any transform when drawing the
+        # buffer.
         self.content_transform = Matrix.identity()
 
-        workpiece.transform_changed.connect(
-            self._on_workpiece_transform_changed
-        )
-
-        # Set initial state
-        self._on_workpiece_transform_changed(workpiece)
+        # NOTE: This element INTENTIONALLY does not connect to
+        # workpiece.transform_changed.
+        # Its transform is driven exclusively by calls to
+        #  _on_workpiece_transform_changed
+        # from the WorkSurface and LayerElement orchestrators.
         self.trigger_update()
 
     def remove(self):
         """Disconnects signals before removing the element."""
-        if self.data:
-            self.data.transform_changed.disconnect(
-                self._on_workpiece_transform_changed
-            )
         super().remove()
 
     def _on_workpiece_transform_changed(
@@ -76,11 +76,16 @@ class WorkPieceOpsElement(CanvasElement):
             return
 
         # 1. Determine the desired world transform for the core ops content.
-        w, h = workpiece.size
         if transient_world_transform is not None:
             model_world_transform = transient_world_transform
         else:
             model_world_transform = workpiece.get_world_transform()
+
+        # --- FIX: Derive size from the world transform, not the local one ---
+        # The absolute scale of the workpiece's world matrix gives its
+        # final dimensions in world space (mm), regardless of grouping.
+        w, h = model_world_transform.get_abs_scale()
+
         # The Ops are pre-scaled, so we remove the scale from the workpiece's
         # matrix to get a transform for just rotation and translation.
         scale_inv_matrix = Matrix.scale(
@@ -139,8 +144,6 @@ class WorkPieceOpsElement(CanvasElement):
             ) @ Matrix.scale(1, -1)
             self.trigger_update()
 
-        # If this is a final, model-driven update, we are responsible for
-        # queueing the draw. During an interactive drag, the canvas handles it.
         if transient_world_transform is None:
             self.canvas.queue_draw()
 

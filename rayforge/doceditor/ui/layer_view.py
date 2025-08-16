@@ -209,7 +209,7 @@ class LayerView(Gtk.Box):
         steps_string = ", ".join(step_names)
 
         # Get workpiece count string
-        count = len(self.layer.workpieces)
+        count = len(self.layer.all_workpieces)
         if count == 1:
             workpiece_string = _("{count} workpiece").format(count=count)
         else:

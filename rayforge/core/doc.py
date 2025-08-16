@@ -42,23 +42,21 @@ class Doc(DocItem):
         return [child for child in self.children if isinstance(child, Layer)]
 
     def __iter__(self):
-        """Iterates through all workpieces in all layers."""
-        return (wp for layer in self.layers for wp in layer.workpieces)
+        """Recursively iterates through all workpieces in all layers."""
+        return (
+            wp for layer in self.layers for wp in layer.all_workpieces
+        )
 
     @property
-    def workpieces(self) -> List[WorkPiece]:
-        """Returns a list of all workpieces from all layers."""
-        return list(self)
-
-    def get_all_workpieces(self) -> List["WorkPiece"]:
+    def all_workpieces(self) -> List[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this document.
         """
-        all_wps = []
-        for child in self.children:
-            all_wps.extend(child.get_all_workpieces())
-        return all_wps
+        wps = []
+        for layer in self.layers:
+            wps.extend(layer.all_workpieces)
+        return wps
 
     def add_workpiece(self, workpiece: WorkPiece):
         """Adds a workpiece to the currently active layer."""
@@ -66,7 +64,7 @@ class Doc(DocItem):
 
     def remove_workpiece(self, workpiece: WorkPiece):
         """Removes a workpiece from the layer that owns it."""
-        if workpiece.parent and isinstance(workpiece.parent, Layer):
+        if workpiece.parent:
             workpiece.parent.remove_child(workpiece)
 
     @property
@@ -153,7 +151,7 @@ class Doc(DocItem):
             self.active_layer_changed.send(self)
 
     def has_workpiece(self):
-        return bool(self.workpieces)
+        return bool(self.all_workpieces)
 
     def has_result(self):
         # A result is possible if there's a workpiece and at least one
