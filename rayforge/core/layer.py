@@ -5,7 +5,7 @@ workpieces within a document.
 
 from __future__ import annotations
 import logging
-from typing import List, Tuple, Optional, TypeVar, Iterable
+from typing import List, Tuple, Optional, TypeVar, Iterable, Dict
 from blinker import Signal
 
 from ..core.step import Step
@@ -45,6 +45,17 @@ class Layer(DocItem):
         workflow = Workflow(f"{name} Workflow")
         self.add_child(workflow)
 
+    def to_dict(self) -> Dict:
+        """Serializes the layer and its children to a dictionary."""
+        return {
+            "uid": self.uid,
+            "type": "layer",
+            "name": self.name,
+            "matrix": self.matrix.to_list(),
+            "visible": self.visible,
+            "children": [child.to_dict() for child in self.children],
+        }
+
     @property
     def workpieces(self) -> List[WorkPiece]:
         """
@@ -62,6 +73,16 @@ class Layer(DocItem):
         objects contained within this layer, including those inside groups.
         """
         return self.get_descendants(of_type=WorkPiece)
+
+    def get_content_items(self) -> List["DocItem"]:
+        """
+        Returns a list of user-facing items in this layer (e.g.,
+        WorkPieces, Groups), excluding internal objects like Workflows.
+        """
+        return [
+            child for child in self.children
+            if not isinstance(child, Workflow)
+        ]
 
     @property
     def workflow(self) -> Workflow:

@@ -1,10 +1,8 @@
 import logging
-from typing import Optional, cast, TYPE_CHECKING
-from ...core.workpiece import WorkPiece
+from typing import cast, TYPE_CHECKING
 from ...core.workflow import Step
-from ...core.ops import Ops
 from ..canvas import CanvasElement
-from .ops import WorkPieceOpsElement
+from .workpiece import WorkPieceView
 
 if TYPE_CHECKING:
     from ...pipeline.generator import OpsGenerator
@@ -15,244 +13,76 @@ logger = logging.getLogger(__name__)
 
 class StepElement(CanvasElement):
     """
-    StepElements display the result of a Step on the
-    WorkSurface. The output represents the laser path.
+    A non-rendering CanvasElement that manages the view-state for a Step.
+
+    This element is the "controller" for a Step in the view. Its primary job
+    is to listen to its model for visibility changes and then broadcast that
+    state to all sibling WorkPieceView elements within the same layer.
+    Its lifecycle is automatically managed by its parent LayerElement.
     """
 
     def __init__(
         self,
         step: Step,
         ops_generator: "OpsGenerator",
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        show_travel_moves: bool = False,
         **kwargs,
     ):
         """
-        Initializes a StepElement with pixel dimensions.
+        Initializes a StepElement.
 
         Args:
             step: The Step data object.
             ops_generator: The central generator for pipeline operations.
-            x: The x-coordinate (pixel) relative to the parent.
-            y: The y-coordinate (pixel) relative to the parent.
-            width: The width (pixel).
-            height: The height (pixel).
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         super().__init__(
-            x,
-            y,
-            width,
-            height,
+            x=0,
+            y=0,
+            width=0,
+            height=0,  # No dimensions needed
             data=step,
             selectable=False,
-            clip=False,
+            visible=step.visible,  # Sync initial visibility
             **kwargs,
         )
-        self.show_travel_moves = show_travel_moves
         self.ops_generator = ops_generator
 
-        # Connect to model signals for visibility and structural changes.
-        step.updated.connect(self._on_step_model_changed)
-        step.visibility_changed.connect(self._on_step_model_changed)
-
-        # Connect to the OpsGenerator's signals for data pipeline events.
-        self.ops_generator.ops_generation_starting.connect(
-            self._on_ops_generation_starting
-        )
-        self.ops_generator.ops_chunk_available.connect(
-            self._on_ops_chunk_available
-        )
-        self.ops_generator.ops_generation_finished.connect(
-            self._on_ops_generation_finished
-        )
+        # Connect to the model signal that drives its behavior
+        step.visibility_changed.connect(self._on_visibility_changed)
 
     def remove(self):
         """Disconnects signals before removing the element."""
         step = cast(Step, self.data)
-        step.updated.disconnect(self._on_step_model_changed)
-        step.visibility_changed.disconnect(self._on_step_model_changed)
-
-        self.ops_generator.ops_generation_starting.disconnect(
-            self._on_ops_generation_starting
-        )
-        self.ops_generator.ops_chunk_available.disconnect(
-            self._on_ops_chunk_available
-        )
-        self.ops_generator.ops_generation_finished.disconnect(
-            self._on_ops_generation_finished
-        )
+        step.visibility_changed.disconnect(self._on_visibility_changed)
         super().remove()
 
-    def add_workpiece(self, workpiece) -> WorkPieceOpsElement:
+    def _on_visibility_changed(self, step: Step):
         """
-        Adds a WorkPieceOpsElement for the given workpiece if it doesn't exist.
-        Returns the existing or newly created element.
+        Handles visibility changes from the model. It updates its own state
+        and then broadcasts the change to its siblings.
         """
-        elem = self.find_by_data(workpiece)
-        if elem:
-            elem.mark_dirty()
-            return cast(WorkPieceOpsElement, elem)
+        if not self.visible == step.visible:
+            self.set_visible(step.visible)
+            self._update_sibling_ops_visibility()
 
-        elem = WorkPieceOpsElement(
-            workpiece,
-            show_travel_moves=self.show_travel_moves,
-            canvas=self.canvas,
-            parent=self,
-        )
-        self.add(elem)
-        return elem
-
-    def set_show_travel_moves(self, show: bool):
-        """Sets travel move visibility for all child Ops elements."""
-        if self.show_travel_moves == show:
+    def _update_sibling_ops_visibility(self):
+        """
+        THE CORE LOGIC: Finds all WorkPieceView siblings in the same parent
+        (LayerElement) and tells them to update the visibility of the ops
+        layer corresponding to this step.
+        """
+        if not self.parent:
             return
-        self.show_travel_moves = show
-        for child in self.children:
-            if isinstance(child, WorkPieceOpsElement):
-                child.set_show_travel_moves(show)
 
-    def _on_step_model_changed(self, step: Step, **kwargs):
-        """
-        Handles any change from the Step model to sync the view.
-        This includes visibility and pruning child elements for workpieces
-        that are no longer in the parent layer.
-        """
-        assert self.canvas and self.parent and self.parent.data, (
-            "Received step change, but element has no canvas"
-            " or parent context"
-        )
-
-        # Sync visibility
-        self.set_visible(step.visible)
-
-        # Sync the child ops elements with the model's workpiece list.
-        current_wp_elems_data = {child.data for child in self.children}
-        model_workpieces = set(self.parent.data.all_workpieces)
-
-        # Remove ops elements for workpieces that are no longer in the model.
-        for workpiece in current_wp_elems_data - model_workpieces:
-            elem = self.find_by_data(workpiece)
-            if elem:
-                elem.remove()
-
-        # Add ops elements for new workpieces
-        for workpiece in model_workpieces - current_wp_elems_data:
-            self._find_or_add_workpiece_elem(workpiece)
-
-        if self.canvas:
-            self.canvas.queue_draw()
-
-    def _find_or_add_workpiece_elem(
-        self, workpiece: WorkPiece
-    ) -> WorkPieceOpsElement:
-        """
-        Finds the element for a workpiece, creating and syncing if necessary.
-        """
-        elem = cast(
-            Optional[WorkPieceOpsElement], self.find_by_data(workpiece)
-        )
-        if not elem:
-            logger.debug(f"Adding ops element for workpiece: {workpiece.name}")
-            elem = self.add_workpiece(workpiece)
-            elem._on_workpiece_transform_changed(workpiece)
-        return elem
-
-    def _on_ops_generation_starting(
-        self,
-        sender: Step,
-        workpiece: WorkPiece,
-        generation_id: int,
-    ):
-        """Called before ops generation starts for a workpiece."""
-        # Only handle events for the step this element represents
-        if sender is not self.data:
-            return
+        step_uid = self.data.uid
+        is_visible = self.visible
 
         logger.debug(
-            f"StepElem '{sender.name}': Received ops_generation_starting "
-            f"for {workpiece.source_file}"
-        )
-        assert self.canvas and self.parent and self.parent.data, (
-            "Received ops_start, but element has no canvas or parent context"
+            f"StepElement '{self.data.name}' broadcasting visibility "
+            f"({is_visible}) to siblings."
         )
 
-        if workpiece not in self.parent.data.all_workpieces:
-            elem = self.find_by_data(workpiece)
-            if elem:
-                elem.remove()
-            return
-
-        elem = self._find_or_add_workpiece_elem(workpiece)
-        elem.clear_ops(generation_id=generation_id)
-
-    def _on_ops_chunk_available(
-        self,
-        sender: Step,
-        workpiece: WorkPiece,
-        chunk: Ops,
-        generation_id: int,
-    ):
-        """Called when a chunk of ops is available for a workpiece."""
-        # Only handle events for the step this element represents
-        if sender is not self.data:
-            return
-
-        logger.debug(
-            f"StepElem '{sender.name}': Received ops_chunk_available for "
-            f"{workpiece.source_file} (chunk size: {len(chunk)}, "
-            f"pos={workpiece.pos})"
-        )
-        assert self.canvas and self.parent and self.parent.data, (
-            "Received update, but element has no canvas or parent context"
-        )
-
-        if workpiece not in self.parent.data.all_workpieces:
-            elem = self.find_by_data(workpiece)
-            if elem:
-                elem.remove()
-            return
-
-        elem = self._find_or_add_workpiece_elem(workpiece)
-        elem.add_ops(chunk, generation_id=generation_id)
-
-    def _on_ops_generation_finished(
-        self,
-        sender: Step,
-        workpiece: WorkPiece,
-        generation_id: int,
-    ):
-        """
-        Called when ops generation is finished. This handler ensures a final,
-        guaranteed redraw of the element's complete state.
-        """
-        # Only handle events for the step this element represents
-        if sender is not self.data:
-            return
-
-        logger.debug(
-            f"StepElem '{sender.name}': Received ops_generation_finished "
-            f"for {workpiece.source_file} (gen ID: {generation_id})"
-        )
-        assert self.canvas and self.parent and self.parent.data, (
-            "Received ops_finished, but element has no canvas or parent "
-            "context"
-        )
-
-        if workpiece not in self.parent.data.all_workpieces:
-            elem = self.find_by_data(workpiece)
-            if elem:
-                elem.remove()
-            return
-
-        elem = self._find_or_add_workpiece_elem(workpiece)
-        final_ops = self.ops_generator.get_ops(sender, workpiece)
-        ops_len = len(final_ops.commands) if final_ops else "None"
-        logger.debug(
-            f"StepElem '{sender.name}': Passing {ops_len} final ops to "
-            f"WorkPieceOpsElement for '{workpiece.source_file}'."
-        )
-        elem.set_ops(final_ops, generation_id=generation_id)
+        # Iterate through all children of the parent (the LayerElement)
+        for child in self.parent.children:
+            if isinstance(child, WorkPieceView):
+                child.set_ops_visibility(step_uid, is_visible)

@@ -33,6 +33,34 @@ class Group(DocItem):
         """
         return self.get_descendants(of_type=WorkPiece)
 
+    def to_dict(self) -> Dict:
+        """Serializes the Group and its children to a dictionary."""
+        return {
+            "uid": self.uid,
+            "type": "group",  # Discriminator for deserialization
+            "name": self.name,
+            "matrix": self.matrix.to_list(),
+            "children": [child.to_dict() for child in self.children],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "Group":
+        """Deserializes a dictionary into a Group instance."""
+        new_group = cls(name=data.get("name", "Group"))
+        new_group.uid = data["uid"]
+        new_group.matrix = Matrix.from_list(data["matrix"])
+
+        for child_data in data.get("children", []):
+            # Use the 'type' to decide which class to instantiate
+            if child_data.get("type") == "group":
+                child_item = Group.from_dict(child_data)
+            else:
+                # Assume WorkPiece if type is not 'group' or is missing
+                child_item = WorkPiece.from_dict(child_data)
+            new_group.add_child(child_item)
+
+        return new_group
+
     @staticmethod
     def _calculate_world_bbox(
         items: List[DocItem],

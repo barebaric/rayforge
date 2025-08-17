@@ -26,6 +26,7 @@ class CairoEncoder(OpsEncoder):
         # at the bottom left, and units are mm.
         # Since Cairo coordinates put the zero point at the top left, we must
         # subtract Y from the machine's Y axis maximum.
+        ctx.save()
         scale_x, scale_y = scale
         ymax = ctx.get_target().get_height()/scale_y  # For Y-axis inversion
 
@@ -115,3 +116,4 @@ class CairoEncoder(OpsEncoder):
             # Draw the segment.
             ctx.set_source_rgb(*cut_color)
             ctx.stroke()
+        ctx.restore()

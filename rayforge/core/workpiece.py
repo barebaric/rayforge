@@ -48,10 +48,6 @@ class WorkPiece(DocItem):
         # The importer is a live instance created from the raw data.
         self.importer: Importer = self.importer_class(self._data)
 
-        # The matrix is the single source of truth. A new workpiece starts
-        # as a 1x1mm object at the origin.
-        self.matrix = Matrix.scale(1.0, 1.0)
-
     @property
     def layer(self) -> Optional["Layer"]:
         """Traverses the hierarchy to find the parent Layer."""
@@ -63,44 +59,6 @@ class WorkPiece(DocItem):
                 return p
             p = p.parent
         return None
-
-    @property
-    def matrix(self) -> "Matrix":
-        """The 3x3 local transformation matrix for this item."""
-        return self._matrix
-
-    @matrix.setter
-    def matrix(self, value: "Matrix"):
-        """
-        Sets the local transformation matrix and fires the appropriate signals.
-
-        This setter intelligently determines if the size (scale) of the
-        workpiece has changed.
-        - If scale changes, it fires `updated` (for ops regeneration) and
-          `transform_changed` (for UI updates).
-        - If only position/rotation changes, it only fires `transform_changed`.
-        """
-        old_matrix = self._matrix
-        if old_matrix == value:
-            return
-
-        old_scale = old_matrix.get_abs_scale()
-        new_scale = value.get_abs_scale()
-
-        self._matrix = value
-
-        # Use a tolerance for floating point comparison of scale.
-        scale_changed = not (
-            abs(old_scale[0] - new_scale[0]) < 1e-9
-            and abs(old_scale[1] - new_scale[1]) < 1e-9
-        )
-
-        # If the size/scale changed, it's a data-level change.
-        if scale_changed:
-            self.updated.send(self)
-
-        # Any geometric change requires a transform update for the UI.
-        self.transform_changed.send(self)
 
     def in_world(self) -> "WorkPiece":
         """
@@ -118,14 +76,6 @@ class WorkPiece(DocItem):
         world_wp.matrix = self.get_world_transform()
         return world_wp
 
-    @property
-    def size(self) -> Tuple[float, float]:
-        """
-        The world-space size (width, height) in mm, as absolute values,
-        decomposed from the world transformation matrix.
-        """
-        return self.get_world_transform().get_abs_scale()
-
     def get_local_size(self) -> Tuple[float, float]:
         """
         The local-space size (width, height) in mm, as absolute values,
@@ -133,81 +83,6 @@ class WorkPiece(DocItem):
         determining rasterization resolution.
         """
         return self.matrix.get_abs_scale()
-
-    def set_size(self, width_mm: float, height_mm: float):
-        """
-        Sets the workpiece size in mm while preserving its world-space center
-        point. This manipulates the existing matrix.
-        """
-        current_w, current_h = self.size
-        if (
-            abs(width_mm - current_w) < 1e-9
-            and abs(height_mm - current_h) < 1e-9
-        ):
-            return
-
-        # Calculate scale factors to apply
-        scale_x = width_mm / current_w if current_w > 1e-9 else 0
-        scale_y = height_mm / current_h if current_h > 1e-9 else 0
-
-        # Get the world-space center of the 1x1 unit object
-        center_world = self.get_world_transform().transform_point((0.5, 0.5))
-
-        # Apply the scaling around the world-space center
-        self.matrix = self.matrix.post_scale(
-            scale_x, scale_y, center=center_world
-        )
-
-    @property
-    def pos(self) -> Tuple[float, float]:
-        """
-        The position (in mm) of the workpiece's top-left corner in world space.
-        """
-        # The position is the world-space location of the local origin (0,0).
-        return self.get_world_transform().transform_point((0.0, 0.0))
-
-    @pos.setter
-    def pos(self, new_pos_world: Tuple[float, float]):
-        """
-        Sets the world-space position of the workpiece's top-left corner
-        by manipulating the matrix's translation component.
-        """
-        current_pos_world = self.pos
-        delta_x = new_pos_world[0] - current_pos_world[0]
-        delta_y = new_pos_world[1] - current_pos_world[1]
-
-        if abs(delta_x) < 1e-9 and abs(delta_y) < 1e-9:
-            return
-
-        # Apply the translation in world space
-        self.matrix = self.matrix.pre_translate(delta_x, delta_y)
-
-    @property
-    def angle(self) -> float:
-        """
-        The rotation angle (in degrees) of the workpiece.
-        This is decomposed from the transformation matrix.
-        """
-        return self.matrix.get_rotation()
-
-    @angle.setter
-    def angle(self, new_angle_deg: float):
-        """
-        Sets the rotation angle by applying a delta rotation around the
-        workpiece's world-space center.
-        """
-        current_angle = self.angle
-        delta_angle = new_angle_deg - current_angle
-
-        # Check for geometrically equivalent angles
-        if abs(delta_angle - round(delta_angle / 360.0) * 360.0) < 1e-9:
-            return
-
-        # Get the world-space center of the 1x1 unit object to rotate around
-        center_world = self.get_world_transform().transform_point((0.5, 0.5))
-
-        # Apply rotation in world space around the center point
-        self.matrix = self.matrix.pre_rotate(delta_angle, center=center_world)
 
     def __getstate__(self) -> Dict[str, Any]:
         """

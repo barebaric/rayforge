@@ -4,7 +4,7 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 
 from __future__ import annotations
 import logging
-from typing import List, Optional, TypeVar, Iterable
+from typing import List, Optional, TypeVar, Iterable, Dict
 from blinker import Signal
 from .item import DocItem
 from .step import Step
@@ -35,6 +35,16 @@ class Workflow(DocItem):
         """
         super().__init__(name=name)
         self.post_step_transformer_changed = Signal()
+
+    def to_dict(self) -> Dict:
+        """Serializes the workflow and its children to a dictionary."""
+        return {
+            "uid": self.uid,
+            "type": "workflow",
+            "name": self.name,
+            "matrix": self.matrix.to_list(),
+            "children": [child.to_dict() for child in self.children],
+        }
 
     @property
     def steps(self) -> List[Step]:

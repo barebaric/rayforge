@@ -50,35 +50,38 @@ def _transform_and_clip_workpiece_ops(
     Applies workpiece-specific transforms using its world matrix,
     converts to machine coordinates, and clips the result.
     """
-    # The ops from the generator are already scaled to the workpiece's
-    # final size in millimeters, but located at the origin.
-    # The workpiece's world matrix transforms from a [0,1]x[0,1] unit
-    # space. To correctly apply rotation and translation without
-    # re-applying scale, we first map the mm-space ops into the
-    # unit space, then apply the full world matrix.
-    w, h = workpiece.size
-    if w > 1e-9 and h > 1e-9:
-        S_inv = np.diag([1 / w, 1 / h, 1, 1])
-        ops.transform(S_inv)
+    # The ops from the generator are already scaled to the workpiece's final
+    # size in millimeters, but located at the origin. We only need to apply
+    # the rotation and translation components from the world matrix.
 
-    # 1. Get the workpiece's 3x3 world transformation matrix from the model.
-    world_matrix_3x3 = workpiece.get_world_transform()
+    # 1. Decompose the world matrix to isolate its components.
+    world_matrix = workpiece.get_world_transform()
+    (x, y, angle, sx, sy, _) = world_matrix.decompose()
 
-    # 2. Convert the 3x3 Matrix object to a 4x4 NumPy array for the Ops class.
-    # This is the bridge between the 2D model and 3D ops.
-    m = world_matrix_3x3.m
-    world_matrix_4x4 = np.identity(4)
-    world_matrix_4x4[0:2, 0:2] = m[0:2, 0:2]  # Copy rotation/scale
-    world_matrix_4x4[0:2, 3] = m[0:2, 2]  # Copy translation
-    ops.transform(world_matrix_4x4)
+    # 2. Create a new 4x4 transform matrix containing only rotation and
+    # translation.
+    # We build it in numpy for the Ops class.
+    transform_4x4 = np.identity(4)
 
-    # 3. Convert from canonical (Y-up) to machine-native coords
+    # Apply rotation around the ops' local origin (0,0)
+    rad = np.radians(angle)
+    c, s = np.cos(rad), np.sin(rad)
+    rotation_matrix = np.array([[c, -s], [s, c]])
+    transform_4x4[0:2, 0:2] = rotation_matrix
+
+    # Apply translation
+    transform_4x4[0:2, 3] = [x, y]
+
+    # 3. Apply the combined rotation and translation to the ops.
+    ops.transform(transform_4x4)
+
+    # 4. Convert from canonical (Y-up) to machine-native coords
     if machine.y_axis_down:
         machine_height = machine.dimensions[1]
         ops.scale(1, -1)
         ops.translate(0, machine_height)
 
-    # 4. Clip to machine boundaries
+    # 5. Clip to machine boundaries
     return ops.clip(clip_rect)
 
 

@@ -14,12 +14,10 @@ from ..undo import ListItemCommand, Command, ChangePropertyCommand
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.dot import DotElement
-from .elements.step import StepElement
-from .elements.workpiece import WorkPieceElement
+from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
-from .elements.ops import WorkPieceOpsElement
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +25,7 @@ logger = logging.getLogger(__name__)
 class MoveWorkpiecesLayerCommand(Command):
     """
     An undoable command to move one or more workpieces to a different layer.
+    (This class is updated to use the new element types).
     """
 
     def __init__(
@@ -61,6 +60,7 @@ class MoveWorkpiecesLayerCommand(Command):
         # Step 1 & 2: UI-first, flicker-free re-parenting
         elements_to_move = []
         for wp in self.workpieces:
+            # Find the new WorkPieceView element
             wp_elem = self.canvas.find_by_data(wp)
             if wp_elem:
                 elements_to_move.append(wp_elem)
@@ -92,8 +92,9 @@ class MoveWorkpiecesLayerCommand(Command):
 
 class WorkSurface(Canvas):
     """
-    The WorkSurface displays a grid area with WorkPieces and
-    WorkPieceOpsElements according to real world dimensions.
+    The WorkSurface displays a grid area with WorkPieces and generated Ops
+    according to real world dimensions. It is the application-specific
+    subclass of the generic Canvas.
     """
 
     # The minimum allowed zoom level, relative to the "fit-to-view" size
@@ -138,7 +139,7 @@ class WorkSurface(Canvas):
             height_mm=self.height_mm,
             y_axis_down=y_axis_down,
         )
-        self.root.background = 0.8, 0.8, 0.8, 0.1  # light gray background
+        self.root.background = 0.8, 0.8, 0.8, 0.1
 
         # Set theme colors for axis and grid.
         self._update_theme_colors()
@@ -177,18 +178,16 @@ class WorkSurface(Canvas):
         self.duplicate_requested = Signal()
         self.aspect_ratio_changed = Signal()
 
-        # Connect to undo/redo signals from the canvas
+        # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
-        self.move_end.connect(self._on_transform_end)
         self.resize_begin.connect(self._on_resize_begin)
-        self.resize_end.connect(self._on_transform_end)
         self.rotate_begin.connect(self._on_any_transform_begin)
-        self.rotate_end.connect(self._on_transform_end)
         self.shear_begin.connect(self._on_any_transform_begin)
-        self.shear_end.connect(self._on_transform_end)
         self.elements_deleted.connect(self._on_elements_deleted)
 
-        # Initialize
+        # The primary connection for model updates
+        self.transform_end.connect(self._on_transform_end)
+
         self.set_machine(machine)
 
         # Connect to the history manager's changed signal to sync the view
@@ -235,23 +234,55 @@ class WorkSurface(Canvas):
         self.queue_draw()
 
     def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
-        """Saves the initial matrix of elements before any transformation."""
+        """
+        Saves the initial matrix of all transformed elements (including their
+        ancestor groups) and the world size of all affected workpieces.
+        """
         logger.debug(f"Transform begin for {len(elements)} element(s).")
         self._transform_start_states.clear()
-        for element in elements:
-            # We only care about DocItem-backed elements for this undo logic
-            if not isinstance(element.data, DocItem):
-                continue
 
-            docitem: DocItem = element.data
-            # IMPORTANT: Store the pure geometry matrix from the model, not
-            # the element's visual matrix.
-            self._transform_start_states[element] = {
-                "matrix": docitem.matrix.copy()
-            }
+        # 1. Collect all unique elements and their group ancestors
+        items_to_capture = set()
+        for element in elements:
+            items_to_capture.add(element)
+            parent = element.parent
+            while isinstance(parent, GroupElement):
+                items_to_capture.add(parent)
+                parent = parent.parent
+
+        # 2. Store the initial matrix for each captured item
+        for element in items_to_capture:
+            if isinstance(element.data, DocItem):
+                self._transform_start_states[element] = {
+                    "matrix": element.data.matrix.copy()
+                }
+
+        # 2. Find ALL unique workpieces that will be affected (including
+        #    those inside selected groups) and store their initial world size.
+        affected_workpieces = set()
+        for element in elements:
+            if isinstance(element.data, WorkPiece):
+                affected_workpieces.add(element.data)
+            elif isinstance(element.data, Group):
+                affected_workpieces.update(
+                    element.data.get_descendants(WorkPiece)
+                )
+
+        for wp in affected_workpieces:
+            wp_element = self.find_by_data(wp)
+            if not wp_element:
+                logger.warning(
+                    f"Got a transformation for workpiece {wp.name} "
+                    "but did not find its element. Skipping."
+                )
+                continue
+            # Store the world size against the element for easy lookup later
+            self._transform_start_states.setdefault(wp_element, {})[
+                "world_size"
+            ] = wp.get_world_transform().get_abs_scale()
 
     def _on_resize_begin(self, sender, elements: List[CanvasElement]):
-        """Handles start of a resize, which invalidates Ops."""
+        """Handles start of a resize, which may invalidate Ops."""
         logger.debug(
             f"Resize begin for {len(elements)} element(s)."
             " Pausing ops generator."
@@ -261,97 +292,56 @@ class WorkSurface(Canvas):
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
-        Creates a single, atomic undo command for the entire transformation.
-        This method pushes the final geometric state of the view back to the
-        model, recalculating group bounds and compensating children to
-        prevent stretching.
+        Finalizes an interactive transform. This method reads the final state
+        from all affected view elements (including parent groups that were
+        auto-updated) and commits these changes to the data model in a
+        single, undoable transaction.
         """
         logger.debug(
             f"Transform end for {len(elements)} element(s)."
-            " Creating undo command."
+            " Finalizing state and creating undo transaction."
         )
         history = self.doc.history_manager
-        with history.transaction(_("Transform item(s)")) as t:
-            # Store all unique model items that have been changed, to avoid
-            # creating duplicate commands for them.
-            processed_items = {}
 
-            # First, process the elements that were directly transformed
-            # by the user
-            for element in elements:
-                if (
-                    not isinstance(element.data, DocItem)
-                    or element not in self._transform_start_states
-                ):
-                    continue
+        # Step 1: Collect all elements that may have changed.
+        # The view (ShrinkWrapGroup) has already updated itself automatically.
+        # We just need to find all the elements that changed.
+        affected_elements = set()
+        for element in elements:
+            affected_elements.add(element)
+            parent = element.parent
+            while isinstance(parent, GroupElement):
+                affected_elements.add(parent)
+                parent = parent.parent
 
-                docitem: DocItem = element.data
-                start_matrix = self._transform_start_states[element]["matrix"]
-                new_matrix = element.transform
-                if start_matrix != new_matrix:
-                    processed_items[docitem] = (
-                        start_matrix,
-                        new_matrix.copy(),
-                    )
+        # Step 2: Create commands for all changes found.
+        commands_to_execute = []
+        for element in affected_elements:
+            if (
+                not isinstance(element.data, DocItem)
+                or element not in self._transform_start_states
+                or "matrix" not in self._transform_start_states[element]
+            ):
+                continue
 
-            # Identify parent groups that need updating and bubble up
-            groups_to_process = {
-                element.parent
-                for element in elements
-                if isinstance(element.parent, GroupElement)
-            }
-            processed_groups = set()
+            docitem: DocItem = element.data
+            start_matrix = self._transform_start_states[element]["matrix"]
+            new_matrix = element.transform
 
-            while groups_to_process:
-                group_elem = groups_to_process.pop()
-                if group_elem in processed_groups:
-                    continue
-                processed_groups.add(group_elem)
-
-                group_model = cast(Group, group_elem.data)
-                start_matrix = group_model.matrix.copy()
-
-                result = group_elem.recalculate_and_compensate_children()
-                if not result:
-                    continue
-
-                new_group_matrix, compensations = result
-
-                # Store the change for the group itself
-                if start_matrix != new_group_matrix:
-                    processed_items[group_model] = (
-                        start_matrix,
-                        new_group_matrix,
-                    )
-
-                # Store changes for all compensated children
-                for child_elem, new_child_matrix in compensations:
-                    child_model = cast(DocItem, child_elem.data)
-                    # Use the original model matrix as the old value
-                    original_child_matrix = child_model.matrix.copy()
-                    if original_child_matrix != new_child_matrix:
-                        processed_items[child_model] = (
-                            original_child_matrix,
-                            new_child_matrix,
-                        )
-
-                # If this group is inside another group, queue the parent
-                # for update
-                if isinstance(group_elem.parent, GroupElement):
-                    groups_to_process.add(group_elem.parent)
-
-            # Finally, create undo commands for all unique changes
-            for docitem, (
-                old_matrix,
-                new_matrix,
-            ) in processed_items.items():
+            if start_matrix != new_matrix:
                 cmd = ChangePropertyCommand(
                     target=docitem,
                     property_name="matrix",
-                    new_value=new_matrix,
-                    old_value=old_matrix,
+                    new_value=new_matrix.copy(),
+                    old_value=start_matrix,
                 )
-                t.execute(cmd)
+                commands_to_execute.append(cmd)
+
+        # Step 3: Execute all commands in a single transaction.
+        if commands_to_execute:
+            with history.transaction(_("Transform item(s)")) as t:
+                for cmd in commands_to_execute:
+                    t.execute(cmd)
 
         self._transform_start_states.clear()
 
@@ -384,6 +374,7 @@ class WorkSurface(Canvas):
                     t.add(cmd)
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
+        """Overrides base to add application-specific layer selection logic."""
         # The base Canvas class handles the conversion from widget (pixel)
         # coordinates to world coordinates. We pass them on directly.
         logger.debug(
@@ -393,7 +384,7 @@ class WorkSurface(Canvas):
 
         # After the click, check if a new workpiece is active.
         active_elem = self.get_active_element()
-        if active_elem and hasattr(active_elem.data, "layer"):
+        if active_elem and isinstance(active_elem.data, WorkPiece):
             active_layer = active_elem.data.layer
             # If the workpiece's layer is not the document's active layer,
             # create an undoable command to change it.
@@ -406,88 +397,6 @@ class WorkSurface(Canvas):
                 )
                 # Using execute() adds it to the undo stack.
                 self.doc.history_manager.execute(cmd)
-
-        # If a resize operation has started, hide the
-        # corresponding ops elements to improve performance.
-        if self._resizing and (self._active_elem or self._selection_group):
-            for element in self.get_selected_elements():
-                if not isinstance(element.data, DocItem):
-                    continue
-                # Find all ops elements corresponding to this item's data
-                for step_elem in self.find_by_type(StepElement):
-                    ops_elem = step_elem.find_by_data(element.data)
-                    if ops_elem:
-                        ops_elem.set_visible(False)
-
-    def on_button_release(self, gesture, x: float, y: float):
-        # Before the parent class resets the resizing state, check if a resize
-        # was in progress.
-        logger.debug(f"Button release: pos=({x:.2f}, {y:.2f})")
-        items_to_update = []
-        if self._resizing and (self._active_elem or self._selection_group):
-            for element in self.get_selected_elements():
-                if isinstance(element.data, DocItem):
-                    items_to_update.append(element.data)
-
-        # Let the parent class finish the drag/resize operation.
-        super().on_button_release(gesture, x, y)
-
-        # If a resize has just finished, make the ops visible again and
-        # trigger a re-allocation and re-render to reflect the new size.
-        if items_to_update:
-            for item in items_to_update:
-                for step_elem in self.find_by_type(StepElement):
-                    ops_elem = step_elem.find_by_data(item)
-                    if ops_elem:
-                        ops_elem.set_visible(True)
-
-    def on_mouse_drag(self, gesture, offset_x: float, offset_y: float):
-        """
-        Handles an active drag. After the base class updates the visual
-        elements, this method propagates the transient transform to the
-        dependent ops elements for real-time updates.
-        """
-        # Let the parent Canvas handle the interactive transform of selected
-        # elements first.
-        super().on_mouse_drag(gesture, offset_x, offset_y)
-
-        # If a transform is in progress, sync the dependent ops elements.
-        is_transforming = (
-            self._moving or self._resizing or self._rotating or self._shearing
-        )
-        if not is_transforming:
-            return
-
-        # 1. Get a flat list of all WorkPieceElements being affected by the
-        #    current transformation, including those inside groups.
-        affected_wp_elements: List[WorkPieceElement] = []
-        for selected_elem in self.get_selected_elements():
-            if isinstance(selected_elem, WorkPieceElement):
-                affected_wp_elements.append(selected_elem)
-            elif isinstance(selected_elem, GroupElement):
-                # If a group is selected, find all its descendant WPElements
-                affected_wp_elements.extend(
-                    elem
-                    for elem in selected_elem.find_by_type(WorkPieceElement)
-                    if isinstance(elem, WorkPieceElement)
-                )
-
-        # 2. For each affected workpiece, find its corresponding ops elements
-        #    (one in each StepElement) and update them with the transient
-        #    (in-progress) world transform.
-        for wp_elem in affected_wp_elements:
-            workpiece_data = wp_elem.data
-            transient_transform = wp_elem.get_world_transform()
-
-            for step_elem in self.find_by_type(StepElement):
-                ops_elem = step_elem.find_by_data(workpiece_data)
-                if ops_elem and isinstance(ops_elem, WorkPieceOpsElement):
-                    # Pass the WorkPieceElement's *current* world
-                    # transform to the ops element for a transient update.
-                    ops_elem._on_workpiece_transform_changed(
-                        workpiece_data,
-                        transient_world_transform=transient_transform,
-                    )
 
     def set_machine(self, machine: Optional[Machine]):
         """
@@ -539,7 +448,7 @@ class WorkSurface(Canvas):
         self._rebuild_view_transform()
         self.queue_draw()
 
-    def get_size(self) -> Tuple[float, float]:
+    def get_size_mm(self) -> Tuple[float, float]:
         """Returns the size of the work surface in mm."""
         return self.width_mm, self.height_mm
 
@@ -609,10 +518,8 @@ class WorkSurface(Canvas):
         # immediately correct.
         super().do_size_allocate(width, height, baseline)
 
-        # THE FIX: Enforce the correct world (mm) dimensions on the root
+        # Enforce the correct world (mm) dimensions on the root
         # element, overriding the pixel-based sizing from the parent class.
-        # This ensures the canvas's world coordinate system is always stable
-        # and measured in millimeters.
         if (
             self.root.width != self.width_mm
             or self.root.height != self.height_mm
@@ -625,9 +532,7 @@ class WorkSurface(Canvas):
 
     def _rebuild_view_transform(self):
         """
-        Constructs the world-to-view transformation matrix from pan, zoom,
-        and machine/widget dimensions. This is the single source of truth
-        for the canvas view.
+        Constructs the world-to-view transformation matrix.
         """
         widget_w, widget_h = self.get_width(), self.get_height()
         if widget_w <= 0 or widget_h <= 0:
@@ -675,23 +580,16 @@ class WorkSurface(Canvas):
         self.view_transform = final_transform
 
         # Propagate the view change to elements that depend on it.
-
-        # WorkPieceElement's buffer needs to be re-rendered on zoom to
-        # avoid blurriness. Calling trigger_update invalidates the buffer.
-        for elem in self.find_by_type(WorkPieceElement):
+        # WorkPieceView's buffer needs to be re-rendered on zoom to avoid
+        # blurriness. Calling trigger_update handles this for both the
+        # base image and all of its internal ops surfaces.
+        for elem in self.find_by_type(WorkPieceView):
             elem.trigger_update()
-
-        # WorkPieceOpsElement's geometry is dependent on the view scale to
-        # maintain a constant pixel margin.
-        for elem in self.find_by_type(WorkPieceOpsElement):
-            elem = cast(WorkPieceOpsElement, elem)
-            # Tell the element to recalculate its transform and size.
-            elem._on_workpiece_transform_changed(elem.data)
 
         # Update laser dot size to maintain a constant size in pixels.
         scale_x_ppm, _ = self.get_view_scale()
         desired_diameter_px = 5.0
-        if scale_x_ppm > 1e-9:  # Avoid division by zero
+        if scale_x_ppm > 1e-9:
             diameter_mm = desired_diameter_px / scale_x_ppm
             self._laser_dot.set_size(diameter_mm, diameter_mm)
 
@@ -703,10 +601,13 @@ class WorkSurface(Canvas):
         """Sets whether to display travel moves and triggers re-rendering."""
         if self._show_travel_moves != show:
             self._show_travel_moves = show
-            # Propagate the change to all existing StepElements
-            for elem in self.find_by_type(StepElement):
-                elem = cast(StepElement, elem)
-                elem.set_show_travel_moves(show)
+            # Re-render all ops surfaces on all workpiece views
+            for elem in self.find_by_type(WorkPieceView):
+                assert isinstance(elem, WorkPieceView)
+                # Tell the view to re-render its ops.
+                # A simple trigger_update won't work if the ops data hasn't
+                # changed.
+                elem.trigger_ops_rerender()
 
     def _create_and_add_layer_element(self, layer: "Layer"):
         """Creates a new LayerElement and adds it to the canvas root."""
@@ -799,10 +700,19 @@ class WorkSurface(Canvas):
         """
         return self.root.find_by_type(thetype)
 
+    def are_workpieces_visible(self) -> bool:
+        """Returns True if the workpiece base images should be visible."""
+        return self._workpieces_visible
+
     def set_workpieces_visible(self, visible=True):
+        """
+        Sets the visibility of the base image for all workpieces. Ops overlays
+        remain visible.
+        """
         self._workpieces_visible = visible
-        for wp_elem in self.find_by_type(WorkPieceElement):
-            wp_elem.set_visible(visible)
+        # Find the WorkPieceView elements and toggle their base image
+        for wp_elem in self.find_by_type(WorkPieceView):
+            cast(WorkPieceView, wp_elem).set_base_image_visible(visible)
         self.queue_draw()
 
     def set_camera_image_visibility(self, visible: bool):
@@ -987,7 +897,7 @@ class WorkSurface(Canvas):
                     self.duplicate_requested.send(self, items=selected_items)
                     return True
             elif keyval == Gdk.KEY_a:
-                self.select_all_items_in_active_layer()
+                self.select_all()
                 return True
 
         move_amount_mm = 1.0
@@ -1083,11 +993,72 @@ class WorkSurface(Canvas):
     def get_selected_workpieces(self) -> List[WorkPiece]:
         all_wps = []
         for elem in self.get_selected_elements():
+            # Check for the element's direct data
             if isinstance(elem.data, WorkPiece):
                 all_wps.append(elem.data)
-            if isinstance(elem.data, DocItem):
+            # If it's a group, get all descendant workpieces from the model
+            elif isinstance(elem.data, Group):
                 all_wps.extend(elem.data.get_descendants(WorkPiece))
-        return all_wps
+        # Return a unique list
+        return list(dict.fromkeys(all_wps))
+
+    def get_selected_items(self) -> Sequence[DocItem]:
+        return [
+            cast(DocItem, elem.data) for elem in self.get_selected_elements()
+        ]
+
+    def get_selected_top_level_items(self) -> List[DocItem]:
+        """
+        Returns a list of the highest-level selected DocItems.
+
+        This follows a simple, robust algorithm:
+        1. For each selected item, find its highest selected ancestor.
+        2. Collect these ancestors.
+        3. Return the unique list of ancestors.
+
+        This correctly handles all cases, including selecting items inside a
+        group. If two workpieces inside a group are selected (and not the
+        group itself), this method will correctly return just those two
+        workpieces. The business logic for what to do with them belongs
+        in the calling code.
+        """
+        selected_elements = self.get_selected_elements()
+        if not selected_elements:
+            return []
+
+        # Create a set of the data models for efficient lookup.
+        selected_item_data = {
+            elem.data
+            for elem in selected_elements
+            if isinstance(elem.data, DocItem)
+        }
+        if not selected_item_data:
+            return []
+
+        top_level_ancestors = []
+        for item in selected_item_data:
+            # For each item, walk up its hierarchy to find the highest
+            # ancestor that is ALSO in the selection set.
+            current = item
+            highest_selected_ancestor = item
+            while current.parent:
+                if current.parent in selected_item_data:
+                    highest_selected_ancestor = current.parent
+                current = current.parent
+            top_level_ancestors.append(highest_selected_ancestor)
+
+        # Return a unique list, preserving order.
+        return list(dict.fromkeys(top_level_ancestors))
+
+    def select_all(self):
+        """
+        Selects all workpieces on all layers.
+        """
+        for elem in self.root.get_all_children_recursive():
+            if isinstance(elem.data, DocItem) and elem.selectable:
+                elem.selected = True
+
+        self._finalize_selection_state()
 
     def select_items(self, items_to_select: Sequence[DocItem]):
         """

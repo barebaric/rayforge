@@ -52,11 +52,11 @@ def _execute_layout_task(
             return  # No changes to apply
 
         with win.doc.history_manager.transaction(transaction_name) as t:
-            for wp, delta_matrix in deltas.items():
-                old_matrix = wp.matrix.copy()
+            for item, delta_matrix in deltas.items():
+                old_matrix = item.matrix.copy()
                 new_matrix = delta_matrix @ old_matrix
                 cmd = ChangePropertyCommand(
-                    target=wp,
+                    target=item,
                     property_name="matrix",
                     new_value=new_matrix,
                     old_value=old_matrix,
@@ -77,106 +77,127 @@ def _execute_layout_task(
 
 
 def center_horizontally(win: "MainWindow"):
-    """Action handler for centering workpieces horizontally."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for centering selected items horizontally."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    surface_w, _ignore = win.surface.get_size()
+    surface_w, _ignore = win.surface.get_size_mm()
     strategy = BboxAlignCenterStrategy(
-        selected_wps, surface_width_mm=surface_w
+        selected_items, surface_width_mm=surface_w
     )
     _execute_layout_task(win, strategy, _("Center Horizontally"))
 
 
 def center_vertically(win: "MainWindow"):
-    """Action handler for centering workpieces vertically."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for centering selected items vertically."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    _ignore, surface_h = win.surface.get_size()
+    _ignore, surface_h = win.surface.get_size_mm()
     strategy = BboxAlignMiddleStrategy(
-        selected_wps, surface_height_mm=surface_h
+        selected_items, surface_height_mm=surface_h
     )
     _execute_layout_task(win, strategy, _("Center Vertically"))
 
 
 def align_left(win: "MainWindow"):
-    """Action handler for aligning workpieces to the left."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for aligning selected items to the left."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    strategy = BboxAlignLeftStrategy(selected_wps)
+    strategy = BboxAlignLeftStrategy(selected_items)
     _execute_layout_task(win, strategy, _("Align Left"))
 
 
 def align_right(win: "MainWindow"):
-    """Action handler for aligning workpieces to the right."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for aligning selected items to the right."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    surface_w, _ignore = win.surface.get_size()
-    strategy = BboxAlignRightStrategy(selected_wps, surface_width_mm=surface_w)
+    surface_w, _ignore = win.surface.get_size_mm()
+    strategy = BboxAlignRightStrategy(
+        selected_items, surface_width_mm=surface_w
+    )
     _execute_layout_task(win, strategy, _("Align Right"))
 
 
 def align_top(win: "MainWindow"):
-    """Action handler for aligning workpieces to the top."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for aligning selected items to the top."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    _ignore, surface_h = win.surface.get_size()
-    strategy = BboxAlignTopStrategy(selected_wps, surface_height_mm=surface_h)
+    _ignore, surface_h = win.surface.get_size_mm()
+    strategy = BboxAlignTopStrategy(
+        selected_items, surface_height_mm=surface_h
+    )
     _execute_layout_task(win, strategy, _("Align Top"))
 
 
 def align_bottom(win: "MainWindow"):
-    """Action handler for aligning workpieces to the bottom."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for aligning selected items to the bottom."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    strategy = BboxAlignBottomStrategy(selected_wps)
+    strategy = BboxAlignBottomStrategy(selected_items)
     _execute_layout_task(win, strategy, _("Align Bottom"))
 
 
 def spread_horizontally(win: "MainWindow"):
-    """Action handler for spreading workpieces horizontally."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for spreading selected items horizontally."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    strategy = SpreadHorizontallyStrategy(selected_wps)
+    strategy = SpreadHorizontallyStrategy(selected_items)
     _execute_layout_task(win, strategy, _("Spread Horizontally"))
 
 
 def spread_vertically(win: "MainWindow"):
-    """Action handler for spreading workpieces vertically."""
-    selected_wps = win.surface.get_selected_workpieces()
-    if not selected_wps:
+    """Action handler for spreading selected items vertically."""
+    selected_items = win.surface.get_selected_items()
+    if not selected_items:
         return
 
-    strategy = SpreadVerticallyStrategy(selected_wps)
+    strategy = SpreadVerticallyStrategy(selected_items)
     _execute_layout_task(win, strategy, _("Spread Vertically"))
 
 
 def layout_pixel_perfect(win: "MainWindow"):
     """Action handler for the pixel-perfect packing layout."""
-    workpieces_to_layout = win.surface.get_selected_workpieces()
+    selected_items = win.surface.get_selected_items()
 
-    # If nothing is selected, apply to all workpieces in the document.
-    if not workpieces_to_layout:
-        workpieces_to_layout = win.doc.all_workpieces
+    # Determine the actual items to be laid out based on selection context.
+    if not selected_items:
+        # If nothing is selected, apply to all workpieces in the document.
+        items_to_layout = win.doc.all_workpieces
+    else:
+        # For any selection, only pack the top-level selected items.
+        # E.g., if a group and its child are both selected, only pack the
+        # group.
+        items_to_layout = []
+        selected_set = set(selected_items)
+        for item in selected_items:
+            has_selected_ancestor = False
+            p = item.parent
+            while p:
+                if p in selected_set:
+                    has_selected_ancestor = True
+                    break
+                p = p.parent
+            if not has_selected_ancestor:
+                items_to_layout.append(item)
 
-    if not workpieces_to_layout:
+    if not items_to_layout:
         return
 
     strategy = PixelPerfectLayoutStrategy(
-        workpieces=workpieces_to_layout,
+        items=items_to_layout,
         margin_mm=0.5,
         resolution_px_per_mm=8.0,
         allow_rotation=True,

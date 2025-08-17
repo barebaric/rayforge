@@ -5,7 +5,7 @@ Implements a pixel-based layout strategy for dense packing of workpieces.
 from __future__ import annotations
 import math
 import logging
-from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import List, Sequence, Dict, Optional, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
 
 import cairo
@@ -13,6 +13,8 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...core.matrix import Matrix
+from ...core.group import Group
+from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from .base import LayoutStrategy
 
@@ -25,12 +27,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WorkpieceVariant:
-    """Represents a pre-rendered, rotated version of a workpiece."""
+    """Represents a pre-rendered, rotated version of a DocItem."""
 
-    workpiece: WorkPiece
+    item: DocItem  # The original DocItem (WorkPiece or Group)
     mask: np.ndarray  # Dilated mask for collision detection
     local_bbox: Tuple[float, float, float, float]  # Bbox in local coords
     angle_offset: int  # Rotation applied to create this variant
+    unrotated_size_mm: Tuple[float, float]  # The size of the source shape
 
 
 @dataclass
@@ -57,8 +60,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
-        margin_mm: float = .5,
+        items: Sequence[DocItem],
+        margin_mm: float = 0.5,
         resolution_px_per_mm: float = 8.0,
         allow_rotation: bool = True,
     ):
@@ -66,26 +69,26 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         Initializes the pixel-perfect layout strategy.
 
         Args:
-            workpieces: The list of workpieces to arrange.
+            items: The list of DocItems to arrange.
             margin_mm: The safety margin to add around each workpiece.
             resolution_px_per_mm: The resolution for rendering shapes.
                 Higher values lead to more accurate but slower packing.
             allow_rotation: Whether to allow 90-degree rotations.
         """
-        super().__init__(workpieces)
+        super().__init__(items)
         self.margin_mm = margin_mm
         self.resolution = resolution_px_per_mm
         self.allow_rotation = allow_rotation
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         """
         Calculates the transform for each workpiece for a dense layout. The
         final arrangement is centered relative to the center of the initial
         selection's bounding box.
         """
-        if not self.workpieces:
+        if not self.items:
             return {}
         logger.info("Starting pixel-perfect layout...")
 
@@ -155,7 +158,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self,
     ) -> Tuple[List[List[WorkpieceVariant]], int]:
         """
-        Generates rotated and dilated masks for all workpieces.
+        Generates rotated and dilated masks for all DocItems.
 
         Returns:
             A tuple containing:
@@ -168,14 +171,14 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         rotations = [0, 90, 180, 270] if self.allow_rotation else [0]
         margin_px = int(self.margin_mm * self.resolution)
 
-        for wp in self.workpieces:
+        for item in self.items:
             variants = []
             for angle in rotations:
-                render = self._render_and_mask(wp, angle)
+                render = self._render_and_mask(item, angle)
                 if not (render and np.sum(render[0]) > 0):
                     continue
 
-                mask, local_bbox = render
+                mask, local_bbox, unrotated_size = render
 
                 if margin_px > 0:
                     # Pad the mask array to create physical space for the
@@ -197,7 +200,9 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     dilated_mask = mask
 
                 variants.append(
-                    WorkpieceVariant(wp, dilated_mask, local_bbox, angle)
+                    WorkpieceVariant(
+                        item, dilated_mask, local_bbox, angle, unrotated_size
+                    )
                 )
                 total_area_px += np.sum(dilated_mask)
 
@@ -253,7 +258,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         total_items = len(item_groups)
 
         for i, variants in enumerate(item_groups):
-            wp_name = variants[0].workpiece.name
+            wp_name = variants[0].item.name
             logger.debug(f"Placing item: {wp_name}")
 
             placement = self._find_best_placement(
@@ -265,7 +270,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 y_px, x_px = pos
                 h_px, w_px = item.mask.shape
 
-                canvas[y_px:y_px + h_px, x_px:x_px + w_px] |= item.mask
+                canvas[y_px : y_px + h_px, x_px : x_px + w_px] |= item.mask
                 placed_bounds_px.append((x_px, y_px, x_px + w_px, y_px + h_px))
                 placements.append(placement)
 
@@ -359,7 +364,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
     def _compute_deltas_from_placements(
         self, placements: List[PlacedItem], group_offset: Tuple[float, float]
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         """
         Converts the list of pixel placements into transform deltas.
 
@@ -368,17 +373,19 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             group_offset: The (x, y) world coordinate of the packing origin.
 
         Returns:
-            A dictionary mapping each workpiece to its required delta matrix.
+            A dictionary mapping each DocItem to its required delta matrix.
         """
-        deltas = {}
+        deltas: Dict[DocItem, Matrix] = {}
         for item in placements:
-            wp, delta = self._create_delta_for_placement(item, group_offset)
-            deltas[wp] = delta
+            doc_item, delta = self._create_delta_for_placement(
+                item, group_offset
+            )
+            deltas[doc_item] = delta
         return deltas
 
     def _create_delta_for_placement(
         self, item: PlacedItem, group_offset: Tuple[float, float]
-    ) -> Tuple[WorkPiece, Matrix]:
+    ) -> Tuple[DocItem, Matrix]:
         """
         Calculates the final matrix and delta for a single placed item.
 
@@ -387,89 +394,191 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             group_offset: The (x, y) world coordinate of the packing origin.
 
         Returns:
-            A tuple of (WorkPiece, delta_Matrix).
+            A tuple of (DocItem, delta_Matrix).
         """
-        wp = item.variant.workpiece
+        doc_item = item.variant.item
         y_px, x_px = item.position_px
         margin_px = int(self.margin_mm * self.resolution)
         group_offset_x, group_offset_y = group_offset
 
-        # The position (x_px, y_px) is for the top-left of the DILATED
-        # mask. Account for the margin to find the true object position.
+        # 1. Calculate final position of the rotated bbox corner in world space
         true_x_px = x_px + margin_px
         true_y_px = y_px + margin_px
-
-        # Convert the true bbox corner from canvas pixels to world coords.
         packed_x = group_offset_x + (true_x_px / self.resolution)
         packed_y = group_offset_y + (true_y_px / self.resolution)
 
-        # The final position of the workpiece's origin is its packed
-        # bbox position minus the bbox's offset from the origin.
+        # 2. Determine final position of the item's origin from bbox data
         bbox_off_x, bbox_off_y = (
             item.variant.local_bbox[0],
             item.variant.local_bbox[1],
         )
         final_x = packed_x - bbox_off_x
         final_y = packed_y - bbox_off_y
-
-        # Construct the final transformation matrix.
-        # The target angle is the one determined by the packer. The original
-        # angle of the workpiece is irrelevant and should be overwritten,
-        # not added to.
-        target_angle = item.variant.angle_offset
-        w_mm, h_mm = wp.size
-        S = Matrix.scale(w_mm, h_mm)
-        R = Matrix.rotation(target_angle, center=(w_mm / 2, h_mm / 2))
         T = Matrix.translation(final_x, final_y)
+
+        # 3. Determine final rotation
+        target_angle = item.variant.angle_offset
+
+        # 4. Determine the final scale matrix (S) and rotation center.
+        # This is the critical step where Groups are treated differently.
+        if isinstance(doc_item, Group):
+            # For a Group, we MUST preserve its existing world scale to avoid
+            # deforming its children. The packer's job is only to move and
+            # rotate the group as a rigid object.
+            current_w, current_h = (
+                doc_item.get_world_transform().get_abs_scale()
+            )
+            S = Matrix.scale(current_w, current_h)
+            center_for_rot = (current_w / 2, current_h / 2)
+        else:
+            # For a WorkPiece, we create a new scale based on its original
+            # world size, as it's being laid out from scratch.
+            w_mm, h_mm = item.variant.unrotated_size_mm
+            S = Matrix.scale(w_mm, h_mm)
+            center_for_rot = (w_mm / 2, h_mm / 2)
+
+        R = Matrix.rotation(target_angle, center=center_for_rot)
+
+        # 5. Construct the final world matrix from T, R, and S.
         final_matrix = T @ R @ S
 
-        # Calculate the delta needed to move from original to final matrix.
-        delta = final_matrix @ wp.matrix.invert()
-        return wp, delta
+        # 6. Calculate the delta required to achieve this new world matrix.
+        # W_new = P @ (Delta @ L_old) => Delta = P_inv @ W_new @ L_old_inv
+        old_local_matrix = doc_item.matrix
+        if old_local_matrix.has_zero_scale():
+            logger.warning(f"Item {doc_item.name} has zero scale, skipping.")
+            return doc_item, Matrix.identity()
+        old_local_inv = old_local_matrix.invert()
+
+        parent_inv = Matrix.identity()
+        if doc_item.parent:
+            parent_world_transform = doc_item.parent.get_world_transform()
+            if not parent_world_transform.has_zero_scale():
+                parent_inv = parent_world_transform.invert()
+
+        delta = parent_inv @ final_matrix @ old_local_inv
+        return doc_item, delta
 
     def _render_and_mask(
-        self, wp: WorkPiece, angle_offset: int
-    ) -> Optional[Tuple[np.ndarray, Tuple[float, float, float, float]]]:
+        self, item: DocItem, angle_offset: int
+    ) -> Optional[
+        Tuple[
+            np.ndarray, Tuple[float, float, float, float], Tuple[float, float]
+        ]
+    ]:
         """
-        Renders a workpiece to a pixel mask at a specific orientation.
+        Renders a DocItem to a pixel mask at a specific orientation.
 
-        Args:
-            wp: The WorkPiece to render.
-            angle_offset: The rotation to apply (0, 90, 180, or 270).
-
-        Returns:
-            A tuple containing the boolean numpy mask and the workpiece's
-            bounding box in its local, rotated coordinate system, or None
-            if rendering fails.
+        Returns a tuple: (mask, local_bbox_of_rotated_shape,
+            unrotated_shape_size).
         """
-        # 1. Calculate the transformation and the resulting bounding box.
-        # The packing algorithm must work with the base shape of the
-        # workpiece, testing canonical rotations. The workpiece's initial
-        # angle is ignored here and handled at the end.
-        w_mm, h_mm = wp.size
+        source_surface: Optional[cairo.ImageSurface] = None
+        unrotated_w_mm, unrotated_h_mm = 0.0, 0.0
+
+        if isinstance(item, WorkPiece):
+            unrotated_w_mm, unrotated_h_mm = (
+                item.get_world_transform().get_abs_scale()
+            )
+            if unrotated_w_mm <= 0 or unrotated_h_mm <= 0:
+                return None
+            source_surface = item.importer.render_to_pixels(
+                width=int(unrotated_w_mm * self.resolution),
+                height=int(unrotated_h_mm * self.resolution),
+            )
+        elif isinstance(item, Group):
+            # For a group, render its contents based on its world AABB.
+            bbox = self._get_item_world_bbox(item)
+            if not bbox:
+                return None
+            min_x_world, min_y_world, max_x_world, max_y_world = bbox
+            unrotated_w_mm = max_x_world - min_x_world
+            unrotated_h_mm = max_y_world - min_y_world
+
+            if unrotated_w_mm <= 0 or unrotated_h_mm <= 0:
+                return None
+
+            width_px = int(unrotated_w_mm * self.resolution)
+            height_px = int(unrotated_h_mm * self.resolution)
+            source_surface = cairo.ImageSurface(
+                cairo.FORMAT_A8, width_px, height_px
+            )
+            ctx = cairo.Context(source_surface)
+
+            for wp in item.get_descendants(of_type=WorkPiece):
+                ctx.save()
+                wp_w, wp_h = wp.get_world_transform().get_abs_scale()
+                if wp_w <= 0 or wp_h <= 0:
+                    ctx.restore()
+                    continue
+
+                wp_surf = wp.importer.render_to_pixels(
+                    width=int(wp_w * self.resolution),
+                    height=int(wp_h * self.resolution),
+                )
+                if not wp_surf:
+                    ctx.restore()
+                    continue
+
+                # Get the workpiece's world transform relative to the
+                # group's AABB.
+                world_transform = wp.get_world_transform()
+                tx, ty, angle, _, _, _ = world_transform.decompose()
+                x_pos_px = (tx - min_x_world) * self.resolution
+
+                # Correct for Cairo's Y-down coordinate system. We must invert
+                # the Y position relative to the canvas height.
+                y_pos_px = height_px - ((ty - min_y_world) * self.resolution)
+
+                center_x_px, center_y_px = (
+                    wp_surf.get_width() / 2,
+                    wp_surf.get_height() / 2,
+                )
+
+                # Cairo's rotation center is also affected by the Y-inversion.
+                # The translation must place the workpiece's bottom-left
+                # corner, then adjust for rotation around its center.
+                ctx.translate(x_pos_px, y_pos_px)
+                ctx.translate(center_x_px, -center_y_px)
+                ctx.rotate(math.radians(angle))
+                ctx.translate(-center_x_px, -(-center_y_px))
+                ctx.translate(
+                    0, -wp_surf.get_height()
+                )  # Move to top-left corner for painting
+
+                ctx.set_source_surface(wp_surf, 0, 0)
+                ctx.paint()
+                ctx.restore()
+
+        if not source_surface:
+            return None
+
+        # The rest of the logic rotates this source surface
         transform = Matrix.rotation(
-            angle_offset, center=(w_mm / 2, h_mm / 2)
-        ) @ Matrix.scale(w_mm, h_mm)
-
-        corners = [(0, 0), (1, 0), (1, 1), (0, 1)]
+            angle_offset, center=(unrotated_w_mm / 2, unrotated_h_mm / 2)
+        )
+        corners = [
+            (0, 0),
+            (unrotated_w_mm, 0),
+            (unrotated_w_mm, unrotated_h_mm),
+            (0, unrotated_h_mm),
+        ]
         world_corners = [transform.transform_point(p) for p in corners]
-        min_x = min(p[0] for p in world_corners)
-        min_y = min(p[1] for p in world_corners)
-        max_x = max(p[0] for p in world_corners)
-        max_y = max(p[1] for p in world_corners)
-
+        min_x, min_y = (
+            min(p[0] for p in world_corners),
+            min(p[1] for p in world_corners),
+        )
+        max_x, max_y = (
+            max(p[0] for p in world_corners),
+            max(p[1] for p in world_corners),
+        )
         local_bbox = (min_x, min_y, max_x, max_y)
+
         width_mm, height_mm = max_x - min_x, max_y - min_y
         if width_mm <= 0 or height_mm <= 0:
             return None
-
-        width_px = round(width_mm * self.resolution)
-        height_px = round(height_mm * self.resolution)
-
-        # 2. Render the unrotated source image from the importer.
-        source_surface = wp.importer.render_to_pixels(
-            width=int(w_mm * self.resolution),
-            height=int(h_mm * self.resolution),
+        width_px, height_px = (
+            round(width_mm * self.resolution),
+            round(height_mm * self.resolution),
         )
         if not source_surface:
             return None
@@ -495,9 +604,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         )
         # We only care about the actual width, not the stride.
         mask = mask[:, :width_px] > 0
-
-        # Cairo's Y-axis points down. Flip to align with numpy indexing.
-        return np.flipud(mask), local_bbox
+        return np.flipud(mask), local_bbox, (unrotated_w_mm, unrotated_h_mm)
 
     @staticmethod
     def _find_first_fit(

@@ -112,16 +112,16 @@ class TestWorkPiece:
         assert len(updated_events) == 0
         assert len(transform_events) == 1
 
-        # set_size should fire both updated and transform_changed.
+        # set_size should fire transform_changed, NOT updated.
         wp.set_size(150, 75)
         assert wp.size == pytest.approx((150.0, 75.0))
-        assert len(updated_events) == 1
+        assert len(updated_events) == 0
         assert len(transform_events) == 2
 
         # set_angle should fire transform_changed, NOT updated.
         wp.angle = 45
         assert wp.angle == pytest.approx(45.0)
-        assert len(updated_events) == 1
+        assert len(updated_events) == 0
         assert len(transform_events) == 3
 
     def test_sizing_and_aspect_ratio(self, workpiece_instance):

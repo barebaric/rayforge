@@ -4,22 +4,22 @@ from .base import LayoutStrategy
 
 if TYPE_CHECKING:
     from ...core.matrix import Matrix
-    from ...core.workpiece import WorkPiece
+    from ...core.item import DocItem
     from ...shared.tasker.context import ExecutionContext
 
 
 class SpreadHorizontallyStrategy(LayoutStrategy):
-    """Distributes workpieces evenly in the horizontal direction."""
+    """Distributes items evenly in the horizontal direction."""
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
-        if len(self.workpieces) < 3:
+    ) -> Dict[DocItem, Matrix]:
+        if len(self.items) < 3:
             return {}
 
         wps_with_bboxes = []
-        for wp in self.workpieces:
-            bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            bbox = self._get_item_world_bbox(wp)
             if bbox:
                 wps_with_bboxes.append((wp, bbox))
 
@@ -56,17 +56,17 @@ class SpreadHorizontallyStrategy(LayoutStrategy):
 
 
 class SpreadVerticallyStrategy(LayoutStrategy):
-    """Distributes workpieces evenly in the vertical direction."""
+    """Distributes items evenly in the vertical direction."""
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
-        if len(self.workpieces) < 3:
+    ) -> Dict[DocItem, Matrix]:
+        if len(self.items) < 3:
             return {}
 
         wps_with_bboxes = []
-        for wp in self.workpieces:
-            bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            bbox = self._get_item_world_bbox(wp)
             if bbox:
                 wps_with_bboxes.append((wp, bbox))
 

@@ -175,6 +175,17 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(doc)  # Initial generation
+        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
+
+        # Simulate the completion of the initial generation task to populate
+        # the cache.
+        initial_task = mock_task_mgr.created_tasks[0]
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = initial_task.key
+        mock_finished_task.get_status.return_value = "completed"
+        # The result needs to be a tuple (Ops, pixel_size)
+        mock_finished_task.result.return_value = (Ops(), (1, 1))
+        initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
 
@@ -182,8 +193,8 @@ class TestOpsGenerator:
         real_workpiece.pos = 50, 50
 
         # Assert
-        # The `descendant_transform_changed` signal should fire, but the
-        # OpsGenerator should NOT listen to it.
+        # The `descendant_transform_changed` signal fires, but the generator
+        # should be smart enough to see the world size hasn't changed.
         mock_task_mgr.run_process.assert_not_called()
 
     def test_workpiece_angle_change_does_not_regenerate(
@@ -195,6 +206,17 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
         OpsGenerator(doc)  # Initial generation
+        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
+
+        # Simulate the completion of the initial generation task to populate
+        # the cache.
+        initial_task = mock_task_mgr.created_tasks[0]
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = initial_task.key
+        mock_finished_task.get_status.return_value = "completed"
+        # The result needs to be a tuple (Ops, pixel_size)
+        mock_finished_task.result.return_value = (Ops(), (1, 1))
+        initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
 
@@ -202,8 +224,8 @@ class TestOpsGenerator:
         real_workpiece.angle = 45
 
         # Assert
-        # The `descendant_transform_changed` signal should fire, but the
-        # OpsGenerator should NOT listen to it.
+        # The `descendant_transform_changed` signal fires, but the generator
+        # should be smart enough to see the world size hasn't changed.
         mock_task_mgr.run_process.assert_not_called()
 
     def test_workpiece_size_change_triggers_regeneration(
@@ -222,6 +244,6 @@ class TestOpsGenerator:
         real_workpiece.set_size(10, 10)
 
         # Assert
-        # The `updated` signal from set_size bubbles up to
-        # `descendant_updated`, which the generator listens to.
+        # The `transform_changed` signal from set_size bubbles up, and the
+        # generator should see that the world size has changed.
         mock_task_mgr.run_process.assert_called_once()

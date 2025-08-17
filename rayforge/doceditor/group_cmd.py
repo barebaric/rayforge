@@ -1,9 +1,15 @@
-from typing import List, Dict, Optional, Callable
+import logging
+from typing import TYPE_CHECKING, List, Dict, Optional, Callable
 from ..undo.models.command import Command
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.group import Group
 from ..core.matrix import Matrix
+
+if TYPE_CHECKING:
+    from ..pipeline.generator import OpsGenerator
+
+logger = logging.getLogger(__name__)
 
 
 def _calculate_ungroup_transforms(group: Group) -> Dict[str, Matrix]:
@@ -34,15 +40,15 @@ class CreateGroupCommand(Command):
         self,
         layer: Layer,
         items_to_group: List[DocItem],
+        ops_generator: "OpsGenerator",
         on_change_callback: Optional[Callable[[], None]] = None,
         name: str = "Group Items",
     ):
         super().__init__(name, on_change_callback)
         self.layer = layer
         self.items_to_group = list(items_to_group)
+        self.ops_generator = ops_generator
         self.new_group: Optional[Group] = None
-
-        # --- Capture state for undo ---
         self._original_parents: Dict[str, DocItem] = {
             item.uid: item.parent
             for item in self.items_to_group
@@ -54,24 +60,22 @@ class CreateGroupCommand(Command):
 
     def execute(self) -> None:
         """Performs the grouping operation."""
-        # --- PHASE 1: CALCULATE (delegated to the Group factory) ---
-        result = Group.create_from_items(self.items_to_group, self.layer)
-        if not result:
-            return
+        with self.ops_generator.paused():
+            result = Group.create_from_items(self.items_to_group, self.layer)
+            if not result:
+                return
 
-        self.new_group = result.new_group
+            self.new_group = result.new_group
+            self.layer.add_child(self.new_group)
 
-        # --- PHASE 2: WRITE (apply the calculated results) ---
-        self.layer.add_child(self.new_group)
-
-        for item in self.items_to_group:
-            # Reparent the item
-            if item.parent:
-                item.parent.remove_child(item)
-            self.new_group.add_child(item)
+            for item in self.items_to_group:
+                # Reparent the item
+                if item.parent:
+                    item.parent.remove_child(item)
+                self.new_group.add_child(item)
 
             # Set its new local matrix *after* reparenting
-            item.matrix = result.child_matrices[item.uid]
+                item.matrix = result.child_matrices[item.uid]
 
         if self.on_change_callback:
             self.on_change_callback()
@@ -82,15 +86,15 @@ class CreateGroupCommand(Command):
             return
 
         # Move children back to original parents first
-        for item in self.items_to_group:
-            original_parent = self._original_parents.get(item.uid)
-            if original_parent:
-                self.new_group.remove_child(item)
-                original_parent.add_child(item)
-                item.matrix = self._original_matrices[item.uid]
-
+        with self.ops_generator.paused():
+            for item in self.items_to_group:
+                original_parent = self._original_parents.get(item.uid)
+                if original_parent:
+                    self.new_group.remove_child(item)
+                    original_parent.add_child(item)
+                    item.matrix = self._original_matrices[item.uid]
         # Then remove the now-empty group
-        self.layer.remove_child(self.new_group)
+            self.layer.remove_child(self.new_group)
 
         if self.on_change_callback:
             self.on_change_callback()
@@ -102,13 +106,13 @@ class UngroupCommand(Command):
     def __init__(
         self,
         groups_to_ungroup: List[Group],
+        ops_generator: "OpsGenerator",
         on_change_callback: Optional[Callable[[], None]] = None,
         name: str = "Ungroup Items",
     ):
         super().__init__(name, on_change_callback)
         self.groups_to_ungroup = list(groups_to_ungroup)
-
-        # --- Capture state for undo ---
+        self.ops_generator = ops_generator
         self._undo_data = []
         for group in self.groups_to_ungroup:
             if group.parent:
@@ -126,49 +130,49 @@ class UngroupCommand(Command):
 
     def execute(self) -> None:
         """Performs the ungrouping operation."""
-        for group in self.groups_to_ungroup:
-            parent = group.parent
-            if not parent:
-                continue
+        with self.ops_generator.paused():
+            for group in self.groups_to_ungroup:
+                parent = group.parent
+                if not parent:
+                    continue
 
-            # --- PHASE 1: READ and CALCULATE ---
-            new_child_matrices = _calculate_ungroup_transforms(group)
-            children_to_move = list(group.children)
+                new_child_matrices = _calculate_ungroup_transforms(group)
+                children_to_move = list(group.children)
 
-            # --- PHASE 2: WRITE ---
-            parent.remove_child(group)
-            for child in children_to_move:
-                parent.add_child(child)
-                child.matrix = new_child_matrices[child.uid]
+                parent.remove_child(group)
+                for child in children_to_move:
+                    parent.add_child(child)
+                    child.matrix = new_child_matrices[child.uid]
 
         if self.on_change_callback:
             self.on_change_callback()
 
     def undo(self) -> None:
         """Reverts the ungrouping by re-creating the original groups."""
-        for data in reversed(self._undo_data):
-            parent = data["parent"]
-            children = data["children"]
-            group = next(
-                (
-                    g
-                    for g in self.groups_to_ungroup
-                    if g.uid == data["group_uid"]
-                ),
-                None,
-            )
-            if not group:
-                continue
+        with self.ops_generator.paused():
+            for data in reversed(self._undo_data):
+                parent = data["parent"]
+                children = data["children"]
+                group = next(
+                    (
+                        g
+                        for g in self.groups_to_ungroup
+                        if g.uid == data["group_uid"]
+                    ),
+                    None,
+                )
+                if not group:
+                    continue
 
-            # Add group back to its parent and restore its matrix
-            parent.add_child(group)
-            group.matrix = data["group_matrix"]
+                # Add group back to its parent and restore its matrix
+                parent.add_child(group)
+                group.matrix = data["group_matrix"]
 
-            # Move children back into the re-created group
-            for child in children:
-                parent.remove_child(child)
-                group.add_child(child)
-                child.matrix = data["child_matrices"][child.uid]
+                # Move children back into the re-created group
+                for child in children:
+                    parent.remove_child(child)
+                    group.add_child(child)
+                    child.matrix = data["child_matrices"][child.uid]
 
         if self.on_change_callback:
             self.on_change_callback()

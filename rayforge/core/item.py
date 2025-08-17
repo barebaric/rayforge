@@ -1,20 +1,26 @@
 from __future__ import annotations
 import uuid
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import (
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Iterable,
     TYPE_CHECKING,
     overload,
+    Dict,
 )
+import logging
+import numpy as np
 from blinker import Signal
 from .matrix import Matrix
 
 if TYPE_CHECKING:
     from .doc import Doc
+
+logger = logging.getLogger(__name__)
 
 # For generic type hinting in add_child, etc.
 T = TypeVar("T", bound="DocItem")
@@ -52,6 +58,17 @@ class DocItem(ABC):
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
 
+    @abstractmethod
+    def to_dict(self) -> Dict:
+        """Serializes the item to a dictionary."""
+        raise NotImplementedError
+
+    def __iter__(self):
+        """
+        Provides a non-recursive iterator over the item's direct children.
+        """
+        return iter(self.children)
+
     @property
     def parent(self) -> Optional[DocItem]:
         """The parent DocItem in the hierarchy."""
@@ -71,6 +88,134 @@ class DocItem(ABC):
         if self.parent:
             return self.parent.doc
         return None
+
+    @property
+    def pos(self) -> Tuple[float, float]:
+        """
+        The position (in mm) of the items's top-left corner in world space.
+        """
+        # The position is the world-space location of the local origin (0,0).
+        return self.get_world_transform().transform_point((0.0, 0.0))
+
+    @pos.setter
+    def pos(self, new_pos_world: Tuple[float, float]):
+        """
+        Sets the world-space position of the items's top-left corner
+        by manipulating the matrix's translation component.
+        """
+        current_pos_world = self.pos
+        delta_x = new_pos_world[0] - current_pos_world[0]
+        delta_y = new_pos_world[1] - current_pos_world[1]
+
+        if abs(delta_x) < 1e-9 and abs(delta_y) < 1e-9:
+            return
+
+        # Apply the translation in world space
+        self.matrix = self.matrix.pre_translate(delta_x, delta_y)
+
+    @property
+    def size(self) -> Tuple[float, float]:
+        """
+        The world-space size (width, height) in mm, as absolute values,
+        decomposed from the world transformation matrix.
+        """
+        return self.get_world_transform().get_abs_scale()
+
+    def set_size(self, width_mm: float, height_mm: float):
+        """
+        Sets the item size in mm while preserving its world-space center
+        point. This manipulates the existing matrix.
+        """
+        current_w, current_h = self.size
+        if (
+            abs(width_mm - current_w) < 1e-9
+            and abs(height_mm - current_h) < 1e-9
+        ):
+            return
+
+        # Calculate scale factors to apply in world space
+        scale_x = width_mm / current_w if current_w > 1e-9 else 0
+        scale_y = height_mm / current_h if current_h > 1e-9 else 0
+
+        # Get the current world transform and world-space center
+        world_transform_old = self.get_world_transform()
+        center_world = world_transform_old.transform_point((0.5, 0.5))
+
+        # Create the scaling transformation in world coordinates
+        scale_transform_world = Matrix.scale(
+            scale_x, scale_y, center=center_world
+        )
+
+        # Calculate the new desired world transform
+        world_transform_new = scale_transform_world @ world_transform_old
+
+        # Back-calculate the new local matrix
+        if self.parent:
+            parent_world_transform = self.parent.get_world_transform()
+            try:
+                parent_world_inv = parent_world_transform.invert()
+                new_local_matrix = parent_world_inv @ world_transform_new
+            except np.linalg.LinAlgError:
+                logger.warning(
+                    "Cannot set size: parent transform is not invertible."
+                )
+                return
+        else:
+            new_local_matrix = world_transform_new
+
+        self.matrix = new_local_matrix
+
+    @property
+    def angle(self) -> float:
+        """
+        The rotation angle (in degrees) of the item.
+        This is decomposed from the local transformation matrix.
+        """
+        return self.matrix.get_rotation()
+
+    @angle.setter
+    def angle(self, new_angle_deg: float):
+        """
+        Sets the local rotation angle to a new value, preserving the item's
+        world-space center point.
+        """
+        current_angle = self.angle
+        delta_angle = new_angle_deg - current_angle
+
+        if abs(delta_angle - round(delta_angle / 360.0) * 360.0) < 1e-9:
+            return
+
+        # Get the current world transform and the world-space center point
+        # around which the rotation should occur.
+        world_transform_old = self.get_world_transform()
+        center_world = world_transform_old.transform_point((0.5, 0.5))
+
+        # Create a rotation transformation that will be applied in world space
+        rotate_transform_world = Matrix.rotation(
+            delta_angle, center=center_world
+        )
+
+        # Calculate the new desired world transform by applying the rotation
+        # to the old one.
+        world_transform_new = rotate_transform_world @ world_transform_old
+
+        # Now, back-calculate the new local matrix that will result in this
+        # new world transform.
+        if self.parent:
+            parent_world_transform = self.parent.get_world_transform()
+            try:
+                parent_world_inv = parent_world_transform.invert()
+                new_local_matrix = parent_world_inv @ world_transform_new
+            except np.linalg.LinAlgError:
+                logger.warning(
+                    "Cannot set angle: parent transform is not invertible."
+                )
+                return
+        else:
+            # If there's no parent, the local matrix is the world matrix.
+            new_local_matrix = world_transform_new
+
+        self.matrix = new_local_matrix
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
         if child in self.children:

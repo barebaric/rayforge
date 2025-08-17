@@ -1,9 +1,8 @@
 import asyncio
 import logging
-import uuid
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Callable
-from gi.repository import Gtk, Gio, GLib, Gdk, Adw  # type: ignore
+from typing import List, Optional, Callable, cast
+from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
 from .shared.tasker.context import ExecutionContext
@@ -14,6 +13,7 @@ from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.group import Group
 from .core.workpiece import WorkPiece
+from .core.item import DocItem
 from .core.workflow import Workflow
 from .pipeline.steps import (
     create_contour_step,
@@ -27,12 +27,13 @@ from .undo import HistoryManager, Command, ListItemCommand, ReorderListCommand
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
+from .doceditor import edit_cmd
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
 from .shared.ui.preferences_dialog import PreferencesWindow
 from .machine.ui.settings_dialog import MachineSettingsDialog
-from .doceditor.ui.workpiece_properties import WorkpiecePropertiesWidget
+from .doceditor.ui.item_properties import DocItemPropertiesWidget
 from .workbench.canvas import CanvasElement
 from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
@@ -84,6 +85,43 @@ css = """
 """
 
 
+def _get_monitor_geometry() -> Optional[Gdk.Rectangle]:
+    """
+    Returns a rectangle for the current monitor dimensions. If not found,
+    may return None.
+    """
+    display = Gdk.Display.get_default()
+    if not display:
+        return None
+
+    monitors = display.get_monitors()
+    if not monitors:
+        return None
+    monitor = cast(Gdk.Monitor, monitors[0])
+
+    # Try to get the monitor under the cursor (heuristic for active
+    # monitor). Note: Wayland has no concept of "primary monitor"
+    # anymore, so Gdk.get_primary_monitor() is obsolete.
+    # Fallback to the first monitor if no monitor is found under the cursor
+    seat = display.get_default_seat()
+    if not seat:
+        return monitor.get_geometry()
+
+    pointer = seat.get_pointer()
+    if not pointer:
+        return monitor.get_geometry()
+
+    surface, x, y = pointer.get_surface_at_position()
+    if not surface:
+        return monitor.get_geometry()
+
+    monitor_under_mouse = display.get_monitor_at_surface(surface)
+    if not monitor_under_mouse:
+        return monitor.get_geometry()
+
+    return monitor_under_mouse.get_geometry()
+
+
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -106,29 +144,8 @@ class MainWindow(Adw.ApplicationWindow):
         root_click_gesture.connect("pressed", self._on_root_click_pressed)
         self.add_controller(root_click_gesture)
 
-        display = Gdk.Display.get_default()
-        monitors = display.get_monitors()
-
-        # Try to get the monitor under the cursor (heuristic for active
-        # monitor). Note: Wayland has no concept of "primary monitor"
-        # anymore, so Gdk.get_primary_monitor() is obsolete.
-        monitor = None
-        if monitors:
-            seat = display.get_default_seat()
-            if seat:
-                pointer = seat.get_pointer()
-                if pointer:
-                    surface, x, y = pointer.get_surface_at_position()
-                    if surface:
-                        monitor = display.get_monitor_at_surface(surface)
-
-        # Fallback to the first monitor if no monitor is found under the cursor
-        if not monitor and monitors:
-            monitor = monitors[0]
-
-        # Set the window size based on the monitor's geometry or a default size
-        if monitor:
-            geometry = monitor.get_geometry()
+        geometry = _get_monitor_geometry()
+        if geometry:
             self.set_default_size(
                 int(geometry.width * 0.8), int(geometry.height * 0.8)
             )
@@ -141,7 +158,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
-        self.action_manager.set_accelerators(self.get_application())
+        app = self.get_application()
+        if app:
+            self.action_manager.set_accelerators(app)
 
         # HeaderBar with left-aligned menu and centered title
         header_bar = Adw.HeaderBar()
@@ -155,16 +174,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
-            title=self.get_title(), subtitle=__version__
+            title=self.get_title() or "", subtitle=__version__ or ""
         )
         header_bar.set_title_widget(window_title)
-
-        # Stores a snapshot (list of dicts) of the copied workpieces.
-        self._clipboard_snapshot: List[Dict] = []
-        # Tracks the number of pastes for the current clipboard snapshot.
-        self._paste_counter = 0
-        # The (x, -y) offset to apply for each paste level.
-        self._paste_increment_mm: Tuple[float, float] = (10.0, -10.0)
 
         # Create and add the main toolbar.
         self.toolbar = MainToolbar()
@@ -178,11 +190,13 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Apply styles
         self.paned.add_css_class("mainpaned")
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        display = Gdk.Display.get_default()
+        if display:
+            provider = Gtk.CssProvider()
+            provider.load_from_string(css)
+            Gtk.StyleContext.add_provider_for_display(
+                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
 
         # Create a work area to display the image and paths
         if config.machine:
@@ -257,23 +271,23 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.append(self.workflowview)
 
         # Add the WorkpiecePropertiesWidget
-        self.workpiece_props_widget = WorkpiecePropertiesWidget()
-        workpiece_props_container = Gtk.Box(
+        self.item_props_widget = DocItemPropertiesWidget()
+        item_props_container = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL
         )
-        self.workpiece_props_widget.set_margin_top(20)
-        self.workpiece_props_widget.set_margin_end(12)
-        workpiece_props_container.append(self.workpiece_props_widget)
+        self.item_props_widget.set_margin_top(20)
+        self.item_props_widget.set_margin_end(12)
+        item_props_container.append(self.item_props_widget)
 
-        self.workpiece_revealer = Gtk.Revealer()
-        self.workpiece_revealer.set_child(workpiece_props_container)
-        self.workpiece_revealer.set_reveal_child(False)
-        self.workpiece_revealer.set_transition_type(
+        self.item_revealer = Gtk.Revealer()
+        self.item_revealer.set_child(item_props_container)
+        self.item_revealer.set_reveal_child(False)
+        self.item_revealer.set_transition_type(
             Gtk.RevealerTransitionType.SLIDE_UP
         )
-        right_pane_box.append(self.workpiece_revealer)
+        right_pane_box.append(self.item_revealer)
 
-        # Connect signals for workpiece selection
+        # Connect signals for item selection
         self.surface.selection_changed.connect(self._on_selection_changed)
 
         # Connect signals for clipboard and duplication
@@ -415,18 +429,18 @@ class MainWindow(Adw.ApplicationWindow):
                 self.needs_homing = False
                 driver = config.machine.driver
                 task_mgr.add_coroutine(lambda ctx: driver.home())
-        self.update_state()
+        self._update_actions_and_ui()
 
     def _on_connection_status_changed(
         self, machine: Machine, status: TransportStatus, message: str
     ):
         """Called when the active machine's connection status changes."""
-        self.update_state()
+        self._update_actions_and_ui()
 
     def on_history_changed(
         self, history_manager: HistoryManager, command: Command
     ):
-        self.update_state()
+        self._update_actions_and_ui()
         # After undo/redo, the document state may have changed in ways
         # that require a full UI sync (e.g., layer visibility).
         self.on_doc_changed(self.doc)
@@ -438,12 +452,12 @@ class MainWindow(Adw.ApplicationWindow):
             self.workflowview.set_workflow(self.doc.active_layer.workflow)
 
         # Update button sensitivity and other state
-        self.update_state()
+        self._update_actions_and_ui()
 
     def _on_active_layer_changed(self, sender):
         """Resets the paste counter when the active layer changes."""
-        self._paste_counter = 0
         logger.debug("Active layer changed, paste counter reset.")
+        edit_cmd.reset_paste_counter()
 
     def _on_selection_changed(
         self,
@@ -452,26 +466,26 @@ class MainWindow(Adw.ApplicationWindow):
         active_element: Optional[CanvasElement],
     ):
         """Handles the 'selection-changed' signal from the WorkSurface."""
-        # Get all selected workpieces
-        selected_workpieces = [
-            elem.data for elem in elements if isinstance(elem.data, WorkPiece)
+        # Get all selected DocItems (WorkPieces, Groups, etc.)
+        selected_items = [
+            elem.data for elem in elements if isinstance(elem.data, DocItem)
         ]
 
-        # Get the primary active workpiece from the signal payload
-        active_workpiece = (
+        # Get the primary active item from the signal payload
+        active_item = (
             active_element.data
-            if active_element and isinstance(active_element.data, WorkPiece)
+            if active_element and isinstance(active_element.data, DocItem)
             else None
         )
 
         # Reorder the list to put the active one first, if it exists
-        if active_workpiece and active_workpiece in selected_workpieces:
-            selected_workpieces.remove(active_workpiece)
-            selected_workpieces.insert(0, active_workpiece)
+        if active_item and active_item in selected_items:
+            selected_items.remove(active_item)
+            selected_items.insert(0, active_item)
 
-        self.workpiece_props_widget.set_workpieces(selected_workpieces)
-        self.workpiece_revealer.set_reveal_child(bool(selected_workpieces))
-        self.update_state()
+        self.item_props_widget.set_items(selected_items)
+        self.item_revealer.set_reveal_child(bool(selected_items))
+        self._update_actions_and_ui()
 
     def _on_surface_aspect_changed(self, sender, ratio):
         self.frame.set_ratio(ratio)
@@ -501,7 +515,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.status_monitor.set_machine(config.machine)
 
         self.surface.update_from_doc(self.doc)
-        self.update_state()
+        self._update_actions_and_ui()
 
         # Update theme
         self.apply_theme()
@@ -517,9 +531,9 @@ class MainWindow(Adw.ApplicationWindow):
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
     def on_running_tasks_changed(self, sender, tasks, progress):
-        self.update_state()
+        self._update_actions_and_ui()
 
-    def update_state(self):
+    def _update_actions_and_ui(self):
         active_machine = config.machine
         am = self.action_manager
 
@@ -623,7 +637,7 @@ class MainWindow(Adw.ApplicationWindow):
         am.get_action("redo").set_enabled(self.doc.history_manager.can_redo())
         am.get_action("cut").set_enabled(has_selection)
         am.get_action("copy").set_enabled(has_selection)
-        am.get_action("paste").set_enabled(len(self._clipboard_snapshot) > 0)
+        am.get_action("paste").set_enabled(edit_cmd.can_paste())
         am.get_action("select_all").set_enabled(self.doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
         am.get_action("remove").set_enabled(has_selection)
@@ -646,11 +660,19 @@ class MainWindow(Adw.ApplicationWindow):
             len(self.surface.get_selected_workpieces()) >= 2
         )
 
-        # Layout
-        am.get_action("layout-pixel-perfect").set_enabled(
-            len(self.surface.get_selected_workpieces()) != 1
-            and len(self.doc.all_workpieces) != 1
-        )
+        # Layout - Update sensitivity for the pixel-perfect layout action
+        selected_top_level_items = self.surface.get_selected_top_level_items()
+
+        if len(selected_top_level_items) >= 2:
+            # Scenario: Multiple top-level items are selected.
+            can_layout = True
+        elif not selected_top_level_items:
+            # Scenario: Nothing selected. Action will lay out all workpieces.
+            can_layout = len(self.doc.get_top_level_items()) >= 2
+        else:  # One item selected
+            can_layout = False
+
+        am.get_action("layout-pixel-perfect").set_enabled(can_layout)
 
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
@@ -937,7 +959,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # The workpiece is created with a sensible size but is positioned
         # near the origin. We now center it on the work surface.
-        wswidth_mm, wsheight_mm = self.surface.get_size()
+        wswidth_mm, wsheight_mm = self.surface.get_size_mm()
         wp_width_mm, wp_height_mm = wp.size
 
         # Center the workpiece on the surface.
@@ -958,163 +980,54 @@ class MainWindow(Adw.ApplicationWindow):
 
         # A workpiece is not selected by default on import,
         # so ensure the properties widget is hidden.
-        self.workpiece_revealer.set_reveal_child(False)
+        self.item_revealer.set_reveal_child(False)
 
-    def on_cut_requested(self, sender, workpieces: List[WorkPiece]):
+    def on_cut_requested(self, sender, items: List[DocItem]):
         """Handles the 'cut-requested' signal from the WorkSurface."""
-        if not workpieces:
-            return
+        edit_cmd.cut_items(self, items)
 
-        self.on_copy_requested(sender, workpieces)
-        # For a cut, the next paste should be at the original location
-        # (no offset).
-        self._paste_counter = 0
-
-        history = self.doc.history_manager
-        with history.transaction(_("Cut workpiece(s)")) as t:
-            for wp in workpieces:
-                cmd_name = _("Cut {name}").format(name=wp.source_file.name)
-                command = ListItemCommand(
-                    owner_obj=self.doc,
-                    item=wp,
-                    undo_command="add_workpiece",
-                    redo_command="remove_workpiece",
-                    name=cmd_name,
-                )
-                t.execute(command)
-
-    def on_copy_requested(self, sender, workpieces: List[WorkPiece]):
+    def on_copy_requested(self, sender, items: List[DocItem]):
         """
-        Handles the 'copy-requested' signal. This snapshots the current
-        state of the selected workpieces and resets the paste sequence.
+        Handles the 'copy-requested' signal from the WorkSurface.
         """
-        if not workpieces:
-            return
-        # Create a snapshot of the current state by serializing to dicts.
-        self._clipboard_snapshot = [wp.to_dict() for wp in workpieces]
-        # For a copy, the next paste should be offset.
-        self._paste_counter = 1
-        logger.debug(
-            f"Copied {len(self._clipboard_snapshot)} workpieces. "
-            "Paste counter set to 1."
-        )
+        edit_cmd.copy_items(self, items)
 
     def on_paste_requested(self, sender, *args):
         """
-        Handles the 'paste-requested' signal. Pastes a new set of items
-        with a cumulative offset from the original clipboard snapshot.
-        For a cut operation, the first paste is at the original location.
+        Handles the 'paste-requested' signal from the WorkSurface.
         """
-        if not self._clipboard_snapshot:
-            return
-
-        history = self.doc.history_manager
-        newly_pasted_workpieces = []
-
-        with history.transaction(_("Paste workpiece(s)")) as t:
-            # The paste counter determines the offset level.
-            # It's 0 for the first paste of a cut, and >0 for all others.
-            offset_x = self._paste_increment_mm[0] * self._paste_counter
-            offset_y = self._paste_increment_mm[1] * self._paste_counter
-
-            for wp_dict in self._clipboard_snapshot:
-                new_wp = WorkPiece.from_dict(wp_dict)
-                new_wp.uid = str(uuid.uuid4())
-                newly_pasted_workpieces.append(new_wp)
-
-                # Decompose position from the restored matrix, apply offset,
-                # and rebuild the matrix by setting the 'pos' property.
-                original_pos = new_wp.pos
-                new_wp.pos = (
-                    original_pos[0] + offset_x,
-                    original_pos[1] + offset_y,
-                )
-
-                cmd_name = _("Paste {name}").format(
-                    name=new_wp.source_file.name
-                )
-                command = ListItemCommand(
-                    owner_obj=self.doc.active_layer,
-                    item=new_wp,
-                    undo_command="remove_workpiece",
-                    redo_command="add_workpiece",
-                    name=cmd_name,
-                )
-                t.execute(command)
-
-        # Increment the counter for the *next* paste operation.
-        self._paste_counter += 1
-
-        if newly_pasted_workpieces:
-            self.surface.select_items(newly_pasted_workpieces)
+        edit_cmd.paste_items(self)
 
     def on_select_all(self, action, param):
         """Selects all workpieces in the document."""
         if self.doc.all_workpieces:
             self.surface.select_items(self.doc.all_workpieces)
 
-    def on_duplicate_requested(self, sender, workpieces: List[WorkPiece]):
+    def on_duplicate_requested(self, sender, items: List[DocItem]):
         """
-        Handles the 'duplicate-requested' signal. This creates an exact
-        copy of the selected workpieces in the same location.
+        Handles the 'duplicate-requested' signal from the WorkSurface.
         """
-        if not workpieces:
-            return
-
-        history = self.doc.history_manager
-        newly_duplicated_workpieces = []
-
-        with history.transaction(_("Duplicate workpiece(s)")) as t:
-            for wp in workpieces:
-                wp_dict = wp.to_dict()
-                new_wp = WorkPiece.from_dict(wp_dict)
-                new_wp.uid = str(uuid.uuid4())
-                newly_duplicated_workpieces.append(new_wp)
-
-                cmd_name = _(f"Duplicate {new_wp.source_file.name}")
-                command = ListItemCommand(
-                    owner_obj=self.doc.active_layer,
-                    item=new_wp,
-                    undo_command="remove_workpiece",
-                    redo_command="add_workpiece",
-                    name=cmd_name,
-                )
-                t.execute(command)
-
-        if newly_duplicated_workpieces:
-            self.surface.select_items(newly_duplicated_workpieces)
+        edit_cmd.duplicate_items(self, items)
 
     def on_menu_cut(self, action, param):
-        selection = self.surface.get_selected_workpieces()
+        selection = self.surface.get_selected_items()
         if selection:
-            self.on_cut_requested(self.surface, selection)
+            edit_cmd.cut_items(self, list(selection))
 
     def on_menu_copy(self, action, param):
-        selection = self.surface.get_selected_workpieces()
+        selection = self.surface.get_selected_items()
         if selection:
-            self.on_copy_requested(self.surface, selection)
+            edit_cmd.copy_items(self, list(selection))
 
     def on_menu_duplicate(self, action, param):
-        selection = self.surface.get_selected_workpieces()
+        selection = self.surface.get_selected_items()
         if selection:
-            self.on_duplicate_requested(self.surface, selection)
+            edit_cmd.duplicate_items(self, list(selection))
 
     def on_menu_remove(self, action, param):
-        workpieces = self.surface.get_selected_workpieces()
-        if not workpieces:
-            return
-        history = self.doc.history_manager
-        with history.transaction(_("Remove workpiece(s)")) as t:
-            for wp in workpieces:
-                cmd_name = _("Remove {name}").format(name=wp.source_file.name)
-                command = ListItemCommand(
-                    owner_obj=self.doc,
-                    item=wp,
-                    undo_command="add_workpiece",
-                    redo_command="remove_workpiece",
-                    name=cmd_name,
-                )
-                t.execute(command)
+        items = self.surface.get_selected_items()
+        if items:
+            edit_cmd.remove_items(self, list(items))
 
     def show_about_dialog(self, action, param):
         dialog = AboutDialog(transient_for=self)

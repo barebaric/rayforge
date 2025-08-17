@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Callable
+from typing import TYPE_CHECKING, Dict, Callable, Optional
 from gi.repository import Gtk, Gio, GLib  # type: ignore
 from .doceditor import layout_actions
 from .core.group import Group
@@ -132,7 +132,9 @@ class ActionManager:
         if not all(item.parent is parent_layer for item in items_to_group):
             return  # Should not happen with current selection logic
 
-        cmd = CreateGroupCommand(parent_layer, items_to_group)
+        cmd = CreateGroupCommand(
+            parent_layer, items_to_group, self.win.surface.ops_generator
+        )
         self.win.doc.history_manager.execute(cmd)
 
     def on_ungroup_action(self, action, param):
@@ -147,11 +149,14 @@ class ActionManager:
         if not groups_to_ungroup:
             return
 
-        cmd = UngroupCommand(groups_to_ungroup)
+        cmd = UngroupCommand(groups_to_ungroup, self.win.surface.ops_generator)
         self.win.doc.history_manager.execute(cmd)
 
     def _add_action(
-        self, name: str, callback: Callable, param: GLib.VariantType = None
+        self,
+        name: str,
+        callback: Callable,
+        param: Optional[GLib.VariantType] = None,
     ):
         """Helper to create, register, and store a simple Gio.SimpleAction."""
         action = Gio.SimpleAction.new(name, param)

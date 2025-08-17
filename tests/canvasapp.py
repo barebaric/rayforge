@@ -5,7 +5,7 @@ import gettext
 from pathlib import Path
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk
 import cairo
 from typing import Optional, Dict, Tuple
 
@@ -14,7 +14,7 @@ gettext.install("canvas", base_path / "rayforge" / "locale")
 logging.basicConfig(level=logging.DEBUG)
 
 
-from rayforge.workbench.canvas import Canvas, CanvasElement
+from rayforge.workbench.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 from rayforge.core.matrix import Matrix
 
 
@@ -242,6 +242,25 @@ def populate_canvas(canvas: Canvas):
         pixel_perfect_hit=True,
     )
     canvas.add(l_shape)
+
+    # This group automatically calculates its bounds to fit its children.
+    shrink_group = ShrinkWrapGroup(selectable=True)
+
+    # Children are positioned relative to the group's origin initially.
+    sg_child1 = ExampleElement(10, 20, 80, 50, background=(1, 0.5, 0.5, 1))
+    sg_child2 = ExampleElement(120, 90, 60, 100, background=(0.5, 0.5, 1, 1))
+    shrink_group.add(sg_child1)
+    shrink_group.add(sg_child2)
+
+    # The group itself can be positioned. Its children will move with it.
+    shrink_group.set_pos(500, 400)
+
+    # This call calculates the tight bounding box around the children (in their
+    # new world positions) and compensates their local transforms so they
+    # appear in the same place.
+    shrink_group.update_bounds()
+
+    canvas.add(shrink_group)
 
 
 app = CanvasApp()

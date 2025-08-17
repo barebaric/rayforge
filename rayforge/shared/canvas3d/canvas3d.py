@@ -2,7 +2,7 @@ import logging
 import math
 from typing import Optional, Tuple
 import numpy as np
-from gi.repository import Gdk, Gtk, Pango  # type: ignore
+from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader

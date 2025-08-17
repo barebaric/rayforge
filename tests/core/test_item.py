@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from blinker import Signal
 from rayforge.core.item import DocItem
 from rayforge.core.group import Group
@@ -22,6 +22,9 @@ class ConcreteItem(DocItem):
     Another distinct DocItem type for testing type-based filtering.
     This item is NOT a workpiece.
     """
+
+    def to_dict(self) -> Dict:
+        return {"name": self.name}
 
 
 class SimpleWorkPiece(WorkPiece):

@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING, Sequence
 from ...core.matrix import Matrix
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:
-    from ...core.workpiece import WorkPiece
+    from ...core.item import DocItem
     from ...shared.tasker.context import ExecutionContext
 
 
@@ -13,9 +13,9 @@ class BboxAlignLeftStrategy(LayoutStrategy):
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_x: float
-        if len(self.workpieces) == 1:
+        if len(self.items) == 1:
             # For a single item, align to the world origin's left edge.
             target_x = 0.0
         else:
@@ -25,8 +25,8 @@ class BboxAlignLeftStrategy(LayoutStrategy):
             target_x = bbox[0]  # Align to selection's left edge
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             delta_x = target_x - wp_bbox[0]
@@ -40,17 +40,17 @@ class BboxAlignCenterStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
+        items: Sequence[DocItem],
         surface_width_mm: Optional[float] = None,
     ):
-        super().__init__(workpieces)
+        super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_center_x: float
-        if len(self.workpieces) == 1 and self.surface_width_mm is not None:
+        if len(self.items) == 1 and self.surface_width_mm is not None:
             target_center_x = self.surface_width_mm / 2
         else:
             bbox = self._get_selection_world_bbox()
@@ -59,8 +59,8 @@ class BboxAlignCenterStrategy(LayoutStrategy):
             target_center_x = bbox[0] + (bbox[2] - bbox[0]) / 2
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             wp_center_x = wp_bbox[0] + (wp_bbox[2] - wp_bbox[0]) / 2
@@ -75,17 +75,17 @@ class BboxAlignRightStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
+        items: Sequence[DocItem],
         surface_width_mm: Optional[float] = None,
     ):
-        super().__init__(workpieces)
+        super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_x: float
-        if len(self.workpieces) == 1 and self.surface_width_mm is not None:
+        if len(self.items) == 1 and self.surface_width_mm is not None:
             target_x = self.surface_width_mm
         else:
             bbox = self._get_selection_world_bbox()
@@ -94,8 +94,8 @@ class BboxAlignRightStrategy(LayoutStrategy):
             target_x = bbox[2]  # Right edge of collective box
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             delta_x = target_x - wp_bbox[2]
@@ -109,17 +109,17 @@ class BboxAlignTopStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
+        items: Sequence[DocItem],
         surface_height_mm: Optional[float] = None,
     ):
-        super().__init__(workpieces)
+        super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_y: float
-        if len(self.workpieces) == 1 and self.surface_height_mm is not None:
+        if len(self.items) == 1 and self.surface_height_mm is not None:
             target_y = self.surface_height_mm
         else:
             bbox = self._get_selection_world_bbox()
@@ -128,8 +128,8 @@ class BboxAlignTopStrategy(LayoutStrategy):
             target_y = bbox[3]  # Top edge of collective box
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             delta_y = target_y - wp_bbox[3]
@@ -143,17 +143,17 @@ class BboxAlignMiddleStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
+        items: Sequence[DocItem],
         surface_height_mm: Optional[float] = None,
     ):
-        super().__init__(workpieces)
+        super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_center_y: float
-        if len(self.workpieces) == 1 and self.surface_height_mm is not None:
+        if len(self.items) == 1 and self.surface_height_mm is not None:
             target_center_y = self.surface_height_mm / 2
         else:
             bbox = self._get_selection_world_bbox()
@@ -162,8 +162,8 @@ class BboxAlignMiddleStrategy(LayoutStrategy):
             target_center_y = bbox[1] + (bbox[3] - bbox[1]) / 2
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             wp_center_y = wp_bbox[1] + (wp_bbox[3] - wp_bbox[1]) / 2
@@ -178,9 +178,9 @@ class BboxAlignBottomStrategy(LayoutStrategy):
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[WorkPiece, Matrix]:
+    ) -> Dict[DocItem, Matrix]:
         target_y: float
-        if len(self.workpieces) == 1:
+        if len(self.items) == 1:
             target_y = 0.0
         else:
             bbox = self._get_selection_world_bbox()
@@ -189,8 +189,8 @@ class BboxAlignBottomStrategy(LayoutStrategy):
             target_y = bbox[1]  # Bottom edge of collective box
 
         deltas = {}
-        for wp in self.workpieces:
-            wp_bbox = self._get_workpiece_world_bbox(wp)
+        for wp in self.items:
+            wp_bbox = self._get_item_world_bbox(wp)
             if not wp_bbox:
                 continue
             delta_y = target_y - wp_bbox[1]

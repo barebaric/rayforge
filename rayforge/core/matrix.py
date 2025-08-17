@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Any, Optional, Union, Sequence
+from typing import Tuple, Any, Optional, Union, Sequence, List, cast
 import numpy as np
 
 # A type alias for data that can be converted into a 3x3 matrix.
@@ -98,6 +98,21 @@ class Matrix:
         # Since self.m is a numpy array of simple types, a regular
         # copy is sufficient.
         return Matrix(self)
+
+    def to_list(self) -> List[List[float]]:
+        """
+        Converts the matrix to a nested list, suitable for serialization.
+        """
+        # The numpy stubs can sometimes incorrectly infer the return type of
+        # tolist(). We use cast to assure the type checker of the correct type.
+        return cast(List[List[float]], self.m.tolist())
+
+    @classmethod
+    def from_list(cls, data: List[List[float]]) -> "Matrix":
+        """
+        Creates a Matrix instance from a nested list.
+        """
+        return cls(data)
 
     @staticmethod
     def identity() -> "Matrix":

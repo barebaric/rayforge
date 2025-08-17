@@ -2,9 +2,11 @@ from __future__ import annotations
 import math
 import logging
 from typing import Any, Generator, List, Tuple, Optional, Set, Union
+from enum import Enum, auto
 import cairo
-from gi.repository import Gtk, Gdk, Graphene  # type: ignore
+from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
+from ...core.matrix import Matrix
 from .element import CanvasElement
 from . import transform
 from .region import (
@@ -18,8 +20,7 @@ from .region import (
 from .cursor import get_cursor_for_region
 from .multiselect import MultiSelectionGroup
 from .overlays import render_selection_handles, render_selection_frame
-from ...core.matrix import Matrix
-from enum import Enum, auto
+from .intersect import obb_intersects_aabb
 
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,7 @@ class Canvas(Gtk.DrawingArea):
         self._rotating: bool = False
         self._shearing: bool = False
         self._was_dragging: bool = False
+        self._transforming_elements: List[CanvasElement] = []
 
         # --- Rotation State ---
         self._drag_start_angle: float = 0.0
@@ -106,6 +108,10 @@ class Canvas(Gtk.DrawingArea):
         self.rotate_end = Signal()
         self.shear_begin = Signal()
         self.shear_end = Signal()
+
+        # Fired after any transform gesture ends.
+        self.transform_end = Signal()
+
         self.elements_deleted = Signal()
         self.selection_changed = Signal()
         self.active_element_changed = Signal()
@@ -184,32 +190,6 @@ class Canvas(Gtk.DrawingArea):
         self.root.set_size(float(width), float(height))
         self.root.allocate()
 
-    def render(self, ctx: cairo.Context):
-        """
-        Renders the canvas content onto a given cairo context.
-        This orchestrates the drawing of all elements and overlays.
-        """
-        # Start the recursive rendering from the root element.
-        self.root.render(ctx)
-
-        # Draw the selection frame if we are in framing mode.
-        if self._framing_selection and self._selection_frame_rect:
-            ctx.save()
-            x, y, w, h = self._selection_frame_rect
-            # A semi-transparent blue fill
-            ctx.set_source_rgba(0.2, 0.5, 0.8, 0.3)
-            ctx.rectangle(x, y, w, h)
-            ctx.fill_preserve()
-            # A solid blue, dashed border
-            ctx.set_source_rgb(0.2, 0.5, 0.8)
-            ctx.set_line_width(1)
-            ctx.set_dash((4, 4))
-            ctx.stroke()
-            ctx.restore()
-
-        # Draw selection handles on top of everything.
-        self._render_selection(ctx, self.root)
-
     def do_snapshot(self, snapshot):
         """GTK4 snapshot-based drawing handler."""
         width, height = self.get_width(), self.get_height()
@@ -229,10 +209,21 @@ class Canvas(Gtk.DrawingArea):
         # view zoom/pan.
         self._render_overlays(ctx)
 
+    def _render_element_overlays(
+        self, ctx: cairo.Context, elem: CanvasElement
+    ):
+        """Recursively calls the draw_overlay method for all elements."""
+        elem.draw_overlay(ctx)
+        for child in elem.children:
+            self._render_element_overlays(ctx, child)
+
     def _render_overlays(self, ctx: cairo.Context):
         """Renders all non-content overlays in pixel space."""
         # Draw selection frames and handles on top of everything.
         self._render_selection_overlay(ctx, self.root)
+
+        # Allow elements to draw their own custom overlays (e.g., previews)
+        self._render_element_overlays(ctx, self.root)
 
         # Draw the framing rectangle if we are in framing mode.
         if self._framing_selection and self._selection_frame_rect:
@@ -484,7 +475,8 @@ class Canvas(Gtk.DrawingArea):
         elif isinstance(target, CanvasElement):
             self._initial_transform = target.transform.copy()
             self._initial_world_transform = target.get_world_transform().copy()
-            self._active_origin = target.rect()
+            tx, ty = target.transform.get_translation()
+            self._active_origin = (tx, ty, target.width, target.height)
 
         self.queue_draw()
 
@@ -627,6 +619,14 @@ class Canvas(Gtk.DrawingArea):
                 self._resizing = True
                 self.resize_begin.send(self, elements=selected_elements)
 
+            # Set a generic "interactive" flag on the elements being
+            # transformed. This allows complex parents (like ShrinkWrapGroup)
+            # to react appropriately without the Canvas needing to know
+            # about them.
+            self._transforming_elements = selected_elements
+            for elem in self._transforming_elements:
+                elem.begin_interactive_transform()
+
         # If we reach here, the drag is confirmed and active.
         # Calculate drag delta in WORLD coordinates
         ok, start_x, start_y = self._drag_gesture.get_start_point()
@@ -755,34 +755,52 @@ class Canvas(Gtk.DrawingArea):
         )
 
     def on_button_release(self, gesture, x: float, y: float):
-        """Handles the end of a drag operation, finalizing transforms."""
+        """
+        Handles the end of a drag operation, finalizing transforms and
+        emitting the generic `transform_end` signal for subclasses to handle
+        model updates.
+        """
         if self._framing_selection:
             self._selection_frame_rect = None
             self._selection_before_framing.clear()
             self._finalize_selection_state()
             return
 
-        if not (
+        is_transforming = (
             self._moving or self._resizing or self._rotating or self._shearing
-        ):
+        )
+        if not is_transforming:
             return
 
         elements = self.get_selected_elements()
+
+        # Fire specific signals for detailed event handling
         if self._moving:
             self.move_end.send(self, elements=elements)
         elif self._resizing:
             self.resize_end.send(self, elements=elements)
-            for elem in elements:
-                elem.trigger_update()
         elif self._rotating:
             self.rotate_end.send(self, elements=elements)
         elif self._shearing:
             self.shear_end.send(self, elements=elements)
 
+        # Fire the single, generic signal for model synchronization.
+        # Subclasses connect to THIS signal to avoid polluting the
+        # generic canvas with application-specific logic.
+        self.transform_end.send(self, elements=elements)
+
+        # Recalculate group bounding box if it was being transformed
         if self._selection_group:
             self._selection_group._calculate_bounding_box()
             self._active_origin = self._selection_group._bounding_box
 
+        # Notify elements that the interaction is over. This allows parent
+        # groups to perform a final state consolidation.
+        for elem in self._transforming_elements:
+            elem.end_interactive_transform()
+        self._transforming_elements.clear()
+
+        # Reset all interaction state variables
         self._resizing, self._moving, self._rotating, self._shearing = (
             False,
             False,
@@ -793,6 +811,7 @@ class Canvas(Gtk.DrawingArea):
         self._initial_transform = None
         self._initial_world_transform = None
         self._rotation_pivot = None
+
         self.queue_draw()
 
     def on_click_released(self, gesture, n_press: int, x: float, y: float):
@@ -887,16 +906,16 @@ class Canvas(Gtk.DrawingArea):
         if len(selected) > 0:
             self._selection_mode = SelectionMode.RESIZE
 
-    def _get_element_world_bbox(self, elem: CanvasElement) -> Graphene.Rect:
+    def _get_element_world_corners(
+        self, elem: CanvasElement
+    ) -> List[Tuple[float, float]]:
         """
-        Calculates the axis-aligned bounding box of an element in world
-        coordinates, accounting for all transformations.
+        Calculates the four corners of an element in world coordinates.
         """
         world_transform = elem.get_world_transform()
-        bbox = world_transform.transform_rectangle(
-            (0, 0, elem.width, elem.height)
-        )
-        return Graphene.Rect().init(*bbox)
+        w, h = elem.width, elem.height
+        local_corners = [(0, 0), (w, 0), (w, h), (0, h)]
+        return [world_transform.transform_point(p) for p in local_corners]
 
     def _update_framing_selection(self):
         """
@@ -924,8 +943,8 @@ class Canvas(Gtk.DrawingArea):
 
         for elem in self.root.get_all_children_recursive():
             if elem.selectable:
-                elem_bbox = self._get_element_world_bbox(elem)
-                intersects = selection_rect.intersection(elem_bbox)[0]
+                elem_corners = self._get_element_world_corners(elem)
+                intersects = obb_intersects_aabb(elem_corners, selection_rect)
 
                 # Select if it intersects or was part of the initial set
                 # in shift-mode.

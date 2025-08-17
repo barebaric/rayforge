@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, TypeVar, Iterable
+from typing import List, Optional, TypeVar, Iterable, Dict
 from blinker import Signal
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
@@ -31,6 +31,15 @@ class Doc(DocItem):
         layer = Layer(_("Layer 1"))
         self.add_child(layer)
 
+    def to_dict(self) -> Dict:
+        """Serializes the document and its children to a dictionary."""
+        return {
+            "uid": self.uid,
+            "type": "doc",
+            "active_layer_index": self._active_layer_index,
+            "children": [child.to_dict() for child in self.children],
+        }
+
     @property
     def doc(self) -> "Doc":
         """The root Doc object is itself."""
@@ -40,12 +49,6 @@ class Doc(DocItem):
     def layers(self) -> List[Layer]:
         """Returns a list of all child items that are Layers."""
         return [child for child in self.children if isinstance(child, Layer)]
-
-    def __iter__(self):
-        """Recursively iterates through all workpieces in all layers."""
-        return (
-            wp for layer in self.layers for wp in layer.all_workpieces
-        )
 
     @property
     def all_workpieces(self) -> List[WorkPiece]:
@@ -66,6 +69,16 @@ class Doc(DocItem):
         """Removes a workpiece from the layer that owns it."""
         if workpiece.parent:
             workpiece.parent.remove_child(workpiece)
+
+    def get_top_level_items(self) -> List["DocItem"]:
+        """
+        Returns a list of all top-level, user-facing items in the document by
+        querying each layer for its content.
+        """
+        top_items = []
+        for layer in self.layers:
+            top_items.extend(layer.get_content_items())
+        return top_items
 
     @property
     def active_layer(self) -> Layer:
@@ -124,11 +137,23 @@ class Doc(DocItem):
         # Prevent removing the last layer.
         if layer not in self.layers or len(self.layers) <= 1:
             return
+
+        old_active_layer = self.active_layer
+
+        # Adjust the active index BEFORE removing the child to prevent an
+        # IndexError during signal handling.
+        index_to_remove = self.layers.index(layer)
+        if self._active_layer_index > index_to_remove:
+            self._active_layer_index -= 1
+        elif self._active_layer_index == index_to_remove:
+            # If removing the active layer, fall back to the last item
+            # in the new, shorter list.
+            if self._active_layer_index >= len(self.layers) - 1:
+                self._active_layer_index = max(0, self._active_layer_index - 1)
+
         self.remove_child(layer)
 
-        # Ensure active_layer_index remains valid
-        if self._active_layer_index >= len(self.layers):
-            self._active_layer_index = len(self.layers) - 1
+        if old_active_layer is not self.active_layer:
             self.active_layer_changed.send(self)
 
     def set_layers(self, layers: List[Layer]):
@@ -137,17 +162,26 @@ class Doc(DocItem):
             raise ValueError("Workpiece layer list cannot be empty.")
 
         # Preserve the active layer if it still exists in the new list
-        current_active = self.active_layer
-        old_active_index = self._active_layer_index
+        old_active_layer = self.active_layer
         try:
-            new_active_index = layers.index(current_active)
+            new_active_index = layers.index(old_active_layer)
         except ValueError:
-            new_active_index = 0  # Default to first layer
+            # The old active layer is not in the new list, so pick a default.
+            # Making the first layer active is a safe and predictable choice.
+            new_active_index = 0
+
+        # IMPORTANT: Update the active index BEFORE calling set_children.
+        # set_children fires signals that can cause UI updates, which will
+        # query `active_layer`. If the index is not updated first, it can
+        # be out of bounds for the new, shorter list of layers, causing an
+        # IndexError.
+        self._active_layer_index = new_active_index
 
         self.set_children(layers)
 
-        self._active_layer_index = new_active_index
-        if old_active_index != self._active_layer_index:
+        # After the state is consistent, send the active_layer_changed signal
+        # if the active layer instance has actually changed.
+        if old_active_layer is not self.active_layer:
             self.active_layer_changed.send(self)
 
     def has_workpiece(self):

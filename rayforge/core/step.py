@@ -57,6 +57,31 @@ class Step(DocItem, ABC):
         self.max_travel_speed = 10000
         self.air_assist = False
 
+    def to_dict(self) -> Dict:
+        """Serializes the step and its configuration to a dictionary."""
+        return {
+            "uid": self.uid,
+            "type": "step",
+            "name": self.name,
+            "matrix": self.matrix.to_list(),
+            "typelabel": self.typelabel,
+            "visible": self.visible,
+            "modifiers_dicts": self.modifiers_dicts,
+            "opsproducer_dict": self.opsproducer_dict,
+            "opstransformers_dicts": self.opstransformers_dicts,
+            "post_step_transformers_dicts": self.post_step_transformers_dicts,
+            "laser_dict": self.laser_dict,
+            "pixels_per_mm": self.pixels_per_mm,
+            "power": self.power,
+            "max_power": self.max_power,
+            "cut_speed": self.cut_speed,
+            "max_cut_speed": self.max_cut_speed,
+            "travel_speed": self.travel_speed,
+            "max_travel_speed": self.max_travel_speed,
+            "air_assist": self.air_assist,
+            "children": [child.to_dict() for child in self.children],
+        }
+
     @property
     def workflow(self) -> Optional["Workflow"]:
         """Returns the parent workflow, if it exists."""
