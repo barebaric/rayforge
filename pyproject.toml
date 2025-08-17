@@ -45,6 +45,10 @@ builtins = ["_"]
 
 [tool.pyright]
 stubPath = "typings"
+reportMissingModuleSource = false
+
+[tool.mypy]
+mypy_path = "stubs"
 
 [tool.setuptools.data-files]
 "share/applications" = ["data/com.barebaric.rayforge.desktop"]
@@ -57,6 +61,7 @@ test = [
     "pytest-asyncio",
     "pytest-mock",
     "pytest-cov", # Add coverage tool
+    "pygobject-stubs",
 ]
 
 [tool.pytest.ini_options]
