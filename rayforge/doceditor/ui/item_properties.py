@@ -122,7 +122,7 @@ class DocItemPropertiesWidget(Expander):
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         button_box.set_valign(Gtk.Align.CENTER)
 
-        self.reset_size_button = Gtk.Button(label=_(" Size"))
+        self.reset_size_button = Gtk.Button(label=_("Size"))
         self.reset_size_button.connect("clicked", self._on_reset_size_clicked)
         button_box.append(self.reset_size_button)
 
