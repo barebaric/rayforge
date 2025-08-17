@@ -1,17 +1,24 @@
-from gi.repository import Gtk, Adw, Gdk  # type: ignore
+from gi.repository import Gtk, Adw, Gdk
+from typing import Tuple
 from .canvas3d import Canvas3D
 from ...core.doc import Doc
 from ...core.ops import Ops
-from ...machine.models.machine import Machine
 
 
 class Canvas3DDialog(Adw.Window):
     """A dialog window to host the 3D canvas."""
 
-    def __init__(self, doc: Doc, machine: Machine, **kwargs):
+    def __init__(
+        self,
+        doc: Doc,
+        title: str,
+        size: Tuple[float, float],
+        y_down: bool,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
 
-        width, height = self._get_initial_size(machine)
+        width, height = self._get_initial_size(size)
         self.set_default_size(width, height)
 
         # Main content box
@@ -22,7 +29,7 @@ class Canvas3DDialog(Adw.Window):
         header_bar = Adw.HeaderBar()
         header_bar.set_title_widget(
             Adw.WindowTitle(
-                title=_(f"{machine.name} – Path Preview"),
+                title=title,
                 subtitle="",
             )
         )
@@ -37,7 +44,14 @@ class Canvas3DDialog(Adw.Window):
         box.append(label)
 
         # The canvas itself
-        self.canvas = Canvas3D(doc, machine, vexpand=True)
+        width_mm, depth_mm = size
+        self.canvas = Canvas3D(
+            doc,
+            width_mm=width_mm,
+            depth_mm=depth_mm,
+            y_down=y_down,
+            vexpand=True,
+        )
         box.append(self.canvas)
 
         # Add key controller for window-level shortcuts
@@ -65,7 +79,9 @@ class Canvas3DDialog(Adw.Window):
         """Passes the generated ops to the underlying canvas."""
         self.canvas.set_ops(ops)
 
-    def _get_initial_size(self, machine: Machine) -> tuple[int, int]:
+    def _get_initial_size(
+        self, machine_dims: Tuple[float, float]
+    ) -> tuple[int, int]:
         """
         Calculate the initial window size to match the machine's aspect ratio,
         fitting within a maximum bounding box. The bounding box is 90% of the
@@ -86,7 +102,7 @@ class Canvas3DDialog(Adw.Window):
 
         DEFAULT_SIZE = MAX_WIDTH, MAX_HEIGHT
 
-        machine_w, machine_h = machine.dimensions
+        machine_w, machine_h = machine_dims
         if not (machine_w and machine_w > 0 and machine_h and machine_h > 0):
             return DEFAULT_SIZE
 

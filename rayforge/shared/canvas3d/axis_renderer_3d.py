@@ -144,17 +144,21 @@ class AxisRenderer3D(BaseRenderer):
         self,
         line_shader: Shader,
         text_shader: Shader,
-        mvp: np.ndarray,
+        scene_mvp: np.ndarray,
+        text_mvp: np.ndarray,
         view_matrix: np.ndarray,
+        model_matrix: np.ndarray,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
 
         Args:
-            line_shader: The shader program to use for drawing lines/solids.
-            text_shader: The shader program to use for drawing text.
-            mvp: The combined Model-View-Projection matrix.
+            line_shader: The shader program for drawing lines/solids.
+            text_shader: The shader program for drawing text.
+            scene_mvp: The MVP matrix for the grid and background.
+            text_mvp: The MVP matrix for the text labels (no model transform).
             view_matrix: The view matrix, used for billboarding text.
+            model_matrix: The model matrix for coordinate system transforms.
         """
         if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
@@ -165,7 +169,7 @@ class AxisRenderer3D(BaseRenderer):
         line_shader.use()
 
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(line_shader, mvp)
+        self.background_renderer.render(line_shader, scene_mvp)
         GL.glDepthMask(GL.GL_TRUE)
 
         line_shader.set_vec4("uColor", self.grid_color)
@@ -180,14 +184,17 @@ class AxisRenderer3D(BaseRenderer):
 
         GL.glBindVertexArray(0)
 
-        self._render_axis_labels(text_shader, mvp, view_matrix)
+        self._render_axis_labels(
+            text_shader, text_mvp, view_matrix, model_matrix
+        )
         GL.glDisable(GL.GL_BLEND)
 
     def _render_axis_labels(
         self,
         text_shader: Shader,
-        mvp_matrix: np.ndarray,
+        text_mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
+        model_matrix: np.ndarray,
     ) -> None:
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
@@ -202,28 +209,35 @@ class AxisRenderer3D(BaseRenderer):
         for x in np.arange(
             self.grid_size_mm, self.width_mm + 1e-5, self.grid_size_mm
         ):
-            pos = np.array([x, -x_axis_label_y_offset, 0.0])
+            # Original position in Y-up coordinate system
+            pos_original = np.array([x, -x_axis_label_y_offset, 0.0, 1.0])
+            # Transform position into the target coordinate system
+            # (e.g. Y-down)
+            pos_transformed = (model_matrix @ pos_original)[:3]
+
             self.text_renderer.render_text(
                 text_shader,
                 str(int(x)),
-                pos,
+                pos_transformed,
                 label_height_mm,
                 self.label_color,
-                mvp_matrix,
+                text_mvp_matrix,
                 view_matrix,
             )
         # Y-axis labels (right-aligned to the left of the axis)
         for y in np.arange(
             self.grid_size_mm, self.height_mm + 1e-5, self.grid_size_mm
         ):
-            pos = np.array([-y_axis_label_x_offset, y, 0.0])
+            pos_original = np.array([-y_axis_label_x_offset, y, 0.0, 1.0])
+            pos_transformed = (model_matrix @ pos_original)[:3]
+
             self.text_renderer.render_text(
                 text_shader,
                 str(int(y)),
-                pos,
+                pos_transformed,
                 label_height_mm,
                 self.label_color,
-                mvp_matrix,
+                text_mvp_matrix,
                 view_matrix,
                 align="right",
             )

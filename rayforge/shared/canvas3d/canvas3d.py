@@ -24,12 +24,20 @@ logger = logging.getLogger(__name__)
 class Canvas3D(Gtk.GLArea):
     """A GTK Widget for rendering a 3D scene with OpenGL."""
 
-    def __init__(self, doc, machine, **kwargs):
+    def __init__(
+        self,
+        doc,
+        width_mm: float,
+        depth_mm: float,
+        y_down: bool = False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.doc, self.machine = doc, machine
-        self.width_mm, self.depth_mm = (
-            machine.dimensions if machine else (100.0, 100.0)
-        )
+        self.doc = doc
+        self.width_mm = width_mm
+        self.depth_mm = depth_mm
+        self.y_down = y_down
+
         self.camera: Optional[Camera] = None
         self.main_shader: Optional[Shader] = None
         self.text_shader: Optional[Shader] = None
@@ -40,6 +48,18 @@ class Canvas3D(Gtk.GLArea):
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
+        self._model_matrix = np.identity(4, dtype=np.float32)
+
+        if self.y_down:
+            # This matrix transforms from a Y-up coordinate system (used by
+            # the Ops data) to a Y-down visual representation. It scales Y by
+            # -1 and then translates by the depth of the bed, effectively
+            # moving the origin from bottom-left to top-left.
+            translate_mat = np.identity(4, dtype=np.float32)
+            translate_mat[1, 3] = self.depth_mm
+            scale_mat = np.identity(4, dtype=np.float32)
+            scale_mat[1, 1] = -1.0
+            self._model_matrix = translate_mat @ scale_mat
 
         # State for interactions
         self._last_pan_offset: Optional[Tuple[float, float]] = None
@@ -146,7 +166,9 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to top view.")
-        self.camera.set_top_view(self.width_mm, self.depth_mm)
+        self.camera.set_top_view(
+            self.width_mm, self.depth_mm, y_down=self.y_down
+        )
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -303,20 +325,28 @@ class Canvas3D(Gtk.GLArea):
 
             proj_matrix = self.camera.get_projection_matrix()
             view_matrix = self.camera.get_view_matrix()
-            mvp_matrix = proj_matrix @ view_matrix
+
+            # Base MVP for UI elements that should not be model-transformed
+            mvp_matrix_ui = proj_matrix @ view_matrix
+
+            # MVP for scene geometry that IS model-transformed (e.g., Y-down)
+            mvp_matrix_scene = mvp_matrix_ui @ self._model_matrix
 
             # Convert to column-major for OpenGL
-            mvp_matrix_gl = mvp_matrix.T
+            mvp_matrix_ui_gl = mvp_matrix_ui.T
+            mvp_matrix_scene_gl = mvp_matrix_scene.T
 
             if self.axis_renderer and self.main_shader and self.text_shader:
                 self.axis_renderer.render(
                     self.main_shader,
                     self.text_shader,
-                    mvp_matrix_gl,
+                    mvp_matrix_scene_gl,  # For grid/axes
+                    mvp_matrix_ui_gl,  # For text
                     view_matrix,
+                    self._model_matrix,  # Pass the model matrix for positions
                 )
             if self.ops_renderer and self.main_shader:
-                self.ops_renderer.render(self.main_shader, mvp_matrix_gl)
+                self.ops_renderer.render(self.main_shader, mvp_matrix_scene_gl)
 
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)

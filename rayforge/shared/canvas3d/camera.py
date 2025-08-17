@@ -196,7 +196,9 @@ class Camera:
         self.target = pivot + rot_matrix @ (self.target - pivot)
         self.up = rot_matrix @ self.up
 
-    def set_top_view(self, world_width: float, world_depth: float):
+    def set_top_view(
+        self, world_width: float, world_depth: float, y_down: bool = False
+    ):
         """Configures the camera for a top-down view (Z-up)."""
         center_x, center_y = world_width / 2.0, world_depth / 2.0
         max_dim = max(world_width, world_depth)
@@ -206,7 +208,14 @@ class Camera:
             [center_x, center_y, max_dim * 1.5], dtype=np.float64
         )
         self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-        self.up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+
+        # For a Y-down view, the camera's "up" must point along the world's
+        # negative Y axis so that the view is not upside-down.
+        self.up = (
+            np.array([0.0, -1.0, 0.0], dtype=np.float64)
+            if y_down
+            else np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        )
         self.is_perspective = True
 
     def set_iso_view(self, world_width: float, world_depth: float):

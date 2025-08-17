@@ -325,27 +325,39 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self.toast_overlay.add_toast(toast)
             return
-        if not config.machine:
+
+        machine = config.machine
+        if not machine:
+            logger.warning("Cannot show 3D view without an active machine.")
+            toast = Adw.Toast.new(_("Select a machine to open the 3D view."))
+            self.toast_overlay.add_toast(toast)
             return
 
-        # Create a new dialog, passing the main window as transient_for
+        # Create a new dialog, passing the required machine properties.
         dialog = Canvas3DDialog(
             doc=self.doc,
             transient_for=self,
-            machine=config.machine,
+            title=_(f"{machine.name} – Path Preview"),
+            size=machine.dimensions,
+            # Safely get the Y-axis direction from the machine config.
+            # This assumes a boolean property like 'y_axis_down' exists.
+            y_down=getattr(machine, "y_axis_down", False),
         )
 
         async def load_ops_coro(context: ExecutionContext):
             """Coroutine to generate and load ops into the 3D view."""
-            machine = config.machine
-            if not machine:
+            current_machine = config.machine
+            if not current_machine:
                 return
 
             try:
                 logger.debug("Creating 3D preview")
                 context.set_message("Generating path preview...")
                 ops = await generate_job_ops(
-                    self.doc, machine, self.surface.ops_generator, context
+                    self.doc,
+                    current_machine,
+                    self.surface.ops_generator,
+                    context,
                 )
 
                 # The task manager runs coroutines in a way that allows
