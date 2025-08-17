@@ -41,6 +41,7 @@ enabled = true
 dependencies = {file = ["requirements.txt"]}
 
 [tool.ruff]
+ignore = ["E203"]
 builtins = ["_"]
 
 [tool.pyright]

@@ -30,7 +30,7 @@ jobs:
       - name: Run flake8 Lint
         uses: py-actions/flake8@v2
         with:
-          ignore: E127,E128,E121,E123,E126,E226,E24,E704,W503,W504
+          ignore: E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504
           args: --builtins _
           path: rayforge
 
