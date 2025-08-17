@@ -21,7 +21,6 @@ class MainToolbar(Gtk.Box):
             orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs
         )
         # Signals for View-State controls (not app actions)
-        self.visibility_toggled = Signal()
         self.camera_visibility_toggled = Signal()
         self.show_travel_toggled = Signal()
         self.machine_warning_clicked = Signal()
@@ -65,8 +64,8 @@ class MainToolbar(Gtk.Box):
         clear_button.set_action_name("win.clear")
         self.append(clear_button)
 
-        # This button controls view state, not an app command, so it keeps its
-        # signal.
+        # The visibility button is a ToggleButton linked to a stateful action.
+        # It manages its own icon state by listening to its "toggled" signal.
         self.visibility_on_icon = get_icon("visibility-on-symbolic")
         self.visibility_off_icon = get_icon("visibility-off-symbolic")
         self.visibility_button = Gtk.ToggleButton()
@@ -75,12 +74,10 @@ class MainToolbar(Gtk.Box):
         self.visibility_button.set_tooltip_text(
             _("Toggle workpiece visibility")
         )
-        self.visibility_button.connect(
-            "toggled",
-            lambda btn: self.visibility_toggled.send(
-                self, active=btn.get_active()
-            ),
-        )
+        # Link the button to the action. The action will control its state.
+        self.visibility_button.set_action_name("win.show_workpieces")
+        # The button updates its own icon when its state changes.
+        self.visibility_button.connect("toggled", self._on_visibility_toggled)
         self.append(self.visibility_button)
 
         # This button also controls view state.
@@ -116,7 +113,7 @@ class MainToolbar(Gtk.Box):
         self.append(self.show_travel_button)
 
         # Add a button to open the 3D preview window.
-        view_3d_button = Gtk.Button(child=get_icon("3d-symbolic"))
+        view_3d_button = Gtk.ToggleButton(child=get_icon("3d-symbolic"))
         view_3d_button.set_action_name("win.show_3d_view")
         view_3d_button.set_sensitive(canvas3d_initialized)
         if not canvas3d_initialized:
@@ -245,3 +242,11 @@ class MainToolbar(Gtk.Box):
         # Add machine selector dropdown
         self.machine_selector = MachineSelector()
         self.append(self.machine_selector)
+
+    def _on_visibility_toggled(self, button: Gtk.ToggleButton):
+        """Callback to update the visibility icon when the button's
+        state changes for any reason (user click or action state change)."""
+        if button.get_active():
+            button.set_child(self.visibility_on_icon)
+        else:
+            button.set_child(self.visibility_off_icon)

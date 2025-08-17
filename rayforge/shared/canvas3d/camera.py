@@ -199,7 +199,7 @@ class Camera:
     def set_top_view(
         self, world_width: float, world_depth: float, y_down: bool = False
     ):
-        """Configures the camera for a top-down view (Z-up)."""
+        """Configures the camera for a top-down, orthographic view (Z-up)."""
         center_x, center_y = world_width / 2.0, world_depth / 2.0
         max_dim = max(world_width, world_depth)
 
@@ -216,7 +216,26 @@ class Camera:
             if y_down
             else np.array([0.0, 1.0, 0.0], dtype=np.float64)
         )
-        self.is_perspective = True
+        # A top-down view should be orthographic, not perspective.
+
+    def set_front_view(self, world_width: float, world_depth: float):
+        """Configures the camera for a 45-degree front view."""
+        center_x, center_y = world_width / 2.0, world_depth / 2.0
+        max_dim = max(world_width, world_depth)
+
+        # Target the center of the XY "floor" plane.
+        self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
+
+        # Position the camera in front of the bed (negative Y) and above it
+        # (positive Z) to get a 45-degree downward angle.
+        direction = np.array([0.0, -1.0, 1.0])
+        direction = direction / np.linalg.norm(direction)
+
+        distance = max_dim * 1.7
+        self.position = self.target + direction * distance
+
+        # World Z-axis is the conventional "up" for this view.
+        self.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
     def set_iso_view(self, world_width: float, world_depth: float):
         """Configures the camera for a standard isometric view (Z-up)."""
@@ -233,7 +252,6 @@ class Camera:
         distance = max_dim * 1.7  # A bit more distance for perspective
         self.position = self.target + direction * distance
 
-        # In a Z-up system, the Z-axis is the natural "up" vector for an
-        # isometric view, making it appear upright.
+        # In a Z-up system, the world Z-axis is the conventional "up"
+        # vector for an isometric view, producing the correct orientation.
         self.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-        self.is_perspective = True

@@ -1,4 +1,4 @@
-from gi.repository import Gio  # type: ignore
+from gi.repository import Gio
 
 
 class MainMenu(Gio.Menu):
@@ -42,6 +42,22 @@ class MainMenu(Gio.Menu):
         other_edit_commands.append(_("Preferences…"), "win.preferences")
         edit_menu.append_section(None, other_edit_commands)
         self.append_submenu(_("_Edit"), edit_menu)
+
+        # View Menu
+        view_menu = Gio.Menu()
+        view_menu.append(_("Show Workpieces"), "win.show_workpieces")
+        view_menu.append_section(None, Gio.Menu.new())  # Separator
+        view_menu.append(_("3D View"), "win.show_3d_view")
+
+        view_3d_commands = Gio.Menu()
+        view_3d_commands.append(_("Top View"), "win.view_top")
+        view_3d_commands.append(_("Front View"), "win.view_front")
+        view_3d_commands.append(_("Isometric View"), "win.view_iso")
+        view_3d_commands.append(
+            _("Toggle Perspective"), "win.view_toggle_perspective"
+        )
+        view_menu.append_section(None, view_3d_commands)
+        self.append_submenu(_("_View"), view_menu)
 
         # Help Menu
         help_menu = Gio.Menu()

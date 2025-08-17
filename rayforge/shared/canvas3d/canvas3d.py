@@ -132,10 +132,6 @@ class Canvas3D(Gtk.GLArea):
         scroll.connect("scroll", self.on_scroll)
         self.add_controller(scroll)
 
-        key_controller = Gtk.EventControllerKey.new()
-        key_controller.connect("key-pressed", self.on_key_pressed)
-        self.add_controller(key_controller)
-
     def _clear_drag_state(self):
         """Resets all state variables related to any drag operation."""
         self._is_orbiting = False
@@ -145,31 +141,26 @@ class Canvas3D(Gtk.GLArea):
         self._last_orbit_pos = None
         self._last_z_rotate_screen_pos = None
 
-    def on_key_pressed(self, controller, keyval, keycode, state):
-        """Handles key press events for the canvas."""
-        logger.debug(f"key pressed: {keyval}")
-        if keyval == Gdk.KEY_p and self.camera:
-            self.camera.is_perspective = not self.camera.is_perspective
-            self.queue_render()
-            return True
-        if keyval in (Gdk.KEY_1, Gdk.KEY_KP_1):
-            self.reset_view_top()
-            return True
-        # Using '7' (and numpad 7) for isometric view, a common convention.
-        if keyval in (Gdk.KEY_7, Gdk.KEY_KP_7):
-            self.reset_view_iso()
-            return True
-        return False
-
     def reset_view_top(self):
         """Resets the camera to a top-down orthographic view (Z-up)."""
         if not self.camera:
             return
         logger.info("Resetting to top view.")
+        # The camera class now handles all orientation logic internally.
         self.camera.set_top_view(
             self.width_mm, self.depth_mm, y_down=self.y_down
         )
 
+        # A view reset can interrupt a drag operation, leaving stale state.
+        self._clear_drag_state()
+        self.queue_render()
+
+    def reset_view_front(self):
+        """Resets the camera to a front-facing perspective view."""
+        if not self.camera:
+            return
+        logger.info("Resetting to front view.")
+        self.camera.set_front_view(self.width_mm, self.depth_mm)
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
         self.queue_render()
@@ -199,7 +190,7 @@ class Canvas3D(Gtk.GLArea):
         )
 
         self.sphere_renderer = SphereRenderer(1.0, 16, 32)
-        self.reset_view_iso()
+        self.reset_view_front()
 
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
@@ -273,14 +264,18 @@ class Canvas3D(Gtk.GLArea):
 
         style_context = self.get_style_context()
 
-        # Get background color and set it for OpenGL
-        found, bg_rgba = style_context.lookup_color("view_bg_color")
+        # Get background color and set it for OpenGL. Prioritize the specific
+        # 'view_bg_color', but fall back to the generic 'theme_bg_color'.
+        found, bg_rgba = style_context.lookup_color("theme_bg_color")
+        if not found:
+            found, bg_rgba = style_context.lookup_color("theme_bg_color")
+
         if found:
             GL.glClearColor(
                 bg_rgba.red, bg_rgba.green, bg_rgba.blue, bg_rgba.alpha
             )
         else:
-            GL.glClearColor(0.2, 0.2, 0.25, 1.0)  # Fallback
+            GL.glClearColor(0.2, 0.2, 0.25, 1.0)  # Final fallback
 
         # Get the foreground color for axes and labels
         found, fg_rgba = style_context.lookup_color("view_fg_color")
@@ -312,7 +307,7 @@ class Canvas3D(Gtk.GLArea):
         # If there are new ops waiting, upload them to the GPU.
         # This handles the race condition where set_ops is called before
         # the GL context is initialized.
-        if self._pending_ops and self.ops_renderer:
+        if self._pending_ops is not None and self.ops_renderer:
             logger.debug("Processing pending ops in on_render.")
             self.ops_renderer.update_ops(self._pending_ops)
             self._pending_ops = None  # Consume the pending ops

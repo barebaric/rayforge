@@ -26,7 +26,26 @@ class ActionManager:
         self._add_action("machine_settings", self.win.show_machine_settings)
 
         # View Actions
-        self._add_action("show_3d_view", self.win.on_show_3d_view)
+        self._add_stateful_action(
+            "show_3d_view",
+            self.win.on_show_3d_view,
+            GLib.Variant.new_boolean(False),
+        )
+        self._add_stateful_action(
+            "show_workpieces",
+            self.win.on_show_workpieces_state_change,
+            GLib.Variant.new_boolean(True),  # Default is visible
+        )
+
+        # 3D View Control Actions
+        self._add_action("view_top", self.win.on_view_top)
+        self._add_action("view_front", self.win.on_view_front)
+        self._add_action("view_iso", self.win.on_view_iso)
+        self._add_stateful_action(
+            "view_toggle_perspective",
+            self.win.on_view_perspective_state_change,
+            GLib.Variant.new_boolean(True),  # Default is perspective
+        )
 
         # Edit & Clipboard Actions
         self._add_action(
@@ -111,6 +130,10 @@ class ActionManager:
         app.set_accels_for_action("win.group", ["<Primary>g"])
         app.set_accels_for_action("win.ungroup", ["<Primary><Shift>g"])
         app.set_accels_for_action("win.show_3d_view", ["F12"])
+        app.set_accels_for_action("win.view_top", ["1"])
+        app.set_accels_for_action("win.view_front", ["2"])
+        app.set_accels_for_action("win.view_iso", ["7"])
+        app.set_accels_for_action("win.view_toggle_perspective", ["p"])
         app.set_accels_for_action("win.layout-pixel-perfect", ["a"])
         app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
@@ -169,8 +192,9 @@ class ActionManager:
     ):
         """Helper for a stateful action, typically for toggle buttons."""
         action = Gio.SimpleAction.new_stateful(name, None, initial_state)
-        # For stateful actions, 'change-state' is for handling requests to
-        # change the state.
+        # For stateful actions, we ONLY connect to 'change-state'. The default
+        # 'activate' handler for boolean actions will correctly call this for
+        # us.
         action.connect("change-state", callback)
         self.win.add_action(action)
         self.actions[name] = action
