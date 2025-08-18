@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 from ...core.ops import Ops
 
 if TYPE_CHECKING:
-    from ...importer.base import Importer
+    from ...core.workpiece import WorkPiece
 
 
 class OpsProducer(ABC):
@@ -22,7 +22,7 @@ class OpsProducer(ABC):
         surface,
         pixels_per_mm,
         *,
-        importer: "Optional[Importer]" = None,
+        workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
         pass

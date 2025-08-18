@@ -9,7 +9,6 @@ MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 # It is designed to be run in a separate process by the TaskManager.
 def run_step_in_subprocess(
     proxy: ExecutionContextProxy,
-    # Pass all required state. Assume these are pickleable.
     workpiece_dict: dict[str, Any],
     opsproducer_dict: dict[str, Any],
     modifiers_dict: List[dict],
@@ -46,7 +45,6 @@ def run_step_in_subprocess(
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
     from ..core.ops import Ops, DisableAirAssistCommand
-    from ..importer.base import Importer  # Import for type hinting
 
     logger.debug("Imports completed")
 
@@ -60,10 +58,9 @@ def run_step_in_subprocess(
 
     # Helper functions
     def _trace_and_modify_surface(
-        surface: Optional[Any],  # cairo.ImageSurface is not pickleable
+        surface: Optional[Any],
         scaler: Optional[Tuple[float, float]],
         *,
-        importer: Importer,
         y_offset_mm: float = 0.0,
     ) -> Ops:
         """
@@ -81,8 +78,6 @@ def run_step_in_subprocess(
             scaler: A tuple (pixels_per_mm_x, pixels_per_mm_y) to scale the
                 output to millimeters, or None to get output in pixel
                 coordinates.
-            importer: The importer instance, passed to the producer to allow
-                for fast-path vector extraction.
             y_offset_mm: The vertical offset in mm for the current chunk, used
                 by raster operations.
 
@@ -98,7 +93,7 @@ def run_step_in_subprocess(
             laser,
             surface,
             scaler,
-            importer=importer,
+            workpiece=workpiece,
             y_offset_mm=y_offset_mm,
         )
 
@@ -134,20 +129,14 @@ def run_step_in_subprocess(
             return
 
         # Path 1: True vector source (e.g., SVG).
-        if workpiece.importer.get_vector_ops():
+        if workpiece.source_ops:
             logger.debug(
-                "Vector importer detected. Using direct vector processing"
+                "Workpiece has source_ops. Using direct vector processing."
             )
-            # The producer gets vector data from the importer. `surface` and
-            # `scaler` are None to indicate a non-pixel, unscaled path.
-            geometry_ops = _trace_and_modify_surface(
-                surface=None, scaler=None, importer=workpiece.importer
-            )
-
+            geometry_ops = _trace_and_modify_surface(surface=None, scaler=None)
             # Return the unscaled ops along with their "natural" dimensions.
-            natural_w, natural_h = workpiece.importer.get_natural_size()
-            if natural_w is None or natural_h is None:
-                natural_w, natural_h = 1.0, 1.0  # Fallback
+            natural_size = workpiece.get_natural_size()
+            natural_w, natural_h = natural_size if natural_size else (1.0, 1.0)
 
             yield geometry_ops, (natural_w, natural_h), 1.0
             return
@@ -166,18 +155,14 @@ def run_step_in_subprocess(
             target_height = int(target_height * scale_factor)
 
         # This is a blocking call, which is fine in a subprocess.
-        surface = workpiece.importer.render_to_pixels(
-            width=target_width, height=target_height
-        )
+        surface = workpiece.render_to_pixels(target_width, target_height)
         if not surface:
             return
 
         # The producer (e.g., PotraceProducer) will trace the bitmap.
         # By passing `scaler=None`, it is expected to return ops in PIXEL
         # coordinates with a Y-up convention.
-        geometry_ops = _trace_and_modify_surface(
-            surface, None, importer=workpiece.importer
-        )
+        geometry_ops = _trace_and_modify_surface(surface, None)
 
         yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
         surface.flush()
@@ -230,7 +215,6 @@ def run_step_in_subprocess(
             chunk_ops = _trace_and_modify_surface(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
-                importer=workpiece.importer,
                 y_offset_mm=y_offset_from_top_mm,
             )
 
@@ -297,8 +281,7 @@ def run_step_in_subprocess(
 
     # --- Transform phase ---
     enabled_transformers = [t for t in opstransformers if t.enabled]
-    num_transformers = len(enabled_transformers)
-    if num_transformers > 0:
+    if enabled_transformers:
         transform_context = proxy.sub_context(
             base_progress=execute_weight, progress_range=transform_weight
         )
@@ -312,8 +295,8 @@ def run_step_in_subprocess(
             )
             # Create a proxy for this transformer's slice of the progress bar
             transformer_run_proxy = transform_context.sub_context(
-                base_progress=(i / num_transformers),
-                progress_range=(1 / num_transformers),
+                base_progress=(i / len(enabled_transformers)),
+                progress_range=(1 / len(enabled_transformers)),
             )
             # transformer.run now runs synchronously and may use the proxy
             # to report its own fine-grained progress.

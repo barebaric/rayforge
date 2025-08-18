@@ -350,13 +350,12 @@ class OpsGenerator:
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
         if self.is_paused:
             return
-
-        all_current_pairs = set()
-        for layer in self.doc.layers:
-            for step in layer.workflow.steps:
-                for workpiece in layer.all_workpieces:
-                    all_current_pairs.add((step.uid, workpiece.uid))
-
+        all_current_pairs = {
+            (step.uid, workpiece.uid)
+            for layer in self.doc.layers
+            for step in layer.workflow.steps
+            for workpiece in layer.all_workpieces
+        }
         cached_pairs = set(self._ops_cache.keys())
 
         # Clean up obsolete items

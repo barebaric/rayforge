@@ -7,7 +7,7 @@ from ...core.ops import Ops
 from .base import OpsProducer
 
 if TYPE_CHECKING:
-    from ...importer.base import Importer
+    from ...core.workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
 
@@ -148,8 +148,8 @@ class Rasterizer(OpsProducer):
         surface,
         pixels_per_mm,
         *,
-        importer: "Optional[Importer]" = None,
-        y_offset_mm: float = 0.0
+        workpiece: "Optional[WorkPiece]" = None,
+        y_offset_mm: float = 0.0,
     ):
         width = surface.get_width()
         height = surface.get_height()

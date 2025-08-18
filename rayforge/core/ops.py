@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import logging
 from copy import copy, deepcopy
-from typing import Iterator, List, Optional, Tuple, Generator
+from typing import Iterator, List, Optional, Tuple, Generator, Dict, Any
 from dataclasses import dataclass
 import numpy as np
 
@@ -70,9 +70,18 @@ class Command:
         """Whether it is a non-cutting movement"""
         return False
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the command to a dictionary."""
+        return {"type": self.__class__.__name__}
+
 
 class MovingCommand(Command):
     end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["end"] = self.end
+        return d
 
 
 class MoveToCommand(MovingCommand):
@@ -99,6 +108,12 @@ class ArcToCommand(MovingCommand):
     def is_cutting_command(self) -> bool:
         return True
 
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["center_offset"] = self.center_offset
+        d["clockwise"] = self.clockwise
+        return d
+
 
 class SetPowerCommand(Command):
     def __init__(self, power: int) -> None:
@@ -110,6 +125,11 @@ class SetPowerCommand(Command):
 
     def apply_to_state(self, state: State) -> None:
         state.power = self.power
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["power"] = self.power
+        return d
 
 
 class SetCutSpeedCommand(Command):
@@ -123,6 +143,11 @@ class SetCutSpeedCommand(Command):
     def apply_to_state(self, state: State) -> None:
         state.cut_speed = self.speed
 
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["speed"] = self.speed
+        return d
+
 
 class SetTravelSpeedCommand(Command):
     def __init__(self, speed: int) -> None:
@@ -134,6 +159,11 @@ class SetTravelSpeedCommand(Command):
 
     def apply_to_state(self, state: State) -> None:
         state.travel_speed = self.speed
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["speed"] = self.speed
+        return d
 
 
 class EnableAirAssistCommand(Command):
@@ -163,6 +193,52 @@ class Ops:
         self.commands: List[Command] = []
         self._commands_ref_for_pyreverse: Command
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Ops object to a dictionary."""
+        return {
+            "commands": [cmd.to_dict() for cmd in self.commands],
+            "last_move_to": self.last_move_to,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> Ops:
+        """Deserializes a dictionary into an Ops instance."""
+        new_ops = cls()
+        last_move = tuple(data.get("last_move_to", (0.0, 0.0, 0.0)))
+        assert len(last_move) == 3, "last_move_to must be a 3-tuple"
+        new_ops.last_move_to = last_move
+
+        for cmd_data in data.get("commands", []):
+            cmd_type = cmd_data.get("type")
+            if cmd_type == "MoveToCommand":
+                new_ops.add(MoveToCommand(end=tuple(cmd_data["end"])))
+            elif cmd_type == "LineToCommand":
+                new_ops.add(LineToCommand(end=tuple(cmd_data["end"])))
+            elif cmd_type == "ArcToCommand":
+                new_ops.add(
+                    ArcToCommand(
+                        end=tuple(cmd_data["end"]),
+                        center_offset=tuple(cmd_data["center_offset"]),
+                        clockwise=cmd_data["clockwise"],
+                    )
+                )
+            elif cmd_type == "SetPowerCommand":
+                new_ops.add(SetPowerCommand(power=cmd_data["power"]))
+            elif cmd_type == "SetCutSpeedCommand":
+                new_ops.add(SetCutSpeedCommand(speed=cmd_data["speed"]))
+            elif cmd_type == "SetTravelSpeedCommand":
+                new_ops.add(SetTravelSpeedCommand(speed=cmd_data["speed"]))
+            elif cmd_type == "EnableAirAssistCommand":
+                new_ops.add(EnableAirAssistCommand())
+            elif cmd_type == "DisableAirAssistCommand":
+                new_ops.add(DisableAirAssistCommand())
+            else:
+                logger.warning(
+                    "Skipping unknown command type during deserialization:"
+                    f" {cmd_type}"
+                )
+        return new_ops
 
     def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)

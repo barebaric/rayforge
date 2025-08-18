@@ -1,5 +1,4 @@
 import logging
-import uuid
 import cairo
 from typing import (
     Generator,
@@ -8,18 +7,22 @@ from typing import (
     cast,
     Dict,
     Any,
-    Type,
     TYPE_CHECKING,
 )
-from blinker import Signal
 from pathlib import Path
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
+
 from ..core.ops import Ops
 from .item import DocItem
 from .matrix import Matrix
 
 if TYPE_CHECKING:
-    from ..importer import Importer
     from .layer import Layer
+    from ..importer.base_renderer import Renderer
 
 
 logger = logging.getLogger(__name__)
@@ -27,43 +30,45 @@ logger = logging.getLogger(__name__)
 
 class WorkPiece(DocItem):
     """
-    Represents a real-world workpiece.
-
-    It holds the raw source data (e.g., for an SVG or image) and manages
-    a live importer instance for operations. Its position, scale/size, and
-    rotation are managed through a single transformation matrix, which serves
-    as the single source of truth for its placement on the canvas.
+    Represents a real-world workpiece. It is a lightweight data container,
+    holding its source data (_data, source_ops), its transformation matrix,
+    and a Renderer for display. It is completely decoupled from importers.
     """
 
     def __init__(
         self,
         source_file: Path,
-        data: bytes,
-        importer_class: Type["Importer"],
+        renderer: "Renderer",
+        data: Optional[bytes] = None,
+        source_ops: Optional[Ops] = None,
     ):
         super().__init__(name=source_file.name)
         self.source_file = source_file
+        self.renderer = renderer
         self._data = data
-        self.importer_class = importer_class
+        self.source_ops = source_ops
 
-        # The importer is a live instance created from the raw data.
-        self.importer = self.importer_class(self._data)
+        # The cache for rendered vips images. Key is (width, height).
+        # This is the proper place for this state, not monkey-patched.
+        self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
-    @classmethod
-    def from_ops(cls, ops: Ops, name: str = "Vector Path") -> "WorkPiece":
+    def clear_render_cache(self):
         """
-        Creates a WorkPiece directly from an Ops object. This WorkPiece
-        will not have a source_file, as its content is generated dynamically.
-        It will use a lightweight, internal-only 'OpsImporter'.
+        Invalidates and clears all cached renders for this workpiece.
+        Should be called if the underlying _data or source_ops changes.
         """
-        # We provide placeholder values for the standard constructor arguments
-        # and then overwrite the live importer instance.
-        from ..importer.opsimport import OpsImporter
+        self._render_cache.clear()
 
-        wp = cls(Path(name), b"", OpsImporter)
-        wp.name = name
-        wp.importer = OpsImporter(b"", ops=ops)
-        return wp
+    @property
+    def data(self) -> Optional[bytes]:
+        return self._data
+
+    @data.setter
+    def data(self, new_data: Optional[bytes]):
+        if self._data != new_data:
+            self._data = new_data
+            self.clear_render_cache()
+            self.updated.send(self)
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -87,7 +92,9 @@ class WorkPiece(DocItem):
         """
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
-        world_wp = WorkPiece(self.source_file, self._data, self.importer_class)
+        world_wp = WorkPiece(
+            self.source_file, self.renderer, self._data, self.source_ops
+        )
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.name = self.name
         world_wp.matrix = self.get_world_transform()
@@ -101,95 +108,57 @@ class WorkPiece(DocItem):
         """
         return self.matrix.get_abs_scale()
 
-    def __getstate__(self) -> Dict[str, Any]:
-        """
-        Prepares the object's state for pickling.
-        """
-        state = self.__dict__.copy()
-        state.pop("_parent", None)
-        state.pop("children", None)
-        state.pop("importer", None)
-
-        # Pop all signals defined in DocItem as they cannot be pickled
-        state.pop("updated", None)
-        state.pop("transform_changed", None)
-        state.pop("descendant_added", None)
-        state.pop("descendant_removed", None)
-        state.pop("descendant_updated", None)
-        state.pop("descendant_transform_changed", None)
-
-        rclass = self.importer_class
-        state["_importer_class_name"] = rclass.__name__
-        state.pop("importer_class", None)
-        state["matrix"] = self._matrix.m.tolist()
-        state.pop("_matrix", None)
-        return state
-
-    def __setstate__(self, state: Dict[str, Any]):
-        """
-        Restores the object's state from the pickled state.
-        """
-        from ..importer import importer_by_name
-
-        importer_class_name = state.pop("_importer_class_name")
-        self.importer_class = importer_by_name[importer_class_name]
-        self._matrix = Matrix(state.pop("matrix"))
-        self.__dict__.update(state)
-        self.importer = self.importer_class(self._data)
-
-        # Re-initialize signals as they are not pickled.
-        self.updated = Signal()
-        self.transform_changed = Signal()
-        self.descendant_added = Signal()
-        self.descendant_removed = Signal()
-        self.descendant_updated = Signal()
-        self.descendant_transform_changed = Signal()
-
-        self._parent = None
-        self.children = []
-
     def to_dict(self) -> Dict[str, Any]:
         """
-        Serializes the WorkPiece state to a pickleable dictionary. The matrix
-        is the only geometric property that needs to be saved.
+        Serializes the WorkPiece state to a dictionary.
         """
-        rclass = self.importer_class
         return {
             "uid": self.uid,
-            "name": self.source_file,
-            "matrix": self._matrix.m.tolist(),
+            "name": self.name,
+            "matrix": self._matrix.to_list(),
+            "renderer_name": self.renderer.__class__.__name__,
+            "source_ops": self.source_ops.to_dict()
+            if self.source_ops
+            else None,
             "data": self._data,
-            "importer": rclass.__name__,
+            "source_file": str(self.source_file),
         }
 
     @classmethod
-    def from_dict(cls, data_dict: Dict[str, Any]) -> "WorkPiece":
+    def from_dict(cls, state: Dict[str, Any]) -> "WorkPiece":
         """
-        Deserializes a WorkPiece from a dictionary.
+        Restores a WorkPiece instance from a dictionary.
         """
-        from ..importer import importer_by_name
+        from ..importer import renderer_by_name
+        from ..core.ops import Ops
 
-        importer_class = importer_by_name[data_dict["importer"]]
-        wp = cls(data_dict["name"], data_dict["data"], importer_class)
-        wp.uid = data_dict.get("uid", str(uuid.uuid4()))
-        wp.name = data_dict.get("name") or wp.source_file.name
+        renderer = renderer_by_name[state["renderer_name"]]
+        source_file = Path(state["source_file"])
+        source_ops = (
+            Ops.from_dict(state["source_ops"]) if state["source_ops"] else None
+        )
 
-        if "matrix" in data_dict:
-            wp.matrix = Matrix(data_dict["matrix"])
-        # Backward compatibility for old format with 'size'
-        elif "size" in data_dict and data_dict["size"] is not None:
-            # Reconstruct matrix from old properties
-            pos = data_dict.get("pos", (0.0, 0.0))
-            angle = data_dict.get("angle", 0.0)
-            size = data_dict["size"]
-            w, h = size
-            cx, cy = w / 2, h / 2
-            S = Matrix.scale(w, h)
-            R = Matrix.rotation(angle, center=(cx, cy))
-            T = Matrix.translation(pos[0], pos[1])
-            wp.matrix = T @ R @ S
-
+        wp = cls(
+            source_file=source_file,
+            renderer=renderer,
+            data=state["data"],
+            source_ops=source_ops,
+        )
+        wp.uid = state["uid"]
+        wp.name = state["name"]
+        wp.matrix = Matrix.from_list(state["matrix"])
         return wp
+
+    def get_natural_size(self) -> Optional[Tuple[float, float]]:
+        return self.renderer.get_natural_size(self)
+
+    def get_natural_aspect_ratio(self) -> Optional[float]:
+        size = self.get_natural_size()
+        if size:
+            w, h = size
+            if w and h and h > 0:
+                return w / h
+        return None
 
     def set_pos(self, x_mm: float, y_mm: float):
         """Legacy method, use property `pos` instead."""
@@ -204,11 +173,11 @@ class WorkPiece(DocItem):
     ) -> Tuple[float, float]:
         """Calculates a sensible default size based on the content's aspect
         ratio and the provided container bounds."""
-        size = self.importer.get_natural_size()
+        size = self.get_natural_size()
         if size and None not in size:
             return cast(Tuple[float, float], size)
 
-        aspect = self.get_default_aspect_ratio()
+        aspect = self.get_natural_aspect_ratio()
         if aspect is None:
             return bounds_width, bounds_height
 
@@ -220,30 +189,14 @@ class WorkPiece(DocItem):
 
         return width_mm, height_mm
 
-    def get_default_aspect_ratio(self):
-        return self.importer.get_aspect_ratio()
-
     def get_current_aspect_ratio(self) -> Optional[float]:
         w, h = self.size
         return w / h if h else None
 
-    @classmethod
-    def from_file(cls, filename: Path, importer_class: type["Importer"]):
-        data = filename.read_bytes()
-        wp = cls(filename, data, importer_class)
-
-        # A new workpiece is created at 1x1mm. We must immediately resize it
-        # to a sensible default based on its natural size and the machine
-        # dimensions.
-        from ..config import config
-
-        bounds_w, bounds_h = (
-            config.machine.dimensions if config.machine else (100.0, 100.0)
-        )
-        default_w, default_h = wp.get_default_size(bounds_w, bounds_h)
-        wp.set_size(default_w, default_h)
-
-        return wp
+    def render_to_pixels(
+        self, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        return self.renderer.render_to_pixels(self, width, height)
 
     def render_for_ops(
         self,
@@ -263,14 +216,14 @@ class WorkPiece(DocItem):
         target_width_px = int(width_mm * pixels_per_mm_x)
         target_height_px = int(height_mm * pixels_per_mm_y)
 
-        return self.importer.render_to_pixels(
-            width=target_width_px, height=target_height_px
+        return self.renderer.render_to_pixels(
+            self, target_width_px, target_height_px
         )
 
     def render_chunk(
         self,
-        pixels_per_mm_x: int,
-        pixels_per_mm_y: int,
+        pixels_per_mm_x: float,
+        pixels_per_mm_y: float,
         max_chunk_width: Optional[int] = None,
         max_chunk_height: Optional[int] = None,
         max_memory_size: Optional[int] = None,
@@ -287,7 +240,8 @@ class WorkPiece(DocItem):
         width = int(current_size[0] * pixels_per_mm_x)
         height = int(current_size[1] * pixels_per_mm_y)
 
-        yield from self.importer.render_chunk(
+        yield from self.renderer.render_chunk(
+            self,
             width,
             height,
             max_chunk_width=max_chunk_width,
@@ -296,7 +250,9 @@ class WorkPiece(DocItem):
         )
 
     def dump(self, indent=0):
-        print("  " * indent, self.source_file, self.importer.label)
+        print(
+            "  " * indent, self.source_file, self.renderer.__class__.__name__
+        )
 
     @property
     def pos_machine(self) -> Optional[Tuple[float, float]]:

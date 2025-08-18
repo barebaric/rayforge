@@ -1,9 +1,9 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List, Tuple
 from gi.repository import Gtk, Gio, GLib
-from ..core.workpiece import WorkPiece
+from ..core.item import DocItem
 from ..importer import importers, importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
 from ..shared.tasker import task_mgr
@@ -16,6 +16,58 @@ if TYPE_CHECKING:
     from ..mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
+
+
+def _calculate_items_bbox(
+    items: List[DocItem],
+) -> Optional[Tuple[float, float, float, float]]:
+    """
+    Calculates the world-space bounding box that encloses a list of DocItems
+    by taking the union of their individual bboxes.
+    """
+    if not items:
+        return None
+
+    # Get the bbox of the first item to initialize the bounds.
+    min_x, min_y, w, h = items[0].bbox
+    max_x = min_x + w
+    max_y = min_y + h
+
+    # Expand the bounds with the bboxes of the other items.
+    for item in items[1:]:
+        ix, iy, iw, ih = item.bbox
+        min_x = min(min_x, ix)
+        min_y = min(min_y, iy)
+        max_x = max(max_x, ix + iw)
+        max_y = max(max_y, iy + ih)
+
+    return min_x, min_y, max_x - min_x, max_y - min_y
+
+
+def _center_imported_items(items: List[DocItem]):
+    """
+    Calculates the collective bounding box of the imported items and
+    translates them to the center of the machine workspace.
+    """
+    if not config.machine:
+        return  # Cannot center if machine dimensions are unknown
+
+    bbox = _calculate_items_bbox(items)
+    if not bbox:
+        return
+
+    bbox_x, bbox_y, bbox_w, bbox_h = bbox
+    machine_w, machine_h = config.machine.dimensions
+
+    # Calculate the translation needed to move the bbox center to the
+    # machine center
+    delta_x = (machine_w / 2) - (bbox_x + bbox_w / 2)
+    delta_y = (machine_h / 2) - (bbox_y + bbox_h / 2)
+
+    # Apply the same translation to all top-level imported items
+    for item in items:
+        current_pos_x, current_pos_y = item.pos
+        item.pos = (current_pos_x + delta_x, current_pos_y + delta_y)
 
 
 def import_file(win: "MainWindow"):
@@ -31,10 +83,12 @@ def import_file(win: "MainWindow"):
     all_supported.set_name(_("All supported"))
     for importer_class in importers:
         file_filter = Gtk.FileFilter()
-        file_filter.set_name(_(importer_class.label))
-        for mime_type in importer_class.mime_types:
-            file_filter.add_mime_type(mime_type)
-            all_supported.add_mime_type(mime_type)
+        if importer_class.label:
+            file_filter.set_name(_(importer_class.label))
+        if importer_class.mime_types:
+            for mime_type in importer_class.mime_types:
+                file_filter.add_mime_type(mime_type)
+                all_supported.add_mime_type(mime_type)
         filter_list.append(file_filter)
     filter_list.append(all_supported)
 
@@ -67,8 +121,8 @@ def load_file_from_path(
     win: "MainWindow", filename: Path, mime_type: Optional[str]
 ):
     """
-    Orchestrates the loading of a specific file path using the new
-    hierarchical importer architecture.
+    Orchestrates the loading of a specific file path using the
+    importer.
     """
     importer_class = None
     if mime_type:
@@ -84,7 +138,7 @@ def load_file_from_path(
 
     try:
         file_data = filename.read_bytes()
-        importer = importer_class(file_data)
+        importer = importer_class(file_data, source_file=filename)
     except Exception as e:
         logger.error(
             f"Failed to instantiate importer for {filename.name}: {e}"
@@ -93,9 +147,10 @@ def load_file_from_path(
 
     cmd_name = _("Import {name}").format(name=filename.name)
 
-    # 1. Attempt hierarchical import.
     imported_items = importer.get_doc_items()
     if imported_items:
+        _center_imported_items(imported_items)
+
         with win.doc.history_manager.transaction(cmd_name) as t:
             for item in imported_items:
                 command = ListItemCommand(
@@ -107,45 +162,8 @@ def load_file_from_path(
                 t.execute(command)
         # Hide properties widget in case something was selected before import
         win.item_revealer.set_reveal_child(False)
-        return
-
-    # 2. Fallback to flat vector import.
-    ops = importer.get_vector_ops()
-    if ops and not ops.is_empty():
-        wp = WorkPiece.from_ops(ops, name=filename.name)
-        _center_new_workpiece(win, wp)
-        command = ListItemCommand(
-            owner_obj=win.doc.active_layer,
-            item=wp,
-            undo_command="remove_workpiece",
-            redo_command="add_workpiece",
-            name=cmd_name,
-        )
-        win.doc.history_manager.execute(command)
-        win.item_revealer.set_reveal_child(False)
-        return
-
-    # 3. Final fallback for raster/other types
-    wp = WorkPiece.from_file(filename, importer_class)
-    _center_new_workpiece(win, wp)
-    command = ListItemCommand(
-        owner_obj=win.doc.active_layer,
-        item=wp,
-        undo_command="remove_workpiece",
-        redo_command="add_workpiece",
-        name=cmd_name,
-    )
-    win.doc.history_manager.execute(command)
-    win.item_revealer.set_reveal_child(False)
-
-
-def _center_new_workpiece(win: "MainWindow", wp: WorkPiece):
-    """Helper method to contain the centering logic for single items."""
-    wswidth_mm, wsheight_mm = win.surface.get_size_mm()
-    wp_width_mm, wp_height_mm = wp.size
-    x_mm = (wswidth_mm - wp_width_mm) / 2
-    y_mm = (wsheight_mm - wp_height_mm) / 2
-    wp.pos = (x_mm, y_mm)
+    else:
+        logger.error(f"Failed to import any items from '{filename.name}'.")
 
 
 def _on_save_dialog_response(dialog, result, win: "MainWindow"):
@@ -160,7 +178,7 @@ def _on_save_dialog_response(dialog, result, win: "MainWindow"):
 
     def write_gcode_sync(path, gcode):
         """Blocking I/O function to be run in a thread."""
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(gcode)
 
     async def export_coro(context: ExecutionContext):

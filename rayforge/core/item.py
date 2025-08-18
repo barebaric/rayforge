@@ -58,6 +58,15 @@ class DocItem(ABC):
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
 
+    @property
+    def bbox(self) -> Tuple[float, float, float, float]:
+        """
+        The world-space bounding box of the item as (x, y, width, height).
+        """
+        x, y = self.pos
+        w, h = self.size
+        return x, y, w, h
+
     @abstractmethod
     def to_dict(self) -> Dict:
         """Serializes the item to a dictionary."""

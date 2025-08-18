@@ -409,7 +409,7 @@ class WorkPieceView(CanvasElement):
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """Renders the base workpiece content to a new surface."""
-        return self.data.importer.render_to_pixels(width=width, height=height)
+        return self.data.render_to_pixels(width=width, height=height)
 
     def draw(self, ctx: cairo.Context):
         """Draws the element's content and ops overlays.
