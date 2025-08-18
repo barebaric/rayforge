@@ -224,22 +224,24 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_hexpand(True)
 
         # Create the 3D canvas
-        self.canvas3d = Canvas3D(
-            self.doc,
-            width_mm=width_mm,
-            depth_mm=height_mm,
-            y_down=y_down,
-            parent=self,
-        )
-
-        # Create a stack to switch between 2D and 3D views
         self.view_stack = Gtk.Stack()
         self.view_stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
         )
         self.view_stack.add_named(self.surface, "2d")
-        self.view_stack.add_named(self.canvas3d, "3d")
         self.frame.set_child(self.view_stack)
+
+        if canvas3d_initialized:
+            self.canvas3d = Canvas3D(
+                self.doc,
+                width_mm=width_mm,
+                depth_mm=height_mm,
+                y_down=y_down,
+                parent=self,
+            )
+
+            # Create a stack to switch between 2D and 3D views
+            self.view_stack.add_named(self.canvas3d, "3d")
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(self.doc.history_manager)

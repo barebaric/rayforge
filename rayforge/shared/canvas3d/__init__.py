@@ -21,7 +21,7 @@ def initialize():
     point before any UI is created.
     """
     global initialized, initialization_error
-    if initialized:
+    if initialized or initialization_error:
         return
 
     try:
@@ -62,9 +62,14 @@ def initialize():
 # or unconditional imports elsewhere don't break. The 'initialized' flag
 # remains the definitive source of truth for canvas availability.
 try:
-    from .canvas3d import Canvas3D
-    from .dialog import Canvas3DDialog
-except ImportError:
+    from .canvas3d import Canvas3D  # type: ignore
+    from .dialog import Canvas3DDialog  # type: ignore
+except Exception as e:
+    logger.exception(
+        "Failed to import Canvas3D or Canvas3DDialog. "
+        "The 3D canvas will not be available."
+    )
+    initialization_error = f"Canvas3D import failed: {e}"
 
     class Canvas3D:
         """A placeholder class for when the 3D canvas fails to initialize."""
