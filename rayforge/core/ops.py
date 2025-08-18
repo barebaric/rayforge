@@ -180,6 +180,10 @@ class Ops:
     def __len__(self) -> int:
         return len(self.commands)
 
+    def is_empty(self) -> bool:
+        """Checks if the Ops object contains any commands."""
+        return not self.commands
+
     def copy(self) -> Ops:
         """Creates a deep copy of the Ops object."""
         new_ops = Ops()

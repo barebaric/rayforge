@@ -7,17 +7,22 @@ from ezdxf import DXFStructureError  # type: ignore[reportPrivateImportUsage]
 import ezdxf.math
 from ezdxf.addons import text2path
 import warnings
+from copy import deepcopy
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 import xml.etree.ElementTree as ET
-from typing import Generator, Optional, Tuple, Iterable, List
+from typing import Generator, Optional, Tuple, Iterable, List, Dict
 
 import cairo
 from .svg import SvgImporter
 from .base import Importer
 from ..core.ops import Ops
+from ..core.item import DocItem
+from ..core.group import Group
+from ..core.workpiece import WorkPiece
+from ..core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,7 @@ class DxfImporter(Importer):
         """
         self.raw_data = data
         self._ops_cache: Optional[Ops] = None
+        self._blocks_cache: Dict[str, List[DocItem]] = {}
         svg_data = self._convert_dxf_to_svg(data)
         self._svg_importer = SvgImporter(svg_data)
 
@@ -90,6 +96,180 @@ class DxfImporter(Importer):
             overlap_x,
             overlap_y,
         )
+
+    def get_doc_items(self) -> "Optional[List[DocItem]]":
+        """
+        Parses the DXF data hierarchically, converting BLOCKs and INSERTs
+        into Group and WorkPiece objects.
+        """
+        try:
+            data_str = self.raw_data.decode("utf-8")
+        except UnicodeDecodeError:
+            data_str = self.raw_data.decode("ascii", errors="replace")
+        data_str = data_str.replace("\r\n", "\n")
+
+        try:
+            doc = ezdxf.read(io.StringIO(data_str))  # type: ignore
+        except DXFStructureError:
+            return []
+
+        bounds = self._get_bounds_mm(doc)
+        if not bounds or not bounds[2] or not bounds[3]:
+            return []
+
+        scale = self._get_scale_to_mm(doc)
+        min_x_mm, min_y_mm, _, _ = bounds
+
+        # 1. Pre-process and cache all block definitions
+        self._prepare_blocks_cache(doc, scale, min_x_mm, min_y_mm)
+
+        # 2. Process the main modelspace to generate top-level items
+        return self._entities_to_doc_items(
+            doc.modelspace(), doc, scale, min_x_mm, min_y_mm
+        )
+
+    def _prepare_blocks_cache(self, doc, scale: float, tx: float, ty: float):
+        """
+        Iterates through all block definitions, parses them into DocItem lists,
+        and stores them in an instance cache.
+        """
+        self._blocks_cache.clear()
+        for block in doc.blocks:
+            # The base transform for items inside a block is identity, as their
+            # final position is determined by the INSERT entity's transform.
+            block_items = self._entities_to_doc_items(
+                block,
+                doc,
+                scale,
+                tx,
+                ty,
+                parent_transform=ezdxf.math.Matrix44(),
+            )
+            self._blocks_cache[block.name] = block_items
+
+    def _entities_to_doc_items(
+        self,
+        entities: Iterable["ezdxf.entities.DXFEntity"],  # type: ignore
+        doc: "ezdxf.document.Drawing",  # type: ignore
+        scale: float,
+        tx: float,
+        ty: float,
+        parent_transform: Optional[ezdxf.math.Matrix44] = None,
+    ) -> List[DocItem]:
+        """
+        Recursively processes entities, converting them to a list of DocItems.
+        Primitive shapes are bundled into WorkPieces. INSERTs become Groups.
+        """
+        result_items: List[DocItem] = []
+        current_ops = Ops()
+
+        # This is the global transformation that moves the entire DXF drawing
+        # from its native coordinate system to the application's (0,0) origin.
+        global_transform = Matrix.translation(-tx, -ty) @ Matrix.scale(
+            scale, scale
+        )
+
+        def flush_ops():
+            nonlocal current_ops
+            if not current_ops.is_empty():
+                wp = WorkPiece.from_ops(current_ops, "Vector Path")
+
+                # --- THIS IS THE CORRECTED SIZING/POSITIONING LOGIC ---
+                min_x_dxf, min_y_dxf, max_x_dxf, max_y_dxf = current_ops.rect()
+
+                # Transform the bounding box corners to final millimeter space
+                p1_mm = global_transform.transform_point(
+                    (min_x_dxf, min_y_dxf)
+                )
+                p2_mm = global_transform.transform_point(
+                    (max_x_dxf, max_y_dxf)
+                )
+
+                # Calculate final position and size in millimeters
+                pos_x_mm = p1_mm[0]
+                pos_y_mm = p1_mm[1]
+                width_mm = p2_mm[0] - p1_mm[0]
+                height_mm = p2_mm[1] - p1_mm[1]
+
+                # Create the final matrix from the millimeter-space values
+                wp.matrix = Matrix.translation(
+                    pos_x_mm, pos_y_mm
+                ) @ Matrix.scale(width_mm, height_mm)
+
+                result_items.append(wp)
+                current_ops = Ops()
+
+        for entity in entities:
+            dxftype = entity.dxftype()
+            if dxftype == "INSERT":
+                flush_ops()
+                block_def = self._blocks_cache.get(entity.dxf.name)
+                if not block_def:
+                    continue
+
+                group = Group(name=entity.dxf.name)
+                group.set_children(deepcopy(block_def))
+
+                insert_matrix44 = entity.matrix44()
+                world_transform44 = (
+                    parent_transform @ insert_matrix44
+                    if parent_transform
+                    else insert_matrix44
+                )
+
+                ux = world_transform44.ux
+                uy = world_transform44.uy
+                insert_pos = world_transform44.get_pos()
+
+                group_local_matrix = Matrix(
+                    [
+                        [ux.x, uy.x, insert_pos.x],
+                        [ux.y, uy.y, insert_pos.y],
+                        [0, 0, 1],
+                    ]
+                )
+
+                # Apply the global transformation to the group as well.
+                group.matrix = global_transform @ group_local_matrix
+
+                result_items.append(group)
+
+            elif dxftype == "LINE":
+                self._line_to_ops(
+                    current_ops, entity, 1.0, 0, 0, parent_transform
+                )
+            elif dxftype in (
+                "CIRCLE",
+                "LWPOLYLINE",
+                "ARC",
+                "ELLIPSE",
+                "SPLINE",
+                "POLYLINE",
+                "HATCH",
+                "TEXT",
+                "MTEXT",
+            ):
+                handler_map = {
+                    "CIRCLE": self._poly_approx_to_ops,
+                    "LWPOLYLINE": self._lwpolyline_to_ops,
+                    "ARC": self._arc_to_ops,
+                    "ELLIPSE": self._poly_approx_to_ops,
+                    "SPLINE": self._poly_approx_to_ops,
+                    "POLYLINE": self._polyline_to_ops,
+                    "HATCH": self._hatch_to_ops,
+                    "TEXT": self._text_to_ops,
+                    "MTEXT": self._text_to_ops,
+                }
+                handler_map[dxftype](
+                    current_ops, entity, 1.0, 0, 0, parent_transform
+                )
+            else:
+                logger.warning(
+                    f"DXF with unsupported entity {dxftype}, skipping"
+                )
+
+        flush_ops()
+        return result_items
 
     def get_vector_ops(self) -> "Optional[Ops]":
         """

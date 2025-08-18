@@ -2,6 +2,7 @@
 import inspect
 from .base import Importer
 from .dxf import DxfImporter
+from .opsimport import OpsImporter
 from .pdf import PdfImporter
 from .png import PngImporter
 from .ruida import RuidaImporter
@@ -28,6 +29,7 @@ for base in importers:
 
 __all__ = [
     "DxfImporter",
+    "OpsImporter",
     "PdfImporter",
     "PngImporter",
     "RuidaImporter",

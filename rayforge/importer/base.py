@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generator, Optional, Tuple, cast, TYPE_CHECKING
+from typing import Generator, Optional, Tuple, cast, TYPE_CHECKING, List
 import cairo
 import math
 import logging
@@ -11,6 +11,7 @@ with warnings.catch_warnings():
 
 if TYPE_CHECKING:
     from ..core.ops import Ops
+    from ..core.item import DocItem
 
 logger = logging.getLogger(__name__)
 
@@ -217,5 +218,20 @@ class Importer(ABC):
         return a direct, high-fidelity translation of it into an Ops object.
 
         For raster-based importers, this method should return None.
+        """
+        return None
+
+    def get_doc_items(self) -> "Optional[List[DocItem]]":
+        """
+        If the underlying source data contains a hierarchical structure (like
+        groups or layers), this method should parse it and return a list of
+        top-level DocItems (WorkPieces and/or Groups).
+
+        The returned items should be fully configured but unparented. Their
+        transformation matrices should represent their position and scale
+        relative to the document's origin.
+
+        If the importer does not support hierarchical import, it should
+        return None.
         """
         return None

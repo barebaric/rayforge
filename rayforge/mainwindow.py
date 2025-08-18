@@ -12,7 +12,6 @@ from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.group import Group
-from .core.workpiece import WorkPiece
 from .core.item import DocItem
 from .core.workflow import Workflow
 from .pipeline.steps import (
@@ -22,12 +21,11 @@ from .pipeline.steps import (
 )
 from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
-from .importer import importers, importer_by_mime_type, importer_by_extension
-from .undo import HistoryManager, Command, ListItemCommand, ReorderListCommand
+from .undo import HistoryManager, Command, ReorderListCommand
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
-from .doceditor import edit_cmd
+from .doceditor import edit_cmd, file_cmd
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
@@ -814,32 +812,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.close()
 
     def on_menu_import(self, action, param=None):
-        self.on_open_clicked(self)
+        file_cmd.import_file(self)
 
     def on_open_clicked(self, sender):
-        # Create a file chooser dialog
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Open File"))
-
-        # Create a Gio.ListModel for the filters
-        filter_list = Gio.ListStore.new(Gtk.FileFilter)
-        all_supported = Gtk.FileFilter()
-        all_supported.set_name(_("All supported"))
-        for importer in importers:
-            file_filter = Gtk.FileFilter()
-            file_filter.set_name(_(importer.label))
-            for mime_type in importer.mime_types:
-                file_filter.add_mime_type(mime_type)
-                all_supported.add_mime_type(mime_type)
-            filter_list.append(file_filter)
-        filter_list.append(all_supported)
-
-        # Set the filters for the dialog
-        dialog.set_filters(filter_list)
-        dialog.set_default_filter(all_supported)
-
-        # Show the dialog and handle the response
-        dialog.open(self, None, self.on_file_dialog_response)
+        file_cmd.import_file(self)
 
     def on_camera_image_visibility_toggled(self, sender, active):
         self.surface.set_camera_image_visibility(active)
@@ -1018,78 +994,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Add the coroutine to the task manager
         task_mgr.add_coroutine(export_coro, key="export-gcode")
 
-    def on_file_dialog_response(self, dialog, result):
-        try:
-            # Get the selected file
-            file = dialog.open_finish(result)
-            if file:
-                # Load the SVG file and convert it to a grayscale surface
-                file_path = Path(file.get_path())
-                file_info = file.query_info(
-                    Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                    Gio.FileQueryInfoFlags.NONE,
-                    None,
-                )
-                mime_type = file_info.get_content_type()
-                self.load_file(file_path, mime_type)
-        except GLib.Error as e:
-            logger.error(f"Error opening file: {e.message}")
-
     def load_file(self, filename: Path, mime_type: Optional[str]):
-        importer = None
-
-        # 1. Try to find a importer by the provided MIME type.
-        # This is the most reliable method for standard file types.
-        if mime_type:
-            importer = importer_by_mime_type.get(mime_type)
-
-        # 2. If no importer was found by MIME type, fall back to the file's
-        # extension.
-        # This is crucial for:
-        #  a) Custom file types not in the system's MIME database (e.g., .rd).
-        #  b) Incorrect MIME database entries (e.g., .rd as a chemistry file).
-        #  c) Cases where no MIME type is provided.
-        if not importer:
-            # The key in importer_by_extension includes the dot (e.g., '.svg').
-            file_extension = filename.suffix.lower()
-            if file_extension:
-                importer = importer_by_extension.get(file_extension)
-
-        if not importer:
-            logger.error(
-                f"No importer found for '{filename.name}' "
-                f"(MIME type: {mime_type}). "
-                f"Could not determine file type from MIME or extension. "
-                f"Supported extensions: {list(importer_by_extension.keys())}"
-            )
-            return
-
-        wp = WorkPiece.from_file(filename, importer)
-
-        # The workpiece is created with a sensible size but is positioned
-        # near the origin. We now center it on the work surface.
-        wswidth_mm, wsheight_mm = self.surface.get_size_mm()
-        wp_width_mm, wp_height_mm = wp.size
-
-        # Center the workpiece on the surface.
-        x_mm = (wswidth_mm - wp_width_mm) / 2
-        y_mm = (wsheight_mm - wp_height_mm) / 2
-        # Using the property setter correctly rebuilds the matrix.
-        wp.pos = (x_mm, y_mm)
-
-        cmd_name = _("Import {name}").format(name=filename.name)
-        command = ListItemCommand(
-            owner_obj=self.doc.active_layer,
-            item=wp,
-            undo_command="remove_workpiece",
-            redo_command="add_workpiece",
-            name=cmd_name,
-        )
-        self.doc.history_manager.execute(command)
-
-        # A workpiece is not selected by default on import,
-        # so ensure the properties widget is hidden.
-        self.item_revealer.set_reveal_child(False)
+        """
+        Loads a file from a path, typically from the command line.
+        This is now a simple wrapper around the centralized command.
+        """
+        file_cmd.load_file_from_path(self, filename, mime_type)
 
     def on_cut_requested(self, sender, items: List[DocItem]):
         """Handles the 'cut-requested' signal from the WorkSurface."""

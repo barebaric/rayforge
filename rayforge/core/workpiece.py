@@ -13,11 +13,12 @@ from typing import (
 )
 from blinker import Signal
 from pathlib import Path
-from ..importer import Importer, importer_by_name
+from ..core.ops import Ops
 from .item import DocItem
 from .matrix import Matrix
 
 if TYPE_CHECKING:
+    from ..importer import Importer
     from .layer import Layer
 
 
@@ -38,7 +39,7 @@ class WorkPiece(DocItem):
         self,
         source_file: Path,
         data: bytes,
-        importer_class: Type[Importer],
+        importer_class: Type["Importer"],
     ):
         super().__init__(name=source_file.name)
         self.source_file = source_file
@@ -46,7 +47,23 @@ class WorkPiece(DocItem):
         self.importer_class = importer_class
 
         # The importer is a live instance created from the raw data.
-        self.importer: Importer = self.importer_class(self._data)
+        self.importer = self.importer_class(self._data)
+
+    @classmethod
+    def from_ops(cls, ops: Ops, name: str = "Vector Path") -> "WorkPiece":
+        """
+        Creates a WorkPiece directly from an Ops object. This WorkPiece
+        will not have a source_file, as its content is generated dynamically.
+        It will use a lightweight, internal-only 'OpsImporter'.
+        """
+        # We provide placeholder values for the standard constructor arguments
+        # and then overwrite the live importer instance.
+        from ..importer.opsimport import OpsImporter
+
+        wp = cls(Path(name), b"", OpsImporter)
+        wp.name = name
+        wp.importer = OpsImporter(b"", ops=ops)
+        return wp
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -112,6 +129,8 @@ class WorkPiece(DocItem):
         """
         Restores the object's state from the pickled state.
         """
+        from ..importer import importer_by_name
+
         importer_class_name = state.pop("_importer_class_name")
         self.importer_class = importer_by_name[importer_class_name]
         self._matrix = Matrix(state.pop("matrix"))
@@ -148,6 +167,8 @@ class WorkPiece(DocItem):
         """
         Deserializes a WorkPiece from a dictionary.
         """
+        from ..importer import importer_by_name
+
         importer_class = importer_by_name[data_dict["importer"]]
         wp = cls(data_dict["name"], data_dict["data"], importer_class)
         wp.uid = data_dict.get("uid", str(uuid.uuid4()))
@@ -207,7 +228,7 @@ class WorkPiece(DocItem):
         return w / h if h else None
 
     @classmethod
-    def from_file(cls, filename: Path, importer_class: type[Importer]):
+    def from_file(cls, filename: Path, importer_class: type["Importer"]):
         data = filename.read_bytes()
         wp = cls(filename, data, importer_class)
 
