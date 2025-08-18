@@ -1,10 +1,16 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GLib
 from ..core.workpiece import WorkPiece
 from ..importer import importers, importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
+from ..shared.tasker import task_mgr
+from ..shared.tasker.context import ExecutionContext
+from ..config import config
+from ..pipeline.job import generate_job_ops
+from ..pipeline.encoder.gcode import GcodeEncoder
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
@@ -35,10 +41,10 @@ def import_file(win: "MainWindow"):
     dialog.set_filters(filter_list)
     dialog.set_default_filter(all_supported)
 
-    dialog.open(win, None, _on_file_dialog_response, win)
+    dialog.open(win, None, _on_import_dialog_response, win)
 
 
-def _on_file_dialog_response(dialog, result, win: "MainWindow"):
+def _on_import_dialog_response(dialog, result, win: "MainWindow"):
     """Callback for when the user selects a file from the dialog."""
     try:
         file = dialog.open_finish(result)
@@ -140,3 +146,74 @@ def _center_new_workpiece(win: "MainWindow", wp: WorkPiece):
     x_mm = (wswidth_mm - wp_width_mm) / 2
     y_mm = (wsheight_mm - wp_height_mm) / 2
     wp.pos = (x_mm, y_mm)
+
+
+def _on_save_dialog_response(dialog, result, win: "MainWindow"):
+    try:
+        file = dialog.save_finish(result)
+        if not file:
+            return
+        file_path = Path(file.get_path())
+    except GLib.Error as e:
+        logger.error(f"Error saving file: {e.message}")
+        return
+
+    def write_gcode_sync(path, gcode):
+        """Blocking I/O function to be run in a thread."""
+        with open(path, "w") as f:
+            f.write(gcode)
+
+    async def export_coro(context: ExecutionContext):
+        machine = config.machine
+        if not machine:
+            return
+
+        try:
+            # 1. Generate Ops (async, reports progress)
+            ops = await generate_job_ops(
+                win.doc, machine, win.surface.ops_generator, context
+            )
+
+            # 2. Encode G-code (sync, but usually fast)
+            context.set_message(_("Encoding G-code..."))
+            encoder = GcodeEncoder.for_machine(machine)
+            gcode = encoder.encode(ops, machine)
+
+            # 3. Write to file (sync, potentially slow, run in thread)
+            context.set_message(_(f"Saving to {file_path}..."))
+            await asyncio.to_thread(write_gcode_sync, file_path, gcode)
+
+            context.set_message(_("Export complete!"))
+            context.set_progress(1.0)
+            context.flush()
+
+        except Exception:
+            logger.error("Failed to export G-code", exc_info=True)
+            raise  # Re-raise to be caught by the task manager
+
+    # Add the coroutine to the task manager
+    task_mgr.add_coroutine(export_coro, key="export-gcode")
+
+
+def export_gcode(win: "MainWindow"):
+    """Shows the save file dialog and handles the G-code export process."""
+    # Create a file chooser dialog for saving the file
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Save G-code File"))
+
+    # Set the default file name
+    dialog.set_initial_name("output.gcode")
+
+    # Create a Gio.ListModel for the filters
+    filter_list = Gio.ListStore.new(Gtk.FileFilter)
+    gcode_filter = Gtk.FileFilter()
+    gcode_filter.set_name(_("G-code files"))
+    gcode_filter.add_mime_type("text/x.gcode")
+    filter_list.append(gcode_filter)
+
+    # Set the filters for the dialog
+    dialog.set_filters(filter_list)
+    dialog.set_default_filter(gcode_filter)
+
+    # Show the dialog and handle the response
+    dialog.save(win, None, _on_save_dialog_response, win)
