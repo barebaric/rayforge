@@ -1,4 +1,6 @@
 import io
+import json
+import logging
 from copy import deepcopy
 from typing import Iterable, Optional, List, Dict, Tuple
 import ezdxf
@@ -14,6 +16,8 @@ from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ..base_importer import Importer
 from .renderer import DXF_RENDERER
+
+logger = logging.getLogger(__name__)
 
 # Mapping of DXF units to millimeters
 units_to_mm = {
@@ -41,9 +45,8 @@ class DxfImporter(Importer):
     def get_doc_items(self) -> Optional[List[DocItem]]:
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
-            doc = ezdxf.read(  # type: ignore
-                io.StringIO(data_str.replace("\r\n", "\n"))
-            )
+            normalized_str = data_str.replace("\r\n", "\n")
+            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError:
             return []
 
@@ -85,26 +88,40 @@ class DxfImporter(Importer):
         """
         result_items: List[DocItem] = []
         current_ops = Ops()
+        current_solids: List[List[Tuple[float, float]]] = []
 
         def flush_ops_to_workpiece():
             """
-            Converts the accumulated Ops into a single, normalized WorkPiece.
+            Converts the accumulated Ops and solid data into a single,
+            normalized WorkPiece.
             """
-            nonlocal current_ops
+            nonlocal current_ops, current_solids
             if current_ops.is_empty():
                 return
 
             min_x, min_y, max_x, max_y = current_ops.rect()
 
-            # Normalize ops to have their origin at (0,0)
+            # Normalize ops and solids to have their origin at (0,0)
             normalized_ops = current_ops.copy()
             normalized_ops.translate(-min_x, -min_y)
 
+            normalized_solids = [
+                [(p[0] - min_x, p[1] - min_y) for p in solid]
+                for solid in current_solids
+            ]
+
+            # Serialize solid data for the renderer
+            wp_data = None
+            if normalized_solids:
+                wp_data = json.dumps({"solids": normalized_solids}).encode(
+                    "utf-8"
+                )
+
             wp = WorkPiece(
                 source_file=self.source_file,
-                # FIX: Use the consistent DXF_RENDERER alias
                 renderer=DXF_RENDERER,
                 source_ops=normalized_ops,
+                data=wp_data,  # Store the renderer-specific data
             )
 
             # Set the workpiece's matrix to position and scale it correctly.
@@ -116,6 +133,7 @@ class DxfImporter(Importer):
 
             result_items.append(wp)
             current_ops = Ops()
+            current_solids = []
 
         for entity in entities:
             if entity.dxftype() == "INSERT":
@@ -149,6 +167,18 @@ class DxfImporter(Importer):
                 group.matrix = global_transform @ instance_matrix
 
                 result_items.append(group)
+
+            elif entity.dxftype() == "SOLID":
+                # A SOLID contributes to both Ops (outline) and data (fill)
+                self._solid_to_ops_and_data(
+                    current_ops,
+                    current_solids,
+                    entity,
+                    scale,
+                    tx,
+                    ty,
+                    parent_transform,
+                )
             else:
                 # Append vector data from other entities to the current Ops.
                 self._entity_to_ops(
@@ -175,6 +205,11 @@ class DxfImporter(Importer):
         handler = handler_map.get(entity.dxftype())
         if handler:
             handler(ops, entity, scale, tx, ty, transform)
+        else:
+            logger.warning(
+                f"Unsupported DXF entity type: {entity.dxftype()}. "
+                "Skipping entity."
+            )
 
     def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
         insunits = doc.header.get("$INSUNITS", 0)
@@ -204,13 +239,13 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
-    ):
+    ) -> Optional[List[Tuple[float, float]]]:
         if not points:
-            return
+            return None
         if transform:
             points = list(transform.transform_vertices(points))
         if not points:
-            return
+            return None
         scaled_points = [
             ((p.x * scale) - tx, (p.y * scale) - ty) for p in points
         ]
@@ -219,6 +254,31 @@ class DxfImporter(Importer):
             ops.line_to(x, y)
         if is_closed:
             ops.line_to(scaled_points[0][0], scaled_points[0][1])
+        return scaled_points
+
+    def _solid_to_ops_and_data(
+        self,
+        ops: Ops,
+        solids_list: List[List[Tuple[float, float]]],
+        entity,
+        scale: float,
+        tx: float,
+        ty: float,
+        transform=None,
+    ):
+        # A SOLID is a quadrilateral. Note the strange vertex order for DXF.
+        points = [
+            entity.dxf.vtx0,
+            entity.dxf.vtx1,
+            entity.dxf.vtx3,
+            entity.dxf.vtx2,
+        ]
+        # Add the outline to ops and get the final scaled points for the fill
+        scaled_points = self._poly_to_ops(
+            ops, points, True, scale, tx, ty, transform
+        )
+        if scaled_points:
+            solids_list.append(scaled_points)
 
     def _line_to_ops(
         self,
@@ -283,7 +343,7 @@ class DxfImporter(Importer):
             final_end_y,
             final_offset_i,
             final_offset_j,
-            clockwise=False,
+            clockwise=entity.dxf.extrusion.z < 0,
             z=end_point.z * scale,
         )
 
