@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-18 00:13+0200\n"
+"POT-Creation-Date: 2025-08-19 12:45+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -243,7 +243,7 @@ msgstr "Define la distancia máxima de recorrido para cada eje."
 
 #: rayforge/machine/driver/grbl_serial.py:23
 msgid "GRBL (Serial)"
-msgstr "GRBL (Serie)"
+msgstr "GRBL (Serial)"
 
 #: rayforge/machine/driver/grbl_serial.py:24
 msgid "GRBL-compatible serial connection"
@@ -361,11 +361,11 @@ msgstr "Ajuste desconocido del dispositivo"
 
 #: rayforge/machine/driver/grbl_serial_next.py:30
 msgid "GRBL (Next, Serial)"
-msgstr "GRBL (Next, Serie)"
+msgstr "GRBL (Next, Serial)"
 
 #: rayforge/machine/driver/grbl_serial_next.py:31
 msgid "Advanced GRBL serial with settings support"
-msgstr "Serie GRBL avanzada con soporte para ajustes"
+msgstr "Serial GRBL avanzado con soporte para ajustes"
 
 #: rayforge/machine/driver/grbl.py:81
 msgid "GRBL (Network)"
@@ -389,7 +389,9 @@ msgstr "GRBL (sin eje Z)"
 
 #: rayforge/machine/models/dialect.py:107
 msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
-msgstr "GRBL estándar, pero elimina los comandos del eje Z para un G-code más eficiente."
+msgstr ""
+"GRBL estándar, pero elimina los comandos del eje Z para un G-code más "
+"eficiente."
 
 #: rayforge/machine/models/dialect.py:130
 msgid "Smoothieware"
@@ -463,7 +465,7 @@ msgid ""
 "This machine profile and all its settings will be permanently removed. This "
 "action cannot be undone."
 msgstr ""
-"Este perfil de la máquina y todos sus ajustes se eliminarán permanentemente. "
+"Este perfil de máquina y todos sus ajustes se eliminarán permanentemente. "
 "Esta acción no se puede deshacer."
 
 #: rayforge/machine/ui/preferences_page.py:130
@@ -600,7 +602,7 @@ msgstr "Añadir nueva máquina"
 
 #: rayforge/machine/ui/profile_selector.py:27
 msgid "Select a machine profile to use as a template."
-msgstr "Seleccione un perfil de la máquina para usar como plantilla."
+msgstr "Seleccione un perfil de máquina para usar como plantilla."
 
 #: rayforge/machine/ui/machine_selector.py:44
 msgid "Select Machine"
@@ -645,8 +647,7 @@ msgstr "Potencia de encuadre"
 
 #: rayforge/machine/ui/laser_preferences_page.py:69
 msgid "Power value in Gcode to use when framing. 0 to disable"
-msgstr ""
-"Valor de potencia en G-code para usar al encuadrar (0 para desactivar)."
+msgstr "Valor de potencia en G-code a usar al encuadrar (0 para desactivar)."
 
 #: rayforge/machine/ui/laser_preferences_page.py:84
 msgid "Spot Size X"
@@ -760,7 +761,7 @@ msgstr ""
 
 #: rayforge/machine/ui/general_preferences_page.py:118
 msgid "Max Travel Speed"
-msgstr "Velocidad máx. de desplazamiento"
+msgstr "Velocidad de desplazamiento máxima"
 
 #: rayforge/machine/ui/general_preferences_page.py:119
 msgid "Maximum travel speed in mm/min"
@@ -768,7 +769,7 @@ msgstr "Velocidad máxima de desplazamiento en mm/min"
 
 #: rayforge/machine/ui/general_preferences_page.py:134
 msgid "Max Cut Speed"
-msgstr "Velocidad máx. de corte"
+msgstr "Velocidad de corte máxima"
 
 #: rayforge/machine/ui/general_preferences_page.py:135
 msgid "Maximum cutting speed in mm/min"
@@ -1067,78 +1068,57 @@ msgstr "Acerca de"
 msgid "_Help"
 msgstr "_Ayuda"
 
-#: rayforge/mainwindow.py:125
+#: rayforge/mainwindow.py:121
 msgid "Rayforge"
 msgstr "Rayforge"
 
-#: rayforge/mainwindow.py:354
+#: rayforge/mainwindow.py:352
 msgid "3D view is not available due to missing dependencies."
 msgstr "La vista 3D no está disponible debido a dependencias faltantes."
 
-#: rayforge/mainwindow.py:365
+#: rayforge/mainwindow.py:363
 msgid "Select a machine to open the 3D view."
 msgstr "Seleccione una máquina para abrir la vista 3D."
 
-#: rayforge/mainwindow.py:401
+#: rayforge/mainwindow.py:406
 msgid "Failed to generate path preview."
 msgstr "Error al generar la vista previa de la trayectoria."
 
-#: rayforge/mainwindow.py:660
+#: rayforge/mainwindow.py:665
 msgid "Select a machine to enable G-code export"
 msgstr "Seleccione una máquina para habilitar la exportación de G-code"
 
-#: rayforge/mainwindow.py:672 rayforge/toolbar.py:42
+#: rayforge/mainwindow.py:677 rayforge/toolbar.py:42
 msgid "Generate G-code"
 msgstr "Generar G-code"
 
-#: rayforge/mainwindow.py:674
+#: rayforge/mainwindow.py:679
 msgid "Add a workpiece to enable export"
 msgstr "Añada una pieza de trabajo para habilitar la exportación"
 
-#: rayforge/mainwindow.py:677
+#: rayforge/mainwindow.py:682
 msgid "Cannot export while other tasks are running"
 msgstr "No se puede exportar mientras hay otras tareas en ejecución"
 
-#: rayforge/mainwindow.py:709 rayforge/toolbar.py:198
+#: rayforge/mainwindow.py:714 rayforge/toolbar.py:198
 msgid "Send to machine"
 msgstr "Enviar a la máquina"
 
-#: rayforge/mainwindow.py:723
+#: rayforge/mainwindow.py:728
 msgid "Resume machine"
 msgstr "Reanudar máquina"
 
-#: rayforge/mainwindow.py:726 rayforge/toolbar.py:206
+#: rayforge/mainwindow.py:731 rayforge/toolbar.py:206
 msgid "Pause machine"
 msgstr "Pausar máquina"
 
-#: rayforge/mainwindow.py:822
-msgid "Open File"
-msgstr "Abrir archivo"
-
-#: rayforge/mainwindow.py:827
-msgid "All supported"
-msgstr "Todos los compatibles"
-
-#: rayforge/mainwindow.py:863 rayforge/toolbar.py:63
+#: rayforge/mainwindow.py:846 rayforge/toolbar.py:63
 msgid "Remove all workpieces"
 msgstr "Eliminar todas las piezas de trabajo"
 
-#: rayforge/mainwindow.py:875
+#: rayforge/mainwindow.py:858
 msgid "Clear Layer Items"
-msgstr "Limpiar elementos de la capa"
-
-#: rayforge/mainwindow.py:882
-msgid "Save G-code File"
-msgstr "Guardar archivo G-code"
-
-#: rayforge/mainwindow.py:890
-msgid "G-code files"
-msgstr "Archivos G-code"
-
-#: rayforge/mainwindow.py:1080
-#, python-brace-format
-msgid "Import {name}"
-msgstr "Importar {name}"
+msgstr "Eliminar elementos de la capa"
 
 #: rayforge/undo/ui/undo_button.py:38
 msgid "Show History"
@@ -1214,7 +1194,7 @@ msgstr "Distribuir verticalmente"
 
 #: rayforge/toolbar.py:175
 msgid "Auto Layout (pack workpieces)"
-msgstr "Disposición automática (empaquetar piezas de trabajo)"
+msgstr "Disposición automática (anidar piezas)"
 
 #: rayforge/toolbar.py:184
 msgid "Home the machine"
@@ -1222,7 +1202,7 @@ msgstr "Llevar la máquina al origen"
 
 #: rayforge/toolbar.py:192
 msgid "Cycle laser head around the occupied area"
-msgstr "Realizar ciclo del cabezal láser alrededor del área ocupada"
+msgstr "Encuadrar el área ocupada"
 
 #: rayforge/toolbar.py:214
 msgid "Cancel running job"
@@ -1238,17 +1218,17 @@ msgstr ""
 "Faltan ajustes requeridos en el controlador de la máquina. Haga clic para "
 "editar."
 
-#: rayforge/pipeline/steprunner.py:263
+#: rayforge/pipeline/steprunner.py:247
 #, python-brace-format
 msgid "Generating path for '{name}'"
 msgstr "Generando trayectoria para '{name}'"
 
-#: rayforge/pipeline/steprunner.py:308
+#: rayforge/pipeline/steprunner.py:291
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "Aplicando '{transformer}' en '{workpiece}'"
 
-#: rayforge/pipeline/steprunner.py:330
+#: rayforge/pipeline/steprunner.py:313
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "Finalizando '{workpiece}'"
@@ -1316,11 +1296,11 @@ msgstr "Suaviza la trayectoria aplicando un filtro gaussiano"
 
 #: rayforge/pipeline/transformer/arcwelder.py:270
 msgid "Arc Weld Path"
-msgstr "Unir líneas en arcos"
+msgstr "Convertir líneas a arcos"
 
 #: rayforge/pipeline/transformer/arcwelder.py:274
 msgid "Welds lines into arcs for smoother paths"
-msgstr "Convierte líneas en arcos para trayectorias más suaves"
+msgstr "Convierte segmentos de línea en arcos para trayectorias más suaves"
 
 #: rayforge/pipeline/transformer/multipass.py:69
 msgid "Multi-Pass"
@@ -1330,23 +1310,57 @@ msgstr "Múltiples pasadas"
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr "Repite la trayectoria varias veces, opcionalmente bajando en el eje Z."
 
-#: rayforge/pipeline/job.py:155
+#: rayforge/pipeline/job.py:161
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
 msgstr "Procesando «{workpiece}» en el paso «{step}»"
 
-#: rayforge/pipeline/job.py:177
+#: rayforge/pipeline/job.py:183
 #, python-brace-format
 msgid "Applying '{transformer}' to '{step}'"
 msgstr "Aplicando '{transformer}' a '{step}'"
 
-#: rayforge/pipeline/job.py:188
+#: rayforge/pipeline/job.py:194
 msgid "Job assembly complete"
 msgstr "Ensamblaje del trabajo completado"
 
 #: rayforge/doceditor/layout_actions.py:205
 msgid "Auto Layout"
 msgstr "Disposición automática"
+
+#: rayforge/doceditor/file_cmd.py:79
+msgid "Open File"
+msgstr "Abrir archivo"
+
+#: rayforge/doceditor/file_cmd.py:83
+msgid "All supported"
+msgstr "Todos los compatibles"
+
+#: rayforge/doceditor/file_cmd.py:148
+#, python-brace-format
+msgid "Import {name}"
+msgstr "Importar {name}"
+
+#: rayforge/doceditor/file_cmd.py:196
+msgid "Encoding G-code..."
+msgstr "Codificando G-code..."
+
+#: rayforge/doceditor/file_cmd.py:201
+#, python-brace-format
+msgid "Saving to {file_path}..."
+msgstr "Guardando en {file_path}..."
+
+#: rayforge/doceditor/file_cmd.py:204
+msgid "Export complete!"
+msgstr "¡Exportación completada!"
+
+#: rayforge/doceditor/file_cmd.py:220
+msgid "Save G-code File"
+msgstr "Guardar archivo G-code"
+
+#: rayforge/doceditor/file_cmd.py:228
+msgid "G-code files"
+msgstr "Archivos G-code"
 
 #: rayforge/doceditor/ui/layer_view.py:98
 msgid "Delete this layer"
@@ -1389,15 +1403,15 @@ msgstr "Cuántas veces repetir este paso"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:99
 msgid "Z Step-Down per Pass (mm)"
-msgstr "Bajada en Z por pasada (mm)"
+msgstr "Descenso en Z por pasada (mm)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:101
 msgid "Distance to lower Z-axis for each subsequent pass"
-msgstr "Distancia a bajar el eje Z en cada pasada subsiguiente"
+msgstr "Distancia de descenso del eje Z por cada pasada adicional"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:131
 msgid "Number of Passes (Legacy)"
-msgstr "Número de pasadas (Heredado)"
+msgstr "Número de pasadas (heredado)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:132
 msgid "This step needs to be updated"
@@ -1459,7 +1473,7 @@ msgstr "Cambiar número de pasadas"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:376
 msgid "Change Z Step-Down"
-msgstr "Cambiar bajada en Z"
+msgstr "Cambiar descenso en Z"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:394
 msgid "Change laser power"
@@ -1490,7 +1504,7 @@ msgstr "Cambiar ángulo de esquina"
 msgid "Toggle '{label}'"
 msgstr "Alternar '{label}'"
 
-#: rayforge/doceditor/ui/step_box.py:69
+#: rayforge/doceditor/ui/step_box.py:68
 msgid "Toggle step visibility"
 msgstr "Alternar visibilidad del paso"
 
@@ -1524,7 +1538,7 @@ msgstr "Proporción fija"
 
 #: rayforge/doceditor/ui/item_properties.py:104
 msgid "Natural Size"
-msgstr "Tamaño original"
+msgstr "Tamaño natural"
 
 #: rayforge/doceditor/ui/item_properties.py:106
 msgid "N/A"
@@ -1601,7 +1615,7 @@ msgstr "{name} (no encontrado)"
 
 #: rayforge/doceditor/ui/layer_list.py:22
 msgid "Workpiece Layers"
-msgstr "Capas de la pieza de trabajo"
+msgstr "Capas de piezas de trabajo"
 
 #: rayforge/doceditor/ui/layer_list.py:52
 msgid "Add New Layer"

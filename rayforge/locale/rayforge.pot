@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-18 00:16+0200\n"
+"POT-Creation-Date: 2025-08-19 12:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1036,77 +1036,56 @@ msgstr ""
 msgid "_Help"
 msgstr ""
 
-#: rayforge/mainwindow.py:125
+#: rayforge/mainwindow.py:121
 msgid "Rayforge"
 msgstr ""
 
-#: rayforge/mainwindow.py:354
+#: rayforge/mainwindow.py:352
 msgid "3D view is not available due to missing dependencies."
 msgstr ""
 
-#: rayforge/mainwindow.py:365
+#: rayforge/mainwindow.py:363
 msgid "Select a machine to open the 3D view."
 msgstr ""
 
-#: rayforge/mainwindow.py:401
+#: rayforge/mainwindow.py:406
 msgid "Failed to generate path preview."
 msgstr ""
 
-#: rayforge/mainwindow.py:660
+#: rayforge/mainwindow.py:665
 msgid "Select a machine to enable G-code export"
 msgstr ""
 
-#: rayforge/mainwindow.py:672 rayforge/toolbar.py:42
+#: rayforge/mainwindow.py:677 rayforge/toolbar.py:42
 msgid "Generate G-code"
 msgstr ""
 
-#: rayforge/mainwindow.py:674
+#: rayforge/mainwindow.py:679
 msgid "Add a workpiece to enable export"
 msgstr ""
 
-#: rayforge/mainwindow.py:677
+#: rayforge/mainwindow.py:682
 msgid "Cannot export while other tasks are running"
 msgstr ""
 
-#: rayforge/mainwindow.py:709 rayforge/toolbar.py:198
+#: rayforge/mainwindow.py:714 rayforge/toolbar.py:198
 msgid "Send to machine"
 msgstr ""
 
-#: rayforge/mainwindow.py:723
+#: rayforge/mainwindow.py:728
 msgid "Resume machine"
 msgstr ""
 
-#: rayforge/mainwindow.py:726 rayforge/toolbar.py:206
+#: rayforge/mainwindow.py:731 rayforge/toolbar.py:206
 msgid "Pause machine"
 msgstr ""
 
-#: rayforge/mainwindow.py:822
-msgid "Open File"
-msgstr ""
-
-#: rayforge/mainwindow.py:827
-msgid "All supported"
-msgstr ""
-
-#: rayforge/mainwindow.py:863 rayforge/toolbar.py:63
+#: rayforge/mainwindow.py:846 rayforge/toolbar.py:63
 msgid "Remove all workpieces"
 msgstr ""
 
-#: rayforge/mainwindow.py:875
+#: rayforge/mainwindow.py:858
 msgid "Clear Layer Items"
-msgstr ""
-
-#: rayforge/mainwindow.py:882
-msgid "Save G-code File"
-msgstr ""
-
-#: rayforge/mainwindow.py:890
-msgid "G-code files"
-msgstr ""
-
-#: rayforge/mainwindow.py:1080
-#, python-brace-format
-msgid "Import {name}"
 msgstr ""
 
 #: rayforge/undo/ui/undo_button.py:38
@@ -1205,17 +1184,17 @@ msgstr ""
 msgid "Machine driver is missing required settings. Click to edit."
 msgstr ""
 
-#: rayforge/pipeline/steprunner.py:263
+#: rayforge/pipeline/steprunner.py:247
 #, python-brace-format
 msgid "Generating path for '{name}'"
 msgstr ""
 
-#: rayforge/pipeline/steprunner.py:308
+#: rayforge/pipeline/steprunner.py:291
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr ""
 
-#: rayforge/pipeline/steprunner.py:330
+#: rayforge/pipeline/steprunner.py:313
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr ""
@@ -1297,22 +1276,56 @@ msgstr ""
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr ""
 
-#: rayforge/pipeline/job.py:155
+#: rayforge/pipeline/job.py:161
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
 msgstr ""
 
-#: rayforge/pipeline/job.py:177
+#: rayforge/pipeline/job.py:183
 #, python-brace-format
 msgid "Applying '{transformer}' to '{step}'"
 msgstr ""
 
-#: rayforge/pipeline/job.py:188
+#: rayforge/pipeline/job.py:194
 msgid "Job assembly complete"
 msgstr ""
 
 #: rayforge/doceditor/layout_actions.py:205
 msgid "Auto Layout"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:79
+msgid "Open File"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:83
+msgid "All supported"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:148
+#, python-brace-format
+msgid "Import {name}"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:196
+msgid "Encoding G-code..."
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:201
+#, python-brace-format
+msgid "Saving to {file_path}..."
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:204
+msgid "Export complete!"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:220
+msgid "Save G-code File"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py:228
+msgid "G-code files"
 msgstr ""
 
 #: rayforge/doceditor/ui/layer_view.py:98
@@ -1455,7 +1468,7 @@ msgstr ""
 msgid "Toggle '{label}'"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_box.py:69
+#: rayforge/doceditor/ui/step_box.py:68
 msgid "Toggle step visibility"
 msgstr ""
 

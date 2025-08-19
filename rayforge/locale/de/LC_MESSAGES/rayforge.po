@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-18 00:13+0200\n"
+"POT-Creation-Date: 2025-08-19 12:45+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -223,7 +223,8 @@ msgstr "Achsenkinematik"
 
 #: rayforge/machine/driver/grbl_util.py:351
 msgid "Defines the maximum rate and acceleration for each axis."
-msgstr "Definiert die maximale Geschwindigkeit und Beschleunigung für jede Achse."
+msgstr ""
+"Definiert die maximale Geschwindigkeit und Beschleunigung für jede Achse."
 
 #: rayforge/machine/driver/grbl_util.py:356
 msgid "Axis Travel"
@@ -280,8 +281,7 @@ msgstr "Kein Treiber"
 msgid "No connection"
 msgstr "Keine Verbindung"
 
-#: rayforge/machine/driver/dummy.py:21
-#: rayforge/machine/driver/dummy.py:24
+#: rayforge/machine/driver/dummy.py:21 rayforge/machine/driver/dummy.py:24
 msgid "No settings"
 msgstr "Keine Einstellungen"
 
@@ -294,14 +294,12 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "Smoothieware über eine Telnet-Verbindung"
 
 #: rayforge/machine/driver/smoothie.py:37
-#: rayforge/machine/driver/grbl_next.py:60
-#: rayforge/machine/driver/grbl.py:99
+#: rayforge/machine/driver/grbl_next.py:60 rayforge/machine/driver/grbl.py:99
 msgid "Hostname"
 msgstr "Hostname"
 
 #: rayforge/machine/driver/smoothie.py:38
-#: rayforge/machine/driver/grbl_next.py:61
-#: rayforge/machine/driver/grbl.py:100
+#: rayforge/machine/driver/grbl_next.py:61 rayforge/machine/driver/grbl.py:100
 msgid "The IP address or hostname of the device"
 msgstr "Die IP-Adresse oder der Hostname des Geräts"
 
@@ -310,8 +308,7 @@ msgid "The Telnet port number"
 msgstr "Die Telnet-Portnummer"
 
 #: rayforge/machine/driver/smoothie.py:60
-#: rayforge/machine/driver/grbl_next.py:70
-#: rayforge/machine/driver/grbl.py:112
+#: rayforge/machine/driver/grbl_next.py:70 rayforge/machine/driver/grbl.py:112
 #, python-brace-format
 msgid "Invalid hostname or IP address: '{host}'"
 msgstr "Ungültiger Hostname oder IP-Adresse: „{host}“"
@@ -324,16 +321,20 @@ msgstr "GRBL (Next, Netzwerk)"
 msgid "Advanced GRBL driver with settings support"
 msgstr "Erweiterter GRBL-Treiber mit Einstellungsunterstützung"
 
-#: rayforge/machine/driver/grbl_next.py:149
-#: rayforge/machine/driver/grbl.py:191
+#: rayforge/machine/driver/grbl_next.py:149 rayforge/machine/driver/grbl.py:191
 msgid "Host is not configured. Please set a valid IP address or hostname."
-msgstr "Host ist nicht konfiguriert. Bitte geben Sie eine gültige IP-Adresse oder einen Hostnamen an."
+msgstr ""
+"Host ist nicht konfiguriert. Bitte geben Sie eine gültige IP-Adresse oder "
+"einen Hostnamen an."
 
-#: rayforge/machine/driver/grbl_next.py:169
-#: rayforge/machine/driver/grbl.py:211
+#: rayforge/machine/driver/grbl_next.py:169 rayforge/machine/driver/grbl.py:211
 #, python-brace-format
-msgid "Could not connect to host '{host}'. Check the IP address and network connection."
-msgstr "Verbindung zum Host „{host}“ konnte nicht hergestellt werden. Überprüfen Sie die IP-Adresse und die Netzwerkverbindung."
+msgid ""
+"Could not connect to host '{host}'. Check the IP address and network "
+"connection."
+msgstr ""
+"Verbindung zum Host „{host}“ konnte nicht hergestellt werden. Überprüfen Sie "
+"die IP-Adresse und die Netzwerkverbindung."
 
 #: rayforge/machine/driver/grbl_next.py:374
 #: rayforge/machine/driver/grbl_serial_next.py:216
@@ -343,7 +344,9 @@ msgstr "Unbekannte Einstellungen"
 #: rayforge/machine/driver/grbl_next.py:376
 #: rayforge/machine/driver/grbl_serial_next.py:218
 msgid "Settings reported by the device not in the standard list."
-msgstr "Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten sind."
+msgstr ""
+"Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten "
+"sind."
 
 #: rayforge/machine/driver/grbl_next.py:397
 #: rayforge/machine/driver/grbl_serial_next.py:239
@@ -380,7 +383,8 @@ msgstr "GRBL (ohne Z-Achse)"
 
 #: rayforge/machine/models/dialect.py:107
 msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
-msgstr "Standard-GRBL, entfernt jedoch Befehle der Z-Achse für effizienteren G-Code."
+msgstr ""
+"Standard-GRBL, entfernt jedoch Befehle der Z-Achse für effizienteren G-Code."
 
 #: rayforge/machine/models/dialect.py:130
 msgid "Smoothieware"
@@ -414,7 +418,8 @@ msgstr "Treiber „{driver}“ nicht gefunden."
 #: rayforge/machine/models/machine.py:328
 #, python-brace-format
 msgid "An unexpected error occurred during validation: {error}"
-msgstr "Während der Validierung ist ein unerwarteter Fehler aufgetreten: {error}"
+msgstr ""
+"Während der Validierung ist ein unerwarteter Fehler aufgetreten: {error}"
 
 #: rayforge/machine/models/profile.py:110
 msgid "Other Device"
@@ -450,8 +455,12 @@ msgid "Delete ‘{name}’?"
 msgstr "„{name}“ löschen?"
 
 #: rayforge/machine/ui/preferences_page.py:125
-msgid "This machine profile and all its settings will be permanently removed. This action cannot be undone."
-msgstr "Dieses Maschinenprofil und alle seine Einstellungen werden dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
+msgid ""
+"This machine profile and all its settings will be permanently removed. This "
+"action cannot be undone."
+msgstr ""
+"Dieses Maschinenprofil und alle seine Einstellungen werden dauerhaft "
+"entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: rayforge/machine/ui/preferences_page.py:130
 msgid "Delete"
@@ -475,7 +484,8 @@ msgstr "Vom Gerät lesen"
 
 #: rayforge/machine/ui/device_settings_page.py:57
 msgid "The current driver does not support reading device settings."
-msgstr "Der aktuelle Treiber unterstützt das Lesen von Geräteeinstellungen nicht."
+msgstr ""
+"Der aktuelle Treiber unterstützt das Lesen von Geräteeinstellungen nicht."
 
 #: rayforge/machine/ui/device_settings_page.py:68
 msgid "Copy Error Details"
@@ -486,12 +496,18 @@ msgid "Dismiss Error"
 msgstr "Fehler ausblenden"
 
 #: rayforge/machine/ui/device_settings_page.py:87
-msgid "Editing these values can be dangerous and may render your machine inoperable!"
-msgstr "Das Ändern dieser Werte kann gefährlich sein und Ihre Maschine unbrauchbar machen!"
+msgid ""
+"Editing these values can be dangerous and may render your machine inoperable!"
+msgstr ""
+"Das Ändern dieser Werte kann gefährlich sein und Ihre Maschine unbrauchbar "
+"machen!"
 
 #: rayforge/machine/ui/device_settings_page.py:91
-msgid "The device may restart or temporarily disconnect after a setting is changed."
-msgstr "Das Gerät kann nach einer Einstellungsänderung neu starten oder die Verbindung vorübergehend trennen."
+msgid ""
+"The device may restart or temporarily disconnect after a setting is changed."
+msgstr ""
+"Das Gerät kann nach einer Einstellungsänderung neu starten oder die "
+"Verbindung vorübergehend trennen."
 
 #: rayforge/machine/ui/device_settings_page.py:101
 msgid "Dismiss Warning"
@@ -499,7 +515,9 @@ msgstr "Warnung ausblenden"
 
 #: rayforge/machine/ui/device_settings_page.py:115
 msgid "Click the refresh button to load settings from the device."
-msgstr "Klicken Sie auf die Aktualisieren-Schaltfläche, um Einstellungen vom Gerät zu laden."
+msgstr ""
+"Klicken Sie auf die Aktualisieren-Schaltfläche, um Einstellungen vom Gerät "
+"zu laden."
 
 #: rayforge/machine/ui/device_settings_page.py:221
 msgid "Operation failed"
@@ -595,8 +613,13 @@ msgid "Laser Heads"
 msgstr "Laserköpfe"
 
 #: rayforge/machine/ui/laser_preferences_page.py:19
-msgid "You can configure multiple laser heads, but only the first in the list will be used because Rayforge does not support multi-head operations yet."
-msgstr "Sie können mehrere Laserköpfe konfigurieren, aber es wird nur der erste in der Liste verwendet, da Rayforge noch keine Multi-Head-Operationen unterstützt."
+msgid ""
+"You can configure multiple laser heads, but only the first in the list will "
+"be used because Rayforge does not support multi-head operations yet."
+msgstr ""
+"Sie können mehrere Laserköpfe konfigurieren, aber es wird nur der erste in "
+"der Liste verwendet, da Rayforge noch keine Multi-Head-Operationen "
+"unterstützt."
 
 #: rayforge/machine/ui/laser_preferences_page.py:46
 msgid "Laser Properties"
@@ -620,7 +643,9 @@ msgstr "Rahmenleistung"
 
 #: rayforge/machine/ui/laser_preferences_page.py:69
 msgid "Power value in Gcode to use when framing. 0 to disable"
-msgstr "Leistungswert im G-Code, der für die Umrandung verwendet wird. 0 zum Deaktivieren"
+msgstr ""
+"Leistungswert im G-Code, der für die Umrandung verwendet wird. 0 zum "
+"Deaktivieren"
 
 #: rayforge/machine/ui/laser_preferences_page.py:84
 msgid "Spot Size X"
@@ -657,8 +682,7 @@ msgstr "Maschineneinstellungen"
 msgid "Machine Log"
 msgstr "Maschinenprotokoll"
 
-#: rayforge/machine/ui/log_dialog.py:53
-#: rayforge/machine/ui/log_dialog.py:192
+#: rayforge/machine/ui/log_dialog.py:53 rayforge/machine/ui/log_dialog.py:192
 msgid "Save Debug Log"
 msgstr "Debug-Protokoll speichern"
 
@@ -678,7 +702,8 @@ msgstr "Debug-Archiv konnte nicht erstellt werden."
 
 #: rayforge/machine/ui/log_dialog.py:186
 msgid "Could not find parent window to attach dialog."
-msgstr "Übergeordnetes Fenster zum Anhängen des Dialogs konnte nicht gefunden werden."
+msgstr ""
+"Übergeordnetes Fenster zum Anhängen des Dialogs konnte nicht gefunden werden."
 
 #: rayforge/machine/ui/log_dialog.py:204
 #, python-brace-format
@@ -727,7 +752,8 @@ msgstr "Y-Achsenrichtung umkehren"
 
 #: rayforge/machine/ui/general_preferences_page.py:102
 msgid "Enable if your machine's origin is top-left instead of bottom-left"
-msgstr "Aktivieren, wenn der Ursprung Ihrer Maschine oben links statt unten links ist"
+msgstr ""
+"Aktivieren, wenn der Ursprung Ihrer Maschine oben links statt unten links ist"
 
 #: rayforge/machine/ui/general_preferences_page.py:118
 msgid "Max Travel Speed"
@@ -784,14 +810,12 @@ msgstr "Hostname oder IP-Adresse darf nicht leer sein."
 msgid "Invalid hostname or IP address format."
 msgstr "Ungültiges Hostname- oder IP-Adressformat."
 
-#: rayforge/shared/varset/intvar.py:22
-#: rayforge/shared/varset/floatvar.py:26
+#: rayforge/shared/varset/intvar.py:22 rayforge/shared/varset/floatvar.py:26
 #, python-brace-format
 msgid "Value must be at least {min_val}."
 msgstr "Der Wert muss mindestens {min_val} betragen."
 
-#: rayforge/shared/varset/intvar.py:28
-#: rayforge/shared/varset/floatvar.py:32
+#: rayforge/shared/varset/intvar.py:28 rayforge/shared/varset/floatvar.py:32
 #, python-brace-format
 msgid "Value must be at most {max_val}."
 msgstr "Der Wert darf höchstens {max_val} betragen."
@@ -871,8 +895,7 @@ msgstr "Hauptentwickler"
 msgid "License"
 msgstr "Lizenz"
 
-#: rayforge/shared/ui/about.py:237
-#: rayforge/shared/ui/about.py:299
+#: rayforge/shared/ui/about.py:237 rayforge/shared/ui/about.py:299
 msgid "System Information"
 msgstr "Systeminformationen"
 
@@ -880,8 +903,7 @@ msgstr "Systeminformationen"
 msgid "Versions of libraries and components"
 msgstr "Versionen von Bibliotheken und Komponenten"
 
-#: rayforge/shared/ui/about.py:247
-#: rayforge/shared/ui/about.py:310
+#: rayforge/shared/ui/about.py:247 rayforge/shared/ui/about.py:310
 msgid "Copy System Information"
 msgstr "Systeminformationen kopieren"
 
@@ -1041,82 +1063,57 @@ msgstr "Über"
 msgid "_Help"
 msgstr "_Hilfe"
 
-#: rayforge/mainwindow.py:125
+#: rayforge/mainwindow.py:121
 msgid "Rayforge"
 msgstr "Rayforge"
 
-#: rayforge/mainwindow.py:354
+#: rayforge/mainwindow.py:352
 msgid "3D view is not available due to missing dependencies."
 msgstr "3D-Ansicht ist aufgrund fehlender Abhängigkeiten nicht verfügbar."
 
-#: rayforge/mainwindow.py:365
+#: rayforge/mainwindow.py:363
 msgid "Select a machine to open the 3D view."
 msgstr "Wählen Sie eine Maschine aus, um die 3D-Ansicht zu öffnen."
 
-#: rayforge/mainwindow.py:401
+#: rayforge/mainwindow.py:406
 msgid "Failed to generate path preview."
 msgstr "Pfadvorschau konnte nicht generiert werden."
 
-#: rayforge/mainwindow.py:660
+#: rayforge/mainwindow.py:665
 msgid "Select a machine to enable G-code export"
 msgstr "Wählen Sie eine Maschine aus, um den G-Code-Export zu aktivieren"
 
-#: rayforge/mainwindow.py:672
-#: rayforge/toolbar.py:42
+#: rayforge/mainwindow.py:677 rayforge/toolbar.py:42
 msgid "Generate G-code"
 msgstr "G-Code generieren"
 
-#: rayforge/mainwindow.py:674
+#: rayforge/mainwindow.py:679
 msgid "Add a workpiece to enable export"
 msgstr "Fügen Sie ein Werkstück hinzu, um den Export zu aktivieren"
 
-#: rayforge/mainwindow.py:677
+#: rayforge/mainwindow.py:682
 msgid "Cannot export while other tasks are running"
 msgstr "Export nicht möglich, während andere Aufgaben ausgeführt werden"
 
-#: rayforge/mainwindow.py:709
-#: rayforge/toolbar.py:198
+#: rayforge/mainwindow.py:714 rayforge/toolbar.py:198
 msgid "Send to machine"
 msgstr "An Maschine senden"
 
-#: rayforge/mainwindow.py:723
+#: rayforge/mainwindow.py:728
 msgid "Resume machine"
 msgstr "Maschine fortsetzen"
 
-#: rayforge/mainwindow.py:726
-#: rayforge/toolbar.py:206
+#: rayforge/mainwindow.py:731 rayforge/toolbar.py:206
 msgid "Pause machine"
 msgstr "Maschine pausieren"
 
-#: rayforge/mainwindow.py:822
-msgid "Open File"
-msgstr "Datei öffnen"
-
-#: rayforge/mainwindow.py:827
-msgid "All supported"
-msgstr "Alle unterstützten"
-
-#: rayforge/mainwindow.py:863
-#: rayforge/toolbar.py:63
+#: rayforge/mainwindow.py:846 rayforge/toolbar.py:63
 msgid "Remove all workpieces"
 msgstr "Alle Werkstücke entfernen"
 
-#: rayforge/mainwindow.py:875
+#: rayforge/mainwindow.py:858
 msgid "Clear Layer Items"
 msgstr "Elemente der Ebene löschen"
-
-#: rayforge/mainwindow.py:882
-msgid "Save G-code File"
-msgstr "G-Code-Datei speichern"
-
-#: rayforge/mainwindow.py:890
-msgid "G-code files"
-msgstr "G-Code-Dateien"
-
-#: rayforge/mainwindow.py:1080
-#, python-brace-format
-msgid "Import {name}"
-msgstr "„{name}“ importieren"
 
 #: rayforge/undo/ui/undo_button.py:38
 msgid "Show History"
@@ -1158,43 +1155,35 @@ msgstr "3D-Ansicht deaktiviert (fehlende Abhängigkeiten wie PyOpenGL)"
 msgid "Show 3D Preview"
 msgstr "3D-Vorschau anzeigen"
 
-#: rayforge/toolbar.py:134
-#: rayforge/doceditor/layout_actions.py:89
+#: rayforge/toolbar.py:134 rayforge/doceditor/layout_actions.py:89
 msgid "Center Horizontally"
 msgstr "Horizontal zentrieren"
 
-#: rayforge/toolbar.py:141
-#: rayforge/doceditor/layout_actions.py:102
+#: rayforge/toolbar.py:141 rayforge/doceditor/layout_actions.py:102
 msgid "Center Vertically"
 msgstr "Vertikal zentrieren"
 
-#: rayforge/toolbar.py:148
-#: rayforge/doceditor/layout_actions.py:112
+#: rayforge/toolbar.py:148 rayforge/doceditor/layout_actions.py:112
 msgid "Align Left"
 msgstr "Links ausrichten"
 
-#: rayforge/toolbar.py:149
-#: rayforge/doceditor/layout_actions.py:125
+#: rayforge/toolbar.py:149 rayforge/doceditor/layout_actions.py:125
 msgid "Align Right"
 msgstr "Rechts ausrichten"
 
-#: rayforge/toolbar.py:150
-#: rayforge/doceditor/layout_actions.py:138
+#: rayforge/toolbar.py:150 rayforge/doceditor/layout_actions.py:138
 msgid "Align Top"
 msgstr "Oben ausrichten"
 
-#: rayforge/toolbar.py:151
-#: rayforge/doceditor/layout_actions.py:148
+#: rayforge/toolbar.py:151 rayforge/doceditor/layout_actions.py:148
 msgid "Align Bottom"
 msgstr "Unten ausrichten"
 
-#: rayforge/toolbar.py:159
-#: rayforge/doceditor/layout_actions.py:158
+#: rayforge/toolbar.py:159 rayforge/doceditor/layout_actions.py:158
 msgid "Spread Horizontally"
 msgstr "Horizontal verteilen"
 
-#: rayforge/toolbar.py:164
-#: rayforge/doceditor/layout_actions.py:168
+#: rayforge/toolbar.py:164 rayforge/doceditor/layout_actions.py:168
 msgid "Spread Vertically"
 msgstr "Vertikal verteilen"
 
@@ -1220,19 +1209,21 @@ msgstr "Maschine nicht vollständig konfiguriert"
 
 #: rayforge/toolbar.py:232
 msgid "Machine driver is missing required settings. Click to edit."
-msgstr "Dem Maschinentreiber fehlen erforderliche Einstellungen. Zum Bearbeiten klicken."
+msgstr ""
+"Dem Maschinentreiber fehlen erforderliche Einstellungen. Zum Bearbeiten "
+"klicken."
 
-#: rayforge/pipeline/steprunner.py:263
+#: rayforge/pipeline/steprunner.py:247
 #, python-brace-format
 msgid "Generating path for '{name}'"
 msgstr "Pfad für „{name}“ generieren"
 
-#: rayforge/pipeline/steprunner.py:308
+#: rayforge/pipeline/steprunner.py:291
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "„{transformer}“ auf „{workpiece}“ anwenden"
 
-#: rayforge/pipeline/steprunner.py:330
+#: rayforge/pipeline/steprunner.py:313
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "„{workpiece}“ wird fertiggestellt"
@@ -1314,23 +1305,57 @@ msgstr "Mehrfachdurchgang"
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr "Wiederholt den Pfad mehrmals, optional mit Z-Absenkung."
 
-#: rayforge/pipeline/job.py:155
+#: rayforge/pipeline/job.py:161
 #, python-brace-format
 msgid "Processing '{workpiece}' in '{step}'"
 msgstr "Verarbeite „{workpiece}“ in Schritt „{step}“"
 
-#: rayforge/pipeline/job.py:177
+#: rayforge/pipeline/job.py:183
 #, python-brace-format
 msgid "Applying '{transformer}' to '{step}'"
 msgstr "„{transformer}“ auf „{step}“ anwenden"
 
-#: rayforge/pipeline/job.py:188
+#: rayforge/pipeline/job.py:194
 msgid "Job assembly complete"
 msgstr "Auftragszusammenstellung abgeschlossen"
 
 #: rayforge/doceditor/layout_actions.py:205
 msgid "Auto Layout"
 msgstr "Automatisches Layout"
+
+#: rayforge/doceditor/file_cmd.py:79
+msgid "Open File"
+msgstr "Datei öffnen"
+
+#: rayforge/doceditor/file_cmd.py:83
+msgid "All supported"
+msgstr "Alle unterstützten"
+
+#: rayforge/doceditor/file_cmd.py:148
+#, python-brace-format
+msgid "Import {name}"
+msgstr "„{name}“ importieren"
+
+#: rayforge/doceditor/file_cmd.py:196
+msgid "Encoding G-code..."
+msgstr "G-Code exportieren..."
+
+#: rayforge/doceditor/file_cmd.py:201
+#, python-brace-format
+msgid "Saving to {file_path}..."
+msgstr "Speichere als {file_path}..."
+
+#: rayforge/doceditor/file_cmd.py:204
+msgid "Export complete!"
+msgstr "Export erledigt!"
+
+#: rayforge/doceditor/file_cmd.py:220
+msgid "Save G-code File"
+msgstr "G-Code-Datei speichern"
+
+#: rayforge/doceditor/file_cmd.py:228
+msgid "G-code files"
+msgstr "G-Code-Dateien"
 
 #: rayforge/doceditor/ui/layer_view.py:98
 msgid "Delete this layer"
@@ -1377,7 +1402,8 @@ msgstr "Z-Absenkung pro Durchgang (mm)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:101
 msgid "Distance to lower Z-axis for each subsequent pass"
-msgstr "Abstand, um den die Z-Achse bei jedem nachfolgenden Durchgang abgesenkt wird"
+msgstr ""
+"Abstand, um den die Z-Achse bei jedem nachfolgenden Durchgang abgesenkt wird"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:131
 msgid "Number of Passes (Legacy)"
@@ -1418,8 +1444,12 @@ msgid "Path Post-Processing"
 msgstr "Pfad-Nachbearbeitung"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:210
-msgid "These steps are applied after path generation and can improve quality or reduce job time."
-msgstr "Diese Schritte werden nach der Pfadgenerierung angewendet und können die Qualität verbessern oder die Auftragszeit verkürzen."
+msgid ""
+"These steps are applied after path generation and can improve quality or "
+"reduce job time."
+msgstr ""
+"Diese Schritte werden nach der Pfadgenerierung angewendet und können die "
+"Qualität verbessern oder die Auftragszeit verkürzen."
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:231
 msgid "Smoothness"
@@ -1431,7 +1461,8 @@ msgstr "Eckenwinkel-Schwelle"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:253
 msgid "Angles sharper than this are kept as corners (degrees)"
-msgstr "Winkel, die spitzer als dieser Wert sind, werden als Ecken beibehalten (Grad)"
+msgstr ""
+"Winkel, die spitzer als dieser Wert sind, werden als Ecken beibehalten (Grad)"
 
 #: rayforge/doceditor/ui/step_settings_dialog.py:356
 msgid "Change number of passes"
@@ -1470,7 +1501,7 @@ msgstr "Eckenwinkel ändern"
 msgid "Toggle '{label}'"
 msgstr "„{label}“ umschalten"
 
-#: rayforge/doceditor/ui/step_box.py:69
+#: rayforge/doceditor/ui/step_box.py:68
 msgid "Toggle step visibility"
 msgstr "Sichtbarkeit des Arbeitsschritts umschalten"
 
