@@ -1,5 +1,5 @@
 from typing import List, Callable
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk
 
 
 css = """
@@ -24,11 +24,13 @@ class StepSelector(Gtk.Popover):
 
         provider = Gtk.CssProvider()
         provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
+        display = Gdk.Display.get_default()
+        if display:
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
 
         # Add step_factories to the ListBox
         for factory_func in step_factories:
@@ -40,7 +42,7 @@ class StepSelector(Gtk.Popover):
             label.add_css_class("step-selector-label")
             row = Gtk.ListBoxRow()
             row.set_child(label)
-            row.factory = factory_func
+            row.factory = factory_func  # type: ignore
             self.listbox.append(row)
 
         # Connect the row-activated signal to handle factory selection

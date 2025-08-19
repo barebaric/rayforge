@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.step import Step
@@ -45,7 +45,6 @@ class StepBox(Adw.ActionRow):
         """Overrides GObject.Object.do_destroy to disconnect signals."""
         self.step.updated.disconnect(self.on_step_changed)
         self.step.visibility_changed.disconnect(self.on_step_changed)
-        super().do_destroy()
 
     def set_prefix(self, prefix):
         self.prefix = prefix
