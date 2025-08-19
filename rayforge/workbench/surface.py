@@ -10,7 +10,7 @@ from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..machine.models.machine import Machine
 from ..pipeline.generator import OpsGenerator
-from ..undo import ListItemCommand, Command, ChangePropertyCommand
+from ..undo import ChangePropertyCommand
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.dot import DotElement
@@ -18,76 +18,9 @@ from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
+from ..doceditor import transform_cmd, layer_cmd
 
 logger = logging.getLogger(__name__)
-
-
-class MoveWorkpiecesLayerCommand(Command):
-    """
-    An undoable command to move one or more workpieces to a different layer.
-    (This class is updated to use the new element types).
-    """
-
-    def __init__(
-        self,
-        canvas: "WorkSurface",
-        workpieces: List[WorkPiece],
-        new_layer: Layer,
-        old_layer: Layer,
-        name: Optional[str] = None,
-    ):
-        super().__init__(name)
-        self.canvas = canvas
-        self.workpieces = workpieces
-        self.new_layer = new_layer
-        self.old_layer = old_layer
-        if not name:
-            self.name = _("Move to another layer")
-
-    def _move(self, from_layer: Layer, to_layer: Layer):
-        """The core logic for moving workpieces, view-first."""
-        from_layer_elem = cast(
-            Optional[LayerElement], self.canvas.find_by_data(from_layer)
-        )
-        to_layer_elem = cast(
-            Optional[LayerElement], self.canvas.find_by_data(to_layer)
-        )
-
-        if not from_layer_elem or not to_layer_elem:
-            logger.warning("Could not find layer elements for move operation.")
-            return
-
-        # Step 1 & 2: UI-first, flicker-free re-parenting
-        elements_to_move = []
-        for wp in self.workpieces:
-            # Find the new WorkPieceView element
-            wp_elem = self.canvas.find_by_data(wp)
-            if wp_elem:
-                elements_to_move.append(wp_elem)
-
-        for elem in elements_to_move:
-            to_layer_elem.add(elem)
-
-        # Enforce correct Z-order immediately after the move.
-        from_layer_elem.sort_children_by_z_order()
-        to_layer_elem.sort_children_by_z_order()
-        self.canvas.queue_draw()
-
-        # Step 3: Update the model
-        # The signals fired by these methods will now trigger a non-destructive
-        # reconciliation in the LayerElements.
-        for wp in self.workpieces:
-            if wp.parent:
-                wp.parent.remove_child(wp)
-            to_layer.add_child(wp)
-
-    def execute(self):
-        """Executes the command, moving workpieces to the new layer."""
-        self._move(self.old_layer, self.new_layer)
-
-    def undo(self):
-        """Undoes the command, moving workpieces back to the old layer."""
-        self._move(self.new_layer, self.old_layer)
 
 
 class WorkSurface(Canvas):
@@ -183,7 +116,6 @@ class WorkSurface(Canvas):
         self.resize_begin.connect(self._on_resize_begin)
         self.rotate_begin.connect(self._on_any_transform_begin)
         self.shear_begin.connect(self._on_any_transform_begin)
-        self.elements_deleted.connect(self._on_elements_deleted)
 
         # The primary connection for model updates
         self.transform_end.connect(self._on_transform_end)
@@ -292,86 +224,18 @@ class WorkSurface(Canvas):
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
-        Finalizes an interactive transform. This method reads the final state
-        from all affected view elements (including parent groups that were
-        auto-updated) and commits these changes to the data model in a
-        single, undoable transaction.
+        Finalizes an interactive transform by delegating to the
+        transform_cmd module to create the undoable transaction.
         """
-        logger.debug(
-            f"Transform end for {len(elements)} element(s)."
-            " Finalizing state and creating undo transaction."
+        transform_cmd.finalize_interactive_transform(
+            self.doc.history_manager, elements, self._transform_start_states
         )
-        history = self.doc.history_manager
-
-        # Step 1: Collect all elements that may have changed.
-        # The view (ShrinkWrapGroup) has already updated itself automatically.
-        # We just need to find all the elements that changed.
-        affected_elements = set()
-        for element in elements:
-            affected_elements.add(element)
-            parent = element.parent
-            while isinstance(parent, GroupElement):
-                affected_elements.add(parent)
-                parent = parent.parent
-
-        # Step 2: Create commands for all changes found.
-        commands_to_execute = []
-        for element in affected_elements:
-            if (
-                not isinstance(element.data, DocItem)
-                or element not in self._transform_start_states
-                or "matrix" not in self._transform_start_states[element]
-            ):
-                continue
-
-            docitem: DocItem = element.data
-            start_matrix = self._transform_start_states[element]["matrix"]
-            new_matrix = element.transform
-
-            if start_matrix != new_matrix:
-                cmd = ChangePropertyCommand(
-                    target=docitem,
-                    property_name="matrix",
-                    new_value=new_matrix.copy(),
-                    old_value=start_matrix,
-                )
-                commands_to_execute.append(cmd)
-
-        # Step 3: Execute all commands in a single transaction.
-        if commands_to_execute:
-            with history.transaction(_("Transform item(s)")) as t:
-                for cmd in commands_to_execute:
-                    t.execute(cmd)
 
         self._transform_start_states.clear()
 
         # If it was a resize, the ops are now stale. Resume the generator.
         if self._resizing:
             self.ops_generator.resume()
-
-    def _on_elements_deleted(self, sender, elements: List[CanvasElement]):
-        logger.debug(
-            f"Elements deleted event received for {len(elements)} elements."
-        )
-        items_to_delete = [
-            elem.data for elem in elements if isinstance(elem.data, DocItem)
-        ]
-
-        if not items_to_delete:
-            return
-
-        history = self.doc.history_manager
-        with history.transaction(_("Delete item(s)")) as t:
-            for item in items_to_delete:
-                if item.parent:
-                    cmd = ListItemCommand(
-                        owner_obj=item.parent,
-                        item=item,
-                        undo_command="add_child",
-                        redo_command="remove_child",
-                        name=_("Delete item"),
-                    )
-                    t.add(cmd)
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""
@@ -854,28 +718,8 @@ class WorkSurface(Canvas):
         if is_ctrl and (
             keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
         ):
-            selected_wps = self.get_selected_workpieces()
-            if not selected_wps:
-                return True
-
-            layers = self.doc.layers
-            if len(layers) <= 1:
-                return True
-
-            current_layer = selected_wps[0].layer
-            if not current_layer:
-                return True
-
-            current_index = layers.index(current_layer)
             direction = -1 if keyval == Gdk.KEY_Page_Up else 1
-            new_index = (current_index + direction + len(layers)) % len(layers)
-            new_layer = layers[new_index]
-
-            cmd = MoveWorkpiecesLayerCommand(
-                self, selected_wps, new_layer, current_layer
-            )
-            self.doc.history_manager.execute(cmd)
-
+            layer_cmd.move_selected_to_adjacent_layer(self, direction)
             return True
 
         # Handle clipboard and duplication
@@ -917,23 +761,17 @@ class WorkSurface(Canvas):
             move_x = move_amount_mm
 
         if move_x != 0 or move_y != 0:
-            selected_items = [e.data for e in self.get_selected_elements()]
+            selected_items = [
+                e.data
+                for e in self.get_selected_elements()
+                if isinstance(e.data, DocItem)
+            ]
             if not selected_items:
                 return True  # Consume event but do nothing
-            with self.doc.history_manager.transaction(_("Move item(s)")) as t:
-                for item in selected_items:
-                    old_matrix = item.matrix.copy()
-                    # Apply delta translation to the existing matrix
-                    # Nudge must be pre-multiplied to happen in world space
-                    delta = Matrix.translation(move_x, move_y)
-                    new_matrix = delta @ old_matrix
-                    cmd = ChangePropertyCommand(
-                        target=item,
-                        property_name="matrix",
-                        new_value=new_matrix,
-                        old_value=old_matrix,
-                    )
-                    t.execute(cmd)
+
+            transform_cmd.nudge_items(
+                self.doc.history_manager, selected_items, move_x, move_y
+            )
             return True
 
         # Propagate to parent Canvas for its default behavior (e.g., Shift/

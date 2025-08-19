@@ -300,10 +300,9 @@ class MainWindow(Adw.ApplicationWindow):
         )
         right_pane_box.append(self.item_revealer)
 
-        # Connect signals for item selection
+        # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
-
-        # Connect signals for clipboard and duplication
+        self.surface.elements_deleted.connect(self.on_elements_deleted)
         self.surface.cut_requested.connect(self.on_cut_requested)
         self.surface.copy_requested.connect(self.on_copy_requested)
         self.surface.paste_requested.connect(self.on_paste_requested)
@@ -942,6 +941,14 @@ class MainWindow(Adw.ApplicationWindow):
         This is now a simple wrapper around the centralized command.
         """
         file_cmd.load_file_from_path(self, filename, mime_type)
+
+    def on_elements_deleted(self, sender, elements: List[CanvasElement]):
+        """Handles the deletion signal from the WorkSurface."""
+        items_to_delete = [
+            elem.data for elem in elements if isinstance(elem.data, DocItem)
+        ]
+        if items_to_delete:
+            edit_cmd.remove_items(self, items_to_delete, "Delete item(s)")
 
     def on_cut_requested(self, sender, items: List[DocItem]):
         """Handles the 'cut-requested' signal from the WorkSurface."""
