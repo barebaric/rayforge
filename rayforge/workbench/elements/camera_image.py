@@ -6,6 +6,10 @@ import numpy as np
 from gi.repository import GLib  # type: ignore
 from ...camera.models.camera import Camera
 from ..canvas import CanvasElement
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from ..surface import WorkSurface
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +21,8 @@ MAX_PROCESSING_DIMENSION = 2048
 
 class CameraImageElement(CanvasElement):
     def __init__(self, camera: Camera, **kwargs):
-        # The element is NOT buffered in the traditional sense. We manage
-        # our own surface cache to prevent flicker from the live feed.
+        # We are not a standard buffered element because we manage our own
+        # surface cache to prevent flicker. We will use a custom draw() method.
         super().__init__(
             x=0, y=0, width=1.0, height=1.0, buffered=False, **kwargs
         )
@@ -47,6 +51,8 @@ class CameraImageElement(CanvasElement):
         ensures the element's visibility is correctly re-evaluated when the
         model changes at runtime.
         """
+        if not isinstance(self.canvas, WorkSurface):
+            return
         if not self.canvas:
             return  # Cannot update visibility without canvas context
         is_globally_visible = self.canvas._cam_visible
@@ -77,15 +83,22 @@ class CameraImageElement(CanvasElement):
             self.canvas.queue_draw()
 
     def allocate(self, force: bool = False):
-        if self.parent:
-            self.width = self.parent.width
-            self.height = self.parent.height
+        """
+        Ensures our element's dimensions always match the canvas'.
+        """
+        worksurface = cast("WorkSurface", self.canvas)
+        self.set_size(worksurface.width_mm, worksurface.height_mm)
         return super().allocate(force)
 
     def draw(self, ctx: cairo.Context):
+        """
+        Draws the cached camera surface, scaled correctly to fit the element's
+        bounds, and triggers a recomputation if the camera state has changed.
+        """
         assert self.canvas, "Canvas must be set before drawing"
+        worksurface = cast("WorkSurface", self.canvas)
 
-        # 1. Always draw the last valid computed surface to prevent flicker.
+        # 1. Draw the last valid computed surface to prevent flicker.
         if self._cached_surface:
             ctx.save()
             source_w = self._cached_surface.get_width()
@@ -119,7 +132,7 @@ class CameraImageElement(CanvasElement):
 
             ctx.restore()
 
-        # 2. Determine if a new, updated surface needs to be computed.
+        # 2. Check if a new surface needs to be computed.
         # The output size for the recomputation should be the pixel dimensions
         # of the canvas widget itself, not the mm dimensions of the work area.
         output_width = self.canvas.get_width()
@@ -136,7 +149,7 @@ class CameraImageElement(CanvasElement):
         if self.camera.image_to_world:
             physical_area = (
                 (0, 0),
-                (self.canvas.width_mm, self.canvas.height_mm),
+                (worksurface.width_mm, worksurface.height_mm),
             )
 
         current_key = (
