@@ -1,9 +1,12 @@
-from gi.repository import Gtk, Gdk, Pango  # type: ignore
+import logging
+from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...undo.models.property_cmd import ChangePropertyCommand
 from ...icons import get_icon
+
+logger = logging.getLogger(__name__)
 
 
 css = """
@@ -120,7 +123,6 @@ class LayerView(Gtk.Box):
         self.layer.descendant_removed.disconnect(self.on_layer_changed)
         self.layer.descendant_updated.disconnect(self.on_layer_changed)
         self.doc.active_layer_changed.disconnect(self.on_layer_changed)
-        super().do_destroy()
 
     def on_name_escape_pressed(self, controller, keyval, keycode, state):
         """Handler for the 'key-pressed' signal to catch Escape."""
@@ -238,8 +240,12 @@ class LayerView(Gtk.Box):
     def apply_css():
         provider = Gtk.CssProvider()
         provider.load_from_string(css)
+        display = Gdk.Display.get_default()
+        if not display:
+            logger.warning("No default Gdk display found. CSS may not apply.")
+            return
         Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
+            display,
             provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )

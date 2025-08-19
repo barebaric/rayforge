@@ -1,6 +1,7 @@
 from gi.repository import Gtk, Gdk  # type: ignore
 from blinker import Signal
 from ...icons import get_icon
+from ..util.gtk import apply_css
 
 
 css = """
@@ -47,23 +48,12 @@ class DragListBox(Gtk.ListBox):
         super().__init__(**kwargs)
         self.set_selection_mode(Gtk.SelectionMode.NONE)
         self.add_css_class("material-list")
-        self.apply_css()
+        apply_css(css)
         self.reordered = Signal()
         self.drag_source_row = None
         self.potential_drop_index = -1
 
-    def apply_css(self):
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
-
     def add_row(self, row):
-        row.add_css_class("material-row")
-
         # Get original content widget from the row
         original_child = row.get_child()
         if original_child:
@@ -92,21 +82,26 @@ class DragListBox(Gtk.ListBox):
 
         row.set_child(hbox)
         self.append(row)
-        self.make_row_draggable(row, handle)
+        self.make_row_draggable(row)
 
-    def make_row_draggable(self, row, handle):
+    def make_row_draggable(self, row):
+        # Drag source is attached to the entire row. Clicks on interactive
+        # children (buttons, entries) are consumed by them and won't
+        # start a drag, which is the desired behavior.
         drag_source = Gtk.DragSource()
         drag_source.set_actions(Gdk.DragAction.MOVE)
         drag_source.connect("prepare", self.on_drag_prepare, row)
-        drag_source.connect("drag-end", self.on_drag_end, row)
+        drag_source.connect("drag-end", self.on_drag_end)
         # Attach the drag source to the entire row. Clicks on interactive
         # children (buttons, entries) are consumed by them and won't
         # start a drag, which is the desired behavior.
         row.add_controller(drag_source)
 
+        # Drop target is also on the entire row.
         drop_target = Gtk.DropTarget.new(Gtk.ListBoxRow, Gdk.DragAction.MOVE)
-        drop_target.connect("drop", self.on_drop, row)
-        drop_target.connect("motion", self.on_drag_motion, row)
+        drop_target.connect("drop", self.on_drop)
+        drop_target.connect("motion", self.on_drag_motion)
+        drop_target.connect("leave", self.on_drag_leave)
         row.add_controller(drop_target)
 
     def _remove_drop_marker(self):
@@ -127,10 +122,11 @@ class DragListBox(Gtk.ListBox):
         self.potential_drop_index = -1
         return Gdk.ContentProvider.new_for_value(row)
 
-    def on_drag_motion(self, drop_target, x, y, target_row):
+    def on_drag_motion(self, drop_target, x, y):
         # This handler is called on the *target* list. We only want to handle
         # drags that originated from *this* list. `self.drag_source_row` is
         # only set on the source list in `on_drag_prepare`.
+        target_row = drop_target.get_widget()
         if not self.drag_source_row:
             return Gdk.DragAction(0)  # Reject drops from other lists
 
@@ -153,11 +149,10 @@ class DragListBox(Gtk.ListBox):
         self.potential_drop_index = drop_index
         return Gdk.DragAction.MOVE
 
-    def on_drag_leave(self, drag, row):
-        row.remove_css_class("drop-above")
-        row.remove_css_class("drop-below")
+    def on_drag_leave(self, drop_target):
+        self._remove_drop_marker()
 
-    def on_drag_end(self, source, drag, delete_data, row):
+    def on_drag_end(self, source, drag, delete_data):
         # `delete_data` is True if `on_drop` returned True, meaning the drop
         # happened on a valid target.
         # If `delete_data` is False, we check if we have a last known valid
@@ -175,7 +170,7 @@ class DragListBox(Gtk.ListBox):
         self.drag_source_row = None
         self.potential_drop_index = -1
 
-    def on_drop(self, drop_target, value, x, y, target_row):
+    def on_drop(self, drop_target, value, x, y):
         # This handler is called on the *target* list. We only want to handle
         # drags that originated from *this* list.
         if not self.drag_source_row:

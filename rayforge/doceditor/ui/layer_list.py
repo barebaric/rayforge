@@ -1,4 +1,5 @@
-from gi.repository import Gtk  # type: ignore
+import logging
+from gi.repository import Gtk
 from blinker import Signal
 from ...core.doc import Doc
 from ...undo.models.list_cmd import ReorderListCommand
@@ -6,6 +7,8 @@ from ...core.layer import Layer
 from ...shared.ui.draglist import DragListBox
 from .layer_view import LayerView
 from ...shared.ui.expander import Expander
+
+logger = logging.getLogger(__name__)
 
 
 class LayerListView(Expander):
@@ -84,14 +87,13 @@ class LayerListView(Expander):
 
         for layer in self.doc.layers:
             list_box_row = Gtk.ListBoxRow()
-            list_box_row.data = layer
+            list_box_row.data = layer  # type: ignore
             layer_view = LayerView(self.doc, layer)
             # Control delete button visibility from the list view
             layer_view.set_deletable(deletable)
             layer_view.delete_clicked.connect(self.on_delete_layer_clicked)
             list_box_row.set_child(layer_view)
             self.draglist.add_row(list_box_row)
-            layer_view.update_style()
 
     def on_row_activated(self, listbox, row):
         """Emits a signal when a layer row is clicked/activated."""
@@ -141,7 +143,7 @@ class LayerListView(Expander):
 
     def on_layers_reordered(self, sender):
         """Handles reordering of Layers with an undoable command."""
-        new_order = [row.data for row in self.draglist]
+        new_order = [row.data for row in self.draglist]  # type: ignore
         command = ReorderListCommand(
             target_obj=self.doc,
             list_property_name="layers",
