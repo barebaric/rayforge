@@ -128,7 +128,7 @@ class BaseRenderer:
         self.shader: Optional[Shader] = None
         self._owned_vaos: list[int] = []
         self._owned_vbos: list[int] = []
-        self._owned_textures: list[int] = []  # <-- ADDED
+        self._owned_textures: list[int] = []
         self._owned_renderers: list[BaseRenderer] = []
 
     def _create_vao(self) -> int:
@@ -143,7 +143,7 @@ class BaseRenderer:
         self._owned_vbos.append(vbo)
         return vbo
 
-    def _create_texture(self) -> int:  # <-- ADDED
+    def _create_texture(self) -> int:
         """Creates a Texture and registers it for automatic cleanup."""
         texture = GL.glGenTextures(1)
         self._owned_textures.append(texture)
@@ -163,7 +163,7 @@ class BaseRenderer:
             if self.shader:
                 self.shader.cleanup()
 
-            if self._owned_textures:  # <-- ADDED
+            if self._owned_textures:
                 GL.glDeleteTextures(self._owned_textures)
                 self._owned_textures.clear()
 

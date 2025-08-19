@@ -179,6 +179,8 @@ class Canvas3D(Gtk.GLArea):
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
+        self._init_gl_resources()
+
         # Create the camera with placeholder values. The correct initial view
         # will be set by reset_view_iso() below.
         self.camera = Camera(
@@ -297,9 +299,7 @@ class Canvas3D(Gtk.GLArea):
 
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
-        if not self._gl_initialized:
-            self._init_gl_resources()
-        if not self._gl_initialized or not self.camera:
+        if not self.camera:
             return False
 
         self._update_theme_colors()
