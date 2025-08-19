@@ -4,7 +4,6 @@ from typing import List, Optional, Callable, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
-from .shared.tasker.context import ExecutionContext
 from .config import config
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -17,7 +16,6 @@ from .pipeline.steps import (
     create_outline_step,
     create_raster_step,
 )
-from .pipeline.job import generate_job_ops
 from .undo import HistoryManager, Command
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
@@ -35,6 +33,7 @@ from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
+from .workbench import view_mode_cmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 
 
@@ -329,94 +328,8 @@ class MainWindow(Adw.ApplicationWindow):
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
-        """
-        Handles the state change for the 'show_3d_view' action.
-        Can be called via 'activate' (value=None) or 'change-state'.
-        """
-        current_state = action.get_state()
-        logger.debug(f"on_show_3d_view: state {current_state}, value {value}")
-        is_3d = current_state.get_boolean() if current_state else False
-        request_3d = value.get_boolean() if value else not is_3d
-
-        # If we are already in the desired state, do nothing.
-        if is_3d == request_3d:
-            return
-
-        if request_3d:
-            if not canvas3d_initialized:
-                logger.warning(
-                    "Attempted to open 3D view, but it is not available."
-                )
-                toast = Adw.Toast.new(
-                    _("3D view is not available due to missing dependencies.")
-                )
-                self.toast_overlay.add_toast(toast)
-                return  # Do not change state if unavailable
-
-            machine = config.machine
-            if not machine:
-                logger.warning(
-                    "Cannot show 3D view without an active machine."
-                )
-                toast = Adw.Toast.new(
-                    _("Select a machine to open the 3D view.")
-                )
-                self.toast_overlay.add_toast(toast)
-                return  # Do not change state if no machine
-
-            # Checks passed, commit to state change and switch view
-            action.set_state(GLib.Variant.new_boolean(True))
-            self.view_stack.set_visible_child_name("3d")
-
-            # Immediately clear the renderer of any old data
-            if self.canvas3d and self.canvas3d.ops_renderer:
-                self.canvas3d.ops_renderer.clear()
-                self.canvas3d.queue_render()
-
-            async def load_ops_coro(context: ExecutionContext):
-                """Coroutine to generate and load ops into the 3D view."""
-                current_machine = config.machine
-                if not current_machine:
-                    return
-
-                try:
-                    logger.debug("Creating 3D preview")
-                    context.set_message("Generating path preview...")
-                    ops = await generate_job_ops(
-                        self.doc,
-                        current_machine,
-                        self.surface.ops_generator,
-                        context,
-                    )
-
-                    # Safely hand off the complete Ops object to the canvas.
-                    # The canvas will process it during its next render cycle.
-                    if self.canvas3d:
-                        self.canvas3d.set_ops(ops)
-
-                    logger.debug("Preview ready")
-                    context.set_message("Path preview loaded.")
-                    context.set_progress(1.0)
-                except Exception:
-                    logger.error(
-                        "Failed to generate ops for 3D view", exc_info=True
-                    )
-                    toast = Adw.Toast.new(
-                        _("Failed to generate path preview.")
-                    )
-                    self.toast_overlay.add_toast(toast)
-                    # On failure, revert view and action state
-                    self.view_stack.set_visible_child_name("2d")
-                    action.set_state(GLib.Variant.new_boolean(False))
-                    raise  # Re-raise to be handled by the task manager
-
-            # Run the coroutine to load the ops.
-            task_mgr.add_coroutine(load_ops_coro, key="load-3d-preview")
-        else:
-            # Switching back to 2D
-            action.set_state(GLib.Variant.new_boolean(False))
-            self.view_stack.set_visible_child_name("2d")
-            self.surface.grab_focus()
+        """Delegates the view switching logic to the command module."""
+        view_mode_cmd.toggle_3d_view(self, action, value)
 
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -434,29 +347,21 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        if self.canvas3d:
-            self.canvas3d.reset_view_top()
+        view_mode_cmd.set_view_top(self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        if self.canvas3d:
-            self.canvas3d.reset_view_front()
+        view_mode_cmd.set_view_front(self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        if self.canvas3d:
-            self.canvas3d.reset_view_iso()
+        view_mode_cmd.set_view_iso(self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         """Handles state changes for the perspective view action."""
-        if self.canvas3d and self.canvas3d.camera:
-            is_perspective = value.get_boolean()
-            self.canvas3d.camera.is_perspective = is_perspective
-            self.canvas3d.queue_render()
-            # Ensure the action's state is updated to reflect the change.
-            action.set_state(value)
+        view_mode_cmd.toggle_perspective(self.canvas3d, action, value)
 
     def _initialize_document(self):
         """
