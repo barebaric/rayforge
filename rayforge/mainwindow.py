@@ -35,7 +35,7 @@ from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
-from .shared.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 
 
 logger = logging.getLogger(__name__)
