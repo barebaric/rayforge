@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Dict, Callable, Optional
 from gi.repository import Gtk, Gio, GLib  # type: ignore
 from .doceditor import layout_actions
 from .core.group import Group
+from .doceditor import layer_cmd
 from .doceditor.group_cmd import CreateGroupCommand, UngroupCommand
 
 if TYPE_CHECKING:
@@ -61,6 +62,10 @@ class ActionManager:
         self._add_action("duplicate", self.win.on_menu_duplicate)
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
+
+        # Layer Management Actions
+        self._add_action("layer-move-up", self.on_layer_move_up)
+        self._add_action("layer-move-down", self.on_layer_move_down)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -142,6 +147,18 @@ class ActionManager:
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
         return self.actions[name]
+
+    def on_layer_move_up(self, action, param):
+        """Handler for the 'layer-move-up' action."""
+        layer_cmd.move_selected_to_adjacent_layer(
+            self.win.surface, direction=-1
+        )
+
+    def on_layer_move_down(self, action, param):
+        """Handler for the 'layer-move-down' action."""
+        layer_cmd.move_selected_to_adjacent_layer(
+            self.win.surface, direction=1
+        )
 
     def on_group_action(self, action, param):
         """Handler for the 'group' action."""

@@ -672,6 +672,11 @@ class MainWindow(Adw.ApplicationWindow):
         )
         am.get_action("ungroup").set_enabled(can_ungroup)
 
+        # Update sensitivity for Layer actions
+        can_move_layers = has_selection and len(self.doc.layers) > 1
+        am.get_action("layer-move-up").set_enabled(can_move_layers)
+        am.get_action("layer-move-down").set_enabled(can_move_layers)
+
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
         can_show_3d = canvas3d_initialized and not task_mgr.has_tasks()

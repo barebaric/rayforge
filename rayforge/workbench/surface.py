@@ -19,6 +19,7 @@ from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
 from ..doceditor import transform_cmd, layer_cmd
+from . import context_menu
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,14 @@ class WorkSurface(Canvas):
         self.add_controller(self._pan_gesture)
         self._pan_start = (0.0, 0.0)
 
+        # Add right-click gesture for context menu
+        self._context_menu_gesture = Gtk.GestureClick.new()
+        self._context_menu_gesture.set_button(Gdk.BUTTON_SECONDARY)
+        self._context_menu_gesture.connect(
+            "pressed", self.on_right_click_pressed
+        )
+        self.add_controller(self._context_menu_gesture)
+
         # This is hacky, but what to do: The EventControllerScroll provides
         # no access to any mouse position, and there is no easy way to
         # get the mouse position in Gtk4. So I have to store it here and
@@ -126,6 +135,28 @@ class WorkSurface(Canvas):
         # globally, which is necessary for undo/redo actions triggered
         # outside of this widget.
         self.doc.history_manager.changed.connect(self._on_history_changed)
+
+    def on_right_click_pressed(
+        self, gesture, n_press: int, x: float, y: float
+    ):
+        """Handles right-clicks to show the context menu."""
+        world_x, world_y = self._get_world_coords(x, y)
+        hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
+
+        if not hit_elem or hit_elem is self.root:
+            # If clicked on empty space, do nothing.
+            return
+
+        # If the right-clicked item is not already part of the selection,
+        # clear the old selection and select just this one item.
+        if not hit_elem.selected:
+            self.unselect_all()
+            hit_elem.selected = True
+            self._finalize_selection_state()
+
+        # Now that we're sure there's a relevant selection, delegate to the
+        # context menu module to build and show the menu.
+        context_menu.show_context_menu(self, gesture)
 
     def _update_theme_colors(self):
         """
