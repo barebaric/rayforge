@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence
 from ..core.item import DocItem
 from ..core.group import Group
 from ..core.workpiece import WorkPiece
-from ..undo import ListItemCommand
+from ..core.workflow import Workflow
+from ..undo import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
+    from ..core.doc import Doc
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +213,31 @@ def remove_items(
                 name=_("Remove item"),
             )
             t.execute(command)
+
+
+def clear_all_items(doc: "Doc"):
+    """
+    Removes all workpieces and groups from all layers in the document in a
+    single undoable transaction.
+    """
+    if not doc.has_workpiece():
+        return
+
+    with doc.history_manager.transaction(_("Remove all workpieces")) as t:
+        for layer in doc.layers:
+            # A layer is considered "not empty" if it has any children
+            # besides its mandatory workflow.
+            if any(
+                not isinstance(child, Workflow) for child in layer.children
+            ):
+                command = ReorderListCommand(
+                    target_obj=layer,
+                    list_property_name="children",
+                    new_list=[layer.workflow],
+                    setter_method_name="set_children",
+                    name=_("Clear Layer Items"),
+                )
+                t.execute(command)
 
 
 def reset_paste_counter():

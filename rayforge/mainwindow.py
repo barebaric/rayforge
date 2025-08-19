@@ -12,18 +12,18 @@ from .machine.models.machine import Machine
 from .core.doc import Doc
 from .core.group import Group
 from .core.item import DocItem
-from .core.workflow import Workflow
 from .pipeline.steps import (
     create_contour_step,
     create_outline_step,
     create_raster_step,
 )
 from .pipeline.job import generate_job_ops
-from .undo import HistoryManager, Command, ReorderListCommand
+from .undo import HistoryManager, Command
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
 from .doceditor import edit_cmd, file_cmd
+from .machine import cmd as machine_cmd
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
@@ -838,25 +838,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(active)
 
     def on_clear_clicked(self, action, param):
-        if not self.doc.has_workpiece():
-            return
-
-        history = self.doc.history_manager
-        with history.transaction(_("Remove all workpieces")) as t:
-            for layer in self.doc.layers:
-                # A layer is considered "not empty" if it has any children
-                # besides its mandatory workflow.
-                if any(
-                    not isinstance(child, Workflow) for child in layer.children
-                ):
-                    command = ReorderListCommand(
-                        target_obj=layer,
-                        list_property_name="children",
-                        new_list=[layer.workflow],
-                        setter_method_name="set_children",
-                        name=_("Clear Layer Items"),
-                    )
-                    t.execute(command)
+        edit_cmd.clear_all_items(self.doc)
 
     def on_export_clicked(self, action, param=None):
         file_cmd.export_gcode(self)
@@ -864,56 +846,21 @@ class MainWindow(Adw.ApplicationWindow):
     def on_home_clicked(self, action, param):
         if not config.machine:
             return
-        driver = config.machine.driver
-        task_mgr.add_coroutine(lambda ctx: driver.home())
+        machine_cmd.home_machine(config.machine)
 
     def on_frame_clicked(self, action, param):
         if not config.machine:
             return
-
-        async def frame_coro(context: ExecutionContext):
-            machine = config.machine
-            if not machine:
-                return
-
-            try:
-                head = machine.heads[0]
-                if not head.frame_power:
-                    return
-
-                ops = await generate_job_ops(
-                    self.doc, machine, self.surface.ops_generator, context
-                )
-                frame = ops.get_frame(
-                    power=head.frame_power, speed=machine.max_travel_speed
-                )
-                frame *= 20
-                await machine.driver.run(frame, machine)
-            except Exception:
-                logger.error("Failed to execute framing job", exc_info=True)
-                raise
-
-        task_mgr.add_coroutine(frame_coro, key="frame-job")
+        machine_cmd.frame_job(
+            self.doc, config.machine, self.surface.ops_generator
+        )
 
     def on_send_clicked(self, action, param):
         if not config.machine:
             return
-
-        async def send_coro(context: ExecutionContext):
-            machine = config.machine
-            if not machine:
-                return
-
-            try:
-                ops = await generate_job_ops(
-                    self.doc, machine, self.surface.ops_generator, context
-                )
-                await machine.driver.run(ops, machine)
-            except Exception:
-                logger.error("Failed to send job to machine", exc_info=True)
-                raise
-
-        task_mgr.add_coroutine(send_coro, key="send-job")
+        machine_cmd.send_job(
+            self.doc, config.machine, self.surface.ops_generator
+        )
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -924,16 +871,14 @@ class MainWindow(Adw.ApplicationWindow):
         """
         if not config.machine:
             return
-        driver = config.machine.driver
         is_requesting_hold = value.get_boolean()
-        task_mgr.add_coroutine(lambda ctx: driver.set_hold(is_requesting_hold))
+        machine_cmd.set_hold(config.machine, is_requesting_hold)
         action.set_state(value)
 
     def on_cancel_clicked(self, action, param):
         if not config.machine:
             return
-        driver = config.machine.driver
-        task_mgr.add_coroutine(lambda ctx: driver.cancel())
+        machine_cmd.cancel_job(config.machine)
 
     def load_file(self, filename: Path, mime_type: Optional[str]):
         """
