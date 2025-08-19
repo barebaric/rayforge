@@ -39,8 +39,6 @@ class CameraImageElement(CanvasElement):
         self._cached_surface_data: np.ndarray | None = None
         # A key representing the state that generated the cached surface.
         self._cached_key: tuple | None = None
-        # A flag to prevent scheduling multiple recomputations.
-        self._recomputing: bool = False
 
     def _on_camera_model_changed(self, sender):
         """
@@ -51,11 +49,10 @@ class CameraImageElement(CanvasElement):
         ensures the element's visibility is correctly re-evaluated when the
         model changes at runtime.
         """
-        if not isinstance(self.canvas, WorkSurface):
-            return
         if not self.canvas:
             return  # Cannot update visibility without canvas context
-        is_globally_visible = self.canvas._cam_visible
+        worksurface = cast("WorkSurface", self.canvas)
+        is_globally_visible = worksurface._cam_visible
         should_be_visible = is_globally_visible and self.camera.enabled
         if self.visible != should_be_visible:
             self.set_visible(should_be_visible)
@@ -162,49 +159,30 @@ class CameraImageElement(CanvasElement):
 
         # 3. Recompute if needed, but in a non-blocking way.
         if self._cached_key != current_key:
-            self._recompute_surface(current_key)
-
-    def _recompute_surface(self, key_for_this_job: tuple):
-        """
-        Performs the expensive image processing in an idle callback.
-        This function's broad exception handling is crucial to prevent
-        crashing the main UI loop.
-        """
-        if self._recomputing:
-            return
-        self._recomputing = True
-
-        # Schedule the expensive work to run when the UI is idle.
-        GLib.idle_add(self._process_and_update_cache, key_for_this_job)
+            GLib.idle_add(self._process_and_update_cache, current_key)
 
     def _process_and_update_cache(self, key_for_this_job: tuple) -> bool:
         """The actual work, to be run by GLib.idle_add."""
-        try:
-            image_data = self.camera.image_data
-            img_data_id, width, height, p_area, transp = key_for_this_job
+        image_data = self.camera.image_data
+        img_data_id, width, height, p_area, transp = key_for_this_job
 
-            if image_data is None or id(image_data) != img_data_id:
-                # A newer frame has already arrived; this job is stale.
-                return False  # Stop the idle add
+        if image_data is None or id(image_data) != img_data_id:
+            # A newer frame has already arrived; this job is stale.
+            return False  # Stop the idle add
 
-            # Generate both the surface and its data buffer.
-            result = self._generate_surface(
-                image_data, (width, height), p_area, transp
-            )
+        # Generate both the surface and its data buffer.
+        result = self._generate_surface(
+            image_data, (width, height), p_area, transp
+        )
 
-            if result:
-                new_surface, new_surface_data = result
-                # Store both to keep the data buffer alive.
-                self._cached_surface = new_surface
-                self._cached_surface_data = new_surface_data
-                self._cached_key = key_for_this_job
-                if self.canvas:
-                    self.canvas.queue_draw()
-
-        except Exception as e:
-            logger.error(f"Failed to recompute camera surface: {e}")
-        finally:
-            self._recomputing = False
+        if result:
+            new_surface, new_surface_data = result
+            # Store both to keep the data buffer alive.
+            self._cached_surface = new_surface
+            self._cached_surface_data = new_surface_data
+            self._cached_key = key_for_this_job
+            if self.canvas:
+                self.canvas.queue_draw()
 
         # This function should only run once per schedule.
         return False
