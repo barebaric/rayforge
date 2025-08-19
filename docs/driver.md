@@ -1,118 +1,68 @@
 # Rayforge Driver Development Guide
 
-This guide will help you create a new driver to support your laser.
+This guide provides a high-level overview of how to create a driver in Rayforge to add support for your laser cutter or engraver. By creating a driver, you integrate your machine's unique communication protocol and command language into the Rayforge ecosystem.
 
 ## Driver Overview
 
-A driver:
+A driver is the bridge between Rayforge's core logic and your physical hardware. It is responsible for three main tasks:
 
-- **Manages connectivity** (HTTP, WebSocket, serial, etc.).
-- Translates generic Ops (machine instructions) into **specific machine commands**
-  (e.g., Gcode).
-- **Emits signals** for UI integration, such as status changes, laser position
-  updates, or log messages.
-- **Runs asynchronously** to avoid blocking the main thread.
+1.  **Managing Connectivity:** Handling the low-level communication protocol (Serial, WebSocket, HTTP, etc.).
+2.  **Translating and Executing Jobs:** Converting Rayforge's internal representation of a job (`Ops`) into machine-specific commands (like G-code) and sending them to the device.
+3.  **Reporting State:** Emitting signals to update the UI with the laser's real-time position, status (`IDLE`, `RUN`), and log messages.
 
-Rayforge simplifies driver implementation by providing modules for most common
-tasks. A typical driver uses specific transport implementations (like HttpTransport,
-WebSocketTransport) and OpsEncoder instances to handle connectivity and command
-translation.
+To simplify this, Rayforge provides an architecture based on composable parts:
 
 ```mermaid
 graph TD;
-    Driver-->Transport;
-    Driver-->OpsEncoder;
+    subgraph Your Driver Implementation
+        Driver-->Transport;
+        Driver-->OpsEncoder;
+    end
+    
+    subgraph Rayforge Core
+        OpsProducer --> Ops;
+    end
+
+    Ops --> Driver;
+    Transport --> Device[Physical Laser];
 ```
 
-- Transport classes maintain stable connections to devices (with automatic
-  reconnection).
-- Encoders convert Rayforge's internal Ops language into device-specific
-  commands.
+-   **`OpsEncoder`:** Translates `Ops` into a specific command language (e.g., G-code).
+-   **`Transport`:** Manages the connection and data transfer.
+-   **`Driver`:** Orchestrates the process, handles device state, and communicates with the UI.
 
-For example, the GrblDriver uses HTTP and WebSocket transports alongside a
-G-code encoder:
+All driver operations are **asynchronous** to ensure the user interface remains responsive.
 
-```mermaid
-graph TD;
-    GrblDriver-->HttpTransport;
-    GrblDriver-->WebSocketTransport;
-    GrblDriver-->GcodeEncoder;
-```
+## The `Ops` Language
 
-A driver should track the state of the device it is connected to. It does this
-by using the `DeviceStatus` and `DeviceState` classes:
+Rayforge describes a laser job as a sequence of high-level operations, stored in an `Ops` object. This is the universal language within Rayforge for describing machine movements, independent of any specific hardware.
 
-- `DeviceStatus` represents a status such as IDLE, RUN, or ALARM.
-- `DeviceState` Encapsulates full device state (position, speed, status, etc.).
+| `Ops` Method | Signature | Description |
+| :--- | :--- | :--- |
+| `move_to` | `(x, y, z=0.0)` | Rapid movement (no cutting) |
+| `line_to` | `(x, y, z=0.0)` | Cutting/Engraving movement |
+| `arc_to` | `(x, y, i, j, cw=True, z=0.0)` | Cutting/Engraving arc movement |
+| `set_power` | `(power)` | Set laser power (0-100%) |
+| `set_cut_speed` | `(speed)` | Set speed for cutting moves (mm/min) |
+| `set_travel_speed` | `(speed)` | Set speed for rapid moves (mm/min) |
+| `enable_air_assist` | `()` | Turn on air assist |
+| `disable_air_assist`| `()` | Turn off air assist |
 
-```mermaid
-graph TD;
-    Driver-->State-->Status;
-```
-
-## OpsEncoder Overview
-
-An OpsEncoder translates **Ops objects** into device-specific
-commands. Ops objects are the Rayforge-internal "language" that
-describes what a machine should do.
-
-Rayforge includes a GcodeEncoder for G-code-compatible devices.
-For proprietary languages, implement a custom encoder first before
-developing the driver.
-
-The OpsEncoder has only one method with the following signature:
+Your driver receives an `Ops` object and must execute these operations on the device. Typically, this is done by passing the `Ops` object to an `OpsEncoder`.
 
 ```python
-def encode(ops: Ops, machine: Machine) -> str:
-```
-
-The Machine object is passed for additional hints, so that the
-encoder can respect any machine settings that may affect the
-translation.
-
-```mermaid
-flowchart LR
-    Ops-->OpsEncoder
-    Machine-->OpsEncoder
-    OpsEncoder-->End[Specific machine instructions]
-```
-
-## Ops Overview
-
-One of the main purposes of a driver is to translate the Rayforge-internal
-representation of a **laser's movement** and **state changes** into something the
-device understands.
-
-Rayforge generates these movements in an `Ops` class. The `Ops` class
-represents a sequence of the following operations:
-
-| Method                    | Description                      |
-| ------------------------- | -------------------------------- |
-| `move_to(x, y)`           | Rapid movement (no cutting) (mm) |
-| `line_to(x, y)`           | Cutting movement (mm)            |
-| `arc_to(x, y, i, j)`      | Cutting arc movement (mm)        |
-| `set_power(value)`        | Laser power (0-100%)             |
-| `set_cut_speed(value)`    | Cutting speed (mm/min)           |
-| `set_travel_speed(value)` | Rapid movement speed (mm/min)    |
-| `enable_air_assist()`     | Turn on air assist               |
-| `disable_air_assist()`    | Turn off air assist              |
-
-The following Ops example shows how Rayforge produces such objects:
-
-```python
+# Example of how Rayforge builds an Ops object
 ops = Ops()
-ops.move_to(0, 0)          # Move to origin
-ops.set_power(80)          # Set laser power
-ops.enable_air_assist()    # Enable air assist
-ops.line_to(100, 100)      # Cut diagonally
+ops.set_travel_speed(3000)
+ops.set_cut_speed(800)
+ops.set_power(80)
+
+ops.move_to(10, 10)       # Rapid move to start point
+ops.enable_air_assist()
+ops.line_to(50, 10)       # Cut a line with air assist
+ops.disable_air_assist()
+ops.line_to(50, 50)       # Cut a line without air assist
 ```
-
-Rayforge passes the resulting Ops object to the driver's `run()` method to
-execute a program.
-
-As explained above, the driver SHOULD use an OpsEncoder to perform the translation
-into the native language of the device.
-You can find examples for such encoders [here](../rayforge/opsencoder/).
 
 ## Driver Implementation
 
@@ -124,76 +74,50 @@ from .driver import Driver
 class YourDriver(Driver):
     label = "Your Device"  # Display name in the UI
     subtitle = "Description for users"
-    supports_settings = False # Set to True if the driver can read/write settings from/to the device
+    supports_settings = False # Set True if the driver can read/write firmware settings
 ```
 
-### Properties
+### Required Properties
 
-Drivers MUST have the following properties:
+-   `label`: A human-readable name shown in the UI.
+-   `subtitle`: A brief description shown below the name.
+-   `supports_settings`: A boolean indicating if the driver can read/write device settings (like GRBL's `$$`).
 
-- `label`: Contains a label to be shown as the driver name in the UI.
-- `subtitle`: Contains a subtitle to be shown in the UI.
-- `supports_settings`: A boolean indicating if the driver supports reading and writing device-specific settings.
+### Required Methods
 
-### Methods
+Your driver class **MUST** implement the following methods. Note that most are **asynchronous** and must be defined with `async def`.
 
-All drivers MUST provide the following methods:
+#### Configuration and Lifecycle
 
-- `get_setup_vars()`: Returns a `VarSet` object that defines the parameters needed for the initial driver configuration. Rayforge uses this to automatically generate the user interface for setting up a new machine.
+-   `get_setup_vars() -> VarSet`: **(Class Method)** Returns a `VarSet` object defining the parameters needed for connection (e.g., IP address, serial port). Rayforge uses this to automatically generate the setup form in the UI.
+-   `setup(**kwargs)`: Called once with the values from the setup form. Use this to initialize your transports and internal state.
+-   `async def connect()`: Establishes and maintains a persistent connection to the device. This method should contain auto-reconnection logic.
+-   `async def cleanup()`: Called when disconnecting. Should close all connections and release resources.
 
-- `get_setting_vars()`: Returns a list of `VarSet` objects that define the device's settings. This is used to build the settings page for a configured machine. It can return an empty list if `supports_settings` is `False`.
+#### Device Control
 
-- `setup(**kwargs)`: This method is invoked with a dictionary of values gathered from the UI defined by `get_setup_vars()`. Use this to initialize your driver with the user's configuration.
+-   `async def run(ops: Ops, machine: Machine)`: The core method for executing a job. Here, you'll use an `OpsEncoder` to convert the `ops` object into commands and send them to the device.
+-   `async def home()`: Homes the machine.
+-   `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser head to a specific XY coordinate.
+-   `async def set_hold(hold: bool = True)`: Pauses or resumes the current job.
+-   `async def cancel()`: Stops the current job.
 
-- `cleanup()`: Closes all connections and frees resources.
+#### Firmware Settings (if `supports_settings` is `True`)
 
-- `connect()`: Opens and maintains a persistent connection until `cleanup()` is called. It should handle auto-reconnection logic.
+-   `get_setting_vars() -> List[VarSet]`: Returns `VarSet` objects that define the structure of the device's settings page.
+-   `async def read_settings()`: Reads all settings from the device and calls `_on_settings_read()` with the result.
+-   `async def write_setting(key: str, value: Any)`: Writes a single setting to the device.
 
-- `run(ops: Ops, machine: Machine)`: Called to execute the given operations on the connected device. The `machine` parameter provides machine-specific settings that may affect the execution.
+### Emitting Signals
 
-- `home()`: Homes the device.
+To communicate with the UI, your driver must emit signals. To ensure proper logging and thread safety, **you must not emit signals directly.** Instead, call the protected helper methods from the base `Driver` class.
 
-- `set_hold(hold: bool = True)`: Pause/unpause the running program.
+-   `self._log(message)`: Sends a log message to the console.
+-   `self._on_state_changed()`: Call this whenever you update `self.state` to notify the UI of a status or position change.
+-   `self._on_connection_status_changed(status, message)`: Informs the UI about the connection status (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
+-   `self._on_command_status_changed(status, message)`: Reports the status of a sent command.
+-   `self._on_settings_read(settings)`: Sends the device settings you've read back to the UI.
 
-- `cancel()`: Cancels the running program.
+## Have Questions?
 
-- `move_to(pos_x: float, pos_y: float)`: Move the laser to the given position. Positions are passed in millimeters.
-
-- `read_settings()`: Reads the configuration settings from the device. When complete, it must call `_on_settings_read()` to emit the results.
-
-- `write_setting(key: str, value: Any)`: Writes a single configuration setting to the device.
-
-### Signals
-
-All drivers may provide the following signals:
-
-- `log_received`: for log messages
-- `state_changed`: to monitor the state (see State object explanation above)
-- `command_status_changed`: to monitor a command that was sent
-- `connection_status_changed`: signals connectivity changes
-- `settings_read`: signals that device settings have been read
-
-You MUST NOT emit these directly! Instead, call the base class
-wrapper methods of the Driver for these methods, such as:
-
-- `Driver._log()`
-- `Driver._on_state_changed()`
-- `Driver._on_settings_read()`
-- `Driver._on_command_status_changed()`
-- `Driver._on_connection_status_changed()`
-
-This ensures that the signals are properly logged.
-
-## State Management
-
-- Assume hardware retains state between commands (e.g., laser power)
-- Re-send critical states after reconnections
-
-## Enums
-
-- `DeviceStatus`: Represents the device status (e.g., IDLE, RUN, ALARM)
-- `TransportStatus`: Represents the transport connection status (e.g., CONNECTED, ERROR, SLEEPING)
-
-## Any questions?
-
-Please contact us through Github Issues!
+The best way to learn is to look at the existing drivers, like `GrblNextNetworkDriver`. If you get stuck, please don't hesitate to open an issue on GitHub! We're happy to help.
