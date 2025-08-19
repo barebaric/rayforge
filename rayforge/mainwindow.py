@@ -369,6 +369,11 @@ class MainWindow(Adw.ApplicationWindow):
             action.set_state(GLib.Variant.new_boolean(True))
             self.view_stack.set_visible_child_name("3d")
 
+            # Immediately clear the renderer of any old data
+            if self.canvas3d and self.canvas3d.ops_renderer:
+                self.canvas3d.ops_renderer.clear()
+                self.canvas3d.queue_render()
+
             async def load_ops_coro(context: ExecutionContext):
                 """Coroutine to generate and load ops into the 3D view."""
                 current_machine = config.machine
@@ -385,10 +390,12 @@ class MainWindow(Adw.ApplicationWindow):
                         context,
                     )
 
-                    # Update the canvas from the main thread context
-                    self.canvas3d.set_ops(ops)
-                    logger.debug("Preview ready")
+                    # Safely hand off the complete Ops object to the canvas.
+                    # The canvas will process it during its next render cycle.
+                    if self.canvas3d:
+                        self.canvas3d.set_ops(ops)
 
+                    logger.debug("Preview ready")
                     context.set_message("Path preview loaded.")
                     context.set_progress(1.0)
                 except Exception:

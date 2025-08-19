@@ -72,14 +72,20 @@ def _transform_and_clip_workpiece_ops(
     # Apply translation
     transform_4x4[0:2, 3] = [x, y]
 
-    # 3. Apply the combined rotation and translation to the ops.
-    ops.transform(transform_4x4)
-
-    # 4. Convert from canonical (Y-up) to machine-native coords
+    # 3. Combine workpiece world transform with machine coordinate transform.
+    # This avoids multiple passes over the ops data.
+    final_transform = transform_4x4
     if machine.y_axis_down:
         machine_height = machine.dimensions[1]
-        ops.scale(1, -1)
-        ops.translate(0, machine_height)
+        y_down_mat = np.identity(4)
+        y_down_mat[1, 1] = -1.0
+        y_down_mat[1, 3] = machine_height
+        # The machine coordinate transform is applied AFTER the workpiece's
+        # world transform.
+        final_transform = y_down_mat @ transform_4x4
+
+    # 4. Apply the single, combined transformation matrix.
+    ops.transform(final_transform)
 
     # 5. Clip to machine boundaries
     return ops.clip(clip_rect)

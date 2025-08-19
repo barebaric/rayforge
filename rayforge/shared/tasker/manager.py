@@ -115,6 +115,18 @@ class TaskManager:
             self._run_task(task, when_done), self._loop
         )
 
+    async def run_in_executor(
+        self, func: Callable[..., Any], *args: Any
+    ) -> Any:
+        """
+        Runs a synchronous function in a separate thread using asyncio's
+        default executor and returns the result. This is useful for offloading
+        blocking, CPU-bound work from an async coroutine.
+        """
+        # The first argument 'None' tells asyncio to use its default
+        # ThreadPoolExecutor.
+        return await self._loop.run_in_executor(None, func, *args)
+
     def run_process(
         self,
         func: Callable[..., Any],

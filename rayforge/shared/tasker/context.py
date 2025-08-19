@@ -4,10 +4,12 @@ ExecutionContext module for managing task execution context.
 
 import logging
 import threading
-from typing import Optional, Callable
+from typing import Optional, Callable, TYPE_CHECKING
 from ..util.glib import idle_add
 from .proxy import BaseExecutionContext
 
+if TYPE_CHECKING:
+    from .task import Task
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class ExecutionContext(BaseExecutionContext):
     ):
         super().__init__(_base_progress, _progress_range, _total)
         self._parent_context = _parent_context
+        self.task: Optional["Task"] = None
 
         if self._parent_context:
             # This is a sub-context. It doesn't own resources.

@@ -548,8 +548,10 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
 
     def set_ops(self, ops: Ops):
-        """Stores the given operations and schedules a redraw."""
+        """
+        Stores the given operations and schedules a redraw. This is safe to
+        call from any thread, even before the widget is realized.
+        """
         logger.debug("Received new ops. Storing and queueing render.")
         self._pending_ops = ops
-        if self.ops_renderer and self._gl_initialized:
-            self.queue_render()
+        self.queue_render()

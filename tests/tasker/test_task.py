@@ -70,7 +70,7 @@ class MockExecutionContext(ExecutionContext):
         super().__init__(
             update_callback=task.update, check_cancelled=task.is_cancelled
         )
-        self._task = task
+        self.task = task
 
 
 @pytest.fixture
@@ -330,6 +330,7 @@ class TestTaskCancellationMethod:
         await task.run(MockExecutionContext(task))
 
         assert task.get_status() == "completed"
+        assert task._task is not None
         assert task._task.done()
 
         # Spy on the internal task's cancel method

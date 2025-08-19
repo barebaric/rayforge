@@ -26,6 +26,8 @@ class OpsRenderer(BaseRenderer):
         self.travel_vao: int = 0
         self.cut_vertex_count: int = 0
         self.travel_vertex_count: int = 0
+        self.cut_vbo: int = 0
+        self.travel_vbo: int = 0
 
     def init_gl(self):
         """Initializes OpenGL resources for rendering."""
@@ -34,12 +36,15 @@ class OpsRenderer(BaseRenderer):
         self.travel_vao = self._create_vao()
         self.travel_vbo = self._create_vbo()
 
-    def update_ops(self, ops: Ops):
-        """
-        Processes an Ops object and updates the vertex buffers.
+    def clear(self):
+        """Clears the renderer's buffers and resets vertex counts."""
+        empty_data = np.array([], dtype=np.float32)
+        self.update_from_vertex_data(empty_data, empty_data)
 
-        Args:
-            ops: The operations object to process.
+    def prepare_vertex_data(self, ops: Ops) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Processes an Ops object into numpy arrays of vertices. This method is
+        thread-safe and can be run in the background.
         """
         cut_vertices: List[float] = []
         travel_vertices: List[float] = []
@@ -72,10 +77,24 @@ class OpsRenderer(BaseRenderer):
 
             last_point = command.end
 
+        return (
+            np.array(cut_vertices, dtype=np.float32),
+            np.array(travel_vertices, dtype=np.float32),
+        )
+
+    def update_from_vertex_data(
+        self, cut_vertices: np.ndarray, travel_vertices: np.ndarray
+    ):
+        """Receives pre-processed vertex data and uploads it to the GPU."""
+        self.cut_vertex_count = cut_vertices.size // 3
         self._load_buffer_data(self.cut_vbo, cut_vertices)
-        self.cut_vertex_count = len(cut_vertices) // 3
+        self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
-        self.travel_vertex_count = len(travel_vertices) // 3
+
+    def update_ops(self, ops: Ops):
+        """Synchronously processes an Ops object and updates vertex buffers."""
+        cut_verts, travel_verts = self.prepare_vertex_data(ops)
+        self.update_from_vertex_data(cut_verts, travel_verts)
 
     def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
         """
@@ -164,9 +183,8 @@ class OpsRenderer(BaseRenderer):
             vertices.extend(end_gl)
         return vertices
 
-    def _load_buffer_data(self, vbo: int, vertices: List[float]):
+    def _load_buffer_data(self, vbo: int, data: np.ndarray):
         """Loads vertex data into a VBO."""
-        data = np.array(vertices, dtype=np.float32)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
         GL.glBufferData(
             GL.GL_ARRAY_BUFFER,
