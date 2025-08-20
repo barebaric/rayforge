@@ -67,6 +67,8 @@ class Machine:
         self.setting_applied = Signal()
         self.connection_status_changed = Signal()
         self.state_changed = Signal()
+        self.log_received = Signal()
+        self.command_status_changed = Signal()
 
         self.add_head(Laser())
 
@@ -75,6 +77,10 @@ class Machine:
             self._on_driver_connection_status_changed
         )
         self.driver.state_changed.connect(self._on_driver_state_changed)
+        self.driver.log_received.connect(self._on_driver_log_received)
+        self.driver.command_status_changed.connect(
+            self._on_driver_command_status_changed
+        )
         self._on_driver_state_changed(self.driver, self.driver.state)
         self._reset_status()
 
@@ -85,6 +91,10 @@ class Machine:
             self._on_driver_connection_status_changed
         )
         self.driver.state_changed.disconnect(self._on_driver_state_changed)
+        self.driver.log_received.disconnect(self._on_driver_log_received)
+        self.driver.command_status_changed.disconnect(
+            self._on_driver_command_status_changed
+        )
 
     async def _rebuild_driver_instance(
         self, ctx: Optional["ExecutionContext"] = None
@@ -182,6 +192,24 @@ class Machine:
         if self.device_state != state:
             self.device_state = state
             idle_add(self.state_changed.send, self, state=state)
+
+    def _on_driver_log_received(self, driver: Driver, message: str):
+        """Proxies the log received signal from the active driver."""
+        idle_add(self.log_received.send, self, message=message)
+
+    def _on_driver_command_status_changed(
+        self,
+        driver: Driver,
+        status: TransportStatus,
+        message: Optional[str] = None,
+    ):
+        """Proxies the command status changed signal from the active driver."""
+        idle_add(
+            self.command_status_changed.send,
+            self,
+            status=status,
+            message=message,
+        )
 
     def is_connected(self) -> bool:
         """

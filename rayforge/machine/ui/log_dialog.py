@@ -62,12 +62,11 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         self._populate_history()
 
         if machine:
-            driver = machine.driver
-            driver.log_received.connect(self.on_log_received)
-            driver.command_status_changed.connect(
+            machine.log_received.connect(self.on_log_received)
+            machine.command_status_changed.connect(
                 self.on_command_status_changed
             )
-            driver.connection_status_changed.connect(
+            machine.connection_status_changed.connect(
                 self.on_connection_status_changed
             )
 
