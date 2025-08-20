@@ -606,6 +606,14 @@ class MainWindow(Adw.ApplicationWindow):
                 and not is_job_or_task_active
             )
             am.get_action("frame").set_enabled(can_frame)
+            if not active_machine.can_frame():
+                self.toolbar.frame_button.set_tooltip_text(
+                    _("Configure frame power to enable")
+                )
+            else:
+                self.toolbar.frame_button.set_tooltip_text(
+                    _("Cycle laser head around the occupied area")
+                )
 
             send_sensitive = (
                 not isinstance(active_driver, NoDeviceDriver)
