@@ -108,7 +108,7 @@ PROFILES: List[MachineProfile] = [
     ),
     MachineProfile(
         name="Sculpfun S30",
-        driver_class_name="GrblNextSerialDriver",
+        driver_class_name="GrblSerialDriver",
         dialect_name="GRBL",
         dimensions=(400, 400),
         y_axis_down=False,

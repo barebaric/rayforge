@@ -2,10 +2,8 @@ import inspect
 from typing import Type, cast
 from .driver import Driver
 from .dummy import NoDeviceDriver
-from .grbl import GrblDriver
+from .grbl import GrblNetworkDriver
 from .grbl_serial import GrblSerialDriver
-from .grbl_next import GrblNextNetworkDriver
-from .grbl_serial_next import GrblNextSerialDriver
 from .smoothie import SmoothieDriver
 
 
@@ -33,9 +31,7 @@ def get_driver(classname: str, default=NoDeviceDriver):
 __all__ = [
     "Driver",
     "NoDeviceDriver",
-    "GrblDriver",
+    "GrblNetworkDriver",
     "GrblSerialDriver",
-    "GrblNextNetworkDriver",
-    "GrblNextSerialDriver",
     "SmoothieDriver",
 ]

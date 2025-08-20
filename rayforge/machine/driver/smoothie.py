@@ -6,7 +6,7 @@ from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
 from .driver import Driver, DeviceStatus, DriverSetupError
-from .grbl import _parse_state
+from .grbl_util import parse_state
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
@@ -176,7 +176,7 @@ class SmoothieDriver(Driver):
 
             if not line.startswith("<") or not line.endswith(">"):
                 continue
-            state = _parse_state(line[1:-1], self.state, self._log)
+            state = parse_state(line[1:-1], self.state, self._log)
             if state != self.state:
                 self.state = state
                 self._on_state_changed()

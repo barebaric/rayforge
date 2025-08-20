@@ -1,86 +1,45 @@
-import re
-import asyncio
 import aiohttp
-from copy import copy
-from typing import Callable, List, Optional, cast, Any, TYPE_CHECKING
+import asyncio
+from typing import Optional, cast, Any, TYPE_CHECKING, List
+
 from ...debug import debug_log_manager, LogType
-from ...shared.varset import VarSet, HostnameVar
+from ...shared.varset import Var, VarSet, HostnameVar
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
     Driver,
-    DeviceStatus,
-    DeviceState,
-    Pos,
     DriverSetupError,
     DeviceConnectionError,
+)
+from .grbl_util import (
+    parse_state,
+    get_grbl_setting_varsets,
+    grbl_setting_re,
+    CommandRequest,
+    hw_info_url,
+    fw_info_url,
+    eeprom_info_url,
+    command_url,
+    upload_url,
+    execute_url,
+    status_url,
 )
 
 if TYPE_CHECKING:
     from ..models.machine import Machine
 
 
-hw_info_url = "/command?plain=%5BESP420%5D&PAGEID="
-fw_info_url = "/command?plain=%5BESP800%5D&PAGEID="
-eeprom_info_url = "/command?plain=%5BESP400%5D&PAGEID="
-command_url = "/command?commandText={command}&PAGEID="
-upload_url = "/upload"
-upload_list_url = "/upload?path=/&PAGEID=0"
-execute_url = "/command?commandText=%5BESP220%5D/{filename}"
-status_url = command_url.format(command="?")
+class GrblNetworkDriver(Driver):
+    """
+    A next-generation driver for GRBL-compatible controllers that use a
+    modern file upload API and allows reading/writing device settings.
+    """
 
-pos_re = re.compile(r":(\d+\.\d+),(\d+\.\d+),(\d+\.\d+)")
-fs_re = re.compile(r"FS:(\d+),(\d+)")
-
-
-def _parse_pos_triplet(pos) -> Optional[Pos]:
-    match = pos_re.search(pos)
-    if not match:
-        return None
-    pos = tuple(float(i) for i in match.groups())
-    if len(pos) != 3:
-        return None
-    return pos
-
-
-def _parse_state(
-    state_str: str, default: DeviceState, logger: Callable
-) -> DeviceState:
-    state = copy(default)
-    try:
-        status, *attribs = state_str.split("|")
-        status = status.split(":")[0]
-    except ValueError:
-        return state
-
-    try:
-        state.status = DeviceStatus[status.upper()]
-    except KeyError:
-        logger(message=f"device sent an unupported status: {status}")
-
-    for attrib in attribs:
-        if attrib.startswith("MPos:"):
-            state.machine_pos = _parse_pos_triplet(attrib) or state.machine_pos
-        elif attrib.startswith("WPos:"):
-            state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
-        elif attrib.startswith("FS:"):
-            try:
-                match = fs_re.match(attrib)
-                if not match:
-                    continue
-                fs = [int(i) for i in match.groups()]
-                state.feed_rate = int(fs[0])
-            except (ValueError, IndexError):
-                pass
-    return state
-
-
-class GrblDriver(Driver):
     label = _("GRBL (Network)")
     subtitle = _("Connect to a GRBL-compatible device over the network")
-    supports_settings = False
+    supports_settings = True
 
     def __init__(self):
         super().__init__()
@@ -89,6 +48,8 @@ class GrblDriver(Driver):
         self.websocket = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
+        self._current_request: Optional[CommandRequest] = None
+        self._cmd_lock = asyncio.Lock()
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
@@ -101,9 +62,6 @@ class GrblDriver(Driver):
                 )
             ]
         )
-
-    def get_setting_vars(self) -> List["VarSet"]:
-        return [VarSet()]
 
     def setup(self, **kwargs: Any):
         host = cast(str, kwargs.get("host", ""))
@@ -188,8 +146,8 @@ class GrblDriver(Driver):
             # Raise a user-friendly error immediately if host is not configured
             raise DeviceConnectionError(
                 _(
-                    "Host is not configured."
-                    " Please set a valid IP address or hostname."
+                    "Host is not configured. Please set a valid"
+                    " IP address or hostname."
                 )
             )
 
@@ -208,17 +166,22 @@ class GrblDriver(Driver):
             return data
         except aiohttp.ClientError as e:
             msg = _(
-                "Could not connect to host '{host}'."
-                " Check the IP address and network connection."
+                "Could not connect to host '{host}'. Check the IP address"
+                " and network connection."
             ).format(host=self.host)
             raise DeviceConnectionError(msg) from e
 
     async def _upload(self, gcode, filename):
-        form = aiohttp.FormData([])
-        form.add_field("path", "/")
-        form.add_field(f"/{filename}S", str(len(gcode)))
-        form.add_field("myfile[]", gcode, filename=filename)
-        url = f"{self.http_base}{upload_url}"
+        """
+        Overrides the base GrblDriver's upload method with a standard
+        multipart/form-data POST request.
+        """
+        form = aiohttp.FormData()
+        form.add_field(
+            "file", gcode, filename=filename, content_type="text/plain"
+        )
+        url = f"{self.http_base}{upload_url}?path=/"
+
         debug_log_manager.add_entry(
             self.__class__.__name__,
             LogType.TX,
@@ -226,7 +189,9 @@ class GrblDriver(Driver):
         )
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=form) as response:
+                response.raise_for_status()
                 data = await response.text()
+
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.RX, data.encode("utf-8")
         )
@@ -305,29 +270,43 @@ class GrblDriver(Driver):
             self._on_connection_status_changed(TransportStatus.ERROR, str(e))
             raise
 
+    async def _execute_command(self, command: str) -> List[str]:
+        """
+        Sends a command via HTTP and waits for the full response from the
+        WebSocket, including an 'ok' or 'error:'.
+        """
+        async with self._cmd_lock:
+            if not self.websocket or not self.websocket.is_connected:
+                raise DeviceConnectionError("Device is not connected.")
+
+            request = CommandRequest(command=command)
+            self._current_request = request
+            try:
+                # Trigger command via HTTP. We don't care about the response.
+                await self._send_command(command)
+                # Wait for the response to arrive on the WebSocket.
+                await asyncio.wait_for(request.finished.wait(), timeout=10.0)
+                return request.response_lines
+            except asyncio.TimeoutError as e:
+                msg = f"Command '{command}' timed out."
+                raise DeviceConnectionError(msg) from e
+            finally:
+                self._current_request = None
+
     async def set_hold(self, hold: bool = True) -> None:
-        if not self.host:
-            return
-        if hold:
-            await self._send_command("!")
-        else:
-            await self._send_command("~")
+        await self._send_command("!" if hold else "~")
 
     async def cancel(self) -> None:
-        if not self.host:
-            return
+        # Cancel is a fire-and-forget soft reset, doesn't always
+        # respond with 'ok'
         await self._send_command("%18")
 
     async def home(self) -> None:
-        if not self.host:
-            return
-        await self._send_command("$H")
+        await self._execute_command("$H")
 
     async def move_to(self, pos_x, pos_y) -> None:
-        if not self.host:
-            return
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
-        await self._send_command(cmd)
+        await self._execute_command(cmd)
 
     def on_http_data_received(self, sender, data: bytes):
         pass
@@ -340,27 +319,93 @@ class GrblDriver(Driver):
     def on_websocket_data_received(self, sender, data: bytes):
         source = f"{self.__class__.__name__}.WebSocket"
         debug_log_manager.add_entry(source, LogType.RX, data)
-        data_str = data.decode("utf-8")
+        try:
+            data_str = data.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            self._log(f"Received non-UTF8 data on WebSocket: {data!r}")
+            return
+
         for line in data_str.splitlines():
             self._log(line)
-            if not line.startswith("<") or not line.endswith(">"):
-                continue
-            state = _parse_state(line[1:-1], self.state, self._log)
-            if state != self.state:
-                self.state = state
-                self._on_state_changed()
+            request = self._current_request
+
+            # If a command is awaiting a response, collect the lines.
+            if request and not request.finished.is_set():
+                request.response_lines.append(line)
+
+            # Process line for state updates, regardless of active request.
+            if line.startswith("<") and line.endswith(">"):
+                state = parse_state(line, self.state, self._log)
+                if state != self.state:
+                    self.state = state
+                    self._on_state_changed()
+            elif line == "ok":
+                self._on_command_status_changed(TransportStatus.IDLE)
+                if request:
+                    request.finished.set()
+            elif line.startswith("error:"):
+                self._on_command_status_changed(
+                    TransportStatus.ERROR, message=line
+                )
+                if request:
+                    request.finished.set()
 
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
         self._on_connection_status_changed(status, message)
 
+    def get_setting_vars(self) -> List["VarSet"]:
+        return get_grbl_setting_varsets()
+
     async def read_settings(self) -> None:
-        raise NotImplementedError(
-            "Device settings not implemented for this driver"
+        response_lines = await self._execute_command("$$")
+        # Get the list of VarSets, which serve as our template
+        known_varsets = self.get_setting_vars()
+
+        # For efficient lookup, map each setting key to its parent VarSet
+        key_to_varset_map = {
+            var_key: varset
+            for varset in known_varsets
+            for var_key in varset.keys()
+        }
+
+        unknown_vars = VarSet(
+            title=_("Unknown Settings"),
+            description=_(
+                "Settings reported by the device not in the standard list."
+            ),
         )
 
+        for line in response_lines:
+            match = grbl_setting_re.match(line)
+            if match:
+                key, value_str = match.groups()
+                # Find which VarSet this key belongs to
+                target_varset = key_to_varset_map.get(key)
+                if target_varset:
+                    # Update the value in the correct VarSet
+                    target_varset[key] = value_str
+                else:
+                    # This setting is not defined in our known VarSets
+                    unknown_vars.add(
+                        Var(
+                            key=key,
+                            label=f"${key}",
+                            var_type=str,
+                            value=value_str,
+                            description=_("Unknown setting from device"),
+                        )
+                    )
+
+        # The result is the list of known VarSets (now populated)
+        result = known_varsets
+        if len(unknown_vars) > 0:
+            # Append the VarSet of unknown settings if any were found
+            result.append(unknown_vars)
+        self._on_settings_read(result)
+
     async def write_setting(self, key: str, value: Any) -> None:
-        raise NotImplementedError(
-            "Device settings not implemented for this driver"
-        )
+        """Writes a setting by sending '$<key>=<value>'."""
+        cmd = f"${key}={value}"
+        await self._execute_command(cmd)
