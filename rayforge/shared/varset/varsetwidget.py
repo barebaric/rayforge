@@ -75,7 +75,9 @@ class VarSetWidget(Adw.PreferencesGroup):
                 )
             elif isinstance(row, Adw.ComboRow):
                 selected = row.get_selected_item()
-                value_str = selected.get_string() if selected else ""
+                value_str = (
+                    selected.get_string() if selected else ""  # type: ignore
+                )
                 value = "" if value_str == NULL_CHOICE_LABEL else value_str
             values[key] = value
         return values
@@ -146,12 +148,16 @@ class VarSetWidget(Adw.PreferencesGroup):
 
     def _create_boolean_row(self, var: Var[bool]):
         if self.explicit_apply:
-            row = Adw.SwitchRow(title=var.label, subtitle=var.description)
+            row = Adw.SwitchRow(
+                title=var.label, subtitle=var.description or ""
+            )
             if var.value is not None:
                 row.set_active(bool(var.value))
             self._add_apply_button_if_needed(row, var.key)
         else:
-            row = Adw.ActionRow(title=var.label, subtitle=var.description)
+            row = Adw.ActionRow(
+                title=var.label, subtitle=var.description or ""
+            )
             switch = Gtk.Switch(valign=Gtk.Align.CENTER)
             switch.set_active(var.value if var.value is not None else False)
             row.add_suffix(switch)
@@ -169,7 +175,7 @@ class VarSetWidget(Adw.PreferencesGroup):
             step_increment=1,
         )
         row = Adw.SpinRow(
-            title=var.label, subtitle=var.description, adjustment=adj
+            title=var.label, subtitle=var.description or "", adjustment=adj
         )
         if not self.explicit_apply:
             row.connect("changed", lambda r: self._on_data_changed(var.key))
@@ -185,7 +191,10 @@ class VarSetWidget(Adw.PreferencesGroup):
             step_increment=0.1,
         )
         row = Adw.SpinRow(
-            title=var.label, subtitle=var.description, adjustment=adj, digits=3
+            title=var.label,
+            subtitle=var.description or "",
+            adjustment=adj,
+            digits=3,
         )
         if not self.explicit_apply:
             row.connect("changed", lambda r: self._on_data_changed(var.key))
@@ -194,18 +203,62 @@ class VarSetWidget(Adw.PreferencesGroup):
         return row
 
     def _create_port_selection_row(self, var: SerialPortVar):
-        ports = sorted(SerialTransport.list_ports(), key=natural_sort_key)
-        choices = [NULL_CHOICE_LABEL] + ports
+        # Use a set to combine available ports with the currently saved value,
+        # ensuring the saved value is always in the list even if disconnected.
+        available_ports = SerialTransport.list_ports()
+        port_set = set(available_ports)
+        if var.value:
+            port_set.add(var.value)
+
+        # Create the final sorted list for the UI
+        sorted_ports = sorted(list(port_set), key=natural_sort_key)
+        choices = [NULL_CHOICE_LABEL] + sorted_ports
+
         store = Gtk.StringList.new(choices)
         row = Adw.ComboRow(
-            title=var.label, subtitle=var.description, model=store
+            title=var.label, subtitle=var.description or "", model=store
         )
+
+        # Set initial selection from the var's value
         if var.value and var.value in choices:
             row.set_selected(choices.index(var.value))
+
+        # This handler is called just before the dropdown opens.
+        def on_open(gesture, n_press, x, y):
+            # Preserve the currently selected value from the UI
+            selected_obj = row.get_selected_item()
+            current_selection = (
+                selected_obj.get_string()  # type: ignore
+                if selected_obj
+                else None
+            )
+
+            # Fetch the new list of ports and ensure the current selection
+            # is preserved in the list.
+            new_ports = SerialTransport.list_ports()
+            port_set = set(new_ports)
+            if current_selection and current_selection != NULL_CHOICE_LABEL:
+                port_set.add(current_selection)
+
+            new_sorted_ports = sorted(list(port_set), key=natural_sort_key)
+            new_choices = [NULL_CHOICE_LABEL] + new_sorted_ports
+            new_store = Gtk.StringList.new(new_choices)
+            row.set_model(new_store)
+
+            # Restore the previous selection if it still exists
+            if current_selection and current_selection in new_choices:
+                row.set_selected(new_choices.index(current_selection))
+
+        # Add a click controller to trigger the refresh when the user
+        # clicks the row
+        click_controller = Gtk.GestureClick.new()
+        click_controller.connect("pressed", on_open)
+        row.add_controller(click_controller)
 
         if self.explicit_apply:
             self._add_apply_button_if_needed(row, var.key)
         else:
+            # This signal fires when the user makes a new selection
             row.connect(
                 "notify::selected-item",
                 lambda r, p: self._on_data_changed(var.key),
