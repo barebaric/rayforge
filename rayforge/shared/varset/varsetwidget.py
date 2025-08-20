@@ -5,6 +5,7 @@ from blinker import Signal
 from ..util.adwfix import get_spinrow_int
 from ...machine.transport.serial import SerialTransport
 from ...machine.transport.validators import is_valid_hostname_or_ip
+from .baudratevar import BaudrateVar
 from .hostnamevar import HostnameVar
 from .serialportvar import SerialPortVar
 from .var import Var
@@ -88,6 +89,8 @@ class VarSetWidget(Adw.PreferencesGroup):
     def _create_row_for_var(self, var: Var):
         if isinstance(var, SerialPortVar):
             return self._create_port_selection_row(var)
+        if isinstance(var, BaudrateVar):
+            return self._create_baud_rate_row(var)
         if isinstance(var, HostnameVar):
             return self._create_hostname_row(var)
 
@@ -200,6 +203,37 @@ class VarSetWidget(Adw.PreferencesGroup):
             row.connect("changed", lambda r: self._on_data_changed(var.key))
         else:
             self._add_apply_button_if_needed(row, var.key)
+        return row
+
+    def _create_baud_rate_row(self, var: BaudrateVar):
+        # Get the list of choices as strings
+        choices_int = SerialTransport.list_baud_rates()
+        choices_str = [str(rate) for rate in choices_int]
+
+        # Create the ComboRow with a StringList model
+        store = Gtk.StringList.new(choices_str)
+        row = Adw.ComboRow(
+            title=var.label, subtitle=var.description or "", model=store
+        )
+
+        # Set the initial selection based on the Var's value
+        if var.value is not None:
+            try:
+                # Find the index of the current value in the choices
+                current_value_str = str(var.value)
+                if current_value_str in choices_str:
+                    index = choices_str.index(current_value_str)
+                    row.set_selected(index)
+            except ValueError:
+                logger.warning(
+                    f"Baud rate '{var.value}' is not in the standard list."
+                )
+
+        if self.explicit_apply:
+            self._add_apply_button_if_needed(row, var.key)
+        else:
+            row.connect("notify::selected-item",
+                        lambda r, p: self._on_data_changed(var.key))
         return row
 
     def _create_port_selection_row(self, var: SerialPortVar):

@@ -28,6 +28,19 @@ class SerialTransport(Transport):
             ports.append(port.device)
         return ports
 
+    @staticmethod
+    def list_baud_rates() -> List[int]:
+        """Returns a list of common serial baud rates."""
+        return [
+            9600,
+            19200,
+            38400,
+            57600,
+            115200,
+            230400,
+            460800,
+        ]
+
     def __init__(self, port: str, baudrate: int):
         """
         Initialize serial transport.

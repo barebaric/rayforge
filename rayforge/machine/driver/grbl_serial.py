@@ -2,7 +2,7 @@ import logging
 import asyncio
 from typing import List, Optional, cast, Any, TYPE_CHECKING
 from ...debug import debug_log_manager, LogType
-from ...shared.varset import VarSet, SerialPortVar, IntVar
+from ...shared.varset import VarSet, SerialPortVar, BaudrateVar
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import SerialTransport, TransportStatus
@@ -39,13 +39,7 @@ class GrblSerialDriver(Driver):
                     label=_("Port"),
                     description=_("Serial port for the device"),
                 ),
-                IntVar(
-                    key="baudrate",
-                    label=_("Baud Rate"),
-                    description=_("Connection speed in bits per second"),
-                    default=115200,
-                    min_val=1,
-                ),
+                BaudrateVar("baudrate"),
             ]
         )
 
