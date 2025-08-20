@@ -69,6 +69,7 @@ class WorkPieceView(CanvasElement):
             clip=False,
             buffered=True,
             pixel_perfect_hit=True,
+            hit_distance=5,
             **kwargs,
         )
 

@@ -16,6 +16,7 @@ from gi.repository import GLib  # type: ignore
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
 from .region import ElementRegion, get_region_rect, check_region_hit
+from .hittest import check_pixel_hit
 from ...core.matrix import Matrix
 
 # Forward declaration for type hinting
@@ -64,6 +65,7 @@ class CanvasElement:
         angle: float = 0.0,
         pixel_perfect_hit: bool = False,
         matrix: Optional[Matrix] = None,
+        hit_distance: float = 0.0,
     ):
         """
         Initializes a new CanvasElement.
@@ -95,6 +97,11 @@ class CanvasElement:
             matrix: An optional transformation matrix. If provided,
                 it overrides x, y, angle, and scale properties on
                 initialization.
+            hit_distance: For pixel-perfect hit checks, this adds a
+                "fuzzy" radius around the mouse pointer. The distance is
+                specified in **screen pixels** and is applied to the
+                element's rendered surface. A non-zero value will check a
+                circular area for any opaque pixel.
         """
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -128,6 +135,7 @@ class CanvasElement:
         self._debounce_timer_id: Optional[int] = None
         self._update_future: Optional[Future] = None
         self.pixel_perfect_hit = pixel_perfect_hit
+        self.hit_distance: float = hit_distance
 
         # This is the single source of truth for the local GEOMETRIC transform.
         self.transform: Matrix = Matrix.identity()
@@ -457,7 +465,7 @@ class CanvasElement:
 
         Args:
             x_abs: The absolute x-coordinate on the canvas.
-            y_abs: The absolute y-coordinate on the canvas.
+            y_abs: The y-coordinate on the canvas.
             candidates: An optional set of regions to limit the check to.
 
         Returns:
@@ -519,6 +527,17 @@ class CanvasElement:
         for child in self.children:
             child._set_canvas_recursive(canvas)
 
+    def _reparent(self, elem: CanvasElement):
+        """Removes an element from its current parent before adding it here."""
+        if elem.parent:
+            # Check parent type to call the correct removal method.
+            if isinstance(elem.parent, CanvasElement):
+                elem.parent.remove_child(elem)
+            elif elem.canvas and isinstance(
+                elem.parent, elem.canvas.__class__
+            ):
+                elem.parent.remove(elem)
+
     def add(self, elem: CanvasElement):
         """
         Adds a child element.
@@ -529,14 +548,7 @@ class CanvasElement:
         Args:
             elem: The `CanvasElement` to add.
         """
-        if elem.parent:
-            # Check parent type to call the correct removal method.
-            if isinstance(elem.parent, CanvasElement):
-                elem.parent.remove_child(elem)
-            elif elem.canvas and isinstance(
-                elem.parent, elem.canvas.__class__
-            ):
-                elem.parent.remove(elem)
+        self._reparent(elem)
 
         self.children.append(elem)
         elem.parent = self
@@ -557,14 +569,7 @@ class CanvasElement:
             index: The index at which to insert the element.
             elem: The `CanvasElement` to insert.
         """
-        if elem.parent:
-            # Check parent type to call the correct removal method.
-            if isinstance(elem.parent, CanvasElement):
-                elem.parent.remove_child(elem)
-            elif elem.canvas and isinstance(
-                elem.parent, elem.canvas.__class__
-            ):
-                elem.parent.remove(elem)
+        self._reparent(elem)
 
         self.children.insert(index, elem)
         elem.canvas = self.canvas
@@ -969,8 +974,6 @@ class CanvasElement:
         """
         Checks if the pixel at local geometry coordinates is opaque.
 
-        This method is now fully generic, accounting for the content_transform.
-
         Args:
             local_x: The x-coordinate in the element's local GEOMETRY space.
             local_y: The y-coordinate in the element's local GEOMETRY space.
@@ -986,50 +989,17 @@ class CanvasElement:
 
         if not self.surface:
             # Cannot perform pixel check if the surface doesn't exist.
-            # Default to treating it as transparent.
             return False
 
-        surface_w = self.surface.get_width()
-        surface_h = self.surface.get_height()
-        if surface_w <= 0 or surface_h <= 0:
-            return False
-
-        # The received coordinates are in the element's GEOMETRIC space.
-        # We must transform them into the CONTENT's space before sampling
-        # the surface.
-        content_x, content_y = local_x, local_y
-        if not self.content_transform.is_identity():
-            try:
-                # We need to map the geometric point to the content's
-                # coordinate system. This requires the inverse of the
-                # content_transform.
-                inv_content = self.content_transform.invert()
-                content_x, content_y = inv_content.transform_point(
-                    (local_x, local_y)
-                )
-            except Exception:
-                # If matrix is non-invertible, we can't do the hit-test.
-                # Default to a hit, as the user is inside the bounding box.
-                return True
-
-        # Scale CONTENT coordinates to surface pixel coordinates.
-        surface_x = int(content_x * (surface_w / self.width))
-        surface_y = int(content_y * (surface_h / self.height))
-
-        # Check if the calculated pixel is within the surface's bounds.
-        if not (0 <= surface_x < surface_w and 0 <= surface_y < surface_h):
-            return False
-
-        # Read the alpha value from the cairo surface data buffer.
-        data = self.surface.get_data()
-        stride = self.surface.get_stride()
-
-        # Format is ARGB32, often BGRA in memory. Alpha is 4th byte.
-        pixel_offset = surface_y * stride + surface_x * 4
-        alpha = data[pixel_offset + 3]
-
-        # Consider any non-zero alpha as a "hit".
-        return alpha > 0
+        return check_pixel_hit(
+            surface=self.surface,
+            content_transform=self.content_transform,
+            element_width=self.width,
+            element_height=self.height,
+            hit_distance=self.hit_distance,
+            local_x=local_x,
+            local_y=local_y,
+        )
 
     def dump(self, indent: int = 0):
         """Prints a debug representation of the element and children."""
