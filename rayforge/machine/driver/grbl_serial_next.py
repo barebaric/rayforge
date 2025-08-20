@@ -7,7 +7,7 @@ from ...shared.varset import Var, VarSet, SerialPortVar, IntVar
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
-from .driver import Driver, DriverSetupError
+from .driver import Driver, DriverSetupError, DeviceStatus
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -38,6 +38,11 @@ class GrblNextSerialDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
+        self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
+        self._command_task: Optional[asyncio.Task] = None
+        self._status_buffer = ""
+        self._is_cancelled = False
+        self._job_running = False
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
@@ -67,6 +72,19 @@ class GrblNextSerialDriver(Driver):
         if not baudrate:
             raise DriverSetupError(_("Baud rate must be configured."))
 
+        available_ports = SerialTransport.list_ports()
+        if port not in available_ports:
+            logger.error(
+                f"Serial port {port} not found. Available ports: "
+                f"{available_ports}"
+            )
+            raise DriverSetupError(f"Serial port {port} not found.")
+        if port.startswith("/dev/ttyS"):
+            logger.warning(
+                f"Port {port} is a hardware serial port, which is unlikely "
+                f"for USB-based GRBL devices."
+            )
+
         super().setup()
 
         self.serial_transport = SerialTransport(port, baudrate)
@@ -75,11 +93,26 @@ class GrblNextSerialDriver(Driver):
             self.on_serial_status_changed
         )
 
+    def on_serial_status_changed(
+        self, sender, status: TransportStatus, message: Optional[str] = None
+    ):
+        """
+        Handle status changes from the serial transport.
+        """
+        logger.debug(
+            f"Serial transport status changed: {status}, message: {message}"
+        )
+        self._on_connection_status_changed(status, message)
+
     async def cleanup(self):
         logger.debug("GrblNextSerialDriver cleanup initiated.")
         self.keep_running = False
+        self._is_cancelled = False
+        self._job_running = False
         if self._connection_task:
             self._connection_task.cancel()
+        if self._command_task:
+            self._command_task.cancel()
         if self.serial_transport:
             self.serial_transport.received.disconnect(
                 self.on_serial_data_received
@@ -90,11 +123,11 @@ class GrblNextSerialDriver(Driver):
         await super().cleanup()
         logger.debug("GrblNextSerialDriver cleanup completed.")
 
-    async def _send_command(self, command: str):
+    async def _send_command(self, command: str, add_newline: bool = True):
         logger.debug(f"Sending fire-and-forget command: {command}")
         if not self.serial_transport or not self.serial_transport.is_connected:
             raise ConnectionError("Serial transport not initialized")
-        payload = (command + "\n").encode("utf-8")
+        payload = (command + ("\n" if add_newline else "")).encode("utf-8")
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.TX, payload
         )
@@ -107,18 +140,50 @@ class GrblNextSerialDriver(Driver):
         """
         logger.debug("GrblNextSerialDriver connect initiated.")
         self.keep_running = True
+        self._is_cancelled = False
+        self._job_running = False
         self._connection_task = asyncio.create_task(self._connection_loop())
+        self._command_task = asyncio.create_task(self._process_command_queue())
 
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
         while self.keep_running:
             self._on_connection_status_changed(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
+
+            transport = self.serial_transport
+            assert transport, "Transport not initialized"
+
             try:
-                assert self.serial_transport, "Transport not initialized"
-                await self.serial_transport.connect()
-                # Send a status report request to get initial state
-                await self._send_command("?")
+                await transport.connect()
+                logger.info("Connection established successfully.")
+                logger.debug(f"is_connected: {transport.is_connected}")
+
+                logger.debug("Sending initial status query")
+                await self._send_command("?", add_newline=False)
+                logger.debug(
+                    "Connection established. Starting status polling."
+                )
+                while transport.is_connected and self.keep_running:
+                    async with self._cmd_lock:
+                        try:
+                            logger.debug("Sending status poll")
+                            payload = b"?"
+                            debug_log_manager.add_entry(
+                                self.__class__.__name__, LogType.TX, payload
+                            )
+                            if self.serial_transport:
+                                await self.serial_transport.send(payload)
+                        except ConnectionError as e:
+                            logger.warning(
+                                "Connection lost while sending poll"
+                                f" command: {e}"
+                            )
+                            break
+                    await asyncio.sleep(0.5)
+
+                    if not self.keep_running or not transport.is_connected:
+                        break
 
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
@@ -128,12 +193,15 @@ class GrblNextSerialDriver(Driver):
             except asyncio.CancelledError:
                 logger.info("Connection loop cancelled.")
                 break
+            except Exception as e:
+                logger.error(f"Unexpected error in connection loop: {e}")
+                self._on_connection_status_changed(
+                    TransportStatus.ERROR, str(e)
+                )
             finally:
-                if (
-                    self.serial_transport
-                    and self.serial_transport.is_connected
-                ):
-                    await self.serial_transport.disconnect()
+                if transport and transport.is_connected:
+                    logger.debug("Disconnecting transport in finally block")
+                    await transport.disconnect()
 
             if not self.keep_running:
                 break
@@ -141,54 +209,119 @@ class GrblNextSerialDriver(Driver):
             logger.debug("Connection lost. Reconnecting in 5s…")
             self._on_connection_status_changed(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
+
         logger.debug("Leaving _connection_loop.")
 
+    async def _process_command_queue(self) -> None:
+        logger.debug("Entering _process_command_queue.")
+        while self.keep_running:
+            try:
+                request = await self._command_queue.get()
+                async with self._cmd_lock:
+                    if (
+                        not self.serial_transport
+                        or not self.serial_transport.is_connected
+                        or self._is_cancelled
+                    ):
+                        logger.warning(
+                            "Cannot process command: Serial transport not "
+                            "connected or job is cancelled. Dropping command."
+                        )
+                        # Mark as done so get() doesn't block forever
+                        if not request.finished.is_set():
+                            request.finished.set()
+                        self._command_queue.task_done()
+                        continue
+
+                    self._current_request = request
+                    try:
+                        logger.debug(f"Executing command: {request.command}")
+                        debug_log_manager.add_entry(
+                            self.__class__.__name__,
+                            LogType.TX,
+                            request.payload,
+                        )
+                        if self.serial_transport:
+                            await self.serial_transport.send(request.payload)
+
+                        # Wait for the response to arrive. The timeout is
+                        # handled by the caller (_execute_command). This
+                        # processor just waits for completion.
+                        await request.finished.wait()
+
+                    except ConnectionError as e:
+                        logger.error(f"Connection error during command: {e}")
+                        self._on_connection_status_changed(
+                            TransportStatus.ERROR,
+                            str(e),
+                        )
+                    finally:
+                        self._current_request = None
+                        self._command_queue.task_done()
+                # Release lock briefly to allow status polling
+                await asyncio.sleep(0.1)
+
+            except asyncio.CancelledError:
+                logger.info("Command queue processing cancelled.")
+                break
+            except Exception as e:
+                logger.error(f"Unexpected error in command queue: {e}")
+                self._on_connection_status_changed(
+                    TransportStatus.ERROR, str(e)
+                )
+        logger.debug("Leaving _process_command_queue.")
+
     async def run(self, ops: Ops, machine: "Machine") -> None:
+        self._is_cancelled = False
+        self._job_running = True
         encoder = GcodeEncoder.for_machine(machine)
         gcode = encoder.encode(ops, machine)
 
-        # Split gcode into lines and send them one by one
         for line in gcode.splitlines():
+            if self._is_cancelled:
+                logger.info("Job cancelled, stopping G-code queuing.")
+                break
             if line.strip():
-                await self._execute_command(line.strip())
-
-    async def _execute_command(self, command: str) -> List[str]:
-        async with self._cmd_lock:
-            if (
-                not self.serial_transport
-                or not self.serial_transport.is_connected
-            ):
-                raise ConnectionError("Serial transport not connected")
-
-            request = CommandRequest(command=command)
-            self._current_request = request
-            try:
-                logger.debug(f"Executing command: {command}")
-                debug_log_manager.add_entry(
-                    self.__class__.__name__, LogType.TX, request.payload
-                )
-                await self.serial_transport.send(request.payload)
-                await asyncio.wait_for(request.finished.wait(), timeout=10.0)
-                return request.response_lines
-            except asyncio.TimeoutError as e:
-                msg = f"Command '{command}' timed out."
-                raise ConnectionError(msg) from e
-            finally:
-                self._current_request = None
-
-    async def set_hold(self, hold: bool = True) -> None:
-        await self._send_command("!" if hold else "~")
+                request = CommandRequest(line.strip())
+                await self._command_queue.put(request)
+        logger.debug("All G-code commands queued for execution.")
+        # Once queuing is done, the job is no longer "running" in the
+        # sense of adding new commands
+        self._job_running = False
 
     async def cancel(self) -> None:
-        # GRBL reset command (Ctrl-X) is usually sent as a byte, not a string
+        logger.debug("Cancel command initiated.")
+        self._is_cancelled = True
+        self._job_running = False
         if self.serial_transport:
             payload = b"\x18"
             debug_log_manager.add_entry(
                 self.__class__.__name__, LogType.TX, payload
             )
             await self.serial_transport.send(payload)
+            # Clear the command queue
+            while not self._command_queue.empty():
+                try:
+                    request = self._command_queue.get_nowait()
+                    # Mark as finished to avoid hanging awaits
+                    request.finished.set()
+                    self._command_queue.task_done()
+                except asyncio.QueueEmpty:
+                    break
+            logger.debug("Command queue cleared after cancel.")
         else:
             raise ConnectionError("Serial transport not initialized")
+
+    async def _execute_command(self, command: str) -> List[str]:
+        self._is_cancelled = False
+        request = CommandRequest(command)
+        await self._command_queue.put(request)
+        await asyncio.wait_for(request.finished.wait(), timeout=10.0)
+        return request.response_lines
+
+    async def set_hold(self, hold: bool = True) -> None:
+        self._is_cancelled = False
+        await self._send_command("!" if hold else "~", add_newline=False)
 
     async def home(self) -> None:
         await self._execute_command("$H")
@@ -252,30 +385,85 @@ class GrblNextSerialDriver(Driver):
         await self._execute_command(cmd)
 
     def on_serial_data_received(self, sender, data: bytes):
+        """
+        Primary handler for incoming serial data. Decodes, buffers, and
+        delegates processing of complete messages.
+        """
         debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
-        data_str = data.decode("utf-8").strip()
-        for line in data_str.splitlines():
-            self._log(line)
-            request = self._current_request
-            if request and not request.finished.is_set():
-                request.response_lines.append(line)
-            if line.startswith("<") and line.endswith(">"):
-                state = parse_state(line[1:-1], self.state, self._log)
-                if state != self.state:
-                    self.state = state
-                    self._on_state_changed()
-            elif line == "ok":
-                self._on_command_status_changed(TransportStatus.IDLE)
-                if request:
-                    request.finished.set()
-            elif line.startswith("error:"):
-                self._on_command_status_changed(
-                    TransportStatus.ERROR, message=line
-                )
-                if request:
-                    request.finished.set()
+        try:
+            data_str = data.decode("utf-8")
+        except UnicodeDecodeError:
+            logger.warning("Received invalid UTF-8 data, ignoring.")
+            return
 
-    def on_serial_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
-    ):
-        self._on_connection_status_changed(status, message)
+        self._status_buffer += data_str
+        # Process all complete messages (ending with '\r\n') in the buffer
+        while "\r\n" in self._status_buffer:
+            end_idx = self._status_buffer.find("\r\n") + 2
+            message = self._status_buffer[:end_idx]
+            self._status_buffer = self._status_buffer[end_idx:]
+            self._process_message(message)
+
+    def _process_message(self, message: str):
+        """
+        Routes a complete message to the appropriate handler based on its
+        content.
+        """
+        stripped_message = message.strip()
+        if not stripped_message:
+            return
+
+        # Status reports are frequent and start with '<'
+        if stripped_message.startswith("<") and stripped_message.endswith(">"):
+            self._handle_status_report(stripped_message)
+        else:
+            # Handle other responses line by line (e.g., 'ok', 'error:')
+            for line in message.strip().splitlines():
+                if line:  # Ensure we don't process empty lines
+                    self._handle_general_response(line)
+
+    def _handle_status_report(self, report: str):
+        """
+        Parses a GRBL status report (e.g., '<Idle|WPos:0,0,0|...>')
+        and updates the device state.
+        """
+        logger.debug(f"Processing received status message: {report}")
+        self._log(report)
+        state = parse_state(report, self.state, self._log)
+
+        # If a job is active, 'Idle' state between commands should be
+        # reported as 'Run' to the UI.
+        if self._job_running and state.status == DeviceStatus.IDLE:
+            state.status = DeviceStatus.RUN
+
+        if state != self.state:
+            self.state = state
+            self._on_state_changed()
+
+    def _handle_general_response(self, line: str):
+        """
+        Handles non-status-report lines like 'ok', 'error:', welcome messages,
+        or settings output.
+        """
+        logger.debug(f"Processing received line: {line}")
+        self._log(line)
+        request = self._current_request
+
+        # Append the line to the response buffer of the current command
+        if request and not request.finished.is_set():
+            request.response_lines.append(line)
+
+        # Check for command completion signals
+        if line == "ok":
+            if request:
+                logger.debug(
+                    f"Command '{request.command}' completed with 'ok'"
+                )
+                request.finished.set()
+        elif line.startswith("error:"):
+            self._on_connection_status_changed(TransportStatus.ERROR, line)
+            if request:
+                request.finished.set()
+        else:
+            # This could be a welcome message, an alarm, or a setting line
+            logger.debug(f"Received informational line: {line}")

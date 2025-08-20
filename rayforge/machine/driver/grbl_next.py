@@ -335,7 +335,7 @@ class GrblNextNetworkDriver(Driver):
 
             # Process line for state updates, regardless of active request.
             if line.startswith("<") and line.endswith(">"):
-                state = parse_state(line[1:-1], self.state, self._log)
+                state = parse_state(line, self.state, self._log)
                 if state != self.state:
                     self.state = state
                     self._on_state_changed()

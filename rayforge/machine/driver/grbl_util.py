@@ -32,20 +32,20 @@ status_url = command_url.format(command="?")
 
 
 # GRBL Regex Parsers
-pos_re = re.compile(r":(\d+\.\d+),(\d+\.\d+),(\d+\.\d+)")
+pos_re = re.compile(r":(-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+)")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
 
 
 # GRBL State Parsers
-def _parse_pos_triplet(pos) -> Optional[Pos]:
+def _parse_pos_triplet(pos: str) -> Optional[Pos]:
     match = pos_re.search(pos)
     if not match:
         return None
-    pos = tuple(float(i) for i in match.groups())
-    if len(pos) != 3:
+    pos_triplet = tuple(float(i) for i in match.groups())
+    if len(pos_triplet) != 3:
         return None
-    return pos
+    return pos_triplet
 
 
 def parse_state(
@@ -53,30 +53,43 @@ def parse_state(
 ) -> DeviceState:
     state = copy(default)
     try:
-        status, *attribs = state_str.split("|")
-        status = status.split(":")[0]
-    except ValueError:
-        return state
+        # Remove '<' and '>' and split by '|'
+        status_parts = state_str[1:-1].split("|")
+        status = None
+        attribs = []
+        for part in status_parts:
+            if not part:
+                continue
+            if not status:  # First part is the status
+                status = part.split(":")[0]
+            else:
+                attribs.append(part)
 
-    try:
-        state.status = DeviceStatus[status.upper()]
-    except KeyError:
-        logger(message=f"device sent an unupported status: {status}")
-
-    for attrib in attribs:
-        if attrib.startswith("MPos:"):
-            state.machine_pos = _parse_pos_triplet(attrib) or state.machine_pos
-        elif attrib.startswith("WPos:"):
-            state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
-        elif attrib.startswith("FS:"):
+        if status:
             try:
-                match = fs_re.match(attrib)
-                if not match:
-                    continue
-                fs = [int(i) for i in match.groups()]
-                state.feed_rate = int(fs[0])
-            except (ValueError, IndexError):
-                pass
+                state.status = DeviceStatus[status.upper()]
+                logger(message=f"Parsed status: {status}")
+            except KeyError:
+                logger(message=f"device sent an unsupported status: {status}")
+
+        for attrib in attribs:
+            if attrib.startswith("MPos:"):
+                state.machine_pos = (
+                    _parse_pos_triplet(attrib) or state.machine_pos
+                )
+            elif attrib.startswith("WPos:"):
+                state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
+            elif attrib.startswith("FS:"):
+                try:
+                    match = fs_re.match(attrib)
+                    if not match:
+                        continue
+                    fs = [int(i) for i in match.groups()]
+                    state.feed_rate = int(fs[0])
+                except (ValueError, IndexError):
+                    logger(message=f"Invalid FS format: {attrib}")
+    except ValueError as e:
+        logger(message=f"Invalid status line format: {state_str}, error: {e}")
     return state
 
 

@@ -61,7 +61,6 @@ class SerialTransport(Transport):
             self._running = True
             self.status_changed.send(self, status=TransportStatus.CONNECTED)
             self._receive_task = asyncio.create_task(self._receive_loop())
-            self.status_changed.send(self, status=TransportStatus.IDLE)
             logger.debug("Serial port connected successfully.")
         except Exception as e:
             logger.error(f"Failed to connect serial port: {e}")
