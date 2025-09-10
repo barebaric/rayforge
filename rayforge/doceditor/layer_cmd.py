@@ -7,6 +7,7 @@ from ..undo import Command
 
 if TYPE_CHECKING:
     from ..workbench.surface import WorkSurface
+    from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -78,42 +79,51 @@ class MoveWorkpiecesLayerCommand(Command):
         self._move(self.new_layer, self.old_layer)
 
 
-def move_selected_to_adjacent_layer(surface: "WorkSurface", direction: int):
-    """
-    Creates an undoable command to move selected workpieces to the
-    next or previous layer.
+class LayerCmd:
+    """Handles commands related to layer manipulation."""
 
-    Args:
-        surface: The WorkSurface instance containing the selection.
-        direction: 1 for the next layer (down), -1 for the previous (up).
-    """
-    selected_wps = surface.get_selected_workpieces()
-    if not selected_wps:
-        return
+    def __init__(self, editor: "DocEditor"):
+        self._editor = editor
 
-    doc = surface.doc
-    layers = doc.layers
-    if len(layers) <= 1:
-        return
+    def move_selected_to_adjacent_layer(
+        self, surface: "WorkSurface", direction: int
+    ):
+        """
+        Creates an undoable command to move selected workpieces to the
+        next or previous layer.
 
-    # Assume all selected workpieces are on the same layer, which is a
-    # reasonable constraint for this operation.
-    current_layer = selected_wps[0].layer
-    if not current_layer:
-        return
+        Args:
+            surface: The WorkSurface instance containing the selection.
+            direction: 1 for the next layer (down), -1 for the previous (up).
+        """
+        selected_wps = surface.get_selected_workpieces()
+        if not selected_wps:
+            return
 
-    try:
-        current_index = layers.index(current_layer)
-        # Wrap around the layer list
-        new_index = (current_index + direction + len(layers)) % len(layers)
-        new_layer = layers[new_index]
+        doc = self._editor.doc
+        layers = doc.layers
+        if len(layers) <= 1:
+            return
 
-        cmd = MoveWorkpiecesLayerCommand(
-            surface, selected_wps, new_layer, current_layer
-        )
-        doc.history_manager.execute(cmd)
+        # Assume all selected workpieces are on the same layer, which is a
+        # reasonable constraint for this operation.
+        current_layer = selected_wps[0].layer
+        if not current_layer:
+            return
 
-    except ValueError:
-        logger.warning(
-            f"Layer '{current_layer.name}' not found in document's layer list."
-        )
+        try:
+            current_index = layers.index(current_layer)
+            # Wrap around the layer list
+            new_index = (current_index + direction + len(layers)) % len(layers)
+            new_layer = layers[new_index]
+
+            cmd = MoveWorkpiecesLayerCommand(
+                surface, selected_wps, new_layer, current_layer
+            )
+            self._editor.history_manager.execute(cmd)
+
+        except ValueError:
+            logger.warning(
+                f"Layer '{current_layer.name}' not found in document's layer "
+                "list."
+            )

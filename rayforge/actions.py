@@ -1,9 +1,8 @@
-from typing import TYPE_CHECKING, Dict, Callable, Optional
+from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
 from gi.repository import Gtk, Gio, GLib  # type: ignore
-from .doceditor import layout_actions
 from .core.group import Group
-from .doceditor import layer_cmd
-from .doceditor.group_cmd import CreateGroupCommand, UngroupCommand
+from .core.item import DocItem
+from .core.layer import Layer
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
@@ -15,6 +14,8 @@ class ActionManager:
     def __init__(self, win: "MainWindow"):
         self.win = win
         self.actions: Dict[str, Gio.SimpleAction] = {}
+        # A convenient alias to the central controller
+        self.editor = self.win.doc_editor
 
     def register_actions(self):
         """Creates all Gio.SimpleActions and adds them to the window."""
@@ -50,10 +51,10 @@ class ActionManager:
 
         # Edit & Clipboard Actions
         self._add_action(
-            "undo", lambda a, p: self.win.doc.history_manager.undo()
+            "undo", lambda a, p: self.editor.history_manager.undo()
         )
         self._add_action(
-            "redo", lambda a, p: self.win.doc.history_manager.redo()
+            "redo", lambda a, p: self.editor.history_manager.redo()
         )
         self._add_action("cut", self.win.on_menu_cut)
         self._add_action("copy", self.win.on_menu_copy)
@@ -72,37 +73,15 @@ class ActionManager:
         self._add_action("ungroup", self.on_ungroup_action)
 
         # Alignment Actions
-        self._add_action(
-            "align-h-center",
-            lambda a, p: layout_actions.center_horizontally(self.win),
-        )
-        self._add_action(
-            "align-v-center",
-            lambda a, p: layout_actions.center_vertically(self.win),
-        )
-        self._add_action(
-            "align-left", lambda a, p: layout_actions.align_left(self.win)
-        )
-        self._add_action(
-            "align-right", lambda a, p: layout_actions.align_right(self.win)
-        )
-        self._add_action(
-            "align-top", lambda a, p: layout_actions.align_top(self.win)
-        )
-        self._add_action(
-            "align-bottom", lambda a, p: layout_actions.align_bottom(self.win)
-        )
-        self._add_action(
-            "spread-h",
-            lambda a, p: layout_actions.spread_horizontally(self.win),
-        )
-        self._add_action(
-            "spread-v", lambda a, p: layout_actions.spread_vertically(self.win)
-        )
-        self._add_action(
-            "layout-pixel-perfect",
-            lambda a, p: layout_actions.layout_pixel_perfect(self.win),
-        )
+        self._add_action("align-h-center", self.on_align_h_center)
+        self._add_action("align-v-center", self.on_align_v_center)
+        self._add_action("align-left", self.on_align_left)
+        self._add_action("align-right", self.on_align_right)
+        self._add_action("align-top", self.on_align_top)
+        self._add_action("align-bottom", self.on_align_bottom)
+        self._add_action("spread-h", self.on_spread_h)
+        self._add_action("spread-v", self.on_spread_v)
+        self._add_action("layout-pixel-perfect", self.on_layout_pixel_perfect)
 
         # Machine Control Actions
         self._add_action("home", self.win.on_home_clicked)
@@ -150,13 +129,13 @@ class ActionManager:
 
     def on_layer_move_up(self, action, param):
         """Handler for the 'layer-move-up' action."""
-        layer_cmd.move_selected_to_adjacent_layer(
+        self.editor.layer.move_selected_to_adjacent_layer(
             self.win.surface, direction=-1
         )
 
     def on_layer_move_down(self, action, param):
         """Handler for the 'layer-move-down' action."""
-        layer_cmd.move_selected_to_adjacent_layer(
+        self.editor.layer.move_selected_to_adjacent_layer(
             self.win.surface, direction=1
         )
 
@@ -166,16 +145,21 @@ class ActionManager:
         if len(selected_elements) < 2:
             return
 
-        items_to_group = [elem.data for elem in selected_elements]
+        items_to_group = [
+            elem.data
+            for elem in selected_elements
+            if isinstance(elem.data, DocItem)
+        ]
         # All items must belong to the same layer to be grouped
-        parent_layer = items_to_group[0].parent
-        if not all(item.parent is parent_layer for item in items_to_group):
-            return  # Should not happen with current selection logic
+        parent_layer = cast(Layer, items_to_group[0].parent)
+        if not parent_layer or not all(
+            item.parent is parent_layer for item in items_to_group
+        ):
+            return
 
-        cmd = CreateGroupCommand(
-            parent_layer, items_to_group, self.win.surface.ops_generator
-        )
-        self.win.doc.history_manager.execute(cmd)
+        new_group = self.editor.group.group_items(parent_layer, items_to_group)
+        if new_group:
+            self.win.surface.select_items([new_group])
 
     def on_ungroup_action(self, action, param):
         """Handler for the 'ungroup' action."""
@@ -189,8 +173,51 @@ class ActionManager:
         if not groups_to_ungroup:
             return
 
-        cmd = UngroupCommand(groups_to_ungroup, self.win.surface.ops_generator)
-        self.win.doc.history_manager.execute(cmd)
+        self.editor.group.ungroup_items(groups_to_ungroup)
+        # The selection will be automatically updated by the history changed
+        # signal handler.
+
+    # --- Alignment Action Handlers ---
+
+    def on_align_h_center(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        w, _ = self.win.surface.get_size_mm()
+        self.editor.layout.center_horizontally(items, w)
+
+    def on_align_v_center(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        _, h = self.win.surface.get_size_mm()
+        self.editor.layout.center_vertically(items, h)
+
+    def on_align_left(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        self.editor.layout.align_left(items)
+
+    def on_align_right(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        w, _ = self.win.surface.get_size_mm()
+        self.editor.layout.align_right(items, w)
+
+    def on_align_top(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        _, h = self.win.surface.get_size_mm()
+        self.editor.layout.align_top(items, h)
+
+    def on_align_bottom(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        self.editor.layout.align_bottom(items)
+
+    def on_spread_h(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        self.editor.layout.spread_horizontally(items)
+
+    def on_spread_v(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        self.editor.layout.spread_vertically(items)
+
+    def on_layout_pixel_perfect(self, action, param):
+        items = list(self.win.surface.get_selected_items())
+        self.editor.layout.layout_pixel_perfect(items)
 
     def _add_action(
         self,

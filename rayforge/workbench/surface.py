@@ -2,14 +2,12 @@ import logging
 from blinker import Signal
 from typing import Optional, Tuple, cast, Dict, List, Sequence
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
-from ..core.doc import Doc
 from ..core.group import Group
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..machine.models.machine import Machine
-from ..pipeline.generator import OpsGenerator
 from ..undo import ChangePropertyCommand
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
@@ -18,7 +16,7 @@ from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
-from ..doceditor import transform_cmd, layer_cmd
+from ..doceditor.editor import DocEditor
 from . import context_menu
 
 logger = logging.getLogger(__name__)
@@ -41,16 +39,16 @@ class WorkSurface(Canvas):
 
     def __init__(
         self,
-        doc: Doc,
+        editor: DocEditor,
         machine: Optional[Machine],
         cam_visible: bool = False,
         **kwargs,
     ):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
-        self.doc = doc
+        self.editor = editor
+        self.doc = self.editor.doc
         self.machine = None  # will be assigned by set_machine() below
-        self.ops_generator = OpsGenerator(doc)
         self.zoom_level = 1.0
         self.pan_x_mm = 0.0
         self.pan_y_mm = 0.0
@@ -251,22 +249,22 @@ class WorkSurface(Canvas):
             " Pausing ops generator."
         )
         self._on_any_transform_begin(sender, elements)
-        self.ops_generator.pause()
+        self.editor.ops_generator.pause()
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
         Finalizes an interactive transform by delegating to the
         transform_cmd module to create the undoable transaction.
         """
-        transform_cmd.finalize_interactive_transform(
-            self.doc.history_manager, elements, self._transform_start_states
+        self.editor.transform.finalize_interactive_transform(
+            elements, self._transform_start_states
         )
 
         self._transform_start_states.clear()
 
         # If it was a resize, the ops are now stale. Resume the generator.
         if self._resizing:
-            self.ops_generator.resume()
+            self.editor.ops_generator.resume()
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""
@@ -510,7 +508,7 @@ class WorkSurface(Canvas):
         layer_elem = LayerElement(layer=layer, canvas=self)
         self.root.add(layer_elem)
 
-    def update_from_doc(self, doc: Doc):
+    def update_from_doc(self):
         """
         Synchronizes the canvas elements with the document model.
 
@@ -519,8 +517,7 @@ class WorkSurface(Canvas):
         document's data model. It also reorders the LayerElements to match
         the Z-order of the layers in the document.
         """
-        self.doc = doc
-        self.ops_generator.doc = doc
+        doc = self.doc
 
         # --- Step 1: Add and Remove LayerElements ---
         doc_layers_set = set(doc.layers)
@@ -750,7 +747,7 @@ class WorkSurface(Canvas):
             keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
         ):
             direction = -1 if keyval == Gdk.KEY_Page_Up else 1
-            layer_cmd.move_selected_to_adjacent_layer(self, direction)
+            self.editor.layer.move_selected_to_adjacent_layer(self, direction)
             return True
 
         # Handle clipboard and duplication
@@ -800,8 +797,8 @@ class WorkSurface(Canvas):
             if not selected_items:
                 return True  # Consume event but do nothing
 
-            transform_cmd.nudge_items(
-                self.doc.history_manager, selected_items, move_x, move_y
+            self.editor.transform.nudge_items(
+                selected_items, move_x, move_y
             )
             return True
 

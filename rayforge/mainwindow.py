@@ -8,7 +8,6 @@ from .config import config
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
-from .core.doc import Doc
 from .core.group import Group
 from .core.item import DocItem
 from .pipeline.steps import (
@@ -17,11 +16,10 @@ from .pipeline.steps import (
     create_raster_step,
 )
 from .undo import HistoryManager, Command
+from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .doceditor.ui.layer_list import LayerListView
-from .doceditor import edit_cmd, file_cmd
-from .machine import cmd as machine_cmd
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
@@ -33,7 +31,6 @@ from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
-from .workbench import view_mode_cmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 
 
@@ -130,6 +127,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Set the ToastOverlay as the window's content
         self.set_content(self.toast_overlay)
 
+        # Create the central document editor. This now owns the Doc and
+        # OpsGenerator.
+        self.doc_editor = DocEditor()
+
         # Add a global click handler to manage focus correctly.
         root_click_gesture = Gtk.GestureClick.new()
         root_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
@@ -143,9 +144,6 @@ class MainWindow(Adw.ApplicationWindow):
             )
         else:
             self.set_default_size(1100, 800)
-
-        # Make a default document. Must be created before ActionManager.
-        self.doc = Doc()
 
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
@@ -206,18 +204,19 @@ class MainWindow(Adw.ApplicationWindow):
         self.paned.set_start_child(self.frame)
 
         # Connect document signals
+        doc = self.doc_editor.doc
         self._initialize_document()
-        self.doc.updated.connect(self.on_doc_changed)
-        self.doc.descendant_added.connect(self.on_doc_changed)
-        self.doc.descendant_removed.connect(self.on_doc_changed)
-        self.doc.descendant_updated.connect(self.on_doc_changed)
-        self.doc.descendant_transform_changed.connect(self.on_doc_changed)
-        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
-        self.doc.history_manager.changed.connect(self.on_history_changed)
+        doc.updated.connect(self.on_doc_changed)
+        doc.descendant_added.connect(self.on_doc_changed)
+        doc.descendant_removed.connect(self.on_doc_changed)
+        doc.descendant_updated.connect(self.on_doc_changed)
+        doc.descendant_transform_changed.connect(self.on_doc_changed)
+        doc.active_layer_changed.connect(self._on_active_layer_changed)
+        doc.history_manager.changed.connect(self.on_history_changed)
 
         self.surface = WorkSurface(
-            self.doc,
-            config.machine,
+            editor=self.doc_editor,
+            machine=config.machine,
             cam_visible=self.toolbar.camera_visibility_button.get_active(),
         )
         self.surface.set_hexpand(True)
@@ -232,19 +231,22 @@ class MainWindow(Adw.ApplicationWindow):
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
-                self.doc,
+                self.doc_editor.doc,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
-                parent=self,
             )
 
             # Create a stack to switch between 2D and 3D views
             self.view_stack.add_named(self.canvas3d, "3d")
 
         # Undo/Redo buttons are now connected to the doc via actions.
-        self.toolbar.undo_button.set_history_manager(self.doc.history_manager)
-        self.toolbar.redo_button.set_history_manager(self.doc.history_manager)
+        self.toolbar.undo_button.set_history_manager(
+            self.doc_editor.history_manager
+        )
+        self.toolbar.redo_button.set_history_manager(
+            self.doc_editor.history_manager
+        )
 
         # Create a vertical paned for the right pane content
         right_pane_scrolled_window = Gtk.ScrolledWindow()
@@ -265,12 +267,12 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_scrolled_window.set_child(right_pane_box)
 
         # Add the Layer list view
-        self.layer_list_view = LayerListView(self.doc)
+        self.layer_list_view = LayerListView(self.doc_editor.doc)
         self.layer_list_view.set_margin_end(12)
         right_pane_box.append(self.layer_list_view)
 
         # The WorkflowView will be updated when a layer is activated.
-        initial_workflow = self.doc.layers[0].workflow
+        initial_workflow = self.doc_editor.doc.layers[0].workflow
         step_factories: List[Callable] = [
             create_contour_step,
             create_outline_step,
@@ -329,7 +331,7 @@ class MainWindow(Adw.ApplicationWindow):
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
         """Delegates the view switching logic to the command module."""
-        view_mode_cmd.toggle_3d_view(self, action, value)
+        self.doc_editor.view.toggle_3d_view(self, action, value)
 
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -347,31 +349,32 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        view_mode_cmd.set_view_top(self.canvas3d)
+        self.doc_editor.view.set_view_top(self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        view_mode_cmd.set_view_front(self.canvas3d)
+        self.doc_editor.view.set_view_front(self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        view_mode_cmd.set_view_iso(self.canvas3d)
+        self.doc_editor.view.set_view_iso(self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         """Handles state changes for the perspective view action."""
-        view_mode_cmd.toggle_perspective(self.canvas3d, action, value)
+        self.doc_editor.view.toggle_perspective(self.canvas3d, action, value)
 
     def _initialize_document(self):
         """
         Adds required initial state to a new document, such as a default
         step.
         """
-        if not self.doc.layers:
+        doc = self.doc_editor.doc
+        if not doc.layers:
             return
 
-        first_layer = self.doc.layers[0]
+        first_layer = doc.layers[0]
         if not first_layer.workflow.has_steps():
             workflow = first_layer.workflow
             default_step = create_contour_step()
@@ -434,13 +437,14 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
         # After undo/redo, the document state may have changed in ways
         # that require a full UI sync (e.g., layer visibility).
-        self.on_doc_changed(self.doc)
+        self.on_doc_changed(self.doc_editor.doc)
 
     def on_doc_changed(self, sender, **kwargs):
         # Synchronize UI elements that depend on the document model
-        self.surface.update_from_doc(self.doc)
-        if self.doc.active_layer:
-            self.workflowview.set_workflow(self.doc.active_layer.workflow)
+        self.surface.update_from_doc()
+        doc = self.doc_editor.doc
+        if doc.active_layer:
+            self.workflowview.set_workflow(doc.active_layer.workflow)
 
         # Update button sensitivity and other state
         self._update_actions_and_ui()
@@ -448,7 +452,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_active_layer_changed(self, sender):
         """Resets the paste counter when the active layer changes."""
         logger.debug("Active layer changed, paste counter reset.")
-        edit_cmd.reset_paste_counter()
+        self.doc_editor.edit.reset_paste_counter()
 
     def _on_selection_changed(
         self,
@@ -524,7 +528,7 @@ class MainWindow(Adw.ApplicationWindow):
                 y_down = False
 
             self.canvas3d = Canvas3D(
-                self.doc,
+                self.doc_editor.doc,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -534,7 +538,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
 
-        self.surface.update_from_doc(self.doc)
+        self.surface.update_from_doc()
         self._update_actions_and_ui()
 
         # Update theme
@@ -556,6 +560,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _update_actions_and_ui(self):
         active_machine = config.machine
         am = self.action_manager
+        doc = self.doc_editor.doc
 
         if not active_machine:
             am.get_action("export").set_enabled(False)
@@ -576,10 +581,10 @@ class MainWindow(Adw.ApplicationWindow):
             state = active_machine.device_state
             active_driver = active_machine.driver
 
-            can_export = self.doc.has_workpiece() and not task_mgr.has_tasks()
+            can_export = doc.has_workpiece() and not task_mgr.has_tasks()
             am.get_action("export").set_enabled(can_export)
             export_tooltip = _("Generate G-code")
-            if not self.doc.has_workpiece():
+            if not doc.has_workpiece():
                 export_tooltip = _("Add a workpiece to enable export")
             elif task_mgr.has_tasks():
                 export_tooltip = _(
@@ -602,7 +607,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             can_frame = (
                 active_machine.can_frame()
-                and self.doc.has_result()
+                and doc.has_result()
                 and not is_job_or_task_active
             )
             am.get_action("frame").set_enabled(can_frame)
@@ -619,7 +624,7 @@ class MainWindow(Adw.ApplicationWindow):
                 not isinstance(active_driver, NoDeviceDriver)
                 and (active_driver and not active_driver.setup_error)
                 and conn_status == TransportStatus.CONNECTED
-                and self.doc.has_result()
+                and doc.has_result()
                 and not is_job_or_task_active
             )
             am.get_action("send").set_enabled(send_sensitive)
@@ -661,15 +666,19 @@ class MainWindow(Adw.ApplicationWindow):
         selected_elements = self.surface.get_selected_elements()
         has_selection = len(selected_elements) > 0
 
-        am.get_action("undo").set_enabled(self.doc.history_manager.can_undo())
-        am.get_action("redo").set_enabled(self.doc.history_manager.can_redo())
+        am.get_action("undo").set_enabled(
+            self.doc_editor.history_manager.can_undo()
+        )
+        am.get_action("redo").set_enabled(
+            self.doc_editor.history_manager.can_redo()
+        )
         am.get_action("cut").set_enabled(has_selection)
         am.get_action("copy").set_enabled(has_selection)
-        am.get_action("paste").set_enabled(edit_cmd.can_paste())
-        am.get_action("select_all").set_enabled(self.doc.has_workpiece())
+        am.get_action("paste").set_enabled(self.doc_editor.edit.can_paste())
+        am.get_action("select_all").set_enabled(doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
         am.get_action("remove").set_enabled(has_selection)
-        am.get_action("clear").set_enabled(self.doc.has_workpiece())
+        am.get_action("clear").set_enabled(doc.has_workpiece())
 
         # Update sensitivity for Grouping actions
         can_group = len(selected_elements) >= 2
@@ -681,7 +690,7 @@ class MainWindow(Adw.ApplicationWindow):
         am.get_action("ungroup").set_enabled(can_ungroup)
 
         # Update sensitivity for Layer actions
-        can_move_layers = has_selection and len(self.doc.layers) > 1
+        can_move_layers = has_selection and len(doc.layers) > 1
         am.get_action("layer-move-up").set_enabled(can_move_layers)
         am.get_action("layer-move-down").set_enabled(can_move_layers)
 
@@ -710,7 +719,7 @@ class MainWindow(Adw.ApplicationWindow):
             can_layout = True
         elif not selected_top_level_items:
             # Scenario: Nothing selected. Action will lay out all workpieces.
-            can_layout = len(self.doc.get_top_level_items()) >= 2
+            can_layout = len(doc.get_top_level_items()) >= 2
         else:  # One item selected
             can_layout = False
 
@@ -736,10 +745,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.close()
 
     def on_menu_import(self, action, param=None):
-        file_cmd.import_file(self)
+        self.doc_editor.file.import_file(self)
 
     def on_open_clicked(self, sender):
-        file_cmd.import_file(self)
+        self.doc_editor.file.import_file(self)
 
     def on_camera_image_visibility_toggled(self, sender, active):
         self.surface.set_camera_image_visibility(active)
@@ -756,29 +765,25 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(active)
 
     def on_clear_clicked(self, action, param):
-        edit_cmd.clear_all_items(self.doc)
+        self.doc_editor.edit.clear_all_items()
 
     def on_export_clicked(self, action, param=None):
-        file_cmd.export_gcode(self)
+        self.doc_editor.file.export_gcode(self)
 
     def on_home_clicked(self, action, param):
         if not config.machine:
             return
-        machine_cmd.home_machine(config.machine)
+        self.doc_editor.machine.home_machine(config.machine)
 
     def on_frame_clicked(self, action, param):
         if not config.machine:
             return
-        machine_cmd.frame_job(
-            self.doc, config.machine, self.surface.ops_generator
-        )
+        self.doc_editor.machine.frame_job(config.machine)
 
     def on_send_clicked(self, action, param):
         if not config.machine:
             return
-        machine_cmd.send_job(
-            self.doc, config.machine, self.surface.ops_generator
-        )
+        self.doc_editor.machine.send_job(config.machine)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -790,20 +795,20 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         is_requesting_hold = value.get_boolean()
-        machine_cmd.set_hold(config.machine, is_requesting_hold)
+        self.doc_editor.machine.set_hold(config.machine, is_requesting_hold)
         action.set_state(value)
 
     def on_cancel_clicked(self, action, param):
         if not config.machine:
             return
-        machine_cmd.cancel_job(config.machine)
+        self.doc_editor.machine.cancel_job(config.machine)
 
     def load_file(self, filename: Path, mime_type: Optional[str]):
         """
         Loads a file from a path, typically from the command line.
         This is now a simple wrapper around the centralized command.
         """
-        file_cmd.load_file_from_path(self, filename, mime_type)
+        self.doc_editor.file.load_file_from_path(filename, mime_type)
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""
@@ -811,54 +816,69 @@ class MainWindow(Adw.ApplicationWindow):
             elem.data for elem in elements if isinstance(elem.data, DocItem)
         ]
         if items_to_delete:
-            edit_cmd.remove_items(self, items_to_delete, "Delete item(s)")
+            self.doc_editor.edit.remove_items(
+                items_to_delete, "Delete item(s)"
+            )
 
     def on_cut_requested(self, sender, items: List[DocItem]):
         """Handles the 'cut-requested' signal from the WorkSurface."""
-        edit_cmd.cut_items(self, items)
+        self.doc_editor.edit.cut_items(items)
+        self._update_actions_and_ui()
 
     def on_copy_requested(self, sender, items: List[DocItem]):
         """
         Handles the 'copy-requested' signal from the WorkSurface.
         """
-        edit_cmd.copy_items(self, items)
+        self.doc_editor.edit.copy_items(items)
+        self._update_actions_and_ui()
 
     def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal from the WorkSurface.
         """
-        edit_cmd.paste_items(self)
+        newly_pasted = self.doc_editor.edit.paste_items()
+        if newly_pasted:
+            self.surface.select_items(newly_pasted)
+        self._update_actions_and_ui()
 
     def on_select_all(self, action, param):
         """Selects all workpieces in the document."""
-        if self.doc.all_workpieces:
-            self.surface.select_items(self.doc.all_workpieces)
+        doc = self.doc_editor.doc
+        if doc.all_workpieces:
+            self.surface.select_items(doc.all_workpieces)
 
     def on_duplicate_requested(self, sender, items: List[DocItem]):
         """
         Handles the 'duplicate-requested' signal from the WorkSurface.
         """
-        edit_cmd.duplicate_items(self, items)
+        newly_duplicated = self.doc_editor.edit.duplicate_items(items)
+        if newly_duplicated:
+            self.surface.select_items(newly_duplicated)
 
     def on_menu_cut(self, action, param):
         selection = self.surface.get_selected_items()
         if selection:
-            edit_cmd.cut_items(self, list(selection))
+            self.doc_editor.edit.cut_items(list(selection))
+            self._update_actions_and_ui()
 
     def on_menu_copy(self, action, param):
         selection = self.surface.get_selected_items()
         if selection:
-            edit_cmd.copy_items(self, list(selection))
+            self.doc_editor.edit.copy_items(list(selection))
+            self._update_actions_and_ui()
 
     def on_menu_duplicate(self, action, param):
         selection = self.surface.get_selected_items()
         if selection:
-            edit_cmd.duplicate_items(self, list(selection))
+            newly_duplicated = self.doc_editor.edit.duplicate_items(
+                list(selection)
+            )
+            self.surface.select_items(newly_duplicated)
 
     def on_menu_remove(self, action, param):
         items = self.surface.get_selected_items()
         if items:
-            edit_cmd.remove_items(self, list(items))
+            self.doc_editor.edit.remove_items(list(items))
 
     def show_about_dialog(self, action, param):
         dialog = AboutDialog(transient_for=self)
