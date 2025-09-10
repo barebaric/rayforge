@@ -10,6 +10,7 @@ windows-build = { features = ["windows-build", "test"], solve-group = "default" 
 
 [dependencies]
 adwaita-icon-theme = "*"
+glib = "*"
 cairo = "*"
 expat = "*"
 gettext = "*"
