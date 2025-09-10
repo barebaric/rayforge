@@ -43,7 +43,7 @@ libvips = "*"
 potrace = "*"
 pkg-config = "*"
 xorg-xproto = "*"
-libx11 = "*"
+xorg-libx11 = "*"
 
 [target.osx-64.dependencies]
 # libagg is not available on osx; needs to be installed separately
