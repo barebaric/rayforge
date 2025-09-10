@@ -244,6 +244,15 @@ def check_region_hit(
     Checks which interactive region is hit by a point in LOCAL coordinates.
     If `candidates` is provided, it will only check against regions in that
     set.
+
+    Args:
+        local_x: The x-coordinate in LOCAL coordinates.
+        local_y: The y-coordinate in LOCAL coordinates.
+        width: The width of the bounding box.
+        height: The height of the bounding box.
+        base_handle_size: The desired base size of the handles in pixels.
+        scale_compensation: The signed scale factor(s) of the context.
+        candidates: Optional set of regions to check against.
     """
     # Determine which handle regions to check based on the candidates.
     # The order of _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
