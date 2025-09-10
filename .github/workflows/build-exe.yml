@@ -60,6 +60,7 @@ jobs:
             mingw-w64-x86_64-libvips
             mingw-w64-x86_64-meson
             mingw-w64-x86_64-ntldd
+            mingw-w64-x86_64-opencv
             mingw-w64-x86_64-openslide
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-poppler
@@ -72,6 +73,7 @@ jobs:
             mingw-w64-x86_64-python-cffi
             mingw-w64-x86_64-python-gobject
             mingw-w64-x86_64-python-numpy
+            mingw-w64-x86_64-python-opencv
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-platformdirs
             mingw-w64-x86_64-python-poetry-core
@@ -89,9 +91,6 @@ jobs:
             autoconf
             automake
             libtool
-            mingw-w64-x86_64-ffmpeg=7.1.1-6
-            mingw-w64-x86_64-opencv=4.12.0-2
-            mingw-w64-x86_64-python-opencv=4.12.0-2
 
       - name: Set up environment
         shell: msys2 {0}
