@@ -16,6 +16,28 @@ if TYPE_CHECKING:
     from .canvas import CanvasElement, MultiSelectionGroup, SelectionMode
 
 
+def _draw_quad_handle(
+    ctx: cairo.Context,
+    p1: Tuple[float, float],
+    p2: Tuple[float, float],
+    p3: Tuple[float, float],
+    p4: Tuple[float, float],
+    is_hovered: bool,
+):
+    """Draws a quadrilateral handle given four screen-space points."""
+    if is_hovered:
+        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.9)
+    else:
+        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
+
+    ctx.move_to(*p1)
+    ctx.line_to(*p2)
+    ctx.line_to(*p3)
+    ctx.line_to(*p4)
+    ctx.close_path()
+    ctx.fill()
+
+
 def _draw_square_handle(
     ctx: cairo.Context, width: float, height: float, is_hovered: bool
 ):
@@ -72,13 +94,13 @@ def _draw_arc_handle(
         # Draw an asymmetric arrowhead. The inner tine is flatter.
         if is_start_arrow:
             # Outer tine (slightly more pronounced)
-            ctx.line_to(-arrow_len, -arrow_width*0.9)
+            ctx.line_to(-arrow_len, -arrow_width * 0.9)
             ctx.move_to(0, 0)
             # Inner tine (flatter)
-            ctx.line_to(-arrow_len*0.9, arrow_width * 1.2)
+            ctx.line_to(-arrow_len * 0.9, arrow_width * 1.2)
         else:
             # Inner tine (flatter)
-            ctx.line_to(-arrow_len*0.9, -arrow_width*1.2)
+            ctx.line_to(-arrow_len * 0.9, -arrow_width * 1.2)
             ctx.move_to(0, 0)
             # Outer tine (slightly more pronounced)
             ctx.line_to(-arrow_width, arrow_len * 0.9)
@@ -234,36 +256,65 @@ def _render_handles(
     sx_abs, sy_abs = transform_to_screen.get_abs_scale()
 
     for region in regions:
-        draw_info = HANDLE_DRAW_INFO.get(region)
-        if not draw_info:
-            continue
+        # Resize handles must be drawn as transformed quads to
+        # account for shear. Rotate/Shear handles are glyphs that are only
+        # rotated to align with the frame.
+        if region in RESIZE_HANDLES:
+            lx, ly, lw, lh = target.get_region_rect(
+                region, base_handle_size, scale_compensation
+            )
+            if lw <= 0 or lh <= 0:
+                continue
 
-        lx, ly, lw, lh = target.get_region_rect(
-            region, base_handle_size, scale_compensation
-        )
-        if lw <= 0 or lh <= 0:
-            continue
+            # Get the 4 corners of the handle's rectangle in local space
+            corners_local = [
+                (lx, ly),
+                (lx + lw, ly),
+                (lx + lw, ly + lh),
+                (lx, ly + lh),
+            ]
+            # Transform them to screen space to get the final skewed quad
+            corners_screen = [
+                transform_to_screen.transform_point(p) for p in corners_local
+            ]
+            _draw_quad_handle(
+                ctx,
+                *corners_screen,
+                is_hovered=(region == hovered_region),
+            )
+        else:  # Rotate or Shear handles
+            draw_info = HANDLE_DRAW_INFO.get(region)
+            if not draw_info:
+                continue
 
-        center_local = (lx + lw / 2, ly + lh / 2)
-        screen_x, screen_y = transform_to_screen.transform_point(center_local)
-        angle_rad = math.radians(
-            draw_info["get_angle"](transform_to_screen, region)
-        )
+            lx, ly, lw, lh = target.get_region_rect(
+                region, base_handle_size, scale_compensation
+            )
+            if lw <= 0 or lh <= 0:
+                continue
 
-        screen_width = lw * sx_abs
-        screen_height = lh * sy_abs
+            center_local = (lx + lw / 2, ly + lh / 2)
+            screen_x, screen_y = transform_to_screen.transform_point(
+                center_local
+            )
+            angle_rad = math.radians(
+                draw_info["get_angle"](transform_to_screen, region)
+            )
 
-        draw_w, draw_h = screen_width, screen_height
-        if draw_info.get("swap_dims", False):
-            draw_w, draw_h = screen_height, screen_width
+            screen_width = lw * sx_abs
+            screen_height = lh * sy_abs
 
-        ctx.save()
-        ctx.translate(screen_x, screen_y)
-        ctx.rotate(angle_rad)
-        draw_info["draw"](
-            ctx, draw_w, draw_h, is_hovered=(region == hovered_region)
-        )
-        ctx.restore()
+            draw_w, draw_h = screen_width, screen_height
+            if draw_info.get("swap_dims", False):
+                draw_w, draw_h = screen_height, screen_width
+
+            ctx.save()
+            ctx.translate(screen_x, screen_y)
+            ctx.rotate(angle_rad)
+            draw_info["draw"](
+                ctx, draw_w, draw_h, is_hovered=(region == hovered_region)
+            )
+            ctx.restore()
 
 
 def render_selection_handles(
