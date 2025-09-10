@@ -7,6 +7,7 @@ from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
+from ..transport.serial import SerialPortPermissionError
 from .driver import Driver, DriverSetupError, DeviceStatus
 from .grbl_util import (
     parse_state,
@@ -58,6 +59,11 @@ class GrblSerialDriver(Driver):
         )
 
     def setup(self, **kwargs: Any):
+        try:
+            SerialTransport.check_serial_permissions_globally()
+        except SerialPortPermissionError as e:
+            raise DriverSetupError(str(e)) from e
+
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
 

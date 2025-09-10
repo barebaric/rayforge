@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 import serial_asyncio
 from typing import Optional, List
 from serial.tools import list_ports
@@ -11,6 +12,12 @@ logger = logging.getLogger(__name__)
 
 class SerialPort(str):
     """A string subclass for identifying serial ports, for UI generation."""
+
+    pass
+
+
+class SerialPortPermissionError(Exception):
+    """Custom exception for systemic serial port permission issues."""
 
     pass
 
@@ -27,6 +34,38 @@ class SerialTransport(Transport):
         for port in list_ports.comports():
             ports.append(port.device)
         return ports
+
+    @staticmethod
+    def check_serial_permissions_globally() -> None:
+        """
+        On POSIX systems, checks if there are visible serial ports that the
+        user cannot access. This is a strong indicator that the user is not
+        in the correct group (e.g., 'dialout').
+
+        Raises:
+            SerialPortPermissionError: If systemic permission issues are
+              detected.
+        """
+        if os.name != "posix":
+            return  # This check is only for POSIX-like systems (Linux, macOS)
+
+        # Filter for common USB-to-serial device names
+        all_ports = list_ports.comports()
+        relevant_ports = [
+            p.device
+            for p in all_ports
+            if "ttyUSB" in p.device or "ttyACM" in p.device
+        ]
+
+        if not relevant_ports:
+            return  # No relevant ports found, nothing to check
+
+        if not any(os.access(p, os.R_OK | os.W_OK) for p in relevant_ports):
+            msg = _(
+                "Could not access any serial ports. On Linux, ensure "
+                "your user is in the 'dialout' group."
+            )
+            raise SerialPortPermissionError(msg)
 
     @staticmethod
     def list_baud_rates() -> List[int]:
@@ -151,8 +190,8 @@ class SerialTransport(Transport):
                 break
             except Exception as e:
                 logger.error(f"Error in _receive_loop: {e}")
-                self.status_changed.send(self,
-                                         status=TransportStatus.ERROR,
-                                         message=str(e))
+                self.status_changed.send(
+                    self, status=TransportStatus.ERROR, message=str(e)
+                )
                 break
         logger.debug("Exiting _receive_loop.")
