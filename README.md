@@ -130,23 +130,92 @@ We welcome any contributions, from bug reports to new features!
 
 ## Development
 
-Interested in hacking on Rayforge? Here's how to get a development environment set up.
+This project uses [**Pixi**](https://pixi.sh/) to manage dependencies and development environments.
+It provides a single, cross-platform tool for a reproducible setup.
+
+### Prerequisites
+
+Ensure you have Pixi installed on your system. You can find the installation instructions
+on the [official website](https://pixi.sh/latest/installation/).
+
+### 1. Initial Setup
+
+After cloning the repository, setting up the development environment is a single command:
 
 ```bash
-# Install system dependencies (example for Debian/Ubuntu)
-sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64 libpotrace-dev libagg-dev libadwaita-1-0 libopencv-dev
-
-# Clone the repository
-git clone https://github.com/barebaric/rayforge.git
-cd rayforge
-
-# Create and activate a virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install Python dependencies
-pip install -r requirements.txt
+pixi install
 ```
+
+This will read the `pixi.toml` file, create a local `.pixi` environment,
+and install all specified conda and pypi dependencies in it.
+
+### 2. Running the Application
+
+To run the main application, use the `run` task defined in `pixi.toml`:
+
+```bash
+pixi run rayforge
+```
+
+### 3. Running Tests
+
+To run the test suite, use the `test` task:
+
+```bash
+pixi run test
+```
+
+### 4. Working in the Activated Environment
+
+For a more interactive workflow (similar to activating a virtual environment), you can start a shell within the project's environment:
+
+```bash
+pixi shell
+```
+
+Now, your shell is configured with all the project's dependencies. You can run commands directly without the `pixi run` prefix:
+
+```bash
+# Inside the pixi shell
+rayforge
+pytest -v
+```
+
+Exit the shell by typing `exit`.
+
+### 5. Managing Dependencies
+
+The `pixi.toml` file is the single source of truth for all dependencies. Do not use `pip` or `conda` directly to add packages.
+
+**To add a new Conda package:**
+
+```bash
+# Example: Add numpy from conda-forge
+pixi add numpy
+```
+
+**To add a new PyPI package:**
+
+```bash
+# Example: Add requests from PyPI
+pixi add --pypi requests
+```
+
+Pixi will automatically resolve the dependencies and update the `pixi.toml` and `pixi.lock` files.
+
+### 6. Translation Workflow
+
+The following tasks are available for managing language translations:
+
+*   **To extract new strings from the code and update `.po` files:**
+    ```bash
+    pixi run update-translations
+    ```
+
+*   **To compile `.po` files into `.mo` files for the application to use:**
+    ```bash
+    pixi run compile-translations
+    ```
 
 ## License
 

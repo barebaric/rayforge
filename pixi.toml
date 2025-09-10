@@ -1,0 +1,97 @@
+[project]
+name = "rayforge"
+version = "0.1.0"
+channels = ["conda-forge", "bioconda", "msys2"]
+platforms = ["linux-64", "osx-64", "win-64"]
+
+[environments]
+default = { features = ["test"], solve-group = "default" }
+windows-build = { features = ["windows-build", "test"], solve-group = "default" }
+
+[dependencies]
+adwaita-icon-theme = "*"
+gettext = "*"
+gtk4 = "*"
+libheif = "*"
+opencv = "*"
+openslide = "*"
+poppler = "*"
+python = ">=3.11"
+
+[pypi-dependencies]
+aiohttp = "==3.12.14"
+blinker = "==1.9.0"
+ezdxf = "==1.3.5"
+opencv-python = "*"
+platformdirs = "==4.3.6"
+pypotrace = "==0.3"
+PyGObject = "==3.50.0"
+PyOpenGL = "==3.1.9"
+PyOpenGL-accelerate = "==3.1.9"
+pypdf = "==6.0.0"
+pyserial-asyncio = "==0.6"
+pyvips = "==3.0.0"
+PyYAML = "==6.0.2"
+scipy = "==1.15.2"
+websockets = "==14.2"
+
+[target.linux-64.dependencies]
+libvips = "*"
+potrace = "*"
+
+[target.osx-64.dependencies]
+libvips = "*"
+potrace = "*"
+
+[target.win-64.dependencies]
+# potrace and libvips are handled by MSYS2, so no dependency here
+
+[feature.test.dependencies]
+pytest = "*"
+
+[feature.test.pypi-dependencies]
+pytest-asyncio = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+pygobject-stubs = "*"
+
+# This feature now ONLY contains the PyInstaller tool
+[feature.windows-build.dependencies]
+pyinstaller = "*"
+
+[tasks]
+run = "rayforge"
+test = "pytest -v"
+update-translations = "bash scripts/update_translations.sh"
+compile-translations = "bash scripts/update_translations.sh --compile-only"
+
+[tasks.build-exe]
+cmd = """
+bash -c '
+  set -e
+  VERSION=${1:-"dev"}
+  echo "Building version: $VERSION"
+  
+  # The MSYS2_PREFIX env var will be set by the GHA workflow
+  MSYS_DIR=${MSYS2_PREFIX}
+  echo "Using MSYS2 prefix: $MSYS_DIR"
+
+  # We use pixi only to get the path to its own environment
+  PIXI_PREFIX=$(pixi info -e windows-build --prefix)
+
+  pyinstaller --onefile --noconsole \\
+    --log-level INFO \\
+    --name "rayforge-${VERSION}" \\
+    --add-data "rayforge/resources;rayforge/resources" \\
+    --add-data "rayforge/locale;rayforge/locale" \\
+    --add-data "${MSYS_DIR}/share/glib-2.0/schemas;glib-2.0/schemas" \\
+    --add-data "${MSYS_DIR}/share/icons;share/icons" \\
+    --add-data "${MSYS_DIR}/lib/girepository-1.0;gi/repository" \\
+    --add-binary "${MSYS_DIR}/bin/libEGL.dll;." \\
+    --add-binary "${MSYS_DIR}/bin/libGLESv2.dll;." \\
+    --add-binary "${MSYS_DIR}/bin/libvips-42.dll;." \\
+    --collect-submodules potrace \\
+    --hidden-import gi._gi_cairo \\
+    rayforge/app.py
+'
+"""
