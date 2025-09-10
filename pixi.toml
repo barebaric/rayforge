@@ -1,7 +1,7 @@
 [project]
 name = "rayforge"
 version = "0.1.0"
-channels = ["conda-forge", "bioconda", "msys2"]
+channels = ["conda-forge", "bioconda", "msys2", "coastline"]
 platforms = ["linux-64", "osx-64", "win-64"]
 
 [environments]
@@ -36,14 +36,17 @@ scipy = "==1.15.2"
 websockets = "==14.2"
 
 [target.linux-64.dependencies]
+libagg = "*"
 libvips = "*"
 potrace = "*"
 
 [target.osx-64.dependencies]
+# libagg is not available on osx; needs to be installed separately
 libvips = "*"
 potrace = "*"
 
 [target.win-64.dependencies]
+# libagg is not available in conda for Windows; needs to be installed separately
 # potrace and libvips are handled by MSYS2, so no dependency here
 
 [feature.test.dependencies]
