@@ -36,6 +36,7 @@ jobs:
           echo "version_clean=$VERSION_CLEAN" >> $GITHUB_OUTPUT
 
       - name: Set up MSYS2 and C Toolchain
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -46,6 +47,15 @@ jobs:
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-potrace
             mingw-w64-x86_64-libvips
+
+      - name: Set up environment
+        shell: msys2 {0}
+        run: |
+          MSYS2_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):[/\\]|/d/|g; s|\\|/|g')
+          echo "MSYS2_PATH=$MSYS2_PATH" >> $GITHUB_ENV
+          echo "$MSYS2_PATH/mingw64/bin" >> $GITHUB_PATH
+          echo "$MSYS2_PATH/usr/bin" >> $GITHUB_PATH
+          echo "MSYS2_PATH=$MSYS2_PATH" > $GITHUB_WORKSPACE/.msys2_env
 
       - name: Build and Install AGG
         shell: msys2 {0}
@@ -99,9 +109,13 @@ jobs:
 
       - name: Install Dependencies with Pixi
         shell: msys2 {0}
-        env:
-          PKG_CONFIG_PATH: ${{ runner.temp }}/msys64/mingw64/lib/pkgconfig
-        run: pixi install -e windows-build
+        run: |
+          export PKG_CONFIG_PATH="${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig"
+          MSYS2_BIN_PATH=$(cygpath -u "${{ steps.msys2.outputs.msys2-location }}")/mingw64/bin
+          export PATH="$MSYS2_BIN_PATH:$PATH"
+          echo "--- Verifying pkg-config is available ---"
+          which pkg-config
+          pixi install -e windows-build
 
       - name: Compile Translations
         shell: msys2 {0}
@@ -110,9 +124,7 @@ jobs:
       - name: Build Executable
         shell: msys2 {0}
         env:
-          # Provides the path to MSYS2 libs for the build script
           MSYS2_PREFIX: ${{ runner.temp }}/msys64/mingw64
-        # Pass the dynamic version string to the pixi task
         run: pixi run -e windows-build build-exe ${{ steps.set-version.outputs.version_clean }}
 
       - name: Upload Artifact
@@ -134,5 +146,5 @@ jobs:
       - name: Test Executable
         shell: bash
         run: |
-          EXE_NAME=$(basename dist/rayforge-*.exe)
-          ./dist/$EXE_NAME --help
+          EXE_NAME=$(ls rayforge-*.exe)
+          ./"$EXE_NAME" --help
