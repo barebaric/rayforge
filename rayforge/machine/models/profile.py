@@ -18,6 +18,7 @@ class MachineProfile:
     name: str
     driver_class_name: Optional[str] = None
     dialect_name: Optional[str] = None
+    gcode_precision: Optional[int] = None
     dimensions: Optional[Tuple[int, int]] = None
     y_axis_down: Optional[bool] = None
     max_travel_speed: Optional[int] = None
@@ -53,6 +54,8 @@ class MachineProfile:
 
         if self.dialect_name is not None:
             m.dialect_name = self.dialect_name
+        if self.gcode_precision is not None:
+            m.gcode_precision = self.gcode_precision
         if self.dimensions is not None:
             m.dimensions = self.dimensions
         if self.y_axis_down is not None:
@@ -94,6 +97,7 @@ PROFILES: List[MachineProfile] = [
         name="Sculpfun iCube",
         driver_class_name="GrblDriver",
         dialect_name="GRBL",
+        gcode_precision=3,
         dimensions=(120, 120),
         y_axis_down=False,
         max_travel_speed=3000,
@@ -110,6 +114,7 @@ PROFILES: List[MachineProfile] = [
         name="Sculpfun S30",
         driver_class_name="GrblSerialDriver",
         dialect_name="GRBL",
+        gcode_precision=3,
         dimensions=(400, 400),
         y_axis_down=False,
         max_travel_speed=3000,

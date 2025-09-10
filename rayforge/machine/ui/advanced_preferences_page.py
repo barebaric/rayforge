@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Gtk, Adw  # type: ignore
 from ..models.dialect import get_available_dialects, get_dialect
+from ...shared.util.adwfix import get_spinrow_int
 
 
 logger = logging.getLogger(__name__)
@@ -15,12 +16,12 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         )
         self.machine = machine
 
-        # Dialect selection
-        dialect_group = Adw.PreferencesGroup(title=_("Dialect"))
-        dialect_group.set_description(
-            _("Select the G-code flavor your machine understands.")
+        # Output settings (was Dialect)
+        output_group = Adw.PreferencesGroup(title=_("Output"))
+        output_group.set_description(
+            _("Configure the G-code flavor and format for your machine.")
         )
-        self.add(dialect_group)
+        self.add(output_group)
 
         # Get all available dialects from the registry
         self.available_dialects = get_available_dialects()
@@ -31,7 +32,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
             title=_("G-Code Dialect"), model=dialect_store
         )
         self.dialect_combo_row.set_use_subtitle(True)
-        dialect_group.add(self.dialect_combo_row)
+        output_group.add(self.dialect_combo_row)
 
         # Set up a custom factory to display both title and subtitle in the
         # dropdown
@@ -39,6 +40,22 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         factory.connect("setup", self._on_dialect_factory_setup)
         factory.connect("bind", self._on_dialect_factory_bind)
         self.dialect_combo_row.set_factory(factory)
+
+        # G-code precision setting
+        precision_adjustment = Gtk.Adjustment(
+            lower=1, upper=8, step_increment=1, page_increment=1
+        )
+        self.precision_row = Adw.SpinRow(
+            title=_("G-code Precision"),
+            subtitle=_(
+                "Number of decimal places for coordinates "
+                "(e.g., 3 for mm, 6 for µm)."
+            ),
+            adjustment=precision_adjustment,
+        )
+        precision_adjustment.set_value(self.machine.gcode_precision)
+        self.precision_row.connect("changed", self.on_precision_changed)
+        output_group.add(self.precision_row)
 
         # Connect the signal BEFORE setting the initial selection.
         # This ensures the handler is called to set the initial title/subtitle.
@@ -210,6 +227,11 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         # Update the machine model if the dialect has actually changed
         if self.machine.dialect_name != new_dialect.name:
             self.machine.set_dialect_name(new_dialect.name)
+
+    def on_precision_changed(self, spinrow):
+        """Update the machine's G-code precision when the value changes."""
+        value = get_spinrow_int(spinrow)
+        self.machine.set_gcode_precision(value)
 
     def on_preamble_override_toggled(self, switch, _):
         """Show or hide the preamble editor box based on the switch state."""

@@ -46,6 +46,7 @@ class Machine:
 
         self.home_on_start: bool = False
         self.dialect_name: str = "GRBL"
+        self.gcode_precision: int = 3
         self.use_custom_preamble: bool = False
         self.preamble: List[str] = []
         self.use_custom_postscript: bool = False
@@ -255,6 +256,12 @@ class Machine:
         self.dialect_name = dialect_name
         self.changed.send(self)
 
+    def set_gcode_precision(self, precision: int):
+        if self.gcode_precision == precision:
+            return
+        self.gcode_precision = precision
+        self.changed.send(self)
+
     def set_home_on_start(self, home_on_start: bool = True):
         self.home_on_start = home_on_start
         self.changed.send(self)
@@ -458,6 +465,7 @@ class Machine:
                     "postscript": self.postscript,
                     "use_custom_preamble": self.use_custom_preamble,
                     "use_custom_postscript": self.use_custom_postscript,
+                    "gcode_precision": self.gcode_precision,
                 },
             }
         }
@@ -500,6 +508,7 @@ class Machine:
         ma.use_custom_postscript = gcode.get(
             "use_custom_postscript", postscript is not None
         )
+        ma.gcode_precision = gcode.get("gcode_precision", 3)
 
         task_mgr.add_coroutine(
             ma._rebuild_driver_instance, key=(ma.id, "rebuild-driver")

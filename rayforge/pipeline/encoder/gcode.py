@@ -39,6 +39,7 @@ class GcodeEncoder(OpsEncoder):
         )
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
+        self._coord_format: str = "{:.3f}"  # Default format
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -61,6 +62,9 @@ class GcodeEncoder(OpsEncoder):
             if machine.use_custom_postscript
             else self.dialect.default_postscript
         )
+
+        # Set the coordinate format based on the machine's precision setting
+        self._coord_format = f"{{:.{machine.gcode_precision}f}}"
 
         gcode: List[str] = [] + preamble
         for cmd in ops:
@@ -138,7 +142,10 @@ class GcodeEncoder(OpsEncoder):
         f_command = self.dialect.format_feedrate(self.travel_speed)
         gcode.append(
             self.dialect.travel_move.format(
-                x=x, y=y, z=z, f_command=f_command
+                x=self._coord_format.format(x),
+                y=self._coord_format.format(y),
+                z=self._coord_format.format(z),
+                f_command=f_command,
             )
         )
 
@@ -151,7 +158,10 @@ class GcodeEncoder(OpsEncoder):
         f_command = self.dialect.format_feedrate(self.cut_speed)
         gcode.append(
             self.dialect.linear_move.format(
-                x=x, y=y, z=z, f_command=f_command
+                x=self._coord_format.format(x),
+                y=self._coord_format.format(y),
+                z=self._coord_format.format(z),
+                f_command=f_command,
             )
         )
 
@@ -170,7 +180,14 @@ class GcodeEncoder(OpsEncoder):
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
         f_command = self.dialect.format_feedrate(self.cut_speed)
         gcode.append(
-            template.format(x=x, y=y, z=z, i=i, j=j, f_command=f_command)
+            template.format(
+                x=self._coord_format.format(x),
+                y=self._coord_format.format(y),
+                z=self._coord_format.format(z),
+                i=self._coord_format.format(i),
+                j=self._coord_format.format(j),
+                f_command=f_command,
+            )
         )
 
     def _laser_on(self, gcode: List[str]) -> None:

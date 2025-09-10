@@ -12,6 +12,8 @@ def to_mm(value, unit, px_factor=None):
         return value * 10
     if unit == "mm":
         return value
+    if unit == "um":
+        return value * 0.001
     if unit == "in":
         return value * 25.4
     if unit == "pt":
