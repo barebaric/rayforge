@@ -10,6 +10,7 @@ windows-build = { features = ["windows-build", "test"], solve-group = "default" 
 
 [dependencies]
 adwaita-icon-theme = "*"
+cairo = "*"
 expat = "*"
 gettext = "*"
 gtk4 = "*"
@@ -40,6 +41,9 @@ websockets = "==14.2"
 libagg = "*"
 libvips = "*"
 potrace = "*"
+pkg-config = "*"
+xorg-xproto = "*"
+libx11 = "*"
 
 [target.osx-64.dependencies]
 # libagg is not available on osx; needs to be installed separately
@@ -58,8 +62,8 @@ pytest-asyncio = "*"
 pytest-mock = "*"
 pytest-cov = "*"
 pygobject-stubs = "*"
+flake8 = "*"
 
-# This feature now ONLY contains the PyInstaller tool
 [feature.windows-build.dependencies]
 pyinstaller = "*"
 
