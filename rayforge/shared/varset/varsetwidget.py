@@ -276,8 +276,23 @@ class VarSetWidget(Adw.PreferencesGroup):
 
             new_sorted_ports = sorted(list(port_set), key=natural_sort_key)
             new_choices = [NULL_CHOICE_LABEL] + new_sorted_ports
-            new_store = Gtk.StringList.new(new_choices)
-            row.set_model(new_store)
+
+            # Get the existing model and update it in-place to avoid
+            # closing the popover
+            store = row.get_model()
+            if not isinstance(store, Gtk.StringList):
+                return
+
+            # Check if an update is even needed to prevent unnecessary
+            # updates
+            current_choices = [
+                store.get_string(i) for i in range(store.get_n_items())
+            ]
+            if current_choices == new_choices:
+                return
+
+            # Update the model using splice, which is less disruptive
+            store.splice(0, store.get_n_items(), new_choices)
 
             # Restore the previous selection if it still exists
             if current_selection and current_selection in new_choices:

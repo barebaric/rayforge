@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from ..driver import drivers
 from ...shared.util.adwfix import get_spinrow_int
 from ..models.machine import Machine
@@ -64,6 +64,10 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         factory.connect("setup", self.on_factory_setup)
         factory.connect("bind", self.on_factory_bind)
         self.combo_row.set_factory(factory)
+
+        # Connect to the machine's changed signal to get updates
+        self.machine.changed.connect(self._on_machine_changed)
+        self.connect("destroy", self._on_destroy)
 
         # Connect the signal BEFORE setting the initial selection.
         # This ensures that our handler is called to correctly set the initial
@@ -173,10 +177,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.height_row.connect("changed", self.on_height_changed)
         dimensions_group.add(self.height_row)
 
-        # Connect to the machine's changed signal to get updates
-        self.machine.changed.connect(self._on_machine_changed)
-        self.connect("destroy", self._on_destroy)
-
         # Initial check for errors
         self._update_error_state()
 
@@ -189,6 +189,13 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         the driver or its configuration changes, allowing the UI to update.
         """
         self._update_error_state()
+
+        # Repopulate the driver-specific settings based on the current
+        # machine state. This is the single source of truth for the UI.
+        driver_cls = self.machine.driver.__class__
+        var_set = driver_cls.get_setup_vars()
+        var_set.set_values(self.machine.driver_args)
+        self.driver_group.populate(var_set)
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
@@ -231,7 +238,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.combo_row.set_title(_("Select driver"))
             self.combo_row.set_subtitle("")
             self.driver_group.clear_dynamic_rows()
-            self._update_error_state()
             return  # No driver selected
 
         driver_cls = drivers[selected_index]
@@ -239,19 +245,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.combo_row.set_title(driver_cls.label)
         self.combo_row.set_subtitle(driver_cls.subtitle)
 
-        # If the user selected a new driver (and not during initialization),
-        # update the machine model and clear existing args.
+        # If the user selected a new driver, update the machine model.
+        # The `machine.changed` signal will then trigger _on_machine_changed
+        # to update the UI, including the driver settings widgets.
         if (
             not self._is_initializing
             and self.machine.driver_name != driver_cls.__name__
         ):
             self.machine.set_driver(driver_cls, {})
-
-        # Always populate the UI.
-        var_set = driver_cls.get_setup_vars()
-        var_set.set_values(self.machine.driver_args)
-        self.driver_group.populate(var_set)
-        self._update_error_state()
+        elif self._is_initializing:
+            # During initialization, the signal handler isn't connected yet
+            # or might not fire as expected, so we populate directly.
+            self._on_machine_changed(self.machine)
 
     def on_name_changed(self, entry_row, _):
         """Update the machine name when the text changes."""
