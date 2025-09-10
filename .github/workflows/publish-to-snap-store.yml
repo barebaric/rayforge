@@ -21,8 +21,13 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: latest
+
       - name: Compile Translations
-        uses: ./.github/actions/compile-translations
+        run: pixi run compile-translations
 
       - name: Build snap
         uses: snapcore/action-build@v1

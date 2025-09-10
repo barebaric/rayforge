@@ -25,6 +25,7 @@ python = ">=3.11"
 [pypi-dependencies]
 aiohttp = "==3.12.14"
 blinker = "==1.9.0"
+build = "*"
 ezdxf = "==1.3.5"
 opencv-python = "*"
 platformdirs = "==4.3.6"
@@ -88,6 +89,10 @@ test = "pytest -v"
 lint = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
+
+[tasks.wheel]
+cmd = "python3 -m build"
+depends-on = ["compile-translations"]
 
 [tasks.build-exe]
 cmd = """

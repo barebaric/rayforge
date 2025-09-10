@@ -23,17 +23,14 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: latest
 
-      - name: Compile Translations
-        uses: ./.github/actions/compile-translations
-
-      - name: Build a wheel
+      - name: Build wheel with Pixi
         run: |
-          git status
-          git describe
-          python3 -m build
+          pixi run wheel
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
