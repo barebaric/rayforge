@@ -506,7 +506,6 @@ class Canvas(Gtk.DrawingArea):
         )
 
         # Determine the final visual rotation angle for the cursor.
-        cursor_angle = 0.0
         selected_elems = self.get_selected_elements()
         cursor_angle = 0.0
         use_absolute_angle = False
@@ -515,8 +514,22 @@ class Canvas(Gtk.DrawingArea):
         # the total visual rotation of the selection. This is the correct
         # logic.
         if self._selection_group:
-            # Group is axis-aligned in world, so only view transform matters.
-            cursor_angle = self.view_transform.get_rotation()
+            # Group is axis-aligned in world, so only view transform matters,
+            # unless we are actively rotating it.
+            if self._rotating and self._rotation_pivot:
+                # We are actively rotating a group. Calculate dynamic angle.
+                world_x, world_y = self._get_world_coords(x, y)
+                pivot_x, pivot_y = self._rotation_pivot
+                current_mouse_angle = math.degrees(
+                    math.atan2(world_y - pivot_y, world_x - pivot_x)
+                )
+                # Total rotation of the group is the difference from start.
+                angle_delta = self._drag_start_angle - current_mouse_angle
+                # Final cursor angle is delta + view rotation.
+                cursor_angle = angle_delta + self.view_transform.get_rotation()
+            else:
+                # For resize/shear/move, group is visually axis-aligned.
+                cursor_angle = self.view_transform.get_rotation()
         elif selected_elems:
             # For a single element, combine its world transform with the view.
             elem = selected_elems[0]
