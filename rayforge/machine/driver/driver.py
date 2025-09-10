@@ -79,9 +79,9 @@ class Driver(ABC):
     the should instead call self._log, self,_on_state_changed, etc.
     """
 
-    label = None
-    subtitle = None
-    supports_settings = False
+    label: str
+    subtitle: str
+    supports_settings: bool = False
 
     def __init__(self):
         self.log_received = Signal()
