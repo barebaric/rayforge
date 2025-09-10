@@ -31,32 +31,76 @@ jobs:
           else
             VERSION="v0.0.0-$(git rev-parse --short HEAD)"
           fi
-          if [ -z "$VERSION" ]; then
-            echo "Error: No git version number found!"
-            exit 1
-          fi
           VERSION_CLEAN=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_ENV
           echo "version_clean=$VERSION_CLEAN" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
 
-      - name: Set up MSYS2 (Provides C libraries missing from Conda on Windows)
+      - name: Set up MSYS2 and C Toolchain
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
           install: >-
-            mingw-w64-x86_64-libvips
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-potrace
+            mingw-w64-x86_64-libvips
 
-      - name: Set up Pixi (Provides Python environment)
+      - name: Build and Install AGG
+        shell: msys2 {0}
+        run: |
+          source $GITHUB_WORKSPACE/.msys2_env
+          cd $GITHUB_WORKSPACE
+
+          echo "Cloning AGG from ghaerr/agg-2.6..."
+          git clone --depth 1 https://github.com/ghaerr/agg-2.6.git
+          cd agg-2.6/agg-src
+          
+          echo "Compiling AGG source files manually..."
+          cd src
+          g++ -c -O2 -I../include *.cpp
+          
+          echo "Creating static library libagg.a..."
+          ar rcs libagg.a *.o
+
+          echo "Installing library and headers manually..."
+          cp libagg.a ${MSYS2_PATH}/mingw64/lib/
+          cd ..
+          cp -r include ${MSYS2_PATH}/mingw64/include/agg2
+
+          echo "Creating libagg.pc file for pkg-config..."
+          echo "prefix=${MSYS2_PATH}/mingw64" > libagg.pc
+          echo "exec_prefix=\${prefix}" >> libagg.pc
+          echo "libdir=\${exec_prefix}/lib" >> libagg.pc
+          echo "includedir=\${prefix}/include" >> libagg.pc
+          echo "" >> libagg.pc
+          echo "Name: libagg" >> libagg.pc
+          echo "Description: Anti-Grain Geometry" >> libagg.pc
+          echo "Version: 2.6.0" >> libagg.pc
+          echo "Libs: -L\${libdir} -lagg" >> libagg.pc
+          echo "Cflags: -I\${includedir}/agg2" >> libagg.pc
+
+          echo "Installing libagg.pc..."
+          cp libagg.pc ${MSYS2_PATH}/mingw64/lib/pkgconfig/
+
+          echo "Verifying AGG installation..."
+          ls -l ${MSYS2_PATH}/mingw64/lib/libagg.a
+          ls -l ${MSYS2_PATH}/mingw64/include/agg2/agg_basics.h
+          ls -l ${MSYS2_PATH}/mingw64/lib/pkgconfig/libagg.pc
+
+          cd $GITHUB_WORKSPACE
+          rm -rf agg-2.6
+
+      - name: Set up Pixi
         uses: prefix-dev/setup-pixi@v0.9.0
         with:
           cache: true
 
       - name: Install Dependencies with Pixi
+        shell: msys2 {0}
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/msys64/mingw64/lib/pkgconfig
         run: pixi install -e windows-build
 
       - name: Compile Translations
