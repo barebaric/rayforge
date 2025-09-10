@@ -19,9 +19,11 @@ gtk4 = "*"
 libheif = "*"
 opencv = "*"
 openslide = "*"
-pkg-config = "*"
 poppler = "*"
 python = ">=3.11"
+
+[build-dependencies]
+pkg-config = "*"
 
 [pypi-dependencies]
 aiohttp = "==3.12.14"

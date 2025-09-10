@@ -109,13 +109,9 @@ jobs:
 
       - name: Install Dependencies with Pixi
         shell: msys2 {0}
-        run: |
-          export PKG_CONFIG_PATH="${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig"
-          MSYS2_BIN_PATH=$(cygpath -u "${{ steps.msys2.outputs.msys2-location }}")/mingw64/bin
-          export PATH="$MSYS2_BIN_PATH:$PATH"
-          echo "--- Verifying pkg-config is available ---"
-          which pkg-config
-          pixi install -e windows-build
+        env:
+          PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
+        run: pixi install -e windows-build
 
       - name: Compile Translations
         shell: msys2 {0}
