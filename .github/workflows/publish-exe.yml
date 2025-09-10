@@ -1,0 +1,94 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-2025
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+      artifact_name: rayforge-${{ steps.set-version.outputs.version }}.zip
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set Version from Git
+        id: set-version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          elif git describe --tags >/dev/null 2>&1; then
+            VERSION=$(git describe --tags)
+          else
+            VERSION="v0.0.0-$(git rev-parse --short HEAD)"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Error: No git version number found!"
+            exit 1
+          fi
+          VERSION_CLEAN=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_ENV
+          echo "version_clean=$VERSION_CLEAN" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up MSYS2 (Provides C libraries missing from Conda on Windows)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-potrace
+
+      - name: Set up Pixi (Provides Python environment)
+        uses: prefix-dev/setup-pixi@v0.9.0
+        with:
+          cache: true
+
+      - name: Install Dependencies with Pixi
+        run: pixi install -e windows-build
+
+      - name: Compile Translations
+        shell: msys2 {0}
+        run: pixi run -e windows-build compile-translations
+
+      - name: Build Executable
+        shell: msys2 {0}
+        env:
+          # Provides the path to MSYS2 libs for the build script
+          MSYS2_PREFIX: ${{ runner.temp }}/msys64/mingw64
+        # Pass the dynamic version string to the pixi task
+        run: pixi run -e windows-build build-exe ${{ steps.set-version.outputs.version_clean }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rayforge-${{ steps.set-version.outputs.version }}.zip
+          path: dist/rayforge-${{ steps.set-version.outputs.version_clean }}.exe
+          compression-level: 9
+
+  test-exe:
+    name: Test Executable
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+      - name: Test Executable
+        shell: bash
+        run: |
+          EXE_NAME=$(basename dist/rayforge-*.exe)
+          ./dist/$EXE_NAME --help
