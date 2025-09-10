@@ -45,6 +45,18 @@ pkg-config = "*"
 xorg-xproto = "*"
 xorg-libx11 = "*"
 xorg-kbproto = "*"
+xorg-xextproto = "*"
+xorg-xineramaproto = "*"
+xorg-xf86vidmodeproto = "*"
+xorg-renderproto = "*"
+xorg-inputproto = "*"
+xorg-compositeproto = "*"
+xorg-damageproto = "*"
+xorg-glproto = "*"
+xorg-presentproto = "*"
+xorg-libxext = "*"
+xorg-libxinerama = "*"
+xorg-libxrandr = "*"
 
 [target.osx-64.dependencies]
 # libagg is not available on osx; needs to be installed separately
