@@ -6,7 +6,6 @@ from typing import Optional, List
 from serial.tools import list_ports
 from .transport import Transport, TransportStatus
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -30,17 +29,28 @@ class SerialTransport(Transport):
     @staticmethod
     def list_ports() -> List[str]:
         """Lists available serial ports."""
-        ports = []
-        for port in list_ports.comports():
-            ports.append(port.device)
-        return ports
+        try:
+            ports = []
+            for port in list_ports.comports():
+                ports.append(port.device)
+            return ports
+        except TypeError:
+            # This TypeError can occur in a misconfigured Snap without
+            # serial-port access when pyserial fails to read device properties.
+            # Log the issue but return an empty list for graceful UI failure.
+            logger.warning(
+                "Could not list serial ports. This may be due to a "
+                "permission error (e.g., Snap confinement)."
+            )
+            return []
 
     @staticmethod
     def check_serial_permissions_globally() -> None:
         """
         On POSIX systems, checks if there are visible serial ports that the
         user cannot access. This is a strong indicator that the user is not
-        in the correct group (e.g., 'dialout').
+        in the correct group (e.g., 'dialout') or, in a Snap, lacks the
+        necessary permissions.
 
         Raises:
             SerialPortPermissionError: If systemic permission issues are
@@ -49,8 +59,31 @@ class SerialTransport(Transport):
         if os.name != "posix":
             return  # This check is only for POSIX-like systems (Linux, macOS)
 
+        try:
+            all_ports = list_ports.comports()
+        except TypeError as e:
+            # This TypeError occurs when pyserial failed to read a
+            # device property, often due to sandbox permissions.
+            if 'SNAP' in os.environ:
+                # We are running inside a Snap, provide a specific, actionable
+                # error.
+                snap_name = os.environ.get('SNAP_NAME', 'rayforge')
+                msg = _(
+                    "Failed to list serial ports due to a Snap confinement "
+                    "error. Please grant permission by running:\n\n"
+                    f"sudo snap connect {snap_name}:serial-port"
+                )
+                raise SerialPortPermissionError(msg) from e
+            else:
+                # For non-snap environments, this points to a different issue.
+                msg = _(
+                    "An unexpected error occurred while listing serial ports. "
+                    "This may be caused by a malfunctioning USB device or "
+                    "a system driver issue."
+                )
+                raise SerialPortPermissionError(msg) from e
+
         # Filter for common USB-to-serial device names
-        all_ports = list_ports.comports()
         relevant_ports = [
             p.device
             for p in all_ports
