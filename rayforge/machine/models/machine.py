@@ -73,6 +73,16 @@ class Machine:
 
         self.add_head(Laser())
 
+    async def shutdown(self):
+        """
+        Gracefully shuts down the machine's active driver and resources.
+        """
+        logger.info(f"Shutting down machine '{self.name}' (id:{self.id})")
+        # Cancel any pending connection tasks for this driver
+        task_mgr.cancel_task((self.id, "driver-connect"))
+        await self.driver.cleanup()
+        self._disconnect_driver_signals()
+
     def _connect_driver_signals(self):
         self.driver.connection_status_changed.connect(
             self._on_driver_connection_status_changed
@@ -527,6 +537,18 @@ class MachineManager:
         self.machine_removed = Signal()
         self.machine_updated = Signal()
         self.load()
+
+    async def shutdown(self):
+        """
+        Shuts down all managed machines and their drivers gracefully.
+        """
+        logger.info("Shutting down all machines.")
+        tasks = [
+            machine.shutdown() for machine in self.machines.values()
+        ]
+        if tasks:
+            await asyncio.gather(*tasks)
+        logger.info("All machines shut down.")
 
     def filename_from_id(self, machine_id: str) -> Path:
         return self.base_dir / f"{machine_id}.yaml"

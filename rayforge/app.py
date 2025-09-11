@@ -6,6 +6,7 @@ import argparse
 import sys
 import os
 import gettext
+import asyncio  # Import asyncio
 from pathlib import Path
 
 # ===================================================================
@@ -173,10 +174,39 @@ def main():
     app = App(args)
     exit_code = app.run(None)
     
-    # Shutdown
-    rayforge.shared.tasker.task_mgr.shutdown()
+    # ===================================================================
+    # SECTION 4: SHUTDOWN SEQUENCE
+    # ===================================================================
+    
+    logger.info("Application exiting.")
+    
+    # 1. Define an async function to shut down high-level components.
+    async def shutdown_async():
+        logger.info("Starting graceful async shutdown...")
+        if rayforge.config.machine_mgr:
+            await rayforge.config.machine_mgr.shutdown()
+        logger.info("Async shutdown complete.")
+
+    # 2. Run the async shutdown on the TaskManager's event loop and wait for it.
+    loop = rayforge.shared.tasker.task_mgr._loop
+    if loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(shutdown_async(), loop)
+        try:
+            # Block until the async cleanup is finished.
+            future.result(timeout=10)
+        except Exception as e:
+            logger.error(f"Error during graceful shutdown: {e}")
+    else:
+        logger.warning("Task manager loop not running, skipping async shutdown.")
+
+    # 3. Save configuration. This happens AFTER async tasks are done.
     if rayforge.config.config_mgr:
         rayforge.config.config_mgr.save()
+    logger.info("Saved config.")
+
+    # 4. As the final step, shut down the task manager itself.
+    rayforge.shared.tasker.task_mgr.shutdown()
+    logger.info("Task manager shut down.")
 
     return exit_code
 

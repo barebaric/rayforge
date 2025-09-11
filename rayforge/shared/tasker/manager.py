@@ -295,7 +295,31 @@ class TaskManager:
             task._status = "failed"
             task._task_exception = e
         finally:
+            # 1. Forcefully terminate the process if it's still alive. This
+            #    breaks any potential pipe deadlocks by closing the child's
+            #    end of the communication pipe.
+            if process.is_alive():
+                logger.warning(
+                    "Task %s: Terminating subprocess %s to prevent deadlock.",
+                    task.key, process.pid
+                )
+                process.terminate()
+
+            # 2. Now that the process is terminated (or finished on its own),
+            #    it is safe to clean up the communication queue. The queue's
+            #    internal feeder thread will no longer block waiting for data.
+            try:
+                queue.close()
+                queue.join_thread()
+            except (OSError, BrokenPipeError, EOFError):
+                # These errors are expected if the process was killed.
+                pass
+
+            # 3. Finally, it is safe to join the process to allow the OS to
+            #    clean up its resources. This will no longer hang.
             self._cleanup_process_resources(process, task.key)
+
+            # 4. Perform the rest of the task state cleanup.
             context.flush()
             # Manually trigger final status update, since run() wasn't used
             task.status_changed.send(task)
@@ -403,21 +427,16 @@ class TaskManager:
             task_key: The key of the task for logging.
         """
         if process.is_alive():
-            logger.warning(
-                "Task %s: Terminating subprocess %s.", task_key, process.pid
+            # The process should have been terminated already in the finally
+            # block. If it's still alive, something is very wrong. Kill it.
+            logger.error(
+                "Task %s: Subprocess %s did not die after terminate. Killing.",
+                task_key,
+                process.pid,
             )
-            process.terminate()
-            process.join(timeout=1.0)
+            process.kill()
 
-            if process.is_alive():
-                logger.error(
-                    "Task %s: Subprocess %s did not die. Killing.",
-                    task_key,
-                    process.pid,
-                )
-                process.kill()
-                process.join(timeout=1.0)
-
+        process.join(timeout=1.0)  # Wait for the process to be reaped
         process.close()
         logger.debug("Task %s: Subprocess resources cleaned up.", task_key)
 
