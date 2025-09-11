@@ -52,13 +52,9 @@ parts:
       - python3-pip
       - python3-setuptools
       - libvips-dev
-      - libagg-dev
-      - libpotrace-dev
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
-      - libagg2t64
-      - libpotrace0
     parse-info: [share/metainfo/com.barebaric.rayforge.metainfo.xml]
     override-pull: |
       craftctl default
@@ -68,8 +64,6 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs
 
       # Symlink ALL required libraries into our new generic directory
-      ln -s ../x86_64-linux-gnu/libpotrace.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libpotrace.so.0
-      ln -s ../x86_64-linux-gnu/libagg.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libagg.so.2
       ln -s ../x86_64-linux-gnu/libvips.so.42 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libvips.so.42
       ln -s ../x86_64-linux-gnu/libfftw3.so.3 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libfftw3.so.3
       ln -s ../x86_64-linux-gnu/libcfitsio.so.10 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libcfitsio.so.10

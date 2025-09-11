@@ -1,18 +1,18 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 import numpy as np
 import cv2
-import potrace
-from .potrace_base import PotraceProducer
+from .base import OpsProducer
+from .edge import EdgeTracer
 from ...core.ops import Ops, Command
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
 
 
-class OutlineTracer(PotraceProducer):
+class OutlineTracer(OpsProducer):
     """
-    Uses the Potrace engine and filters the results to trace only the
-    outermost paths of a shape, ignoring any holes.
+    Produces only the outermost paths of a shape by first performing a full
+    trace and then applying a robust outline-finding algorithm.
     """
 
     def run(
@@ -24,23 +24,36 @@ class OutlineTracer(PotraceProducer):
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
-        # If the workpiece has source_ops, apply the outline-finding algorithm
-        # to them.
+        """
+        Generates outline Ops. If source vectors are available, it filters
+        them. Otherwise, it performs a full raster trace and then filters
+        the result.
+        """
+        source_ops: Optional[Ops] = None
+
         if (
             workpiece
             and workpiece.source_ops
             and len(workpiece.source_ops) > 0
         ):
-            return self._filter_vector_ops_xor(workpiece.source_ops)
+            # Use the pre-existing vector data
+            source_ops = workpiece.source_ops
+        else:
+            # If no source vectors, perform a full raster trace to generate
+            # them
+            edge_tracer = EdgeTracer()
+            source_ops = edge_tracer.run(
+                laser,
+                surface,
+                pixels_per_mm,
+                workpiece=workpiece,
+                y_offset_mm=y_offset_mm,
+            )
 
-        # If no source_ops, fall back to raster tracing the surface.
-        return super().run(
-            laser,
-            surface,
-            pixels_per_mm,
-            workpiece=workpiece,
-            y_offset_mm=y_offset_mm,
-        )
+        # With a complete set of vectors, apply the outline-finding algorithm
+        if source_ops:
+            return self._filter_vector_ops_xor(source_ops)
+        return Ops()
 
     def _filter_vector_ops_xor(self, ops: Ops) -> Ops:
         """
@@ -87,9 +100,12 @@ class OutlineTracer(PotraceProducer):
             if cmd.is_travel_command():
                 if current_path:
                     paths.append(current_path)
-                current_path = [cmd]
-            else:
-                current_path.append(cmd)
+                current_path = []
+
+            # Add command to path regardless of travel, but start new path on
+            # travel
+            current_path.append(cmd)
+
         if current_path:
             paths.append(current_path)
 
@@ -97,8 +113,38 @@ class OutlineTracer(PotraceProducer):
         mask = np.zeros((height_px, width_px), dtype=np.uint8)
 
         for path in paths:
-            poly_points = [cmd.end for cmd in path if cmd.end is not None]
+            # Filter out travel commands from the start of a path for drawing
+            poly_points = [
+                cmd.end
+                for cmd in path
+                if cmd.end is not None and not cmd.is_travel_command()
+            ]
+            if not poly_points:  # Check if there are any non-travel points
+                # If a path starts with a move, add its first point
+                first_point = next(
+                    (cmd.end for cmd in path if cmd.end is not None), None
+                )
+                if first_point:
+                    poly_points.append(first_point)
+                else:
+                    continue
+
             if len(poly_points) < 3:
+                # For lines (2 points), we can still contribute to the mask
+                if len(poly_points) == 2:
+                    # Scale points
+                    scaled_line = np.array(
+                        [p[:2] for p in poly_points], dtype=np.float32
+                    )
+                    scaled_line[:, 0] = (scaled_line[:, 0] - min_x) * scale + 1
+                    scaled_line[:, 1] = (scaled_line[:, 1] - min_y) * scale + 1
+                    cv2.line(
+                        mask,
+                        tuple(scaled_line[0].astype(int)),
+                        tuple(scaled_line[1].astype(int)),
+                        (255,),
+                        1,
+                    )
                 continue
 
             # Scale and translate XY points to fit the canvas
@@ -150,52 +196,3 @@ class OutlineTracer(PotraceProducer):
             final_ops.close_path()  # Ensure the shape is closed
 
         return final_ops
-
-    def _filter_curves(
-        self, curves: List[potrace.Curve]
-    ) -> List[potrace.Curve]:
-        """
-        (Raster path) Returns only curves that are not contained within any
-        other curve.
-        """
-        if len(curves) <= 1:
-            return curves
-
-        polygons = self._curves_to_polygons(curves)
-
-        external_curves = []
-        for i, curve in enumerate(curves):
-            if not self._is_contained(i, curve, polygons):
-                external_curves.append(curve)
-        return external_curves
-
-    def _curves_to_polygons(
-        self, curves: List[potrace.Curve]
-    ) -> List[np.ndarray]:
-        """
-        (Raster path) Converts Potrace curves to OpenCV-compatible polygons
-        for testing.
-        """
-        return [
-            np.array([s.end_point for s in c], dtype=np.int32).reshape(
-                (-1, 1, 2)
-            )
-            for c in curves
-        ]
-
-    def _is_contained(
-        self,
-        curve_index: int,
-        curve_to_test: potrace.Curve,
-        polygons: List[np.ndarray],
-    ) -> bool:
-        """
-        (Raster path) Checks if a curve is inside any of the other polygons.
-        """
-        test_point = tuple(map(int, curve_to_test.start_point))
-        for i, polygon in enumerate(polygons):
-            if i == curve_index:
-                continue
-            if cv2.pointPolygonTest(polygon, test_point, False) > 0:
-                return True
-        return False

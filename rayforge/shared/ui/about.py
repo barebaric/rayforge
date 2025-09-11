@@ -96,7 +96,7 @@ def get_dependency_info() -> dict:
         ("opencv-python", "OpenCV"),
         ("numpy", "NumPy"),
         ("scipy", "SciPy"),
-        ("pypotrace", "pypotrace"),
+        ("vtracer", "vtracer"),
     ]:
         ver = _get_version(pkg_name)
         graphics_deps.append((display_name, ver))
