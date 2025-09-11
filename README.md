@@ -66,12 +66,22 @@ includes all necessary dependencies in a single package.
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
 
-To grant the application access to your camera, run the following command once
-after installation:
+> [!IMPORTANT]
+> To grant the application access to your camera and serial port, run the
+> following commands once after installation!
 
 ```bash
 sudo snap connect rayforge:camera
 ```
+
+If you want to be able to use USB Serial connections, you need to to the following:
+
+1. Update to the latest Rayforge edge release.
+2. Plug your laser into a USB port.
+3. Open a terminal
+4. Execute `sudo snap set system experimental.hotplug=true`
+5. Execute `sudo snap connect rayforge:serial-port`. This will fail if your laser is not connected via USB!
+6. Start Rayforge
 
 #### Advanced: PIP
 
