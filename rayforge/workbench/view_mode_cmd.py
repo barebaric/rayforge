@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 from gi.repository import GLib, Adw
-from ..config import config
+from .. import config
 from ..pipeline.job import generate_job_ops
 from ..shared.tasker import task_mgr
 from ..shared.tasker.context import ExecutionContext
@@ -54,7 +54,7 @@ class ViewModeCmd:
                 win.toast_overlay.add_toast(toast)
                 return
 
-            machine = config.machine
+            machine = config.config.machine
             if not machine:
                 logger.warning(
                     "Cannot show 3D view without an active machine."
@@ -73,7 +73,7 @@ class ViewModeCmd:
                 win.canvas3d.queue_render()
 
             async def load_ops_coro(context: ExecutionContext):
-                current_machine = config.machine
+                current_machine = config.config.machine
                 if not current_machine:
                     return
 
