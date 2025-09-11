@@ -28,6 +28,7 @@ pkg-config = "*"
 c-compiler = "*"
 meson = "*"
 ninja = "*"
+rust = "*"
 
 [pypi-dependencies]
 aiohttp = "==3.12.14"
