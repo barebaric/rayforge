@@ -258,6 +258,14 @@ class GrblSerialDriver(Driver):
                     finally:
                         self._current_request = None
                         self._command_queue.task_done()
+                        # If a job was running and the queue is now empty,
+                        # the job is finished.
+                        if self._job_running and self._command_queue.empty():
+                            logger.debug(
+                                "Job finished: command queue is empty."
+                            )
+                            self._job_running = False
+
                 # Release lock briefly to allow status polling
                 await asyncio.sleep(0.1)
 
@@ -284,10 +292,13 @@ class GrblSerialDriver(Driver):
             if line.strip():
                 request = CommandRequest(line.strip())
                 await self._command_queue.put(request)
-        logger.debug("All G-code commands queued for execution.")
-        # Once queuing is done, the job is no longer "running" in the
-        # sense of adding new commands
-        self._job_running = False
+
+        # Check if the queue is empty immediately after adding. This handles
+        # the case of an empty G-code file, ensuring _job_running is reset.
+        if self._command_queue.empty():
+            self._job_running = False
+
+        logger.debug("All G-code commands queued for execution")
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")
