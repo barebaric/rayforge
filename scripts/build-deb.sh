@@ -28,7 +28,7 @@ echo "--- Vendoring pre-built wheels ---"
 # IMPORTANT: Wheels are downloaded to a 'vendor/' directory, NOT 'debian/'.
 # This treats them as part of the upstream source, which is the correct approach.
 TMP_SRC_DIR="${BUILD_DIR}/rayforge-${UPSTREAM_VERSION}"
-mkdir -p "${TMP_SRC_DIR}/vendor/wheels"
+mkdir -p "${TMP_SRC_DIR}/vendor/sdist"
 
 REQUIREMENTS_FILE="debian/requirements-bundle.txt"
 if [[ ! -f "$REQUIREMENTS_FILE" ]]; then
@@ -61,18 +61,18 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         echo "::error::PyPI returned invalid JSON for $package==$version"
         exit 1
     fi
-    wheel_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "bdist_wheel" and (.filename | (test("cp310-cp310-linux_x86_64") or test("manylinux2014_x86_64")))) | .url' | head -n 1)
-    if [[ -z "$wheel_url" ]]; then
+    source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "sdist") | .url' | head -n 1)
+    if [[ -z "$source_url" ]]; then
         echo "::error::No compatible wheel found for $package==$version"
         exit 1
     fi
-    filename=$(basename "$wheel_url")
+    filename=$(basename "$source_url")
     echo "Downloading: $filename"
-    # IMPORTANT: The output path is now vendor/wheels
-    curl -sSL "$wheel_url" -o "${TMP_SRC_DIR}/vendor/wheels/${filename}"
+    # IMPORTANT: The output path is now vendor/sdist
+    curl -sSL "$source_url" -o "${TMP_SRC_DIR}/vendor/sdist/${filename}"
 done < "$REQUIREMENTS_FILE"
 
-if [[ -z "$(ls -A "${TMP_SRC_DIR}/vendor/wheels/" 2>/dev/null)" ]]; then
+if [[ -z "$(ls -A "${TMP_SRC_DIR}/vendor/sdist/" 2>/dev/null)" ]]; then
     echo "::error::No wheels were downloaded."
     exit 1
 fi
@@ -106,19 +106,33 @@ MAINTAINER_INFO=$(grep '^Maintainer:' debian/control | head -n 1 | sed 's/Mainta
 export DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed -E 's/.*<(.*)>.*/\1/')
 export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
+# The `dch` commands are safe to run in the current environment
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-    # Use dpkg-buildpackage directly. It will build in the current, correct directory.
-    dpkg-buildpackage -S -us -uc
+    
+    # --- THIS IS THE CRITICAL FIX ---
+    # Run the build in a pristine environment to avoid contamination from pixi
+    env -i \
+        HOME="$HOME" \
+        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+        DEBEMAIL="$DEBEMAIL" \
+        DEBFULLNAME="$DEBFULLNAME" \
+        dpkg-buildpackage -S -us -uc
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-    # Use dpkg-buildpackage directly. It will build in the current, correct directory.
-    dpkg-buildpackage -b -us -uc
+
+    # --- THIS IS THE CRITICAL FIX ---
+    # Run the build in a pristine environment to avoid contamination from pixi
+    env -i \
+        HOME="$HOME" \
+        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+        DEBEMAIL="$DEBEMAIL" \
+        DEBFULLNAME="$DEBFULLNAME" \
+        dpkg-buildpackage -b -us -uc
 fi
 
 # --- 5. Copy Artifacts ---
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
-# dpkg-buildpackage places the results in the parent directory ($BUILD_DIR)
 cp -v "$BUILD_DIR"/rayforge_* "$ORIG_DIR/dist/"
