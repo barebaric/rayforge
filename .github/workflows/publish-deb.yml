@@ -26,21 +26,36 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput build-essential python3-all dh-python
 
       - name: Import GPG key
+        env:
+          GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.PPA_GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --import <(echo "${{ secrets.PPA_GPG_PRIVATE_KEY }}" | base64 --decode)
+          echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
           echo "--- GPG Public Keys ---"
           gpg --list-keys
           echo "--- GPG Secret Keys ---"
           gpg --list-secret-keys
+          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2)
+          echo "KEY_ID=$KEY_ID" >> $GITHUB_ENV
 
       - name: Install Pixi
         uses: prefix-dev/setup-pixi@v0.8.1
         with:
           pixi-version: latest
 
-      - name: Build and upload
+      - name: Build source package
         env:
           DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+        run: pixi run build-deb-source
+
+      - name: Sign source package
+        env:
+          DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+          KEY_ID: ${{ env.KEY_ID }}
         run: |
-          pixi run build-deb-source
-          dput ppa:knipknap/rayforge dist/*.changes
+          echo "$DEB_GPG_PASSPHRASE" > /tmp/passphrase.txt
+          debsign -p'gpg --batch --yes --no-use-agent --pinentry-mode=loopback --passphrase-file /tmp/passphrase.txt --armor --detach-sign --output -' -k"$KEY_ID" dist/*.changes
+          rm /tmp/passphrase.txt
+
+      - name: Upload to PPA
+        run: dput ppa:knipknap/rayforge dist/*.changes

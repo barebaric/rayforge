@@ -51,10 +51,9 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed 's/ <.*//')
 
 # Update Changelog and build the package
 if [ "${1:-}" == "--source" ]; then
-  # For PPA: Build a source package
+  # For PPA: Build an unsigned source package
   dch --newversion "${UPSTREAM_VERSION}-1~ppa1" "New PPA release ${UPSTREAM_VERSION}."
-  GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
-  debuild -S -k"${GPG_KEY_ID}"
+  debuild -S -us -uc
 else
   # For Local: Build a binary package
   dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
