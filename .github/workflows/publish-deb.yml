@@ -24,19 +24,19 @@ jobs:
 
       - name: Install dependencies
         run: >
-          sudo apt-get update && sudo apt-get install -y 
-          devscripts 
-          debhelper 
-          dput 
-          build-essential 
-          python3-all 
-          dh-python 
-          jq 
-          equivs 
-          libpotrace-dev 
+          sudo apt-get update && sudo apt-get install -y
+          devscripts
+          debhelper
+          dput
+          build-essential
+          python3-all
+          dh-python
+          jq
+          equivs
+          libpotrace-dev
           libagg-dev
-          python3-numpy 
-          python3-poetry-core 
+          python3-numpy
+          python3-poetry-core
           cython3
 
       - name: Import GPG key
@@ -82,9 +82,8 @@ jobs:
 
       - name: Test package installation
         run: |
-          # Use 'apt install' on the local .deb file.
-          # apt is better than dpkg because it handles dependencies correctly.
-          sudo apt-get install -y ${{ steps.build_binary.outputs.deb_file }}
+          # Add './' to make the path unambiguous for apt.
+          sudo apt-get install -y ./${{ steps.build_binary.outputs.deb_file }}
 
       - name: Run smoke test
         run: |
