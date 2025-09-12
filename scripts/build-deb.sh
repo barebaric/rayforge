@@ -109,17 +109,16 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-    # The -nc flag (--no-pre-clean) prevents debuild from cleaning the source tree,
-    # which ensures our vendor/wheels directory is not removed before the build.
-    debuild -S -us -uc -nc
+    # Use dpkg-buildpackage directly. It will build in the current, correct directory.
+    dpkg-buildpackage -S -us -uc
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-    # The -nc flag (--no-pre-clean) prevents debuild from cleaning the source tree,
-    # which ensures our vendor/wheels directory is not removed before the build.
-    debuild -b -us -uc -nc
+    # Use dpkg-buildpackage directly. It will build in the current, correct directory.
+    dpkg-buildpackage -b -us -uc
 fi
 
 # --- 5. Copy Artifacts ---
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
+# dpkg-buildpackage places the results in the parent directory ($BUILD_DIR)
 cp -v "$BUILD_DIR"/rayforge_* "$ORIG_DIR/dist/"
