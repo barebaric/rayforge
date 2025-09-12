@@ -51,8 +51,9 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed 's/ <.*//')
 
 # Update Changelog and build the package
 if [ "${1:-}" == "--source" ]; then
-  # For PPA: Build an unsigned source package
-  dch --newversion "${UPSTREAM_VERSION}-1~ppa1" "New PPA release ${UPSTREAM_VERSION}."
+  # For PPA: Set the distribution to the OLDEST target release to support.
+  TARGET_DISTRIBUTION="jammy"
+  dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "${TARGET_DISTRIBUTION}" "New PPA release ${UPSTREAM_VERSION}."
   debuild -S -us -uc
 else
   # For Local: Build a binary package

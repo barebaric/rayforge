@@ -30,13 +30,22 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
         run: |
+          # Import the key from secrets
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
           echo "--- GPG Public Keys ---"
           gpg --list-keys
           echo "--- GPG Secret Keys ---"
           gpg --list-secret-keys
-          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2)
-          echo "KEY_ID=$KEY_ID" >> $GITHUB_ENV
+          KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | awk -F: '{print $10}')
+
+          # Verify that we got a fingerprint
+          if [ -z "$KEY_FINGERPRINT" ]; then
+            echo "::error::Could not extract GPG key fingerprint."
+            exit 1
+          fi
+
+          echo "Found key fingerprint: $KEY_FINGERPRINT"
+          echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
       - name: Install Pixi
         uses: prefix-dev/setup-pixi@v0.8.1
@@ -44,18 +53,14 @@ jobs:
           pixi-version: latest
 
       - name: Build source package
-        env:
-          DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
         run: pixi run build-deb-source
 
       - name: Sign source package
         env:
-          DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+          GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          echo "$DEB_GPG_PASSPHRASE" > /tmp/passphrase.txt
-          debsign -p'gpg --batch --yes --no-use-agent --pinentry-mode=loopback --passphrase-file /tmp/passphrase.txt --armor --detach-sign --output -' -k"$KEY_ID" dist/*.changes
-          rm /tmp/passphrase.txt
+          echo "$GPG_PASSPHRASE" | debsign --passphrase-fd 0 -k"$KEY_ID" dist/*.changes
 
       - name: Upload to PPA
         run: dput ppa:knipknap/rayforge dist/*.changes
