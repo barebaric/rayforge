@@ -35,6 +35,7 @@ jobs:
           equivs
           libpotrace-dev
           libagg-dev
+          pybuild-plugin-pyproject
           python3-numpy
           python3-poetry-core
           cython3
