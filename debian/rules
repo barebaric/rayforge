@@ -1,14 +1,19 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --with python3
+	dh $@ --with python3 --buildsystem=pybuild
 
 override_dh_auto_install:
-	dh_auto_install
-
-execute_after_dh_python3:
-	# The default dh_python3 has already run and installed the main application.
-	# Now, we install our single vendored dependency into the same place.
+	# STEP 1: Run the DEFAULT dh_auto_install command first.
+	# We set the env vars so THIS step can find build-deps like poetry-core
+	# and correctly build and install the main 'rayforge' application and its scripts.
+	export PIP_NO_INDEX=1; \
+	export PIP_FIND_LINKS=file://$(CURDIR)/vendor/sdist; \
+	dh_auto_install; \
+	\
+	# STEP 2: Now that the main app is installed,
+	# build and install pypotrace into the same staging directory.
+	echo "--- Manually installing vendored pypotrace dependency ---"; \
 	pip3 install \
 		--no-build-isolation \
 		--no-dependencies \
@@ -16,7 +21,11 @@ execute_after_dh_python3:
 		--find-links=file://$(CURDIR)/vendor/sdist \
 		--target=$(CURDIR)/debian/rayforge/usr/lib/python3/dist-packages \
 		--upgrade \
-		pypotrace
+		pypotrace;
+
+# This override correctly skips the broken test runner.
+override_dh_auto_test:
+	echo "Skipping tests during Debian build; they are run in the dedicated CI test job."
 
 override_dh_clean:
 	# This is still necessary to prevent the vendor directory from being deleted.
