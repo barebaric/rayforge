@@ -10,6 +10,7 @@ Build-Depends: debhelper-compat (= 13),
                dh-python,
                python3-dev,
                libpotrace-dev,
+               libagg-dev,
                python3-numpy,
                python3-poetry-core,
                cython3

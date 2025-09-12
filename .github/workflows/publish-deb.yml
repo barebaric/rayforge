@@ -34,6 +34,7 @@ jobs:
           jq 
           equivs 
           libpotrace-dev 
+          libagg-dev
           python3-numpy 
           python3-poetry-core 
           cython3
