@@ -1,0 +1,9 @@
+# Tell dpkg-source to ignore these directories when creating the source package.
+# This prevents build artifacts and virtual environments from being included.
+tar-ignore = .git
+tar-ignore = .pixi
+tar-ignore = .venv
+tar-ignore = repo
+tar-ignore = dist
+tar-ignore = build
+tar-ignore = *.egg-info

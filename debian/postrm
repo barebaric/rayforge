@@ -1,7 +1,11 @@
 #!/bin/sh
 set -e
+
+#DEBHELPER#
+
 if [ "$1" = "remove" ]; then
     update-desktop-database -q || true
     gtk-update-icon-cache -q /usr/share/icons/hicolor || true
 fi
+
 exit 0

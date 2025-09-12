@@ -164,9 +164,10 @@ on the [official website](https://pixi.sh/latest/installation/).
 
 ### 1. Initial Setup
 
-After cloning the repository, setting up the development environment is a single command:
+After cloning the repository, setting up the development environment should work with this command:
 
 ```bash
+sudo apt install gir1.2-adw-1
 pixi install
 ```
 

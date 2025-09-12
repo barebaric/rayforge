@@ -21,11 +21,13 @@ opencv = "*"
 openslide = "*"
 poppler = "*"
 python = ">=3.11"
+librsvg = ">=2.58.4,<3"
 
 [build-dependencies]
 pkg-config = "*"
 
 [pypi-dependencies]
+rayforge = { editable = true, path = "." }
 aiohttp = "==3.12.14"
 blinker = "==1.9.0"
 build = "*"
@@ -34,6 +36,7 @@ opencv-python = "*"
 platformdirs = "==4.3.6"
 pypotrace = "==0.3"
 PyGObject = "==3.50.0"
+pygobject-stubs = "*"
 PyOpenGL = "==3.1.9"
 PyOpenGL-accelerate = "==3.1.9"
 pypdf = "==6.0.0"
@@ -86,7 +89,7 @@ flake8 = "*"
 pyinstaller = "*"
 
 [tasks]
-run = "rayforge"
+rayforge = "GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0 rayforge"
 test = "pytest -v"
 lint = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge"
 update-translations = "bash scripts/update_translations.sh"

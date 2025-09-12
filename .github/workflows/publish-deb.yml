@@ -47,4 +47,4 @@ jobs:
         env:
           DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
         run: |
-          dput ppa:barebaric/rayforge ../*.changes
+          dput ppa:knipknap/rayforge ../*.changes
