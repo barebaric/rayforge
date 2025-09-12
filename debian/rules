@@ -6,7 +6,9 @@
 override_dh_auto_install:
 	dh_auto_install
 
-override_dh_python3:
+execute_after_dh_python3:
+	# The default dh_python3 has already run and installed the main application.
+	# Now, we install our single vendored dependency into the same place.
 	pip3 install \
 		--no-build-isolation \
 		--no-dependencies \
@@ -15,8 +17,6 @@ override_dh_python3:
 		--target=$(CURDIR)/debian/rayforge/usr/lib/python3/dist-packages \
 		--upgrade \
 		pypotrace
-
-	dh_python3 --no-guessing
 
 override_dh_clean:
 	# This is still necessary to prevent the vendor directory from being deleted.
