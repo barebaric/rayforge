@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
-from rayforge.importer import SvgImporter
+from rayforge.importer import SVG_RENDERER
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Laser, Machine
@@ -26,14 +26,17 @@ def setup_real_config(mocker):
         machine = test_machine
 
     test_config = TestConfig()
-    mocker.patch("rayforge.pipeline.steps.config", test_config)
-    mocker.patch("rayforge.core.workpiece.config", test_config, create=True)
+    mocker.patch("rayforge.config.config", test_config)
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
 
 
 @pytest.fixture
-def mock_task_mgr(mocker):
+def mock_task_mgr():
+    """
+    Creates a MagicMock for the TaskManager.
+    It no longer patches any modules.
+    """
     mock_mgr = MagicMock()
     created_tasks_info = []
 
@@ -52,7 +55,6 @@ def mock_task_mgr(mocker):
 
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
     mock_mgr.created_tasks = created_tasks_info
-    mocker.patch("rayforge.pipeline.generator.task_mgr", mock_mgr)
     return mock_mgr
 
 
@@ -62,7 +64,7 @@ def real_workpiece():
     <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
     <rect width="10" height="10" />
     </svg>"""
-    workpiece = WorkPiece(Path("real_workpiece.svg"), svg_data, SvgImporter)
+    workpiece = WorkPiece(Path("real_workpiece.svg"), SVG_RENDERER, svg_data)
     workpiece.set_size(50, 30)
     workpiece.pos = 10, 20
     return workpiece
@@ -86,7 +88,8 @@ class TestOpsGenerator:
         layer.add_workpiece(real_workpiece)
 
         # Act
-        OpsGenerator(doc)
+        # The OpsGenerator is now created with the mock manager injected.
+        OpsGenerator(doc, mock_task_mgr)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
@@ -100,7 +103,7 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
 
-        generator = OpsGenerator(doc)
+        generator = OpsGenerator(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
         task_to_complete = mock_task_mgr.created_tasks[0]
 
@@ -131,7 +134,7 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
 
-        generator = OpsGenerator(doc)
+        generator = OpsGenerator(doc, mock_task_mgr)
         # The constructor has already called run_process once.
         mock_task_mgr.run_process.assert_called_once()
         task_to_cancel = mock_task_mgr.created_tasks[0]
@@ -153,9 +156,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
-        OpsGenerator(
-            doc
-        )  # This creates the generator and runs the initial task.
+        OpsGenerator(doc, mock_task_mgr)  # Initial generation
 
         # Reset the mock to ignore the initial setup call.
         mock_task_mgr.run_process.reset_mock()
@@ -174,7 +175,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
-        OpsGenerator(doc)  # Initial generation
+        OpsGenerator(doc, mock_task_mgr)  # Initial generation
         mock_task_mgr.run_process.assert_called_once()  # Verify initial call
 
         # Simulate the completion of the initial generation task to populate
@@ -205,7 +206,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
-        OpsGenerator(doc)  # Initial generation
+        OpsGenerator(doc, mock_task_mgr)  # Initial generation
         mock_task_mgr.run_process.assert_called_once()  # Verify initial call
 
         # Simulate the completion of the initial generation task to populate
@@ -236,7 +237,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
-        OpsGenerator(doc)  # Initial generation
+        OpsGenerator(doc, mock_task_mgr)  # Initial generation
 
         mock_task_mgr.run_process.reset_mock()
 

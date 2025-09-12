@@ -4,7 +4,7 @@ from typing import List, Optional, Callable, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
-from .config import config
+from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
@@ -129,7 +129,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the central document editor. This now owns the Doc and
         # OpsGenerator.
-        self.doc_editor = DocEditor()
+        assert config_mgr is not None
+        self.doc_editor = DocEditor(task_mgr, config_mgr)
 
         # Add a global click handler to manage focus correctly.
         root_click_gesture = Gtk.GestureClick.new()

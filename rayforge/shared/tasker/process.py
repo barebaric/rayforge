@@ -13,6 +13,7 @@ which is not safe during bootstrapping.
 In other words, we cannot use GLib.idle_add or similar.
 """
 
+import builtins
 from multiprocessing import Queue
 from typing import Any, Callable
 
@@ -34,6 +35,11 @@ def process_target_wrapper(
     """
     print("process_target_wrapper() called")
     import logging
+    # Set up a null translator for gettext. This ensures that `_()` calls,
+    # used for internationalization, do not fail in the subprocess even if
+    # a full i18n environment is not present.
+    if not hasattr(builtins, "_"):
+        setattr(builtins, "_", lambda s: s)
 
     # Force reconfiguration of logging for this new process. This is critical
     # because logging.basicConfig() is a no-op if handlers are already

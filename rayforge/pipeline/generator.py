@@ -15,7 +15,6 @@ from typing import Dict, Optional, Tuple, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
 from contextlib import contextmanager
-from ..shared.tasker import task_mgr
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.step import Step
@@ -25,6 +24,7 @@ from .steprunner import run_step_in_subprocess
 
 if TYPE_CHECKING:
     from ..shared.tasker.task import Task
+    from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -63,15 +63,17 @@ class OpsGenerator:
         Tuple[str, str], Tuple[Optional[Ops], Optional[Tuple[int, int]]]
     ]
 
-    def __init__(self, doc: "Doc"):
+    def __init__(self, doc: "Doc", task_manager: "TaskManager"):
         """
         Initializes the OpsGenerator.
 
         Args:
             doc: The top-level Doc object to monitor for changes.
+            task_manager: The TaskManager instance to use for background jobs.
         """
         logger.debug(f"{self.__class__.__name__}.__init__ called")
         self._doc: Doc = Doc()
+        self._task_manager = task_manager
         self._ops_cache: OpsGenerator.OpsCacheType = {}
         self._world_size_cache: Dict[str, Tuple[float, float]] = {}
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
@@ -82,6 +84,8 @@ class OpsGenerator:
         self.ops_generation_starting = Signal()
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
+        # Fired when is_busy changes (0->N tasks or N->0 tasks)
+        self.processing_state_changed = Signal()
 
         # This will trigger the setter, which connects signals and runs the
         # initial reconciliation.
@@ -123,6 +127,11 @@ class OpsGenerator:
             )
             self._connect_signals()
             self.reconcile_all()
+
+    @property
+    def is_busy(self) -> bool:
+        """Returns True if any ops generation tasks are currently running."""
+        return bool(self._active_tasks)
 
     def _connect_signals(self):
         """Connects to the document's signals."""
@@ -336,7 +345,7 @@ class OpsGenerator:
         self._world_size_cache.pop(key[1], None)
         self._generation_id_map.pop(key, None)
         self._active_tasks.pop(key, None)
-        task_mgr.cancel_task(key)
+        self._task_manager.cancel_task(key)
 
     def reconcile_all(self):
         """
@@ -433,6 +442,7 @@ class OpsGenerator:
         )
         self._ops_cache[key] = (None, None)
 
+        was_busy = self.is_busy
         s_uid, w_uid = step.uid, workpiece.uid
 
         # Capture the size we are generating for and pass it to the callback.
@@ -461,7 +471,7 @@ class OpsGenerator:
         # instance with its world-transform "baked in" as its local matrix.
         world_workpiece = workpiece.in_world()
 
-        task = task_mgr.run_process(
+        task = self._task_manager.run_process(
             run_step_in_subprocess,
             world_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -475,6 +485,8 @@ class OpsGenerator:
             when_event=self._on_task_event_received,
         )
         self._active_tasks[key] = task
+        if not was_busy and self.is_busy:
+            self.processing_state_changed.send(self, is_processing=True)
 
     def _on_task_event_received(
         self, task: "Task", event_name: str, data: dict
@@ -523,6 +535,7 @@ class OpsGenerator:
             f"{self.__class__.__name__}._on_generation_complete called"
         )
         key = s_uid, w_uid
+        was_busy = self.is_busy
         self._active_tasks.pop(key, None)
 
         if (
@@ -555,6 +568,10 @@ class OpsGenerator:
         self.ops_generation_finished.send(
             step, workpiece=workpiece, generation_id=task_generation_id
         )
+
+        is_busy_now = self.is_busy
+        if was_busy and not is_busy_now:
+            self.processing_state_changed.send(self, is_processing=False)
 
     def _handle_completed_task(
         self,

@@ -1,20 +1,21 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List, Tuple, Callable
 from gi.repository import Gtk, Gio, GLib
 from ..core.item import DocItem
 from ..importer import importers, importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
-from ..shared.tasker import task_mgr
 from ..shared.tasker.context import ExecutionContext
-from .. import config
 from ..pipeline.job import generate_job_ops
 from ..pipeline.encoder.gcode import GcodeEncoder
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
     from .editor import DocEditor
+    from ..shared.tasker.manager import TaskManager
+    from ..config import ConfigManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,15 @@ logger = logging.getLogger(__name__)
 class FileCmd:
     """Handles file import and export operations."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(
+        self,
+        editor: "DocEditor",
+        task_manager: "TaskManager",
+        config_manager: "ConfigManager",
+    ):
         self._editor = editor
+        self._task_manager = task_manager
+        self._config_manager = config_manager
 
     def _calculate_items_bbox(
         self,
@@ -56,7 +64,8 @@ class FileCmd:
         Calculates the collective bounding box of the imported items and
         translates them to the center of the machine workspace.
         """
-        if not config.config.machine:
+        machine = self._config_manager.config.machine
+        if not machine:
             return  # Cannot center if machine dimensions are unknown
 
         bbox = self._calculate_items_bbox(items)
@@ -64,7 +73,7 @@ class FileCmd:
             return
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
-        machine_w, machine_h = config.config.machine.dimensions
+        machine_w, machine_h = machine.dimensions
 
         # Calculate the translation needed to move the bbox center to the
         # machine center
@@ -170,15 +179,13 @@ class FileCmd:
         else:
             logger.error(f"Failed to import any items from '{filename.name}'.")
 
-    def _on_save_dialog_response(self, dialog, result, win: "MainWindow"):
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
-            return
+    def export_gcode_to_path(
+        self, file_path: Path, when_done: Optional[Callable] = None
+    ):
+        """
+        Headless version of G-code export that writes to a specific path.
+        This is used by the async facade on DocEditor and for testing.
+        """
 
         def write_gcode_sync(path, gcode):
             """Blocking I/O function to be run in a thread."""
@@ -186,9 +193,10 @@ class FileCmd:
                 f.write(gcode)
 
         async def export_coro(context: ExecutionContext):
-            machine = config.config.machine
+            machine = self._config_manager.config.machine
             if not machine:
-                return
+                context.set_message("Error: No machine configured.")
+                raise ValueError("Cannot export G-code without a machine.")
 
             try:
                 # 1. Generate Ops (async, reports progress)
@@ -217,7 +225,21 @@ class FileCmd:
                 raise  # Re-raise to be caught by the task manager
 
         # Add the coroutine to the task manager
-        task_mgr.add_coroutine(export_coro, key="export-gcode")
+        self._task_manager.add_coroutine(
+            export_coro, key="export-gcode", when_done=when_done
+        )
+
+    def _on_save_dialog_response(self, dialog, result, win: "MainWindow"):
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+        except GLib.Error as e:
+            logger.error(f"Error saving file: {e.message}")
+            return
+
+        self.export_gcode_to_path(file_path)
 
     def export_gcode(self, win: "MainWindow"):
         """Shows the save file dialog and handles the G-code export process."""

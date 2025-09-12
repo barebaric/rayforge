@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 
 
 class TaskManager:
-    def __init__(self) -> None:
+    def __init__(
+        self, main_thread_scheduler: Optional[Callable] = None
+    ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
         self._progress_map: Dict[
@@ -42,6 +44,7 @@ class TaskManager:
         self._thread: threading.Thread = threading.Thread(
             target=self._run_event_loop, args=(self._loop,), daemon=True
         )
+        self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
 
     def __len__(self) -> int:
@@ -157,7 +160,9 @@ class TaskManager:
 
         # Schedule the creation and start of the process on the main GTK
         # thread. This will execute after the current call stack unwinds.
-        idle_add(self._start_process_on_main_thread, task, when_done)
+        self._main_thread_scheduler(
+            self._start_process_on_main_thread, task, when_done
+        )
 
         return task
 
@@ -190,7 +195,7 @@ class TaskManager:
             context.flush()
             self._cleanup_task(task)
             if when_done:
-                idle_add(when_done, task)
+                self._main_thread_scheduler(when_done, task)
 
     def _start_process_on_main_thread(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -247,7 +252,7 @@ class TaskManager:
             task.status_changed.send(task)
             self._cleanup_task(task)
             if when_done:
-                idle_add(when_done, task)
+                self._main_thread_scheduler(when_done, task)
 
     def _monitor_subprocess_lifecycle(
         self,
@@ -301,7 +306,8 @@ class TaskManager:
             if process.is_alive():
                 logger.warning(
                     "Task %s: Terminating subprocess %s to prevent deadlock.",
-                    task.key, process.pid
+                    task.key,
+                    process.pid,
                 )
                 process.terminate()
 
@@ -325,7 +331,7 @@ class TaskManager:
             task.status_changed.send(task)
             self._cleanup_task(task)
             if when_done:
-                idle_add(when_done, task)
+                self._main_thread_scheduler(when_done, task)
 
     def _handle_process_queue_message(
         self,
@@ -351,11 +357,11 @@ class TaskManager:
                 event_name, data = value
                 logger.debug(
                     f"TaskManager: Received event '{event_name}' for task "
-                    f"'{context.task.key}'. Dispatching via idle_add."
+                    f"'{context.task.key}'. Dispatching via scheduler."
                 )
                 # Fire the event signal on the Task object.
                 # This needs to be done on the main thread.
-                idle_add(
+                self._main_thread_scheduler(
                     context.task.event_received.send,
                     context.task,
                     event_name=event_name,
@@ -480,7 +486,9 @@ class TaskManager:
         """
         progress = self.get_overall_progress_unsafe()
         tasks = list(self._tasks.values())
-        idle_add(self.tasks_updated.send, self, tasks=tasks, progress=progress)
+        self._main_thread_scheduler(
+            self.tasks_updated.send, self, tasks=tasks, progress=progress
+        )
 
     def get_overall_progress(self) -> float:
         """Calculate overall progress. This method is thread-safe."""

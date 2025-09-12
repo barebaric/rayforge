@@ -1,6 +1,6 @@
 import logging
 from blinker import Signal
-from typing import Optional, Tuple, cast, Dict, List, Sequence
+from typing import TYPE_CHECKING, Optional, Tuple, cast, Dict, List, Sequence
 from gi.repository import Graphene, Gdk, Gtk  # type: ignore
 from ..core.group import Group
 from ..core.layer import Layer
@@ -16,8 +16,9 @@ from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
-from ..doceditor.editor import DocEditor
 from . import context_menu
+if TYPE_CHECKING:
+    from ..doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class WorkSurface(Canvas):
 
     def __init__(
         self,
-        editor: DocEditor,
+        editor: "DocEditor",
         machine: Optional[Machine],
         cam_visible: bool = False,
         **kwargs,

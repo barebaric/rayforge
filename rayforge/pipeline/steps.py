@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-
-from ..config import config
+from .. import config
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import OutlineTracer, EdgeTracer, Rasterizer
@@ -10,7 +9,7 @@ from .transformer import Optimize, Smooth, MultiPassTransformer
 
 def create_outline_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure an Outline step."""
-    assert config.machine
+    assert config.config.machine
     step = Step(
         typelabel=_("External Outline"),
         name=name,
@@ -27,15 +26,15 @@ def create_outline_step(name: Optional[str] = None) -> Step:
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.laser_dict = config.machine.heads[0].to_dict()
-    step.max_cut_speed = config.machine.max_cut_speed
-    step.max_travel_speed = config.machine.max_travel_speed
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
     return step
 
 
 def create_contour_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Contour step."""
-    assert config.machine
+    assert config.config.machine
     step = Step(
         typelabel=_("Contour"),
         name=name,
@@ -52,15 +51,15 @@ def create_contour_step(name: Optional[str] = None) -> Step:
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.laser_dict = config.machine.heads[0].to_dict()
-    step.max_cut_speed = config.machine.max_cut_speed
-    step.max_travel_speed = config.machine.max_travel_speed
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
     return step
 
 
 def create_raster_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Rasterize step."""
-    assert config.machine
+    assert config.config.machine
     step = Step(
         typelabel=_("Raster Engrave"),
         name=name,
@@ -76,7 +75,7 @@ def create_raster_step(name: Optional[str] = None) -> Step:
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.laser_dict = config.machine.heads[0].to_dict()
-    step.max_cut_speed = config.machine.max_cut_speed
-    step.max_travel_speed = config.machine.max_travel_speed
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
     return step

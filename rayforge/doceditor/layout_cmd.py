@@ -14,12 +14,12 @@ from .layout import (
     SpreadVerticallyStrategy,
     PixelPerfectLayoutStrategy,
 )
-from ..shared.tasker import task_mgr
 from ..undo import ChangePropertyCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor
     from ..shared.tasker.task import Task
+    from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,9 @@ logger = logging.getLogger(__name__)
 class LayoutCmd:
     """Handles alignment, distribution, and automatic layout of items."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(self, editor: "DocEditor", task_manager: "TaskManager"):
         self._editor = editor
+        self._task_manager = task_manager
 
     def _execute_layout_task(
         self, strategy: LayoutStrategy, transaction_name: str
@@ -78,7 +79,7 @@ class LayoutCmd:
             return strategy.calculate_deltas(context)
 
         # Launch the coroutine and attach the main-thread callback.
-        task_mgr.add_coroutine(
+        self._task_manager.add_coroutine(
             layout_coro,
             when_done=when_done,
             key=f"layout-{transaction_name}",  # key to prevent concurrent runs
