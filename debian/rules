@@ -3,11 +3,9 @@
 %:
 	dh $@ --with python3
 
-# This override is standard and can be kept.
 override_dh_auto_install:
 	dh_auto_install
 
-# Override dh_python3 to install our vendored wheel from the correct location.
 override_dh_python3:
 	# 1. Tell pip to look for wheels in our new vendor/wheels directory.
 	# 2. Tell pip to install the 'pypotrace' package into the package's staging directory.
@@ -22,3 +20,8 @@ override_dh_python3:
 	# 3. Run the original dh_python3 command, but prevent it from guessing
 	#    dependencies, as we have handled our vendored one manually.
 	dh_python3 --no-guessing
+
+override_dh_clean:
+	# Do nothing. Our build script already provides a clean environment.
+	# The default dh_clean was removing the vendor/wheels directory.
+	echo "Skipping dh_clean to preserve vendored wheels."
