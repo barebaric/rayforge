@@ -7,6 +7,11 @@ override_dh_auto_install:
 	dh_auto_install
 
 override_dh_python3:
+	echo "--- DIAGNOSTIC: Listing all files in the current build directory ---"
+	pwd
+	ls -lR
+	echo "--- END DIAGNOSTIC ---"
+
 	# 1. Tell pip to look for wheels in our new vendor/wheels directory.
 	# 2. Tell pip to install the 'pypotrace' package into the package's staging directory.
 	#    Pip will find the correct wheel in the --find-links path and unpack it.
@@ -23,5 +28,4 @@ override_dh_python3:
 
 override_dh_clean:
 	# Do nothing. Our build script already provides a clean environment.
-	# The default dh_clean was removing the vendor/wheels directory.
 	echo "Skipping dh_clean to preserve vendored wheels."
