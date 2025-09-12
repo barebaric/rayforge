@@ -72,6 +72,14 @@ fi
 if [ "$BUILD_SOURCE" = true ]; then
     echo "Building SIGNED SOURCE package for PPA..."
     GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
+    
+    # Check for the GPG key
+    if [ -z "$GPG_KEY_ID" ]; then
+        echo "Error: Could not find a GPG secret key for signing."
+        echo "Please ensure the PPA_GPG_PRIVATE_KEY secret is set correctly."
+        exit 1
+    fi
+    
     debuild -S -k"${GPG_KEY_ID}"
     echo "Source package built successfully. Find it in the parent directory."
 else
