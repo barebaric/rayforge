@@ -38,13 +38,9 @@ jobs:
         with:
           pixi-version: latest
 
-      - name: Build source package
-        env:
-          DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
-        run: pixi run build-deb-source
-
-      - name: Upload to PPA
+      - name: Build and upload
         env:
           DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
         run: |
+          pixi run build-deb-source
           dput ppa:knipknap/rayforge dist/*.changes
