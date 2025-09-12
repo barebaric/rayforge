@@ -32,11 +32,10 @@ jobs:
         run: |
           # Import the key from secrets
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
-          echo "--- GPG Public Keys ---"
-          gpg --list-keys
-          echo "--- GPG Secret Keys ---"
-          gpg --list-secret-keys
-          KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | awk -F: '{print $10}')
+
+          # We add 'head -n 1' to ensure we only get the first fingerprint,
+          # preventing errors from sub-keys.
+          KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -n 1 | awk -F: '{print $10}')
 
           # Verify that we got a fingerprint
           if [ -z "$KEY_FINGERPRINT" ]; then
@@ -60,7 +59,14 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          echo "$GPG_PASSPHRASE" | debsign --passphrase-fd 0 -k"$KEY_ID" dist/*.changes
+          # Create a temporary file for the GPG passphrase.
+          echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
+
+          # Sign the package using the -p flag, which is compatible with older debsign versions.
+          debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" dist/*.changes
+
+          # Securely remove the temporary passphrase file.
+          rm /tmp/passphrase.txt
 
       - name: Upload to PPA
         run: dput ppa:knipknap/rayforge dist/*.changes
