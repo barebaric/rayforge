@@ -19,7 +19,7 @@ echo "--- Determining version from Git repository ---"
 if [[ -n "$GITHUB_REF_NAME" && "$GITHUB_REF_TYPE" == "tag" ]]; then
   UPSTREAM_VERSION_RAW="$GITHUB_REF_NAME"
 else
-  # Create a compliant pre-release version string like 0.20.2~dev48~f12659d
+# Create a compliant pre-release version string like 0.20.2~dev48~f12659d
   UPSTREAM_VERSION_RAW=$(git describe --tags --always --long | sed -e 's/^v//' -e 's/\([^-]*\)-\([0-9]*\)-g\([0-9a-f]*\)/\1~dev\2~\3/')
 fi
 UPSTREAM_VERSION="${UPSTREAM_VERSION_RAW#v}"
@@ -44,33 +44,26 @@ cp -a debian "${BUILD_DIR}/rayforge-${UPSTREAM_VERSION}/"
 # --- 4. Run the Build Inside the Clean Directory ---
 cd "${BUILD_DIR}/rayforge-${UPSTREAM_VERSION}"
 
-# Prepare Environment for dch (no longer needs git)
+# Prepare Environment for dch
 MAINTAINER_INFO=$(grep '^Maintainer:' debian/control | head -n 1 | sed 's/Maintainer: //')
 export DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed 's/.*<\(.*\)>.*/\1/')
 export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed 's/ <.*//')
 
-# Update Changelog
+# Update Changelog and build the package
 if [ "${1:-}" == "--source" ]; then
+  # For PPA: Build a source package
   dch --newversion "${UPSTREAM_VERSION}-1~ppa1" "New PPA release ${UPSTREAM_VERSION}."
+  GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
+  debuild -S -k"${GPG_KEY_ID}"
 else
+  # For Local: Build a binary package
   dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-fi
-
-# Build the Package
-if [ "${1:-}" == "--source" ]; then
-    GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
-    debuild -S -k"${GPG_KEY_ID}"
-else
-    debuild -b -us -uc
+  debuild -b -us -uc
 fi
 
 # --- 5. Copy Artifacts Back to Original Project Directory ---
-echo "--- Copying build artifacts back to project ---"
+echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
-# debuild places artifacts in the parent directory of the build tree, which is $BUILD_DIR.
-cp -v "${BUILD_DIR}"/rayforge_*.deb "$ORIG_DIR/dist/" || true
-cp -v "${BUILD_DIR}"/rayforge_*.ddeb "$ORIG_DIR/dist/" || true
-cp -v "${BUILD_DIR}"/rayforge_*.changes "$ORIG_DIR/dist/" || true
-cp -v "${BUILD_DIR}"/rayforge_*.buildinfo "$ORIG_DIR/dist/" || true
-cp -v "${BUILD_DIR}"/rayforge_*.dsc "$ORIG_DIR/dist/" || true
-cp -v "${BUILD_DIR}"/rayforge_*.debian.tar.xz "$ORIG_DIR/dist/" || true
+# debuild places artifacts in the parent of the build tree ($BUILD_DIR)
+# Copy all generated package files to dist/
+cp -v "${BUILD_DIR}"/rayforge_* "$ORIG_DIR/dist/"

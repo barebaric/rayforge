@@ -13,7 +13,7 @@ jobs:
     uses: ./.github/workflows/lint-test.yml
 
   publish-to-ppa:
-    name: Build source package and publish to PPA
+    name: Build and publish to PPA
     needs: [lint-test]
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
         with:
           pixi-version: latest
 
-      - name: Build source package with Pixi
+      - name: Build source package
         env:
           DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
         run: pixi run build-deb-source
@@ -47,4 +47,4 @@ jobs:
         env:
           DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
         run: |
-          dput ppa:knipknap/rayforge ../*.changes
+          dput ppa:knipknap/rayforge dist/*.changes
