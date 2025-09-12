@@ -23,7 +23,7 @@ jobs:
           fetch-tags: true
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput build-essential python3-all
+        run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput build-essential python3-all dh-python
 
       - name: Import GPG key
         run: |
