@@ -8,7 +8,7 @@ Homepage: https://github.com/barebaric/rayforge
 
 Package: rayforge
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, python3-gi, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libvips42, libpotrace0, adwaita-icon-theme, python3-numpy, python3-scipy, python3-opencv, python3-yaml, python3-aiohttp, python3-websockets, python3-blinker, python3-platformdirs, python3-opengl
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, python3-gi, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libvips42t64, libpotrace-dev, libagg-dev, libpotrace0, adwaita-icon-theme, python3-numpy, python3-scipy, python3-serial-asyncio, python3-opencv, python3-ezdxf, python3-pypdf, python3-yaml, python3-aiohttp, python3-websockets, python3-blinker, python3-platformdirs, python3-opengl
 Description: Desktop application for laser cutting and engraving
  Rayforge is a powerful, open-source, and cross-platform software for
  controlling your laser cutter and engraver.

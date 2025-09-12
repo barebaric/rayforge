@@ -13,7 +13,7 @@ jobs:
     uses: ./.github/workflows/lint-test.yml
 
   publish-to-ppa:
-    name: Build and publish to PPA
+    name: Build, Test, and Publish to PPA
     needs: [lint-test]
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +23,8 @@ jobs:
           fetch-tags: true
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput build-essential python3-all dh-python
+        # Added equivs, which is required by mk-build-deps
+        run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput build-essential python3-all dh-python jq equivs
 
       - name: Import GPG key
         env:
@@ -51,7 +52,37 @@ jobs:
         with:
           pixi-version: latest
 
-      - name: Build source package
+      - name: Build BINARY package for testing
+        id: build_binary
+        run: |
+          # Run the build script WITHOUT --source to produce a .deb file
+          pixi run build-deb
+          # Find the name of the generated .deb file and make it available to other steps
+          DEB_FILE=$(find dist -name "*.deb" -type f | head -n 1)
+          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+
+      - name: Install runtime dependencies for testing
+        run: |
+          # This command reads debian/control and installs all packages
+          # listed in the 'Depends' field automatically.
+          sudo mk-build-deps --install --tool="apt-get -y" debian/control
+
+      - name: Test package installation
+        run: |
+          # Use 'apt install' on the local .deb file.
+          # apt is better than dpkg because it handles dependencies correctly.
+          sudo apt-get install -y ${{ steps.build_binary.outputs.deb_file }}
+
+      - name: Run smoke test
+        run: |
+          # Verify that the package is listed as installed
+          dpkg -l rayforge
+          # Verify the main executable is in the PATH and can be run
+          # This simple command proves the installation was successful.
+          rayforge --version
+
+      - name: Build SOURCE package for PPA upload
+        # This is still needed because PPAs require a source package upload
         run: pixi run build-deb-source
 
       - name: Sign source package
