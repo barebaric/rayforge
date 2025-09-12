@@ -46,3 +46,6 @@ class NoDeviceDriver(Driver):
 
     async def write_setting(self, key: str, value: Any) -> None:
         pass
+
+    async def clear_alarm(self) -> None:
+        pass

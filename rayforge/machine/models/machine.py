@@ -45,6 +45,7 @@ class Machine:
         self._connect_driver_signals()
 
         self.home_on_start: bool = False
+        self.clear_alarm_on_connect: bool = False
         self.dialect_name: str = "GRBL"
         self.gcode_precision: int = 3
         self.use_custom_preamble: bool = False
@@ -276,6 +277,12 @@ class Machine:
         self.home_on_start = home_on_start
         self.changed.send(self)
 
+    def set_clear_alarm_on_connect(self, clear_alarm: bool = True):
+        if self.clear_alarm_on_connect == clear_alarm:
+            return
+        self.clear_alarm_on_connect = clear_alarm
+        self.changed.send(self)
+
     def set_use_custom_preamble(self, use: bool):
         if self.use_custom_preamble == use:
             return
@@ -460,6 +467,7 @@ class Machine:
                 "name": self.name,
                 "driver": self.driver_name,
                 "driver_args": self.driver_args,
+                "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
                 "dialect": self.dialect_name,
                 "dimensions": list(self.dimensions),
@@ -487,6 +495,9 @@ class Machine:
         ma.name = ma_data.get("name", ma.name)
         ma.driver_name = ma_data.get("driver")
         ma.driver_args = ma_data.get("driver_args", {})
+        ma.clear_alarm_on_connect = ma_data.get(
+            "clear_alarm_on_connect", ma.clear_alarm_on_connect
+        )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
         ma.dialect_name = ma_data.get("dialect", "GRBL")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))

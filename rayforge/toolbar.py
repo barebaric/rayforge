@@ -215,6 +215,15 @@ class MainToolbar(Gtk.Box):
         self.cancel_button.set_action_name("win.cancel")
         self.append(self.cancel_button)
 
+        self.clear_alarm_button = Gtk.Button(
+            child=get_icon("unlock-symbolic")
+        )
+        self.clear_alarm_button.set_tooltip_text(
+            _("Clear machine alarm (unlock)")
+        )
+        self.clear_alarm_button.set_action_name("win.clear_alarm")
+        self.append(self.clear_alarm_button)
+
         # Add spacer to push machine selector to the right
         spacer = Gtk.Box()
         spacer.set_hexpand(True)

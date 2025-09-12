@@ -165,6 +165,9 @@ class SmoothieDriver(Driver):
         cmd = f"G90 G0 X{float(pos_x)} Y{float(pos_y)}"
         await self._send_and_wait(cmd.encode())
 
+    async def clear_alarm(self) -> None:
+        await self._send_and_wait(b"M999")
+
     def on_telnet_data_received(self, sender, data: bytes):
         debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
         data_str = data.decode("utf-8")

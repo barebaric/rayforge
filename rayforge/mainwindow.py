@@ -431,9 +431,21 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def _on_connection_status_changed(
-        self, machine: Machine, status: TransportStatus, message: str
+        self,
+        machine: Machine,
+        status: TransportStatus,
+        message: Optional[str] = None,
     ):
         """Called when the active machine's connection status changes."""
+        if (
+            status == TransportStatus.CONNECTED
+            and machine.clear_alarm_on_connect
+            and machine.device_state.status == DeviceStatus.ALARM
+        ):
+            logger.info(
+                "Machine connected in ALARM state. Auto-clearing alarm."
+            )
+            self.doc_editor.machine.clear_alarm(machine)
         self._update_actions_and_ui()
 
     def on_history_changed(
@@ -575,6 +587,7 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("send").set_enabled(False)
             am.get_action("hold").set_enabled(False)
             am.get_action("cancel").set_enabled(False)
+            am.get_action("clear_alarm").set_enabled(False)
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
             )
@@ -659,6 +672,17 @@ class MainWindow(Adw.ApplicationWindow):
                 DeviceStatus.CYCLE,
             )
             am.get_action("cancel").set_enabled(cancel_sensitive)
+
+            clear_alarm_sensitive = device_status == DeviceStatus.ALARM
+            am.get_action("clear_alarm").set_enabled(clear_alarm_sensitive)
+            if clear_alarm_sensitive:
+                self.toolbar.clear_alarm_button.add_css_class(
+                    "suggested-action"
+                )
+            else:
+                self.toolbar.clear_alarm_button.remove_css_class(
+                    "suggested-action"
+                )
 
             connected = conn_status == TransportStatus.CONNECTED
             self.surface.set_laser_dot_visible(connected)
@@ -807,6 +831,11 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         self.doc_editor.machine.cancel_job(config.machine)
+
+    def on_clear_alarm_clicked(self, action, param):
+        if not config.machine:
+            return
+        self.doc_editor.machine.clear_alarm(config.machine)
 
     def load_file(self, filename: Path, mime_type: Optional[str]):
         """

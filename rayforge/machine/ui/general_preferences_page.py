@@ -99,6 +99,20 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         machine_group.add(home_on_start_row)
 
+        clear_alarm_row = Adw.SwitchRow()
+        clear_alarm_row.set_title(_("Clear Alarm On Connect"))
+        clear_alarm_row.set_subtitle(
+            _(
+                "Automatically send an unlock command if "
+                "connected in an ALARM state"
+            )
+        )
+        clear_alarm_row.set_active(machine.clear_alarm_on_connect)
+        clear_alarm_row.connect(
+            "notify::active", self.on_clear_alarm_on_connect_changed
+        )
+        machine_group.add(clear_alarm_row)
+
         # Y-Axis direction switch
         y_axis_switch_row = Adw.SwitchRow(
             title=_("Invert Y Axis Direction"),
@@ -264,6 +278,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
     def on_home_on_start_changed(self, row, _):
         self.machine.set_home_on_start(row.get_active())
+
+    def on_clear_alarm_on_connect_changed(self, row, _):
+        self.machine.set_clear_alarm_on_connect(row.get_active())
 
     def on_y_axis_toggled(self, row, _):
         self.machine.set_y_axis_down(row.get_active())

@@ -91,3 +91,10 @@ class MachineCmd:
         """Adds a task to cancel the currently running job on the machine."""
         driver = machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.cancel(), key="cancel-job")
+
+    def clear_alarm(self, machine: "Machine"):
+        """Adds a task to clear any active alarm on the machine."""
+        driver = machine.driver
+        task_mgr.add_coroutine(
+            lambda ctx: driver.clear_alarm(), key="clear-alarm"
+        )

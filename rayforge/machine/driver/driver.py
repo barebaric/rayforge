@@ -184,6 +184,13 @@ class Driver(ABC):
         """
         pass
 
+    @abstractmethod
+    async def clear_alarm(self) -> None:
+        """
+        Sends a command to clear any active alarm state.
+        """
+        pass
+
     def _log(self, message: str):
         debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, message

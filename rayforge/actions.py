@@ -88,6 +88,7 @@ class ActionManager:
         self._add_action("frame", self.win.on_frame_clicked)
         self._add_action("send", self.win.on_send_clicked)
         self._add_action("cancel", self.win.on_cancel_clicked)
+        self._add_action("clear_alarm", self.win.on_clear_alarm_clicked)
 
         # Stateful action for the hold/pause button
         self._add_stateful_action(

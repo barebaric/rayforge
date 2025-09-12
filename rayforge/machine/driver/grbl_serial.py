@@ -341,6 +341,9 @@ class GrblSerialDriver(Driver):
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
         await self._execute_command(cmd)
 
+    async def clear_alarm(self) -> None:
+        await self._execute_command("$X")
+
     def get_setting_vars(self) -> List["VarSet"]:
         return get_grbl_setting_varsets()
 

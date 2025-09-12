@@ -308,6 +308,9 @@ class GrblNetworkDriver(Driver):
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
         await self._execute_command(cmd)
 
+    async def clear_alarm(self) -> None:
+        await self._execute_command("$X")
+
     def on_http_data_received(self, sender, data: bytes):
         pass
 
