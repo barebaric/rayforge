@@ -13,7 +13,6 @@ from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .transform_cmd import TransformCmd
 from ..machine.cmd import MachineCmd
-from ..workbench.view_mode_cmd import ViewModeCmd
 
 if TYPE_CHECKING:
     from ..undo import HistoryManager
@@ -70,7 +69,6 @@ class DocEditor:
         self.layout = LayoutCmd(self, self._task_manager)
         self.transform = TransformCmd(self)
         self.machine = MachineCmd(self)
-        self.view = ViewModeCmd(self)
 
     async def wait_until_settled(self, timeout: float = 10.0) -> None:
         """

@@ -31,6 +31,7 @@ from .shared.ui.about import AboutDialog
 from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
+from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 
 
@@ -131,6 +132,9 @@ class MainWindow(Adw.ApplicationWindow):
         # OpsGenerator.
         assert config_mgr is not None
         self.doc_editor = DocEditor(task_mgr, config_mgr)
+
+        # Instantiate UI-specific command handlers
+        self.view_cmd = ViewModeCmd(self.doc_editor)
 
         # Add a global click handler to manage focus correctly.
         root_click_gesture = Gtk.GestureClick.new()
@@ -332,7 +336,7 @@ class MainWindow(Adw.ApplicationWindow):
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
         """Delegates the view switching logic to the command module."""
-        self.doc_editor.view.toggle_3d_view(self, action, value)
+        self.view_cmd.toggle_3d_view(self, action, value)
 
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -350,21 +354,21 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        self.doc_editor.view.set_view_top(self.canvas3d)
+        self.view_cmd.set_view_top(self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        self.doc_editor.view.set_view_front(self.canvas3d)
+        self.view_cmd.set_view_front(self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        self.doc_editor.view.set_view_iso(self.canvas3d)
+        self.view_cmd.set_view_iso(self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         """Handles state changes for the perspective view action."""
-        self.doc_editor.view.toggle_perspective(self.canvas3d, action, value)
+        self.view_cmd.toggle_perspective(self.canvas3d, action, value)
 
     def _initialize_document(self):
         """
