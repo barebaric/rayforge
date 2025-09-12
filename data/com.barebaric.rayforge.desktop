@@ -4,7 +4,8 @@ Type=Application
 
 Name=Rayforge
 Comment=Laser cutting and engraving
-Categories=AudioVideo;GTK;
+Categories=Graphics;2DGraphics;VectorGraphics;Engineering;
+StartupNotify=true
 
 Icon=com.barebaric.rayforge
 Exec=rayforge

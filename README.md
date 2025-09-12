@@ -1,6 +1,7 @@
 [![GitHub Release](https://img.shields.io/github/release/barebaric/rayforge.svg?style=flat)](https://github.com/barebaric/rayforge/releases/)
 [![PyPI version](https://img.shields.io/pypi/v/rayforge)](https://pypi.org/project/rayforge/)
 [![Snap Release](https://snapcraft.io/rayforge/badge.svg)](https://snapcraft.io/rayforge)
+[![Launchpad PPA](https://img.shields.io/badge/PPA-blue)](https://launchpad.net/~knipknap/+archive/ubuntu/rayforge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Rayforge
@@ -57,12 +58,25 @@ The easiest way to get started on Windows is to download the latest installer fr
 
 ### Linux
 
-We offer two primary installation methods for Linux.
+We offer several installation methods for Linux.
 
-#### Recommended: Snap
+#### Ubuntu & Derivatives (via PPA)
 
-The recommended method for most users is installing via the Snap Store, as it
-includes all necessary dependencies in a single package.
+For users on Ubuntu and its derivatives (like Linux Mint, Pop!_OS), the recommended method is our official PPA. This integrates directly with your system's package manager and provides automatic updates.
+
+> [!NOTE]
+> The PPA supports **Ubuntu 24.04 LTS and newer**.
+
+Open a terminal and run the following commands:
+```bash
+sudo add-apt-repository ppa:knipknap/rayforge
+sudo apt update
+sudo apt install rayforge
+```
+
+#### Cross-Distro (Recommended via Snap)
+
+For other Linux distributions, or if you prefer a sandboxed application, the recommended method is installing via the Snap Store. It includes all necessary dependencies in a single package.
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
 
@@ -83,9 +97,9 @@ If you want to be able to use USB Serial connections, you need to to the followi
 5. Execute `sudo snap connect rayforge:serial-port`. This will fail if your laser is not connected via USB!
 6. Start Rayforge
 
-#### Advanced: PIP
+#### Advanced: From Source (via PIP)
 
-For advanced users who prefer not to use Snap, Rayforge can be installed via PIP.
+For advanced users who prefer not to use Snap or a PPA, Rayforge can be installed via PIP.
 You will need to manually install system dependencies first. On Debian/Ubuntu-based
 systems, this can be done with:
 

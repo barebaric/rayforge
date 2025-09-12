@@ -126,3 +126,13 @@ bash -c '
     rayforge/app.py
 '
 """
+
+[tasks.build-deb]
+# Builds a binary .deb package for local installation and testing.
+cmd = "bash scripts/build-deb.sh"
+depends-on = ["compile-translations"]
+
+[tasks.build-deb-source]
+# Builds a source package, ready for upload to a PPA.
+cmd = "bash scripts/build-deb.sh --source"
+depends-on = ["compile-translations"]

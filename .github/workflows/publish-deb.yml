@@ -1,0 +1,45 @@
+name: Publish .deb to PPA
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+
+jobs:
+  lint-test:
+    if: github.repository == 'barebaric/rayforge'
+    uses: ./.github/workflows/lint-test.yml
+
+  publish-to-ppa:
+    name: Build source package and publish to PPA
+    needs: [lint-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y devscripts debhelper dput
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.PPA_GPG_PRIVATE_KEY }}" | base64 --decode | gpg --import
+          gpg --list-keys --keyid-format long
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: latest
+
+      - name: Build source package with Pixi
+        run: pixi run build-deb-source
+
+      - name: Upload to PPA
+        env:
+          DEB_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+        run: |
+          dput ppa:barebaric/rayforge ../*.changes

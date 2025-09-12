@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+override_dh_auto_install:
+	# First, run the standard install for our own application code.
+	dh_auto_install --destdir=debian/rayforge
+	
+	# Now, use pip to install the bundled requirements into the same staging area.
+	pip install --no-deps --target debian/rayforge/usr/lib/python3/dist-packages -r debian/requirements-bundle.txt
+
+	# Immediately clean up unwanted files that pip just installed.
+	find debian/rayforge -name __pycache__ -type d -exec rm -rf {} +
+	find debian/rayforge -name .gitignore -type f -delete
+
+# This is the standard catch-all rule that tells debhelper to do its magic.
+%:
+	dh $@ --with python3

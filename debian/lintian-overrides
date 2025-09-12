@@ -1,0 +1,6 @@
+# The bundled ezdxf wheel has a compiled dependency on the NumPy C-API.
+# The standard debhelper tools do not automatically detect this for pre-compiled
+# binaries installed via pip. However, our explicit dependency on 'python3-numpy'
+# in debian/control satisfies this requirement in practice.
+# We are overriding this lintian error to acknowledge we have handled it.
+rayforge: missing-dependency-on-numpy-abi
