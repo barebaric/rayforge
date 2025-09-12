@@ -6,9 +6,7 @@ from functools import partial
 import pytest
 import pytest_asyncio
 import gi
-
 gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
