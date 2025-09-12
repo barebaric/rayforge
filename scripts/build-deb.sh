@@ -109,11 +109,14 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-    # This -S build is what was failing. It will now succeed.
-    debuild -S -us -uc
+    # The -nc flag (--no-pre-clean) prevents debuild from cleaning the source tree,
+    # which ensures our vendor/wheels directory is not removed before the build.
+    debuild -S -us -uc -nc
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-    debuild -b -us -uc
+    # The -nc flag (--no-pre-clean) prevents debuild from cleaning the source tree,
+    # which ensures our vendor/wheels directory is not removed before the build.
+    debuild -b -us -uc -nc
 fi
 
 # --- 5. Copy Artifacts ---
