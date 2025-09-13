@@ -5,7 +5,7 @@
 
 override_dh_auto_build:
 	export SETUPTOOLS_GIT_VERSIONING_VERSION=$$(dpkg-parsechangelog -S Version | sed 's/-[0-9~a-z]*$$//')
-	echo $SETUPTOOLS_GIT_VERSIONING_VERSION
+	echo $(SETUPTOOLS_GIT_VERSIONING_VERSION)
 	dh_auto_build
 
 override_dh_auto_install:
