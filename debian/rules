@@ -3,6 +3,14 @@
 %:
 	dh $@ --with python3 --buildsystem=pybuild
 
+override_dh_auto_build:
+	# 1. Get the full version from the changelog (e.g., 0.20.2~dev73-1~ppa1)
+	# 2. Extract just the upstream part (e.g., 0.20.2~dev73)
+	# 3. Export it as SETUPTOOLS_GIT_VERSIONING_VERSION for the build system.
+	# The double '$$' is required Make syntax to pass a single '$' to the shell.
+	export SETUPTOOLS_GIT_VERSIONING_VERSION=$$(dpkg-parsechangelog -S Version | sed 's/-[0-9~a-z]*$$//'); \
+	dh_auto_build
+
 override_dh_auto_install:
 	# STEP 1: Run the DEFAULT dh_auto_install command first.
 	# We set the env vars so THIS step can find build-deps like poetry-core
