@@ -94,8 +94,10 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
 
+      - name: Clean build artifacts before final build
+        run: rm -rf dist/*
+
       - name: Build SOURCE package for PPA upload
-        # This is still needed because PPAs require a source package upload
         run: pixi run build-deb-source
 
       - name: Sign source package
