@@ -100,12 +100,12 @@ cp -r "$ORIG_DIR/debian" "$TMP_SRC_DIR/"
 cd "$TMP_SRC_DIR"
 
 MAINTAINER_INFO=$(grep '^Maintainer:' debian/control | head -n 1 | sed 's/Maintainer: //')
-DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed -E 's/.*<(.*)>.*/\1/')
-DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
+export DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed -E 's/.*<(.*)>.*/\1/')
+export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
 # The `dch` commands are safe to run in the current environment
 if [[ "${1:-}" == "--source" ]]; then
-    TARGET_DISTRIBUTION="jammy"
+    TARGET_DISTRIBUTION="noble"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
     
     # Use env -i to get a clean environment, and pass in ONLY the variables we need.

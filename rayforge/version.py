@@ -29,3 +29,12 @@ def get_version_from_pkg() -> Optional[str]:
         return version("rayforge")
     except PackageNotFoundError:
         return None
+
+
+def get_version_from_file() -> Optional[str]:
+    version_file = os.path.join(__dir__, "version.txt")
+    try:
+        with open(version_file, "r") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return None
