@@ -3,7 +3,13 @@ import numpy as np
 import cv2
 import potrace
 from .potrace_base import PotraceProducer
-from ...core.ops import Ops, Command
+from ...core.ops import Ops
+from ...core.geometry import (
+    Geometry,
+    Command as GeometryCommand,
+    MoveToCommand,
+)
+
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -24,16 +30,12 @@ class OutlineTracer(PotraceProducer):
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
-        # If the workpiece has source_ops, apply the outline-finding algorithm
+        # If the workpiece has vectors, apply the outline-finding algorithm
         # to them.
-        if (
-            workpiece
-            and workpiece.source_ops
-            and len(workpiece.source_ops) > 0
-        ):
-            return self._filter_vector_ops_xor(workpiece.source_ops)
+        if workpiece and workpiece.vectors and len(workpiece.vectors) > 0:
+            return self._filter_vector_ops_xor(workpiece.vectors)
 
-        # If no source_ops, fall back to raster tracing the surface.
+        # If no vectors, fall back to raster tracing the surface.
         return super().run(
             laser,
             surface,
@@ -42,14 +44,16 @@ class OutlineTracer(PotraceProducer):
             y_offset_mm=y_offset_mm,
         )
 
-    def _filter_vector_ops_xor(self, ops: Ops) -> Ops:
+    def _filter_vector_ops_xor(self, geometry: Geometry) -> Ops:
         """
         Filters vector paths using a robust XOR rasterization method. This
         correctly handles all nesting, winding order, and complex geometry by
         simulating a graphics importer's even-odd fill rule and then
         extracting ONLY the external contours.
         """
-        all_points = [cmd.end for cmd in ops.commands if cmd.end is not None]
+        all_points = [
+            cmd.end for cmd in geometry.commands if cmd.end is not None
+        ]
         if not all_points:
             return Ops()
 
@@ -71,7 +75,9 @@ class OutlineTracer(PotraceProducer):
         height_mm = max_y - min_y
 
         if width_mm <= 0 or height_mm <= 0:
-            return ops  # Not a shape with area, return as is.
+            return Ops.from_geometry(
+                geometry
+            )  # Not a shape with area, return as is.
 
         # Create a canvas. We can cap the size for performance.
         CANVAS_MAX_DIM = 4096
@@ -80,11 +86,11 @@ class OutlineTracer(PotraceProducer):
         width_px = int(np.ceil(width_mm * scale)) + 2  # Add padding
         height_px = int(np.ceil(height_mm * scale)) + 2
 
-        # 2. Deconstruct Ops into polygons
-        paths: List[List[Command]] = []
-        current_path: List[Command] = []
-        for cmd in ops.commands:
-            if cmd.is_travel_command():
+        # 2. Deconstruct Geometry into polygons
+        paths: List[List[GeometryCommand]] = []
+        current_path: List[GeometryCommand] = []
+        for cmd in geometry.commands:
+            if isinstance(cmd, MoveToCommand):
                 if current_path:
                     paths.append(current_path)
                 current_path = [cmd]

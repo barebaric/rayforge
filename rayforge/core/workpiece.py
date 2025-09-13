@@ -16,7 +16,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ..core.ops import Ops
+from ..core.geometry import Geometry
 from .item import DocItem
 from .matrix import Matrix
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class WorkPiece(DocItem):
     """
     Represents a real-world workpiece. It is a lightweight data container,
-    holding its source data (_data, source_ops), its transformation matrix,
+    holding its source data (_data, geometry), its transformation matrix,
     and a Renderer for display. It is completely decoupled from importers.
     """
 
@@ -40,13 +40,13 @@ class WorkPiece(DocItem):
         source_file: Path,
         renderer: "Renderer",
         data: Optional[bytes] = None,
-        source_ops: Optional[Ops] = None,
+        vectors: Optional[Geometry] = None,
     ):
         super().__init__(name=source_file.name)
         self.source_file = source_file
         self.renderer = renderer
         self._data = data
-        self.source_ops = source_ops
+        self.vectors = vectors
 
         # The cache for rendered vips images. Key is (width, height).
         # This is the proper place for this state, not monkey-patched.
@@ -55,7 +55,7 @@ class WorkPiece(DocItem):
     def clear_render_cache(self):
         """
         Invalidates and clears all cached renders for this workpiece.
-        Should be called if the underlying _data or source_ops changes.
+        Should be called if the underlying _data or geometry changes.
         """
         self._render_cache.clear()
 
@@ -93,7 +93,7 @@ class WorkPiece(DocItem):
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
         world_wp = WorkPiece(
-            self.source_file, self.renderer, self._data, self.source_ops
+            self.source_file, self.renderer, self._data, self.vectors
         )
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.name = self.name
@@ -117,9 +117,7 @@ class WorkPiece(DocItem):
             "name": self.name,
             "matrix": self._matrix.to_list(),
             "renderer_name": self.renderer.__class__.__name__,
-            "source_ops": self.source_ops.to_dict()
-            if self.source_ops
-            else None,
+            "vectors": self.vectors.to_dict() if self.vectors else None,
             "data": self._data,
             "source_file": str(self.source_file),
         }
@@ -130,19 +128,21 @@ class WorkPiece(DocItem):
         Restores a WorkPiece instance from a dictionary.
         """
         from ..importer import renderer_by_name
-        from ..core.ops import Ops
+        from ..core.geometry import Geometry
 
         renderer = renderer_by_name[state["renderer_name"]]
         source_file = Path(state["source_file"])
-        source_ops = (
-            Ops.from_dict(state["source_ops"]) if state["source_ops"] else None
+        vectors = (
+            Geometry.from_dict(state["vectors"])
+            if state["vectors"]
+            else None
         )
 
         wp = cls(
             source_file=source_file,
             renderer=renderer,
             data=state["data"],
-            source_ops=source_ops,
+            vectors=vectors,
         )
         wp.uid = state["uid"]
         wp.name = state["name"]

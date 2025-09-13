@@ -5,11 +5,12 @@ from copy import deepcopy
 from typing import Iterable, Optional, List, Dict, Tuple
 import ezdxf
 import ezdxf.math
+import numpy as np
 from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 
-from ...core.ops import Ops
+from ...core.geometry import Geometry
 from ...core.group import Group
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
@@ -87,23 +88,31 @@ class DxfImporter(Importer):
         and Groups).
         """
         result_items: List[DocItem] = []
-        current_ops = Ops()
+        current_geo = Geometry()
         current_solids: List[List[Tuple[float, float]]] = []
 
-        def flush_ops_to_workpiece():
+        def flush_geo_to_workpiece():
             """
-            Converts the accumulated Ops and solid data into a single,
+            Converts the accumulated Geometry and solid data into a single,
             normalized WorkPiece.
             """
-            nonlocal current_ops, current_solids
-            if current_ops.is_empty():
+            nonlocal current_geo, current_solids
+            if current_geo.is_empty():
                 return
 
-            min_x, min_y, max_x, max_y = current_ops.rect()
+            min_x, min_y, max_x, max_y = current_geo.rect()
 
-            # Normalize ops and solids to have their origin at (0,0)
-            normalized_ops = current_ops.copy()
-            normalized_ops.translate(-min_x, -min_y)
+            # Normalize geometry and solids to have their origin at (0,0)
+            normalized_geo = deepcopy(current_geo)
+            translate_matrix = np.array(
+                [
+                    [1, 0, 0, -min_x],
+                    [0, 1, 0, -min_y],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
+            normalized_geo.transform(translate_matrix)
 
             normalized_solids = [
                 [(p[0] - min_x, p[1] - min_y) for p in solid]
@@ -120,7 +129,7 @@ class DxfImporter(Importer):
             wp = WorkPiece(
                 source_file=self.source_file,
                 renderer=DXF_RENDERER,
-                source_ops=normalized_ops,
+                vectors=normalized_geo,
                 data=wp_data,  # Store the renderer-specific data
             )
 
@@ -132,14 +141,14 @@ class DxfImporter(Importer):
             )
 
             result_items.append(wp)
-            current_ops = Ops()
+            current_geo = Geometry()
             current_solids = []
 
         for entity in entities:
             if entity.dxftype() == "INSERT":
-                # An INSERT entity ends the current Ops run and creates a
+                # An INSERT entity ends the current Geometry run and creates a
                 # Group.
-                flush_ops_to_workpiece()
+                flush_geo_to_workpiece()
                 block_items = self._blocks_cache.get(entity.dxf.name)
                 if not block_items:
                     continue
@@ -169,9 +178,10 @@ class DxfImporter(Importer):
                 result_items.append(group)
 
             elif entity.dxftype() == "SOLID":
-                # A SOLID contributes to both Ops (outline) and data (fill)
-                self._solid_to_ops_and_data(
-                    current_ops,
+                # A SOLID contributes to both Geometry (outline) and
+                # data (fill)
+                self._solid_to_geo_and_data(
+                    current_geo,
                     current_solids,
                     entity,
                     scale,
@@ -180,31 +190,32 @@ class DxfImporter(Importer):
                     parent_transform,
                 )
             else:
-                # Append vector data from other entities to the current Ops.
-                self._entity_to_ops(
-                    current_ops, entity, doc, scale, tx, ty, parent_transform
+                # Append vector data from other entities to the current
+                # Geometry.
+                self._entity_to_geo(
+                    current_geo, entity, doc, scale, tx, ty, parent_transform
                 )
 
-        flush_ops_to_workpiece()  # Flush any remaining Ops.
+        flush_geo_to_workpiece()  # Flush any remaining Geometry.
         return result_items
 
-    def _entity_to_ops(self, ops, entity, doc, scale, tx, ty, transform):
+    def _entity_to_geo(self, geo, entity, doc, scale, tx, ty, transform):
         """Dispatcher to call the correct handler for a given DXF entity."""
         handler_map = {
-            "LINE": self._line_to_ops,
-            "CIRCLE": self._poly_approx_to_ops,
-            "LWPOLYLINE": self._lwpolyline_to_ops,
-            "ARC": self._arc_to_ops,
-            "ELLIPSE": self._poly_approx_to_ops,
-            "SPLINE": self._poly_approx_to_ops,
-            "POLYLINE": self._polyline_to_ops,
-            "HATCH": self._hatch_to_ops,
-            "TEXT": self._text_to_ops,
-            "MTEXT": self._text_to_ops,
+            "LINE": self._line_to_geo,
+            "CIRCLE": self._poly_approx_to_geo,
+            "LWPOLYLINE": self._lwpolyline_to_geo,
+            "ARC": self._arc_to_geo,
+            "ELLIPSE": self._poly_approx_to_geo,
+            "SPLINE": self._poly_approx_to_geo,
+            "POLYLINE": self._polyline_to_geo,
+            "HATCH": self._hatch_to_geo,
+            "TEXT": self._text_to_geo,
+            "MTEXT": self._text_to_geo,
         }
         handler = handler_map.get(entity.dxftype())
         if handler:
-            handler(ops, entity, scale, tx, ty, transform)
+            handler(geo, entity, scale, tx, ty, transform)
         else:
             logger.warning(
                 f"Unsupported DXF entity type: {entity.dxftype()}. "
@@ -230,9 +241,9 @@ class DxfImporter(Importer):
             (max_p.y - min_p.y) * scale,
         )
 
-    def _poly_to_ops(
+    def _poly_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         points: List[ezdxf.math.Vec3],
         is_closed: bool,
         scale: float,
@@ -249,16 +260,16 @@ class DxfImporter(Importer):
         scaled_points = [
             ((p.x * scale) - tx, (p.y * scale) - ty) for p in points
         ]
-        ops.move_to(scaled_points[0][0], scaled_points[0][1])
+        geo.move_to(scaled_points[0][0], scaled_points[0][1])
         for x, y in scaled_points[1:]:
-            ops.line_to(x, y)
+            geo.line_to(x, y)
         if is_closed:
-            ops.line_to(scaled_points[0][0], scaled_points[0][1])
+            geo.line_to(scaled_points[0][0], scaled_points[0][1])
         return scaled_points
 
-    def _solid_to_ops_and_data(
+    def _solid_to_geo_and_data(
         self,
-        ops: Ops,
+        geo: Geometry,
         solids_list: List[List[Tuple[float, float]]],
         entity,
         scale: float,
@@ -273,16 +284,17 @@ class DxfImporter(Importer):
             entity.dxf.vtx3,
             entity.dxf.vtx2,
         ]
-        # Add the outline to ops and get the final scaled points for the fill
-        scaled_points = self._poly_to_ops(
-            ops, points, True, scale, tx, ty, transform
+        # Add the outline to geometry and get the final scaled points for
+        # the fill
+        scaled_points = self._poly_to_geo(
+            geo, points, True, scale, tx, ty, transform
         )
         if scaled_points:
             solids_list.append(scaled_points)
 
-    def _line_to_ops(
+    def _line_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -290,11 +302,11 @@ class DxfImporter(Importer):
         transform=None,
     ):
         points = [entity.dxf.start, entity.dxf.end]
-        self._poly_to_ops(ops, points, False, scale, tx, ty, transform)
+        self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
 
-    def _lwpolyline_to_ops(
+    def _lwpolyline_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -302,11 +314,11 @@ class DxfImporter(Importer):
         transform=None,
     ):
         points = [ezdxf.math.Vec3(p[0], p[1], 0) for p in entity.vertices()]
-        self._poly_to_ops(ops, points, entity.closed, scale, tx, ty, transform)
+        self._poly_to_geo(geo, points, entity.closed, scale, tx, ty, transform)
 
-    def _arc_to_ops(
+    def _arc_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -337,8 +349,8 @@ class DxfImporter(Importer):
             center_offset.x * scale,
             center_offset.y * scale,
         )
-        ops.move_to(final_start_x, final_start_y, start_point.z * scale)
-        ops.arc_to(
+        geo.move_to(final_start_x, final_start_y, start_point.z * scale)
+        geo.arc_to(
             final_end_x,
             final_end_y,
             final_offset_i,
@@ -347,9 +359,9 @@ class DxfImporter(Importer):
             z=end_point.z * scale,
         )
 
-    def _poly_approx_to_ops(
+    def _poly_approx_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -360,13 +372,13 @@ class DxfImporter(Importer):
             path_obj = ezdxf.path.make_path(entity)  # type: ignore
             points = list(path_obj.flattening(distance=0.01))
             is_closed = getattr(entity, "closed", False)
-            self._poly_to_ops(ops, points, is_closed, scale, tx, ty, transform)
+            self._poly_to_geo(geo, points, is_closed, scale, tx, ty, transform)
         except Exception:
             pass
 
-    def _polyline_to_ops(
+    def _polyline_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -376,12 +388,12 @@ class DxfImporter(Importer):
         try:
             for v_entity in entity.virtual_entities():
                 if v_entity.dxftype() == "LINE":
-                    self._line_to_ops(ops, v_entity, scale, tx, ty, transform)
+                    self._line_to_geo(geo, v_entity, scale, tx, ty, transform)
                 elif v_entity.dxftype() == "ARC":
-                    self._arc_to_ops(ops, v_entity, scale, tx, ty, transform)
+                    self._arc_to_geo(geo, v_entity, scale, tx, ty, transform)
         except Exception:
-            self._poly_to_ops(
-                ops,
+            self._poly_to_geo(
+                geo,
                 list(entity.points()),
                 entity.is_closed,
                 scale,
@@ -390,9 +402,9 @@ class DxfImporter(Importer):
                 transform,
             )
 
-    def _hatch_to_ops(
+    def _hatch_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -403,23 +415,23 @@ class DxfImporter(Importer):
             for path in entity.paths:
                 for v_entity in path.virtual_entities():
                     if v_entity.dxftype() == "LINE":
-                        self._line_to_ops(
-                            ops, v_entity, scale, tx, ty, transform
+                        self._line_to_geo(
+                            geo, v_entity, scale, tx, ty, transform
                         )
                     elif v_entity.dxftype() == "ARC":
-                        self._arc_to_ops(
-                            ops, v_entity, scale, tx, ty, transform
+                        self._arc_to_geo(
+                            geo, v_entity, scale, tx, ty, transform
                         )
                     elif v_entity.dxftype() in ("SPLINE", "ELLIPSE"):
-                        self._poly_approx_to_ops(
-                            ops, v_entity, scale, tx, ty, transform
+                        self._poly_approx_to_geo(
+                            geo, v_entity, scale, tx, ty, transform
                         )
         except Exception:
             pass
 
-    def _text_to_ops(
+    def _text_to_geo(
         self,
-        ops: Ops,
+        geo: Geometry,
         entity,
         scale: float,
         tx: float,
@@ -429,6 +441,6 @@ class DxfImporter(Importer):
         try:
             for path in text2path.make_paths_from_entity(entity):
                 points = list(path.flattening(distance=0.01))
-                self._poly_to_ops(ops, points, False, scale, tx, ty, transform)
+                self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
         except Exception:
             pass

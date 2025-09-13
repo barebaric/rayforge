@@ -4,6 +4,7 @@ from typing import Optional, TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
 
+from ...core.ops import Ops
 from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ..base_renderer import Renderer
 
@@ -15,20 +16,21 @@ CAIRO_MAX_DIMENSION = 16384
 class OpsRenderer(Renderer):
     """
     A stateless, shared renderer for any WorkPiece that contains vector
-    data in its `source_ops` attribute. It uses the CairoEncoder to draw
-    the ops.
+    data in its `vectors` attribute. It uses the CairoEncoder to draw
+    the geometry.
     """
 
     def get_natural_size(
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
         """
-        For vector ops, the natural size is the bounding box of the geometry.
+        For vector geometry, the natural size is the bounding box of
+        the geometry.
         """
-        if not workpiece.source_ops or workpiece.source_ops.is_empty():
+        if not workpiece.vectors or workpiece.vectors.is_empty():
             return None
 
-        min_x, min_y, max_x, max_y = workpiece.source_ops.rect()
+        min_x, min_y, max_x, max_y = workpiece.vectors.rect()
         width = max_x - min_x
         height = max_y - min_y
         return width, height
@@ -36,7 +38,7 @@ class OpsRenderer(Renderer):
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        if not workpiece.source_ops or workpiece.source_ops.is_empty():
+        if not workpiece.vectors or workpiece.vectors.is_empty():
             return None
 
         render_width, render_height = width, height
@@ -66,25 +68,30 @@ class OpsRenderer(Renderer):
         ctx.paint()
         ctx.set_source_rgb(0, 0, 0)  # Black lines
 
-        # Calculate scaling to fit the workpiece's local ops into the surface
-        ops_min_x, ops_min_y, ops_max_x, ops_max_y = (
-            workpiece.source_ops.rect()
+        # Calculate scaling to fit the workpiece's local geometry into
+        # the surface
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = (
+            workpiece.vectors.rect()
         )
-        ops_width = ops_max_x - ops_min_x
-        ops_height = ops_max_y - ops_min_y
+        geo_width = geo_max_x - geo_min_x
+        geo_height = geo_max_y - geo_min_y
 
-        if ops_width <= 1e-9 or ops_height <= 1e-9:
-            return surface  # Return transparent surface if ops have no size
+        if geo_width <= 1e-9 or geo_height <= 1e-9:
+            return surface  # Return transparent surface if no size
 
-        scale_x = render_width / ops_width
-        scale_y = render_height / ops_height
+        scale_x = render_width / geo_width
+        scale_y = render_height / geo_height
 
-        # Translate the ops so their top-left corner is at the origin
-        ctx.translate(-ops_min_x * scale_x, -ops_min_y * scale_y)
+        # Translate the geometry so its top-left corner is at the origin
+        ctx.translate(-geo_min_x * scale_x, -geo_min_y * scale_y)
+
+        # The CairoEncoder expects an Ops object, so we convert our pure
+        # geometry into a temporary Ops object for rendering.
+        render_ops = Ops.from_geometry(workpiece.vectors)
 
         encoder = CairoEncoder()
         encoder.encode(
-            ops=workpiece.source_ops,
+            ops=render_ops,
             ctx=ctx,
             scale=(scale_x, scale_y),
             cut_color=(0, 0, 0),

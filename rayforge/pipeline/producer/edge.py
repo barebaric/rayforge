@@ -22,12 +22,12 @@ class EdgeTracer(PotraceProducer):
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
-        # If the workpiece has source_ops, the "Edge" strategy is to simply
+        # If the workpiece has geometry, the "Edge" strategy is to simply
         # return them unmodified.
-        if workpiece and workpiece.source_ops:
-            return workpiece.source_ops
+        if workpiece and workpiece.vectors:
+            return Ops.from_geometry(workpiece.vectors)
 
-        # If no source_ops, fall back to raster tracing the surface.
+        # If no geometry, fall back to raster tracing the surface.
         return super().run(
             laser,
             surface,

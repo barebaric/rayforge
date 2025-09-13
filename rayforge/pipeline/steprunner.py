@@ -129,9 +129,9 @@ def run_step_in_subprocess(
             return
 
         # Path 1: True vector source (e.g., SVG).
-        if workpiece.source_ops:
+        if workpiece.vectors:
             logger.debug(
-                "Workpiece has source_ops. Using direct vector processing."
+                "Workpiece has vectors. Using direct vector processing."
             )
             geometry_ops = _trace_and_modify_surface(surface=None, scaler=None)
             # Return the unscaled ops along with their "natural" dimensions.

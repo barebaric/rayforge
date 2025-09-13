@@ -2,9 +2,21 @@ from __future__ import annotations
 import math
 import logging
 from copy import copy, deepcopy
-from typing import Iterator, List, Optional, Tuple, Generator, Dict, Any
+from typing import (
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Generator,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+)
 from dataclasses import dataclass
 import numpy as np
+
+if TYPE_CHECKING:
+    from .geometry import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +250,27 @@ class Ops:
                     "Skipping unknown command type during deserialization:"
                     f" {cmd_type}"
                 )
+        return new_ops
+
+    @classmethod
+    def from_geometry(cls, geometry: Geometry) -> "Ops":
+        """
+        Creates an Ops object from a Geometry object, converting its path.
+        """
+        from . import geometry as geo_module
+
+        new_ops = cls()
+        for cmd in geometry.commands:
+            # Explicitly convert from geometry.Command to ops.Command
+            if isinstance(cmd, geo_module.MoveToCommand):
+                new_ops.add(MoveToCommand(cmd.end))
+            elif isinstance(cmd, geo_module.LineToCommand):
+                new_ops.add(LineToCommand(cmd.end))
+            elif isinstance(cmd, geo_module.ArcToCommand):
+                new_ops.add(
+                    ArcToCommand(cmd.end, cmd.center_offset, cmd.clockwise)
+                )
+        new_ops.last_move_to = geometry.last_move_to
         return new_ops
 
     def __iter__(self) -> Iterator[Command]:

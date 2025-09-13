@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class DxfRenderer(Renderer):
     """
     A renderer for DXF workpieces that can contain both vector operations
-    (source_ops) for toolpaths and special data (workpiece.data) for filled
+    (geometry) for toolpaths and special data (workpiece.data) for filled
     shapes like SOLID entities.
     """
 
@@ -20,18 +20,18 @@ class DxfRenderer(Renderer):
     ) -> Optional[Tuple[float, float]]:
         """
         The natural size is determined by the bounding box of the toolpaths
-        (source_ops), as this represents the machinable area.
+        (geometry), as this represents the machinable area.
         """
         return OPS_RENDERER.get_natural_size(workpiece)
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        # First, render the outlines from source_ops using the standard
+        # First, render the outlines from geometry using the standard
         # OPS_RENDERER. This gives us a surface with the correct dimensions
         # and transformations for the outlines.
         surface = OPS_RENDERER.render_to_pixels(workpiece, width, height)
-        if not surface or not workpiece.source_ops:
+        if not surface or not workpiece.vectors:
             return None
 
         # Now, check for special renderer data (for filled solids)
@@ -47,7 +47,7 @@ class DxfRenderer(Renderer):
                     # OPS_RENDERER used to draw the outlines, so the fills
                     # align perfectly.
                     ops_min_x, ops_min_y, ops_max_x, ops_max_y = (
-                        workpiece.source_ops.rect()
+                        workpiece.vectors.rect()
                     )
                     ops_width = ops_max_x - ops_min_x
                     ops_height = ops_max_y - ops_min_y
