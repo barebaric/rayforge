@@ -78,14 +78,14 @@ fi
 echo "--- Creating upstream tarball with vendored wheels ---"
 rsync -a \
     --exclude='.git' \
---exclude='.pixi' \
---exclude='.venv' \
+    --exclude='.pixi' \
+    --exclude='.venv' \
     --exclude='dist' \
---exclude='build' \
---exclude='repo' \
+    --exclude='build' \
+    --exclude='repo' \
     --exclude='*.egg-info' \
---exclude='__pycache__' \
---exclude='debian' \
+    --exclude='__pycache__' \
+    --exclude='debian' \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
 TARBALL_NAME="rayforge_${UPSTREAM_VERSION}.orig.tar.gz"
@@ -100,24 +100,33 @@ cp -r "$ORIG_DIR/debian" "$TMP_SRC_DIR/"
 cd "$TMP_SRC_DIR"
 
 MAINTAINER_INFO=$(grep '^Maintainer:' debian/control | head -n 1 | sed 's/Maintainer: //')
+DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed -E 's/.*<(.*)>.*/\1/')
+DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
 # The `dch` commands are safe to run in the current environment
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
+    
+    # Use env -i to get a clean environment, and pass in ONLY the variables we need.
+    env -i \
+        HOME="$HOME" \
+        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+        DEBEMAIL="$DEBEMAIL" \
+        DEBFULLNAME="$DEBFULLNAME" \
+        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
+        dpkg-buildpackage -S -us -uc
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-fi
 
-# Export the version for setuptools-git-versioning to find.
-export SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION"
-# Unset linker paths to prevent contamination from the pixi environment.
-unset LD_LIBRARY_PATH PKG_CONFIG_PATH
-
-if [[ "${1:-}" == "--source" ]]; then
-    dpkg-buildpackage -S -us -uc
-else
-    dpkg-buildpackage -b -us -uc
+    # Use env -i to get a clean environment, and pass in ONLY the variables we need.
+    env -i \
+        HOME="$HOME" \
+        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+        DEBEMAIL="$DEBEMAIL" \
+        DEBFULLNAME="$DEBFULLNAME" \
+        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
+        dpkg-buildpackage -b -us -uc
 fi
 
 # --- 5. Copy Artifacts ---
