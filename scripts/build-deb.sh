@@ -114,7 +114,6 @@ if [[ "${1:-}" == "--source" ]]; then
         PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
         DEBEMAIL="$DEBEMAIL" \
         DEBFULLNAME="$DEBFULLNAME" \
-        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
         dpkg-buildpackage -S -us -uc
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
@@ -125,7 +124,6 @@ else
         PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
         DEBEMAIL="$DEBEMAIL" \
         DEBFULLNAME="$DEBFULLNAME" \
-        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
         dpkg-buildpackage -b -us -uc
 fi
 
