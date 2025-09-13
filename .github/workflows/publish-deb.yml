@@ -41,6 +41,7 @@ jobs:
           python3-numpy
           python3-poetry-core
           cython3
+          pkg-config
 
       - name: Import GPG key
         env:
