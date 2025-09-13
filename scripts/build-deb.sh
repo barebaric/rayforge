@@ -68,7 +68,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     fi
     filename=$(basename "$source_url")
     echo "Downloading: $filename"
-    # IMPORTANT: The output path is now vendor/sdist
+# IMPORTANT: The output path is now vendor/sdist
     curl -sSL "$source_url" -o "${TMP_SRC_DIR}/vendor/sdist/${filename}"
 done < "$REQUIREMENTS_FILE"
 
@@ -81,14 +81,14 @@ fi
 echo "--- Creating upstream tarball with vendored wheels ---"
 rsync -a \
     --exclude='.git' \
-    --exclude='.pixi' \
-    --exclude='.venv' \
+--exclude='.pixi' \
+--exclude='.venv' \
     --exclude='dist' \
-    --exclude='build' \
-    --exclude='repo' \
+--exclude='build' \
+--exclude='repo' \
     --exclude='*.egg-info' \
-    --exclude='__pycache__' \
-    --exclude='debian' \
+--exclude='__pycache__' \
+--exclude='debian' \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
 TARBALL_NAME="rayforge_${UPSTREAM_VERSION}.orig.tar.gz"
@@ -110,17 +110,6 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-    
-    # --- THIS IS THE CRITICAL FIX ---
-    # Run the build in a pristine environment to avoid contamination from pixi
-    env -i \
-        HOME="$HOME" \
-        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
-        DEBEMAIL="$DEBEMAIL" \
-        DEBFULLNAME="$DEBFULLNAME" \
-        dpkg-buildpackage -S -us -uc
-else
-    dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
 
     # --- THIS IS THE CRITICAL FIX ---
     # Run the build in a pristine environment to avoid contamination from pixi
@@ -129,6 +118,16 @@ else
         PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
         DEBEMAIL="$DEBEMAIL" \
         DEBFULLNAME="$DEBFULLNAME" \
+        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
+        dpkg-buildpackage -S -us -uc
+else
+    dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
+    env -i \
+        HOME="$HOME" \
+        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+        DEBEMAIL="$DEBEMAIL" \
+        DEBFULLNAME="$DEBFULLNAME" \
+        SETUPTOOLS_GIT_VERSIONING_VERSION="$UPSTREAM_VERSION" \
         dpkg-buildpackage -b -us -uc
 fi
 
