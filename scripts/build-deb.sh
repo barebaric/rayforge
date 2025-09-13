@@ -81,14 +81,14 @@ fi
 echo "--- Creating upstream tarball with vendored wheels ---"
 rsync -a \
     --exclude='.git' \
---exclude='.pixi' \
---exclude='.venv' \
+    --exclude='.pixi' \
+    --exclude='.venv' \
     --exclude='dist' \
---exclude='build' \
---exclude='repo' \
+    --exclude='build' \
+    --exclude='repo' \
     --exclude='*.egg-info' \
---exclude='__pycache__' \
---exclude='debian' \
+    --exclude='__pycache__' \
+    --exclude='debian' \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
 TARBALL_NAME="rayforge_${UPSTREAM_VERSION}.orig.tar.gz"
@@ -134,4 +134,4 @@ fi
 # --- 5. Copy Artifacts ---
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
-cp -v "$BUILD_DIR"/rayforge_* "$ORIG_DIR/dist/"
+cp -v "$BUILD_DIR"/rayforge* "$ORIG_DIR/dist/"
