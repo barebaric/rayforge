@@ -141,7 +141,7 @@ class GroupElement(ShrinkWrapGroup):
             if isinstance(item_data, WorkPiece):
                 child_elem = WorkPieceView(
                     workpiece=item_data,
-                    ops_generator=work_surface.ops_generator,
+                    ops_generator=work_surface.editor.ops_generator,
                     canvas=self.canvas,
                     selectable=False,  # Children are not selectable
                 )
