@@ -1,4 +1,5 @@
 import json
+import sys
 import time
 import threading
 from typing import Optional, List, Tuple, Dict, Sequence, Any
@@ -26,6 +27,22 @@ class VideoCaptureDevice:
         else:
             device_id_int = self.device_id
 
+        # On Linux, first attempt to use the more stable V4L2 backend.
+        if sys.platform.startswith('linux'):
+            self.cap = cv2.VideoCapture(device_id_int, cv2.CAP_V4L2)
+            if self.cap.isOpened():
+                # V4L2 succeeded, we can return immediately.
+                return self.cap
+            else:
+                # V4L2 failed, release the handle and fall through to the
+                # default.
+                logger.warning(
+                    "Failed to open camera with V4L2 backend. "
+                    "Falling back to default."
+                )
+                self.cap.release()
+
+        # For non-Linux platforms, or as a fallback for Linux.
         self.cap = cv2.VideoCapture(device_id_int)
         if not self.cap.isOpened():
             raise IOError(

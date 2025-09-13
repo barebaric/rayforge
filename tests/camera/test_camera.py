@@ -87,7 +87,7 @@ class TestCamera(unittest.TestCase):
         try:
 
             class MockVideoCapture:
-                def __init__(self, device):
+                def __init__(self, device, backend=None):
                     self.device = device
                     self.opened = True
 
