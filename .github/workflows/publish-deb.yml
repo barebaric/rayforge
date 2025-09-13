@@ -1,3 +1,5 @@
+# .github/workflows/publish-to-ppa.yml
+
 name: Publish .deb to PPA
 
 on:
@@ -61,16 +63,12 @@ jobs:
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
-      - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
-        with:
-          pixi-version: latest
-
       - name: Build BINARY package for testing
         id: build_binary
         run: |
           # Run the build script WITHOUT --source to produce a .deb file
-          pixi run build-deb
+          chmod +x ./scripts/build-deb.sh
+          ./scripts/build-deb.sh
           # Find the name of the generated .deb file and make it available to other steps
           DEB_FILE=$(find dist -name "*.deb" -type f | head -n 1)
           echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
@@ -98,7 +96,7 @@ jobs:
         run: rm -rf dist/*
 
       - name: Build SOURCE package for PPA upload
-        run: pixi run build-deb-source
+        run: ./scripts/build-deb.sh --source
 
       - name: Sign source package
         env:
