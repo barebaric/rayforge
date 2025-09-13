@@ -270,6 +270,7 @@ class TaskManager:
         )
         context.task = task
         state: Dict[str, Any] = {"result": None, "error": None}
+        clean_shutdown = False
 
         try:
             # Synchronous monitoring loop
@@ -284,15 +285,21 @@ class TaskManager:
             self._drain_process_queue(queue, context, state)  # Final drain
             self._check_process_result(process, state, task.key)
 
+            # If we reach here, the process exited cleanly with a result.
+            clean_shutdown = True
             task._status = "completed"
             task._progress = 1.0
             task._task_result = state.get("result")
 
         except CancelledError as e:
+            # Cancellation is a controlled, clean shutdown.
+            clean_shutdown = True
             logger.warning(f"Task {task.key}: Process task was cancelled: {e}")
             task._status = "canceled"
             task._task_exception = e
         except Exception as e:
+            # Any other exception (e.g. from non-zero exit code) is an
+            # uncontrolled shutdown.
             logger.error(
                 f"Task {task.key}: Process monitor thread failed.",
                 exc_info=True,
@@ -300,33 +307,30 @@ class TaskManager:
             task._status = "failed"
             task._task_exception = e
         finally:
-            # 1. Forcefully terminate the process if it's still alive. This
-            #    breaks any potential pipe deadlocks by closing the child's
-            #    end of the communication pipe.
+            # The cleanup sequence is critical to avoid race conditions.
             if process.is_alive():
-                logger.warning(
-                    "Task %s: Terminating subprocess %s to prevent deadlock.",
-                    task.key,
-                    process.pid,
-                )
                 process.terminate()
 
-            # 2. Now that the process is terminated (or finished on its own),
-            #    it is safe to clean up the communication queue. The queue's
-            #    internal feeder thread will no longer block waiting for data.
-            try:
-                queue.close()
-                queue.join_thread()
-            except (OSError, BrokenPipeError, EOFError):
-                # These errors are expected if the process was killed.
-                pass
+            # We must always join the process to allow the OS to reap it.
+            process.join(timeout=1.0)
 
-            # 3. Finally, it is safe to join the process to allow the OS to
-            #    clean up its resources. This will no longer hang.
-            self._cleanup_process_resources(process, task.key)
+            # For a controlled shutdown (success or cancellation), we are
+            # responsible for cleaning up the queue and process handle.
+            if clean_shutdown:
+                try:
+                    queue.close()
+                    queue.join_thread()
+                except (OSError, BrokenPipeError, EOFError):
+                    pass  # Expected errors if process was killed.
+                process.close()
+            # For an uncontrolled shutdown (crash/unexpected exit), we do
+            # NOT touch the queue or process.close(). The internal Python
+            # ResourceTracker is responsible, and interfering will cause a
+            # race condition.
 
-            # 4. Perform the rest of the task state cleanup.
+            # Perform the rest of the task state cleanup.
             context.flush()
+
             # Manually trigger final status update, since run() wasn't used
             task.status_changed.send(task)
             self._cleanup_task(task)
@@ -421,30 +425,6 @@ class TaskManager:
                 f"unexpectedly with exit code {process.exitcode}."
             )
             raise Exception(msg)
-
-    def _cleanup_process_resources(
-        self, process: SpawnProcess, task_key: Any
-    ) -> None:
-        """
-        Ensure a subprocess is terminated and its resources are closed.
-
-        Args:
-            process: The multiprocessing.Process to clean up.
-            task_key: The key of the task for logging.
-        """
-        if process.is_alive():
-            # The process should have been terminated already in the finally
-            # block. If it's still alive, something is very wrong. Kill it.
-            logger.error(
-                "Task %s: Subprocess %s did not die after terminate. Killing.",
-                task_key,
-                process.pid,
-            )
-            process.kill()
-
-        process.join(timeout=1.0)  # Wait for the process to be reaped
-        process.close()
-        logger.debug("Task %s: Subprocess resources cleaned up.", task_key)
 
     def _cleanup_task(self, task: Task) -> None:
         """
