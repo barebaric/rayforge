@@ -11,8 +11,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# === All Git operations happen HERE, in the original repository ===
-
 # --- 1. Dynamic Version Detection ---
 echo "--- Determining version from Git repository ---"
 if [[ -n "$GITHUB_REF_NAME" && "$GITHUB_REF_TYPE" == "tag" ]]; then
@@ -68,7 +66,6 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     fi
     filename=$(basename "$source_url")
     echo "Downloading: $filename"
-# IMPORTANT: The output path is now vendor/sdist
     curl -sSL "$source_url" -o "${TMP_SRC_DIR}/vendor/sdist/${filename}"
 done < "$REQUIREMENTS_FILE"
 
@@ -81,14 +78,14 @@ fi
 echo "--- Creating upstream tarball with vendored wheels ---"
 rsync -a \
     --exclude='.git' \
-    --exclude='.pixi' \
-    --exclude='.venv' \
+--exclude='.pixi' \
+--exclude='.venv' \
     --exclude='dist' \
-    --exclude='build' \
-    --exclude='repo' \
+--exclude='build' \
+--exclude='repo' \
     --exclude='*.egg-info' \
-    --exclude='__pycache__' \
-    --exclude='debian' \
+--exclude='__pycache__' \
+--exclude='debian' \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
 TARBALL_NAME="rayforge_${UPSTREAM_VERSION}.orig.tar.gz"
@@ -110,9 +107,6 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 if [[ "${1:-}" == "--source" ]]; then
     TARGET_DISTRIBUTION="jammy"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-
-    # --- THIS IS THE CRITICAL FIX ---
-    # Run the build in a pristine environment to avoid contamination from pixi
     env -i \
         HOME="$HOME" \
         PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
@@ -134,4 +128,4 @@ fi
 # --- 5. Copy Artifacts ---
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
-cp -v "$BUILD_DIR"/rayforge* "$ORIG_DIR/dist/"
+find "$BUILD_DIR" -maxdepth 1 -name 'rayforge*' -type f -exec cp -v {} "$ORIG_DIR/dist/" \;
