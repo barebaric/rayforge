@@ -52,6 +52,7 @@ class Camera:
         self._transparency: float = 0.2
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
+        self._settings_dirty: bool = True  # Flag to re-apply settings
 
         # Properties for camera calibration
         # How to determine calibration values:
@@ -210,6 +211,7 @@ class Camera:
             f"{value}"
         )
         self._white_balance = value
+        self._settings_dirty = True
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -233,6 +235,7 @@ class Camera:
             f"Camera contrast changed from {self._contrast} to {value}"
         )
         self._contrast = value
+        self._settings_dirty = True
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -256,6 +259,7 @@ class Camera:
             f"Camera brightness changed from {self._brightness} to {value}"
         )
         self._brightness = value
+        self._settings_dirty = True
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -510,13 +514,9 @@ class Camera:
             logger.error(f"Failed to apply perspective warp: {e}")
             return None
 
-    def _read_frame_and_update_data(self, cap: cv2.VideoCapture):
-        """
-        Reads a single frame from the given VideoCapture object,
-        updates camera data, and emits the image_captured signal.
-        """
+    def _apply_settings(self, cap: cv2.VideoCapture):
+        """Applies the current settings to the VideoCapture object."""
         try:
-            # Apply white balance, contrast, and brightness settings
             if self.white_balance is None:
                 cap.set(cv2.CAP_PROP_AUTO_WB, 1)  # Enable auto white balance
             else:
@@ -525,6 +525,18 @@ class Camera:
             cap.set(cv2.CAP_PROP_CONTRAST, self.contrast)
             cap.set(cv2.CAP_PROP_BRIGHTNESS, self.brightness)
 
+            self._settings_dirty = False
+            logger.debug("Applied camera hardware settings.")
+        except Exception as e:
+            # We log as a warning because the stream may still work
+            logger.warning(f"Could not apply one or more camera settings: {e}")
+
+    def _read_frame_and_update_data(self, cap: cv2.VideoCapture):
+        """
+        Reads a single frame from the given VideoCapture object,
+        updates camera data, and emits the image_captured signal.
+        """
+        try:
             ret, frame = cap.read()
             if not ret:
                 logger.warning("Failed to capture frame from camera.")
@@ -550,8 +562,12 @@ class Camera:
                     logger.info(
                         f"Camera {self.device_id} opened successfully."
                     )
+                    # Force settings to be applied on first open
+                    self._settings_dirty = True
                     # Loop to read frames from the open device
                     while self._running:
+                        if self._settings_dirty:
+                            self._apply_settings(cap)
                         self._read_frame_and_update_data(cap)
                         # Use time.sleep for portability in a non-GUI thread
                         time.sleep(1 / 30)  # ~30 FPS
@@ -605,6 +621,8 @@ class Camera:
         """
         try:
             with VideoCaptureDevice(self.device_id) as cap:
+                # Apply settings before capturing the single frame
+                self._apply_settings(cap)
                 self._read_frame_and_update_data(cap)
         except IOError as e:
             logger.error(f"Error capturing image: {e}")
