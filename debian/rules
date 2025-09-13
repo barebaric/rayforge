@@ -36,7 +36,7 @@ override_dh_auto_install:
 		--find-links=file://$(CURDIR)/vendor/sdist \
 		--target=$(CURDIR)/debian/rayforge/usr/lib/python3/dist-packages \
 		--upgrade \
-		pypotrace;
+		pypotrace pyvips
 
 override_dh_auto_test:
 	echo "Skipping tests during Debian build; they are run in the dedicated CI test job."
