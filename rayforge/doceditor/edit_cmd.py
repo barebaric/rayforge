@@ -5,6 +5,7 @@ from ..core.item import DocItem
 from ..core.group import Group
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
+from ..core.stocklayer import StockLayer
 from ..undo import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
@@ -96,6 +97,9 @@ class EditCmd:
         history = self._editor.history_manager
         newly_pasted_items = []
 
+        active_layer_was_stock = isinstance(doc.active_layer, StockLayer)
+        target_layer = self._editor.default_workpiece_layer
+
         with history.transaction(_("Paste item(s)")) as t:
             offset_x = self._paste_increment_mm[0] * self._paste_counter
             offset_y = self._paste_increment_mm[1] * self._paste_counter
@@ -125,7 +129,7 @@ class EditCmd:
                 )
 
                 command = ListItemCommand(
-                    owner_obj=doc.active_layer,
+                    owner_obj=target_layer,
                     item=new_item,
                     undo_command="remove_child",
                     redo_command="add_child",
@@ -135,6 +139,15 @@ class EditCmd:
 
         # Increment counter for the *next* paste
         self._paste_counter += 1
+
+        if active_layer_was_stock:
+            self._editor.notification_requested.send(
+                self,
+                message=_("Items pasted onto layer '{layer_name}'").format(
+                    layer_name=target_layer.name
+                ),
+            )
+
         return newly_pasted_items
 
     def duplicate_items(self, items: List[DocItem]) -> List[DocItem]:
@@ -151,6 +164,9 @@ class EditCmd:
         doc = self._editor.doc
         history = self._editor.history_manager
         newly_duplicated_items = []
+
+        active_layer_was_stock = isinstance(doc.active_layer, StockLayer)
+        target_layer = self._editor.default_workpiece_layer
 
         top_level_items = self._get_top_level_items(items)
 
@@ -176,13 +192,21 @@ class EditCmd:
                 # has the correct matrix.
 
                 command = ListItemCommand(
-                    owner_obj=doc.active_layer,
+                    owner_obj=target_layer,
                     item=new_item,
                     undo_command="remove_child",
                     redo_command="add_child",
                     name=_("Duplicate item"),
                 )
                 t.execute(command)
+
+        if active_layer_was_stock:
+            self._editor.notification_requested.send(
+                self,
+                message=_("Items duplicated onto layer '{layer_name}'").format(
+                    layer_name=target_layer.name
+                ),
+            )
 
         return newly_duplicated_items
 
@@ -229,8 +253,7 @@ class EditCmd:
                 # A layer is considered "not empty" if it has any children
                 # besides its mandatory workflow.
                 if any(
-                    not isinstance(child, Workflow)
-                    for child in layer.children
+                    not isinstance(child, Workflow) for child in layer.children
                 ):
                     command = ReorderListCommand(
                         target_obj=layer,

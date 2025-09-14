@@ -10,6 +10,9 @@ from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
+from .core.layer import Layer
+from .core.stock import StockItem
+from .core.stocklayer import StockLayer
 from .pipeline.steps import (
     create_contour_step,
     create_outline_step,
@@ -19,6 +22,7 @@ from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
+from .workbench.elements.stock import StockElement
 from .doceditor.ui.layer_list import LayerListView
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
@@ -118,15 +122,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title(_("Rayforge"))
         self._current_machine: Optional[Machine] = None  # For signal handling
 
-        # The main content box
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
-        self.toast_overlay.set_child(vbox)
-
-        # Set the ToastOverlay as the window's content
         self.set_content(self.toast_overlay)
+
+        # The main content box is now the child of the ToastOverlay
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.toast_overlay.set_child(vbox)
 
         # Create the central document editor. This now owns the Doc and
         # OpsGenerator.
@@ -219,6 +221,11 @@ class MainWindow(Adw.ApplicationWindow):
         doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.history_manager.changed.connect(self.on_history_changed)
 
+        # Connect editor signals
+        self.doc_editor.notification_requested.connect(
+            self._on_editor_notification
+        )
+
         self.surface = WorkSurface(
             editor=self.doc_editor,
             machine=config.machine,
@@ -269,6 +276,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a vertical box to organize the content within the
         # ScrolledWindow.
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        right_pane_box.set_size_request(400, -1)
         right_pane_scrolled_window.set_child(right_pane_box)
 
         # Add the Layer list view
@@ -277,7 +285,8 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.append(self.layer_list_view)
 
         # The WorkflowView will be updated when a layer is activated.
-        initial_workflow = self.doc_editor.doc.layers[0].workflow
+        initial_workflow = self.doc_editor.doc.active_layer.workflow
+        assert initial_workflow, "Initial active layer must have a workflow"
         step_factories: List[Callable] = [
             create_contour_step,
             create_outline_step,
@@ -286,7 +295,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.workflowview = WorkflowView(
             initial_workflow, step_factories=step_factories
         )
-        self.workflowview.set_size_request(400, -1)
         self.workflowview.set_margin_top(20)
         self.workflowview.set_margin_end(12)
         right_pane_box.append(self.workflowview)
@@ -373,15 +381,26 @@ class MainWindow(Adw.ApplicationWindow):
     def _initialize_document(self):
         """
         Adds required initial state to a new document, such as a default
-        step.
+        step to the first workpiece layer.
         """
         doc = self.doc_editor.doc
         if not doc.layers:
             return
 
-        first_layer = doc.layers[0]
-        if not first_layer.workflow.has_steps():
-            workflow = first_layer.workflow
+        # Find the first non-stock, "workpiece" layer to add the default
+        # step to.
+        first_workpiece_layer = None
+        for layer in doc.layers:
+            if not isinstance(layer, StockLayer):
+                first_workpiece_layer = layer
+                break  # Found the first one
+
+        if (
+            first_workpiece_layer
+            and first_workpiece_layer.workflow
+            and not first_workpiece_layer.workflow.has_steps()
+        ):
+            workflow = first_workpiece_layer.workflow
             default_step = create_contour_step()
             workflow.add_step(default_step)
             logger.info("Added default Contour step to initial document.")
@@ -460,16 +479,52 @@ class MainWindow(Adw.ApplicationWindow):
         # Synchronize UI elements that depend on the document model
         self.surface.update_from_doc()
         doc = self.doc_editor.doc
-        if doc.active_layer:
+        if doc.active_layer and doc.active_layer.workflow:
             self.workflowview.set_workflow(doc.active_layer.workflow)
+
+        # Sync the selectability of stock items based on active layer
+        self._sync_element_selectability()
 
         # Update button sensitivity and other state
         self._update_actions_and_ui()
 
+    def _sync_element_selectability(self):
+        """
+        Updates the 'selectable' property of StockElements on the canvas
+        based on which layer is currently active.
+        """
+        # Find all StockElement instances currently on the canvas
+        for element in self.surface.find_by_type(StockElement):
+            stock_item = cast(StockItem, element.data)
+            # An item is selectable if its parent layer is the active one
+            layer = cast(Layer, stock_item.parent)
+            is_selectable = layer and layer.active
+            element.selectable = is_selectable
+
     def _on_active_layer_changed(self, sender):
-        """Resets the paste counter when the active layer changes."""
-        logger.debug("Active layer changed, paste counter reset.")
+        """
+        Handles activation of a new layer. Updates the workflow view and
+        resets the paste counter.
+        """
+        logger.debug("Active layer changed, updating UI.")
+        # Reset the paste counter to ensure the next paste is in-place.
         self.doc_editor.edit.reset_paste_counter()
+
+        # Get the newly activated layer from the document
+        activated_layer = self.doc_editor.doc.active_layer
+        has_workflow = activated_layer.workflow is not None
+
+        # Show/hide the workflow view based on the layer type
+        self.workflowview.set_visible(has_workflow)
+
+        if has_workflow:
+            # For regular layers, update the workflow view with the
+            # new workflow
+            self.workflowview.set_workflow(activated_layer.workflow)
+
+    def _on_editor_notification(self, sender, message: str):
+        """Shows a toast when requested by the DocEditor."""
+        self.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def _on_selection_changed(
         self,

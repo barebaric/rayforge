@@ -94,6 +94,7 @@ class Canvas(Gtk.DrawingArea):
         self._shearing: bool = False
         self._was_dragging: bool = False
         self._transforming_elements: List[CanvasElement] = []
+        self.edit_context: Optional[CanvasElement] = None
 
         # --- Rotation State ---
         self._drag_start_angle: float = 0.0
@@ -173,7 +174,7 @@ class Canvas(Gtk.DrawingArea):
         self._drag_gesture = Gtk.GestureDrag()
         self._drag_gesture.set_button(Gdk.BUTTON_PRIMARY)
         self._drag_gesture.connect("drag-update", self.on_mouse_drag)
-        self._drag_gesture.connect("drag-end", self.on_button_release)
+        self._drag_gesture.connect("drag-end", self.on_drag_end)
         self.add_controller(self._drag_gesture)
 
         self._key_controller = Gtk.EventControllerKey.new()
@@ -196,12 +197,21 @@ class Canvas(Gtk.DrawingArea):
         bounds = Graphene.Rect().init(0, 0, width, height)
         ctx = snapshot.append_cairo(bounds)
 
-        # Render world content first
         # Apply the view transform to render all elements in world space.
         ctx.save()
         cairo_matrix = cairo.Matrix(*self.view_transform.for_cairo())
         ctx.transform(cairo_matrix)
-        self.root.render(ctx)
+        if self.edit_context:
+            # 1. Render everything with low alpha
+            ctx.push_group()
+            self.root.render(ctx)
+            ctx.pop_group_to_source()
+            ctx.paint_with_alpha(0.3)
+            # 2. Re-render the edit context and its children on top at full
+            #    alpha
+            self.edit_context.render(ctx)
+        else:
+            self.root.render(ctx)
         ctx.restore()
 
         # After restoring the context, we are now in pure pixel space.
@@ -221,6 +231,10 @@ class Canvas(Gtk.DrawingArea):
         """Renders all non-content overlays in pixel space."""
         # Draw selection frames and handles on top of everything.
         self._render_selection_overlay(ctx, self.root)
+
+        # If in edit mode, the context element draws its own special overlay.
+        if self.edit_context:
+            self.edit_context.draw_edit_overlay(ctx)
 
         # Allow elements to draw their own custom overlays (e.g., previews)
         self._render_element_overlays(ctx, self.root)
@@ -272,7 +286,14 @@ class Canvas(Gtk.DrawingArea):
         self, ctx: cairo.Context, elem: CanvasElement
     ):
         """Draws the interactive handles for a single selected element."""
-        if self._moving or self._resizing or self._rotating or self._shearing:
+        # Hide standard handles if transforming or if in edit mode.
+        if (
+            self._moving
+            or self._resizing
+            or self._rotating
+            or self._shearing
+            or elem is self.edit_context
+        ):
             return
 
         screen_transform = self.view_transform @ elem.get_world_transform()
@@ -412,6 +433,24 @@ class Canvas(Gtk.DrawingArea):
         world_x, world_y = self._get_world_coords(x, y)
         self._update_hover_state(world_x, world_y)
 
+        # Edit mode logic
+        if self.edit_context:
+            handled = self.edit_context.handle_edit_press(world_x, world_y)
+            # If press was not handled by element, check for background click
+            if not handled and self._hovered_elem is None:
+                self.leave_edit_mode()
+            self.queue_draw()
+            return  # Stop further processing in edit mode
+
+        # Double-click to enter edit mode
+        if (
+            n_press == 2
+            and self._hovered_elem
+            and self._hovered_elem.is_editable
+        ):
+            self.enter_edit_mode(self._hovered_elem)
+            return
+
         self._active_region = self._hovered_region
         hit = self._hovered_elem
         self._framing_selection = False
@@ -442,8 +481,8 @@ class Canvas(Gtk.DrawingArea):
                     selection_changed = True
                 self._active_elem = hit
 
-        # This flag may be used in on_button_release to toggling the
-        # selection mode  .
+        # This flag may be used in on_click_released to toggling the
+        # selection mode.
         self._selection_just_changed = selection_changed
 
         if self._framing_selection:
@@ -492,6 +531,11 @@ class Canvas(Gtk.DrawingArea):
         is_dragging = (
             self._moving or self._resizing or self._rotating or self._shearing
         )
+
+        # If in edit mode, cursor logic is up to the element.
+        # For now, we do nothing and let it be default.
+        if self.edit_context:
+            return
 
         # Only update hover state when not dragging.
         if not is_dragging:
@@ -598,6 +642,24 @@ class Canvas(Gtk.DrawingArea):
         It now includes a threshold to distinguish between a click and a
         true drag.
         """
+        # Edit mode logic
+        if self.edit_context:
+            ok, start_x, start_y = self._drag_gesture.get_start_point()
+            if not ok:
+                return
+            current_x, current_y = start_x + offset_x, start_y + offset_y
+            start_world_x, start_world_y = self._get_world_coords(
+                start_x, start_y
+            )
+            current_world_x, current_world_y = self._get_world_coords(
+                current_x, current_y
+            )
+            world_dx = current_world_x - start_world_x
+            world_dy = current_world_y - start_world_y
+            self.edit_context.handle_edit_drag(world_dx, world_dy)
+            self.queue_draw()
+            return  # Stop further processing
+
         if self._framing_selection:
             self._update_framing_selection_from_drag(offset_x, offset_y)
             return
@@ -767,12 +829,20 @@ class Canvas(Gtk.DrawingArea):
             )
         )
 
-    def on_button_release(self, gesture, x: float, y: float):
+    def on_drag_end(self, gesture, offset_x: float, offset_y: float):
         """
-        Handles the end of a drag operation, finalizing transforms and
-        emitting the generic `transform_end` signal for subclasses to handle
-        model updates.
+        Handles the end of a drag operation, finalizing transforms.
         """
+        if self.edit_context:
+            ok, start_x, start_y = self._drag_gesture.get_start_point()
+            if ok:
+                world_x, world_y = self._get_world_coords(
+                    start_x + offset_x, start_y + offset_y
+                )
+                self.edit_context.handle_edit_release(world_x, world_y)
+            self.queue_draw()
+            return
+
         if self._framing_selection:
             self._selection_frame_rect = None
             self._selection_before_framing.clear()
@@ -798,8 +868,6 @@ class Canvas(Gtk.DrawingArea):
             self.shear_end.send(self, elements=elements)
 
         # Fire the single, generic signal for model synchronization.
-        # Subclasses connect to THIS signal to avoid polluting the
-        # generic canvas with application-specific logic.
         self.transform_end.send(self, elements=elements)
 
         # Recalculate group bounding box if it was being transformed
@@ -832,6 +900,9 @@ class Canvas(Gtk.DrawingArea):
         Handles the completion of a click that did not become a drag.
         This is where the selection mode is toggled.
         """
+        if self.edit_context:
+            return  # Clicks are fully handled by on_button_press in edit mode
+
         if self._framing_selection:
             self._framing_selection = False
             self._selection_frame_rect = None
@@ -879,11 +950,37 @@ class Canvas(Gtk.DrawingArea):
         # Reset the flag after the full click action is complete
         self._selection_just_changed = False
 
+    def enter_edit_mode(self, element: CanvasElement):
+        """Enters edit mode, focusing on a specific element."""
+        if not element.is_editable or self.edit_context is element:
+            return
+        if self.edit_context:
+            self.leave_edit_mode()
+
+        logger.debug(f"Entering edit mode for {element}")
+        self.unselect_all()  # Clear any existing selections
+        self.edit_context = element
+        element.selected = True  # Select the context element for visual cues
+        self._sync_selection_state()
+        element.on_edit_mode_enter()
+        self.set_cursor(Gdk.Cursor.new_from_name("default"))
+        self.queue_draw()
+
+    def leave_edit_mode(self):
+        """Exits the current edit mode."""
+        if not self.edit_context:
+            return
+        logger.debug(f"Leaving edit mode for {self.edit_context}")
+        self.edit_context.on_edit_mode_leave()
+        self.edit_context = None
+        self.unselect_all()
+        self.set_cursor(Gdk.Cursor.new_from_name("default"))
+        self.queue_draw()
+
     def _sync_selection_state(self):
         """
-        Synchronizes the internal selection state (active element, multi-
-        selection group) with the current `selected` flags on elements. It
-        fires signals but does NOT change the interaction mode.
+        Synchronizes the internal selection state with the current `selected`
+        flags on elements.
         """
         selected = self.get_selected_elements()
 
@@ -975,6 +1072,9 @@ class Canvas(Gtk.DrawingArea):
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
         """Handles key press events for modifiers and actions."""
+        if keyval == Gdk.KEY_Escape and self.edit_context:
+            self.leave_edit_mode()
+            return True
         if keyval in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_pressed = True
             return True

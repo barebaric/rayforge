@@ -12,7 +12,7 @@ from typing import (
     Set,
 )
 import cairo
-from gi.repository import GLib  # type: ignore
+from gi.repository import GLib
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
 from .region import ElementRegion, get_region_rect, check_region_hit
@@ -66,6 +66,7 @@ class CanvasElement:
         pixel_perfect_hit: bool = False,
         matrix: Optional[Matrix] = None,
         hit_distance: float = 0.0,
+        is_editable: bool = False,
     ):
         """
         Initializes a new CanvasElement.
@@ -102,6 +103,8 @@ class CanvasElement:
                 specified in **screen pixels** and is applied to the
                 element's rendered surface. A non-zero value will check a
                 circular area for any opaque pixel.
+            is_editable: If True, the element can be double-clicked
+                to enter a special "edit mode".
         """
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -136,6 +139,7 @@ class CanvasElement:
         self._update_future: Optional[Future] = None
         self.pixel_perfect_hit = pixel_perfect_hit
         self.hit_distance: float = hit_distance
+        self.is_editable: bool = is_editable
 
         # This is the single source of truth for the local GEOMETRIC transform.
         self.transform: Matrix = Matrix.identity()
@@ -239,6 +243,16 @@ class CanvasElement:
 
         Args:
             ctx: The cairo context in world/pixel space.
+        """
+        pass
+
+    def draw_edit_overlay(self, ctx: cairo.Context):
+        """
+        Draws a custom overlay for editing, only called when the element is
+        the canvas's `edit_context`. The context is in screen space.
+
+        Args:
+            ctx: The cairo context in screen/pixel space.
         """
         pass
 
@@ -787,7 +801,6 @@ class CanvasElement:
         local_center = (self.width / 2, self.height / 2)
         return self.get_world_transform().transform_point(local_center)
 
-    # ... (the rest of the file from allocate to dump is unchanged) ...
     def allocate(self, force: bool = False):
         """
         Allocates or re-allocates resources, like the backing surface.
@@ -1000,6 +1013,47 @@ class CanvasElement:
             local_x=local_x,
             local_y=local_y,
         )
+
+    def on_edit_mode_enter(self):
+        """Called when this element becomes the Canvas's edit_context."""
+        pass
+
+    def on_edit_mode_leave(self):
+        """Called when this element is no longer the Canvas's edit_context."""
+        pass
+
+    def handle_edit_press(self, world_x: float, world_y: float) -> bool:
+        """
+        Handles a mouse press event while in edit mode.
+
+        Args:
+            world_x: The x-coordinate of the press in world space.
+            world_y: The y-coordinate of the press in world space.
+
+        Returns:
+            True if the event was handled, False otherwise.
+        """
+        return False
+
+    def handle_edit_drag(self, world_dx: float, world_dy: float):
+        """
+        Handles a mouse drag event while in edit mode.
+
+        Args:
+            world_dx: The horizontal drag distance in world coordinates.
+            world_dy: The vertical drag distance in world coordinates.
+        """
+        pass
+
+    def handle_edit_release(self, world_x: float, world_y: float):
+        """
+        Handles a mouse release event while in edit mode.
+
+        Args:
+            world_x: The x-coordinate of the release in world space.
+            world_y: The y-coordinate of the release in world space.
+        """
+        pass
 
     def dump(self, indent: int = 0):
         """Prints a debug representation of the element and children."""

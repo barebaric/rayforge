@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List
+from ..shared.util.glib import idle_add
 from ..core.item import DocItem
 from .layout import (
     BboxAlignLeftStrategy,
@@ -42,20 +43,43 @@ class LayoutCmd:
         guaranteed to run on the main GTK thread.
         """
 
+        # Define the handler that will receive error signals from the strategy.
+        def on_error_reported(sender, message: str):
+            """
+            Receives an error message from the strategy (from a background
+            thread) and safely schedules a UI notification on the main thread.
+            """
+            # Wrap the call in a lambda to ensure the keyword argument is
+            # passed correctly by GLib.idle_add.
+            idle_add(
+                self._editor.notification_requested.send, self, message=message
+            )
+
+        # Connect the handler before running the task.
+        strategy.error_reported.connect(on_error_reported)
+
         def when_done(task: "Task"):
             """
             This callback runs on the main thread after the task finishes.
-            It safely applies the calculated changes to the document.
+            It disconnects the signal handler and safely applies the
+            calculated changes to the document.
             """
+            # Disconnect the handler to prevent potential memory leaks.
+            strategy.error_reported.disconnect(on_error_reported)
+
             if task.get_status() != "completed":
                 logger.error(
-                    f"Layout task '{transaction_name}' did not complete "
-                    f"successfully. Status: {task.get_status()}"
+                    "Layout task '%s' did not complete successfully. "
+                    "Status: %s",
+                    transaction_name,
+                    task.get_status(),
                 )
-                # You could add a toast notification here if desired.
                 return
 
+            # The result of the task is the dictionary of transformation
+            # deltas.
             deltas = task.result()
+
             if not deltas:
                 return  # No changes to apply
 

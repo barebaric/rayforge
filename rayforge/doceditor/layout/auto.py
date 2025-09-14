@@ -5,16 +5,19 @@ Implements a pixel-based layout strategy for dense packing of workpieces.
 from __future__ import annotations
 import math
 import logging
-from typing import List, Sequence, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import List, Sequence, Dict, Optional, Tuple, TYPE_CHECKING, cast
 from dataclasses import dataclass
 
 import cairo
 import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
+
+from ...core.geometry import MoveToCommand, LineToCommand, ArcToCommand
 from ...core.matrix import Matrix
 from ...core.group import Group
 from ...core.item import DocItem
+from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from .base import LayoutStrategy
 
@@ -92,36 +95,105 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             return {}
         logger.info("Starting pixel-perfect layout...")
 
-        # 1. Get initial selection bounding box and its center.
-        selection_bbox = self._get_selection_world_bbox()
-        if not selection_bbox:
-            return {}
-        min_x_world, min_y_world, max_x_world, max_y_world = selection_bbox
-        initial_center = (
-            (min_x_world + max_x_world) / 2,
-            (min_y_world + max_y_world) / 2,
-        )
-
         if context:
             context.set_message("Preparing workpiece variants...")
 
         prepared_items, total_area = self._prepare_variants()
         if not prepared_items:
+            self.unplaced_items = list(self.items)
             return {}
 
         if context:
             context.set_progress(0.1)
-            context.set_message("Packing items...")
 
-        # 2. Create packing canvas and pack items.
-        canvas = self._create_packing_canvas(total_area, prepared_items)
-        logger.info(
-            f"Using packing canvas of {canvas.shape[1]}x{canvas.shape[0]} px."
-        )
+        # Stock-aware Logic
+        stock_item: Optional[StockItem] = None
+        doc = self.items[0].doc
+        if doc and doc.stock_layer and doc.stock_layer.children:
+            # Type check to ensure we have a StockItem and satisfy the linter.
+            child = doc.stock_layer.children[0]
+            if isinstance(child, StockItem):
+                stock_item = child
 
-        placements, placed_bounds_px = self._pack_items(
-            prepared_items, canvas, context
-        )
+        # Use stock as boundary if it exists, otherwise do unbounded layout.
+        if stock_item:
+            logger.info("Stock item found, using it as layout boundary.")
+            if context:
+                context.set_message("Using stock as boundary...")
+
+            stock_bbox = stock_item.bbox
+            canvas_origin_world = (stock_bbox[0], stock_bbox[1])
+            canvas_w_mm, canvas_h_mm = stock_bbox[2], stock_bbox[3]
+            canvas_w_px = round(canvas_w_mm * self.resolution)
+            canvas_h_px = round(canvas_h_mm * self.resolution)
+
+            # Create a mask of the valid area from the stock's geometry.
+            allowed_area_mask = self._render_stock_to_mask(
+                stock_item, canvas_w_px, canvas_h_px
+            )
+            # Initialize the canvas with invalid areas already marked.
+            canvas = np.logical_not(allowed_area_mask)
+            group_offset = canvas_origin_world
+
+            placements, self.unplaced_items = self._pack_items(
+                prepared_items, canvas, context
+            )
+
+        else:
+            # 1. Get initial selection bounding box for unbounded layout.
+            logger.info("No stock found, creating unbounded layout.")
+            selection_bbox = self._get_selection_world_bbox()
+            if not selection_bbox:
+                return {}
+            min_x_world, min_y_world, max_x_world, max_y_world = selection_bbox
+            initial_center = (
+                (min_x_world + max_x_world) / 2,
+                (min_y_world + max_y_world) / 2,
+            )
+
+            if context:
+                context.set_message("Packing items...")
+
+            # 2. Create packing canvas.
+            canvas = self._create_packing_canvas(total_area, prepared_items)
+            logger.info(
+                f"Packing canvas size {canvas.shape[1]}x{canvas.shape[0]} px."
+            )
+
+            placements, self.unplaced_items = self._pack_items(
+                prepared_items, canvas, context
+            )
+            if not placements:
+                return {}
+
+            # 3. Calculate the bounding box and center of the new
+            # packed layout.
+            placed_bounds_px = [
+                self._get_placement_bounds(p) for p in placements
+            ]
+            final_min_x_px = min(b[0] for b in placed_bounds_px)
+            final_min_y_px = min(b[1] for b in placed_bounds_px)
+            final_max_x_px = max(b[2] for b in placed_bounds_px)
+            final_max_y_px = max(b[3] for b in placed_bounds_px)
+
+            final_center_px = (
+                (final_min_x_px + final_max_x_px) / 2,
+                (final_min_y_px + final_max_y_px) / 2,
+            )
+
+            # 4. Calculate the world offset needed to align centers.
+            group_offset = (
+                initial_center[0] - (final_center_px[0] / self.resolution),
+                initial_center[1] - (final_center_px[1] / self.resolution),
+            )
+
+        if self.unplaced_items:
+            item_names = ", ".join(item.name for item in self.unplaced_items)
+            message = _(
+                "Could not fit the following items: {item_names}"
+            ).format(item_names=item_names)
+            self.error_reported.send(self, message=message)
+
         if not placements:
             return {}
 
@@ -129,30 +201,75 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             context.set_progress(0.9)
             context.set_message("Calculating final positions...")
 
-        # 3. Calculate the bounding box and center of the new packed layout.
-        final_min_x_px = min(b[0] for b in placed_bounds_px)
-        final_min_y_px = min(b[1] for b in placed_bounds_px)
-        final_max_x_px = max(b[2] for b in placed_bounds_px)
-        final_max_y_px = max(b[3] for b in placed_bounds_px)
-
-        final_center_px = (
-            (final_min_x_px + final_max_x_px) / 2,
-            (final_min_y_px + final_max_y_px) / 2,
-        )
-
-        # 4. Calculate the world offset needed to align the final layout's
-        #    center with the initial selection's center. This offset is the
-        #    world coordinate that corresponds to pixel (0,0) on the canvas.
-        group_offset = (
-            initial_center[0] - (final_center_px[0] / self.resolution),
-            initial_center[1] - (final_center_px[1] / self.resolution),
-        )
-
-        # 5. Compute the final transformation deltas using this new offset.
+        # 5. Compute the final transformation deltas using the
+        # calculated offset.
         deltas = self._compute_deltas_from_placements(placements, group_offset)
 
         logger.info("Pixel-perfect layout complete.")
         return deltas
+
+    def _render_stock_to_mask(
+        self, stock_item: StockItem, width_px: int, height_px: int
+    ) -> np.ndarray:
+        """
+        Renders the stock's transformed geometry to a boolean mask that
+        defines the valid area for packing.
+
+        Args:
+            stock_item: The stock item to render.
+            width_px: The width of the target canvas in pixels.
+            height_px: The height of the target canvas in pixels.
+
+        Returns:
+            A 2D boolean numpy array where True represents a valid area.
+        """
+        # 1. Get the transform that maps the stock's local geometry space to
+        #    the world, then to the canvas's local pixel space.
+        stock_world_transform = stock_item.get_world_transform()
+        canvas_origin_world = (stock_item.bbox[0], stock_item.bbox[1])
+        translation_to_canvas = Matrix.translation(
+            -canvas_origin_world[0], -canvas_origin_world[1]
+        )
+        final_transform_mm = translation_to_canvas @ stock_world_transform
+
+        # 2. Apply this transform to a copy of the geometry.
+        # The Geometry.transform method expects a 4x4 NumPy array.
+        geometry_for_render = stock_item.geometry.copy()
+        m4x4 = np.identity(4)
+        m4x4[:2, :2] = final_transform_mm.m[:2, :2]
+        m4x4[:2, 3] = final_transform_mm.m[:2, 2]
+        geometry_for_render.transform(m4x4)
+
+        # 3. Render the transformed geometry onto a cairo surface.
+        surface = cairo.ImageSurface(cairo.FORMAT_A8, width_px, height_px)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)  # Use white for the valid area
+        ctx.scale(self.resolution, self.resolution)  # Scale context to mm
+
+        # Draw the path from the geometry commands.
+        last_pos = (0.0, 0.0, 0.0)
+        for cmd in geometry_for_render.commands:
+            end = cast(Tuple[float, float, float], getattr(cmd, "end", None))
+            if isinstance(cmd, MoveToCommand):
+                ctx.move_to(end[0], end[1])
+            elif isinstance(cmd, LineToCommand):
+                ctx.line_to(end[0], end[1])
+            elif isinstance(cmd, ArcToCommand):
+                segments = geometry_for_render._linearize_arc(cmd, last_pos)
+                for _, p2 in segments:
+                    ctx.line_to(p2[0], p2[1])
+            if end is not None:
+                last_pos = end
+        ctx.fill()
+
+        # 4. Extract the pixel data into a NumPy array.
+        buf = surface.get_data()
+        mask = np.frombuffer(buf, dtype=np.uint8).reshape(
+            (height_px, surface.get_stride())
+        )
+        # We flip Y-axis (np.flipud) because Cairo's origin is top-left,
+        # while our application's world space is bottom-left.
+        return np.flipud(mask[:, :width_px] > 0)
 
     def _prepare_variants(
         self,
@@ -239,7 +356,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         item_groups: List[List[WorkpieceVariant]],
         canvas: np.ndarray,
         context: Optional[ExecutionContext] = None,
-    ) -> Tuple[List[PlacedItem], List[Tuple[int, int, int, int]]]:
+    ) -> Tuple[List[PlacedItem], List[DocItem]]:
         """
         Places workpiece variants onto the canvas greedily.
 
@@ -251,15 +368,17 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         Returns:
             A tuple containing:
             - A list of final `PlacedItem` instances.
-            - A list of their bounding boxes in pixels (x0, y0, x1, y1).
+            - A list of `DocItem`s that could not be placed.
         """
         placements: List[PlacedItem] = []
         placed_bounds_px: List[Tuple[int, int, int, int]] = []
+        # Create a dictionary of all items to be placed, for easy removal.
+        item_dict = {group[0].item.uid: group[0].item for group in item_groups}
         total_items = len(item_groups)
 
         for i, variants in enumerate(item_groups):
-            wp_name = variants[0].item.name
-            logger.debug(f"Placing item: {wp_name}")
+            item_obj = variants[0].item
+            logger.debug(f"Placing item: {item_obj.name}")
 
             placement = self._find_best_placement(
                 variants, canvas, placed_bounds_px
@@ -273,6 +392,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 canvas[y_px : y_px + h_px, x_px : x_px + w_px] |= item.mask
                 placed_bounds_px.append((x_px, y_px, x_px + w_px, y_px + h_px))
                 placements.append(placement)
+                # Remove successfully placed item from the dictionary.
+                del item_dict[item_obj.uid]
 
                 if context:
                     # Calculate progress within the 0.1 to 0.9 range allocated
@@ -284,9 +405,20 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                         f"Packing item {i + 1} of {total_items}..."
                     )
             else:
-                logger.warning(f"Could not place item {wp_name}.")
+                logger.warning(f"Could not place item {item_obj.name}.")
 
-        return placements, placed_bounds_px
+        # Any items remaining in the dictionary are the ones that failed.
+        unplaced_items = list(item_dict.values())
+        return placements, unplaced_items
+
+    @staticmethod
+    def _get_placement_bounds(
+        placement: PlacedItem,
+    ) -> Tuple[int, int, int, int]:
+        """Calculates the (x0, y0, x1, y1) bounds of a placed item."""
+        y_px, x_px = placement.position_px
+        h_px, w_px = placement.variant.mask.shape
+        return (x_px, y_px, x_px + w_px, y_px + h_px)
 
     def _find_best_placement(
         self,

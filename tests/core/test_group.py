@@ -4,7 +4,9 @@ from rayforge.core.group import Group
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
-from rayforge.importer import SvgImporter
+from rayforge.importer import SVG_RENDERER
+from rayforge.core.stock import StockItem
+from rayforge.core.geometry import Geometry
 
 
 @pytest.fixture
@@ -13,9 +15,22 @@ def workpiece_factory():
 
     def _create_workpiece(name="test_wp"):
         # The actual data doesn't matter for these tests.
-        return WorkPiece(Path(f"{name}.svg"), b"<svg></svg>", SvgImporter)
+        return WorkPiece(Path(f"{name}.svg"), SVG_RENDERER, b"<svg></svg>")
 
     return _create_workpiece
+
+
+@pytest.fixture
+def stock_item_factory():
+    """Provides a factory to create dummy StockItem instances for testing."""
+
+    def _create_stock_item(name="test_stock"):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(100, 100)
+        return StockItem(name=name, geometry=geo)
+
+    return _create_stock_item
 
 
 def test_group_initialization():
@@ -267,3 +282,93 @@ def test_factory_with_nested_item(workpiece_factory):
     new_wp_world = new_group_world_transform @ result.child_matrices[wp.uid]
 
     assert new_wp_world == original_wp_world
+
+
+def test_deserialization_skips_stock_item_child():
+    """
+    Tests that Group.from_dict skips over any StockItem found in its
+    children list, as they are not allowed to be grouped.
+    """
+    group_dict = {
+        "uid": "group-uid",
+        "type": "group",
+        "name": "My Group",
+        "matrix": Matrix.identity().to_list(),
+        "children": [
+            {
+                "uid": "wp-uid",
+                "type": "workpiece",
+                "name": "test.svg",
+                "matrix": Matrix.identity().to_list(),
+                "renderer_name": "SvgRenderer",
+                "vectors": None,
+                "data": b"",
+                "source_file": "test.svg",
+            },
+            {
+                "uid": "stock-uid",
+                "type": "stockitem",
+                "name": "My Stock",
+                "matrix": Matrix.identity().to_list(),
+                "geometry": None,
+            },
+        ],
+    }
+
+    group = Group.from_dict(group_dict)
+
+    assert len(group.children) == 1
+    assert isinstance(group.children[0], WorkPiece)
+    assert group.children[0].uid == "wp-uid"
+
+
+def test_factory_ignores_stock_items(workpiece_factory, stock_item_factory):
+    """
+    Tests that the group factory method ignores any StockItems in the list
+    of items to be grouped.
+    """
+    layer = Layer("Test Layer")
+    wp1 = workpiece_factory("wp1")
+    stock1 = stock_item_factory("stock1")
+
+    wp1.matrix = Matrix.translation(10, 20)
+    stock1.matrix = Matrix.translation(500, 500)
+    layer.add_child(wp1)
+    layer.add_child(stock1)
+
+    # Action: try to group a workpiece and a stock item
+    result = Group.create_from_items([wp1, stock1], layer)
+
+    assert result is not None
+
+    # Assert: The group's bbox should only encompass the workpiece,
+    # not the stock.
+    # Bbox of wp1: (10, 20, 1, 1)
+    new_group = result.new_group
+    group_x, group_y, group_w, group_h = new_group.matrix.transform_rectangle(
+        (0, 0, 1, 1)
+    )
+
+    assert group_x == pytest.approx(10)
+    assert group_y == pytest.approx(20)
+    assert group_w == pytest.approx(1)
+    assert group_h == pytest.approx(1)
+
+    # Assert: The child matrices dict should only contain the workpiece
+    assert wp1.uid in result.child_matrices
+    assert stock1.uid not in result.child_matrices
+
+
+def test_factory_returns_none_if_only_stock_items(stock_item_factory):
+    """
+    Tests that the group factory returns None if the only items to group are
+    StockItems.
+    """
+    layer = Layer("Test Layer")
+    stock1 = stock_item_factory("stock1")
+    stock2 = stock_item_factory("stock2")
+    layer.add_child(stock1)
+    layer.add_child(stock2)
+
+    result = Group.create_from_items([stock1, stock2], layer)
+    assert result is None

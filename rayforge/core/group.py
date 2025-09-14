@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Sequence
 from dataclasses import dataclass
 from .item import DocItem
 from .matrix import Matrix
@@ -51,19 +51,25 @@ class Group(DocItem):
         new_group.matrix = Matrix.from_list(data["matrix"])
 
         for child_data in data.get("children", []):
-            # Use the 'type' to decide which class to instantiate
-            if child_data.get("type") == "group":
+            child_type = child_data.get("type")
+            child_item = None
+
+            # Whitelist: Only process types that are allowed to be in a group.
+            if child_type == "group":
                 child_item = Group.from_dict(child_data)
-            else:
-                # Assume WorkPiece if type is not 'group' or is missing
+            # Handle WorkPiece and legacy files with no type field.
+            elif child_type == "workpiece" or child_type is None:
                 child_item = WorkPiece.from_dict(child_data)
-            new_group.add_child(child_item)
+
+            # Any other type (like 'stockitem') is implicitly ignored.
+            if child_item:
+                new_group.add_child(child_item)
 
         return new_group
 
     @staticmethod
     def _calculate_world_bbox(
-        items: List[DocItem],
+        items: Sequence[DocItem],
     ) -> Optional[Tuple[float, float, float, float]]:
         """
         Calculates the union of the world-space bounding boxes for a list
@@ -93,7 +99,7 @@ class Group(DocItem):
     ) -> Optional[GroupingResult]:
         """
         Factory method to create a new Group sized and positioned to enclose
-        a list of items.
+        a list of items. Only groupable items (WorkPiece, Group) are included.
 
         This is a pure calculation method; it does not modify the
         document tree.
@@ -105,16 +111,24 @@ class Group(DocItem):
         Returns:
             A GroupingResult object containing the configured (but not
             parented) new group and the calculated local matrices for its
-            children, or None if no items are provided.
+            children, or None if no valid items are provided.
         """
-        if not items_to_group:
+        # Whitelist the types that are allowed to be grouped.
+        valid_items_to_group = [
+            item
+            for item in items_to_group
+            if isinstance(item, (WorkPiece, Group))
+        ]
+
+        if not valid_items_to_group:
             return None
 
         # 1. Capture original world transforms and calculate bounding box.
         original_world_transforms = {
-            item.uid: item.get_world_transform() for item in items_to_group
+            item.uid: item.get_world_transform()
+            for item in valid_items_to_group
         }
-        bbox = cls._calculate_world_bbox(items_to_group)
+        bbox = cls._calculate_world_bbox(valid_items_to_group)
         if not bbox:
             return None
         world_x, world_y, world_w, world_h = bbox

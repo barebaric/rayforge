@@ -203,9 +203,10 @@ class OpsGenerator:
         """Finds a step anywhere in the document by its UID."""
         logger.debug(f"{self.__class__.__name__}._find_step_by_uid called")
         for layer in self.doc.layers:
-            for step in layer.workflow.steps:
-                if step.uid == uid:
-                    return step
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    if step.uid == uid:
+                        return step
         return None
 
     def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
@@ -232,7 +233,7 @@ class OpsGenerator:
         elif isinstance(origin, WorkPiece):
             workpiece = origin
             workpiece_layer = workpiece.layer
-            if workpiece_layer:
+            if workpiece_layer and workpiece_layer.workflow:
                 for step in workpiece_layer.workflow:
                     key = (step.uid, workpiece.uid)
                     if self._ops_cache.get(key, (None, None))[0] is None:
@@ -246,7 +247,7 @@ class OpsGenerator:
                             f"Ops for {key} found in cache after 'add'. "
                             "Skipping regeneration."
                         )
-        elif isinstance(origin, Layer):
+        elif isinstance(origin, Layer) and origin.workflow:
             for step in origin.workflow:
                 self._update_ops_for_step(step)
 
@@ -262,7 +263,7 @@ class OpsGenerator:
         )
         if isinstance(origin, Step):
             keys_to_clean = [k for k in self._ops_cache if k[0] == origin.uid]
-        elif isinstance(origin, Layer):
+        elif isinstance(origin, Layer) and origin.workflow:
             step_uids = {s.uid for s in origin.workflow}
             keys_to_clean = [k for k in self._ops_cache if k[0] in step_uids]
         else:
@@ -362,6 +363,7 @@ class OpsGenerator:
         all_current_pairs = {
             (step.uid, workpiece.uid)
             for layer in self.doc.layers
+            if layer.workflow is not None
             for step in layer.workflow.steps
             for workpiece in layer.all_workpieces
         }
@@ -373,6 +375,8 @@ class OpsGenerator:
 
         # Trigger generation for new or invalidated items.
         for layer in self.doc.layers:
+            if layer.workflow is None:
+                continue
             for step in layer.workflow.steps:
                 for workpiece in layer.all_workpieces:
                     key = (step.uid, workpiece.uid)
@@ -410,7 +414,7 @@ class OpsGenerator:
             f"{self.__class__.__name__}._update_ops_for_workpiece called"
         )
         workpiece_layer = workpiece.layer
-        if workpiece_layer:
+        if workpiece_layer and workpiece_layer.workflow:
             for step in workpiece_layer.workflow:
                 self._trigger_ops_generation(step, workpiece)
 

@@ -31,7 +31,7 @@ class StepBox(Adw.ActionRow):
         button.connect("clicked", self.on_button_properties_clicked)
 
         button = Gtk.Button()
-        button.set_child(get_icon("user-trash-symbolic"))
+        button.set_child(get_icon("delete-symbolic"))
         button.set_valign(Gtk.Align.CENTER)
         self.add_suffix(button)
         button.connect("clicked", self.on_button_delete_clicked)

@@ -31,14 +31,12 @@ class MainToolbar(Gtk.Box):
         self.set_margin_end(12)
 
         # Import and export buttons
-        open_button = Gtk.Button(child=get_icon("document-open-symbolic"))
+        open_button = Gtk.Button(child=get_icon("open-symbolic"))
         open_button.set_tooltip_text(_("Import image"))
         open_button.set_action_name("win.import")
         self.append(open_button)
 
-        self.export_button = Gtk.Button(
-            child=get_icon("document-save-symbolic")
-        )
+        self.export_button = Gtk.Button(child=get_icon("save-symbolic"))
         self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.set_action_name("win.export")
         self.append(self.export_button)
@@ -59,10 +57,18 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        clear_button = Gtk.Button(child=get_icon("edit-clear-all-symbolic"))
+        clear_button = Gtk.Button(child=get_icon("eraser-symbolic"))
         clear_button.set_tooltip_text(_("Remove all workpieces"))
         clear_button.set_action_name("win.clear")
         self.append(clear_button)
+
+        # Add Stock button
+        self.add_stock_button = Gtk.Button(
+            child=get_icon("reset-stock-symbolic")
+        )
+        self.add_stock_button.set_tooltip_text(_("Reset stock to default."))
+        self.add_stock_button.set_action_name("win.add_stock")
+        self.append(self.add_stock_button)
 
         # The visibility button is a ToggleButton linked to a stateful action.
         # It manages its own icon state by listening to its "toggled" signal.
@@ -99,7 +105,7 @@ class MainToolbar(Gtk.Box):
 
         # This button also controls view state.
         self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("function-linear-symbolic"))
+        self.show_travel_button.set_child(get_icon("laser-path-symbolic"))
         self.show_travel_button.set_active(False)
         self.show_travel_button.set_tooltip_text(
             _("Toggle travel move visibility")
@@ -180,21 +186,19 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.home_button = Gtk.Button(child=get_icon("go-home-symbolic"))
+        self.home_button = Gtk.Button(child=get_icon("home-symbolic"))
         self.home_button.set_tooltip_text(_("Home the machine"))
         self.home_button.set_action_name("win.home")
         self.append(self.home_button)
 
-        self.frame_button = Gtk.Button(
-            child=get_icon("edit-select-all-symbolic")
-        )
+        self.frame_button = Gtk.Button(child=get_icon("frame-symbolic"))
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
         )
         self.frame_button.set_action_name("win.frame")
         self.append(self.frame_button)
 
-        self.send_button = Gtk.Button(child=get_icon("document-send-symbolic"))
+        self.send_button = Gtk.Button(child=get_icon("send-symbolic"))
         self.send_button.set_tooltip_text(_("Send to machine"))
         self.send_button.set_action_name("win.send")
         self.append(self.send_button)
@@ -208,15 +212,13 @@ class MainToolbar(Gtk.Box):
         self.hold_button.set_action_name("win.hold")
         self.append(self.hold_button)
 
-        self.cancel_button = Gtk.Button(
-            child=get_icon("process-stop-symbolic")
-        )
+        self.cancel_button = Gtk.Button(child=get_icon("stop-symbolic"))
         self.cancel_button.set_tooltip_text(_("Cancel running job"))
         self.cancel_button.set_action_name("win.cancel")
         self.append(self.cancel_button)
 
         self.clear_alarm_button = Gtk.Button(
-            child=get_icon("unlock-symbolic")
+            child=get_icon("clear-alarm-symbolic")
         )
         self.clear_alarm_button.set_tooltip_text(
             _("Clear machine alarm (unlock)")
@@ -232,7 +234,7 @@ class MainToolbar(Gtk.Box):
         # Add clickable warning for misconfigured machine
         self.machine_warning_box = Gtk.Box(spacing=6)
         self.machine_warning_box.set_margin_end(12)
-        warning_icon = get_icon("dialog-warning-symbolic")
+        warning_icon = get_icon("warning-symbolic")
         warning_label = Gtk.Label(label=_("Machine not fully configured"))
         warning_label.add_css_class("warning-label")
         self.machine_warning_box.append(warning_icon)

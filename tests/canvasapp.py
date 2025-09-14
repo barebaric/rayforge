@@ -2,12 +2,13 @@
 import gi
 import logging
 import gettext
+import math
 from pathlib import Path
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk
 import cairo
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 base_path = Path(__file__).parent
 gettext.install("canvas", base_path / "rayforge" / "locale")
@@ -93,6 +94,201 @@ class LShapeElement(CanvasElement):
         ctx.close_path()
         ctx.fill()
         return surface
+
+
+class EditableElement(CanvasElement):
+    """
+    A custom canvas element that can be double-clicked to enter an
+    "edit mode" where its vertices can be moved.
+    """
+
+    vertices: List[List[float]]
+
+    def __init__(self, x, y, width, height, **kwargs):
+        # Ensure is_editable is set to True
+        super().__init__(x, y, width, height, is_editable=True, **kwargs)
+        self.original_background = self.background
+        self._was_buffered = self.buffered
+
+        # Define some editable points in local coordinates
+        self.vertices = [
+            [width * 0.1, height * 0.1],  # Top-left
+            [width * 0.9, height * 0.1],  # Top-right
+            [width * 0.9, height * 0.9],  # Bottom-right
+            [width * 0.1, height * 0.9],  # Bottom-left
+        ]
+        self._active_vertex_idx: Optional[int] = None
+        self._initial_vertex_pos: Optional[List[float]] = None
+
+    def _draw_content(self, ctx: cairo.Context, width: float, height: float):
+        """Draws a polygon connecting the vertices."""
+        if not self.vertices:
+            return
+        ctx.set_source_rgba(0.9, 0.9, 0.2, 0.7)  # Yellowish
+        ctx.move_to(*self.vertices[0])
+        for v in self.vertices[1:]:
+            ctx.line_to(*v)
+        ctx.close_path()
+        ctx.fill()
+
+    def draw(self, ctx: cairo.Context):
+        """Overrides drawing to handle both buffered and unbuffered cases."""
+        ctx.save()
+        m_content = self.content_transform.m
+        cairo_content_matrix = cairo.Matrix(
+            m_content[0, 0],
+            m_content[1, 0],
+            m_content[0, 1],
+            m_content[1, 1],
+            m_content[0, 2],
+            m_content[1, 2],
+        )
+        ctx.transform(cairo_content_matrix)
+
+        if not self.buffered or not self.surface:
+            ctx.set_source_rgba(*self.background)
+            ctx.rectangle(0, 0, self.width, self.height)
+            ctx.fill()
+            self._draw_content(ctx, self.width, self.height)
+        else:
+            super().draw(ctx)
+        ctx.restore()
+
+    def render_to_surface(
+        self, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """Overrides surface rendering for buffered elements."""
+        surface = super().render_to_surface(width, height)
+        if surface:
+            ctx = cairo.Context(surface)
+            # Scale the context so the vector drawing fills the surface,
+            # regardless of the buffer's pixel dimensions. This ensures
+            # the drawing is sharp at any zoom level.
+            if self.width > 0 and self.height > 0:
+                ctx.scale(width / self.width, height / self.height)
+            self._draw_content(ctx, self.width, self.height)
+        return surface
+
+    def on_edit_mode_enter(self):
+        logging.info("EditableElement entered edit mode.")
+        self.background = (0.2, 0.2, 0.4, 1.0)  # Dark blue in edit mode
+        # Store original buffered state and temporarily disable it for smooth
+        # interactive drawing.
+        self._was_buffered = self.buffered
+        self.buffered = False
+        self.trigger_update()
+
+    def on_edit_mode_leave(self):
+        logging.info("EditableElement left edit mode.")
+        self.background = self.original_background
+        self.buffered = self._was_buffered
+        self._active_vertex_idx = None
+        self._initial_vertex_pos = None
+        # Clear the old surface to prevent flickering with the stale
+        # content. This forces a direct draw for the first frame after
+        # leaving edit mode, while the new buffered surface is generated
+        # in the background.
+        self.surface = None
+        self.trigger_update()
+
+    def draw_edit_overlay(self, ctx: cairo.Context):
+        """Draws circular handles for each vertex in screen space."""
+        if not self.canvas:
+            return
+
+        screen_transform = (
+            self.canvas.view_transform @ self.get_world_transform()
+        )
+
+        ctx.save()
+        ctx.set_line_width(2.0)
+        handle_radius = 8.0
+
+        for i, vertex in enumerate(self.vertices):
+            sx, sy = screen_transform.transform_point((vertex[0], vertex[1]))
+
+            if i == self._active_vertex_idx:
+                ctx.set_source_rgba(1.0, 0.5, 0.0, 0.9)  # Orange for active
+            else:
+                ctx.set_source_rgba(0.0, 0.8, 1.0, 0.8)  # Cyan for inactive
+
+            ctx.arc(sx, sy, handle_radius, 0, 2 * math.pi)
+            ctx.fill_preserve()
+            ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
+            ctx.stroke()
+        ctx.restore()
+
+    def _get_hit_vertex(self, world_x: float, world_y: float) -> Optional[int]:
+        """Checks if a world coordinate point hits any vertex handle."""
+        if not self.canvas:
+            return None
+
+        try:
+            inv_world = self.get_world_transform().invert()
+        except Exception:
+            return None
+
+        local_x, local_y = inv_world.transform_point((world_x, world_y))
+
+        screen_transform = (
+            self.canvas.view_transform @ self.get_world_transform()
+        )
+        scale_x, scale_y = screen_transform.get_abs_scale()
+
+        hit_radius_local_x = 8.0 / scale_x if scale_x > 1e-6 else float("inf")
+        hit_radius_local_y = 8.0 / scale_y if scale_y > 1e-6 else float("inf")
+
+        for i, vertex in enumerate(self.vertices):
+            dx = local_x - vertex[0]
+            dy = local_y - vertex[1]
+            # Simple bounding box check is sufficient and faster
+            if abs(dx) < hit_radius_local_x and abs(dy) < hit_radius_local_y:
+                return i
+        return None
+
+    def handle_edit_press(self, world_x: float, world_y: float) -> bool:
+        hit_idx = self._get_hit_vertex(world_x, world_y)
+        if hit_idx is not None:
+            self._active_vertex_idx = hit_idx
+            self._initial_vertex_pos = self.vertices[hit_idx][:]
+            logging.debug(f"Editing vertex {hit_idx}")
+            return True
+        return False
+
+    def handle_edit_drag(self, world_dx: float, world_dy: float):
+        if (
+            self._active_vertex_idx is None
+            or self._initial_vertex_pos is None
+            or not self.canvas
+        ):
+            return
+
+        try:
+            world_tf_no_trans = (
+                self.get_world_transform().without_translation()
+            )
+            inv_rot_scale = world_tf_no_trans.invert()
+            local_dx, local_dy = inv_rot_scale.transform_vector(
+                (world_dx, world_dy)
+            )
+        except Exception:
+            return
+
+        self.vertices[self._active_vertex_idx][0] = (
+            self._initial_vertex_pos[0] + local_dx
+        )
+        self.vertices[self._active_vertex_idx][1] = (
+            self._initial_vertex_pos[1] + local_dy
+        )
+        # Since we are not buffered in edit mode, we must queue a draw
+        # to see the changes live.
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def handle_edit_release(self, world_x: float, world_y: float):
+        self._active_vertex_idx = None
+        self._initial_vertex_pos = None
+        logging.debug("Finished editing vertex.")
 
 
 class CanvasApp(Gtk.Application):
@@ -259,8 +455,13 @@ def populate_canvas(canvas: Canvas):
     # new world positions) and compensates their local transforms so they
     # appear in the same place.
     shrink_group.update_bounds()
-
     canvas.add(shrink_group)
+
+    # New editable element to test the edit mode feature
+    editable = EditableElement(
+        550, 600, 200, 150, background=(0.4, 0.4, 0.2, 1), buffered=True
+    )
+    canvas.add(editable)
 
 
 app = CanvasApp()

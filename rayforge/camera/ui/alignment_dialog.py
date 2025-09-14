@@ -2,11 +2,12 @@ import logging
 import math
 from typing import List, Optional, Tuple
 import numpy as np
-from gi.repository import Gtk, Adw, Gdk, GLib  # type: ignore
+from gi.repository import Gtk, Adw, Gdk, GLib
 from ..models.camera import Camera, Pos
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget
 from ...icons import get_icon
+from ...shared.util.gtk import apply_css
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,7 @@ class CameraAlignmentDialog(Adw.Window):
         self.drag_start_image_y = 0
         self._display_ready = False
 
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_string(
+        apply_css(
             """
             .info-highlight {
                 background-color: @accent_bg_color;
@@ -40,11 +40,6 @@ class CameraAlignmentDialog(Adw.Window):
                 padding: 8px 12px;
             }
             """
-        )
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -99,7 +94,7 @@ class CameraAlignmentDialog(Adw.Window):
         self.info_box.set_halign(Gtk.Align.CENTER)
         self.overlay.add_overlay(self.info_box)
 
-        icon = get_icon("dialog-info-symbolic")
+        icon = get_icon("info-symbolic")
         icon.set_valign(Gtk.Align.CENTER)  # Vertically centered
         self.info_box.append(icon)
 
@@ -114,7 +109,7 @@ class CameraAlignmentDialog(Adw.Window):
         info_label.set_hexpand(True)
         self.info_box.append(info_label)
 
-        dismiss_button = Gtk.Button(child=get_icon("window-close-symbolic"))
+        dismiss_button = Gtk.Button(child=get_icon("close-symbolic"))
         dismiss_button.add_css_class("flat")
         dismiss_button.set_valign(Gtk.Align.CENTER)  # Vertically centered
         dismiss_button.connect("clicked", lambda btn: self.info_box.hide())

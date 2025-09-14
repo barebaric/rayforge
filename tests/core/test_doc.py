@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
+from rayforge.core.stocklayer import StockLayer
 
 
 @pytest.fixture
@@ -12,23 +13,28 @@ def doc():
 
 
 def test_doc_initialization(doc):
-    """Verify a new Doc starts with one layer and a real HistoryManager."""
-    assert len(doc.layers) == 1
-    # The import from ..undo would need to be added to the file for this to
-    # work from ..undo import HistoryManager
-    # assert isinstance(doc.history_manager, HistoryManager)
-    assert doc.history_manager is not None  # A good enough check
+    """Verify a new Doc starts with a StockLayer and one regular Layer."""
+    assert len(doc.children) == 2
+    assert isinstance(doc.children[0], StockLayer)
+    assert isinstance(doc.children[1], Layer)
+    assert len(doc.layers) == 2  # .layers includes all Layer subclasses
+
+    # Check that the first regular layer is active
+    assert not isinstance(doc.active_layer, StockLayer)
+    assert doc.active_layer.name == "Layer 1"
+    assert doc.history_manager is not None
 
 
 def test_add_layer_fires_descendant_added(doc):
     """Test adding a layer fires descendant_added with the layer as origin."""
+    initial_layer_count = len(doc.layers)
     handler = MagicMock()
     doc.descendant_added.connect(handler)
 
     new_layer = Layer("Layer 2")
     doc.add_layer(new_layer)
 
-    assert len(doc.layers) == 2
+    assert len(doc.layers) == initial_layer_count + 1
     handler.assert_called_once_with(doc, origin=new_layer)
 
 
@@ -51,8 +57,11 @@ def test_descendant_updated_bubbles_up_to_doc(doc):
     handler = MagicMock()
     doc.descendant_updated.connect(handler)
 
-    layer = doc.layers[0]
+    layer = (
+        doc.active_layer
+    )  # Use the active layer, which is guaranteed to be a regular one
     workflow = layer.workflow
+    assert workflow is not None
     step = Step("Test Step")
     workflow.add_step(step)
     handler.reset_mock()  # Ignore the 'add' event
@@ -69,8 +78,9 @@ def test_descendant_added_bubbles_up_to_doc(doc):
     handler = MagicMock()
     doc.descendant_added.connect(handler)
 
-    layer = doc.layers[0]
+    layer = doc.active_layer
     workflow = layer.workflow
+    assert workflow is not None
     step = Step("Test Step")
 
     # Act
@@ -82,8 +92,9 @@ def test_descendant_added_bubbles_up_to_doc(doc):
 
 def test_descendant_removed_bubbles_up_to_doc(doc):
     """A descendant_removed signal for a step should bubble up to the Doc."""
-    layer = doc.layers[0]
+    layer = doc.active_layer
     workflow = layer.workflow
+    assert workflow is not None
     step = Step("Test Step")
     workflow.add_step(step)
 
@@ -95,3 +106,42 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
 
     # Assert
     handler.assert_called_once_with(doc, origin=step)
+
+
+def test_doc_initial_state_has_stock_layer(doc):
+    """A new document should always have a stock layer by default."""
+    assert doc.stock_layer is not None
+    assert isinstance(doc.stock_layer, StockLayer)
+
+
+def test_doc_cannot_add_second_stocklayer(doc):
+    """Test that adding a second StockLayer to a Doc raises a ValueError."""
+    # A stock layer already exists from initialization
+    with pytest.raises(ValueError):
+        doc.add_child(StockLayer(name="Stock 2"))
+
+
+def test_doc_cannot_remove_stocklayer(doc, caplog):
+    """
+    Test that attempting to remove the StockLayer does nothing and logs
+    a warning.
+    """
+    stock_layer = doc.stock_layer
+    assert stock_layer is not None
+    assert stock_layer in doc.children
+
+    # Act
+    doc.remove_child(stock_layer)
+
+    # Assert
+    assert stock_layer in doc.children  # Still there
+    assert "The StockLayer cannot be removed." in caplog.text
+
+
+def test_doc_stock_layer_property(doc):
+    """
+    Test that the doc.stock_layer property correctly finds the stock layer.
+    """
+    stock_layer = doc.stock_layer
+    assert stock_layer is not None
+    assert stock_layer is doc.children[0]

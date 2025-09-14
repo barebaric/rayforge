@@ -1,6 +1,6 @@
 import logging
-from typing import Optional, List, Callable
-from gi.repository import Gtk  # type: ignore
+from typing import Optional, List, Callable, cast
+from gi.repository import Gtk
 from ...core.workflow import Workflow
 from ...undo.models.list_cmd import ListItemCommand, ReorderListCommand
 from ...shared.ui.draglist import DragListBox
@@ -52,7 +52,7 @@ class WorkflowView(Expander):
         button_box.set_margin_bottom(10)
         button_box.set_margin_start(12)
 
-        add_icon = get_icon("list-add-symbolic")
+        add_icon = get_icon("add-symbolic")
         button_box.append(add_icon)
 
         lbl = _("Add New Step...")
@@ -122,13 +122,14 @@ class WorkflowView(Expander):
 
         # Check if the list of steps is already in sync to avoid unnecessary
         # rebuilds.
-        current_steps = [row.data for row in self.draglist]
+        current_steps = [row.data for row in self.draglist]  # type: ignore
         if current_steps == self.workflow.steps:
             # The list structure is the same, just tell each stepbox to
             # update its summary.
             for i, row in enumerate(self.draglist):
-                # The row's child is an HBox: [handle, content]. Get content.
+                row = cast(Gtk.ListBoxRow, row)
                 hbox = row.get_child()
+                assert hbox, "Failed to get hbox from draglist row"
                 stepbox = hbox.get_last_child()
                 if isinstance(stepbox, StepBox):
                     stepbox.set_prefix(
@@ -141,7 +142,7 @@ class WorkflowView(Expander):
         self.draglist.remove_all()
         for seq, step in enumerate(self.workflow, start=1):
             row = Gtk.ListBoxRow()
-            row.data = step  # Store model for reordering
+            row.data = step  # type: ignore # Store model for reordering
             stepbox = StepBox(
                 self.workflow.doc,
                 step,
@@ -195,7 +196,7 @@ class WorkflowView(Expander):
         """Handles reordering of steps with an undoable command."""
         if not self.workflow or not self.workflow.doc:
             return
-        new_order = [row.data for row in self.draglist]
+        new_order = [row.data for row in self.draglist]  # type: ignore
         command = ReorderListCommand(
             target_obj=self.workflow,
             list_property_name="steps",

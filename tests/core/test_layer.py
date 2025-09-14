@@ -13,8 +13,8 @@ def doc():
 
 @pytest.fixture
 def layer(doc):
-    """Provides the first layer from a real Doc."""
-    return doc.layers[0]
+    """Provides the active layer from a real Doc, which is a regular Layer."""
+    return doc.active_layer
 
 
 @pytest.fixture
@@ -52,6 +52,7 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     layer.descendant_added.connect(handler)
 
     workflow = layer.workflow
+    assert workflow is not None
     step = Step("Test Step")
 
     # Act

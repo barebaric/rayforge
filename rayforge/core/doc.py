@@ -1,10 +1,14 @@
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict
+from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING
 from blinker import Signal
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
 from .layer import Layer
 from .item import DocItem
+from .stocklayer import StockLayer
+
+if TYPE_CHECKING:
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -25,11 +29,19 @@ class Doc(DocItem):
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
 
-        self._active_layer_index: int = 0
+        # A new document starts with a stock layer and one empty workpiece
+        # layer. The stock layer is added first to appear at the bottom of
+        # the UI list.
+        stock_layer = StockLayer()
+        self.add_child(stock_layer)
 
-        # A new document starts with one empty layer.
-        layer = Layer(_("Layer 1"))
-        self.add_child(layer)
+        workpiece_layer = Layer(_("Layer 1"))
+        self.add_child(workpiece_layer)
+
+        # The new workpiece layer should be active by default, not the stock.
+        # The `layers` property will return [StockLayer, Layer], so index 1
+        # is correct.
+        self._active_layer_index: int = 1
 
     def to_dict(self) -> Dict:
         """Serializes the document and its children to a dictionary."""
@@ -46,6 +58,14 @@ class Doc(DocItem):
         return self
 
     @property
+    def stock_layer(self) -> Optional["StockLayer"]:
+        """Returns the StockLayer if one exists in the document."""
+        for child in self.children:
+            if isinstance(child, StockLayer):
+                return child
+        return None
+
+    @property
     def layers(self) -> List[Layer]:
         """Returns a list of all child items that are Layers."""
         return [child for child in self.children if isinstance(child, Layer)]
@@ -58,6 +78,7 @@ class Doc(DocItem):
         """
         wps = []
         for layer in self.layers:
+            # This correctly skips StockLayer, as its all_workpieces is empty
             wps.extend(layer.all_workpieces)
         return wps
 
@@ -102,7 +123,11 @@ class Doc(DocItem):
         self.job_assembly_invalidated.send(self)
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
-        if isinstance(child, Layer):
+        if isinstance(child, StockLayer):
+            if self.stock_layer is not None:
+                raise ValueError("A document can only have one StockLayer.")
+            # StockLayer doesn't have a workflow, so no signal to connect
+        elif isinstance(child, Layer):
             child.post_step_transformer_changed.connect(
                 self._on_layer_post_transformer_changed
             )
@@ -110,65 +135,87 @@ class Doc(DocItem):
         return child
 
     def remove_child(self, child: DocItem):
+        if isinstance(child, StockLayer):
+            logger.warning("The StockLayer cannot be removed.")
+            return
+
         if isinstance(child, Layer):
-            child.post_step_transformer_changed.disconnect(
-                self._on_layer_post_transformer_changed
-            )
+            # StockLayer is a subclass, but we already handled it above.
+            if child.workflow:
+                child.post_step_transformer_changed.disconnect(
+                    self._on_layer_post_transformer_changed
+                )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):
+        new_children_list = list(new_children)
+        stock_layer_count = sum(
+            isinstance(c, StockLayer) for c in new_children_list
+        )
+        if stock_layer_count > 1:
+            raise ValueError("A document can only have one StockLayer.")
+
         old_layers = self.layers
         for layer in old_layers:
-            layer.post_step_transformer_changed.disconnect(
-                self._on_layer_post_transformer_changed
-            )
+            if not isinstance(layer, StockLayer):
+                # Ensure the layer has a workflow before disconnecting
+                if layer.workflow:
+                    layer.post_step_transformer_changed.disconnect(
+                        self._on_layer_post_transformer_changed
+                    )
 
-        new_layers = [c for c in new_children if isinstance(c, Layer)]
+        new_layers = [c for c in new_children_list if isinstance(c, Layer)]
         for layer in new_layers:
-            layer.post_step_transformer_changed.connect(
-                self._on_layer_post_transformer_changed
-            )
-        super().set_children(new_children)
+            if not isinstance(layer, StockLayer):
+                layer.post_step_transformer_changed.connect(
+                    self._on_layer_post_transformer_changed
+                )
+        super().set_children(new_children_list)
 
     def add_layer(self, layer: Layer):
         self.add_child(layer)
 
     def remove_layer(self, layer: Layer):
-        # Prevent removing the last layer.
-        if layer not in self.layers or len(self.layers) <= 1:
+        if layer not in self.layers:
             return
 
-        old_active_layer = self.active_layer
-
-        # Adjust the active index BEFORE removing the child to prevent an
-        # IndexError during signal handling.
-        index_to_remove = self.layers.index(layer)
-        if self._active_layer_index > index_to_remove:
-            self._active_layer_index -= 1
-        elif self._active_layer_index == index_to_remove:
-            # If removing the active layer, fall back to the last item
-            # in the new, shorter list.
-            if self._active_layer_index >= len(self.layers) - 1:
-                self._active_layer_index = max(0, self._active_layer_index - 1)
-
-        self.remove_child(layer)
-
-        if old_active_layer is not self.active_layer:
-            self.active_layer_changed.send(self)
+        new_layers = [la for la in self.layers if la is not layer]
+        try:
+            self.set_layers(new_layers)
+        except ValueError as e:
+            # Log the failure if an internal API call tries to do this.
+            logger.warning(f"Layer removal failed: {e}")
 
     def set_layers(self, layers: List[Layer]):
-        # A document must always have at least one layer.
-        if not layers:
-            raise ValueError("Workpiece layer list cannot be empty.")
+        new_layers_list = list(layers)
+
+        # A document must always have at least one regular workpiece layer.
+        regular_layer_count = sum(
+            1 for layer in new_layers_list if not isinstance(layer, StockLayer)
+        )
+        if regular_layer_count < 1:
+            raise ValueError(
+                "A document must have at least one workpiece layer."
+            )
 
         # Preserve the active layer if it still exists in the new list
         old_active_layer = self.active_layer
         try:
-            new_active_index = layers.index(old_active_layer)
+            new_active_index = new_layers_list.index(old_active_layer)
         except ValueError:
             # The old active layer is not in the new list, so pick a default.
-            # Making the first layer active is a safe and predictable choice.
-            new_active_index = 0
+            # Fall back to the first regular layer in the new list.
+            try:
+                first_regular_layer = next(
+                    la
+                    for la in new_layers_list
+                    if not isinstance(la, StockLayer)
+                )
+                new_active_index = new_layers_list.index(first_regular_layer)
+            except (StopIteration, ValueError):
+                # This should be unreachable due to the check above, but as a
+                # failsafe, just pick the first item.
+                new_active_index = 0
 
         # IMPORTANT: Update the active index BEFORE calling set_children.
         # set_children fires signals that can cause UI updates, which will
@@ -177,7 +224,7 @@ class Doc(DocItem):
         # IndexError.
         self._active_layer_index = new_active_index
 
-        self.set_children(layers)
+        self.set_children(new_layers_list)
 
         # After the state is consistent, send the active_layer_changed signal
         # if the active layer instance has actually changed.
@@ -191,5 +238,6 @@ class Doc(DocItem):
         # A result is possible if there's a workpiece and at least one
         # workflow (in any layer) has steps.
         return self.has_workpiece() and any(
-            layer.workflow.has_steps() for layer in self.layers
+            layer.workflow and layer.workflow.has_steps()
+            for layer in self.layers
         )

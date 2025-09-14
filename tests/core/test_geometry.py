@@ -233,3 +233,50 @@ def test_transform_rotate_preserves_z():
     assert z == -5
     assert x == pytest.approx(-10)
     assert y == pytest.approx(10)
+
+
+def test_copy_method(sample_geometry):
+    """Tests the deep copy functionality of the Geometry class."""
+    original_geo = sample_geometry
+    copied_geo = original_geo.copy()
+
+    # Check for initial equality and deep copy semantics
+    assert copied_geo is not original_geo
+    assert copied_geo.commands is not original_geo.commands
+    assert len(copied_geo.commands) == len(original_geo.commands)
+    assert copied_geo.last_move_to == original_geo.last_move_to
+    # Check a specific command's value to ensure it was copied
+    original_line_to = cast(LineToCommand, original_geo.commands[1])
+    copied_line_to = cast(LineToCommand, copied_geo.commands[1])
+    assert copied_line_to.end == original_line_to.end
+
+    # Modify the original and check that the copy is unaffected
+    original_geo.line_to(100, 100)  # Adds a 4th command
+    cast(MoveToCommand, original_geo.commands[0]).end = (99, 99, 99)
+
+    # The copy should still have the original number of commands
+    assert len(copied_geo.commands) == 3
+    # The copy's first command should have its original value
+    copied_move_to = cast(MoveToCommand, copied_geo.commands[0])
+    assert copied_move_to.end == (0.0, 0.0, 0.0)
+
+
+def test_linearize_arc_method(sample_geometry):
+    """Tests the internal _linearize_arc method."""
+    # The second command is a line_to(10,10), which is the start of the arc
+    start_point = cast(LineToCommand, sample_geometry.commands[1]).end
+    # The third command is the arc
+    arc_cmd = cast(ArcToCommand, sample_geometry.commands[2])
+
+    segments = sample_geometry._linearize_arc(arc_cmd, start_point)
+
+    # Check that linearization produces a reasonable number of segments
+    assert len(segments) >= 2
+
+    # Check that the start and end points of the chain of segments match
+    # the original arc's start and end points.
+    first_segment_start, _ = segments[0]
+    _, last_segment_end = segments[-1]
+
+    assert first_segment_start == pytest.approx(start_point)
+    assert last_segment_end == pytest.approx(arc_cmd.end)

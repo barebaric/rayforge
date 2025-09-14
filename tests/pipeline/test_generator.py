@@ -73,7 +73,10 @@ def real_workpiece():
 @pytest.fixture
 def doc():
     d = Doc()
-    d.layers[0].workflow.set_steps([])
+    # Get the active layer (the first workpiece layer) and clear its steps
+    active_layer = d.active_layer
+    assert active_layer.workflow is not None
+    active_layer.workflow.set_steps([])
     return d
 
 
@@ -82,7 +85,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -98,7 +102,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -129,7 +134,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -152,7 +158,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -171,7 +178,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -202,7 +210,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)
@@ -233,7 +242,8 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.layers[0]
+        layer = doc.active_layer
+        assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
         layer.add_workpiece(real_workpiece)

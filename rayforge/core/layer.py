@@ -85,13 +85,14 @@ class Layer(DocItem):
         ]
 
     @property
-    def workflow(self) -> Workflow:
+    def workflow(self) -> Optional[Workflow]:
         """Returns the layer's workflow. A layer must have one workflow."""
         for child in self.children:
             if isinstance(child, Workflow):
                 return child
-        # This state should be unreachable if the constructor works correctly.
-        raise RuntimeError("Layer is missing its internal workflow.")
+        # This state should be unreachable for a standard Layer, but subclasses
+        # like StockLayer may not have a workflow.
+        return None
 
     def _on_workflow_post_transformer_changed(self, sender):
         """
@@ -109,9 +110,12 @@ class Layer(DocItem):
 
     def remove_child(self, child: DocItem):
         if isinstance(child, Workflow):
-            child.post_step_transformer_changed.disconnect(
-                self._on_workflow_post_transformer_changed
-            )
+            # Check if the workflow actually exists before trying to disconnect
+            wf = self.workflow
+            if wf and wf is child:
+                wf.post_step_transformer_changed.disconnect(
+                    self._on_workflow_post_transformer_changed
+                )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):
@@ -147,7 +151,9 @@ class Layer(DocItem):
         if self.name == name:
             return
         self.name = name
-        self.workflow.name = f"{name} Workflow"
+        wf = self.workflow
+        if wf:
+            wf.name = f"{name} Workflow"
         self.updated.send(self)
 
     def set_visible(self, visible: bool):
@@ -174,7 +180,11 @@ class Layer(DocItem):
         Sets the layer's workpieces to a new list, preserving the
         existing workflow.
         """
-        self.set_children([*workpieces, self.workflow])
+        current_workflow = self.workflow
+        new_children: List[DocItem] = list(workpieces)
+        if current_workflow:
+            new_children.append(current_workflow)
+        self.set_children(new_children)
 
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
         """
@@ -184,7 +194,7 @@ class Layer(DocItem):
             A list of (Step, WorkPiece) tuples that are currently
             visible and have valid geometry for rendering.
         """
-        if not self.visible:
+        if not self.visible or not self.workflow:
             return []
         items = []
         # Use the correct recursive method to find all workpieces

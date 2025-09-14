@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, cast, Optional
 
+from ...core.stock import StockItem
 from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.group import Group
@@ -8,6 +9,7 @@ from ..canvas.element import CanvasElement
 from .workpiece import WorkPieceView
 from .step import StepElement
 from .group import GroupElement
+from .stock import StockElement
 
 if TYPE_CHECKING:
     from ...core.layer import Layer
@@ -18,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 def _z_order_sort_key(element: CanvasElement):
     """Sort key to ensure StepElements are drawn after visual elements."""
-    if isinstance(element, (WorkPieceView, GroupElement)):
-        return 0  # Draw workpieces and groups first (at the bottom)
+    if isinstance(element, (WorkPieceView, GroupElement, StockElement)):
+        return 0  # Draw visual items first (at the bottom)
     if isinstance(element, StepElement):
         # StepElements are invisible managers, but we keep them in the
         # sort order for consistency.
@@ -91,14 +93,16 @@ class LayerElement(CanvasElement):
 
         work_surface = cast(WorkSurface, self.canvas)
 
-        # Reconcile Visual Elements (WorkPieces and Groups)
+        # Reconcile Visual Elements (WorkPieces, Groups, StockItems)
         model_items = {
-            c for c in self.data.children if isinstance(c, (WorkPiece, Group))
+            c
+            for c in self.data.children
+            if isinstance(c, (WorkPiece, Group, StockItem))
         }
         current_visual_elements = [
             elem
             for elem in self.children
-            if isinstance(elem, (WorkPieceView, GroupElement))
+            if isinstance(elem, (WorkPieceView, GroupElement, StockElement))
         ]
 
         # Remove elements for items no longer in the layer
@@ -128,8 +132,20 @@ class LayerElement(CanvasElement):
                     canvas=self.canvas,
                     selectable=self.data.visible,
                 )
+            elif isinstance(item_data, StockItem):
+                new_elem = StockElement(
+                    stock_item=item_data,
+                    canvas=self.canvas,
+                    # Stock is potentially selectable, but its get_elem_hit
+                    # method will make the final decision based on layer state.
+                    selectable=True,
+                )
+
             if new_elem:
                 self.add(new_elem)
+
+        if self.data.workflow is None:
+            return  # e.g. StockLayer, which has no workflow
 
         # Reconcile StepElements (Lifecycle Managers)
         current_step_elements = [

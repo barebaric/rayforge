@@ -1,6 +1,8 @@
+from typing import cast
 from gi.repository import Gtk, Adw  # type: ignore
 from ..models.laser import Laser
 from ...shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ...icons import get_icon
 
 
 class LaserPreferencesPage(Adw.PreferencesPage):
@@ -33,7 +35,7 @@ class LaserPreferencesPage(Adw.PreferencesPage):
             spacing=5,
             halign=Gtk.Align.END,
         )
-        add_button = Gtk.Button(icon_name="list-add-symbolic")
+        add_button = Gtk.Button(child=get_icon("add-symbolic"))
         add_button.connect("clicked", self.on_add_laserhead)
         remove_button = Gtk.Button(icon_name="list-remove-symbolic")
         remove_button.connect("clicked", self.on_remove_laserhead)
@@ -131,7 +133,10 @@ class LaserPreferencesPage(Adw.PreferencesPage):
             if i < row_count:
                 # Update existing row
                 row = self.laserhead_list.get_row_at_index(i)
-                row.set_title(
+                if not row:
+                    continue
+                action_row = cast(Adw.ActionRow, row)
+                action_row.set_title(
                     _("Laser (Max Power: {head.max_power})").format(head=head)
                 )
             else:
@@ -148,7 +153,8 @@ class LaserPreferencesPage(Adw.PreferencesPage):
         # Remove extra rows
         while row_count > len(self.machine.heads):
             last_row = self.laserhead_list.get_row_at_index(row_count - 1)
-            self.laserhead_list.remove(last_row)
+            if last_row:
+                self.laserhead_list.remove(last_row)
             row_count -= 1
 
         # Restore selection

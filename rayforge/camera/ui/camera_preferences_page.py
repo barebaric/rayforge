@@ -4,6 +4,7 @@ from typing import List
 from ..models.camera import Camera
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
+from ...icons import get_icon
 
 
 class CameraPreferencesPage(Adw.PreferencesPage):
@@ -42,7 +43,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
             spacing=5,
             halign=Gtk.Align.END,
         )
-        add_camera_button = Gtk.Button(icon_name="list-add-symbolic")
+        add_camera_button = Gtk.Button(child=get_icon("add-symbolic"))
         add_camera_button.connect("clicked", self.on_add_camera)
         remove_camera_button = Gtk.Button(icon_name="list-remove-symbolic")
         remove_camera_button.connect("clicked", self.on_remove_camera)

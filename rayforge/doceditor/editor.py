@@ -2,9 +2,11 @@ from __future__ import annotations
 import logging
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 from blinker import Signal
 from ..core.doc import Doc
+from ..core.layer import Layer
+from ..core.stocklayer import StockLayer
 from ..pipeline.generator import OpsGenerator
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
@@ -12,6 +14,7 @@ from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .transform_cmd import TransformCmd
+from .stock_cmd import StockCmd
 from ..machine.cmd import MachineCmd
 
 if TYPE_CHECKING:
@@ -57,6 +60,7 @@ class DocEditor:
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
+        self.notification_requested = Signal()  # For UI feedback
         self.ops_generator.processing_state_changed.connect(
             self._on_processing_state_changed
         )
@@ -68,7 +72,41 @@ class DocEditor:
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self._task_manager)
         self.transform = TransformCmd(self)
+        self.stock = StockCmd(self)
         self.machine = MachineCmd(self)
+
+    @property
+    def machine_dimensions(self) -> Optional[Tuple[float, float]]:
+        """Returns the configured machine's dimensions, or None."""
+        machine = self._config_manager.config.machine
+        if machine:
+            return machine.dimensions
+        return None
+
+    @property
+    def default_workpiece_layer(self) -> Layer:
+        """
+        Determines the most appropriate layer for adding new workpieces.
+        - If the active layer is a standard layer, returns it.
+        - If the active layer is a stock layer, returns the topmost standard
+          layer.
+        - If no standard layers exist, it creates one.
+        """
+        active_layer = self.doc.active_layer
+        if not isinstance(active_layer, StockLayer):
+            return active_layer
+
+        # Active layer is stock, find the top-most standard layer
+        for child in reversed(self.doc.children):
+            if isinstance(child, Layer) and not isinstance(child, StockLayer):
+                return child
+
+        # No standard layer found, so create one.
+        # This is an edge case, but good to handle.
+        logger.warning("No standard layer found; creating a new one.")
+        new_layer = Layer(_("Layer 1"))
+        self.doc.add_layer(new_layer)
+        return new_layer
 
     async def wait_until_settled(self, timeout: float = 10.0) -> None:
         """

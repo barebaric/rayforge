@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Any,
 )
+from copy import deepcopy
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,13 @@ class Geometry:
     def __len__(self) -> int:
         return len(self.commands)
 
+    def copy(self: T_Geometry) -> T_Geometry:
+        """Creates a deep copy of the Geometry object."""
+        new_geo = self.__class__()
+        new_geo.commands = deepcopy(self.commands)
+        new_geo.last_move_to = self.last_move_to
+        return new_geo
+
     def is_empty(self) -> bool:
         return not self.commands
 
@@ -163,8 +171,12 @@ class Geometry:
             p0[0] + arc_cmd.center_offset[0],
             p0[1] + arc_cmd.center_offset[1],
         )
-        radius = math.dist(p0[:2], center)
-        if radius == 0:
+
+        radius_start = math.dist(p0[:2], center)
+        radius_end = math.dist(p1[:2], center)
+
+        # If the start point is the center, it's just a line to the end.
+        if radius_start == 0:
             return [(p0, p1)]
 
         start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
@@ -177,12 +189,16 @@ class Geometry:
             if angle_range < 0:
                 angle_range += 2 * math.pi
 
-        arc_len = abs(angle_range * radius)
+        # Use the average radius to get a better estimate for arc length
+        avg_radius = (radius_start + radius_end) / 2
+        arc_len = abs(angle_range * avg_radius)
         num_segments = max(2, int(arc_len / 0.5))
 
         prev_pt = p0
         for i in range(1, num_segments + 1):
             t = i / num_segments
+            # Interpolate radius and angle to handle imperfectly defined arcs
+            radius = radius_start + (radius_end - radius_start) * t
             angle = start_angle + angle_range * t
             z = z0 + (z1 - z0) * t
             next_pt = (

@@ -16,6 +16,11 @@ class ActionManager:
         self.actions: Dict[str, Gio.SimpleAction] = {}
         # A convenient alias to the central controller
         self.editor = self.win.doc_editor
+        self.doc = self.editor.doc
+
+        # Connect to doc signals to update action states
+        self.doc.descendant_added.connect(self.update_action_states)
+        self.doc.descendant_removed.connect(self.update_action_states)
 
     def register_actions(self):
         """Creates all Gio.SimpleActions and adds them to the window."""
@@ -67,6 +72,7 @@ class ActionManager:
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
         self._add_action("layer-move-down", self.on_layer_move_down)
+        self._add_action("add_stock", self.on_add_stock)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -96,6 +102,17 @@ class ActionManager:
             self.win.on_hold_state_change,
             GLib.Variant.new_boolean(False),
         )
+
+        self.update_action_states()
+
+    def update_action_states(self, *args, **kwargs):
+        """Updates the enabled state of actions based on document state."""
+        # The "Add Stock" button should always be enabled.
+        self.actions["add_stock"].set_enabled(True)
+
+    def on_add_stock(self, action, param):
+        """Handler for the 'add_stock' action."""
+        self.editor.stock.add_stock_item()
 
     def set_accelerators(self, app: Gtk.Application):
         """Sets keyboard accelerators for the application's actions."""

@@ -85,7 +85,11 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
     step = steps.create_contour_step(name="Vectorize")
     step.set_power(500)
     step.set_cut_speed(3000)
-    editor.doc.active_layer.workflow.add_step(step)
+    
+    # Safely access the workflow from the active layer
+    workflow = editor.doc.active_layer.workflow
+    assert workflow is not None, "Active layer must have a workflow for this test"
+    workflow.add_step(step)
 
     svg_path = assets_path / "10x10_square.svg"
     expected_gcode_path = assets_path / "expected_square.gcode"

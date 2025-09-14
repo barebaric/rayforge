@@ -51,7 +51,7 @@ class MachineStatusIconWidget(Gtk.Box):
         elif status == DeviceStatus.UNLOCK:
             return "process-working-symbolic"
         elif status == DeviceStatus.CYCLE:
-            return "view-refresh-symbolic"
+            return "refresh-symbolic"
         elif status == DeviceStatus.TEST:
             return "utilities-terminal-symbolic"
         else:

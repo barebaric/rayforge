@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
+from ...core.stocklayer import StockLayer
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...undo.models.property_cmd import ChangePropertyCommand
@@ -50,7 +51,7 @@ class LayerView(Gtk.Box):
     delete_clicked = Signal()
 
     def __init__(self, doc: Doc, layer: Layer):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
         # Apply CSS globally, but only once.
         self.apply_css()
@@ -59,6 +60,11 @@ class LayerView(Gtk.Box):
 
         self.doc = doc
         self.layer = layer
+
+        # A container to hold the icon, allowing it to be replaced.
+        self.icon_container = Gtk.Box()
+        self.icon_container.set_valign(Gtk.Align.CENTER)
+        self.append(self.icon_container)
 
         # Box for title and subtitle, now correctly centered.
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -203,30 +209,45 @@ class LayerView(Gtk.Box):
 
     def update_ui(self):
         """Synchronizes the widget's state with the layer data."""
-        if not self.name_entry.has_focus():
+        # Remove the old icon, if one exists, before adding the new one.
+        if old_icon := self.icon_container.get_first_child():
+            self.icon_container.remove(old_icon)
+
+        if isinstance(self.layer, StockLayer):
+            self.icon_container.append(get_icon("stock-symbolic"))
             self.name_entry.set_text(self.layer.name)
-
-        # Get step names from the layer's workflow
-        step_names = [s.name for s in self.layer.workflow]
-        steps_string = ", ".join(step_names)
-
-        # Get workpiece count string
-        count = len(self.layer.all_workpieces)
-        if count == 1:
-            workpiece_string = _("{count} workpiece").format(count=count)
+            self.name_entry.set_editable(False)
+            self.subtitle_label.set_text(_("Stock Material"))
+            self.subtitle_label.set_tooltip_text(_("Stock Material"))
+            self.visibility_button.set_visible(True)
         else:
-            workpiece_string = _("{count} workpieces").format(count=count)
+            self.icon_container.append(get_icon("layer-symbolic"))
+            self.name_entry.set_editable(True)
+            if not self.name_entry.has_focus():
+                self.name_entry.set_text(self.layer.name)
 
-        # Combine them into the final subtitle
-        if steps_string:
-            # Example: "Outline, Rasterize 4 workpieces"
-            subtitle_text = f"{steps_string} {workpiece_string}"
-        else:
-            # Example: "4 workpieces"
-            subtitle_text = workpiece_string
+            # Get step names from the layer's workflow
+            workflow = self.layer.workflow
+            step_names = [s.name for s in workflow] if workflow else []
+            steps_string = ", ".join(step_names)
 
-        self.subtitle_label.set_label(subtitle_text)
-        self.subtitle_label.set_tooltip_text(subtitle_text)
+            # Get workpiece count string
+            count = len(self.layer.all_workpieces)
+            if count == 1:
+                workpiece_string = _("{count} workpiece").format(count=count)
+            else:
+                workpiece_string = _("{count} workpieces").format(count=count)
+
+            # Combine them into the final subtitle
+            if steps_string:
+                # Example: "Outline, Rasterize 4 workpieces"
+                subtitle_text = f"{steps_string} {workpiece_string}"
+            else:
+                # Example: "4 workpieces"
+                subtitle_text = workpiece_string
+
+            self.subtitle_label.set_label(subtitle_text)
+            self.subtitle_label.set_tooltip_text(subtitle_text)
 
         # Sync the visibility button's state and icon with the model.
         # Assume 'visible' property exists, default to True for robustness.

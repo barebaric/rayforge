@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING
+from blinker import Signal
 from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
@@ -29,6 +30,7 @@ class LayoutStrategy(ABC):
             raise ValueError(
                 "LayoutStrategy requires at least one item after filtering."
             )
+        self.error_reported = Signal()
 
     @staticmethod
     def _filter_descendants(items: Sequence[DocItem]) -> list[DocItem]:

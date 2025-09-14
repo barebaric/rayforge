@@ -1,5 +1,6 @@
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk
 from ...icons import get_icon
+from ..util.gtk import apply_css
 
 
 css = """
@@ -61,7 +62,7 @@ class Expander(Gtk.Box):
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
-        self.apply_css()
+        apply_css(css)
         self.add_css_class("expander-card")
 
         # Header
@@ -97,7 +98,7 @@ class Expander(Gtk.Box):
         self.subtitle_label.add_css_class("expander-subtitle")
         label_box.append(self.subtitle_label)
 
-        self.arrow = get_icon("pan-end-symbolic")
+        self.arrow = get_icon("chevron-right-symbolic")
         self.arrow.add_css_class("expander-arrow")
         self.arrow.set_valign(Gtk.Align.CENTER)
         header_content_box.append(self.arrow)
@@ -139,14 +140,3 @@ class Expander(Gtk.Box):
             self.remove_css_class("expanded")
             self.arrow.remove_css_class("accent")
             self.arrow.remove_css_class("rotated")
-
-    @staticmethod
-    def apply_css():
-        """Load CSS once for all instances of this widget."""
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )

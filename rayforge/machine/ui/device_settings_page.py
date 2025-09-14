@@ -1,6 +1,6 @@
 import logging
-from typing import List
-from gi.repository import Gtk, Adw, GLib, Gdk  # type: ignore
+from typing import List, cast
+from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...config import config
 from ...shared.varset.varsetwidget import VarSetWidget, VarSet
@@ -43,7 +43,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
 
         # Create header controls once and store them
         self.spinner = Gtk.Spinner()
-        self.read_button = Gtk.Button(child=get_icon("view-refresh-symbolic"))
+        self.read_button = Gtk.Button(child=get_icon("refresh-symbolic"))
         self.read_button.set_tooltip_text(_("Read from Device"))
         self.read_button.connect("clicked", self._on_read_clicked)
         self.header_box = Gtk.Box(spacing=6)
@@ -64,16 +64,14 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.error_row.set_icon_name("dialog-error-symbolic")
         self.error_row.add_css_class("error")
 
-        copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
+        copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
         copy_button.set_tooltip_text(_("Copy Error Details"))
         copy_button.add_css_class("flat")
         copy_button.set_valign(Gtk.Align.CENTER)
         copy_button.connect("clicked", self._on_copy_error_clicked)
         self.error_row.add_suffix(copy_button)
 
-        error_close_button = Gtk.Button(
-            child=get_icon("window-close-symbolic")
-        )
+        error_close_button = Gtk.Button(child=get_icon("close-symbolic"))
         error_close_button.set_tooltip_text(_("Dismiss Error"))
         error_close_button.add_css_class("flat")
         error_close_button.set_valign(Gtk.Align.CENTER)
@@ -97,7 +95,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
             warning_row.set_icon_name("dialog-warning-symbolic")
             warning_row.add_css_class("warning")
 
-            close_button = Gtk.Button(child=get_icon("window-close-symbolic"))
+            close_button = Gtk.Button(child=get_icon("close-symbolic"))
             close_button.set_tooltip_text(_("Dismiss Warning"))
             close_button.add_css_class("flat")
             close_button.set_valign(Gtk.Align.CENTER)
@@ -126,9 +124,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.machine.connection_status_changed.connect(
             self._on_connection_status_changed
         )
-        self.machine.settings_updated.connect(
-            self._on_settings_op_success
-        )
+        self.machine.settings_updated.connect(self._on_settings_op_success)
         self.machine.setting_applied.connect(self._on_setting_applied)
         self.machine.settings_error.connect(self._on_settings_op_error)
         self.connect("destroy", self.on_destroy)
@@ -143,9 +139,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.machine.connection_status_changed.disconnect(
             self._on_connection_status_changed
         )
-        self.machine.settings_updated.disconnect(
-            self._on_settings_op_success
-        )
+        self.machine.settings_updated.disconnect(self._on_settings_op_success)
         self.machine.setting_applied.disconnect(self._on_setting_applied)
         self.machine.settings_error.disconnect(self._on_settings_op_error)
         if self._error_timeout_id > 0:
@@ -260,7 +254,11 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         logger.debug("Success signal received with var_sets (from read).")
 
         scrolled_window = self.get_ancestor(Gtk.ScrolledWindow)
-        adj = scrolled_window.get_vadjustment() if scrolled_window else None
+        adj = (
+            cast(Gtk.ScrolledWindow, scrolled_window).get_vadjustment()
+            if scrolled_window
+            else None
+        )
         scroll_value = (
             adj.get_value() if adj and self._varset_widgets else None
         )

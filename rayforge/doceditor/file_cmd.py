@@ -133,9 +133,7 @@ class FileCmd:
         except Exception:
             logger.exception("Error opening file")
 
-    def load_file_from_path(
-        self, filename: Path, mime_type: Optional[str]
-    ):
+    def load_file_from_path(self, filename: Path, mime_type: Optional[str]):
         """
         Orchestrates the loading of a specific file path using the
         importer.
@@ -167,10 +165,13 @@ class FileCmd:
         if imported_items:
             self._center_imported_items(imported_items)
 
+            # Use the editor's helper to get the correct target layer
+            target_layer = self._editor.default_workpiece_layer
+
             with self._editor.history_manager.transaction(cmd_name) as t:
                 for item in imported_items:
                     command = ListItemCommand(
-                        owner_obj=self._editor.doc.active_layer,
+                        owner_obj=target_layer,
                         item=item,
                         undo_command="remove_child",
                         redo_command="add_child",

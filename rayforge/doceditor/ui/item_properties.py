@@ -2,6 +2,9 @@ import logging
 from gi.repository import Gtk, Adw, Gio
 from typing import Optional, Tuple, List, cast
 from pathlib import Path
+
+from ...core.stock import StockItem
+from ...core.group import Group
 from ...shared.ui.expander import Expander
 from ...config import config
 from ...core.workpiece import WorkPiece
@@ -147,9 +150,11 @@ class DocItemPropertiesWidget(Expander):
         self, item: DocItem, value: float, changed_dim: str
     ) -> Tuple[Optional[float], Optional[float]]:
         """Calculates new width and height maintaining aspect ratio."""
-        if not isinstance(item, WorkPiece):
-            return None, None
-        aspect_ratio = item.get_current_aspect_ratio()
+        # This now works for both WorkPiece and StockItem via duck-typing.
+        aspect_ratio = None
+        if isinstance(item, (WorkPiece, StockItem)):
+            aspect_ratio = item.get_current_aspect_ratio()
+
         if not aspect_ratio:
             return None, None
 
@@ -376,9 +381,7 @@ class DocItemPropertiesWidget(Expander):
                     item.angle = new_angle
                 return
 
-            with doc.history_manager.transaction(
-                _("Change item angle")
-            ) as t:
+            with doc.history_manager.transaction(_("Change item angle")) as t:
                 for item in self.items:
                     old_matrix = item.matrix.copy()
                     item.angle = new_angle
@@ -396,11 +399,11 @@ class DocItemPropertiesWidget(Expander):
 
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
-        # Check if the primary selected item is a workpiece
-        is_workpiece = (
-            self.items and isinstance(self.items[0], WorkPiece)
+        # Check if the primary selected item is a workpiece or stock item
+        is_ratio_lockable = self.items and isinstance(
+            self.items[0], (WorkPiece, StockItem)
         )
-        if not is_workpiece:
+        if not is_ratio_lockable:
             # For groups or multi-select, lock-ratio doesn't have a clear
             # definition of 'natural aspect', so we disable it.
             switch_row.set_sensitive(False)
@@ -434,12 +437,12 @@ class DocItemPropertiesWidget(Expander):
             _("Reset item aspect ratio")
         ) as t:
             for item in self.items:
-                if not isinstance(item, WorkPiece):
+                if not isinstance(item, (WorkPiece, StockItem)):
                     continue
 
                 current_size = item.size
                 current_width = current_size[0]
-                default_aspect = item.get_default_aspect_ratio()
+                default_aspect = item.get_natural_aspect_ratio()
                 if not default_aspect or default_aspect == 0:
                     continue
 
@@ -463,11 +466,9 @@ class DocItemPropertiesWidget(Expander):
                 config.machine.dimensions if config.machine else default_dim
             )
             for item in self.items:
-                if not isinstance(item, WorkPiece):
+                if not isinstance(item, (WorkPiece, StockItem)):
                     continue
-                natural_width, natural_height = item.get_default_size(
-                    *bounds
-                )
+                natural_width, natural_height = item.get_default_size(*bounds)
                 new_size = (natural_width, natural_height)
 
                 if new_size == item.size:
@@ -535,6 +536,18 @@ class DocItemPropertiesWidget(Expander):
 
         self._in_update = True
         try:
+            # Determine selection type and update title
+            if len(self.items) > 1:
+                self.set_title(_("Multiple Items"))
+            elif isinstance(item, StockItem):
+                self.set_title(_("Stock Properties"))
+            elif isinstance(item, WorkPiece):
+                self.set_title(_("Workpiece Properties"))
+            elif isinstance(item, Group):
+                self.set_title(_("Group Properties"))
+            else:
+                self.set_title(_("Item Properties"))
+
             bounds = (
                 config.machine.dimensions if config.machine else default_dim
             )
@@ -549,9 +562,7 @@ class DocItemPropertiesWidget(Expander):
                 self.y_row.set_subtitle(_("Zero is at the top"))
                 machine_height = bounds[1]
                 pos_machine_x = pos_world[0]
-                pos_machine_y = (
-                    machine_height - pos_world[1] - size_world[1]
-                )
+                pos_machine_y = machine_height - pos_world[1] - size_world[1]
             else:
                 self.y_row.set_subtitle(_("Zero is at the bottom"))
                 pos_machine_x, pos_machine_y = pos_world
@@ -565,15 +576,29 @@ class DocItemPropertiesWidget(Expander):
             is_single_workpiece = len(self.items) == 1 and isinstance(
                 item, WorkPiece
             )
-            self.source_file_row.set_visible(is_single_workpiece)
-            self.natural_size_row.set_visible(is_single_workpiece)
-            self.reset_aspect_button.set_sensitive(is_single_workpiece)
-            self.reset_size_button.set_sensitive(is_single_workpiece)
-            self.fixed_ratio_switch.set_sensitive(is_single_workpiece)
+            is_single_stockitem = len(self.items) == 1 and isinstance(
+                item, StockItem
+            )
+            is_single_item_with_size = (
+                is_single_workpiece or is_single_stockitem
+            )
 
-            if len(self.items) == 1 and isinstance(item, WorkPiece):
-                # Type is now narrowed for Pylance
-                workpiece = item
+            # Show/hide controls based on selection type
+            self.source_file_row.set_visible(is_single_workpiece)
+            self.natural_size_row.set_visible(is_single_item_with_size)
+            self.reset_buttons_row.set_visible(is_single_item_with_size)
+            self.fixed_ratio_switch.set_sensitive(is_single_item_with_size)
+
+            if is_single_item_with_size:
+                # This works for both WorkPiece and StockItem
+                assert isinstance(item, (WorkPiece, StockItem))
+                natural_width, natural_height = item.get_default_size(*bounds)
+                self.natural_size_label.set_label(
+                    f"{natural_width:.2f}x{natural_height:.2f}"
+                )
+
+            if is_single_workpiece:
+                workpiece = cast(WorkPiece, item)
                 try:
                     file_path = Path(workpiece.source_file)
                     if file_path.is_file():
@@ -581,19 +606,11 @@ class DocItemPropertiesWidget(Expander):
                         self.open_source_button.set_sensitive(True)
                     else:
                         self.source_file_row.set_subtitle(
-                            _("{name} (not found)").format(
-                                name=file_path.name
-                            )
+                            _("{name} (not found)").format(name=file_path.name)
                         )
                         self.open_source_button.set_sensitive(False)
                 except (TypeError, ValueError):
                     self.open_source_button.set_sensitive(False)
 
-                natural_width, natural_height = workpiece.get_default_size(
-                    *bounds
-                )
-                self.natural_size_label.set_label(
-                    f"{natural_width:.2f}x{natural_height:.2f}"
-                )
         finally:
             self._in_update = False
