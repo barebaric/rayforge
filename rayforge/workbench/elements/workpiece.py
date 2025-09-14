@@ -149,13 +149,32 @@ class WorkPieceView(CanvasElement):
         self.trigger_update()
 
     def _on_transform_changed(self, workpiece: WorkPiece):
-        """Handler for when the workpiece model's transform changes."""
+        """
+        Handler for when the workpiece model's transform changes.
+
+        This is the key fix for the blurriness issue. When the transform
+        changes, we check if the object's *size* has also changed. If so,
+        the buffered raster image is now invalid (it would be stretched and
+        blurry), so we must trigger a full update to re-render it cleanly at
+        the new resolution.
+        """
         if not self.canvas or self.transform == workpiece.matrix:
             return
         logger.debug(
             f"Transform changed for '{workpiece.name}', updating view."
         )
+
+        # Get the size from the view's current (old) transform matrix.
+        old_w, old_h = self.transform.get_abs_scale()
+
         self.set_transform(workpiece.matrix)
+
+        # Get the size from the new transform that was just set.
+        new_w, new_h = self.transform.get_abs_scale()
+
+        # Check for a meaningful change in size to invalidate the cache.
+        if abs(new_w - old_w) > 1e-6 or abs(new_h - old_h) > 1e-6:
+            self.trigger_update()
 
     def _on_ops_generation_starting(
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
@@ -211,7 +230,7 @@ class WorkPieceView(CanvasElement):
         if not ops or not self.canvas:
             return None
 
-        # --- FLICKER-FREE LOGIC: Create a new surface from scratch ---
+        # Create a new surface from scratch
         work_surface = cast("WorkSurface", self.canvas)
         world_w, world_h = self.data.size
         view_ppm_x, view_ppm_y = work_surface.get_view_scale()
@@ -462,7 +481,7 @@ class WorkPieceView(CanvasElement):
 
     def trigger_ops_rerender(self):
         """Triggers a re-render of all applicable ops for this workpiece."""
-        if not self.data.layer:
+        if not self.data.layer or not self.data.layer.workflow:
             return
         logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
         applicable_steps = self.data.layer.workflow.steps
