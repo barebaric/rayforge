@@ -481,7 +481,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             )
             if unrotated_w_mm <= 0 or unrotated_h_mm <= 0:
                 return None
-            source_surface = item.importer.render_to_pixels(
+            source_surface = item.renderer.render_to_pixels(
+                item,
                 width=int(unrotated_w_mm * self.resolution),
                 height=int(unrotated_h_mm * self.resolution),
             )
@@ -511,7 +512,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     ctx.restore()
                     continue
 
-                wp_surf = wp.importer.render_to_pixels(
+                wp_surf = wp.renderer.render_to_pixels(
+                    wp,
                     width=int(wp_w * self.resolution),
                     height=int(wp_h * self.resolution),
                 )
