@@ -19,26 +19,40 @@ def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
 def split_long_segments(operations: List[Command]) -> List[List[Command]]:
     """
     Split a list of operations such that segments where air assist
-    is enabled are separated from segments where it is not. We
-    need this because these segments must remain in order,
-    so we need to separate them and run the path optimizer on
-    each segment individually.
+    is enabled are separated from segments where it is not. We also
+    split on marker commands, as their order must be preserved.
 
     The result is a list of Command lists.
     """
-    if len(operations) <= 1:
-        return [operations]
+    if not operations:
+        return []
 
-    segments = [[operations[0]]]
-    last_state = operations[0].state
-    for op in operations[1:]:
+    segments: List[List[Command]] = []
+    current_segment: List[Command] = []
+
+    for op in operations:
+        # Markers always create a new segment boundary.
+        if op.is_marker_command():
+            if current_segment:
+                segments.append(current_segment)
+            segments.append([op])  # The marker gets its own segment.
+            current_segment = []
+            continue
+
+        if not current_segment:
+            current_segment.append(op)
+            continue
+
+        last_state = current_segment[-1].state
         if last_state and op.state and last_state.allow_rapid_change(op.state):
-            segments[-1].append(op)
+            current_segment.append(op)
         else:
-            # If rapid state change is not allowed, add
-            # it to a new long segment.
-            segments.append([op])
-            last_state = op.state
+            segments.append(current_segment)
+            current_segment = [op]
+
+    if current_segment:
+        segments.append(current_segment)
+
     return segments
 
 
@@ -338,6 +352,14 @@ class Optimize(OpsTransformer):
             if context.is_cancelled():
                 return
 
+            # If the segment is a marker, just pass it through without
+            # optimizing
+            if long_segment and long_segment[0].is_marker_command():
+                result.append(long_segment)
+                # Still need to advance the progress bar for this segment
+                optimize_ctx.set_progress((i + 1) / total_long_segments)
+                continue
+
             context.set_message(
                 _("Optimizing segment {i}/{total}...").format(
                     i=i + 1, total=total_long_segments
@@ -404,18 +426,27 @@ class Optimize(OpsTransformer):
         # Step 5: Re-assemble the Ops object.
         context.set_message(_("Reassembling optimized paths..."))
         reassemble_ctx = context.sub_context(
-            base_progress=optimize_weight,
-            progress_range=reassemble_weight
+            base_progress=optimize_weight, progress_range=reassemble_weight
         )
 
-        flat_result = [item for sublist in result for item in sublist]
-        total_reassemble_segments = len(flat_result)
+        flat_result_segments = []
+        for item in result:
+            if item and isinstance(item[0], list):
+                flat_result_segments.extend(item)
+            else:
+                flat_result_segments.append(item)
+
+        total_reassemble_segments = len(flat_result_segments)
         reassemble_ctx.set_total(total_reassemble_segments)
 
         ops.commands = []
         prev_state = State()
-        for i, segment in enumerate(flat_result):
+        for i, segment in enumerate(flat_result_segments):
             if not segment:
+                continue
+
+            if segment[0].is_marker_command():
+                ops.add(segment[0])
                 continue
 
             for cmd in segment:

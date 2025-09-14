@@ -51,7 +51,11 @@ class OpsRenderer(BaseRenderer):
         last_point: Tuple[float, float, float] = 0.0, 0.0, 0.0
 
         for command in getattr(ops, "commands", []):
-            if not isinstance(command, Command) or command.end is None:
+            if (
+                not isinstance(command, Command)
+                or command.is_marker_command()
+                or command.end is None
+            ):
                 continue
 
             # Convert to GL coordinates (Z-up, so direct mapping)

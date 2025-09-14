@@ -40,7 +40,7 @@ class CairoEncoder(OpsEncoder):
         prev_point_2d = 0, ymax
         for segment in ops.segments():
             for cmd in segment:
-                if cmd.end is None:
+                if cmd.end is None or cmd.is_marker_command():
                     continue
 
                 x, y, z = cmd.end

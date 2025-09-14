@@ -1,7 +1,5 @@
 import unittest
 from typing import List, cast
-
-# Correct imports as specified by the user
 from rayforge.core.ops import (
     Ops,
     State,
@@ -9,6 +7,8 @@ from rayforge.core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    JobStartCommand,
+    MovingCommand,
 )
 from rayforge.pipeline.transformer.optimize import (
     Optimize,
@@ -20,10 +20,6 @@ from rayforge.pipeline.transformer.optimize import (
     two_opt,
     _dist_2d,
 )
-
-# Assuming the real context classes are available for import, which is best
-# practice and resolves type mismatches with the optimizer's function
-# signatures.
 from rayforge.shared.tasker.context import (
     BaseExecutionContext,
     ExecutionContext,
@@ -72,13 +68,19 @@ class TestOptimizerHelpers(unittest.TestCase):
         self.assertEqual([len(s) for s in segments], [1, 2, 2, 1])
 
         # Empty and single command lists
-        self.assertEqual(
-            len(split_long_segments([])[0]), 0, "Handles empty list"
-        )
+        self.assertEqual(split_long_segments([]), [], "Handles empty list")
         cmds4 = self._create_commands_with_states([True])
         self.assertEqual(
             len(split_long_segments(cmds4)), 1, "Handles single command"
         )
+
+        # Test with marker commands
+        cmds_with_marker = self._create_commands_with_states([True, True])
+        cmds_with_marker.insert(1, JobStartCommand())  # [cmd_T, marker, cmd_T]
+        segments_with_marker = split_long_segments(cmds_with_marker)
+        self.assertEqual(len(segments_with_marker), 3)
+        self.assertEqual([len(s) for s in segments_with_marker], [1, 1, 1])
+        self.assertIsInstance(segments_with_marker[1][0], JobStartCommand)
 
     def test_split_segments(self):
         """Test splitting a list of commands into re-orderable paths."""
@@ -413,6 +415,60 @@ class TestOptimizerIntegration(unittest.TestCase):
                 )
                 assert cmd.state
                 self.assertTrue(cmd.state.air_assist, "State should be air ON")
+
+    def test_run_preserves_markers(self):
+        """Verify that marker commands act as optimization boundaries."""
+        ops = Ops()
+        ops.set_power(100)
+
+        # Inefficient path with a marker in the middle
+        ops.move_to(0, 0)
+        ops.line_to(10, 0)  # Seg 1
+        ops.move_to(100, 100)
+        ops.line_to(110, 100)  # Seg 2
+        ops.add(JobStartCommand())  # Marker
+        ops.move_to(10, 0)
+        ops.line_to(10, 10)  # Seg 3
+        ops.move_to(110, 100)
+        ops.line_to(110, 110)  # Seg 4
+
+        optimizer = Optimize()
+        optimizer.run(ops)
+
+        # Find the marker
+        marker_idx = -1
+        for i, cmd in enumerate(ops.commands):
+            if isinstance(cmd, JobStartCommand):
+                marker_idx = i
+                break
+
+        self.assertNotEqual(
+            marker_idx, -1, "Marker command should be preserved"
+        )
+
+        # Check that segments before the marker were optimized together
+        moving_cmds_before = [
+            c
+            for c in ops.commands[:marker_idx]
+            if isinstance(c, MovingCommand)
+        ]
+        self.assertEqual(len(moving_cmds_before), 4)
+        self.assertEqual(moving_cmds_before[0].end, (0, 0, 0))  # Start S1
+        self.assertEqual(moving_cmds_before[1].end, (10, 0, 0))  # End S1
+        self.assertEqual(moving_cmds_before[2].end, (100, 100, 0))  # Start S2
+        self.assertEqual(moving_cmds_before[3].end, (110, 100, 0))  # End S2
+
+        # Check that segments after the marker were optimized together
+        moving_cmds_after = [
+            c
+            for c in ops.commands[marker_idx + 1 :]
+            if isinstance(c, MovingCommand)
+        ]
+        self.assertEqual(len(moving_cmds_after), 4)
+        self.assertEqual(moving_cmds_after[0].end, (10, 0, 0))  # Start S3
+        self.assertEqual(moving_cmds_after[1].end, (10, 10, 0))  # End S3
+        self.assertEqual(moving_cmds_after[2].end, (110, 100, 0))  # Start S4
+        self.assertEqual(moving_cmds_after[3].end, (110, 110, 0))  # End S4
 
 
 if __name__ == "__main__":

@@ -99,6 +99,9 @@ class GcodeEncoder(OpsEncoder):
                 self._handle_arc_to(
                     gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
+            case _:
+                # Ignore marker commands and any other unhandled command types
+                pass
 
     def _emit_modal_speed(self, gcode: List[str], speed: float) -> None:
         """

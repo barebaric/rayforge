@@ -72,14 +72,19 @@ class Command:
         pass
 
     def is_state_command(self) -> bool:
+        """Whether this command modifies the machine state (power, speed)."""
         return False
 
     def is_cutting_command(self) -> bool:
-        """Whether it is a cutting movement"""
+        """Whether it is a cutting movement."""
         return False
 
     def is_travel_command(self) -> bool:
-        """Whether it is a non-cutting movement"""
+        """Whether it is a non-cutting movement."""
+        return False
+
+    def is_marker_command(self) -> bool:
+        """Whether this is a logical marker for the generator."""
         return False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -194,6 +199,70 @@ class DisableAirAssistCommand(Command):
         state.air_assist = False
 
 
+@dataclass(frozen=True, repr=False)
+class JobStartCommand(Command):
+    def is_marker_command(self) -> bool:
+        return True
+
+
+@dataclass(frozen=True, repr=False)
+class JobEndCommand(Command):
+    def is_marker_command(self) -> bool:
+        return True
+
+
+@dataclass(frozen=True, repr=False)
+class LayerStartCommand(Command):
+    layer_uid: str
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["layer_uid"] = self.layer_uid
+        return d
+
+
+@dataclass(frozen=True, repr=False)
+class LayerEndCommand(Command):
+    layer_uid: str
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["layer_uid"] = self.layer_uid
+        return d
+
+
+@dataclass(frozen=True, repr=False)
+class WorkpieceStartCommand(Command):
+    workpiece_uid: str
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["workpiece_uid"] = self.workpiece_uid
+        return d
+
+
+@dataclass(frozen=True, repr=False)
+class WorkpieceEndCommand(Command):
+    workpiece_uid: str
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["workpiece_uid"] = self.workpiece_uid
+        return d
+
+
 class Ops:
     """
     Represents a set of generated path segments and instructions that
@@ -245,6 +314,26 @@ class Ops:
                 new_ops.add(EnableAirAssistCommand())
             elif cmd_type == "DisableAirAssistCommand":
                 new_ops.add(DisableAirAssistCommand())
+            elif cmd_type == "JobStartCommand":
+                new_ops.add(JobStartCommand())
+            elif cmd_type == "JobEndCommand":
+                new_ops.add(JobEndCommand())
+            elif cmd_type == "LayerStartCommand":
+                new_ops.add(LayerStartCommand(layer_uid=cmd_data["layer_uid"]))
+            elif cmd_type == "LayerEndCommand":
+                new_ops.add(LayerEndCommand(layer_uid=cmd_data["layer_uid"]))
+            elif cmd_type == "WorkpieceStartCommand":
+                new_ops.add(
+                    WorkpieceStartCommand(
+                        workpiece_uid=cmd_data["workpiece_uid"]
+                    )
+                )
+            elif cmd_type == "WorkpieceEndCommand":
+                new_ops.add(
+                    WorkpieceEndCommand(
+                        workpiece_uid=cmd_data["workpiece_uid"]
+                    )
+                )
             else:
                 logger.warning(
                     "Skipping unknown command type during deserialization:"
@@ -311,7 +400,7 @@ class Ops:
         for cmd in self.commands:
             if cmd.is_state_command():
                 cmd.apply_to_state(state)
-            else:
+            elif not cmd.is_marker_command():
                 cmd.state = copy(state)
 
     def clear(self) -> None:
@@ -509,7 +598,7 @@ class Ops:
             elif command.is_cutting_command():
                 segment.append(command)
 
-            elif command.is_state_command():
+            elif command.is_state_command() or command.is_marker_command():
                 yield segment
                 yield [command]
                 segment = []
@@ -816,7 +905,7 @@ class Ops:
         clipped_pen_pos: Optional[Tuple[float, float, float]] = None
 
         for cmd in self.commands:
-            if cmd.is_state_command():
+            if cmd.is_state_command() or cmd.is_marker_command():
                 new_ops.add(deepcopy(cmd))
                 continue
 

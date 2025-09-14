@@ -10,7 +10,16 @@ from ..machine.models.machine import Machine
 from ..shared.tasker.context import ExecutionContext
 from ..shared.tasker.manager import CancelledError
 from ..core.doc import Doc
-from ..core.ops import Ops
+from ..core.layer import Layer
+from ..core.ops import (
+    Ops,
+    JobStartCommand,
+    JobEndCommand,
+    LayerStartCommand,
+    LayerEndCommand,
+    WorkpieceStartCommand,
+    WorkpieceEndCommand,
+)
 from ..pipeline.generator import OpsGenerator
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
@@ -130,67 +139,91 @@ async def generate_job_ops(
         encoded or sent to a driver.
     """
     final_ops = Ops()
+    final_ops.add(JobStartCommand())
     machine_width, machine_height = machine.dimensions
     clip_rect = 0, 0, machine_width, machine_height
 
-    # Group visible work items by their step
-    work_items_by_step: Dict[Step, List[WorkPiece]] = {}
+    # Group visible work items by their layer
+    work_items_by_layer: Dict[Layer, List[tuple[Step, WorkPiece]]] = {}
     total_items = 0
     for layer in doc.layers:
         renderable_items = layer.get_renderable_items()
-        for step, workpiece in renderable_items:
-            if step not in work_items_by_step:
-                work_items_by_step[step] = []
-            work_items_by_step[step].append(workpiece)
-        total_items += len(renderable_items)
+        if renderable_items:
+            work_items_by_layer[layer] = renderable_items
+            total_items += len(renderable_items)
 
     if not total_items:
+        final_ops.add(JobEndCommand())
         return final_ops
 
     processed_items = 0
-    for step, workpieces in work_items_by_step.items():
-        step_combined_ops = Ops()
+    for layer, items in work_items_by_layer.items():
+        final_ops.add(LayerStartCommand(layer_uid=layer.uid))
 
-        for workpiece in workpieces:
-            if context:
-                if context.is_cancelled():
-                    raise CancelledError("Operation cancelled")
-                processed_items += 1
-                context.set_progress(processed_items / total_items)
-                context.set_message(
-                    _("Processing '{workpiece}' in '{step}'").format(
-                        workpiece=workpiece.source_file.name, step=step.name
+        # Re-group by step to apply post-step transformers correctly
+        work_items_by_step_in_layer: Dict[Step, List[WorkPiece]] = {}
+        for step, workpiece in items:
+            if step not in work_items_by_step_in_layer:
+                work_items_by_step_in_layer[step] = []
+            work_items_by_step_in_layer[step].append(workpiece)
+
+        for step, workpieces in work_items_by_step_in_layer.items():
+            step_combined_ops = Ops()
+
+            for workpiece in workpieces:
+                if context:
+                    if context.is_cancelled():
+                        raise CancelledError("Operation cancelled")
+                    processed_items += 1
+                    context.set_progress(processed_items / total_items)
+                    context.set_message(
+                        _("Processing '{workpiece}' in '{step}'").format(
+                            workpiece=workpiece.source_file.name,
+                            step=step.name,
+                        )
                     )
+                    await asyncio.sleep(0)
+
+                # This is the critical hand-off from the generator to the
+                # assembler.
+                workpiece_ops = ops_generator.get_ops(step, workpiece)
+                if not workpiece_ops:
+                    continue
+
+                # Wrap the workpiece ops with start/end markers
+                ops_with_markers = Ops()
+                ops_with_markers.add(
+                    WorkpieceStartCommand(workpiece_uid=workpiece.uid)
                 )
-                await asyncio.sleep(0)
+                ops_with_markers.commands.extend(workpiece_ops.commands)
+                ops_with_markers.add(
+                    WorkpieceEndCommand(workpiece_uid=workpiece.uid)
+                )
 
-            # This is the critical hand-off from the generator to the
-            # assembler.
-            workpiece_ops = ops_generator.get_ops(step, workpiece)
-            if not workpiece_ops:
-                continue
+                clipped_ops = _transform_and_clip_workpiece_ops(
+                    ops_with_markers, workpiece, machine, clip_rect
+                )
+                step_combined_ops += clipped_ops
 
-            clipped_ops = _transform_and_clip_workpiece_ops(
-                workpiece_ops, workpiece, machine, clip_rect
-            )
-            step_combined_ops += clipped_ops
-
-        # Apply post-step transformers to the combined ops for this step
-        post_transformers = _instantiate_transformers_from_step(step)
-        for transformer in post_transformers:
-            if context:
-                context.set_message(
-                    _("Applying '{transformer}' to '{step}'").format(
-                        transformer=transformer.label, step=step.name
+            # Apply post-step transformers to the combined ops for this step
+            post_transformers = _instantiate_transformers_from_step(step)
+            for transformer in post_transformers:
+                if context:
+                    context.set_message(
+                        _("Applying '{transformer}' to '{step}'").format(
+                            transformer=transformer.label, step=step.name
+                        )
                     )
-                )
-                await asyncio.sleep(0)
-            transformer.run(step_combined_ops, context=context)
+                    await asyncio.sleep(0)
+                transformer.run(step_combined_ops, context=context)
 
-        final_ops += step_combined_ops
+            final_ops += step_combined_ops
+        final_ops.add(LayerEndCommand(layer_uid=layer.uid))
 
     if context:
         context.set_progress(1.0)
         context.set_message(_("Job assembly complete"))
         context.flush()
+
+    final_ops.add(JobEndCommand())
     return final_ops

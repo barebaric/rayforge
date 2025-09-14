@@ -228,7 +228,7 @@ def split_into_segments(commands):
             current_segment.append(cmd)
             current_pos = cmd.end
 
-        elif cmd.is_state_command():
+        elif cmd.is_state_command() or cmd.is_marker_command():
             # All other commands are standalone
             if current_segment:
                 segments.append(current_segment)
