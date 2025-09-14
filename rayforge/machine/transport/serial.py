@@ -104,8 +104,8 @@ class SerialTransport(Transport):
                 " Please ensure the device is connected via USB and run:"
                 "\n\n"
                 "sudo snap set system experimental.hotplug=true\n"
-                f"sudo snap connect {snap_name}:serial-port"
-            )
+                "sudo snap connect {snap_name}:serial-port"
+            ).format(snap_name)
             raise SerialPortPermissionError(msg)
 
         elif not all_ports:
@@ -121,9 +121,9 @@ class SerialTransport(Transport):
                 "Serial ports found, but none are accessible. Please ensure"
                 " your Snap has the 'serial-port' interface connected by"
                 " running:\n\n"
-                "sudo snap set system experimental.hotplug=true"
-                f"sudo snap connect {snap_name}:serial-port"
-            )
+                "sudo snap set system experimental.hotplug=true\n"
+                "sudo snap connect {snap_name}:serial-port"
+            ).format(snap_name)
             raise SerialPortPermissionError(msg)
         else:
             msg = (
