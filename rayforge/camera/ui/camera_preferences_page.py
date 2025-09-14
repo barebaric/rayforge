@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from blinker import Signal
 from typing import List
 from ..models.camera import Camera

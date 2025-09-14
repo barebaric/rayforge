@@ -1,5 +1,5 @@
 import logging
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from ..models.camera import Camera
 from .display_widget import CameraDisplay
 

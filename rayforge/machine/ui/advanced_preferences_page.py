@@ -1,5 +1,5 @@
 import logging
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from ..models.dialect import get_available_dialects, get_dialect
 from ...shared.util.adwfix import get_spinrow_int
 

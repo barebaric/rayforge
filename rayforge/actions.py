@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
-from gi.repository import Gtk, Gio, GLib  # type: ignore
+from gi.repository import Gtk, Gio, GLib
 from .core.group import Group
 from .core.item import DocItem
 from .core.layer import Layer

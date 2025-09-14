@@ -1,5 +1,6 @@
-from gi.repository import Gtk, Adw, GdkPixbuf, Gdk  # type: ignore
+from gi.repository import Gtk, Adw, GdkPixbuf
 from typing import Optional
+from ...shared.util.gtk import apply_css
 from ..models.camera import Camera
 
 
@@ -11,23 +12,17 @@ class CameraSelectionDialog(Adw.MessageDialog):
             heading=_("Select Camera"),
             body=_("Please select an available camera device"),
             close_response="cancel",
-            **kwargs
+            **kwargs,
         )
         self.set_size_request(400, 300)  # Increased size
         self.selected_device_id: Optional[str] = None
 
         # Add CSS for hover effect
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_string("""
+        apply_css("""
             .rounded-image {
                 border-radius: 8px;
             }
         """)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
 
         self.carousel = Adw.Carousel()
         self.carousel.set_vexpand(True)
@@ -43,9 +38,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.set_extra_child(self.carousel)
 
         self.add_response("cancel", _("Cancel"))
-        self.set_response_enabled(
-            "cancel", True
-        )
+        self.set_response_enabled("cancel", True)
         self.set_default_response("cancel")
 
         self.available_devices: list[str] = []
@@ -118,9 +111,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             # Add a gesture recognizer for click
             gesture = Gtk.GestureClick.new()
             gesture.connect(
-                "released",
-                self.on_carousel_item_clicked,
-                device_id
+                "released", self.on_carousel_item_clicked, device_id
             )
             box.add_controller(gesture)
 

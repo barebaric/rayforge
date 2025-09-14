@@ -1,4 +1,5 @@
-from gi.repository import Adw, Gtk  # type: ignore
+from typing import cast, Optional
+from gi.repository import Adw, Gtk
 from ...config import machine_mgr, config
 from ..models.machine import Machine
 from ..models.profile import MachineProfile
@@ -113,12 +114,14 @@ class MachinePreferencesPage(Adw.PreferencesPage):
     def _on_edit_machine_clicked(self, button, machine: Machine):
         """Opens the detailed settings dialog for a specific machine."""
         dialog = MachineSettingsDialog(machine=machine)
-        dialog.present(self.get_root())
+        dialog.present(self.get_ancestor(Gtk.Window))
 
     def _on_delete_machine_clicked(self, button, machine: Machine):
         """Shows a confirmation dialog before deleting a machine."""
         dialog = Adw.MessageDialog(
-            transient_for=self.get_root(),
+            transient_for=cast(
+                Optional[Gtk.Window], self.get_ancestor(Gtk.Window)
+            ),
             modal=True,
             heading=_("Delete ‘{name}’?").format(name=machine.name),
             body=_(
@@ -146,7 +149,11 @@ class MachinePreferencesPage(Adw.PreferencesPage):
 
     def _on_add_machine_clicked(self, button):
         """Shows a dialog to select a machine profile to add."""
-        dialog = MachineProfileSelectorDialog(transient_for=self.get_root())
+        dialog = MachineProfileSelectorDialog(
+            transient_for=cast(
+                Optional[Gtk.Window], self.get_ancestor(Gtk.Window)
+            )
+        )
         dialog.profile_selected.connect(self._on_profile_selected_for_add)
         dialog.present()
 
@@ -156,4 +163,4 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         machine_mgr.add_machine(new_machine)
 
         editor_dialog = MachineSettingsDialog(machine=new_machine)
-        editor_dialog.present(self.get_root())
+        editor_dialog.present(self.get_ancestor(Gtk.Window))

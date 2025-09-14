@@ -1,8 +1,9 @@
 import logging
 from typing import Optional, Tuple
 from blinker import Signal
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk
 from ...icons import get_icon
+from ...shared.util.gtk import apply_css
 
 
 logger = logging.getLogger(__name__)
@@ -30,13 +31,7 @@ class PointBubbleWidget(Gtk.Box):
         self.image_y: Optional[float] = None
 
         # Add base CSS class for styling
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
+        apply_css(css)
         self.add_css_class("point-bubble")
 
         # Define blinker signals
@@ -130,7 +125,7 @@ class PointBubbleWidget(Gtk.Box):
     def clear_focus(self):
         if self.world_x_spin.has_focus() or self.world_y_spin.has_focus():
             window = self.world_x_spin.get_ancestor(Gtk.Window)
-            if window:
+            if isinstance(window, Gtk.Window):
                 window.set_focus(None)
 
     def set_active(self, active: bool):

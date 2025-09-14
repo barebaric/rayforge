@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from typing import Optional
 import logging
 from ..models.camera import Camera
@@ -115,16 +115,20 @@ class CameraProperties(Adw.PreferencesGroup):
         """Open the CameraImageSettingsDialog."""
         if not self._camera:
             return
-        dialog = CameraImageSettingsDialog(
-            self.get_ancestor(Gtk.Window), self._camera
-        )
-        dialog.present()
+        window = self.get_ancestor(Gtk.Window)
+        if isinstance(window, Gtk.Window):
+            dialog = CameraImageSettingsDialog(
+                window, self._camera
+            )
+            dialog.present()
 
     def on_image_alignment_button_clicked(self, button):
         """Open the CameraImageAlignmentDialog."""
         if not self._camera:
             return
-        dialog = CameraAlignmentDialog(
-            self.get_ancestor(Gtk.Window), self._camera
-        )
-        dialog.present()
+        window = self.get_ancestor(Gtk.Window)
+        if isinstance(window, Gtk.Window):
+            dialog = CameraAlignmentDialog(
+                window, self._camera
+            )
+            dialog.present()

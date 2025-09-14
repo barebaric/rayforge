@@ -10,6 +10,7 @@ from ...core.layer import Layer
 from ...shared.ui.draglist import DragListBox
 from .layer_view import LayerView
 from ...shared.ui.expander import Expander
+from ...icons import get_icon
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class LayerListView(Expander):
         button_box.set_margin_bottom(10)
         button_box.set_margin_start(12)
 
-        add_icon = Gtk.Image.new_from_icon_name("add-symbolic")
+        add_icon = get_icon("add-symbolic")
         button_box.append(add_icon)
 
         lbl = _("Add New Layer")
