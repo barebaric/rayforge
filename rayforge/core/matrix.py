@@ -519,6 +519,35 @@ class Matrix:
         xy, yy = self.m[0, 1], self.m[1, 1]
         return math.degrees(math.atan2(yy, xy))
 
+    @staticmethod
+    def compose(
+        tx: float,
+        ty: float,
+        angle_deg: float,
+        sx: float,
+        sy: float,
+        skew_angle_deg: float,
+    ) -> "Matrix":
+        """
+        Composes a matrix from translation, rotation, scale, and skew.
+        This is the inverse of the `decompose` method, assuming a
+        composition order of: Rotate, then Scale, then Shear.
+        """
+        R = Matrix.rotation(angle_deg)
+        S = Matrix.scale(sx, sy)
+
+        skew_rad = math.radians(skew_angle_deg)
+        shear_factor = math.tan(skew_rad)
+        K = Matrix.shear(shear_factor, 0)
+
+        # Combine linear transformations
+        linear_matrix = R @ S @ K
+
+        # Set the translation component
+        composed_matrix = linear_matrix.set_translation(tx, ty)
+
+        return composed_matrix
+
     def decompose(self) -> Tuple[float, float, float, float, float, float]:
         """
         Decomposes the matrix into translation, rotation, scale, and skew.

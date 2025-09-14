@@ -631,3 +631,58 @@ class TestMatrix:
         m_trans = Matrix.translation(50, -60)
         # [[1, 0, 50], [0, 1, -60], [0, 0, 1]]
         assert m_trans.for_cairo() == (1, 0, 0, 1, 50, -60)
+
+    def test_compose(self):
+        """Tests the new compose() static method."""
+        # Test case 1: Simple transform without shear
+        tx, ty, angle, sx, sy, skew = 10, 20, 30, 2, 3, 0
+        m1 = Matrix.compose(tx, ty, angle, sx, sy, skew)
+        m_manual = (
+            Matrix.translation(tx, ty)
+            @ Matrix.rotation(angle)
+            @ Matrix.scale(sx, sy)
+        )
+        assert m1 == m_manual
+
+        # Test case 2: Transform with shear and negative values
+        tx, ty, angle, sx, sy, skew = 50, -60, -45, 1.5, 2.5, 15
+        m2 = Matrix.compose(tx, ty, angle, sx, sy, skew)
+        d_tx, d_ty, d_angle, d_sx, d_sy, d_skew = m2.decompose()
+        assert tx == pytest.approx(d_tx)
+        assert ty == pytest.approx(d_ty)
+        assert angle == pytest.approx(d_angle)
+        assert sx == pytest.approx(d_sx)
+        assert sy == pytest.approx(d_sy)
+        assert skew == pytest.approx(d_skew)
+
+        # Test case 3: Transform with reflection
+        tx, ty, angle, sx, sy, skew = 0, 0, 0, 2, -3, 0
+        m3 = Matrix.compose(tx, ty, angle, sx, sy, skew)
+        m_scale = Matrix.scale(2, -3)
+        assert m3 == m_scale
+        d_tx, d_ty, d_angle, d_sx, d_sy, d_skew = m3.decompose()
+        assert sy == pytest.approx(d_sy)
+
+    def test_compose_decompose_roundtrip(self):
+        """
+        Tests that decomposing a complex matrix and then composing it from
+        the parts yields the original matrix.
+        """
+        # 1. Create a complex, known matrix
+        shear_factor = 0.5
+        K = Matrix.shear(shear_factor, 0)
+        T = Matrix.translation(10, -20)
+        R = Matrix.rotation(45)
+        S = Matrix.scale(-2, 3)  # Include reflection
+
+        # Composition order: Shear -> Scale -> Rotate -> Translate
+        M_original = T @ R @ S @ K
+
+        # 2. Decompose it
+        tx, ty, angle, sx, sy, skew = M_original.decompose()
+
+        # 3. Re-compose it from the decomposed parts
+        M_recomposed = Matrix.compose(tx, ty, angle, sx, sy, skew)
+
+        # 4. Assert that the matrices are equal
+        assert M_original == M_recomposed
