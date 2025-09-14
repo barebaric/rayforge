@@ -112,15 +112,35 @@ class DocItem(ABC):
         Sets the world-space position of the items's top-left corner
         by manipulating the matrix's translation component.
         """
-        current_pos_world = self.pos
+        world_transform_old = self.get_world_transform()
+        current_pos_world = world_transform_old.transform_point((0.0, 0.0))
         delta_x = new_pos_world[0] - current_pos_world[0]
         delta_y = new_pos_world[1] - current_pos_world[1]
 
         if abs(delta_x) < 1e-9 and abs(delta_y) < 1e-9:
             return
 
-        # Apply the translation in world space
-        self.matrix = self.matrix.pre_translate(delta_x, delta_y)
+        # Create the translation in world coordinates
+        translate_transform_world = Matrix.translation(delta_x, delta_y)
+
+        # Calculate the new desired world transform
+        world_transform_new = translate_transform_world @ world_transform_old
+
+        # Back-calculate the new local matrix
+        if self.parent:
+            parent_world_transform = self.parent.get_world_transform()
+            try:
+                parent_world_inv = parent_world_transform.invert()
+                new_local_matrix = parent_world_inv @ world_transform_new
+            except np.linalg.LinAlgError:
+                logger.warning(
+                    "Cannot set pos: parent transform is not invertible."
+                )
+                return
+        else:
+            new_local_matrix = world_transform_new
+
+        self.matrix = new_local_matrix
 
     @property
     def size(self) -> Tuple[float, float]:
@@ -135,28 +155,47 @@ class DocItem(ABC):
         Sets the item size in mm while preserving its world-space center
         point. This manipulates the existing matrix.
         """
-        current_w, current_h = self.size
+        world_transform_old = self.get_world_transform()
+        current_w, current_h = world_transform_old.get_abs_scale()
+
         if (
             abs(width_mm - current_w) < 1e-9
             and abs(height_mm - current_h) < 1e-9
         ):
             return
 
-        # Calculate scale factors to apply in world space
-        scale_x = width_mm / current_w if current_w > 1e-9 else 0
-        scale_y = height_mm / current_h if current_h > 1e-9 else 0
+        # Decompose the existing world transform to preserve its properties
+        tx, ty, angle, sx, sy, skew = world_transform_old.decompose()
 
-        # Get the current world transform and world-space center
-        world_transform_old = self.get_world_transform()
-        center_world = world_transform_old.transform_point((0.5, 0.5))
+        # Preserve any reflection by checking the sign of the original scale
+        new_sx = width_mm * (1 if sx >= 0 else -1)
+        new_sy = height_mm * (1 if sy >= 0 else -1)
 
-        # Create the scaling transformation in world coordinates
-        scale_transform_world = Matrix.scale(
-            scale_x, scale_y, center=center_world
+        # Compose a new world matrix with the new scale, but without its
+        # translation corrected yet.
+        # We use (0,0) for translation initially, as we will correct the
+        # center point manually.
+        world_transform_new_uncorrected = Matrix.compose(
+            0, 0, angle, new_sx, new_sy, skew
         )
 
-        # Calculate the new desired world transform
-        world_transform_new = scale_transform_world @ world_transform_old
+        # The old center point that we must maintain
+        center_world_old = world_transform_old.transform_point((0.5, 0.5))
+
+        # The center point of our newly composed matrix (before translation)
+        center_world_new_uncorrected = (
+            world_transform_new_uncorrected.transform_point((0.5, 0.5))
+        )
+
+        # Calculate the required translation to move the new center to the old
+        # center's position.
+        final_tx = center_world_old[0] - center_world_new_uncorrected[0]
+        final_ty = center_world_old[1] - center_world_new_uncorrected[1]
+
+        # Create the final desired world matrix
+        world_transform_new = world_transform_new_uncorrected.set_translation(
+            final_tx, final_ty
+        )
 
         # Back-calculate the new local matrix
         if self.parent:
@@ -225,6 +264,82 @@ class DocItem(ABC):
             new_local_matrix = world_transform_new
 
         self.matrix = new_local_matrix
+
+    @property
+    def shear(self) -> float:
+        """
+        The shear angle (in degrees) of the item.
+        This is decomposed from the local transformation matrix.
+        """
+        # decompose returns (tx, ty, angle_deg, sx, sy, skew_angle_deg)
+        return self.matrix.decompose()[5]
+
+    @shear.setter
+    def shear(self, new_shear_deg: float):
+        """
+        Sets the local shear angle to a new value, preserving the item's
+        world-space center point.
+        """
+        old_shear_deg = self.shear
+        if abs(new_shear_deg - old_shear_deg) < 1e-9:
+            return
+
+        # Get world center before change
+        world_transform_old = self.get_world_transform()
+        center_world_old = world_transform_old.transform_point((0.5, 0.5))
+
+        # Decompose local matrix to get its non-shear components
+        tx, ty, angle, sx, sy, _ = self.matrix.decompose()
+
+        # Recompose local matrix with the new shear value
+        new_local_matrix = Matrix.compose(tx, ty, angle, sx, sy, new_shear_deg)
+
+        # Calculate the new world center based on the temporary new matrix
+        parent_world_transform = (
+            self.parent.get_world_transform()
+            if self.parent
+            else Matrix.identity()
+        )
+        world_transform_new_uncorrected = (
+            parent_world_transform @ new_local_matrix
+        )
+        center_world_new = world_transform_new_uncorrected.transform_point(
+            (0.5, 0.5)
+        )
+
+        # Calculate the world-space correction needed to restore the center
+        delta_x = center_world_old[0] - center_world_new[0]
+        delta_y = center_world_old[1] - center_world_new[1]
+
+        # If there's no significant change, just set the matrix
+        if abs(delta_x) < 1e-9 and abs(delta_y) < 1e-9:
+            self.matrix = new_local_matrix
+            return
+
+        # To correct the center point, we apply a world-space translation
+        # *after* the uncorrected new world transform. Then we back-calculate
+        # the final local matrix.
+        translate_transform_world = Matrix.translation(delta_x, delta_y)
+        world_transform_new_corrected = (
+            translate_transform_world @ world_transform_new_uncorrected
+        )
+
+        # Back-calculate final local matrix
+        if self.parent:
+            try:
+                parent_world_inv = parent_world_transform.invert()
+                final_local_matrix = (
+                    parent_world_inv @ world_transform_new_corrected
+                )
+            except np.linalg.LinAlgError:
+                logger.warning(
+                    "Cannot set shear: parent transform is not invertible."
+                )
+                return
+        else:
+            final_local_matrix = world_transform_new_corrected
+
+        self.matrix = final_local_matrix
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
         if child in self.children:

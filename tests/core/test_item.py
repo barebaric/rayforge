@@ -1,3 +1,5 @@
+import pytest
+import math
 from typing import Optional, Dict
 from blinker import Signal
 from rayforge.core.item import DocItem
@@ -300,4 +302,131 @@ def test_signal_disconnection_on_remove():
     parent.remove_child(child)
 
     child.updated.send(child)
+    assert catcher.call_count == 0
+
+
+def test_pos_property():
+    """Tests the world-space pos property getter and setter."""
+    parent = GroupItem()
+    parent.matrix = Matrix.translation(100, 200) @ Matrix.rotation(90)
+    item = GroupItem()
+    parent.add_child(item)
+
+    # Initial position should be the parent's translation
+    # Rotated (0,0) is still (0,0), then translated by (100, 200)
+    assert item.pos == pytest.approx((100, 200))
+
+    # Set new world position
+    item.pos = (50, 50)
+    assert item.pos == pytest.approx((50, 50))
+
+    # Test that setting the same position doesn't change the matrix
+    old_matrix = item.matrix.copy()
+    item.pos = (50, 50)
+    assert item.matrix == old_matrix
+
+
+def test_size_property():
+    """Tests the world-space size property setter."""
+    parent = GroupItem()
+    parent.matrix = Matrix.scale(2, 3)  # Parent has non-uniform scale
+    item = GroupItem()
+    item.matrix = Matrix.rotation(45)  # Item has rotation
+    parent.add_child(item)
+
+    # Initial world size depends on parent scale and child rotation.
+    # The `size` property returns the decomposed scale factors, which are
+    # not trivial when rotation and non-uniform scale are mixed.
+    # sx = sqrt((2*cos45)^2 + (3*sin45)^2) = sqrt(2 + 4.5) = sqrt(6.5)
+    # sy = det / sx = (2*3) / sqrt(6.5) = 6 / sqrt(6.5)
+    size_x = math.sqrt(6.5)
+    size_y = 6 / size_x
+    assert item.size == pytest.approx((size_x, size_y))
+
+    # Get center point before resize
+    center_before = item.get_world_transform().transform_point((0.5, 0.5))
+
+    # Set new world size
+    item.set_size(10, 20)
+    assert item.size == pytest.approx((10, 20))
+
+    # Check that center point is preserved
+    center_after = item.get_world_transform().transform_point((0.5, 0.5))
+    assert center_before == pytest.approx(center_after)
+
+
+def test_angle_property():
+    """Tests the local angle property getter and setter."""
+    parent = GroupItem()
+    parent.matrix = Matrix.rotation(30)
+    item = GroupItem()
+    parent.add_child(item)
+
+    # Initial angle is 0
+    assert item.angle == pytest.approx(0)
+
+    # Get center point before rotation
+    center_before = item.get_world_transform().transform_point((0.5, 0.5))
+
+    # Set new local angle
+    item.angle = 45
+    assert item.angle == pytest.approx(45)
+
+    # World rotation is parent + child
+    world_angle = item.get_world_transform().get_rotation()
+    assert world_angle == pytest.approx(30 + 45)
+
+    # Center point should be preserved
+    center_after = item.get_world_transform().transform_point((0.5, 0.5))
+    assert center_before == pytest.approx(center_after)
+
+    # Test setting the same angle doesn't fire signal
+    # (implicitly tested by matrix change)
+    old_matrix = item.matrix.copy()
+    item.angle = 45
+    assert item.matrix == old_matrix
+
+
+def test_shear_property():
+    """Tests the local shear property getter and setter."""
+    parent = GroupItem()
+    parent.matrix = Matrix.translation(10, 20) @ Matrix.rotation(30)
+    item = GroupItem()
+    item.matrix = Matrix.scale(2, 3)  # Give it some scale
+    parent.add_child(item)
+
+    # 1. Test Getter
+    # Initial shear is 0
+    assert item.shear == pytest.approx(0)
+    # Manually set a matrix with shear
+    item.matrix = Matrix.shear(0.5, 0)  # shear_factor = 0.5
+    expected_shear_angle = math.degrees(math.atan(0.5))
+    assert item.shear == pytest.approx(expected_shear_angle)
+
+    # 2. Test Setter and center preservation
+    # Reset item matrix
+    item.matrix = Matrix.scale(2, 3)
+    assert item.shear == pytest.approx(0)
+
+    # Get center point before shear
+    center_before = item.get_world_transform().transform_point((0.5, 0.5))
+
+    catcher = SignalCatcher()
+    item.transform_changed.connect(catcher)
+
+    # Set new local shear
+    new_shear_angle = 15.0
+    item.shear = new_shear_angle
+    assert item.shear == pytest.approx(new_shear_angle)
+    assert catcher.call_count == 1
+
+    # Center point should be preserved
+    center_after = item.get_world_transform().transform_point((0.5, 0.5))
+    assert center_before == pytest.approx(center_after)
+
+    # 3. Test that setting the same value doesn't change the matrix/fire signal
+    catcher.reset()
+    old_matrix = item.matrix.copy()
+    item.shear = 15.0
+    assert item.matrix == old_matrix
     assert catcher.call_count == 0
