@@ -105,7 +105,7 @@ class SerialTransport(Transport):
                 "\n\n"
                 "sudo snap set system experimental.hotplug=true\n"
                 "sudo snap connect {snap_name}:serial-port"
-            ).format(snap_name)
+            ).format(snap_name=snap_name)
             raise SerialPortPermissionError(msg)
 
         elif not all_ports:
@@ -123,7 +123,7 @@ class SerialTransport(Transport):
                 " running:\n\n"
                 "sudo snap set system experimental.hotplug=true\n"
                 "sudo snap connect {snap_name}:serial-port"
-            ).format(snap_name)
+            ).format(snap_name=snap_name)
             raise SerialPortPermissionError(msg)
         else:
             msg = (
