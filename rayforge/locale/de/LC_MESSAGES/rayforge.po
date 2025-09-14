@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-14 17:20+0200\n"
+"POT-Creation-Date: 2025-09-14 19:19+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -21,42 +21,42 @@ msgstr ""
 msgid "Layer 1"
 msgstr "Ebene 1"
 
-#: rayforge/camera/ui/selection_dialog.py:11
+#: rayforge/camera/ui/selection_dialog.py:12
 msgid "Select Camera"
 msgstr "Kamera auswählen"
 
-#: rayforge/camera/ui/selection_dialog.py:12
+#: rayforge/camera/ui/selection_dialog.py:13
 msgid "Please select an available camera device"
 msgstr "Bitte wählen Sie ein verfügbares Kameragerät aus"
 
-#: rayforge/camera/ui/selection_dialog.py:45
+#: rayforge/camera/ui/selection_dialog.py:40
 #: rayforge/camera/ui/alignment_dialog.py:129
-#: rayforge/machine/ui/preferences_page.py:129
+#: rayforge/machine/ui/preferences_page.py:132
 #: rayforge/machine/ui/profile_selector.py:54
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: rayforge/camera/ui/selection_dialog.py:59
+#: rayforge/camera/ui/selection_dialog.py:52
 msgid "No cameras found."
 msgstr "Keine Kameras gefunden."
 
-#: rayforge/camera/ui/selection_dialog.py:65
+#: rayforge/camera/ui/selection_dialog.py:58
 #: rayforge/machine/ui/settings_dialog.py:63
 #, python-brace-format
 msgid "Camera {device_id}"
 msgstr "Kamera {device_id}"
 
-#: rayforge/camera/ui/selection_dialog.py:74
+#: rayforge/camera/ui/selection_dialog.py:67
 #, python-brace-format
 msgid "Failed to load image for Device ID: {device_id}"
 msgstr "Fehler beim Laden des Bildes für Geräte-ID: {device_id}"
 
-#: rayforge/camera/ui/selection_dialog.py:106
+#: rayforge/camera/ui/selection_dialog.py:99
 #, python-brace-format
 msgid "Device ID: {device_id}"
 msgstr "Geräte-ID: {device_id}"
 
-#: rayforge/camera/ui/point_bubble_widget.py:68
+#: rayforge/camera/ui/point_bubble_widget.py:63
 msgid "Delete this point"
 msgstr "Diesen Punkt löschen"
 
@@ -459,36 +459,36 @@ msgstr ""
 msgid "Other Device"
 msgstr "Anderes Gerät"
 
-#: rayforge/machine/ui/preferences_page.py:17
+#: rayforge/machine/ui/preferences_page.py:18
 msgid "Machines"
 msgstr "Maschinen"
 
-#: rayforge/machine/ui/preferences_page.py:21
+#: rayforge/machine/ui/preferences_page.py:22
 msgid "Configured Machines"
 msgstr "Konfigurierte Maschinen"
 
-#: rayforge/machine/ui/preferences_page.py:22
+#: rayforge/machine/ui/preferences_page.py:23
 msgid "Add or remove machines."
 msgstr "Maschinen hinzufügen oder entfernen."
 
-#: rayforge/machine/ui/preferences_page.py:36
+#: rayforge/machine/ui/preferences_page.py:37
 msgid "+"
 msgstr "+"
 
-#: rayforge/machine/ui/preferences_page.py:72
+#: rayforge/machine/ui/preferences_page.py:73
 msgid "This machine has an invalid configuration."
 msgstr "Diese Maschine hat eine ungültige Konfiguration."
 
-#: rayforge/machine/ui/preferences_page.py:79
+#: rayforge/machine/ui/preferences_page.py:80
 msgid "This is the active machine."
 msgstr "Dies ist die aktive Maschine."
 
-#: rayforge/machine/ui/preferences_page.py:123
+#: rayforge/machine/ui/preferences_page.py:126
 #, python-brace-format
 msgid "Delete ‘{name}’?"
 msgstr "„{name}“ löschen?"
 
-#: rayforge/machine/ui/preferences_page.py:125
+#: rayforge/machine/ui/preferences_page.py:128
 msgid ""
 "This machine profile and all its settings will be permanently removed. This "
 "action cannot be undone."
@@ -496,7 +496,7 @@ msgstr ""
 "Dieses Maschinenprofil und alle seine Einstellungen werden dauerhaft "
 "entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
 
-#: rayforge/machine/ui/preferences_page.py:130
+#: rayforge/machine/ui/preferences_page.py:133
 msgid "Delete"
 msgstr "Löschen"
 
@@ -833,7 +833,7 @@ msgid "Dimensions"
 msgstr "Abmessungen"
 
 #: rayforge/machine/ui/general_preferences_page.py:171
-#: rayforge/doceditor/ui/item_properties.py:80
+#: rayforge/doceditor/ui/item_properties.py:89
 msgid "Width"
 msgstr "Breite"
 
@@ -842,7 +842,7 @@ msgid "Width of the machine in mm"
 msgstr "Breite der Maschine in mm"
 
 #: rayforge/machine/ui/general_preferences_page.py:186
-#: rayforge/doceditor/ui/item_properties.py:89
+#: rayforge/doceditor/ui/item_properties.py:98
 msgid "Height"
 msgstr "Höhe"
 
@@ -1670,7 +1670,7 @@ msgid "Toggle step visibility"
 msgstr "Sichtbarkeit des Arbeitsschritts umschalten"
 
 #: rayforge/doceditor/ui/item_properties.py:35
-#: rayforge/doceditor/ui/item_properties.py:549
+#: rayforge/doceditor/ui/item_properties.py:635
 msgid "Item Properties"
 msgstr "Elementeigenschaften"
 
@@ -1694,136 +1694,165 @@ msgstr "Nullpunkt ist auf der linken Seite"
 msgid "Y Position"
 msgstr "Y-Position"
 
-#: rayforge/doceditor/ui/item_properties.py:98
+#: rayforge/doceditor/ui/item_properties.py:80
 msgid "Fixed Ratio"
 msgstr "Festes Verhältnis"
 
 #: rayforge/doceditor/ui/item_properties.py:107
-msgid "Natural Size"
-msgstr "Natürliche Größe"
-
-#: rayforge/doceditor/ui/item_properties.py:109
-msgid "N/A"
-msgstr "N/V"
-
-#: rayforge/doceditor/ui/item_properties.py:115
-#: rayforge/doceditor/ui/item_properties.py:132
 msgid "Angle"
 msgstr "Winkel"
 
-#: rayforge/doceditor/ui/item_properties.py:116
+#: rayforge/doceditor/ui/item_properties.py:108
 msgid "Clockwise is positive"
 msgstr "Im Uhrzeigersinn ist positiv"
 
-#: rayforge/doceditor/ui/item_properties.py:128
-msgid "Size"
-msgstr "Größe"
+#: rayforge/doceditor/ui/item_properties.py:117
+msgid "Shear"
+msgstr "Scherung"
 
-#: rayforge/doceditor/ui/item_properties.py:138
-msgid "Aspect"
-msgstr "Seitenverhältnis"
+#: rayforge/doceditor/ui/item_properties.py:118
+msgid "Horizontal shear angle"
+msgstr "Horizontaler Scherwinkel"
 
-#: rayforge/doceditor/ui/item_properties.py:203
+#: rayforge/doceditor/ui/item_properties.py:135
+msgid "Reset to natural width"
+msgstr "Auf natürliche Breite zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:141
+msgid "Reset to natural height"
+msgstr "Auf natürliche Höhe zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:147
+msgid "Reset to natural aspect ratio"
+msgstr "Auf natürliches Seitenverhältnis zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:152
+msgid "Reset angle to 0°"
+msgstr "Winkel auf 0° zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:157
+msgid "Reset shear to 0°"
+msgstr "Scherung auf 0° zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:217
 msgid "Resize item"
 msgstr "Elementgröße ändern"
 
-#: rayforge/doceditor/ui/item_properties.py:222
-#: rayforge/doceditor/ui/item_properties.py:266
+#: rayforge/doceditor/ui/item_properties.py:236
+#: rayforge/doceditor/ui/item_properties.py:280
 msgid "Resize item(s)"
 msgstr "Größe von Element(en) ändern"
 
-#: rayforge/doceditor/ui/item_properties.py:308
-#: rayforge/doceditor/ui/item_properties.py:340
+#: rayforge/doceditor/ui/item_properties.py:322
+#: rayforge/doceditor/ui/item_properties.py:354
 msgid "Move item"
 msgstr "Element verschieben"
 
-#: rayforge/doceditor/ui/item_properties.py:384
+#: rayforge/doceditor/ui/item_properties.py:398
 msgid "Change item angle"
 msgstr "Elementwinkel ändern"
 
-#: rayforge/doceditor/ui/item_properties.py:437
+#: rayforge/doceditor/ui/item_properties.py:427
+msgid "Change item shear"
+msgstr "Elementscherung ändern"
+
+#: rayforge/doceditor/ui/item_properties.py:480
 msgid "Reset item aspect ratio"
 msgstr "Element-Seitenverhältnis zurücksetzen"
 
-#: rayforge/doceditor/ui/item_properties.py:464
-msgid "Reset item size"
-msgstr "Elementgröße zurücksetzen"
+#: rayforge/doceditor/ui/item_properties.py:509
+msgid "Reset item width"
+msgstr "Elementbreite zurücksetzen"
 
-#: rayforge/doceditor/ui/item_properties.py:487
+#: rayforge/doceditor/ui/item_properties.py:511
+msgid "Reset item height"
+msgstr "Elementhöhe zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:554
 msgid "Reset item angle"
 msgstr "Elementwinkel zurücksetzen"
 
-#: rayforge/doceditor/ui/item_properties.py:518
+#: rayforge/doceditor/ui/item_properties.py:573
+msgid "Reset item shear"
+msgstr "Elementscherung zurücksetzen"
+
+#: rayforge/doceditor/ui/item_properties.py:604
 msgid "1 item selected"
 msgstr "1 Element ausgewählt"
 
-#: rayforge/doceditor/ui/item_properties.py:520
+#: rayforge/doceditor/ui/item_properties.py:606
 #, python-brace-format
 msgid "{count} items selected"
 msgstr "{count} Elemente ausgewählt"
 
-#: rayforge/doceditor/ui/item_properties.py:541
+#: rayforge/doceditor/ui/item_properties.py:627
 msgid "Multiple Items"
 msgstr "Mehrere Elemente"
 
-#: rayforge/doceditor/ui/item_properties.py:543
+#: rayforge/doceditor/ui/item_properties.py:629
 msgid "Stock Properties"
 msgstr "Materialeigenschaften"
 
-#: rayforge/doceditor/ui/item_properties.py:545
+#: rayforge/doceditor/ui/item_properties.py:631
 msgid "Workpiece Properties"
 msgstr "Werkstückeigenschaften"
 
-#: rayforge/doceditor/ui/item_properties.py:547
+#: rayforge/doceditor/ui/item_properties.py:633
 msgid "Group Properties"
 msgstr "Gruppeneigenschaften"
 
-#: rayforge/doceditor/ui/item_properties.py:562
+#: rayforge/doceditor/ui/item_properties.py:649
 msgid "Zero is at the top"
 msgstr "Nullpunkt ist oben"
 
-#: rayforge/doceditor/ui/item_properties.py:567
+#: rayforge/doceditor/ui/item_properties.py:654
 msgid "Zero is at the bottom"
 msgstr "Nullpunkt ist unten"
 
-#: rayforge/doceditor/ui/item_properties.py:609
+#: rayforge/doceditor/ui/item_properties.py:689
+#: rayforge/doceditor/ui/item_properties.py:692
+#, python-brace-format
+msgid "Natural: {val:.2f}"
+msgstr "Natürlich: {val:.2f}"
+
+#: rayforge/doceditor/ui/item_properties.py:707
 #, python-brace-format
 msgid "{name} (not found)"
 msgstr "{name} (nicht gefunden)"
 
-#: rayforge/doceditor/ui/layer_list.py:28
+#: rayforge/doceditor/ui/layer_list.py:29
 msgid "Workpiece Layers"
 msgstr "Werkstück-Ebenen"
 
-#: rayforge/doceditor/ui/layer_list.py:58
+#: rayforge/doceditor/ui/layer_list.py:59
 msgid "Add New Layer"
 msgstr "Neue Ebene hinzufügen"
 
-#: rayforge/doceditor/ui/layer_list.py:77
+#: rayforge/doceditor/ui/layer_list.py:78
 #, python-brace-format
 msgid "{count} layer"
 msgstr "{count} Ebene"
 
-#: rayforge/doceditor/ui/layer_list.py:79
+#: rayforge/doceditor/ui/layer_list.py:80
 #, python-brace-format
 msgid "{count} Layers"
 msgstr "{count} Ebenen"
 
-#: rayforge/doceditor/ui/layer_list.py:134
+#: rayforge/doceditor/ui/layer_list.py:135
 msgid "Layer"
 msgstr "Ebene"
 
-#: rayforge/doceditor/ui/layer_list.py:156
+#: rayforge/doceditor/ui/layer_list.py:157
 #, python-brace-format
 msgid "Add layer '{name}'"
 msgstr "Ebene „{name}“ hinzufügen"
 
-#: rayforge/doceditor/ui/layer_list.py:170
+#: rayforge/doceditor/ui/layer_list.py:171
 #, python-brace-format
 msgid "Remove layer '{name}'"
 msgstr "Ebene „{name}“ entfernen"
 
-#: rayforge/doceditor/ui/layer_list.py:190
+#: rayforge/doceditor/ui/layer_list.py:191
 msgid "Reorder layers"
 msgstr "Ebenen neu anordnen"
 

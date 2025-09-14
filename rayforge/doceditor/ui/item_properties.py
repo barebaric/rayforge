@@ -75,6 +75,15 @@ class DocItemPropertiesWidget(Expander):
         self.y_row.connect("notify::value", self._on_y_changed)
         rows_container.append(self.y_row)
 
+        # Fixed Ratio Switch
+        self.fixed_ratio_switch = Adw.SwitchRow(
+            title=_("Fixed Ratio"), active=True
+        )
+        self.fixed_ratio_switch.connect(
+            "notify::active", self._on_fixed_ratio_toggled
+        )
+        rows_container.append(self.fixed_ratio_switch)
+
         # Width Entry
         self.width_row = Adw.SpinRow(
             title=_("Width"),
@@ -93,23 +102,6 @@ class DocItemPropertiesWidget(Expander):
         self.height_row.connect("notify::value", self._on_height_changed)
         rows_container.append(self.height_row)
 
-        # Fixed Ratio Switch
-        self.fixed_ratio_switch = Adw.SwitchRow(
-            title=_("Fixed Ratio"), active=True
-        )
-        self.fixed_ratio_switch.connect(
-            "notify::active", self._on_fixed_ratio_toggled
-        )
-        rows_container.append(self.fixed_ratio_switch)
-
-        # Natural Size Label
-        self.natural_size_row = Adw.ActionRow(
-            title=_("Natural Size"), visible=False
-        )
-        self.natural_size_label = Gtk.Label(label=_("N/A"), xalign=0)
-        self.natural_size_row.add_suffix(self.natural_size_label)
-        rows_container.append(self.natural_size_row)
-
         # Angle Entry
         self.angle_row = Adw.SpinRow(
             title=_("Angle"),
@@ -120,29 +112,51 @@ class DocItemPropertiesWidget(Expander):
         self.angle_row.connect("notify::value", self._on_angle_changed)
         rows_container.append(self.angle_row)
 
-        # Reset Buttons Row
-        self.reset_buttons_row = Adw.ActionRow(title=("Reset"))
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_valign(Gtk.Align.CENTER)
-
-        self.reset_size_button = Gtk.Button(label=_("Size"))
-        self.reset_size_button.connect("clicked", self._on_reset_size_clicked)
-        button_box.append(self.reset_size_button)
-
-        self.reset_angle_button = Gtk.Button(label=_("Angle"))
-        self.reset_angle_button.connect(
-            "clicked", self._on_reset_angle_clicked
+        # Shear Entry
+        self.shear_row = Adw.SpinRow(
+            title=_("Shear"),
+            subtitle=_("Horizontal shear angle"),
+            adjustment=Gtk.Adjustment.new(0, -85, 85, 1, 10, 0),
+            digits=2,
         )
-        button_box.append(self.reset_angle_button)
+        self.shear_row.connect("notify::value", self._on_shear_changed)
+        rows_container.append(self.shear_row)
 
-        self.reset_aspect_button = Gtk.Button(label=_("Aspect"))
-        self.reset_aspect_button.connect(
-            "clicked", self._on_reset_aspect_clicked
+        # --- Reset Buttons ---
+        # Note: These are now added as suffixes to their respective rows.
+        def create_reset_button(tooltip_text, on_clicked):
+            button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
+            button.set_valign(Gtk.Align.CENTER)
+            button.set_tooltip_text(tooltip_text)
+            button.connect("clicked", on_clicked)
+            return button
+
+        self.reset_width_button = create_reset_button(
+            _("Reset to natural width"),
+            lambda btn: self._on_reset_dimension_clicked(btn, "width"),
         )
-        button_box.append(self.reset_aspect_button)
+        self.width_row.add_suffix(self.reset_width_button)
 
-        self.reset_buttons_row.add_suffix(button_box)
-        rows_container.append(self.reset_buttons_row)
+        self.reset_height_button = create_reset_button(
+            _("Reset to natural height"),
+            lambda btn: self._on_reset_dimension_clicked(btn, "height"),
+        )
+        self.height_row.add_suffix(self.reset_height_button)
+
+        self.reset_aspect_button = create_reset_button(
+            _("Reset to natural aspect ratio"), self._on_reset_aspect_clicked
+        )
+        self.fixed_ratio_switch.add_suffix(self.reset_aspect_button)
+
+        self.reset_angle_button = create_reset_button(
+            _("Reset angle to 0°"), self._on_reset_angle_clicked
+        )
+        self.angle_row.add_suffix(self.reset_angle_button)
+
+        self.reset_shear_button = create_reset_button(
+            _("Reset shear to 0°"), self._on_reset_shear_clicked
+        )
+        self.shear_row.add_suffix(self.reset_shear_button)
 
         self.set_items(items)
 
@@ -397,6 +411,35 @@ class DocItemPropertiesWidget(Expander):
         finally:
             self._in_update = False
 
+    def _on_shear_changed(self, spin_row, GParamSpec):
+        if self._in_update or not self.items:
+            return
+        self._in_update = True
+        try:
+            new_shear_from_ui = spin_row.get_value()
+
+            doc = self.items[0].doc
+            if not doc:
+                for item in self.items:
+                    item.shear = new_shear_from_ui
+                return
+
+            with doc.history_manager.transaction(_("Change item shear")) as t:
+                for item in self.items:
+                    old_matrix = item.matrix.copy()
+                    item.shear = new_shear_from_ui
+                    new_matrix = item.matrix.copy()
+
+                    if old_matrix == new_matrix:
+                        continue
+
+                    cmd = ChangePropertyCommand(
+                        item, "matrix", new_matrix, old_value=old_matrix
+                    )
+                    t.add(cmd)
+        finally:
+            self._in_update = False
+
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
         # Check if the primary selected item is a workpiece or stock item
@@ -454,28 +497,52 @@ class DocItemPropertiesWidget(Expander):
 
                 self._apply_and_add_resize_cmd(t, item, new_size)
 
-    def _on_reset_size_clicked(self, button):
+    def _on_reset_dimension_clicked(self, button, dimension_to_reset: str):
         if not self.items:
-            return False
+            return
+
         doc = self.items[0].doc
         if not doc:
-            return False
+            return
 
-        with doc.history_manager.transaction(_("Reset item size")) as t:
+        transaction_name = (
+            _("Reset item width")
+            if dimension_to_reset == "width"
+            else _("Reset item height")
+        )
+        with doc.history_manager.transaction(transaction_name) as t:
             bounds = (
                 config.machine.dimensions if config.machine else default_dim
             )
             for item in self.items:
                 if not isinstance(item, (WorkPiece, StockItem)):
                     continue
+
                 natural_width, natural_height = item.get_default_size(*bounds)
-                new_size = (natural_width, natural_height)
+                current_width, current_height = item.size
+
+                new_width = current_width
+                new_height = current_height
+
+                if dimension_to_reset == "width":
+                    new_width = natural_width
+                    if self.fixed_ratio_switch.get_active():
+                        aspect = item.get_natural_aspect_ratio()
+                        if aspect and new_width > 1e-9:
+                            new_height = new_width / aspect
+                else:  # dimension_to_reset == "height"
+                    new_height = natural_height
+                    if self.fixed_ratio_switch.get_active():
+                        aspect = item.get_natural_aspect_ratio()
+                        if aspect and new_height > 1e-9:
+                            new_width = new_height * aspect
+
+                new_size = (new_width, new_height)
 
                 if new_size == item.size:
                     continue
 
                 self._apply_and_add_resize_cmd(t, item, new_size)
-        return False
 
     def _on_reset_angle_clicked(self, button):
         if not self.items:
@@ -490,6 +557,25 @@ class DocItemPropertiesWidget(Expander):
                     continue
                 old_matrix = item.matrix.copy()
                 item.angle = 0.0
+                new_matrix = item.matrix.copy()
+                cmd = ChangePropertyCommand(
+                    item, "matrix", new_matrix, old_value=old_matrix
+                )
+                t.add(cmd)
+
+    def _on_reset_shear_clicked(self, button):
+        if not self.items:
+            return
+        doc = self.items[0].doc
+        if not doc:
+            return
+
+        with doc.history_manager.transaction(_("Reset item shear")) as t:
+            for item in self.items:
+                if item.shear == 0.0:
+                    continue
+                old_matrix = item.matrix.copy()
+                item.shear = 0.0
                 new_matrix = item.matrix.copy()
                 cmd = ChangePropertyCommand(
                     item, "matrix", new_matrix, old_value=old_matrix
@@ -557,6 +643,7 @@ class DocItemPropertiesWidget(Expander):
             size_world = item.size
             pos_world = item.pos
             angle_local = item.angle
+            shear_local = item.shear
 
             if y_axis_down:
                 self.y_row.set_subtitle(_("Zero is at the top"))
@@ -572,6 +659,7 @@ class DocItemPropertiesWidget(Expander):
             self.x_row.set_value(pos_machine_x)
             self.y_row.set_value(pos_machine_y)
             self.angle_row.set_value(-angle_local)
+            self.shear_row.set_value(shear_local)
 
             is_single_workpiece = len(self.items) == 1 and isinstance(
                 item, WorkPiece
@@ -585,17 +673,27 @@ class DocItemPropertiesWidget(Expander):
 
             # Show/hide controls based on selection type
             self.source_file_row.set_visible(is_single_workpiece)
-            self.natural_size_row.set_visible(is_single_item_with_size)
-            self.reset_buttons_row.set_visible(is_single_item_with_size)
             self.fixed_ratio_switch.set_sensitive(is_single_item_with_size)
+            self.reset_width_button.set_sensitive(is_single_item_with_size)
+            self.reset_height_button.set_sensitive(is_single_item_with_size)
+            self.reset_aspect_button.set_sensitive(is_single_item_with_size)
+
+            is_group = isinstance(item, Group)
+            self.shear_row.set_visible(not is_group)
 
             if is_single_item_with_size:
                 # This works for both WorkPiece and StockItem
                 assert isinstance(item, (WorkPiece, StockItem))
                 natural_width, natural_height = item.get_default_size(*bounds)
-                self.natural_size_label.set_label(
-                    f"{natural_width:.2f}x{natural_height:.2f}"
+                self.width_row.set_subtitle(
+                    _("Natural: {val:.2f}").format(val=natural_width)
                 )
+                self.height_row.set_subtitle(
+                    _("Natural: {val:.2f}").format(val=natural_height)
+                )
+            else:
+                self.width_row.set_subtitle("")
+                self.height_row.set_subtitle("")
 
             if is_single_workpiece:
                 workpiece = cast(WorkPiece, item)
