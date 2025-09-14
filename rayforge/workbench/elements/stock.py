@@ -82,9 +82,8 @@ class StockElement(CanvasElement):
             )
             ctx.scale(width / geo_width, height / geo_height)
 
-        # --- Direct Geometry Rendering Logic ---
         # This block iterates through the geometry commands and builds a
-        # cairo path directly, without needing any external encoder.
+        # cairo path.
         for cmd in self.data.geometry:
             if cmd.end is None:
                 continue
@@ -116,12 +115,28 @@ class StockElement(CanvasElement):
                         ctx.arc_negative(
                             center_x, center_y, radius, angle1, angle2
                         )
-        # --- End of Direct Rendering Logic ---
 
-        # Now, style and stroke the path that was just created
+        # Now, style and stroke the path that was just created.
         ctx.set_source_rgba(0.2, 0.2, 0.2, 0.8)
-        # Scale line width to be consistent regardless of surface resolution
-        ctx.set_line_width(2.0 * (geo_width / width if width > 0 else 1.0))
+
+        # To achieve a crisp line of a consistent apparent width in device
+        # space, we must set the line width in the scaled user space. With
+        # non-uniform scaling, a circular pen in user space becomes an
+        # ellipse. Using the geometric mean of the inverse scaling factors
+        # provides a good compromise for the line width. A target width of
+        # 1.5px is chosen as it often appears sharper than 2px.
+        if width > 1e-9 and height > 1e-9:
+            avg_inv_scale = math.sqrt(
+                (geo_width / width) * (geo_height / height)
+            )
+            ctx.set_line_width(1.5 * avg_inv_scale)
+        else:
+            ctx.set_line_width(1.5)
+
+        # Use round caps and joins for a smoother appearance, which helps
+        # mitigate aliasing effects at sharp corners.
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
         ctx.stroke()
 
         return surface
