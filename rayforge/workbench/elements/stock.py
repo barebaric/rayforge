@@ -1,6 +1,5 @@
 import logging
 import math
-from typing import Optional
 import cairo
 from ...core.stock import StockItem
 from ...core.geometry import (
@@ -27,14 +26,13 @@ class StockElement(CanvasElement):
             1.0,
             1.0,  # Geometry is 1x1, transform handles size
             data=stock_item,
-            buffered=True,  # Good for complex vector shapes
+            buffered=False,
             pixel_perfect_hit=False,  # Bbox is fine for stock
             **kwargs,
         )
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
         self._on_transform_changed(self.data)
-        self.trigger_update()
 
     def remove(self):
         """Disconnects signals before removal."""
@@ -48,7 +46,8 @@ class StockElement(CanvasElement):
             f"Model content changed for '{stock_item.name}', "
             "triggering update."
         )
-        self.trigger_update()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def _on_transform_changed(self, stock_item: StockItem):
         """Handler for when the stock item's transform changes."""
@@ -56,34 +55,23 @@ class StockElement(CanvasElement):
             return
         self.set_transform(stock_item.matrix)
 
-    def render_to_surface(
-        self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
-        """Renders the stock item's geometry to a new surface."""
-        if width <= 0 or height <= 0 or not self.data.geometry:
-            return None
+    def draw(self, ctx: cairo.Context):
+        """Draws the stock geometry directly to the main canvas context."""
+        if not self.data.geometry:
+            return
 
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        ctx = cairo.Context(surface)
+        ctx.save()
 
-        # Fill with a semi-transparent color
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
-        ctx.paint()
-
-        # Get the bounding box of the geometry to scale it correctly
         min_x, min_y, max_x, max_y = self.data.geometry.rect()
         geo_width = max_x - min_x
         geo_height = max_y - min_y
 
-        # Translate and scale the context so the geometry fills the surface
+        # Scale and translate context to fit geometry inside the 1x1 element
         if geo_width > 1e-9 and geo_height > 1e-9:
-            ctx.translate(
-                -min_x * (width / geo_width), -min_y * (height / geo_height)
-            )
-            ctx.scale(width / geo_width, height / geo_height)
+            ctx.scale(1.0 / geo_width, 1.0 / geo_height)
+            ctx.translate(-min_x, -min_y)
 
-        # This block iterates through the geometry commands and builds a
-        # cairo path.
+        # Build the path from geometry data
         for cmd in self.data.geometry:
             if cmd.end is None:
                 continue
@@ -116,27 +104,13 @@ class StockElement(CanvasElement):
                             center_x, center_y, radius, angle1, angle2
                         )
 
-        # Now, style and stroke the path that was just created.
+        # Fill the path
+        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
+        ctx.fill_preserve()
+
+        # Stroke the path with a crisp, 1-device-pixel hairline
         ctx.set_source_rgba(0.2, 0.2, 0.2, 0.8)
-
-        # To achieve a crisp line of a consistent apparent width in device
-        # space, we must set the line width in the scaled user space. With
-        # non-uniform scaling, a circular pen in user space becomes an
-        # ellipse. Using the geometric mean of the inverse scaling factors
-        # provides a good compromise for the line width. A target width of
-        # 1.5px is chosen as it often appears sharper than 2px.
-        if width > 1e-9 and height > 1e-9:
-            avg_inv_scale = math.sqrt(
-                (geo_width / width) * (geo_height / height)
-            )
-            ctx.set_line_width(1.5 * avg_inv_scale)
-        else:
-            ctx.set_line_width(1.5)
-
-        # Use round caps and joins for a smoother appearance, which helps
-        # mitigate aliasing effects at sharp corners.
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_hairline(True)
         ctx.stroke()
 
-        return surface
+        ctx.restore()
