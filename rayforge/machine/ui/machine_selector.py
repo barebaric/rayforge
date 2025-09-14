@@ -1,6 +1,6 @@
 import logging
-from typing import Optional
-from gi.repository import Gtk, Gio, GObject  # type: ignore
+from typing import Optional, cast
+from gi.repository import Gtk, Gio, GObject
 from blinker import Signal
 from ...config import config, machine_mgr
 from ..models.machine import Machine
@@ -116,9 +116,10 @@ class MachineSelector(Gtk.DropDown):
         This is only fired by direct user interaction, not programmatic
         changes.
         """
-        selected_list_item: Optional[MachineListItem] = (
-            self.get_selected_item()
+        selected_list_item = cast(
+            Optional[MachineListItem], self.get_selected_item()
         )
+
         if selected_list_item:
             logger.info(
                 f"User selected '{selected_list_item.machine.name}'. "

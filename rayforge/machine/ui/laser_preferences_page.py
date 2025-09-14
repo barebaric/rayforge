@@ -1,5 +1,5 @@
 from typing import cast
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from ..models.laser import Laser
 from ...shared.util.adwfix import get_spinrow_int, get_spinrow_float
 from ...icons import get_icon

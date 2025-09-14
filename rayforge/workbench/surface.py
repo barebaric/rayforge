@@ -1,7 +1,7 @@
 import logging
 from blinker import Signal
 from typing import TYPE_CHECKING, Optional, Tuple, cast, Dict, List, Sequence
-from gi.repository import Graphene, Gdk, Gtk  # type: ignore
+from gi.repository import Graphene, Gdk, Gtk
 from ..core.group import Group
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece

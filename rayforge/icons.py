@@ -1,7 +1,7 @@
 import importlib.resources
 import logging
 import pathlib
-from gi.repository import Gtk, Gio  # type: ignore
+from gi.repository import Gtk, Gio
 from .resources import icons  # type: ignore
 
 

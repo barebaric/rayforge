@@ -1,5 +1,5 @@
 from blinker import Signal
-from gi.repository import Adw, Gtk  # type: ignore
+from gi.repository import Adw, Gtk
 
 from ..models.profile import MachineProfile, PROFILES
 

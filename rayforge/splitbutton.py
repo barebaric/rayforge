@@ -1,6 +1,6 @@
 import logging
 from typing import List, Tuple
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk
 from .icons import get_icon
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,9 @@ class SplitMenuButton(Gtk.Box):
         Called when a user clicks an item in the popover menu.
         This updates the main button to reflect the choice.
         """
-        self.menu_button.get_popover().popdown()
+        popover = self.menu_button.get_popover()
+        if popover:
+            popover.popdown()
         self._set_active_action(index)
 
     def _set_active_action(self, index: int):

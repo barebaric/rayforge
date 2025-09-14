@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk
 from blinker import Signal
 from ...icons import get_icon
 from ..util.gtk import apply_css

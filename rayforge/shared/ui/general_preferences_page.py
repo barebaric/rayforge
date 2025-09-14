@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gtk  # type: ignore
+from gi.repository import Adw, Gtk
 from ...config import config
 
 

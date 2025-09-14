@@ -11,7 +11,7 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 from OpenGL import GL
 import cairo
-from gi.repository import Pango, PangoCairo  # type: ignore
+from gi.repository import Pango, PangoCairo
 from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)

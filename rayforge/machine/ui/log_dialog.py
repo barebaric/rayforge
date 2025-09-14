@@ -2,7 +2,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from gi.repository import Gtk, Adw, GLib, Gio  # type: ignore
+from gi.repository import Gtk, Adw, GLib, Gio
 from blinker import Signal
 from ..driver.driver import TransportStatus
 from ..models.machine import Machine

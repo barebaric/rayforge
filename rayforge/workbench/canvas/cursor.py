@@ -1,7 +1,7 @@
 import math
-from typing import Dict
+from typing import Dict, Optional
 import cairo
-from gi.repository import Gdk, GLib  # type: ignore
+from gi.repository import Gdk, GLib
 from .region import ElementRegion, ROTATE_HANDLES
 
 # Module-level caches for custom-rendered cursors to avoid recreating them.
@@ -188,10 +188,8 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
 
 
 def get_cursor_for_region(
-    region: ElementRegion,
-    angle: float,
-    absolute: bool = False
-) -> Gdk.Cursor:
+    region: ElementRegion, angle: float, absolute: bool = False
+) -> Optional[Gdk.Cursor]:
     base_angle = _region_angles.get(region, 0) if not absolute else 0
     if region is None or region == ElementRegion.NONE:
         return Gdk.Cursor.new_from_name("default")

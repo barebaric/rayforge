@@ -1,4 +1,4 @@
-from gi.repository import Adw  # type: ignore
+from gi.repository import Adw
 from ...camera.models import Camera
 from ..models.machine import Machine
 from .general_preferences_page import GeneralPreferencesPage

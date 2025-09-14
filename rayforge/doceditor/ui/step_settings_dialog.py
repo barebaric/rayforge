@@ -1,5 +1,5 @@
 from typing import Tuple, Dict, Any, Optional
-from gi.repository import Gtk, Adw, GLib  # type: ignore
+from gi.repository import Gtk, Adw, GLib
 from blinker import Signal
 from ...config import config
 from ...undo import HistoryManager, ChangePropertyCommand, DictItemCommand

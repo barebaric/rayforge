@@ -1,6 +1,6 @@
 import re
 import logging
-from gi.repository import Gtk, Adw  # type: ignore
+from gi.repository import Gtk, Adw
 from blinker import Signal
 from ..util.adwfix import get_spinrow_int
 from ...machine.transport.serial import SerialTransport

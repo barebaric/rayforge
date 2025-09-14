@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gdk, Gtk  # type: ignore
+from gi.repository import Adw, Gdk, Gtk
 from .general_preferences_page import GeneralPreferencesPage
 from ...machine.ui.preferences_page import MachinePreferencesPage
 from ...icons import get_icon
@@ -49,7 +49,8 @@ class PreferencesWindow(Adw.Window):
 
         # Create the content's NavigationPage wrapper using the first page's
         # title
-        first_stack_page = self.content_stack.get_pages().get_item(0)
+        pages = self.content_stack.get_pages()
+        first_stack_page = pages.get_item(0)  # type: ignore
         initial_title = first_stack_page.get_title()
         self.content_page = Adw.NavigationPage.new(
             self.content_stack, initial_title
@@ -99,7 +100,8 @@ class PreferencesWindow(Adw.Window):
         if row:
             index = row.get_index()
             # Get the Gtk.StackPage wrapper object
-            stack_page = self.content_stack.get_pages().get_item(index)
+            pages = self.content_stack.get_pages()
+            stack_page = pages.get_item(index)  # type: ignore
             # Get the actual child widget from the wrapper
             widget_to_show = stack_page.get_child()
 

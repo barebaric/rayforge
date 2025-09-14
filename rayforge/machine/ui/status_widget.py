@@ -1,4 +1,4 @@
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk
 from typing import Optional
 from ...machine.driver.driver import (
     DeviceStatus,

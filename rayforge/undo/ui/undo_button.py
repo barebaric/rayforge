@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk
 from .. import HistoryManager
 from ..models.command import Command
 
@@ -61,6 +61,8 @@ class _HistoryButton(Gtk.Box):
         self.menu_button.set_sensitive(can_act)
 
         popover = self.menu_button.get_popover()
+        if not popover:
+            return
 
         # Get the full stack and then limit it for display purposes.
         full_stack = self._get_stack()
@@ -68,15 +70,13 @@ class _HistoryButton(Gtk.Box):
 
         if display_stack:
             # Rebuild the listbox only if needed
-            if not popover.get_child() or not isinstance(
-                popover.get_child(), Gtk.ListBox
-            ):
+            list_box = popover.get_child()
+            if not isinstance(list_box, Gtk.ListBox):
                 list_box = Gtk.ListBox()
                 list_box.set_selection_mode(Gtk.SelectionMode.NONE)
                 list_box.get_style_context().add_class("popover-list")
                 popover.set_child(list_box)
 
-            list_box = popover.get_child()
             # A simple implementation is to clear and refill.
             # For high-frequency updates, one might optimize this.
             child = list_box.get_first_child()
@@ -97,7 +97,9 @@ class _HistoryButton(Gtk.Box):
 
     def _on_menu_item_clicked(self, _, command: Command):
         """Performs undo/redo up to a specific command from the popover."""
-        self.menu_button.get_popover().popdown()
+        popover = self.menu_button.get_popover()
+        if popover:
+            popover.popdown()
         if not self.manager:
             return
         self._act_to(command)

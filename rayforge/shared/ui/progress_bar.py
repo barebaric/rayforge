@@ -1,4 +1,5 @@
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Pango
+from ..util.gtk import apply_css
 
 
 class ProgressBar(Gtk.Box):
@@ -27,7 +28,7 @@ class ProgressBar(Gtk.Box):
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,
             hexpand=False,
-            ellipsize=3,  # (3 = Pango.EllipsizeMode.END)
+            ellipsize=Pango.EllipsizeMode.END,
         )
         self.status_box.append(self.label)
         self.append(self.status_box)
@@ -47,29 +48,18 @@ class ProgressBar(Gtk.Box):
         self.progress_bar.add_css_class("thin-progress-bar")
         self.append(self.progress_bar)
 
-        self._apply_css()
-        self._connect_signals()
-
-        self.label.set_visible(False)
-        # CHANGED: Use opacity for the progress bar to reserve its space.
-        self.progress_bar.set_opacity(0)
-
-    def _apply_css(self):
         """Applies custom CSS to style the widget."""
-        css_provider = Gtk.CssProvider()
-        css = """
+        apply_css("""
         progressbar.thin-progress-bar {
             min-height: 5px;
             /* Add a transition for a smooth fade in/out effect */
             transition: opacity 0.25s;
         }
-        """
-        css_provider.load_from_string(css)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
+        """)
+        self._connect_signals()
+
+        self.label.set_visible(False)
+        self.progress_bar.set_opacity(0)
 
     def _connect_signals(self):
         """Connect to the single, consolidated TaskManager signal."""

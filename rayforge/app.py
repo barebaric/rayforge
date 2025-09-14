@@ -68,7 +68,7 @@ def main():
     # We need Adw for the class definition, so this one import is okay here.
     import gi
     gi.require_version('Adw', '1')
-    from gi.repository import Adw  # type: ignore
+    from gi.repository import Adw
 
     class App(Adw.Application):
         def __init__(self, args):
