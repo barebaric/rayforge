@@ -1,5 +1,3 @@
-# .github/workflows/publish-to-ppa.yml
-
 name: Publish .deb to PPA
 
 on:
@@ -114,4 +112,6 @@ jobs:
           rm /tmp/passphrase.txt
 
       - name: Upload to PPA
+        # This step will only run when the trigger is a tag push
+        if: startsWith(github.ref, 'refs/tags/')
         run: dput ppa:knipknap/rayforge dist/*.changes
