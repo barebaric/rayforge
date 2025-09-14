@@ -47,6 +47,27 @@ class DeviceStatus(Enum):
     TEST = auto()
 
 
+# Translatable labels for DeviceStatus enums
+DEVICE_STATUS_LABELS = {
+    DeviceStatus.UNKNOWN: _("Unknown"),
+    DeviceStatus.IDLE: _("Idle"),
+    DeviceStatus.RUN: _("Run"),
+    DeviceStatus.HOLD: _("Hold"),
+    DeviceStatus.JOG: _("Jog"),
+    DeviceStatus.ALARM: _("Alarm"),
+    DeviceStatus.DOOR: _("Door"),
+    DeviceStatus.CHECK: _("Check"),
+    DeviceStatus.HOME: _("Home"),
+    DeviceStatus.SLEEP: _("Sleep"),
+    DeviceStatus.TOOL: _("Tool"),
+    DeviceStatus.QUEUE: _("Queue"),
+    DeviceStatus.LOCK: _("Lock"),
+    DeviceStatus.UNLOCK: _("Unlock"),
+    DeviceStatus.CYCLE: _("Cycle"),
+    DeviceStatus.TEST: _("Test"),
+}
+
+
 Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
 
 

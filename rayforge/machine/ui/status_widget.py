@@ -1,6 +1,10 @@
 from gi.repository import Gtk  # type: ignore
 from typing import Optional
-from ...machine.driver.driver import DeviceStatus, DeviceState
+from ...machine.driver.driver import (
+    DeviceStatus,
+    DeviceState,
+    DEVICE_STATUS_LABELS,
+)
 from ...machine.models.machine import Machine
 
 
@@ -97,5 +101,7 @@ class MachineStatusWidget(Gtk.Box):
             self.label.set_label(_("No driver selected"))
             self.icon.set_status(DeviceStatus.UNKNOWN)
         else:
-            self.label.set_label(status.name)
+            self.label.set_label(
+                DEVICE_STATUS_LABELS.get(status, _("Unknown"))
+            )
             self.icon.set_status(status)

@@ -14,6 +14,19 @@ class TransportStatus(Enum):
     SLEEPING = auto()
 
 
+# Translatable labels for TransportStatus enums
+TRANSPORT_STATUS_LABELS = {
+    TransportStatus.UNKNOWN: _("Unknown"),
+    TransportStatus.IDLE: _("Idle"),
+    TransportStatus.CONNECTING: _("Connecting"),
+    TransportStatus.CONNECTED: _("Connected"),
+    TransportStatus.ERROR: _("Error"),
+    TransportStatus.CLOSING: _("Closing"),
+    TransportStatus.DISCONNECTED: _("Disconnected"),
+    TransportStatus.SLEEPING: _("Sleeping"),
+}
+
+
 class Transport(ABC):
     """
     Abstract base class for asynchronous data transports.

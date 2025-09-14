@@ -1,6 +1,9 @@
 from gi.repository import Gtk  # type: ignore
 from typing import Optional
-from ...machine.transport import TransportStatus
+from ...machine.transport.transport import (
+    TransportStatus,
+    TRANSPORT_STATUS_LABELS,
+)
 from ...machine.models.machine import Machine
 
 
@@ -90,5 +93,7 @@ class ConnectionStatusWidget(Gtk.Box):
             self.label.set_label(_("No driver selected"))
             self.icon.set_status(TransportStatus.DISCONNECTED)
         else:
-            self.label.set_label(status.name)
+            self.label.set_label(
+                TRANSPORT_STATUS_LABELS.get(status, _("Disconnected"))
+            )
             self.icon.set_status(status)
