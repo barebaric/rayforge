@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple, Optional
 from .machine import Machine, Laser
+from .script import Script, ScriptTrigger
 from ..driver import get_driver_cls
 
 
@@ -23,11 +24,10 @@ class MachineProfile:
     y_axis_down: Optional[bool] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
-    preamble: Optional[List[str]] = None
-    postscript: Optional[List[str]] = None
     driver_args: Optional[Dict[str, Any]] = None
     home_on_start: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
+    hookscripts: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self) -> Machine:
         """
@@ -64,14 +64,16 @@ class MachineProfile:
             m.max_travel_speed = self.max_travel_speed
         if self.max_cut_speed is not None:
             m.max_cut_speed = self.max_cut_speed
-        if self.preamble is not None:
-            m.preamble = self.preamble.copy()
-            m.use_custom_preamble = True
-        if self.postscript is not None:
-            m.postscript = self.postscript.copy()
-            m.use_custom_postscript = True
         if self.home_on_start is not None:
             m.home_on_start = self.home_on_start
+        if self.hookscripts is not None:
+            for s_data in self.hookscripts:
+                try:
+                    # Profiles define hooks with an internal trigger field
+                    trigger = ScriptTrigger[s_data["trigger"]]
+                    m.hookscripts[trigger] = Script.from_dict(s_data)
+                except (KeyError, ValueError) as e:
+                    logger.warning(f"Skipping invalid hook in profile: {e}")
 
         m.cameras = []
 

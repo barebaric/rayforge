@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Optional, List, Tuple
 from ...core.ops import (
     Ops,
@@ -10,12 +11,26 @@ from ...core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    JobStartCommand,
+    JobEndCommand,
+    LayerStartCommand,
+    LayerEndCommand,
+    WorkpieceStartCommand,
+    WorkpieceEndCommand,
 )
 from ...machine.models.dialect import GcodeDialect, get_dialect
+from ...machine.models.script import ScriptTrigger
+from ...shared.util.template import TemplateFormatter
 from .base import OpsEncoder
+from .context import GcodeContext, JobInfo
+from ...core.layer import Layer
+from ...core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ...machine.models.machine import Machine
+
+logger = logging.getLogger(__name__)
 
 
 class GcodeEncoder(OpsEncoder):
@@ -50,32 +65,47 @@ class GcodeEncoder(OpsEncoder):
         dialect = get_dialect(machine.dialect_name)
         return cls(dialect)
 
-    def encode(self, ops: Ops, machine: "Machine") -> str:
+    def encode(self, ops: Ops, machine: "Machine", doc: "Doc") -> str:
         """Main encoding workflow"""
-        preamble = (
-            machine.preamble
-            if machine.use_custom_preamble
-            else self.dialect.default_preamble
-        )
-        postscript = (
-            machine.postscript
-            if machine.use_custom_postscript
-            else self.dialect.default_postscript
-        )
-
         # Set the coordinate format based on the machine's precision setting
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
 
-        gcode: List[str] = [] + preamble
+        context = GcodeContext(
+            machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
+        )
+        gcode: List[str] = []
         for cmd in ops:
-            self._handle_command(gcode, cmd, machine)
-        self._finalize(gcode, postscript)
+            self._handle_command(gcode, cmd, context)
+        self._finalize(gcode)
         return "\n".join(gcode)
 
+    def _emit_scripts(
+        self, gcode: List[str], context: GcodeContext, trigger: ScriptTrigger
+    ):
+        """
+        Finds the script for a trigger and uses the TemplateFormatter to
+        expand it.
+        """
+        script_action = context.machine.hookscripts.get(trigger)
+
+        if script_action and script_action.enabled:
+            formatter = TemplateFormatter(context.machine, context)
+            expanded_lines = formatter.expand_script(script_action)
+            gcode.extend(expanded_lines)
+            return
+
+        # If we get here, no user scripts were found, so use defaults.
+        if trigger == ScriptTrigger.JOB_START:
+            gcode.extend(self.dialect.default_preamble)
+        elif trigger == ScriptTrigger.JOB_END:
+            gcode.extend(self.dialect.default_postscript)
+
     def _handle_command(
-        self, gcode: List[str], cmd: Command, machine: "Machine"
+        self, gcode: List[str], cmd: Command, context: GcodeContext
     ) -> None:
         """Dispatch command to appropriate handler"""
+        machine = context.machine
+        doc = context.doc
         match cmd:
             case SetPowerCommand():
                 self._update_power(gcode, cmd.power, machine)
@@ -99,9 +129,46 @@ class GcodeEncoder(OpsEncoder):
                 self._handle_arc_to(
                     gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
-            case _:
-                # Ignore marker commands and any other unhandled command types
-                pass
+            case JobStartCommand():
+                self._emit_scripts(gcode, context, ScriptTrigger.JOB_START)
+            case JobEndCommand():
+                # This is the single point of truth for job cleanup.
+                # First, perform guaranteed safety shutdowns. This emits the
+                # first M5 and updates the internal state.
+                self._laser_off(gcode)
+                if self.air_assist:
+                    self._set_air_assist(gcode, False)
+
+                # Then, run the user script or the full default postscript.
+                self._emit_scripts(gcode, context, ScriptTrigger.JOB_END)
+            case LayerStartCommand(layer_uid=uid):
+                descendant = doc.find_descendant_by_uid(uid)
+                if isinstance(descendant, Layer):
+                    context.layer = descendant
+                elif descendant is not None:
+                    logger.warning(
+                        f"Expected Layer for UID {uid}, but "
+                        f" found {type(descendant)}"
+                    )
+                self._emit_scripts(gcode, context, ScriptTrigger.LAYER_START)
+            case LayerEndCommand():
+                self._emit_scripts(gcode, context, ScriptTrigger.LAYER_END)
+                context.layer = None
+            case WorkpieceStartCommand(workpiece_uid=uid):
+                descendant = doc.find_descendant_by_uid(uid)
+                if isinstance(descendant, WorkPiece):
+                    context.workpiece = descendant
+                elif descendant is not None:
+                    logger.warning(
+                        f"Expected WorkPiece for UID {uid}, "
+                        f" but found {type(descendant)}"
+                    )
+                self._emit_scripts(
+                    gcode, context, ScriptTrigger.WORKPIECE_START
+                )
+            case WorkpieceEndCommand():
+                self._emit_scripts(gcode, context, ScriptTrigger.WORKPIECE_END)
+                context.workpiece = None
 
     def _emit_modal_speed(self, gcode: List[str], speed: float) -> None:
         """
@@ -206,10 +273,7 @@ class GcodeEncoder(OpsEncoder):
             gcode.append(self.dialect.laser_off)
             self.laser_active = False
 
-    def _finalize(self, gcode: List[str], postscript: List[str]) -> None:
-        """Cleanup at end of file"""
-        self._laser_off(gcode)
-        if self.air_assist and self.dialect.air_assist_off:
-            gcode.append(self.dialect.air_assist_off)
-        gcode.extend(postscript)
-        gcode.append("")
+    def _finalize(self, gcode: List[str]) -> None:
+        """Ensures the G-code file ends with a newline."""
+        if not gcode or gcode[-1]:
+            gcode.append("")

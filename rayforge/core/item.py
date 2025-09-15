@@ -439,6 +439,24 @@ class DocItem(ABC):
 
         return all_descendants
 
+    def find_descendant_by_uid(self, uid: str) -> Optional[DocItem]:
+        """
+        Recursively searches the subtree for a descendant with a matching UID.
+
+        Args:
+            uid: The unique identifier to search for.
+
+        Returns:
+            The DocItem if found, otherwise None.
+        """
+        for child in self.children:
+            if child.uid == uid:
+                return child
+            found = child.find_descendant_by_uid(uid)
+            if found:
+                return found
+        return None
+
     def _connect_child_signals(self, child: DocItem):
         child.updated.connect(self._on_child_updated)
         child.transform_changed.connect(self._on_child_transform_changed)

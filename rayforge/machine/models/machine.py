@@ -20,6 +20,7 @@ from ..driver.driver import (
 from ..driver.dummy import NoDeviceDriver
 from ..driver import get_driver_cls
 from .laser import Laser
+from .script import Script, ScriptTrigger
 
 if TYPE_CHECKING:
     from ...shared.varset import VarSet
@@ -48,10 +49,8 @@ class Machine:
         self.clear_alarm_on_connect: bool = False
         self.dialect_name: str = "GRBL"
         self.gcode_precision: int = 3
-        self.use_custom_preamble: bool = False
-        self.preamble: List[str] = []
-        self.use_custom_postscript: bool = False
-        self.postscript: List[str] = []
+        self.hookscripts: Dict[ScriptTrigger, Script] = {}
+        self.macros: Dict[str, Script] = {}
         self.heads: List[Laser] = []
         self._heads_ref_for_pyreverse: Laser
         self.cameras: List[Camera] = []
@@ -283,26 +282,6 @@ class Machine:
         self.clear_alarm_on_connect = clear_alarm
         self.changed.send(self)
 
-    def set_use_custom_preamble(self, use: bool):
-        if self.use_custom_preamble == use:
-            return
-        self.use_custom_preamble = use
-        self.changed.send(self)
-
-    def set_preamble(self, preamble: List[str]):
-        self.preamble = preamble
-        self.changed.send(self)
-
-    def set_use_custom_postscript(self, use: bool):
-        if self.use_custom_postscript == use:
-            return
-        self.use_custom_postscript = use
-        self.changed.send(self)
-
-    def set_postscript(self, postscript: List[str]):
-        self.postscript = postscript
-        self.changed.send(self)
-
     def set_max_travel_speed(self, speed: int):
         self.max_travel_speed = speed
         self.changed.send(self)
@@ -343,6 +322,20 @@ class Machine:
         self.changed.send(self)
 
     def _on_camera_changed(self, camera, *args):
+        self.changed.send(self)
+
+    def add_macro(self, script: Script):
+        """Adds a macro and notifies listeners."""
+        if script.uid in self.macros:
+            return
+        self.macros[script.uid] = script
+        self.changed.send(self)
+
+    def remove_macro(self, script_uid: str):
+        """Removes a macro and notifies listeners."""
+        if script_uid not in self.macros:
+            return
+        del self.macros[script_uid]
         self.changed.send(self)
 
     def can_frame(self):
@@ -474,15 +467,18 @@ class Machine:
                 "y_axis_down": self.y_axis_down,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
+                "hookscripts": {
+                    trigger.name: script.to_dict()
+                    for trigger, script in self.hookscripts.items()
+                },
+                "macros": {
+                    uid: macro.to_dict() for uid, macro in self.macros.items()
+                },
                 "speeds": {
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
                 },
                 "gcode": {
-                    "preamble": self.preamble,
-                    "postscript": self.postscript,
-                    "use_custom_preamble": self.use_custom_preamble,
-                    "use_custom_postscript": self.use_custom_postscript,
                     "gcode_precision": self.gcode_precision,
                 },
             }
@@ -502,6 +498,23 @@ class Machine:
         ma.dialect_name = ma_data.get("dialect", "GRBL")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
+
+        # Deserialize hookscripts first, if they exist
+        hook_data = ma_data.get("hookscripts", {})
+        for trigger_name, script_data in hook_data.items():
+            try:
+                trigger = ScriptTrigger[trigger_name]
+                ma.hookscripts[trigger] = Script.from_dict(script_data)
+            except KeyError:
+                logger.warning(
+                    f"Skipping unknown hook trigger '{trigger_name}'"
+                )
+
+        macro_data = ma_data.get("macros", {})
+        for uid, script_data in macro_data.items():
+            script_data["uid"] = uid  # Ensure UID is consistent with key
+            ma.macros[uid] = Script.from_dict(script_data)
+
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))
@@ -514,21 +527,6 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         gcode = ma_data.get("gcode", {})
-
-        # Load preamble/postscript values. They might be None in old files.
-        preamble = gcode.get("preamble")
-        postscript = gcode.get("postscript")
-        ma.preamble = preamble if preamble is not None else []
-        ma.postscript = postscript if postscript is not None else []
-
-        # Load override flags. If they don't exist (old file),
-        # infer state from whether preamble/postscript were defined.
-        ma.use_custom_preamble = gcode.get(
-            "use_custom_preamble", preamble is not None
-        )
-        ma.use_custom_postscript = gcode.get(
-            "use_custom_postscript", postscript is not None
-        )
         ma.gcode_precision = gcode.get("gcode_precision", 3)
 
         task_mgr.add_coroutine(
@@ -554,9 +552,7 @@ class MachineManager:
         Shuts down all managed machines and their drivers gracefully.
         """
         logger.info("Shutting down all machines.")
-        tasks = [
-            machine.shutdown() for machine in self.machines.values()
-        ]
+        tasks = [machine.shutdown() for machine in self.machines.values()]
         if tasks:
             await asyncio.gather(*tasks)
         logger.info("All machines shut down.")

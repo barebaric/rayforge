@@ -199,6 +199,29 @@ def test_get_descendants():
     assert root.get_descendants(of_type=Doc) == []
 
 
+def test_find_descendant_by_uid():
+    """Tests the recursive search for a descendant by its UID."""
+    root = GroupItem(name="root")
+    c1 = GroupItem(name="c1")
+    c2 = ConcreteItem(name="c2")
+    gc1 = ConcreteItem(name="gc1")
+
+    root.add_child(c1)
+    root.add_child(c2)
+    c1.add_child(gc1)
+
+    # Find a deeply nested item
+    assert root.find_descendant_by_uid(gc1.uid) is gc1
+    # Find a direct child
+    assert root.find_descendant_by_uid(c2.uid) is c2
+    # Search should not find the item itself
+    assert root.find_descendant_by_uid(root.uid) is None
+    # Search should return None for an unknown UID
+    assert root.find_descendant_by_uid("non-existent-uid") is None
+    # Search on a leaf node should return None
+    assert gc1.find_descendant_by_uid(root.uid) is None
+
+
 def test_matrix_property_and_signal():
     """Tests setting the matrix and the firing of `transform_changed`."""
     item = GroupItem()
