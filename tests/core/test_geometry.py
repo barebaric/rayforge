@@ -280,3 +280,152 @@ def test_linearize_arc_method(sample_geometry):
 
     assert first_segment_start == pytest.approx(start_point)
     assert last_segment_end == pytest.approx(arc_cmd.end)
+
+
+def test_find_closest_point_empty_geometry():
+    geo = Geometry()
+    assert geo.find_closest_point(10, 10) is None
+
+
+def test_find_closest_point_single_line():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+
+    # Point on the line
+    result = geo.find_closest_point(5, 0)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 0))
+
+    # Point directly above the line
+    result = geo.find_closest_point(5, 5)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 0))
+
+    # Point past the end
+    result = geo.find_closest_point(15, 0)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(1.0)
+    assert point == pytest.approx((10, 0))
+
+    # Point before the start
+    result = geo.find_closest_point(-5, 5)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.0)
+    assert point == pytest.approx((0, 0))
+
+
+def test_find_closest_point_diagonal_line():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+
+    # Closest point is the midpoint of the segment
+    result = geo.find_closest_point(0, 10)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 5))
+
+
+def test_find_closest_point_square():
+    geo = Geometry()
+    geo.move_to(0, 0)  # cmd 0
+    geo.line_to(10, 0)  # cmd 1
+    geo.line_to(10, 10)  # cmd 2
+    geo.line_to(0, 10)  # cmd 3
+    geo.close_path()  # cmd 4 (line to 0,0 from 0,10)
+
+    # Closest to bottom edge
+    result = geo.find_closest_point(5, -2)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 0))
+
+    # Closest to top-right corner (end of segment 2)
+    result = geo.find_closest_point(11, 11)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 2
+    assert t == pytest.approx(1.0)
+    assert point == pytest.approx((10, 10))
+
+    # Closest to left edge (part of segment 4)
+    result = geo.find_closest_point(-3, 5)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 4
+    # Segment 4 is from (0, 10) to (0, 0). (0, 5) is halfway.
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((0, 5))
+
+
+def test_find_closest_point_arc():
+    geo = Geometry()
+    geo.move_to(10, 0)
+    # 90 deg counter-clockwise arc, center (0,0), radius 10
+    geo.arc_to(0, 10, i=-10, j=0, clockwise=False)
+
+    # Point at 45 degrees on the arc
+    p_on_arc_x = 10 * math.cos(math.radians(45))
+    p_on_arc_y = 10 * math.sin(math.radians(45))
+    result = geo.find_closest_point(p_on_arc_x, p_on_arc_y)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    # Tolerance needed due to arc linearization
+    assert t == pytest.approx(0.5, abs=1e-2)
+    assert point == pytest.approx((p_on_arc_x, p_on_arc_y), abs=1e-2)
+
+    # Point "inside" the arc, should snap to 45 degree point
+    result = geo.find_closest_point(5, 5)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5, abs=1e-2)
+    assert point == pytest.approx((p_on_arc_x, p_on_arc_y), abs=1e-2)
+
+    # Point past the end of the arc
+    result = geo.find_closest_point(-5, 15)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(1.0)
+    assert point == pytest.approx((0, 10))
+
+
+def test_find_closest_point_with_gap():
+    geo = Geometry()
+    geo.move_to(0, 0)  # cmd 0
+    geo.line_to(10, 0)  # cmd 1
+    geo.move_to(0, 10)  # cmd 2
+    geo.line_to(10, 10)  # cmd 3
+
+    # Point closer to bottom line
+    result = geo.find_closest_point(5, 4)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 1
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 0))
+
+    # Point closer to top line
+    result = geo.find_closest_point(5, 6)
+    assert result is not None
+    idx, t, point = result
+    assert idx == 3
+    assert t == pytest.approx(0.5)
+    assert point == pytest.approx((5, 10))

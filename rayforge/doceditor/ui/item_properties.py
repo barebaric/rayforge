@@ -122,6 +122,16 @@ class DocItemPropertiesWidget(Expander):
         self.shear_row.connect("notify::value", self._on_shear_changed)
         rows_container.append(self.shear_row)
 
+        # Tabs Switch
+        self.tabs_enabled_switch = Adw.SwitchRow(
+            title=_("Enable Tabs"),
+            visible=False,
+        )
+        self.tabs_enabled_switch.connect(
+            "notify::active", self._on_tabs_enabled_toggled
+        )
+        rows_container.append(self.tabs_enabled_switch)
+
         # --- Reset Buttons ---
         # Note: These are now added as suffixes to their respective rows.
         def create_reset_button(tooltip_text, on_clicked):
@@ -159,6 +169,32 @@ class DocItemPropertiesWidget(Expander):
         self.shear_row.add_suffix(self.reset_shear_button)
 
         self.set_items(items)
+
+    def _on_tabs_enabled_toggled(self, switch, GParamSpec):
+        if self._in_update or not self.items:
+            return
+
+        # Should only affect a single selected workpiece
+        if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
+            return
+
+        item = cast(WorkPiece, self.items[0])
+        new_value = switch.get_active()
+
+        if item.tabs_enabled == new_value:
+            return
+
+        doc = item.doc
+        if not doc:
+            return
+
+        cmd = ChangePropertyCommand(
+            target=item,
+            property_name="tabs_enabled",
+            new_value=new_value,
+            name=_("Toggle Tabs"),
+        )
+        doc.history_manager.execute(cmd)
 
     def _calculate_new_size_with_ratio(
         self, item: DocItem, value: float, changed_dim: str
@@ -707,8 +743,20 @@ class DocItemPropertiesWidget(Expander):
                             _("{name} (not found)").format(name=file_path.name)
                         )
                         self.open_source_button.set_sensitive(False)
+
+                    # Show tab switch if the workpiece has tabs
+                    if workpiece.tabs:
+                        self.tabs_enabled_switch.set_visible(True)
+                        self.tabs_enabled_switch.set_active(
+                            workpiece.tabs_enabled
+                        )
+                    else:
+                        self.tabs_enabled_switch.set_visible(False)
                 except (TypeError, ValueError):
                     self.open_source_button.set_sensitive(False)
+                    self.tabs_enabled_switch.set_visible(False)
+            else:
+                self.tabs_enabled_switch.set_visible(False)
 
         finally:
             self._in_update = False

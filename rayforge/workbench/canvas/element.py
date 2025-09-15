@@ -94,7 +94,7 @@ class CanvasElement:
             angle: The local rotation angle in degrees.
             pixel_perfect_hit: If True (and buffered=True),
                 hit-testing will check the transparency of the
-                pixel on the element's surface.
+                pixel on the element's rendered surface.
             matrix: An optional transformation matrix. If provided,
                 it overrides x, y, angle, and scale properties on
                 initialization.
@@ -140,6 +140,7 @@ class CanvasElement:
         self.pixel_perfect_hit = pixel_perfect_hit
         self.hit_distance: float = hit_distance
         self.is_editable: bool = is_editable
+        self.draggable: bool = False
 
         # This is the single source of truth for the local GEOMETRIC transform.
         self.transform: Matrix = Matrix.identity()
@@ -158,6 +159,11 @@ class CanvasElement:
         else:
             # Initial synchronization from primitive properties on creation
             self._rebuild_transform()
+
+    @property
+    def is_hovered(self) -> bool:
+        """Returns True if the mouse is currently hovering over the element."""
+        return self.hovered
 
     def _rebuild_transform(self):
         """

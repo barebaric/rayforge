@@ -575,3 +575,53 @@ def test_transform_shear():
     final_point = final_cmd.end
     assert final_point[0] == pytest.approx(p2_vec[0])
     assert final_point[1] == pytest.approx(p2_vec[1])
+
+
+def test_subtract_regions():
+    # Test case 1: A simple gap in the middle of a line
+    ops = Ops()
+    ops.move_to(0, 50, -5)
+    ops.line_to(100, 50, 5)  # 100mm line with Z change
+
+    # A simple rectangular region to subtract
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.subtract_regions([region])
+
+    # Expected result: Move, Line, Move, Line
+    assert len(ops.commands) == 4
+
+    # First segment
+    cmd1 = ops.commands[0]
+    cmd2 = ops.commands[1]
+    assert isinstance(cmd1, MoveToCommand)
+    assert isinstance(cmd2, LineToCommand)
+    assert cmd1.end == pytest.approx((0.0, 50.0, -5.0))
+    # Z should be interpolated to 40% of the way
+    assert cmd2.end == pytest.approx((40.0, 50.0, -1.0))
+
+    # Second segment (after the gap)
+    cmd3 = ops.commands[2]
+    cmd4 = ops.commands[3]
+    assert isinstance(cmd3, MoveToCommand)
+    assert isinstance(cmd4, LineToCommand)
+    # Z should be interpolated to 60% of the way
+    assert cmd3.end == pytest.approx((60.0, 50.0, 1.0))
+    assert cmd4.end == pytest.approx((100.0, 50.0, 5.0))
+
+    # Test case 2: Line is fully contained in region
+    ops = Ops()
+    ops.move_to(45, 50)
+    ops.line_to(55, 50)
+    ops.subtract_regions([region])
+    # All drawing commands should be removed
+    assert len(ops.commands) == 0
+
+    # Test case 3: Line starts inside region
+    ops = Ops()
+    ops.move_to(45, 50)
+    ops.line_to(70, 50)
+    ops.subtract_regions([region])
+    assert len(ops.commands) == 2
+    assert ops.commands[0].end == pytest.approx((60, 50, 0))
+    assert ops.commands[1].end == pytest.approx((70, 50, 0))

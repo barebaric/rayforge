@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from blinker import Signal
 from ...core.ops import Ops
 from ...shared.tasker.proxy import BaseExecutionContext
+from ...core.workpiece import WorkPiece
 
 
 class OpsTransformer(ABC):
@@ -14,6 +15,7 @@ class OpsTransformer(ABC):
     - Applying travel path optimizations
     - Applying arc welding
     """
+
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
         self.changed = Signal()
@@ -49,13 +51,15 @@ class OpsTransformer(ABC):
     def run(
         self,
         ops: Ops,
-        context: Optional[BaseExecutionContext] = None
+        workpiece: Optional[WorkPiece] = None,
+        context: Optional[BaseExecutionContext] = None,
     ) -> None:
         """
         Runs the transformation.
 
         Args:
             ops: The Ops object to transform in-place.
+            workpiece: The WorkPiece model being processed.
             context: Used for progress and cancellation hooks.
         """
         pass
@@ -63,12 +67,12 @@ class OpsTransformer(ABC):
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
         return {
-            'name': self.__class__.__name__,
-            'enabled': self.enabled,
+            "name": self.__class__.__name__,
+            "enabled": self.enabled,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'OpsTransformer':
+    def from_dict(cls, data: Dict[str, Any]) -> "OpsTransformer":
         """
         Acts as a factory to create a transformer instance from a dictionary.
         This method should be called on the base class, e.g.,
@@ -86,7 +90,7 @@ class OpsTransformer(ABC):
         # Lazy import to avoid circular dependency
         from . import transformer_by_name
 
-        name = data.get('name')
+        name = data.get("name")
         if not name:
             raise ValueError("Transformer data is missing 'name' field.")
 

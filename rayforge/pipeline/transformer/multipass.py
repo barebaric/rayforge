@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Optional, Dict, Any
 
 from .base import OpsTransformer
+from ...core.workpiece import WorkPiece
 from ...core.ops import Ops
 from ...shared.tasker.proxy import BaseExecutionContext
 
@@ -75,7 +76,10 @@ class MultiPassTransformer(OpsTransformer):
         )
 
     def run(
-        self, ops: Ops, context: Optional[BaseExecutionContext] = None
+        self,
+        ops: Ops,
+        workpiece: Optional[WorkPiece] = None,
+        context: Optional[BaseExecutionContext] = None,
     ) -> None:
         """
         Executes the multi-pass transformation on the Ops object.

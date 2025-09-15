@@ -1,5 +1,6 @@
 import math
 from typing import Optional, List, Tuple, Dict, Any
+from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
 from ...shared.tasker.proxy import BaseExecutionContext
 from .base import OpsTransformer
@@ -110,7 +111,12 @@ class Smooth(OpsTransformer):
     def description(self) -> str:
         return _("Smooths the path by applying a Gaussian filter")
 
-    def run(self, ops: Ops, context: Optional[BaseExecutionContext] = None):
+    def run(
+        self,
+        ops: Ops,
+        workpiece: Optional[WorkPiece] = None,
+        context: Optional[BaseExecutionContext] = None,
+    ):
         """
         Executes the smoothing transformation on a set of operations.
 
@@ -132,8 +138,9 @@ class Smooth(OpsTransformer):
             points_to_smooth: Optional[List[Tuple[float, float, float]]] = None
             if self._is_line_only_segment(segment):
                 # Extract points. The `end` property may be typed as Optional.
-                points_to_smooth = [cmd.end for cmd in segment
-                                    if cmd.end is not None]
+                points_to_smooth = [
+                    cmd.end for cmd in segment if cmd.end is not None
+                ]
                 smoothed = self._smooth_segment(points_to_smooth)
                 if smoothed:
                     ops.move_to(*smoothed[0])
@@ -287,7 +294,7 @@ class Smooth(OpsTransformer):
                 start_idx = sorted_anchors[i]
                 end_idx = sorted_anchors[(i + 1) % num_anchors]
                 if start_idx < end_idx:
-                    sub_seg = prepared_points[start_idx:end_idx + 1]
+                    sub_seg = prepared_points[start_idx : end_idx + 1]
                 else:  # Handle wraparound segment
                     sub_seg = (
                         prepared_points[start_idx:]
@@ -309,7 +316,7 @@ class Smooth(OpsTransformer):
             last_anchor_idx = sorted_anchors[0]
             for i in range(1, len(sorted_anchors)):
                 anchor_idx = sorted_anchors[i]
-                sub_seg = prepared_points[last_anchor_idx:anchor_idx + 1]
+                sub_seg = prepared_points[last_anchor_idx : anchor_idx + 1]
                 smoothed_sub = self._smooth_sub_segment(sub_seg)
                 final_points.extend(smoothed_sub[:-1])
                 last_anchor_idx = anchor_idx

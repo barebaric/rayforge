@@ -3,6 +3,7 @@ import math
 import logging
 from copy import copy
 from typing import Optional, List, cast, Dict, Any, Tuple
+from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, State, ArcToCommand, Command, MovingCommand
 from .base import OpsTransformer
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
@@ -255,21 +256,21 @@ def two_opt(
                 e_end = ordered[j][-1]
                 if j < n - 1:
                     f_start = ordered[j + 1][0]
-                    curr_cost = _dist_2d(
-                        a_end.end, b_start.end
-                    ) + _dist_2d(e_end.end, f_start.end)
-                    new_cost = _dist_2d(
-                        a_end.end, e_end.end
-                    ) + _dist_2d(b_start.end, f_start.end)
+                    curr_cost = _dist_2d(a_end.end, b_start.end) + _dist_2d(
+                        e_end.end, f_start.end
+                    )
+                    new_cost = _dist_2d(a_end.end, e_end.end) + _dist_2d(
+                        b_start.end, f_start.end
+                    )
                 else:
                     curr_cost = _dist_2d(a_end.end, b_start.end)
                     new_cost = _dist_2d(a_end.end, e_end.end)
                 if new_cost < curr_cost:
-                    sub = ordered[i + 1:j + 1]
+                    sub = ordered[i + 1 : j + 1]
                     # Reverse order and flip each segment.
                     for n in range(len(sub)):
                         sub[n] = flip_segment(sub[n])
-                    ordered[i + 1:j + 1] = sub[::-1]
+                    ordered[i + 1 : j + 1] = sub[::-1]
                     improved = True
         iter_count += 1
 
@@ -317,7 +318,10 @@ class Optimize(OpsTransformer):
         return _("Minimizes travel distance by reordering segments")
 
     def run(
-        self, ops: Ops, context: Optional[BaseExecutionContext] = None
+        self,
+        ops: Ops,
+        workpiece: Optional[WorkPiece] = None,
+        context: Optional[BaseExecutionContext] = None,
     ) -> None:
         if context is None:
             context = ExecutionContext()

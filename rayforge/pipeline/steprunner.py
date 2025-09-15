@@ -300,7 +300,10 @@ def run_step_in_subprocess(
             )
             # transformer.run now runs synchronously and may use the proxy
             # to report its own fine-grained progress.
-            transformer.run(final_ops, context=transformer_run_proxy)
+
+            transformer.run(
+                final_ops, workpiece=workpiece, context=transformer_run_proxy
+            )
 
             # Ensure this step's progress is marked as 100% complete before
             # moving to the next one.

@@ -5,6 +5,7 @@ from .multipass import MultiPassTransformer
 from .arcwelder import ArcWeld
 from .optimize import Optimize
 from .smooth import Smooth
+from .tabs import TabOpsTransformer
 
 transformer_by_name = dict(
     (name, obj) for name, obj in locals().items()
@@ -19,5 +20,6 @@ __all__ = [
     "ArcWeld",
     "Optimize",
     "Smooth",
+    "TabOpsTransformer",
     "transformer_by_name",
 ]

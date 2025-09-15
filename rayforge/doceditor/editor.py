@@ -15,6 +15,7 @@ from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .transform_cmd import TransformCmd
 from .stock_cmd import StockCmd
+from .tab_cmd import TabCmd
 from ..machine.cmd import MachineCmd
 
 if TYPE_CHECKING:
@@ -73,6 +74,7 @@ class DocEditor:
         self.layout = LayoutCmd(self, self._task_manager)
         self.transform = TransformCmd(self)
         self.stock = StockCmd(self)
+        self.tab = TabCmd(self)
         self.machine = MachineCmd(self)
 
     @property

@@ -172,7 +172,7 @@ class TestSmooth(unittest.TestCase):
             return original_smooth_segment(points)
 
         smoother._smooth_segment = cancelling_smooth_segment
-        smoother.run(ops, context)
+        smoother.run(ops, context=context)
 
         # The loop runs 5 times before the cancellation is detected on
         # the 6th try

@@ -942,3 +942,210 @@ class Ops:
     def dump(self) -> None:
         for segment in self.segments():
             print(segment)
+
+    def _is_point_inside_polygon(
+        self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
+    ) -> bool:
+        """
+        Checks if a 2D point is inside a 2D polygon using the Ray Casting
+        algorithm. This implementation is robust against horizontal edges.
+        """
+        x, y = point
+        n = len(polygon)
+        if n == 0:
+            return False
+
+        inside = False
+        p1x, p1y = polygon[0]
+        for i in range(n + 1):
+            p2x, p2y = polygon[i % n]
+            # Check if the horizontal ray at y intersects with the edge
+            # (p1, p2)
+            if (p1y > y) != (p2y > y):
+                # Calculate the x-coordinate of the intersection
+                x_intersect = (p2x - p1x) * (y - p1y) / (p2y - p1y) + p1x
+                # If the point is to the left of the intersection, we have a
+                # crossing
+                if x < x_intersect:
+                    inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+
+    def _line_intersection(
+        self,
+        p1: Tuple[float, float],
+        p2: Tuple[float, float],
+        p3: Tuple[float, float],
+        p4: Tuple[float, float],
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Finds the intersection point of two line segments (p1,p2) and (p3,p4).
+        Returns the intersection point or None.
+        """
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        x4, y4 = p4
+
+        den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if abs(den) < 1e-9:
+            return None  # Parallel or collinear
+
+        t_num = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
+        u_num = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3))
+
+        t = t_num / den
+        u = u_num / den
+
+        if 0 <= t <= 1 and 0 <= u <= 1:
+            return (x1 + t * (x2 - x1), y1 + t * (y2 - y1))
+        return None
+
+    def _get_segment_intersections(
+        self,
+        p1_2d: Tuple[float, float],
+        p2_2d: Tuple[float, float],
+        regions: List[List[Tuple[float, float]]],
+    ) -> List[float]:
+        """
+        Calculates all intersection points of a 2D segment with the
+        boundaries of the given regions.
+        Returns a sorted list of fractional distances 't' (from 0.0 to 1.0)
+        along the segment where intersections occur.
+        """
+        cut_points_t = {0.0, 1.0}
+        for region in regions:
+            for i in range(len(region)):
+                p3 = region[i]
+                p4 = region[(i + 1) % len(region)]
+                intersection = self._line_intersection(p1_2d, p2_2d, p3, p4)
+
+                if intersection:
+                    ix, iy = intersection
+                    seg_dx, seg_dy = p2_2d[0] - p1_2d[0], p2_2d[1] - p1_2d[1]
+
+                    if abs(seg_dx) > abs(seg_dy):
+                        t = (ix - p1_2d[0]) / seg_dx if seg_dx != 0 else 0.0
+                    else:
+                        t = (iy - p1_2d[1]) / seg_dy if seg_dy != 0 else 0.0
+                    cut_points_t.add(max(0.0, min(1.0, t)))
+
+        return sorted(list(cut_points_t))
+
+    def _process_segment_for_subtraction(
+        self,
+        p1: Tuple[float, float, float],
+        p2: Tuple[float, float, float],
+        regions: List[List[Tuple[float, float]]],
+        new_ops: "Ops",
+        pen_pos: Optional[Tuple[float, float, float]],
+    ) -> Optional[Tuple[float, float, float]]:
+        """
+        Processes a single 3D segment. It is split by the regions, and
+        only the parts outside the regions are added to new_ops.
+        Returns the updated pen position.
+        """
+        sorted_cuts = self._get_segment_intersections(p1[:2], p2[:2], regions)
+
+        for i in range(len(sorted_cuts) - 1):
+            t1, t2 = sorted_cuts[i], sorted_cuts[i + 1]
+            if abs(t1 - t2) < 1e-9:
+                continue
+
+            # Check if the midpoint of this sub-segment is inside any region
+            mid_t = (t1 + t2) / 2.0
+            mid_p = (
+                p1[0] + (p2[0] - p1[0]) * mid_t,
+                p1[1] + (p2[1] - p1[1]) * mid_t,
+            )
+
+            is_inside_any_region = any(
+                self._is_point_inside_polygon(mid_p, r) for r in regions
+            )
+
+            if not is_inside_any_region:
+                # This sub-segment is kept. Interpolate its 3D coordinates.
+                sub_p1: Tuple[float, float, float] = (
+                    p1[0] + (p2[0] - p1[0]) * t1,
+                    p1[1] + (p2[1] - p1[1]) * t1,
+                    p1[2] + (p2[2] - p1[2]) * t1,
+                )
+                sub_p2: Tuple[float, float, float] = (
+                    p1[0] + (p2[0] - p1[0]) * t2,
+                    p1[1] + (p2[1] - p1[1]) * t2,
+                    p1[2] + (p2[2] - p1[2]) * t2,
+                )
+
+                if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
+                    new_ops.move_to(*sub_p1)
+
+                new_ops.line_to(*sub_p2)
+                pen_pos = sub_p2
+
+        return pen_pos
+
+    def subtract_regions(
+        self, regions: List[List[Tuple[float, float]]]
+    ) -> "Ops":
+        """
+        Clips the Ops by subtracting a list of polygonal regions.
+        This modifies the Ops object in place and returns it.
+        """
+        if not regions or not self.commands:
+            return self
+
+        new_ops = Ops()
+        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        # Tracks the last known pen position of a *kept* segment
+        pen_pos: Optional[Tuple[float, float, float]] = None
+
+        # Add any leading state/marker commands before the first move
+        first_move_idx = next(
+            (
+                i
+                for i, cmd in enumerate(self.commands)
+                if isinstance(cmd, MovingCommand)
+            ),
+            len(self.commands),
+        )
+        for i in range(first_move_idx):
+            new_ops.add(deepcopy(self.commands[i]))
+
+        for cmd in self.commands:
+            if not isinstance(cmd, MovingCommand):
+                # State/marker commands are handled as they appear
+                # between moves
+                if not new_ops.commands or new_ops.commands[-1] is not cmd:
+                    new_ops.add(deepcopy(cmd))
+                continue
+
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+                pen_pos = None  # Pen is up
+                continue
+
+            # Linearize cutting command into segments
+            segments: List[
+                Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+            ] = []
+            if isinstance(cmd, LineToCommand):
+                segments.append((last_point, cmd.end))
+            elif isinstance(cmd, ArcToCommand):
+                segments.extend(self._linearize_arc(cmd, last_point))
+
+            # Process each linearized segment
+            for p1, p2 in segments:
+                pen_pos = self._process_segment_for_subtraction(
+                    p1, p2, regions, new_ops, pen_pos
+                )
+
+            last_point = cmd.end
+
+        self.commands = new_ops.commands
+        # Update last_move_to to a valid point if ops is not empty
+        if new_ops.commands:
+            for cmd in reversed(new_ops.commands):
+                if isinstance(cmd, MoveToCommand):
+                    self.last_move_to = cmd.end
+                    break
+        return self

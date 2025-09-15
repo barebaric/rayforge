@@ -8,9 +8,11 @@ from typing import (
     Dict,
     Any,
     TYPE_CHECKING,
+    List,
 )
 from pathlib import Path
 import warnings
+from dataclasses import asdict
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -19,6 +21,7 @@ with warnings.catch_warnings():
 from ..core.geometry import Geometry
 from .item import DocItem
 from .matrix import Matrix
+from .tab import Tab
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -51,6 +54,9 @@ class WorkPiece(DocItem):
         # The cache for rendered vips images. Key is (width, height).
         # This is the proper place for this state, not monkey-patched.
         self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
+
+        self.tabs: List[Tab] = []
+        self.tabs_enabled: bool = True
 
     def clear_render_cache(self):
         """
@@ -98,6 +104,8 @@ class WorkPiece(DocItem):
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.name = self.name
         world_wp.matrix = self.get_world_transform()
+        world_wp.tabs = self.tabs
+        world_wp.tabs_enabled = self.tabs_enabled
         return world_wp
 
     def get_local_size(self) -> Tuple[float, float]:
@@ -120,6 +128,8 @@ class WorkPiece(DocItem):
             "vectors": self.vectors.to_dict() if self.vectors else None,
             "data": self._data,
             "source_file": str(self.source_file),
+            "tabs": [asdict(t) for t in self.tabs],
+            "tabs_enabled": self.tabs_enabled,
         }
 
     @classmethod
@@ -147,6 +157,10 @@ class WorkPiece(DocItem):
         wp.uid = state["uid"]
         wp.name = state["name"]
         wp.matrix = Matrix.from_list(state["matrix"])
+
+        wp.tabs = [Tab(**t_data) for t_data in state.get("tabs", [])]
+        wp.tabs_enabled = state.get("tabs_enabled", True)
+
         return wp
 
     def get_natural_size(self) -> Optional[Tuple[float, float]]:

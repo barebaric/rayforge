@@ -152,13 +152,6 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.set_default_size(1100, 800)
 
-        # Setup keyboard actions using the new ActionManager.
-        self.action_manager = ActionManager(self)
-        self.action_manager.register_actions()
-        app = self.get_application()
-        if app:
-            self.action_manager.set_accelerators(app)
-
         # HeaderBar with left-aligned menu and centered title
         header_bar = Adw.HeaderBar()
         vbox.append(header_bar)
@@ -210,6 +203,20 @@ class MainWindow(Adw.ApplicationWindow):
         self.frame.set_hexpand(True)
         self.paned.set_start_child(self.frame)
 
+        self.surface = WorkSurface(
+            editor=self.doc_editor,
+            machine=config.machine,
+            cam_visible=self.toolbar.camera_visibility_button.get_active(),
+        )
+        self.surface.set_hexpand(True)
+
+        # Setup keyboard actions using the new ActionManager.
+        self.action_manager = ActionManager(self)
+        self.action_manager.register_actions()
+        app = self.get_application()
+        if app:
+            self.action_manager.set_accelerators(app)
+
         # Connect document signals
         doc = self.doc_editor.doc
         self._initialize_document()
@@ -225,13 +232,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.notification_requested.connect(
             self._on_editor_notification
         )
-
-        self.surface = WorkSurface(
-            editor=self.doc_editor,
-            machine=config.machine,
-            cam_visible=self.toolbar.camera_visibility_button.get_active(),
-        )
-        self.surface.set_hexpand(True)
 
         # Create the 3D canvas
         self.view_stack = Gtk.Stack()

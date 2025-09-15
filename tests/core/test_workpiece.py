@@ -2,9 +2,11 @@ import cairo
 import pytest
 from pathlib import Path
 from typing import Optional, Tuple
+from dataclasses import asdict
+
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import Ops
+from rayforge.core.tab import Tab
 from rayforge.core.workpiece import WorkPiece
 from rayforge.importer.svg.renderer import SvgRenderer
 from blinker import Signal
@@ -45,6 +47,8 @@ class TestWorkPiece:
         assert wp.matrix == Matrix.identity()
         assert isinstance(wp.updated, Signal)
         assert isinstance(wp.transform_changed, Signal)
+        assert wp.tabs == []
+        assert wp.tabs_enabled is True
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -55,7 +59,6 @@ class TestWorkPiece:
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
-        wp.source_ops = Ops()  # Add empty ops for full coverage
         data_dict = wp.to_dict()
 
         assert "size" not in data_dict
@@ -76,6 +79,31 @@ class TestWorkPiece:
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
         assert new_wp.get_natural_size() == (100.0, 50.0)
+
+    def test_serialization_with_tabs(self, workpiece_instance):
+        """Tests that tabs are correctly serialized and deserialized."""
+        wp = workpiece_instance
+        wp.tabs = [
+            Tab(width=3.0, segment_index=1, t=0.5, uid="tab1"),
+            Tab(width=3.0, segment_index=5, t=0.25, uid="tab2"),
+        ]
+        wp.tabs_enabled = False
+
+        data_dict = wp.to_dict()
+
+        assert "tabs" in data_dict
+        assert "tabs_enabled" in data_dict
+        assert data_dict["tabs_enabled"] is False
+        assert len(data_dict["tabs"]) == 2
+        assert data_dict["tabs"][0] == asdict(wp.tabs[0])
+
+        new_wp = WorkPiece.from_dict(data_dict)
+
+        assert new_wp.tabs_enabled is False
+        assert len(new_wp.tabs) == 2
+        assert new_wp.tabs[0].uid == "tab1"
+        assert new_wp.tabs[1].width == 3.0
+        assert new_wp.tabs[1].t == 0.25
 
     def test_setters_and_signals(self, workpiece_instance):
         wp = workpiece_instance

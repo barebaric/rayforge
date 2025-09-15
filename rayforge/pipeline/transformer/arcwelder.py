@@ -4,6 +4,7 @@ from itertools import groupby
 from typing import Optional, Dict, Any, List
 from scipy.optimize import least_squares
 from ...shared.tasker.proxy import BaseExecutionContext
+from ...core.workpiece import WorkPiece
 from ...core.ops import (
     Ops,
     Command,
@@ -45,8 +46,9 @@ def are_colinear(points, tolerance=0.01):
 
     if line_length == 0:
         # Points are coincident, check if all are within tolerance
-        return all(math.hypot(p[0] - p1[0], p[1] - p1[1]) < tolerance
-                   for p in points)
+        return all(
+            math.hypot(p[0] - p1[0], p[1] - p1[1]) < tolerance for p in points
+        )
 
     # Check perpendicular distance of each point to the line p1-p2
     for p in points[1:-1]:  # Skip endpoints as they define the line
@@ -70,9 +72,8 @@ def is_clockwise(points):
         return False
 
     p1, p2, p3 = points[0], points[1], points[2]
-    cross = (
-        (p2[0] - p1[0]) * (p3[1] - p2[1])
-        - (p2[1] - p1[1]) * (p3[0] - p2[0])
+    cross = (p2[0] - p1[0]) * (p3[1] - p2[1]) - (p2[1] - p1[1]) * (
+        p3[0] - p2[0]
     )
     return cross < 0
 
@@ -105,19 +106,19 @@ def fit_circle(points):
 
     # Initial guess: mean center and average radius
     x0, y0 = np.mean(x), np.mean(y)
-    r0 = np.mean(np.sqrt((x-x0)**2 + (y-y0)**2))
+    r0 = np.mean(np.sqrt((x - x0) ** 2 + (y - y0) ** 2))
 
     # Fit circle using least squares
     result = least_squares(
-        lambda p: np.sqrt((x-p[0])**2 + (y-p[1])**2) - p[2],
+        lambda p: np.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2) - p[2],
         [x0, y0, r0],
-        method='lm'
+        method="lm",
     )
     xc, yc, r = result.x
     center = (xc, yc)
 
     # Point-to-arc error: max deviation of points from circle
-    distances = np.sqrt((x-xc)**2 + (y-yc)**2)
+    distances = np.sqrt((x - xc) ** 2 + (y - yc) ** 2)
     point_error = np.max(np.abs(distances - r))
 
     # Total error: max of point fit and arc deviation
@@ -170,8 +171,9 @@ def arc_to_polyline_deviation(points, center, radius):
             mag1 = math.hypot(v1x, v1y)
             mag2 = math.hypot(v2x, v2y)
             if mag1 < 1e-6 or mag2 < 1e-6:
-                deviation = abs(d1 - radius) if mag1 < 1e-6 \
-                       else abs(d2 - radius)
+                deviation = (
+                    abs(d1 - radius) if mag1 < 1e-6 else abs(d2 - radius)
+                )
             else:
                 cos_theta = min(1.0, max(-1.0, dot / (mag1 * mag2)))
                 theta = math.acos(cos_theta)
@@ -253,12 +255,15 @@ class ArcWeld(OpsTransformer):
     max_points: Maximum number of points to attempt arc fitting
     max_angular_step: Max angle between points on the arc
     """
-    def __init__(self,
-                 enabled: bool = True,
-                 tolerance=0.049,
-                 min_points=6,
-                 max_points=15,
-                 max_angular_step=75):
+
+    def __init__(
+        self,
+        enabled: bool = True,
+        tolerance=0.049,
+        min_points=6,
+        max_points=15,
+        max_angular_step=75,
+    ):
         super().__init__(enabled=enabled)
         self.tolerance = tolerance
         self.min_points = min_points
@@ -274,7 +279,10 @@ class ArcWeld(OpsTransformer):
         return _("Welds lines into arcs for smoother paths")
 
     def run(
-        self, ops: Ops, context: Optional[BaseExecutionContext] = None
+        self,
+        ops: Ops,
+        workpiece: Optional[WorkPiece] = None,
+        context: Optional[BaseExecutionContext] = None,
     ) -> None:
         segments = split_into_segments(ops.commands)
         ops.clear()
@@ -306,10 +314,10 @@ class ArcWeld(OpsTransformer):
         index = 1
         while index < length:
             # Consume colinear points first
-            colinear_points = self._count_colinear_points(segment, index-1)
+            colinear_points = self._count_colinear_points(segment, index - 1)
 
             if colinear_points:
-                ops.line_to(*segment[index+colinear_points-2])
+                ops.line_to(*segment[index + colinear_points - 2])
                 index += colinear_points - 1
                 continue
 
@@ -317,13 +325,16 @@ class ArcWeld(OpsTransformer):
             # fit_segment already performs a fast deviation calculation,
             # but it only checks deviation from original points and not
             # from the lines that connect the points.
-            arc, arc_end = self._find_longest_valid_arc(segment, index-1)
+            arc, arc_end = self._find_longest_valid_arc(segment, index - 1)
             if arc:
                 # Perform better, but more expensive, deviation calculation.
-                deviation = arc_to_polyline_deviation(segment[index-1:arc_end],
-                                                      *arc[:2])
+                deviation = arc_to_polyline_deviation(
+                    segment[index - 1 : arc_end], *arc[:2]
+                )
                 if deviation <= self.tolerance:
-                    self._add_arc_command(segment, index-1, arc_end, arc, ops)
+                    self._add_arc_command(
+                        segment, index - 1, arc_end, arc, ops
+                    )
                     index = arc_end  # Move to the point *after* the arc
                     continue
 
@@ -334,21 +345,21 @@ class ArcWeld(OpsTransformer):
     def _count_colinear_points(self, segment, start):
         """Advance index past colinear points, returning the end index."""
         length = len(segment)
-        if length-start < 3:
+        if length - start < 3:
             return 0
 
-        end = start+3
+        end = start + 3
         found = None
-        while end < length and are_colinear(segment[start:end+1]):
+        while end < length and are_colinear(segment[start : end + 1]):
             end += 1
-            found = end-start
+            found = end - start
 
         return found
 
     def _add_arc_command(self, segment, start, end, arc, ops):
         center, _, _ = arc
         start_point = segment[start]
-        end_point = segment[end-1]
+        end_point = segment[end - 1]
 
         # Calculate I and J offsets
         i = center[0] - start_point[0]
@@ -395,26 +406,28 @@ class ArcWeld(OpsTransformer):
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
         data = super().to_dict()
-        data.update({
-            'tolerance': self.tolerance,
-            'min_points': self.min_points,
-            'max_points': self.max_points,
-            'max_angular_step': math.degrees(self.max_step),
-        })
+        data.update(
+            {
+                "tolerance": self.tolerance,
+                "min_points": self.min_points,
+                "max_points": self.max_points,
+                "max_angular_step": math.degrees(self.max_step),
+            }
+        )
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ArcWeld':
+    def from_dict(cls, data: Dict[str, Any]) -> "ArcWeld":
         """Creates an ArcWeld instance from a dictionary."""
-        if data.get('name') != cls.__name__:
+        if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"
                 f" got {data.get('name')}"
             )
         return cls(
-            enabled=data.get('enabled', True),
-            tolerance=data.get('tolerance', 0.049),
-            min_points=data.get('min_points', 6),
-            max_points=data.get('max_points', 15),
-            max_angular_step=data.get('max_angular_step', 75),
+            enabled=data.get("enabled", True),
+            tolerance=data.get("tolerance", 0.049),
+            min_points=data.get("min_points", 6),
+            max_points=data.get("max_points", 15),
+            max_angular_step=data.get("max_angular_step", 75),
         )

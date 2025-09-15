@@ -23,6 +23,7 @@ class MainToolbar(Gtk.Box):
         # Signals for View-State controls (not app actions)
         self.camera_visibility_toggled = Signal()
         self.show_travel_toggled = Signal()
+        self.tabs_visibility_toggled = Signal()
         self.machine_warning_clicked = Signal()
 
         self.set_margin_bottom(2)
@@ -181,6 +182,31 @@ class MainToolbar(Gtk.Box):
         auto_layout_button.set_tooltip_text(_("Auto Layout (pack workpieces)"))
         auto_layout_button.set_action_name("win.layout-pixel-perfect")
         self.append(auto_layout_button)
+
+        # Tabbing buttons (Split Dropdown)
+        tab_actions = [
+            (
+                _("Add Equidistant Tabs"),
+                "tabs-equidistant-symbolic",
+                "win.add-tabs-equidistant",
+            ),
+        ]
+        self.tab_menu_button = SplitMenuButton(actions=tab_actions)
+        self.tab_menu_button.set_tooltip_text(_("Add Tabs to selection"))
+        self.append(self.tab_menu_button)
+
+        # Add a button to toggle tab visibility.
+        self.show_tabs_button = Gtk.ToggleButton()
+        self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
+        self.show_tabs_button.set_active(False)
+        self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
+        self.show_tabs_button.connect(
+            "toggled",
+            lambda btn: self.tabs_visibility_toggled.send(
+                self, active=btn.get_active()
+            ),
+        )
+        self.append(self.show_tabs_button)
 
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
