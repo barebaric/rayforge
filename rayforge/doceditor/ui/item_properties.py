@@ -188,10 +188,13 @@ class DocItemPropertiesWidget(Expander):
         if not doc:
             return
 
+        old_value = item.tabs_enabled
+
         cmd = ChangePropertyCommand(
             target=item,
             property_name="tabs_enabled",
             new_value=new_value,
+            old_value=old_value,
             name=_("Toggle Tabs"),
         )
         doc.history_manager.execute(cmd)
