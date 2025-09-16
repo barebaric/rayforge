@@ -55,8 +55,8 @@ class WorkPiece(DocItem):
         # This is the proper place for this state, not monkey-patched.
         self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
-        self.tabs: List[Tab] = []
-        self.tabs_enabled: bool = True
+        self._tabs: List[Tab] = []
+        self._tabs_enabled: bool = True
 
     def clear_render_cache(self):
         """
@@ -74,6 +74,27 @@ class WorkPiece(DocItem):
         if self._data != new_data:
             self._data = new_data
             self.clear_render_cache()
+            self.updated.send(self)
+
+    @property
+    def tabs(self) -> List[Tab]:
+        """The list of Tab objects for this workpiece."""
+        return self._tabs
+
+    @tabs.setter
+    def tabs(self, new_tabs: List[Tab]):
+        if self._tabs != new_tabs:
+            self._tabs = new_tabs
+            self.updated.send(self)
+
+    @property
+    def tabs_enabled(self) -> bool:
+        return self._tabs_enabled
+
+    @tabs_enabled.setter
+    def tabs_enabled(self, new_value: bool):
+        if self._tabs_enabled != new_value:
+            self._tabs_enabled = new_value
             self.updated.send(self)
 
     @property
@@ -128,8 +149,8 @@ class WorkPiece(DocItem):
             "vectors": self.vectors.to_dict() if self.vectors else None,
             "data": self._data,
             "source_file": str(self.source_file),
-            "tabs": [asdict(t) for t in self.tabs],
-            "tabs_enabled": self.tabs_enabled,
+            "tabs": [asdict(t) for t in self._tabs],
+            "tabs_enabled": self._tabs_enabled,
         }
 
     @classmethod
@@ -143,9 +164,7 @@ class WorkPiece(DocItem):
         renderer = renderer_by_name[state["renderer_name"]]
         source_file = Path(state["source_file"])
         vectors = (
-            Geometry.from_dict(state["vectors"])
-            if state["vectors"]
-            else None
+            Geometry.from_dict(state["vectors"]) if state["vectors"] else None
         )
 
         wp = cls(
