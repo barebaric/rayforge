@@ -545,27 +545,36 @@ class WorkPieceView(CanvasElement):
 
         self._update_tab_handles_state()
 
-    def _update_tab_handles_state(self):
-        """Updates visibility, opacity, and interactivity of handles."""
-        is_edit_mode = bool(self.canvas and self.canvas.edit_context is self)
-        show_tabs = is_edit_mode or self._tabs_visible_override
-
+    def _configure_tab_handles(self, is_editing: bool):
+        """
+        A helper to unambiguously set the state of tab handles based on
+        whether the element is in edit mode.
+        """
+        show_tabs = is_editing or self._tabs_visible_override
         for handle in self._tab_handles:
             handle.set_visible(show_tabs)
-            handle.draggable = is_edit_mode
-            handle.opacity = 1.0 if is_edit_mode else 0.3
+            handle.draggable = is_editing
+            handle.opacity = 1.0 if is_editing else 0.3
+
+    def _update_tab_handles_state(self):
+        """
+        Updates visibility, opacity, and interactivity of handles based on the
+        current canvas edit context.
+        """
+        is_edit_mode = bool(self.canvas and self.canvas.edit_context is self)
+        self._configure_tab_handles(is_edit_mode)
 
     def on_edit_mode_enter(self):
         """Activates tab handles for editing."""
         logger.debug(f"Entering edit mode for tabs on '{self.data.name}'")
-        self._update_tab_handles_state()
+        self._configure_tab_handles(True)
         if self.canvas:
             self.canvas.queue_draw()
 
     def on_edit_mode_leave(self):
         """Deactivates tab handles and commits any changes."""
         logger.debug(f"Leaving edit mode on '{self.data.name}'")
-        self._update_tab_handles_state()
+        self._configure_tab_handles(False)
         self._dragged_handle = None
         self._initial_tabs_state = None
         if self.canvas:
