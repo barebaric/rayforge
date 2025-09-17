@@ -221,8 +221,8 @@ class TaskManager:
 
         try:
             if task.is_cancelled():
-                # Task was cancelled before we even got a chance to run.
-                raise CancelledError("Task cancelled before process start.")
+                logger.info("Task cancelled before process start.")
+                return
 
             process = mp_context.Process(
                 target=process_target_wrapper, args=process_args, daemon=True
