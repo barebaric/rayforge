@@ -189,6 +189,11 @@ class MainToolbar(Gtk.Box):
                 "tabs-equidistant-symbolic",
                 "win.add-tabs-equidistant",
             ),
+            (
+                _("Add Cardinal Tabs (N,S,E,W)"),
+                "compass-symbolic",
+                "win.add-tabs-cardinal",
+            ),
         ]
         self.tab_menu_button = SplitMenuButton(actions=tab_actions)
         self.tab_menu_button.set_tooltip_text(_("Add Tabs to selection"))

@@ -182,6 +182,58 @@ class TabCmd:
                 cumulative_dist += seg_len
         return tabs
 
+    def _calculate_cardinal_tabs(
+        self, geometry: Geometry, width: float
+    ) -> List[Tab]:
+        """Calculates positions for 4 tabs at the cardinal points."""
+        if not geometry.commands:
+            return []
+
+        # 1. Get bounding box of the geometry
+        min_x, min_y, max_x, max_y = geometry.rect()
+        width_bbox = max_x - min_x
+        height_bbox = max_y - min_y
+
+        if width_bbox < 1e-6 or height_bbox < 1e-6:
+            return []
+
+        # 2. Define the 4 cardinal points on the bounding box
+        mid_x = min_x + width_bbox / 2
+        mid_y = min_y + height_bbox / 2
+        cardinal_points = [
+            (mid_x, max_y),  # North
+            (mid_x, min_y),  # South
+            (max_x, mid_y),  # East
+            (min_x, mid_y),  # West
+        ]
+
+        # 3. For each point, find the closest location on the geometry path
+        tabs: List[Tab] = []
+        for x, y in cardinal_points:
+            closest = geometry.find_closest_point(x, y)
+            if closest:
+                segment_index, t, _ = closest
+                tabs.append(
+                    Tab(
+                        width=width,
+                        segment_index=segment_index,
+                        t=min(1.0, max(0.0, t)),
+                    )
+                )
+
+        # 4. Deduplicate tabs that might land on the same spot (e.g., corners)
+        unique_tabs: List[Tab] = []
+        seen: set[Tuple[int, int]] = set()
+        for tab in tabs:
+            # Round `t` to avoid floating point inaccuracies causing missed
+            # duplicates
+            key = (tab.segment_index, round(tab.t * 1e5))
+            if key not in seen:
+                unique_tabs.append(tab)
+                seen.add(key)
+
+        return unique_tabs
+
     def add_tabs(
         self,
         workpiece: WorkPiece,
@@ -226,5 +278,38 @@ class TabCmd:
             new_tabs=new_tabs,
             transformer_config=transformer_config,
             name=_("Add Tabs"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def add_cardinal_tabs(
+        self, workpiece: WorkPiece, step: Step, width: float
+    ):
+        """
+        Creates and applies 4 tabs to a workpiece at the cardinal points
+        (North, South, East, West). This is an undoable action.
+
+        Args:
+            workpiece: The WorkPiece to add tabs to.
+            step: The Step whose pipeline will process the tabs.
+            width: The width of each tab in millimeters.
+        """
+        if not workpiece.vectors:
+            logger.warning(
+                f"Cannot add tabs to workpiece '{workpiece.name}' "
+                "because it has no vector geometry."
+            )
+            return
+
+        new_tabs = self._calculate_cardinal_tabs(workpiece.vectors, width)
+
+        transformer_config = {"name": "TabOpsTransformer", "enabled": True}
+
+        cmd = ConfigureTabsCommand(
+            editor=self._editor,
+            workpiece=workpiece,
+            step=step,
+            new_tabs=new_tabs,
+            transformer_config=transformer_config,
+            name=_("Add Cardinal Tabs"),
         )
         self._editor.history_manager.execute(cmd)
