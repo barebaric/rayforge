@@ -749,11 +749,21 @@ class WorkPieceView(CanvasElement):
                         yield i, p_start_arc[:2], p_end_arc[:2]
                     last_pos_3d = cmd.end
 
+    def update_handle_transforms(self):
+        """
+        Recalculates the transforms for all tab handles. This is needed
+        when the canvas zoom changes, as the handles have a minimum pixel size.
+        """
+        for handle in self._tab_handles:
+            self._position_handle_from_tab(handle)
+
     def _position_handle_from_tab(self, handle: TabHandleElement):
         """Calculates and sets a handle's transform from its tab data."""
         tab = cast(Tab, handle.data)
-        if not self.data.vectors or tab.segment_index >= len(
-            self.data.vectors.commands
+        if (
+            not self.data.vectors
+            or tab.segment_index >= len(self.data.vectors.commands)
+            or not self.canvas
         ):
             return
 
@@ -815,13 +825,55 @@ class WorkPieceView(CanvasElement):
             natural_w, natural_h = cast(Tuple[float, float], natural_size)
         else:
             natural_w, natural_h = self.data.get_local_size()
+        if natural_w <= 0 or natural_h <= 0:
+            return  # Avoid division by zero
 
-        # Normalize scale and position into the parent's 1x1 local space.
-        # The handle's local X-axis is its width, Y-axis is its length.
-        scale_x_norm = tab.width / natural_w if natural_w > 0 else 0
-        scale_y_norm = tab.length / natural_h if natural_h > 0 else 0
-        pos_x_norm = px / natural_w if natural_w > 0 else 0
-        pos_y_norm = py / natural_h if natural_h > 0 else 0
+        work_surface = cast("WorkSurface", self.canvas)
+        view_ppm_x, view_ppm_y = work_surface.get_view_scale()
+
+        # 1. Calculate the on-screen size of the parent workpiece in pixels.
+        parent_width_px = self.data.size[0] * view_ppm_x
+        parent_height_px = self.data.size[1] * view_ppm_y
+        if parent_width_px <= 0 or parent_height_px <= 0:
+            return
+
+        # 2. Calculate the "natural" size of the handle in pixels.
+        natural_width_px = tab.width * view_ppm_x
+        natural_length_px = tab.length * view_ppm_y
+
+        # 3. Define minimums
+        MIN_WIDTH_PX = 6.0
+        MIN_LENGTH_PX = 10.0
+
+        # 4. Determine scaling factor required to satisfy minimums while
+        #    maintaining aspect ratio (Tab.width / Tab.length).
+
+        required_scale = 1.0
+
+        # Check if horizontal size is below minimum
+        if natural_width_px < MIN_WIDTH_PX:
+            required_scale = max(
+                required_scale, MIN_WIDTH_PX / natural_width_px
+            )
+
+        # Check if vertical size is below minimum
+        if natural_length_px < MIN_LENGTH_PX:
+            required_scale = max(
+                required_scale, MIN_LENGTH_PX / natural_length_px
+            )
+
+        # 5. Apply the required scale factor to the nominal pixel size
+        #    (If required_scale is 1.0, nothing changes, otherwise we scale up)
+        target_width_px = natural_width_px * required_scale
+        target_length_px = natural_length_px * required_scale
+
+        # 6. The scale factor (normalized to 0..1 space) is the ratio of the
+        #    target pixel size to the parent workpiece's total pixel size.
+        scale_x_norm = target_width_px / parent_width_px
+        scale_y_norm = target_length_px / parent_height_px
+
+        pos_x_norm = px / natural_w
+        pos_y_norm = py / natural_h
 
         # Build transform: center, scale, rotate, then translate.
         # The rotation aligns the handle's local X-axis (width) with the

@@ -17,6 +17,7 @@ from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
 from . import context_menu
+
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
 
@@ -478,7 +479,9 @@ class WorkSurface(Canvas):
         # blurriness. Calling trigger_update handles this for both the
         # base image and all of its internal ops surfaces.
         for elem in self.find_by_type(WorkPieceView):
-            elem.trigger_update()
+            wp_view = cast(WorkPieceView, elem)
+            wp_view.trigger_update()
+            wp_view.update_handle_transforms()
 
         # Update laser dot size to maintain a constant size in pixels.
         scale_x_ppm, _ = self.get_view_scale()
@@ -798,9 +801,7 @@ class WorkSurface(Canvas):
             if not selected_items:
                 return True  # Consume event but do nothing
 
-            self.editor.transform.nudge_items(
-                selected_items, move_x, move_y
-            )
+            self.editor.transform.nudge_items(selected_items, move_x, move_y)
             return True
 
         # Propagate to parent Canvas for its default behavior (e.g., Shift/
