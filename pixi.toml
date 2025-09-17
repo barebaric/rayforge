@@ -88,8 +88,11 @@ flake8 = "*"
 [feature.windows-build.dependencies]
 pyinstaller = "*"
 
+[tasks.rayforge]
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
+cmd = "rayforge"
+
 [tasks]
-rayforge = "GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0 rayforge"
 test = "pytest -v"
 lint = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge"
 update-translations = "bash scripts/update_translations.sh"
