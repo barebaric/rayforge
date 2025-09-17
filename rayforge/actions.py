@@ -4,6 +4,8 @@ from .core.group import Group
 from .core.item import DocItem
 from .core.layer import Layer
 from .core.workpiece import WorkPiece
+from .workbench.elements.workpiece import WorkPieceView
+
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
@@ -81,8 +83,11 @@ class ActionManager:
         self._add_action("ungroup", self.on_ungroup_action)
 
         # Tabbing Actions
-        self._add_action(
-            "add-tabs-equidistant", self.on_add_tabs_equidistant
+        self._add_action("add-tabs-equidistant", self.on_add_tabs_equidistant)
+        self._add_stateful_action(
+            "show_tabs",
+            self.on_show_tabs_state_change,
+            GLib.Variant.new_boolean(False),
         )
 
         # Alignment Actions
@@ -171,6 +176,21 @@ class ActionManager:
             count=4,
             width=3.0,
         )
+
+    def on_show_tabs_state_change(self, action, state):
+        """
+        Handler for the global tab visibility state change.
+        This action's callback finds all WorkPieceView elements and updates
+        their visibility override.
+        """
+        is_visible = state.get_boolean()
+        # Use the surface's helper method to find all workpiece views
+        for wp_view_elem in self.win.surface.find_by_type(WorkPieceView):
+            # Cast the element to the correct type to satisfy the linter
+            wp_view = cast(WorkPieceView, wp_view_elem)
+            wp_view.set_tabs_visible_override(is_visible)
+
+        action.set_state(state)
 
     def set_accelerators(self, app: Gtk.Application):
         """Sets keyboard accelerators for the application's actions."""

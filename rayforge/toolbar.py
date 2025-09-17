@@ -23,7 +23,6 @@ class MainToolbar(Gtk.Box):
         # Signals for View-State controls (not app actions)
         self.camera_visibility_toggled = Signal()
         self.show_travel_toggled = Signal()
-        self.tabs_visibility_toggled = Signal()
         self.machine_warning_clicked = Signal()
 
         self.set_margin_bottom(2)
@@ -200,12 +199,7 @@ class MainToolbar(Gtk.Box):
         self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
         self.show_tabs_button.set_active(False)
         self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
-        self.show_tabs_button.connect(
-            "toggled",
-            lambda btn: self.tabs_visibility_toggled.send(
-                self, active=btn.get_active()
-            ),
-        )
+        self.show_tabs_button.set_action_name("win.show_tabs")
         self.append(self.show_tabs_button)
 
         # Control buttons: home, send, pause, stop
