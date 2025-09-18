@@ -157,6 +157,16 @@ class DocItemPropertiesWidget(Expander):
             button.connect("clicked", on_clicked)
             return button
 
+        self.reset_x_button = create_reset_button(
+            _("Reset X position to 0"), self._on_reset_x_clicked
+        )
+        self.x_row.add_suffix(self.reset_x_button)
+
+        self.reset_y_button = create_reset_button(
+            _("Reset Y position to 0"), self._on_reset_y_clicked
+        )
+        self.y_row.add_suffix(self.reset_y_button)
+
         self.reset_width_button = create_reset_button(
             _("Reset to natural width"),
             lambda btn: self._on_reset_dimension_clicked(btn, "width"),
@@ -645,6 +655,76 @@ class DocItemPropertiesWidget(Expander):
                 old_matrix = item.matrix.copy()
                 item.shear = 0.0
                 new_matrix = item.matrix.copy()
+                cmd = ChangePropertyCommand(
+                    item, "matrix", new_matrix, old_value=old_matrix
+                )
+                t.add(cmd)
+
+    def _on_reset_x_clicked(self, button):
+        if not self.items:
+            return
+        doc = self.items[0].doc
+        if not doc:
+            return
+
+        with doc.history_manager.transaction(_("Reset X position")) as t:
+            for item in self.items:
+                # The item's pos is its bottom-left corner in world space.
+                # Resetting X to 0 moves this corner to the Y-axis.
+                if abs(item.pos[0] - 0.0) < 1e-9:
+                    continue
+
+                old_matrix = item.matrix.copy()
+                current_pos_world = item.pos
+                new_pos_world = (0.0, current_pos_world[1])
+                item.pos = new_pos_world
+                new_matrix = item.matrix.copy()
+
+                cmd = ChangePropertyCommand(
+                    item, "matrix", new_matrix, old_value=old_matrix
+                )
+                t.add(cmd)
+
+    def _on_reset_y_clicked(self, button):
+        if not self.items:
+            return
+        doc = self.items[0].doc
+        if not doc:
+            return
+
+        with doc.history_manager.transaction(_("Reset Y position")) as t:
+            bounds = (
+                config.machine.dimensions if config.machine else default_dim
+            )
+            y_axis_down = (
+                config.machine.y_axis_down if config.machine else False
+            )
+
+            for item in self.items:
+                pos_world = item.pos
+                size_world = item.size
+
+                # Calculate the target Y in world coordinates (Y-up)
+                if y_axis_down:
+                    # Machine origin is top-left. Resetting machine-Y to 0
+                    # means the top of the item is at the top of the bed.
+                    # item.pos is the *bottom* of the item.
+                    machine_height = bounds[1]
+                    target_y_world = machine_height - size_world[1]
+                else:
+                    # Machine origin is bottom-left. Resetting machine-Y to 0
+                    # means the bottom of the item is at the bottom of the bed.
+                    target_y_world = 0.0
+
+                # Avoid empty transactions if already at the target
+                if abs(pos_world[1] - target_y_world) < 1e-9:
+                    continue
+
+                old_matrix = item.matrix.copy()
+                new_pos_world = (pos_world[0], target_y_world)
+                item.pos = new_pos_world
+                new_matrix = item.matrix.copy()
+
                 cmd = ChangePropertyCommand(
                     item, "matrix", new_matrix, old_value=old_matrix
                 )
