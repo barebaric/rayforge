@@ -2,9 +2,33 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 from blinker import Signal
+from enum import Enum, auto
 from ...core.ops import Ops
 from ...shared.tasker.proxy import BaseExecutionContext
 from ...core.workpiece import WorkPiece
+
+
+class ExecutionPhase(Enum):
+    """
+    Defines the execution order for different types of OpsTransformers.
+
+    The pipeline runner does not execute transformers in their simple list
+    order; it groups them by phase and runs them sequentially. This ensures
+    a logical flow where path continuity is preserved for transformers that
+    need it.
+
+    The execution order is always:
+    1. GEOMETRY_REFINEMENT: For transformers that modify path geometry but
+       require it to be continuous (e.g., Smooth, ArcWeld).
+    2. PATH_INTERRUPTION: For transformers that intentionally create gaps or
+       discontinuities in paths (e.g., TabOpsTransformer).
+    3. POST_PROCESSING: For transformers that operate on the final, potentially
+       segmented paths (e.g., Optimize, MultiPass).
+    """
+
+    GEOMETRY_REFINEMENT = auto()
+    PATH_INTERRUPTION = auto()
+    POST_PROCESSING = auto()
 
 
 class OpsTransformer(ABC):
@@ -34,6 +58,11 @@ class OpsTransformer(ABC):
     def enabled(self, enabled: bool) -> None:
         """Convenience setter, delegates to set_enabled."""
         self.set_enabled(enabled)
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """Defines when this transformer should run."""
+        return ExecutionPhase.POST_PROCESSING
 
     @property
     @abstractmethod

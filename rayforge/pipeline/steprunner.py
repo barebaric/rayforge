@@ -41,7 +41,7 @@ def run_step_in_subprocess(
 
     from .modifier import Modifier
     from .producer import OpsProducer
-    from .transformer import OpsTransformer
+    from .transformer import OpsTransformer, ExecutionPhase
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
     from ..core.ops import Ops, DisableAirAssistCommand
@@ -286,28 +286,44 @@ def run_step_in_subprocess(
             base_progress=execute_weight, progress_range=transform_weight
         )
 
-        for i, transformer in enumerate(enabled_transformers):
-            proxy.set_message(
-                _("Applying '{transformer}' on '{workpiece}'").format(
-                    transformer=transformer.label,
-                    workpiece=workpiece.source_file.name,
+        # 1. Group transformers by their execution phase
+        phase_order = (
+            ExecutionPhase.GEOMETRY_REFINEMENT,
+            ExecutionPhase.PATH_INTERRUPTION,
+            ExecutionPhase.POST_PROCESSING,
+        )
+        transformers_by_phase = {phase: [] for phase in phase_order}
+        for t in enabled_transformers:
+            transformers_by_phase[t.execution_phase].append(t)
+
+        # 2. Execute transformers in the correct phase order
+        processed_count = 0
+        total_to_process = len(enabled_transformers)
+
+        for phase in phase_order:
+            for transformer in transformers_by_phase[phase]:
+                proxy.set_message(
+                    _("Applying '{transformer}' on '{workpiece}'").format(
+                        transformer=transformer.label,
+                        workpiece=workpiece.source_file.name,
+                    )
                 )
-            )
-            # Create a proxy for this transformer's slice of the progress bar
-            transformer_run_proxy = transform_context.sub_context(
-                base_progress=(i / len(enabled_transformers)),
-                progress_range=(1 / len(enabled_transformers)),
-            )
-            # transformer.run now runs synchronously and may use the proxy
-            # to report its own fine-grained progress.
+                # Create a proxy for this transformer's slice of progress
+                transformer_run_proxy = transform_context.sub_context(
+                    base_progress=(processed_count / total_to_process),
+                    progress_range=(1 / total_to_process),
+                )
+                # transformer.run now runs synchronously and may use the
+                # proxy to report its own fine-grained progress.
+                transformer.run(
+                    final_ops,
+                    workpiece=workpiece,
+                    context=transformer_run_proxy,
+                )
 
-            transformer.run(
-                final_ops, workpiece=workpiece, context=transformer_run_proxy
-            )
-
-            # Ensure this step's progress is marked as 100% complete before
-            # moving to the next one.
-            transformer_run_proxy.set_progress(1.0)
+                # Mark step as complete and increment for the next one
+                transformer_run_proxy.set_progress(1.0)
+                processed_count += 1
 
     if settings["air_assist"]:
         final_ops.add(DisableAirAssistCommand())

@@ -12,7 +12,7 @@ from ...core.ops import (
     ArcToCommand,
     MoveToCommand,
 )
-from .base import OpsTransformer
+from .base import OpsTransformer, ExecutionPhase
 
 
 def remove_duplicates(segment):
@@ -269,6 +269,11 @@ class ArcWeld(OpsTransformer):
         self.min_points = min_points
         self.max_points = max_points
         self.max_step = math.radians(max_angular_step)
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """ArcWeld needs to run on continuous paths to find fitting arcs."""
+        return ExecutionPhase.GEOMETRY_REFINEMENT
 
     @property
     def label(self) -> str:

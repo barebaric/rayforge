@@ -2,8 +2,14 @@ from __future__ import annotations
 import math
 import logging
 from typing import Optional, List, Tuple, Dict, Any
-from .base import OpsTransformer
-from ...core.ops import Ops
+from .base import OpsTransformer, ExecutionPhase
+from ...core.ops import (
+    Ops,
+    Command,
+    SectionType,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
+)
 from ...core.geometry import (
     LineToCommand as GeoLineToCommand,
     ArcToCommand as GeoArcToCommand,
@@ -24,6 +30,11 @@ class TabOpsTransformer(OpsTransformer):
 
     def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """Tabs intentionally break paths, so they must run after smoothing."""
+        return ExecutionPhase.PATH_INTERRUPTION
 
     @property
     def label(self) -> str:
@@ -62,9 +73,11 @@ class TabOpsTransformer(OpsTransformer):
                 continue
 
             p_start_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+            # Find the start point of the command segment by looking backwards
+            # for the last command that had an endpoint.
             for i in range(tab.segment_index - 1, -1, -1):
                 prev_cmd = workpiece.vectors.commands[i]
-                if isinstance(prev_cmd, GeoMovingCommand):
+                if isinstance(prev_cmd, GeoMovingCommand) and prev_cmd.end:
                     p_start_3d = prev_cmd.end
                     break
 
@@ -177,33 +190,54 @@ class TabOpsTransformer(OpsTransformer):
             f"Generated {len(tab_polygons)} tab polygons for subtraction."
         )
 
-        ops_bounds_before = ops.rect()
-        num_commands_before = len(ops.commands)
-        logger.debug(
-            f"Ops state before subtraction: bounds={ops_bounds_before}, "
-            f"commands={num_commands_before}"
-        )
+        new_commands: List[Command] = []
+        active_section_type: Optional[SectionType] = None
+        section_buffer: List[Command] = []
 
-        ops.subtract_regions(tab_polygons)
+        def _process_buffer():
+            if not section_buffer:
+                return
 
-        num_commands_after = len(ops.commands)
-        logger.debug(
-            f"Ops command count after subtraction: {num_commands_after}"
-        )
+            if active_section_type == SectionType.VECTOR_OUTLINE:
+                logger.debug(
+                    "Processing buffered VECTOR_OUTLINE section for tabs."
+                )
+                temp_ops = Ops()
+                temp_ops.commands = section_buffer
+                num_before = len(temp_ops.commands)
+                temp_ops.subtract_regions(tab_polygons)
+                num_after = len(temp_ops.commands)
+                logger.debug(
+                    "Tab subtraction changed command count from "
+                    f"{num_before} to {num_after}."
+                )
+                new_commands.extend(temp_ops.commands)
+            else:
+                # For any other section type, or commands outside a section,
+                # pass them through unmodified.
+                logger.debug(
+                    "Passing through buffered section of type "
+                    f"{active_section_type}."
+                )
+                new_commands.extend(section_buffer)
 
-        if (
-            num_commands_before == num_commands_after
-            and num_commands_before > 0
-        ):
-            logger.warning(
-                "TabOpsTransformer: Subtraction did not change the number of "
-                "commands. The polygons and paths likely do not overlap."
-            )
-        else:
-            logger.info(
-                "TabOpsTransformer successfully applied tabs. Command count "
-                f"changed from {num_commands_before} to {num_commands_after}."
-            )
+        for cmd in ops.commands:
+            if isinstance(cmd, OpsSectionStartCommand):
+                _process_buffer()  # Process the previous section
+                section_buffer = []
+                active_section_type = cmd.section_type
+                new_commands.append(cmd)  # Preserve the marker
+            elif isinstance(cmd, OpsSectionEndCommand):
+                _process_buffer()  # Process the current section
+                section_buffer = []
+                active_section_type = None
+                new_commands.append(cmd)  # Preserve the marker
+            else:
+                section_buffer.append(cmd)
+
+        _process_buffer()  # Process any commands in the final buffer
+
+        ops.commands = new_commands
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TabOpsTransformer":

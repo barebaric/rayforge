@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple, Dict, Any
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
 from ...shared.tasker.proxy import BaseExecutionContext
-from .base import OpsTransformer
+from .base import OpsTransformer, ExecutionPhase
 
 
 class Smooth(OpsTransformer):
@@ -42,6 +42,11 @@ class Smooth(OpsTransformer):
         self._sigma: float = 0.1
         self._amount = -1
         self.amount = amount
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """Smooth needs to run on continuous paths before they are broken."""
+        return ExecutionPhase.GEOMETRY_REFINEMENT
 
     @property
     def amount(self) -> int:

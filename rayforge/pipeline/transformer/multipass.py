@@ -3,7 +3,7 @@ import math
 from copy import deepcopy
 from typing import Optional, Dict, Any
 
-from .base import OpsTransformer
+from .base import OpsTransformer, ExecutionPhase
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops
 from ...shared.tasker.proxy import BaseExecutionContext
@@ -38,6 +38,11 @@ class MultiPassTransformer(OpsTransformer):
         # Use property setters to ensure validation logic is applied
         self.passes = passes
         self.z_step_down = z_step_down
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """Multi-pass duplicates the final path, so it runs late."""
+        return ExecutionPhase.POST_PROCESSING
 
     @property
     def passes(self) -> int:

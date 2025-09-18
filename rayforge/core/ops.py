@@ -13,6 +13,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from dataclasses import dataclass
+from enum import Enum, auto
 import numpy as np
 
 if TYPE_CHECKING:
@@ -263,6 +264,45 @@ class WorkpieceEndCommand(Command):
         return d
 
 
+class SectionType(Enum):
+    """Defines the semantic type of a block of Ops commands."""
+
+    VECTOR_OUTLINE = auto()
+    RASTER_FILL = auto()
+
+
+@dataclass(frozen=True)
+class OpsSectionStartCommand(Command):
+    """Marks the beginning of a semantically distinct block of Ops."""
+
+    section_type: SectionType
+    workpiece_uid: str  # Provides context to downstream transformers
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["section_type"] = self.section_type.name
+        d["workpiece_uid"] = self.workpiece_uid
+        return d
+
+
+@dataclass(frozen=True)
+class OpsSectionEndCommand(Command):
+    """Marks the end of a block."""
+
+    section_type: SectionType
+
+    def is_marker_command(self) -> bool:
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["section_type"] = self.section_type.name
+        return d
+
+
 class Ops:
     """
     Represents a set of generated path segments and instructions that
@@ -332,6 +372,19 @@ class Ops:
                 new_ops.add(
                     WorkpieceEndCommand(
                         workpiece_uid=cmd_data["workpiece_uid"]
+                    )
+                )
+            elif cmd_type == "OpsSectionStartCommand":
+                new_ops.add(
+                    OpsSectionStartCommand(
+                        section_type=SectionType[cmd_data["section_type"]],
+                        workpiece_uid=cmd_data["workpiece_uid"],
+                    )
+                )
+            elif cmd_type == "OpsSectionEndCommand":
+                new_ops.add(
+                    OpsSectionEndCommand(
+                        section_type=SectionType[cmd_data["section_type"]]
                     )
                 )
             else:
@@ -408,6 +461,13 @@ class Ops:
 
     def add(self, command: Command) -> None:
         self.commands.append(command)
+
+    def extend(self, other_ops: "Ops") -> None:
+        """
+        Appends all commands from another Ops object to this one.
+        """
+        if other_ops and other_ops.commands:
+            self.commands.extend(other_ops.commands)
 
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
         self.last_move_to = (float(x), float(y), float(z))

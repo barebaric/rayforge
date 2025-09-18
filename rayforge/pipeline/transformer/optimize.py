@@ -5,7 +5,7 @@ from copy import copy
 from typing import Optional, List, cast, Dict, Any, Tuple
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, State, ArcToCommand, Command, MovingCommand
-from .base import OpsTransformer
+from .base import OpsTransformer, ExecutionPhase
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
 
 
@@ -308,6 +308,11 @@ class Optimize(OpsTransformer):
 
     5. Re-assemble the Ops object.
     """
+
+    @property
+    def execution_phase(self) -> ExecutionPhase:
+        """Path optimization should run last on the final path segments."""
+        return ExecutionPhase.POST_PROCESSING
 
     @property
     def label(self) -> str:

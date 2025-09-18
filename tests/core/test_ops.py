@@ -14,6 +14,9 @@ from rayforge.core.ops import (
     DisableAirAssistCommand,
     State,
     MovingCommand,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
+    SectionType,
 )
 
 
@@ -102,6 +105,42 @@ def test_ops_addition(sample_ops):
 def test_ops_multiplication(sample_ops):
     multiplied = sample_ops * 3
     assert len(multiplied) == 3 * len(sample_ops)
+
+
+def test_ops_extend(sample_ops):
+    # Create another Ops object to extend with
+    ops2 = Ops()
+    ops2.move_to(20, 20)
+    ops2.set_cut_speed(1000)
+
+    original_len = len(sample_ops)
+    len_to_add = len(ops2)
+
+    # Perform the extend operation
+    sample_ops.extend(ops2)
+
+    # Verify the length has increased correctly
+    assert len(sample_ops) == original_len + len_to_add
+
+    # Verify the last two commands are the ones from ops2
+    assert sample_ops.commands[-2] is ops2.commands[0]
+    assert sample_ops.commands[-1] is ops2.commands[1]
+
+
+def test_ops_extend_with_empty(sample_ops):
+    empty_ops = Ops()
+    original_len = len(sample_ops)
+    sample_ops.extend(empty_ops)
+    assert len(sample_ops) == original_len
+
+
+def test_ops_extend_with_none(sample_ops):
+    original_len = len(sample_ops)
+    # This test is just to ensure it doesn't raise an exception.
+    # The type hint is `Ops`, so this would be a type error, but
+    # robust code should handle it.
+    sample_ops.extend(None)  # type: ignore
+    assert len(sample_ops) == original_len
 
 
 def test_preload_state(sample_ops):
@@ -625,3 +664,58 @@ def test_subtract_regions():
     assert len(ops.commands) == 2
     assert ops.commands[0].end == pytest.approx((60, 50, 0))
     assert ops.commands[1].end == pytest.approx((70, 50, 0))
+
+
+def test_section_markers_are_marker_commands():
+    start_cmd = OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "uid123")
+    end_cmd = OpsSectionEndCommand(SectionType.VECTOR_OUTLINE)
+    assert start_cmd.is_marker_command()
+    assert end_cmd.is_marker_command()
+    # Also check they aren't other types
+    assert not start_cmd.is_state_command()
+    assert not start_cmd.is_cutting_command()
+    assert not start_cmd.is_travel_command()
+
+
+def test_segments_with_section_markers():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.add(OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "uid123"))
+    ops.move_to(10, 10)
+    ops.line_to(20, 10)
+    ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+    ops.move_to(20, 20)
+
+    segments = list(ops.segments())
+    # Expected segments:
+    # 1. [MoveTo(0,0), LineTo(10,0)]
+    # 2. [OpsSectionStartCommand] (as its own segment)
+    # 3. [MoveTo(10,10), LineTo(20,10)]
+    # 4. [OpsSectionEndCommand] (as its own segment)
+    # 5. [MoveTo(20,20)]
+    assert len(segments) == 5
+    assert isinstance(segments[1][0], OpsSectionStartCommand)
+    assert isinstance(segments[3][0], OpsSectionEndCommand)
+    assert len(segments[1]) == 1
+    assert len(segments[3]) == 1
+
+
+def test_serialization_with_section_markers():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-abc"))
+    ops.line_to(10, 0)
+    ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+
+    data = ops.to_dict()
+    new_ops = Ops.from_dict(data)
+
+    assert len(new_ops.commands) == 4
+    start_cmd = cast(OpsSectionStartCommand, new_ops.commands[1])
+    end_cmd = cast(OpsSectionEndCommand, new_ops.commands[3])
+    assert isinstance(start_cmd, OpsSectionStartCommand)
+    assert isinstance(end_cmd, OpsSectionEndCommand)
+    assert start_cmd.section_type == SectionType.RASTER_FILL
+    assert start_cmd.workpiece_uid == "wp-abc"
+    assert end_cmd.section_type == SectionType.RASTER_FILL

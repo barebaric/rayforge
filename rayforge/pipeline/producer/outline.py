@@ -3,7 +3,12 @@ import numpy as np
 import cv2
 import potrace
 from .potrace_base import PotraceProducer
-from ...core.ops import Ops
+from ...core.ops import (
+    Ops,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
+    SectionType,
+)
 from ...core.geometry import (
     Geometry,
     Command as GeometryCommand,
@@ -30,19 +35,32 @@ class OutlineTracer(PotraceProducer):
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ) -> Ops:
+        if workpiece is None:
+            raise ValueError("OutlineTracer requires a workpiece context.")
+
+        final_ops = Ops()
+        final_ops.add(
+            OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
+        )
+
         # If the workpiece has vectors, apply the outline-finding algorithm
         # to them.
         if workpiece and workpiece.vectors and len(workpiece.vectors) > 0:
-            return self._filter_vector_ops_xor(workpiece.vectors)
-
+            vector_ops = self._filter_vector_ops_xor(workpiece.vectors)
+            final_ops.extend(vector_ops)
         # If no vectors, fall back to raster tracing the surface.
-        return super().run(
-            laser,
-            surface,
-            pixels_per_mm,
-            workpiece=workpiece,
-            y_offset_mm=y_offset_mm,
-        )
+        else:
+            raster_trace_ops = super().run(
+                laser,
+                surface,
+                pixels_per_mm,
+                workpiece=workpiece,
+                y_offset_mm=y_offset_mm,
+            )
+            final_ops.extend(raster_trace_ops)
+
+        final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+        return final_ops
 
     def _filter_vector_ops_xor(self, geometry: Geometry) -> Ops:
         """

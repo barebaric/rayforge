@@ -3,7 +3,12 @@ import numpy as np
 import math
 import logging
 from typing import Optional, TYPE_CHECKING
-from ...core.ops import Ops
+from ...core.ops import (
+    Ops,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
+    SectionType,
+)
 from .base import OpsProducer
 
 if TYPE_CHECKING:
@@ -151,19 +156,31 @@ class Rasterizer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
     ):
+        if workpiece is None:
+            raise ValueError("Rasterizer requires a workpiece context.")
+
+        final_ops = Ops()
+        final_ops.add(
+            OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
+        )
+
         width = surface.get_width()
         height = surface.get_height()
         logger.debug(f"Rasterizer received surface: {width}x{height} pixels")
         logger.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
 
         ymax = surface.get_height() / pixels_per_mm[1]
-        return rasterize_horizontally(
+        raster_ops = rasterize_horizontally(
             surface,
             ymax,  # y max for axis inversion
             pixels_per_mm,
             laser.spot_size_mm[1],
             y_offset_mm=y_offset_mm,
         )
+        final_ops.extend(raster_ops)
+
+        final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+        return final_ops
 
     def can_scale(self) -> bool:
         return False
