@@ -2,7 +2,8 @@ import logging
 from gi.repository import Gtk, Adw, Gio
 from typing import Optional, Tuple, List, cast, TYPE_CHECKING
 from pathlib import Path
-
+from dataclasses import replace
+from copy import deepcopy
 from ...core.stock import StockItem
 from ...core.group import Group
 from ...shared.ui.expander import Expander
@@ -149,6 +150,19 @@ class DocItemPropertiesWidget(Expander):
         self.clear_tabs_button.connect("clicked", self._on_clear_tabs_clicked)
         self.tabs_row.add_suffix(self.clear_tabs_button)
 
+        # Tab Width Entry
+        self.tab_width_row = Adw.SpinRow(
+            title=_("Tab Width"),
+            subtitle=_(
+                "Length along the path"
+            ),  # Clarify what "width" means for a tab
+            adjustment=Gtk.Adjustment.new(1.0, 0.1, 100.0, 0.1, 1.0, 0),
+            digits=2,
+            visible=False,  # Hidden by default
+        )
+        self.tab_width_row.connect("notify::value", self._on_tab_width_changed)
+        rows_container.append(self.tab_width_row)
+
         # --- Reset Buttons ---
         def create_reset_button(tooltip_text, on_clicked):
             button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
@@ -194,6 +208,12 @@ class DocItemPropertiesWidget(Expander):
         )
         self.shear_row.add_suffix(self.reset_shear_button)
 
+        self.reset_tab_width_button = create_reset_button(
+            _("Reset tab width to default (1.0 mm)"),
+            self._on_reset_tab_width_clicked,
+        )
+        self.tab_width_row.add_suffix(self.reset_tab_width_button)
+
         self.set_items(items)
 
     def _on_clear_tabs_clicked(self, button):
@@ -237,6 +257,65 @@ class DocItemPropertiesWidget(Expander):
             name=_("Toggle Tabs"),
         )
         doc.history_manager.execute(cmd)
+
+    def _on_tab_width_changed(self, spin_row, GParamSpec):
+        if self._in_update or not self.items:
+            return
+
+        if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
+            return
+
+        workpiece = cast(WorkPiece, self.items[0])
+        new_width = get_spinrow_float(self.tab_width_row)
+        if new_width is None or new_width <= 0:  # Ensure valid width
+            return
+
+        if not workpiece.doc:
+            return
+
+        old_tabs = deepcopy(workpiece.tabs)
+        # Check if any change is actually needed to avoid empty undo commands
+        if not old_tabs or all(tab.width == new_width for tab in old_tabs):
+            return
+
+        new_tabs = [replace(tab, width=new_width) for tab in old_tabs]
+
+        cmd = ChangePropertyCommand(
+            target=workpiece,
+            property_name="tabs",
+            new_value=new_tabs,
+            old_value=old_tabs,
+            name=_("Change Tab Width"),
+        )
+        workpiece.doc.history_manager.execute(cmd)
+
+    def _on_reset_tab_width_clicked(self, button):
+        if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
+            return
+
+        workpiece = cast(WorkPiece, self.items[0])
+        default_width = (
+            1.0  # Default width, matching the spinrow's initial value
+        )
+
+        if not workpiece.doc:
+            return
+
+        old_tabs = deepcopy(workpiece.tabs)
+        # Check if any change is actually needed
+        if not old_tabs or all(tab.width == default_width for tab in old_tabs):
+            return
+
+        new_tabs = [replace(tab, width=default_width) for tab in old_tabs]
+
+        cmd = ChangePropertyCommand(
+            target=workpiece,
+            property_name="tabs",
+            new_value=new_tabs,
+            old_value=old_tabs,
+            name=_("Reset Tab Width"),
+        )
+        workpiece.doc.history_manager.execute(cmd)
 
     def _calculate_new_size_with_ratio(
         self, item: DocItem, value: float, changed_dim: str
@@ -872,6 +951,11 @@ class DocItemPropertiesWidget(Expander):
                     # Show tab switch if the workpiece has vector data
                     can_have_tabs = workpiece.vectors is not None
                     self.tabs_row.set_visible(can_have_tabs)
+                    # NEW: Visibility for tab_width_row
+                    self.tab_width_row.set_visible(
+                        can_have_tabs and workpiece.tabs_enabled
+                    )
+
                     if can_have_tabs:
                         self.tabs_row.set_active(workpiece.tabs_enabled)
                         self.clear_tabs_button.set_sensitive(
@@ -883,11 +967,57 @@ class DocItemPropertiesWidget(Expander):
                             )
                         )
 
+                        if workpiece.tabs_enabled:
+                            if workpiece.tabs:
+                                first_tab_width = workpiece.tabs[0].width
+                                self.tab_width_row.set_value(first_tab_width)
+                                if not all(
+                                    t.width == first_tab_width
+                                    for t in workpiece.tabs
+                                ):
+                                    self.tab_width_row.set_subtitle(
+                                        _("Mixed values")
+                                    )
+                                else:
+                                    self.tab_width_row.set_subtitle(
+                                        _("Length along the path")
+                                    )
+                                self.tab_width_row.set_sensitive(True)
+                                self.reset_tab_width_button.set_sensitive(True)
+                            else:  # Tabs enabled, but no tabs present
+                                self.tab_width_row.set_value(
+                                    1.0
+                                )  # Default value for display
+                                self.tab_width_row.set_subtitle(
+                                    _("Length along the path")
+                                )
+                                self.tab_width_row.set_sensitive(
+                                    False
+                                )  # Cannot change width if no tabs to modify
+                                self.reset_tab_width_button.set_sensitive(
+                                    False
+                                )
+                        else:  # tabs_enabled is False
+                            self.tab_width_row.set_value(
+                                1.0
+                            )  # Reset to default for UI display
+                            self.tab_width_row.set_subtitle(
+                                _("Length along the path")
+                            )
+                            self.tab_width_row.set_sensitive(False)
+                            self.reset_tab_width_button.set_sensitive(False)
+
                 except (TypeError, ValueError):
                     self.open_source_button.set_sensitive(False)
                     self.tabs_row.set_visible(False)
+                    self.tab_width_row.set_visible(
+                        False
+                    )  # Ensure hidden on error
             else:
                 self.tabs_row.set_visible(False)
+                self.tab_width_row.set_visible(
+                    False
+                )  # Ensure hidden for non-workpieces
                 self.vector_count_row.set_visible(False)
 
         finally:
