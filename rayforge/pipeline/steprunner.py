@@ -134,11 +134,19 @@ def run_step_in_subprocess(
                 "Workpiece has vectors. Using direct vector processing."
             )
             geometry_ops = _trace_and_modify_surface(surface=None, scaler=None)
-            # Return the unscaled ops along with their "natural" dimensions.
-            natural_size = workpiece.get_natural_size()
-            natural_w, natural_h = natural_size if natural_size else (1.0, 1.0)
 
-            yield geometry_ops, (natural_w, natural_h), 1.0
+            # The generated ops are already in millimeters. We must report
+            # their actual millimeter bounding box as the "source size" to
+            # prevent incorrect re-scaling by the OpsGenerator.
+            _x, _y, w_mm, h_mm = geometry_ops.rect()
+
+            # If the geometry has no area (e.g., a single point or line),
+            # provide a fallback size to avoid division by zero.
+            if w_mm <= 1e-6 or h_mm <= 1e-6:
+                logger.warning("Vector Ops have no area. Using fallback size.")
+                w_mm, h_mm = 1.0, 1.0
+
+            yield geometry_ops, (w_mm, h_mm), 1.0
             return
 
         # Path 2: Vector source that needs to be rendered and traced.

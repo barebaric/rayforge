@@ -37,7 +37,7 @@ from .actions import ActionManager
 from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .doceditor.ui import file_dialogs
+from .doceditor.ui import file_dialogs, import_handler
 
 
 logger = logging.getLogger(__name__)
@@ -843,28 +843,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.close()
 
     def on_menu_import(self, action, param=None):
-        file_dialogs.show_import_dialog(self, self._on_import_dialog_response)
-
-    def _on_import_dialog_response(self, dialog, result, user_data):
-        """Callback for when the user selects a file from the dialog."""
-        try:
-            file = dialog.open_finish(result)
-            if not file:
-                return
-
-            file_path = Path(file.get_path())
-            file_info = file.query_info(
-                Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                Gio.FileQueryInfoFlags.NONE,
-                None,
-            )
-            mime_type = file_info.get_content_type()
-            self.doc_editor.file.load_file_from_path(file_path, mime_type)
-            # Hide properties widget in case something was selected before
-            # import
-            self.item_revealer.set_reveal_child(False)
-        except Exception:
-            logger.exception("Error opening file")
+        import_handler.start_interactive_import(self, self.doc_editor)
 
     def on_open_clicked(self, sender):
         self.on_menu_import(sender)
@@ -940,13 +919,6 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         self.doc_editor.machine.clear_alarm(config.machine)
-
-    def load_file(self, filename: Path, mime_type: Optional[str]):
-        """
-        Loads a file from a path, typically from the command line.
-        This is now a simple wrapper around the centralized command.
-        """
-        self.doc_editor.file.load_file_from_path(filename, mime_type)
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""

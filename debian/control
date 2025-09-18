@@ -14,6 +14,7 @@ Build-Depends: debhelper-compat (= 13),
                libagg-dev,
                python3-numpy,
                python3-poetry-core,
+               python3-svgelements,
                cython3,
                pkg-config
 Standards-Version: 4.6.2

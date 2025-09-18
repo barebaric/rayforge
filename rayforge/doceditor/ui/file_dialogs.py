@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Any
 from gi.repository import Gtk, Gio
 from ...importer import importers
 
@@ -11,14 +11,17 @@ logger = logging.getLogger(__name__)
 # This module assumes gettext has been installed and `_` is a global builtin.
 
 
-def show_import_dialog(win: "MainWindow", callback: Callable):
+def show_import_dialog(
+    win: "MainWindow", callback: Callable, user_data: Any = None
+):
     """
     Shows the file chooser dialog for importing files.
 
     Args:
         win: The parent Gtk.Window.
         callback: The function to call with (dialog, result, user_data) upon
-                  response. The window instance is passed as user_data.
+                  response.
+        user_data: Custom data to pass to the callback.
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(_("Open File"))
@@ -40,7 +43,7 @@ def show_import_dialog(win: "MainWindow", callback: Callable):
     dialog.set_filters(filter_list)
     dialog.set_default_filter(all_supported)
 
-    dialog.open(win, None, callback, win)
+    dialog.open(win, None, callback, user_data)
 
 
 def show_export_gcode_dialog(win: "MainWindow", callback: Callable):

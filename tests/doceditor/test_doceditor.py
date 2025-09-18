@@ -9,6 +9,7 @@ import re
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.pipeline import steps
 from rayforge.doceditor.editor import DocEditor
+from rayforge.core.vectorization_config import TraceConfig
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,7 +115,13 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     # Action 1: Import the file and await its completion.
     logger.info(f"Importing file: {svg_path}")
-    await editor.import_file_from_path(svg_path, mime_type="image/svg+xml")
+
+    # Create a TraceConfig instance to trigger tracing behavior.
+    trace_config = TraceConfig()
+
+    await editor.import_file_from_path(
+        svg_path, mime_type="image/svg+xml", vector_config=trace_config
+    )
     logger.info("Import task has finished.")
 
     # Assert state after the import task has mutated the document
@@ -144,6 +151,8 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     assert len(generated_lines) == len(expected_lines), (
         "Generated G-code has a different number of lines than expected."
+        f"\nGenerated lines ({len(generated_lines)}): {generated_lines}"
+        f"\nExpected lines ({len(expected_lines)}): {expected_lines}"
     )
 
     for gen_line, exp_line in zip(generated_lines, expected_lines):

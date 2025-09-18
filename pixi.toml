@@ -22,6 +22,7 @@ openslide = "*"
 poppler = "*"
 python = ">=3.11"
 librsvg = ">=2.58.4,<3"
+svgelements = ">=1.9.6,<2"
 
 [build-dependencies]
 pkg-config = "*"

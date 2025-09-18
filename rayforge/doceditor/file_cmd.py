@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, List, Tuple, Callable
+from typing import TYPE_CHECKING, Optional, List, Tuple, Callable, cast
 from ..core.item import DocItem
 from ..importer import importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
@@ -11,6 +11,7 @@ from ..pipeline.encoder.gcode import GcodeEncoder
 from ..core.vectorization_config import TraceConfig
 from ..core.import_source import ImportSource
 from ..core.workpiece import WorkPiece
+from ..core.layer import Layer
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -90,6 +91,7 @@ class FileCmd:
         self,
         filename: Path,
         mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
         when_done: Optional[Callable] = None,
     ):
         """
@@ -119,10 +121,6 @@ class FileCmd:
             # 1. Read file data (blocking I/O)
             file_data = await asyncio.to_thread(filename.read_bytes)
 
-            # Create a default vector config for now. This will become
-            # user-configurable in the future.
-            vector_config = TraceConfig()
-
             # 2. Instantiate importer and get items (potentially CPU-bound)
             def do_import_sync():
                 importer = importer_class(file_data, source_file=filename)
@@ -134,9 +132,7 @@ class FileCmd:
                 logger.warning(
                     f"Importer created no items for '{filename.name}'."
                 )
-                context.set_message(
-                    _("Import failed: No items were created.")
-                )
+                context.set_message(_("Import failed: No items were created."))
                 return None  # Return None to signify no items to add.
 
             # 3. Create, register, and link the import source.
@@ -186,7 +182,9 @@ class FileCmd:
 
                 # 3. Center and add them to the document in a transaction.
                 self._center_imported_items(imported_items)
-                target_layer = self._editor.default_workpiece_layer
+                target_layer = cast(
+                    Layer, self._editor.default_workpiece_layer
+                )
                 cmd_name = _("Import {name}").format(name=filename.name)
 
                 with self._editor.history_manager.transaction(cmd_name) as t:
@@ -207,6 +205,7 @@ class FileCmd:
         self._task_manager.add_coroutine(
             import_coro,
             key=f"import-{filename.name}",
+            # when_done is wrapped to run on the main thread.
             when_done=commit_to_document,
         )
 

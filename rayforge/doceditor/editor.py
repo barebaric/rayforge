@@ -7,7 +7,9 @@ from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.stocklayer import StockLayer
+from ..core.vectorization_config import TraceConfig
 from ..pipeline.generator import OpsGenerator
+from ..machine.cmd import MachineCmd
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
@@ -16,7 +18,6 @@ from .layout_cmd import LayoutCmd
 from .transform_cmd import TransformCmd
 from .stock_cmd import StockCmd
 from .tab_cmd import TabCmd
-from ..machine.cmd import MachineCmd
 
 if TYPE_CHECKING:
     from ..undo import HistoryManager
@@ -133,7 +134,10 @@ class DocEditor:
             self.processing_state_changed.disconnect(on_settled)
 
     async def import_file_from_path(
-        self, filename: Path, mime_type: Optional[str]
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
     ) -> None:
         """
         Imports a file from the specified path and waits for the operation
@@ -149,7 +153,7 @@ class DocEditor:
                 import_future.set_exception(e)
 
         self.file.load_file_from_path(
-            filename, mime_type, when_done=when_done_callback
+            filename, mime_type, vector_config, when_done=when_done_callback
         )
         await import_future
 
