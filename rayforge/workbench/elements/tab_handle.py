@@ -9,6 +9,7 @@ from ..canvas.element import CanvasElement
 from ...core.tab import Tab
 from ...undo import ChangePropertyCommand
 from ...core.matrix import Matrix
+from ...core.geometry import LineToCommand, ArcToCommand
 
 if TYPE_CHECKING:
     from .workpiece import WorkPieceView
@@ -42,6 +43,9 @@ class TabHandleElement(CanvasElement):
         # Cache for geometric calculations, in parent's normalized (0-1) space.
         self._local_pos_norm: Tuple[float, float] = (0.0, 0.0)
         self._local_tangent_norm: Tuple[float, float] = (1.0, 0.0)
+        self._last_closest_segment = tab_data.segment_index
+        self._last_closest_t = tab_data.t
+        self._search_radius = 5  # segments to search around last position
 
     def on_attached(self):
         """Lifecycle hook called when added to the canvas."""
@@ -113,20 +117,18 @@ class TabHandleElement(CanvasElement):
         self, world_dx: float, world_dy: float
     ) -> Tuple[float, float]:
         """
-        Overrides drag behavior. Because drag_handler_controls_transform
-        is True, this method directly updates the element's transform.
+        Optimized drag behavior with reduced search space for closest point.
         """
         parent_view = cast("WorkPieceView", self.parent)
         if not self.canvas or not parent_view.data.vectors:
             return world_dx, world_dy
 
-        # Get the current mouse position in world coordinates (mm).
+        # Get mouse position in world coordinates
         world_mouse_x, world_mouse_y = self.canvas._get_world_coords(
             self.canvas._last_mouse_x, self.canvas._last_mouse_y
         )
 
-        # Transform world mouse pos to the parent workpiece's local 1x1
-        # unit space
+        # Transform to parent's local normalized space
         try:
             inv_parent_world = parent_view.get_world_transform().invert()
             local_x_norm, local_y_norm = inv_parent_world.transform_point(
@@ -135,8 +137,7 @@ class TabHandleElement(CanvasElement):
         except Exception:
             return world_dx, world_dy
 
-        # The vectors exist in the workpiece's "natural" untransformed geometry
-        # space. We must convert the normalized local point into that space.
+        # Convert to mm coordinates in natural space
         natural_size = parent_view.data.get_natural_size()
         if natural_size and None not in natural_size:
             natural_w, natural_h = cast(Tuple[float, float], natural_size)
@@ -149,21 +150,64 @@ class TabHandleElement(CanvasElement):
         local_x_mm = local_x_norm * natural_w
         local_y_mm = local_y_norm * natural_h
 
-        # Find the closest point on the source geometry using mm coordinates
-        result = parent_view.data.vectors.find_closest_point(
-            local_x_mm, local_y_mm
+        # Use limited search space around last known position
+        num_commands = len(parent_view.data.vectors.commands)
+        start_idx = max(0, self._last_closest_segment - self._search_radius)
+        end_idx = min(
+            num_commands, self._last_closest_segment + self._search_radius + 1
         )
-        if not result:
-            return world_dx, world_dy
 
-        # Update the tab data model directly for live feedback
-        seg_idx, t, _ = result
+        # Find closest point in limited search space
+        best_segment = self._last_closest_segment
+        best_t = self._last_closest_t
+        min_dist_sq = float("inf")
+
+        for i in range(start_idx, end_idx):
+            if i >= num_commands:
+                continue
+
+            cmd = parent_view.data.vectors.commands[i]
+            if (
+                not isinstance(cmd, (LineToCommand, ArcToCommand))
+                or not cmd.end
+            ):
+                continue
+
+            # Get point and tangent for this command to estimate distance
+            point_tangent = parent_view.data.vectors.get_point_and_tangent_at(
+                i, 0.5
+            )
+            if not point_tangent:
+                continue
+
+            point, _ = point_tangent
+            dist_sq = (local_x_mm - point[0]) ** 2 + (
+                local_y_mm - point[1]
+            ) ** 2
+
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                # Now do precise calculation only for this candidate command
+                precise_result = (
+                    parent_view.data.vectors.find_closest_point_on_segment(
+                        i, local_x_mm, local_y_mm
+                    )
+                )
+                if precise_result:
+                    t, point = precise_result
+                    best_segment = i
+                    best_t = t
+
+        # Update tab data
         tab_to_update = cast(Tab, self.data)
-        tab_to_update.segment_index = seg_idx
-        tab_to_update.t = t
+        tab_to_update.segment_index = best_segment
+        tab_to_update.t = best_t
+
+        # Update cache for next search
+        self._last_closest_segment = best_segment
+        self._last_closest_t = best_t
 
         self.update_base_geometry()
-        # Transform is updated automatically by the render() override
         return world_dx, world_dy
 
     def render(self, ctx: cairo.Context):

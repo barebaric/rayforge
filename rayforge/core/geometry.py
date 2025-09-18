@@ -393,6 +393,46 @@ class Geometry:
 
         return closest_info
 
+    def find_closest_point_on_segment(
+        self, segment_index: int, x: float, y: float
+    ) -> Optional[Tuple[float, Tuple[float, float]]]:
+        """
+        Finds the closest point on a specific segment to the given coordinates.
+        Returns (t, point) or None.
+        """
+        if segment_index >= len(self.commands):
+            return None
+
+        cmd = self.commands[segment_index]
+        if not isinstance(cmd, (LineToCommand, ArcToCommand)) or not cmd.end:
+            return None
+
+        # Find start point
+        start_point = None
+        for i in range(segment_index - 1, -1, -1):
+            prev_cmd = self.commands[i]
+            if isinstance(prev_cmd, MovingCommand) and prev_cmd.end:
+                start_point = prev_cmd.end
+                break
+
+        if not start_point:
+            return None
+
+        if isinstance(cmd, LineToCommand):
+            t, point, _ = self._find_closest_on_line_segment(
+                start_point[:2], cmd.end[:2], x, y
+            )
+            return (t, point)
+        elif isinstance(cmd, ArcToCommand):
+            result = self._find_closest_on_linearized_arc(
+                cmd, start_point, x, y
+            )
+            if result:
+                t_arc, pt_arc, _ = result
+                return (t_arc, pt_arc)
+
+        return None
+
     def _get_subpath_vertices(
         self, start_cmd_index: int
     ) -> List[Tuple[float, float]]:
