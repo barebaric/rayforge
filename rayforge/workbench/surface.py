@@ -294,12 +294,42 @@ class WorkSurface(Canvas):
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
-        Finalizes an interactive transform by delegating to the
-        transform_cmd module to create the undoable transaction.
+        Finalizes an interactive transform by collecting all matrix changes
+        from view elements and creating a single, undoable transaction.
         """
-        self.editor.transform.finalize_interactive_transform(
-            elements, self._transform_start_states
-        )
+        # Step 1: Collect all elements that may have changed.
+        affected_elements = set()
+        for element in elements:
+            affected_elements.add(element)
+            parent = element.parent
+            while isinstance(parent, GroupElement):
+                affected_elements.add(parent)
+                parent = parent.parent
+
+        # Step 2: Create a list of all model changes found.
+        changes_to_commit = []
+        for element in affected_elements:
+            if (
+                not isinstance(element.data, DocItem)
+                or element not in self._transform_start_states
+                or "matrix" not in self._transform_start_states[element]
+            ):
+                continue
+
+            docitem: DocItem = element.data
+            start_matrix = self._transform_start_states[element]["matrix"]
+            new_matrix = element.transform
+
+            if start_matrix != new_matrix:
+                changes_to_commit.append(
+                    (docitem, start_matrix, new_matrix.copy())
+                )
+
+        # Step 3: Delegate to the command handler to create the transaction.
+        if changes_to_commit:
+            self.editor.transform.create_transform_transaction(
+                changes_to_commit
+            )
 
         self._transform_start_states.clear()
 
