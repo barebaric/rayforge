@@ -185,7 +185,7 @@ class MainToolbar(Gtk.Box):
         # Tabbing buttons (Split Dropdown)
         tab_actions = [
             (
-                _("Add Equidistant Tabs"),
+                _("Add Equidistant Tabs…"),
                 "tabs-equidistant-symbolic",
                 "win.add-tabs-equidistant",
             ),

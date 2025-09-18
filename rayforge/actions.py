@@ -4,6 +4,7 @@ from .core.group import Group
 from .core.item import DocItem
 from .core.layer import Layer
 from .core.workpiece import WorkPiece
+from .doceditor.ui.add_tabs_popover import AddTabsPopover
 
 
 if TYPE_CHECKING:
@@ -121,9 +122,8 @@ class ActionManager:
         """Updates the enabled state of actions based on document state."""
         self.actions["add_stock"].set_enabled(True)
 
-        can_add_tabs = any(
-            wp.vectors for wp in self.doc.get_descendants(WorkPiece)
-        )
+        target_workpieces = self._get_workpieces_for_tabbing()
+        can_add_tabs = any(wp.vectors for wp in target_workpieces)
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
         self.actions["add-tabs-cardinal"].set_enabled(can_add_tabs)
 
@@ -149,35 +149,27 @@ class ActionManager:
             return selected_workpieces
 
     def on_add_tabs_equidistant(self, action, param):
-        """Handler for adding equidistant tabs to a workpiece."""
+        """Opens the popover for adding equidistant tabs."""
         workpieces_to_process = self._get_workpieces_for_tabbing()
-        if not workpieces_to_process:
+        valid_workpieces = [
+            wp
+            for wp in workpieces_to_process
+            if wp.vectors
+            and wp.layer
+            and wp.layer.workflow
+            and wp.layer.workflow.has_steps()
+        ]
+
+        if not valid_workpieces:
             return
 
-        # 1. Execute the command to update the data model.
-        for workpiece in workpieces_to_process:
-            if not (
-                workpiece.layer
-                and workpiece.layer.workflow
-                and workpiece.layer.workflow.has_steps()
-            ):
-                continue
-
-            step = workpiece.layer.workflow.steps[0]
-            self.editor.tab.add_tabs(
-                workpiece=workpiece,
-                step=step,
-                strategy="equidistant",
-                count=4,
-                width=3.0,
-            )
-
-        # 2. Ensure the UI state is visible. The new architecture, where the
-        #    WorkSurface listens to the action's state, will handle the rest.
-        show_tabs_action = self.get_action("show_tabs")
-        state = show_tabs_action.get_state()
-        if not (state and state.get_boolean()):
-            show_tabs_action.set_state(GLib.Variant.new_boolean(True))
+        # The popover needs to be parented to the SplitMenuButton's main button
+        button = self.win.toolbar.tab_menu_button.main_button
+        popover = AddTabsPopover(
+            editor=self.editor, workpieces=valid_workpieces
+        )
+        popover.set_parent(button)
+        popover.popup()
 
     def on_add_tabs_cardinal(self, action, param):
         """Handler for adding cardinal tabs to a workpiece."""

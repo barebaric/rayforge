@@ -306,7 +306,9 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.append(self.workflowview)
 
         # Add the WorkpiecePropertiesWidget
-        self.item_props_widget = DocItemPropertiesWidget()
+        self.item_props_widget = DocItemPropertiesWidget(
+            editor=self.doc_editor
+        )
         item_props_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.item_props_widget.set_margin_top(20)
         self.item_props_widget.set_margin_end(12)

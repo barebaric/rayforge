@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw, Gio
-from typing import Optional, Tuple, List, cast
+from typing import Optional, Tuple, List, cast, TYPE_CHECKING
 from pathlib import Path
 
 from ...core.stock import StockItem
@@ -13,6 +13,9 @@ from ...shared.util.adwfix import get_spinrow_float
 from ...icons import get_icon
 from ...undo import ChangePropertyCommand
 
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
+
 
 logger = logging.getLogger(__name__)
 default_dim = 100, 100
@@ -21,6 +24,7 @@ default_dim = 100, 100
 class DocItemPropertiesWidget(Expander):
     def __init__(
         self,
+        editor: "DocEditor",
         items: Optional[List[DocItem]] = None,
         *args,
         **kwargs,
@@ -28,6 +32,7 @@ class DocItemPropertiesWidget(Expander):
         # Initialize the parent Expander widget
         super().__init__(*args, **kwargs)
 
+        self.editor = editor
         self.items = items or []
         self._in_update = False
 
@@ -123,17 +128,21 @@ class DocItemPropertiesWidget(Expander):
         rows_container.append(self.shear_row)
 
         # Tabs Switch
-        self.tabs_enabled_switch = Adw.SwitchRow(
-            title=_("Enable Tabs"),
+        self.tabs_row = Adw.SwitchRow(
+            title=_("Tabs"),
             visible=False,
         )
-        self.tabs_enabled_switch.connect(
-            "notify::active", self._on_tabs_enabled_toggled
-        )
-        rows_container.append(self.tabs_enabled_switch)
+        self.tabs_row.connect("notify::active", self._on_tabs_enabled_toggled)
+        rows_container.append(self.tabs_row)
+
+        self.clear_tabs_button = Gtk.Button()
+        self.clear_tabs_button.set_icon_name("edit-clear-symbolic")
+        self.clear_tabs_button.set_valign(Gtk.Align.CENTER)
+        self.clear_tabs_button.set_tooltip_text(_("Remove all tabs"))
+        self.clear_tabs_button.connect("clicked", self._on_clear_tabs_clicked)
+        self.tabs_row.add_suffix(self.clear_tabs_button)
 
         # --- Reset Buttons ---
-        # Note: These are now added as suffixes to their respective rows.
         def create_reset_button(tooltip_text, on_clicked):
             button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
             button.set_valign(Gtk.Align.CENTER)
@@ -169,6 +178,19 @@ class DocItemPropertiesWidget(Expander):
         self.shear_row.add_suffix(self.reset_shear_button)
 
         self.set_items(items)
+
+    def _on_clear_tabs_clicked(self, button):
+        if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
+            return
+        workpiece = self.items[0]
+        if not (
+            workpiece.layer
+            and workpiece.layer.workflow
+            and workpiece.layer.workflow.has_steps()
+        ):
+            return
+        step = workpiece.layer.workflow.steps[0]
+        self.editor.tab.clear_tabs(workpiece, step)
 
     def _on_tabs_enabled_toggled(self, switch, GParamSpec):
         if self._in_update or not self.items:
@@ -747,19 +769,25 @@ class DocItemPropertiesWidget(Expander):
                         )
                         self.open_source_button.set_sensitive(False)
 
-                    # Show tab switch if the workpiece has tabs
-                    if workpiece.tabs:
-                        self.tabs_enabled_switch.set_visible(True)
-                        self.tabs_enabled_switch.set_active(
-                            workpiece.tabs_enabled
+                    # Show tab switch if the workpiece has vector data
+                    can_have_tabs = workpiece.vectors is not None
+                    self.tabs_row.set_visible(can_have_tabs)
+                    if can_have_tabs:
+                        self.tabs_row.set_active(workpiece.tabs_enabled)
+                        self.clear_tabs_button.set_sensitive(
+                            bool(workpiece.tabs)
                         )
-                    else:
-                        self.tabs_enabled_switch.set_visible(False)
+                        self.tabs_row.set_subtitle(
+                            _("{num_tabs} tabs").format(
+                                num_tabs=len(workpiece.tabs)
+                            )
+                        )
+
                 except (TypeError, ValueError):
                     self.open_source_button.set_sensitive(False)
-                    self.tabs_enabled_switch.set_visible(False)
+                    self.tabs_row.set_visible(False)
             else:
-                self.tabs_enabled_switch.set_visible(False)
+                self.tabs_row.set_visible(False)
 
         finally:
             self._in_update = False

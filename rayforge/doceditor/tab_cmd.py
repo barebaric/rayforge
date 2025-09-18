@@ -16,7 +16,7 @@ from ..core.step import Step
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
+    from ..doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -311,5 +311,18 @@ class TabCmd:
             new_tabs=new_tabs,
             transformer_config=transformer_config,
             name=_("Add Cardinal Tabs"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def clear_tabs(self, workpiece: WorkPiece, step: Step):
+        """Removes all tabs from a workpiece for a given step."""
+        transformer_config = {"name": "TabOpsTransformer", "enabled": True}
+        cmd = ConfigureTabsCommand(
+            editor=self._editor,
+            workpiece=workpiece,
+            step=step,
+            new_tabs=[],
+            transformer_config=transformer_config,
+            name=_("Clear Tabs"),
         )
         self._editor.history_manager.execute(cmd)
