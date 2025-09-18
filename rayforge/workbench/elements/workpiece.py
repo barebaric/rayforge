@@ -1,18 +1,15 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Generator
+from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from concurrent.futures import Future
-from copy import deepcopy
-
 from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
 from ..canvas import CanvasElement
 from ...pipeline.encoder.cairoencoder import CairoEncoder
-from ...core.geometry import LineToCommand, ArcToCommand, MoveToCommand
+from ...core.geometry import LineToCommand, ArcToCommand
 from ...core.tab import Tab
-from ...undo import ChangePropertyCommand
 from .tab_handle import TabHandleElement
 import math
 
@@ -62,11 +59,9 @@ class WorkPieceView(CanvasElement):
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
 
-        # Edit Mode State
         self._tab_handles: List[TabHandleElement] = []
-        self._dragged_handle: Optional[TabHandleElement] = None
-        self._initial_tabs_state: Optional[List[Tab]] = None
-        self._tabs_visible_override = False  # For the toolbar toggle
+        # Default to False; the correct state will be pulled from the surface.
+        self._tabs_visible_override: bool = False
 
         # The element's geometry is a 1x1 unit square.
         # The transform matrix handles all scaling and positioning.
@@ -82,9 +77,17 @@ class WorkPieceView(CanvasElement):
             buffered=True,
             pixel_perfect_hit=True,
             hit_distance=5,
-            is_editable=True,
+            is_editable=False,
             **kwargs,
         )
+
+        # After super().__init__, self.canvas is set. Pull the initial
+        # tab visibility state from the WorkSurface, which is the state owner.
+        if self.canvas:
+            work_surface = cast("WorkSurface", self.canvas)
+            self._tabs_visible_override = (
+                work_surface.get_global_tab_visibility()
+            )
 
         self.content_transform = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
 
@@ -141,14 +144,6 @@ class WorkPieceView(CanvasElement):
                 f"Setting ops visibility for step '{step_uid}' to {visible}"
             )
             self._ops_visibility[step_uid] = visible
-            if self.canvas:
-                self.canvas.queue_draw()
-
-    def set_tabs_visible_override(self, visible: bool):
-        """Controls visibility of tab handles when not in edit mode."""
-        if self._tabs_visible_override != visible:
-            self._tabs_visible_override = visible
-            self._update_tab_handles_state()
             if self.canvas:
                 self.canvas.queue_draw()
 
@@ -526,6 +521,20 @@ class WorkPieceView(CanvasElement):
                 step, self.data, generation_id=gen_id
             )
 
+    def set_tabs_visible_override(self, visible: bool):
+        """Sets the global visibility override for tab handles."""
+        if self._tabs_visible_override != visible:
+            self._tabs_visible_override = visible
+            self._update_tab_handle_visibility()
+
+    def _update_tab_handle_visibility(self):
+        """Applies the current visibility logic to all tab handles."""
+        # A handle is visible if the global toggle is on AND tabs are enabled
+        # on the workpiece model.
+        is_visible = self._tabs_visible_override and self.data.tabs_enabled
+        for handle in self._tab_handles:
+            handle.set_visible(is_visible)
+
     def _create_or_update_tab_handles(self):
         """Creates or replaces TabHandleElements based on the model."""
         # Remove old handles
@@ -534,220 +543,18 @@ class WorkPieceView(CanvasElement):
                 self.remove_child(handle)
         self._tab_handles.clear()
 
+        # Determine visibility based on the global override and the model flag
+        is_visible = self._tabs_visible_override and self.data.tabs_enabled
+
         if not self.data.tabs:
             return
 
         for tab in self.data.tabs:
             handle = TabHandleElement(tab_data=tab, parent=self)
             self._position_handle_from_tab(handle)
+            handle.set_visible(is_visible)  # Set initial visibility
             self._tab_handles.append(handle)
             self.add(handle)
-
-        self._update_tab_handles_state()
-
-    def _configure_tab_handles(self, is_editing: bool):
-        """
-        A helper to unambiguously set the state of tab handles based on
-        whether the element is in edit mode.
-        """
-        show_tabs = is_editing or self._tabs_visible_override
-        for handle in self._tab_handles:
-            handle.set_visible(show_tabs)
-            handle.draggable = is_editing
-            handle.opacity = 1.0 if is_editing else 0.3
-
-    def _update_tab_handles_state(self):
-        """
-        Updates visibility, opacity, and interactivity of handles based on the
-        current canvas edit context.
-        """
-        is_edit_mode = bool(self.canvas and self.canvas.edit_context is self)
-        self._configure_tab_handles(is_edit_mode)
-
-    def on_edit_mode_enter(self):
-        """Activates tab handles for editing."""
-        logger.debug(f"Entering edit mode for tabs on '{self.data.name}'")
-        self._configure_tab_handles(True)
-        if self.canvas:
-            self.canvas.queue_draw()
-
-    def on_edit_mode_leave(self):
-        """Deactivates tab handles and commits any changes."""
-        logger.debug(f"Leaving edit mode on '{self.data.name}'")
-        self._configure_tab_handles(False)
-        self._dragged_handle = None
-        self._initial_tabs_state = None
-        if self.canvas:
-            self.canvas.queue_draw()
-
-    def draw_edit_overlay(self, ctx: cairo.Context):
-        """Draws the source vector path as a guide for tab placement."""
-        # Use workpiece.vectors which are already in local space.
-        if not self.data.vectors or not self.canvas:
-            return
-
-        widget_width = self.canvas.get_allocated_width()
-        widget_height = self.canvas.get_allocated_height()
-        if widget_width <= 0 or widget_height <= 0:
-            return
-
-        temp_surface = cairo.ImageSurface(
-            cairo.FORMAT_ARGB32, widget_width, widget_height
-        )
-        temp_ctx = cairo.Context(temp_surface)
-
-        screen_transform_matrix = (
-            self.canvas.view_transform @ self.get_world_transform()
-        )
-        cairo_matrix = cairo.Matrix(*screen_transform_matrix.for_cairo())
-        temp_ctx.transform(cairo_matrix)
-
-        # Draw the vector path with a distinct style
-        # Line width needs to be adjusted by the inverse of the scale factor
-        # to appear consistent regardless of zoom.
-        scale_x_screen = screen_transform_matrix.get_abs_scale()[0]
-        temp_ctx.set_line_width(
-            2.0 / scale_x_screen if scale_x_screen > 0 else 1.0
-        )
-        temp_ctx.set_source_rgba(0.1, 0.5, 0.9, 0.8)  # Bright blue
-
-        # Convert geometry to ops and encode it
-        ops = Ops.from_geometry(self.data.vectors)
-        encoder = CairoEncoder()
-        # Pass (1.0, 1.0) for scale because the ctx is now scaled to match
-        # the workpiece's local mm space *visually*.
-        encoder.encode(
-            ops, temp_ctx, scale=(1.0, 1.0), show_travel_moves=False
-        )
-
-        ctx.set_source_surface(temp_surface, 0, 0)
-        ctx.paint()
-
-    def handle_edit_press(self, world_x: float, world_y: float) -> bool:
-        """Handles a mouse press, checking if a tab handle was clicked."""
-        # Find which handle was clicked, if any
-        # Delegate to base CanvasElement's hit-test, which iterates children.
-        hit_element = self.get_elem_hit(world_x, world_y)
-        if isinstance(hit_element, TabHandleElement):
-            self._dragged_handle = hit_element
-            self._initial_tabs_state = deepcopy(self.data.tabs)
-            logger.debug(f"Started dragging tab {hit_element.data.uid}")
-            return True
-        return False
-
-    def handle_edit_drag(self, world_dx: float, world_dy: float):
-        """Handles dragging a tab handle along the vector path."""
-        if (
-            not self._dragged_handle
-            or not self.canvas
-            or not self.data.vectors
-        ):
-            return
-
-        # Get the current mouse position in world coordinates (pixel space).
-        world_mouse_x, world_mouse_y = self.canvas._get_world_coords(
-            self.canvas._last_mouse_x, self.canvas._last_mouse_y
-        )
-
-        # Transform world mouse pos to this element's local 1x1 unit space
-        try:
-            inv_world = self.get_world_transform().invert()
-            local_x_norm, local_y_norm = inv_world.transform_point(
-                (world_mouse_x, world_mouse_y)
-            )
-        except Exception:
-            return
-
-        # Un-normalize from 1x1 space to the geometry's local millimeter space.
-        # This must use the geometry's "natural" size, not the current scaled
-        # size of the workpiece view.
-        natural_size = self.data.get_natural_size()
-        if natural_size and None not in natural_size:
-            natural_w, natural_h = cast(Tuple[float, float], natural_size)
-        else:
-            # Fallback if natural size is not available.
-            natural_w, natural_h = self.data.get_local_size()
-
-        local_x_mm = local_x_norm * natural_w
-        local_y_mm = local_y_norm * natural_h
-
-        # Find the closest point on the source geometry using mm coordinates
-        result = self.data.vectors.find_closest_point(local_x_mm, local_y_mm)
-        if not result:
-            return
-
-        seg_idx, t, _ = result
-        tab_to_update = cast(Tab, self._dragged_handle.data)
-
-        # Update the model directly for live feedback
-        tab_to_update.segment_index = seg_idx
-        tab_to_update.t = t
-
-        # Reposition the visual handle
-        self._position_handle_from_tab(self._dragged_handle)
-        self.canvas.queue_draw()
-
-    def handle_edit_release(self, world_x: float, world_y: float):
-        """Finalizes a tab drag by creating an undo command."""
-        if not self._dragged_handle or not self._initial_tabs_state:
-            return
-
-        # Access the Doc object through the Canvas and its editor.
-        if self.canvas and hasattr(self.canvas, "editor"):
-            doc = cast("WorkSurface", self.canvas).editor.doc
-            if doc:
-                # Create a command with the initial and final states
-                cmd = ChangePropertyCommand(
-                    target=self.data,
-                    property_name="tabs",
-                    new_value=deepcopy(self.data.tabs),
-                    old_value=self._initial_tabs_state,
-                    name=_("Move Tab"),
-                )
-                # Restore the model to its initial state before executing the
-                # command, so the undo/redo stack is correct.
-                self.data.tabs = self._initial_tabs_state
-                doc.history_manager.execute(cmd)
-        else:
-            logger.warning(
-                "Could not finalize tab drag: Canvas or DocEditor not found."
-            )
-
-        # Reset drag state
-        self._dragged_handle = None
-        self._initial_tabs_state = None
-        if self.canvas:
-            self.canvas.queue_draw()
-
-    def _get_path_segments_local(
-        self,
-    ) -> Generator[
-        Tuple[int, Tuple[float, float], Tuple[float, float]], None, None
-    ]:
-        """
-        Yields all movable segments from the source vectors as
-        (index, p_start, p_end) tuples in local coordinates.
-        ArcToCommands are linearized for this purpose.
-        """
-        if not self.data.vectors:
-            return
-        last_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-        for i, cmd in enumerate(self.data.vectors.commands):
-            if isinstance(cmd, MoveToCommand):
-                if cmd.end:
-                    last_pos_3d = cmd.end
-            elif isinstance(cmd, LineToCommand):
-                if cmd.end:
-                    yield i, last_pos_3d[:2], cmd.end[:2]
-                    last_pos_3d = cmd.end
-            elif isinstance(cmd, ArcToCommand):
-                if cmd.end:
-                    arc_segments = self.data.vectors._linearize_arc(
-                        cmd, last_pos_3d
-                    )
-                    for p_start_arc, p_end_arc in arc_segments:
-                        yield i, p_start_arc[:2], p_end_arc[:2]
-                    last_pos_3d = cmd.end
 
     def update_handle_transforms(self):
         """

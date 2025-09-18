@@ -13,6 +13,7 @@ from typing import (
 from pathlib import Path
 import warnings
 from dataclasses import asdict
+from copy import deepcopy
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -125,7 +126,7 @@ class WorkPiece(DocItem):
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.name = self.name
         world_wp.matrix = self.get_world_transform()
-        world_wp.tabs = self.tabs
+        world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         return world_wp
 

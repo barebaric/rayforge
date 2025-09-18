@@ -38,36 +38,68 @@ class TabHandleElement(CanvasElement):
             clip=False,
         )
         self._initial_tabs_state: Optional[List[Tab]] = None
-        if self.canvas:
-            self.canvas.move_begin.connect(self._on_drag_begin)
-            self.canvas.move_end.connect(self._on_drag_end)
 
-    def _on_drag_begin(self, sender, elements: List[CanvasElement]):
+    def on_attached(self):
+        """Lifecycle hook called when added to the canvas."""
+        assert self.canvas
+        self.canvas.move_begin.connect(self._on_drag_begin)
+        self.canvas.move_end.connect(self._on_drag_end)
+
+    def on_detached(self):
+        """Lifecycle hook called before being removed from the canvas."""
+        assert self.canvas
+        self.canvas.move_begin.disconnect(self._on_drag_begin)
+        self.canvas.move_end.disconnect(self._on_drag_end)
+
+    def _on_drag_begin(
+        self,
+        sender,
+        elements: List[CanvasElement],
+        drag_target: Optional[CanvasElement] = None,
+    ):
         """Called by the canvas when a move operation starts."""
-        if self in elements:
+        # The drag_target is the specific element being manipulated, which
+        # is exactly what we need. This is more robust than checking the
+        # general selection ('elements' list).
+        if drag_target is self:
             parent_view = cast("WorkPieceView", self.parent)
             # Store a deepcopy of the entire tabs list for the undo command
             self._initial_tabs_state = deepcopy(parent_view.data.tabs)
             logger.debug(f"Drag begin for tab {self.data.uid}")
 
-    def _on_drag_end(self, sender, elements: List[CanvasElement]):
+    def _on_drag_end(
+        self,
+        sender,
+        elements: List[CanvasElement],
+        drag_target: Optional[CanvasElement] = None,
+    ):
         """Called by the canvas when a move operation ends."""
-        if self in elements and self._initial_tabs_state:
+        # Check against the explicit drag_target.
+        if drag_target is self and self._initial_tabs_state is not None:
             parent_view = cast("WorkPieceView", self.parent)
             work_surface = cast("WorkSurface", self.canvas)
             doc = work_surface.editor.doc
 
-            # Create an undoable command with the before and after states
+            # The new state is the current state of the model's tabs list,
+            # which was modified live during the drag.
+            new_tabs_state = deepcopy(parent_view.data.tabs)
+
+            # Do not modify the model directly. Create a command with the
+            # old and new states, and let the history manager apply the change.
+            # This ensures a single, correct 'updated' signal is fired.
             cmd = ChangePropertyCommand(
                 target=parent_view.data,
                 property_name="tabs",
-                new_value=deepcopy(parent_view.data.tabs),
+                new_value=new_tabs_state,
                 old_value=self._initial_tabs_state,
                 name=_("Move Tab"),
             )
-            # Restore the model to its initial state before executing,
-            # so the history manager can correctly apply the new state.
-            parent_view.data.tabs = self._initial_tabs_state
+            # The model is currently in the 'new' state due to live dragging.
+            # We must set it back to the 'old' state so the undo manager can
+            # correctly apply the 'new' state and record the change.
+            # We bypass the public property setter to avoid firing a premature,
+            # incorrect update signal, thus fixing the race condition.
+            parent_view.data._tabs = self._initial_tabs_state
             doc.history_manager.execute(cmd)
 
             self._initial_tabs_state = None

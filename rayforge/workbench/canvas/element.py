@@ -67,6 +67,10 @@ class CanvasElement:
         matrix: Optional[Matrix] = None,
         hit_distance: float = 0.0,
         is_editable: bool = False,
+        draggable: bool = False,
+        show_selection_frame: bool = True,
+        drag_handler_controls_transform: bool = False,
+        preserves_selection_on_click: bool = False,
     ):
         """
         Initializes a new CanvasElement.
@@ -105,6 +109,19 @@ class CanvasElement:
                 circular area for any opaque pixel.
             is_editable: If True, the element can be double-clicked
                 to enter a special "edit mode".
+            draggable: If True, the element can be moved by dragging its
+                body, and its drag behavior can be customized by
+                overriding `handle_drag_move`.
+            show_selection_frame: If False, the selection frame and
+                handles will not be drawn for this element even when it is
+                selected. Useful for custom interactive handles.
+            drag_handler_controls_transform: If True, the `handle_drag_move`
+                method is responsible for updating the element's transform
+                itself. If False (default), it should return a constrained
+                delta for the canvas to apply.
+            preserves_selection_on_click: If True, clicking this element
+                will not change the existing selection on the canvas. It will
+                only make this element the target for a potential drag.
         """
         logger.debug(
             f"CanvasElement.__init__: x={x}, y={y}, width={width}, "
@@ -140,7 +157,10 @@ class CanvasElement:
         self.pixel_perfect_hit = pixel_perfect_hit
         self.hit_distance: float = hit_distance
         self.is_editable: bool = is_editable
-        self.draggable: bool = False
+        self.draggable: bool = draggable
+        self.show_selection_frame: bool = show_selection_frame
+        self.drag_handler_controls_transform = drag_handler_controls_transform
+        self.preserves_selection_on_click = preserves_selection_on_click
 
         # This is the single source of truth for the local GEOMETRIC transform.
         self.transform: Matrix = Matrix.identity()
@@ -238,6 +258,21 @@ class CanvasElement:
         """
         Hook called when the list of children is modified (add/remove).
         Subclasses can override this to react.
+        """
+        pass
+
+    def on_attached(self):
+        """
+        Lifecycle hook called when the element is added to a canvas.
+        `self.canvas` is guaranteed to be available. Subclasses can
+        override this to connect signals or initialize resources.
+        """
+        pass
+
+    def on_detached(self):
+        """
+        Lifecycle hook called before the element is removed from a canvas.
+        Subclasses can override this to disconnect signals or clean up.
         """
         pass
 
@@ -541,11 +576,25 @@ class CanvasElement:
         """Creates a deep copy of the element."""
         return deepcopy(self)
 
-    def _set_canvas_recursive(self, canvas: Optional["Canvas"]):
-        """Recursively sets the canvas for self and all children."""
+    def _attach_to_canvas_recursive(self, canvas: Optional["Canvas"]):
+        """
+        Recursively sets the canvas for self and all children, and calls
+        the on_attached lifecycle hook.
+        """
         self.canvas = canvas
+        self.on_attached()
         for child in self.children:
-            child._set_canvas_recursive(canvas)
+            child._attach_to_canvas_recursive(canvas)
+
+    def _detach_from_canvas_recursive(self):
+        """
+        Recursively calls the on_detached hook and nullifies the canvas
+        reference for self and all children.
+        """
+        self.on_detached()
+        for child in self.children:
+            child._detach_from_canvas_recursive()
+        self.canvas = None
 
     def _reparent(self, elem: CanvasElement):
         """Removes an element from its current parent before adding it here."""
@@ -572,9 +621,9 @@ class CanvasElement:
 
         self.children.append(elem)
         elem.parent = self
-        # Recursively propagate the canvas reference to the new
-        # child and all of its descendants.
-        elem._set_canvas_recursive(self.canvas)
+        # Recursively propagate the canvas reference and trigger the
+        # on_attached hook for the new child and its descendants.
+        elem._attach_to_canvas_recursive(self.canvas)
         elem.allocate()
         self.mark_dirty()
         self.on_child_list_changed()
@@ -592,8 +641,10 @@ class CanvasElement:
         self._reparent(elem)
 
         self.children.insert(index, elem)
-        elem.canvas = self.canvas
         elem.parent = self
+        # Recursively propagate the canvas reference and trigger the
+        # on_attached hook for the new child and its descendants.
+        elem._attach_to_canvas_recursive(self.canvas)
         elem.allocate()
         self.mark_dirty()
         self.on_child_list_changed()
@@ -667,11 +718,14 @@ class CanvasElement:
 
     def remove_all(self):
         """Removes all children from this element."""
-        children = self.children
-        self.children = []
-        if self.canvas is not None:
-            for child in children:
+        children_to_remove = self.children[:]
+        self.children.clear()
+
+        for child in children_to_remove:
+            child._detach_from_canvas_recursive()
+            if self.canvas:
                 self.canvas.elem_removed.send(self, child=child)
+
         self.mark_dirty()
         self.on_child_list_changed()
 
@@ -692,6 +746,8 @@ class CanvasElement:
             elem: The child element to remove.
         """
         if elem in self.children:
+            # Trigger the detach hook before actual removal.
+            elem._detach_from_canvas_recursive()
             self.children.remove(elem)
             if self.canvas:
                 self.canvas.elem_removed.send(self, child=elem)
@@ -982,7 +1038,8 @@ class CanvasElement:
             return None
 
         # 4. Optional: If inside the bounding box, perform pixel-perfect check.
-        if self.pixel_perfect_hit:
+        # Draggable elements should be hittable anywhere within their bbox.
+        if self.pixel_perfect_hit and not self.draggable:
             if not self.is_pixel_opaque(local_geom_x, local_geom_y):
                 return None
 
@@ -1060,6 +1117,23 @@ class CanvasElement:
             world_y: The y-coordinate of the release in world space.
         """
         pass
+
+    def handle_drag_move(
+        self, world_dx: float, world_dy: float
+    ) -> Tuple[float, float]:
+        """
+        Intercepts a drag move to apply constraints. Subclasses can
+        override this to customize drag behavior.
+
+        This method is only called if the `draggable` property is True.
+
+        If `drag_handler_controls_transform` is True, this method is
+        responsible for setting the element's transform directly.
+
+        If it's False, this method should return a constrained delta tuple
+        `(constrained_dx, constrained_dy)` in world space.
+        """
+        return world_dx, world_dy
 
     def dump(self, indent: int = 0):
         """Prints a debug representation of the element and children."""

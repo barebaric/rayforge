@@ -202,7 +202,7 @@ class MainToolbar(Gtk.Box):
         # Add a button to toggle tab visibility.
         self.show_tabs_button = Gtk.ToggleButton()
         self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
-        self.show_tabs_button.set_active(False)
+        self.show_tabs_button.set_active(True)
         self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
         self.show_tabs_button.set_action_name("win.show_tabs")
         self.append(self.show_tabs_button)

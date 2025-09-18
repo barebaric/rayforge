@@ -136,6 +136,30 @@ class WorkSurface(Canvas):
         # outside of this widget.
         self.doc.history_manager.changed.connect(self._on_history_changed)
 
+        # --- View State Management ---
+        # This property holds the canonical global state for tab visibility.
+        self._tabs_globally_visible: bool = True
+
+    def get_global_tab_visibility(self) -> bool:
+        """
+        Returns the current global visibility state for tab handles. This is
+        used by new WorkPieceViews to pull the correct initial state.
+        """
+        return self._tabs_globally_visible
+
+    def set_global_tab_visibility(self, visible: bool):
+        """
+        Sets the global visibility for tab handles and propagates the change
+        to all existing WorkPieceView elements.
+        """
+        if self._tabs_globally_visible == visible:
+            return  # No change
+        self._tabs_globally_visible = visible
+        # Propagate the new state to all existing views
+        for wp_elem in self.find_by_type(WorkPieceView):
+            wp_view = cast(WorkPieceView, wp_elem)
+            wp_view.set_tabs_visible_override(visible)
+
     def on_right_click_pressed(
         self, gesture, n_press: int, x: float, y: float
     ):
@@ -196,12 +220,23 @@ class WorkSurface(Canvas):
         self._sync_selection_state()
         self.queue_draw()
 
-    def _on_any_transform_begin(self, sender, elements: List[CanvasElement]):
+    def _on_any_transform_begin(
+        self,
+        sender,
+        elements: List[CanvasElement],
+        drag_target: Optional[CanvasElement] = None,
+        **kwargs,
+    ):
         """
         Saves the initial matrix of all transformed elements (including their
         ancestor groups) and the world size of all affected workpieces.
+        The 'drag_target' argument is now explicitly accepted from signals
+        that provide it (like move_begin).
         """
-        logger.debug(f"Transform begin for {len(elements)} element(s).")
+        logger.debug(
+            f"Transform begin for {len(elements)} element(s). "
+            f"Drag target: {drag_target}"
+        )
         self._transform_start_states.clear()
 
         # 1. Collect all unique elements and their group ancestors
@@ -250,6 +285,10 @@ class WorkSurface(Canvas):
             f"Resize begin for {len(elements)} element(s)."
             " Pausing ops generator."
         )
+        # Call the generic transform begin handler.
+        # Note: resize_begin signal in canvas.py currently doesn't send
+        # drag_target, so this call will pass None for drag_target in
+        # _on_any_transform_begin, which is correct.
         self._on_any_transform_begin(sender, elements)
         self.editor.ops_generator.pause()
 
@@ -277,7 +316,7 @@ class WorkSurface(Canvas):
         )
         super().on_button_press(gesture, n_press, x, y)
 
-        # After the click, check if a new workpiece is active.
+        # After the click, check if the active element dictates a layer change.
         active_elem = self.get_active_element()
         if active_elem and isinstance(active_elem.data, WorkPiece):
             active_layer = active_elem.data.layer

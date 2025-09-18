@@ -23,7 +23,24 @@ class ExampleElement(CanvasElement):
     """
     A custom canvas element that draws a triangle to clearly show its
     orientation, useful for debugging transformations.
+
+    This element also demonstrates custom drag behavior by snapping to a grid
+    if `snap_grid_size` is provided.
     """
+
+    def __init__(
+        self, *args, snap_grid_size: Optional[float] = None, **kwargs
+    ):
+        """
+        Initializes the ExampleElement.
+
+        Args:
+            snap_grid_size: If set, the element will snap to a grid of
+                            this size when dragged. `draggable` must also
+                            be set to True for this to take effect.
+        """
+        super().__init__(*args, **kwargs)
+        self.snap_grid_size = snap_grid_size
 
     def _draw_content(self, ctx: cairo.Context, width: float, height: float):
         """Draws the orienting shape (a triangle)."""
@@ -37,14 +54,8 @@ class ExampleElement(CanvasElement):
     def draw(self, ctx: cairo.Context):
         """Overrides drawing for unbuffered elements."""
         ctx.save()
-        m_content = self.content_transform.m
         cairo_content_matrix = cairo.Matrix(
-            m_content[0, 0],
-            m_content[1, 0],
-            m_content[0, 1],
-            m_content[1, 1],
-            m_content[0, 2],
-            m_content[1, 2],
+            *self.content_transform.for_cairo()
         )
         ctx.transform(cairo_content_matrix)
 
@@ -67,6 +78,39 @@ class ExampleElement(CanvasElement):
             ctx = cairo.Context(surface)
             self._draw_content(ctx, width, height)
         return surface
+
+    def handle_drag_move(
+        self, world_dx: float, world_dy: float
+    ) -> Tuple[float, float]:
+        """Overrides the drag behavior to implement grid snapping."""
+        # If no grid is set, or if the element is not on a canvas,
+        # perform default (unconstrained) dragging.
+        if self.snap_grid_size is None or not self.canvas:
+            return super().handle_drag_move(world_dx, world_dy)
+
+        # The canvas stores the element's state at the start of the drag.
+        # This is crucial for calculating the snap from a consistent origin.
+        initial_transform = self.canvas._initial_world_transform
+        if initial_transform is None:
+            return world_dx, world_dy  # Should not happen during a drag
+
+        # 1. Get the initial world position of the element's origin.
+        initial_x, initial_y = initial_transform.get_translation()
+
+        # 2. Calculate the proposed new position in world coordinates.
+        proposed_x = initial_x + world_dx
+        proposed_y = initial_y + world_dy
+
+        # 3. Snap the proposed position to the grid.
+        grid = self.snap_grid_size
+        snapped_x = round(proposed_x / grid) * grid
+        snapped_y = round(proposed_y / grid) * grid
+
+        # 4. Calculate the new, constrained delta from the initial position.
+        constrained_dx = snapped_x - initial_x
+        constrained_dy = snapped_y - initial_y
+
+        return constrained_dx, constrained_dy
 
 
 class LShapeElement(CanvasElement):
@@ -134,14 +178,8 @@ class EditableElement(CanvasElement):
     def draw(self, ctx: cairo.Context):
         """Overrides drawing to handle both buffered and unbuffered cases."""
         ctx.save()
-        m_content = self.content_transform.m
         cairo_content_matrix = cairo.Matrix(
-            m_content[0, 0],
-            m_content[1, 0],
-            m_content[0, 1],
-            m_content[1, 1],
-            m_content[0, 2],
-            m_content[1, 2],
+            *self.content_transform.for_cairo()
         )
         ctx.transform(cairo_content_matrix)
 
@@ -417,7 +455,16 @@ class CanvasApp(Gtk.Application):
 
 def populate_canvas(canvas: Canvas):
     """Helper function to add the same elements to a canvas."""
-    elem = ExampleElement(100, 120, 100, 100, background=(0.5, 1, 0.5, 1))
+    # This element demonstrates the custom drag handler for grid snapping.
+    elem = ExampleElement(
+        100,
+        120,
+        100,
+        100,
+        background=(0.5, 1, 0.5, 1),
+        draggable=True,  # Make the element draggable
+        snap_grid_size=50.0,  # Set the snap grid size (in world units)
+    )
     canvas.add(elem)
     group = CanvasElement(250, 250, 400, 350, background=(0, 1, 1, 0.2))
     group.add(ExampleElement(20, 20, 100, 80, background=(0.7, 0.7, 1, 1)))

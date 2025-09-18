@@ -217,6 +217,12 @@ class MainWindow(Adw.ApplicationWindow):
         if app:
             self.action_manager.set_accelerators(app)
 
+        # Set the initial state of the surface based on the action's default
+        show_tabs_action = self.action_manager.get_action("show_tabs")
+        state = show_tabs_action.get_state()
+        initial_state = state.get_boolean() if state else True
+        self.surface.set_global_tab_visibility(initial_state)
+
         # Connect document signals
         doc = self.doc_editor.doc
         self._initialize_document()
@@ -794,6 +800,11 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.distribute_menu_button.set_sensitive(
             len(self.surface.get_selected_workpieces()) >= 2
         )
+
+        # Update sensitivity for Tab buttons
+        show_tabs_action = am.get_action("show_tabs")
+        has_any_tabs = any(wp.tabs for wp in doc.all_workpieces)
+        show_tabs_action.set_enabled(has_any_tabs)
 
         # Layout - Update sensitivity for the pixel-perfect layout action
         selected_top_level_items = self.surface.get_selected_top_level_items()

@@ -58,6 +58,8 @@ class Canvas(Gtk.DrawingArea):
             parent=self,
         )
         self.view_transform: Matrix = Matrix.identity()
+        # The primary element within the current selection, which receives
+        # keyboard focus. This is a persistent state.
         self._active_elem: Optional[CanvasElement] = None
 
         # Stores the state of an element or group at the start of a transform
@@ -77,6 +79,9 @@ class Canvas(Gtk.DrawingArea):
         self._hovered_elem: Optional[CanvasElement] = None
         self._hovered_region: ElementRegion = ElementRegion.NONE
         self._active_region: ElementRegion = ElementRegion.NONE
+        # The element being actively manipulated. This is a transient state,
+        # lasting only for the duration of an interaction.
+        self._drag_target: Optional[CanvasElement] = None
         self._selection_mode: SelectionMode = SelectionMode.NONE
         self._selection_just_changed: bool = False
         self._selection_group: Optional[MultiSelectionGroup] = None
@@ -263,9 +268,8 @@ class Canvas(Gtk.DrawingArea):
         """
         is_multi_select = self._selection_group is not None
 
-        # Draw frame for any selected element. If it's a multi-selection,
-        # we draw the frame but no handles.
-        if elem.selected:
+        # Draw frame for any selected element, respecting show_selection_frame.
+        if elem.selected and elem.show_selection_frame:
             self._draw_selection_frame(ctx, elem)
             if not is_multi_select:
                 self._render_single_selection_overlay(ctx, elem)
@@ -456,7 +460,10 @@ class Canvas(Gtk.DrawingArea):
         self._framing_selection = False
         selection_changed = False
 
-        # --- Selection Logic ---
+        # Step 1: Always identify the transient target for a drag operation.
+        self._drag_target = hit
+
+        # Step 2: Decide if the persistent selection state should change.
         if self._active_region in [ElementRegion.NONE, ElementRegion.BODY]:
             if hit is None:  # Clicked on background: start framing.
                 self._framing_selection = True
@@ -469,8 +476,8 @@ class Canvas(Gtk.DrawingArea):
                         selection_changed = True
                     self.root.unselect_all()
                     self._selection_before_framing = set()
-                self._active_elem = None
-            elif hit:  # Clicked an element.
+            elif not hit.preserves_selection_on_click:
+                # This is a standard element; perform normal selection logic.
                 if not self._shift_pressed:
                     if not hit.selected:
                         self.root.unselect_all()
@@ -479,6 +486,7 @@ class Canvas(Gtk.DrawingArea):
                 else:  # Shift-click toggles selection.
                     hit.selected = not hit.selected
                     selection_changed = True
+                # A standard click always updates the active element.
                 self._active_elem = hit
 
         # This flag may be used in on_click_released to toggling the
@@ -497,7 +505,7 @@ class Canvas(Gtk.DrawingArea):
             self._finalize_selection_state()
 
         # --- Prepare for Transform ---
-        target = self._selection_group or self._active_elem
+        target = self._selection_group or self._drag_target
         if not target:
             self.queue_draw()
             return
@@ -677,28 +685,38 @@ class Canvas(Gtk.DrawingArea):
 
             # Now that the drag is confirmed, set the state and fire signals.
             self._was_dragging = True
-            selected_elements = self.get_selected_elements()
-            if not selected_elements:
+
+            # The elements to transform are either the current selection, or
+            # the single drag target if there's no selection.
+            elements_to_transform = self.get_selected_elements()
+            if not elements_to_transform and self._drag_target:
+                elements_to_transform = [self._drag_target]
+
+            if not elements_to_transform:
                 return
 
             if self._active_region == ElementRegion.BODY:
                 self._moving = True
-                self.move_begin.send(self, elements=selected_elements)
+                self.move_begin.send(
+                    self,
+                    elements=elements_to_transform,
+                    drag_target=self._drag_target,
+                )
             elif self._active_region in ROTATE_HANDLES:
                 self._rotating = True
-                self.rotate_begin.send(self, elements=selected_elements)
+                self.rotate_begin.send(self, elements=elements_to_transform)
             elif self._active_region in SHEAR_HANDLES:
                 self._shearing = True
-                self.shear_begin.send(self, elements=selected_elements)
+                self.shear_begin.send(self, elements=elements_to_transform)
             elif self._active_region != ElementRegion.NONE:
                 self._resizing = True
-                self.resize_begin.send(self, elements=selected_elements)
+                self.resize_begin.send(self, elements=elements_to_transform)
 
             # Set a generic "interactive" flag on the elements being
             # transformed. This allows complex parents (like ShrinkWrapGroup)
             # to react appropriately without the Canvas needing to know
             # about them.
-            self._transforming_elements = selected_elements
+            self._transforming_elements = elements_to_transform
             for elem in self._transforming_elements:
                 elem.begin_interactive_transform()
 
@@ -747,23 +765,48 @@ class Canvas(Gtk.DrawingArea):
                         self._active_origin,
                     )
             self.queue_draw()
-        elif self._active_elem:
+        elif self._drag_target:
             if self._moving:
-                if self._active_elem and self._initial_world_transform:
-                    transform.move_element(
-                        self._active_elem,
-                        world_dx,
-                        world_dy,
-                        self._initial_world_transform,
-                    )
+                if self._drag_target and self._initial_world_transform:
+                    if (
+                        self._drag_target.draggable
+                        and self._drag_target.drag_handler_controls_transform
+                    ):
+                        # This element handles its own transform update.
+                        self._drag_target.handle_drag_move(world_dx, world_dy)
+                        # No need for queue_draw here, handler should do it.
+                    elif self._drag_target.draggable:
+                        # This element returns a constrained delta.
+                        (
+                            constrained_dx,
+                            constrained_dy,
+                        ) = self._drag_target.handle_drag_move(
+                            world_dx, world_dy
+                        )
+                        transform.move_element(
+                            self._drag_target,
+                            constrained_dx,
+                            constrained_dy,
+                            self._initial_world_transform,
+                        )
+                        self.queue_draw()
+                    else:
+                        # Standard, unconstrained move.
+                        transform.move_element(
+                            self._drag_target,
+                            world_dx,
+                            world_dy,
+                            self._initial_world_transform,
+                        )
+                        self.queue_draw()
             elif self._resizing:
                 if (
-                    self._active_elem
+                    self._drag_target
                     and self._initial_transform
                     and self._initial_world_transform
                 ):
                     transform.resize_element(
-                        element=self._active_elem,
+                        element=self._drag_target,
                         world_dx=world_dx,
                         world_dy=world_dy,
                         initial_local_transform=self._initial_transform,
@@ -773,29 +816,31 @@ class Canvas(Gtk.DrawingArea):
                         shift_pressed=self._shift_pressed,
                         ctrl_pressed=self._ctrl_pressed,
                     )
-                    self._active_elem.trigger_update()
+                    self._drag_target.trigger_update()
+                    self.queue_draw()
             elif self._rotating:
                 if (
-                    self._active_elem
+                    self._drag_target
                     and self._initial_world_transform
                     and self._rotation_pivot
                 ):
                     transform.rotate_element(
-                        element=self._active_elem,
+                        element=self._drag_target,
                         world_x=current_world_x,
                         world_y=current_world_y,
                         initial_world_transform=self._initial_world_transform,
                         rotation_pivot=self._rotation_pivot,
                         drag_start_angle=self._drag_start_angle,
                     )
+                    self.queue_draw()
             elif self._shearing:
                 if (
-                    self._active_elem
+                    self._drag_target
                     and self._initial_transform
                     and self._initial_world_transform
                 ):
                     transform.shear_element(
-                        element=self._active_elem,
+                        element=self._drag_target,
                         world_dx=world_dx,
                         world_dy=world_dy,
                         initial_local_transform=self._initial_transform,
@@ -803,7 +848,7 @@ class Canvas(Gtk.DrawingArea):
                         active_region=self._active_region,
                         view_transform=self.view_transform,
                     )
-            self.queue_draw()
+                    self.queue_draw()
 
     def _start_rotation(
         self,
@@ -853,13 +898,19 @@ class Canvas(Gtk.DrawingArea):
             self._moving or self._resizing or self._rotating or self._shearing
         )
         if not is_transforming:
+            # Clear the drag target if a drag didn't start.
+            self._drag_target = None
             return
 
-        elements = self.get_selected_elements()
+        elements = self._transforming_elements
+        if not elements:
+            return
 
         # Fire specific signals for detailed event handling
         if self._moving:
-            self.move_end.send(self, elements=elements)
+            self.move_end.send(
+                self, elements=elements, drag_target=self._drag_target
+            )
         elif self._resizing:
             self.resize_end.send(self, elements=elements)
         elif self._rotating:
@@ -892,6 +943,7 @@ class Canvas(Gtk.DrawingArea):
         self._initial_transform = None
         self._initial_world_transform = None
         self._rotation_pivot = None
+        self._drag_target = None
 
         self.queue_draw()
 
@@ -916,6 +968,7 @@ class Canvas(Gtk.DrawingArea):
         if self._was_dragging:
             self._was_dragging = False
             self._selection_just_changed = False
+            self._drag_target = None
             return
 
         # Check for mode switch on simple click
@@ -947,8 +1000,9 @@ class Canvas(Gtk.DrawingArea):
                 self._selection_mode = new_mode
                 self.queue_draw()
 
-        # Reset the flag after the full click action is complete
+        # Reset transient states after the full click action is complete
         self._selection_just_changed = False
+        self._drag_target = None
 
     def enter_edit_mode(self, element: CanvasElement):
         """Enters edit mode, focusing on a specific element."""
@@ -984,6 +1038,7 @@ class Canvas(Gtk.DrawingArea):
         """
         selected = self.get_selected_elements()
 
+        # Update the active element, which is the last one selected.
         if self._active_elem and self._active_elem not in selected:
             self._active_elem = None
         if not self._active_elem and selected:
@@ -997,7 +1052,9 @@ class Canvas(Gtk.DrawingArea):
         else:
             self._selection_group = None
 
+        # The active_element is the single, primary item in the selection.
         self.active_element_changed.send(self, element=self._active_elem)
+        # The selection_changed signal reports the entire group.
         self.selection_changed.send(
             self, elements=selected, active_element=self._active_elem
         )
@@ -1100,7 +1157,11 @@ class Canvas(Gtk.DrawingArea):
             self._ctrl_pressed = False
 
     def get_active_element(self) -> Optional[CanvasElement]:
-        """Returns the currently active element, if any."""
+        """
+        Returns the element that is the primary focus of the current
+        selection. This element receives keyboard events and determines
+        the context for property panels.
+        """
         return self._active_elem
 
     def get_selected_elements(self) -> List[CanvasElement]:
