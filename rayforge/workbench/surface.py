@@ -524,7 +524,7 @@ class WorkSurface(Canvas):
 
         # Update laser dot size to maintain a constant size in pixels.
         scale_x_ppm, _ = self.get_view_scale()
-        desired_diameter_px = 5.0
+        desired_diameter_px = 3.0
         if scale_x_ppm > 1e-9:
             diameter_mm = desired_diameter_px / scale_x_ppm
             self._laser_dot.set_size(diameter_mm, diameter_mm)

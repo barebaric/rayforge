@@ -212,7 +212,7 @@ class TabHandleElement(CanvasElement):
             ctx.translate(center_x, center_y)
             ctx.rotate(orientation_angle_rad - math.pi / 2.0)
 
-            w, h = screen_width, screen_length
+            w, h = screen_width * 0.8, screen_length*0.9
 
             # Draw Slot Path (always axis-aligned in this new context)
             ctx.new_sub_path()
