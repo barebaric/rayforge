@@ -37,6 +37,7 @@ from .actions import ActionManager
 from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .doceditor.ui import file_dialogs
 
 
 logger = logging.getLogger(__name__)
@@ -842,10 +843,31 @@ class MainWindow(Adw.ApplicationWindow):
         self.close()
 
     def on_menu_import(self, action, param=None):
-        self.doc_editor.file.import_file(self)
+        file_dialogs.show_import_dialog(self, self._on_import_dialog_response)
+
+    def _on_import_dialog_response(self, dialog, result, user_data):
+        """Callback for when the user selects a file from the dialog."""
+        try:
+            file = dialog.open_finish(result)
+            if not file:
+                return
+
+            file_path = Path(file.get_path())
+            file_info = file.query_info(
+                Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                Gio.FileQueryInfoFlags.NONE,
+                None,
+            )
+            mime_type = file_info.get_content_type()
+            self.doc_editor.file.load_file_from_path(file_path, mime_type)
+            # Hide properties widget in case something was selected before
+            # import
+            self.item_revealer.set_reveal_child(False)
+        except Exception:
+            logger.exception("Error opening file")
 
     def on_open_clicked(self, sender):
-        self.doc_editor.file.import_file(self)
+        self.on_menu_import(sender)
 
     def on_camera_image_visibility_toggled(self, sender, active):
         self.surface.set_camera_image_visibility(active)
@@ -865,7 +887,21 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.edit.clear_all_items()
 
     def on_export_clicked(self, action, param=None):
-        self.doc_editor.file.export_gcode(self)
+        file_dialogs.show_export_gcode_dialog(
+            self, self._on_save_dialog_response
+        )
+
+    def _on_save_dialog_response(self, dialog, result, user_data):
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+        except GLib.Error as e:
+            logger.error(f"Error saving file: {e.message}")
+            return
+
+        self.doc_editor.file.export_gcode_to_path(file_path)
 
     def on_home_clicked(self, action, param):
         if not config.machine:

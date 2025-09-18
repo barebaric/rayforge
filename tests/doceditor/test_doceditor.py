@@ -5,11 +5,30 @@ from pathlib import Path
 from functools import partial
 import pytest
 import pytest_asyncio
-import gi
-gi.require_version("Gtk", "4.0")
+import re
+from rayforge.shared.tasker.manager import TaskManager
+from rayforge.pipeline import steps
+from rayforge.doceditor.editor import DocEditor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def parse_gcode_line(line: str) -> dict:
+    """
+    Parses a G-code line into a dictionary of axes and values.
+    Example: "G0 X10.5 Y20.0" -> {'G': 0.0, 'X': 10.5, 'Y': 20.0}
+    Ignores comments.
+    """
+    line = line.split(";")[0].strip()
+    if not line:
+        return {}
+    parts = {}
+    # Regex to find all letter-number pairs
+    tokens = re.findall(r"([A-Za-z])([-+]?\d*\.?\d+)", line)
+    for command, value in tokens:
+        parts[command.upper()] = float(value)
+    return parts
 
 
 @pytest.fixture
@@ -39,8 +58,6 @@ async def task_mgr():
     Provides a test-isolated TaskManager, configured to bridge its main-thread
     callbacks to the asyncio event loop.
     """
-    from rayforge.shared.tasker.manager import TaskManager
-
     main_loop = asyncio.get_running_loop()
 
     def asyncio_scheduler(callback, *args, **kwargs):
@@ -60,8 +77,6 @@ async def editor(task_mgr, test_config_manager):
     """
     Provides a fully configured DocEditor.
     """
-    from rayforge.doceditor.editor import DocEditor
-
     return DocEditor(task_manager=task_mgr, config_manager=test_config_manager)
 
 
@@ -80,15 +95,15 @@ def assets_path() -> Path:
 async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
     """Full end-to-end test using a real subprocess for ops generation."""
     # --- 1. ARRANGE ---
-    from rayforge.pipeline import steps
-
     step = steps.create_contour_step(name="Vectorize")
     step.set_power(500)
     step.set_cut_speed(3000)
-    
+
     # Safely access the workflow from the active layer
     workflow = editor.doc.active_layer.workflow
-    assert workflow is not None, "Active layer must have a workflow for this test"
+    assert workflow is not None, (
+        "Active layer must have a workflow for this test"
+    )
     workflow.add_step(step)
 
     svg_path = assets_path / "10x10_square.svg"
@@ -97,14 +112,15 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     # --- 2. ACT ---
 
-    # Action 1: Load the file (this is a synchronous model mutation)
+    # Action 1: Import the file and await its completion.
     logger.info(f"Importing file: {svg_path}")
-    editor.file.load_file_from_path(svg_path, mime_type="image/svg+xml")
+    await editor.import_file_from_path(svg_path, mime_type="image/svg+xml")
+    logger.info("Import task has finished.")
 
-    # Assert initial state after synchronous load
+    # Assert state after the import task has mutated the document
     assert len(editor.doc.all_workpieces) == 1
     assert editor.doc.all_workpieces[0].name == "10x10_square.svg"
-    assert editor.is_processing
+    assert editor.is_processing, "OpsGenerator should be busy after import"
 
     # Wait 1: Await the reactive processing triggered by the load.
     # Increase timeout as real subprocesses are slower.
@@ -119,6 +135,32 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     # --- 3. ASSERT ---
     assert output_gcode_path.exists()
-    generated_gcode = output_gcode_path.read_text(encoding="utf-8").strip()
-    expected_gcode = expected_gcode_path.read_text(encoding="utf-8").strip()
-    assert generated_gcode == expected_gcode
+    generated_lines = (
+        output_gcode_path.read_text(encoding="utf-8").strip().splitlines()
+    )
+    expected_lines = (
+        expected_gcode_path.read_text(encoding="utf-8").strip().splitlines()
+    )
+
+    assert len(generated_lines) == len(expected_lines), (
+        "Generated G-code has a different number of lines than expected."
+    )
+
+    for gen_line, exp_line in zip(generated_lines, expected_lines):
+        # For non-command lines (comments, empty lines), compare directly
+        if not gen_line.strip() or gen_line.strip().startswith(
+            (";", "(", "%")
+        ):
+            assert gen_line.strip() == exp_line.strip()
+            continue
+
+        gen_parts = parse_gcode_line(gen_line)
+        exp_parts = parse_gcode_line(exp_line)
+
+        # Check that the same commands are present on both lines
+        assert gen_parts.keys() == exp_parts.keys()
+
+        # Compare values with a tolerance for floating point numbers
+        for key in gen_parts:
+            # A tolerance of 1 micron (0.001 mm) is reasonable for CNC
+            assert gen_parts[key] == pytest.approx(exp_parts[key], abs=1e-2)

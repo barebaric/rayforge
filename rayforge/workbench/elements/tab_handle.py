@@ -8,6 +8,7 @@ from copy import deepcopy
 from ..canvas.element import CanvasElement
 from ...core.tab import Tab
 from ...undo import ChangePropertyCommand
+from ...core.matrix import Matrix
 
 if TYPE_CHECKING:
     from .workpiece import WorkPieceView
@@ -38,6 +39,9 @@ class TabHandleElement(CanvasElement):
             clip=False,
         )
         self._initial_tabs_state: Optional[List[Tab]] = None
+        # Cache for geometric calculations, in parent's normalized (0-1) space.
+        self._local_pos_norm: Tuple[float, float] = (0.0, 0.0)
+        self._local_tangent_norm: Tuple[float, float] = (1.0, 0.0)
 
     def on_attached(self):
         """Lifecycle hook called when added to the canvas."""
@@ -158,12 +162,104 @@ class TabHandleElement(CanvasElement):
         tab_to_update.segment_index = seg_idx
         tab_to_update.t = t
 
-        # Reposition the visual handle based on the updated model data
-        parent_view._position_handle_from_tab(self)
-
-        # Return original delta; it will be ignored by the canvas, but
-        # this satisfies the method signature and type hints.
+        self.update_base_geometry()
+        # Transform is updated automatically by the render() override
         return world_dx, world_dy
+
+    def render(self, ctx: cairo.Context):
+        """
+        Overrides render to ensure transform is always up-to-date before
+        drawing.
+        """
+        self.update_transform()
+        super().render(ctx)
+
+    def update_base_geometry(self):
+        """
+        Calculates the handle's position and tangent vector in the parent's
+        local, normalized space and caches them. This is the expensive part
+        of the geometry calculation.
+        """
+        parent_view = cast("WorkPieceView", self.parent)
+        tab = cast(Tab, self.data)
+        if not parent_view.data.vectors or tab.segment_index >= len(
+            parent_view.data.vectors.commands
+        ):
+            return
+
+        result = parent_view.data.vectors.get_point_and_tangent_at(
+            tab.segment_index, tab.t
+        )
+        if not result:
+            return
+        local_pos_mm, local_tangent_mm = result
+
+        natural_size = parent_view.data.get_natural_size()
+        if natural_size and None not in natural_size:
+            natural_w, natural_h = cast(Tuple[float, float], natural_size)
+        else:
+            natural_w, natural_h = parent_view.data.get_local_size()
+
+        if natural_w > 1e-9 and natural_h > 1e-9:
+            self._local_pos_norm = (
+                local_pos_mm[0] / natural_w,
+                local_pos_mm[1] / natural_h,
+            )
+            # Normalize the tangent vector relative to the parent's unit space.
+            self._local_tangent_norm = (
+                local_tangent_mm[0] / natural_w,
+                local_tangent_mm[1] / natural_h,
+            )
+
+    def update_transform(self):
+        """
+        Calculates and sets this handle's transform to be a fixed pixel size
+        with the correct orientation, regardless of parent transformations.
+        """
+        if not self.canvas or not self.parent:
+            return
+
+        parent_element = cast(CanvasElement, self.parent)
+        work_surface = cast("WorkSurface", self.canvas)
+
+        # 1. Get transforms and scales
+        parent_world_transform = parent_element.get_world_transform()
+        zoom_x, zoom_y = work_surface.get_view_scale()
+
+        # 2. Transform local normalized pos/tangent into world space
+        world_pos = parent_world_transform.transform_point(
+            self._local_pos_norm
+        )
+        world_tangent = parent_world_transform.transform_vector(
+            self._local_tangent_norm
+        )
+
+        # 3. Calculate visually correct angle from the world-space tangent
+        world_angle_rad = math.atan2(world_tangent[1], world_tangent[0])
+
+        # 4. Define handle size in pixels and convert to world units
+        TARGET_WIDTH_PX = 10.0
+        TARGET_LENGTH_PX = 22.0
+        handle_width_world = TARGET_WIDTH_PX / zoom_x
+        handle_length_world = TARGET_LENGTH_PX / zoom_y
+
+        # 5. Construct the desired handle transform in WORLD space
+        desired_world_transform = (
+            Matrix.translation(world_pos[0], world_pos[1])
+            @ Matrix.rotation(math.degrees(world_angle_rad))
+            @ Matrix.scale(handle_width_world, handle_length_world)
+            @ Matrix.translation(-0.5, -0.5)  # Center handle on its origin
+        )
+
+        # 6. Convert this world transform back into the handle's LOCAL
+        # transform
+        try:
+            inv_parent_world = parent_world_transform.invert()
+            local_transform = inv_parent_world @ desired_world_transform
+            self.set_transform(local_transform)
+        except Exception:
+            # Invert can fail if parent is scaled to zero
+            pass
 
     def draw(self, ctx: cairo.Context):
         """Draws the tab handle as a themed slot shape with a grip."""
@@ -174,13 +270,16 @@ class TabHandleElement(CanvasElement):
 
         # Define fallback RGBA colors
         fallback_bg = Gdk.RGBA(red=0.3, green=0.5, blue=0.9, alpha=0.8)
-        fallback_fg = Gdk.RGBA(red=0.9, green=0.9, blue=0.9, alpha=0.9)
+        fallback_fg = Gdk.RGBA(red=0.5, green=0.5, blue=0.9, alpha=0.9)
+        fallback_grip = Gdk.RGBA(red=0.9, green=0.9, blue=0.9, alpha=0.5)
 
         # Use accent colors as required
         found, bg_color = style_context.lookup_color("accent_bg_color")
         bg_color = bg_color if found else fallback_bg
         found, fg_color = style_context.lookup_color("accent_color")
         fg_color = fg_color if found else fallback_fg
+        found, grip_color = style_context.lookup_color("accent_fg_color")
+        grip_color = grip_color if found else fallback_grip
 
         if self.is_hovered:
             bg_color.alpha = min(1.0, bg_color.alpha + 0.15)
@@ -212,52 +311,41 @@ class TabHandleElement(CanvasElement):
             ctx.translate(center_x, center_y)
             ctx.rotate(orientation_angle_rad - math.pi / 2.0)
 
-            w, h = screen_width * 0.8, screen_length*0.9
+            w, h = screen_width, screen_length
 
-            # Draw Slot Path (always axis-aligned in this new context)
-            ctx.new_sub_path()
-            if h >= w:  # Taller than wide, or a circle
-                radius = w / 2.0
-                ctx.arc(0, -(h / 2.0 - radius), radius, math.pi, 0)
-                ctx.arc(0, h / 2.0 - radius, radius, 0, math.pi)
-            else:  # Wider than tall
-                radius = h / 2.0
-                ctx.arc(
-                    -(w / 2.0 - radius),
-                    0,
-                    radius,
-                    math.pi / 2.0,
-                    3.0 * math.pi / 2.0,
-                )
-                ctx.arc(
-                    w / 2.0 - radius,
-                    0,
-                    radius,
-                    3.0 * math.pi / 2.0,
-                    math.pi / 2.0,
-                )
-            ctx.close_path()
+            def _create_slot_path():
+                """Helper to build the slot path geometry."""
+                ctx.new_path()
+                if h >= w:  # Taller than wide
+                    radius = w / 2.0
+                    y1 = -(h / 2.0 - radius)
+                    y2 = h / 2.0 - radius
+                    ctx.arc(0, y1, radius, math.pi, 0)
+                    ctx.line_to(radius, y2)
+                    ctx.arc(0, y2, radius, 0, math.pi)
+                    ctx.close_path()
+                else:  # Wider than tall
+                    radius = h / 2.0
+                    x1 = -(w / 2.0 - radius)
+                    x2 = w / 2.0 - radius
+                    ctx.arc(x1, 0, radius, math.pi / 2.0, 3.0 * math.pi / 2.0)
+                    ctx.line_to(x2, -radius)
+                    ctx.arc(x2, 0, radius, 3.0 * math.pi / 2.0, math.pi / 2.0)
+                    ctx.close_path()
 
-            # Fill and stroke
+            # 1. Fill the slot background
+            _create_slot_path()
             ctx.set_source_rgba(
                 bg_color.red, bg_color.green, bg_color.blue, bg_color.alpha
             )
-            ctx.fill_preserve()
-            ctx.set_line_width(1.0)
-            ctx.set_source_rgba(
-                fg_color.red,
-                fg_color.green,
-                fg_color.blue,
-                fg_color.alpha * 0.7,
-            )
-            ctx.stroke()
+            ctx.fill()
 
-            # Draw Grip Lines
+            # 2. Draw the grip lines on top of the fill
             ctx.new_path()
             if h >= w:  # Vertical slot: lines are horizontal
                 grip_len = w * 0.7
                 x_start, x_end = -grip_len / 2.0, grip_len / 2.0
-                y_spacing = min(h * 0.1, w * 0.4)
+                y_spacing = h * 0.15
                 ctx.move_to(x_start, -y_spacing)
                 ctx.line_to(x_end, -y_spacing)
                 ctx.move_to(x_start, 0)
@@ -265,9 +353,9 @@ class TabHandleElement(CanvasElement):
                 ctx.move_to(x_start, y_spacing)
                 ctx.line_to(x_end, y_spacing)
             else:  # Horizontal slot: lines are vertical
-                grip_len = h * 0.7
+                grip_len = h * 0.8
                 y_start, y_end = -grip_len / 2.0, grip_len / 2.0
-                x_spacing = min(w * 0.1, h * 0.4)
+                x_spacing = w * 0.15
                 ctx.move_to(-x_spacing, y_start)
                 ctx.line_to(-x_spacing, y_end)
                 ctx.move_to(0, y_start)
@@ -275,9 +363,23 @@ class TabHandleElement(CanvasElement):
                 ctx.move_to(x_spacing, y_start)
                 ctx.line_to(x_spacing, y_end)
 
+            ctx.set_line_width(1.5)
+            ctx.set_source_rgba(
+                grip_color.red,
+                grip_color.green,
+                grip_color.blue,
+                grip_color.alpha * 0.6,
+            )
+            ctx.stroke()
+
+            # 3. Stroke the slot outline on top of everything
+            _create_slot_path()
             ctx.set_line_width(1.0)
             ctx.set_source_rgba(
-                fg_color.red, fg_color.green, fg_color.blue, fg_color.alpha
+                fg_color.red,
+                fg_color.green,
+                fg_color.blue,
+                fg_color.alpha * 0.6,
             )
             ctx.stroke()
 

@@ -6,6 +6,7 @@ from .workpiece import WorkPiece
 from .layer import Layer
 from .item import DocItem
 from .stocklayer import StockLayer
+from .import_source import ImportSource
 
 if TYPE_CHECKING:
     pass
@@ -28,6 +29,7 @@ class Doc(DocItem):
         self.history_manager = HistoryManager()
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
+        self.import_sources: Dict[str, ImportSource] = {}
 
         # A new document starts with a stock layer and one empty workpiece
         # layer. The stock layer is added first to appear at the bottom of
@@ -50,6 +52,10 @@ class Doc(DocItem):
             "type": "doc",
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
+            "import_sources": {
+                uid: source.to_dict()
+                for uid, source in self.import_sources.items()
+            },
         }
 
     @property

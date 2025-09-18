@@ -3,7 +3,6 @@ import pytest
 from pathlib import Path
 from typing import Optional, Tuple
 from dataclasses import asdict
-
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
@@ -50,6 +49,7 @@ class TestWorkPiece:
         assert isinstance(wp.transform_changed, Signal)
         assert wp.tabs == []
         assert wp.tabs_enabled is True
+        assert wp.import_source_uid is None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -60,11 +60,13 @@ class TestWorkPiece:
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
+        wp.import_source_uid = "source-123"
         data_dict = wp.to_dict()
 
         assert "size" not in data_dict
         assert isinstance(data_dict["matrix"], list)
         assert data_dict["renderer_name"] == "SvgRenderer"
+        assert data_dict["import_source_uid"] == "source-123"
 
         # No patch is needed. The global renderer_by_name registry is assumed
         # to be populated, and from_dict should find the renderer there.
@@ -80,6 +82,7 @@ class TestWorkPiece:
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
         assert new_wp.get_natural_size() == (100.0, 50.0)
+        assert new_wp.import_source_uid == "source-123"
 
     def test_serialization_with_tabs(self, workpiece_instance):
         """Tests that tabs are correctly serialized and deserialized."""
@@ -367,3 +370,43 @@ class TestWorkPiece:
         wp.vectors.move_to(0, 0)
         wp.vectors.line_to(10, 0)
         assert wp.get_tab_direction(tab) is None
+
+    def test_get_tab_direction_non_uniform_scale_diagonal(
+        self, workpiece_instance
+    ):
+        """
+        Tests that the tab normal is correct for a diagonal path under
+        non-uniform scaling, which is where the old method fails.
+        """
+        wp = workpiece_instance
+        # A 45-degree rotated CCW square
+        geo = Geometry()
+        geo.move_to(10, 0)
+        geo.line_to(
+            20, 10
+        )  # segment 1: diagonal, tangent proportional to (1,1)
+        geo.line_to(10, 20)
+        geo.line_to(0, 10)
+        geo.close_path()
+        wp.vectors = geo
+
+        # The geometry's bounding box is 20x20.
+        # Applying a 20x10 size results in a non-uniform scale of (1, 0.5).
+        wp.set_size(20, 10)
+        wp.angle = 0  # ensure no rotation
+
+        tab = Tab(width=1, segment_index=1, t=0.5)
+        direction = wp.get_tab_direction(tab)
+        assert direction is not None
+
+        # The local tangent is (1, 1).
+        # The world-space path segment is scaled by (1, 0.5).
+        # The world tangent is therefore proportional to (1, 0.5).
+        # The outward normal for a CCW path is a 90-deg CW rotation of the
+        # tangent (ty, -tx).
+        # So, the normal is proportional to (0.5, -1).
+        expected_x, expected_y = (0.5, -1.0)
+        norm = (expected_x**2 + expected_y**2) ** 0.5
+        expected_direction = (expected_x / norm, expected_y / norm)
+
+        assert direction == pytest.approx(expected_direction)

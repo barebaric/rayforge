@@ -8,10 +8,7 @@ from ...core.matrix import Matrix
 from ...core.ops import Ops
 from ..canvas import CanvasElement
 from ...pipeline.encoder.cairoencoder import CairoEncoder
-from ...core.geometry import LineToCommand, ArcToCommand
-from ...core.tab import Tab
 from .tab_handle import TabHandleElement
-import math
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
@@ -551,144 +548,18 @@ class WorkPieceView(CanvasElement):
 
         for tab in self.data.tabs:
             handle = TabHandleElement(tab_data=tab, parent=self)
-            self._position_handle_from_tab(handle)
-            handle.set_visible(is_visible)  # Set initial visibility
+            # The handle is now responsible for its own geometry.
+            handle.update_base_geometry()
+            handle.update_transform()
+            handle.set_visible(is_visible)
             self._tab_handles.append(handle)
             self.add(handle)
 
     def update_handle_transforms(self):
         """
-        Recalculates the transforms for all tab handles. This is needed
-        when the canvas zoom changes, as the handles have a minimum pixel size.
+        Recalculates transforms for all tab handles. This is called on zoom.
         """
+        # This method is now only called by the WorkSurface on zoom.
+        # The live resize update is handled implicitly by the render pass.
         for handle in self._tab_handles:
-            self._position_handle_from_tab(handle)
-
-    def _position_handle_from_tab(self, handle: TabHandleElement):
-        """Calculates and sets a handle's transform from its tab data."""
-        tab = cast(Tab, handle.data)
-        if (
-            not self.data.vectors
-            or tab.segment_index >= len(self.data.vectors.commands)
-            or not self.canvas
-        ):
-            return
-
-        cmd = self.data.vectors.commands[tab.segment_index]
-        if not isinstance(cmd, (LineToCommand, ArcToCommand)) or not cmd.end:
-            return
-
-        start_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-        for i in range(tab.segment_index):
-            prev_cmd = self.data.vectors.commands[i]
-            if prev_cmd.end:
-                start_pos_3d = prev_cmd.end
-
-        px, py, tangent_angle_rad = 0.0, 0.0, 0.0
-        if isinstance(cmd, LineToCommand):
-            p_start, p_end = start_pos_3d[:2], cmd.end[:2]
-            px = p_start[0] + (p_end[0] - p_start[0]) * tab.t
-            py = p_start[1] + (p_end[1] - p_start[1]) * tab.t
-            tangent_angle_rad = math.atan2(
-                p_end[1] - p_start[1], p_end[0] - p_start[0]
-            )
-        elif isinstance(cmd, ArcToCommand):
-            p0 = start_pos_3d
-            center = (
-                p0[0] + cmd.center_offset[0],
-                p0[1] + cmd.center_offset[1],
-            )
-            radius = math.dist(p0[:2], center)
-            if radius == 0:
-                p_start, p_end = p0[:2], cmd.end[:2]
-                px = p_start[0] + (p_end[0] - p_start[0]) * tab.t
-                py = p_start[1] + (p_end[1] - p_start[1]) * tab.t
-                tangent_angle_rad = math.atan2(
-                    p_end[1] - p_start[1], p_end[0] - p_start[0]
-                )
-            else:
-                start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
-                end_angle = math.atan2(
-                    cmd.end[1] - center[1], cmd.end[0] - center[0]
-                )
-                angle_range = end_angle - start_angle
-                if cmd.clockwise:
-                    if angle_range > 0:
-                        angle_range -= 2 * math.pi
-                else:
-                    if angle_range < 0:
-                        angle_range += 2 * math.pi
-
-                tab_angle = start_angle + angle_range * tab.t
-                px = center[0] + radius * math.cos(tab_angle)
-                py = center[1] + radius * math.sin(tab_angle)
-                # The tangent to a circle is perpendicular to the radius vector
-                tangent_angle_rad = tab_angle + (
-                    math.pi / 2.0 if not cmd.clockwise else -math.pi / 2.0
-                )
-
-        natural_size = self.data.get_natural_size()
-        if natural_size and None not in natural_size:
-            natural_w, natural_h = cast(Tuple[float, float], natural_size)
-        else:
-            natural_w, natural_h = self.data.get_local_size()
-        if natural_w <= 0 or natural_h <= 0:
-            return  # Avoid division by zero
-
-        work_surface = cast("WorkSurface", self.canvas)
-        view_ppm_x, view_ppm_y = work_surface.get_view_scale()
-
-        # 1. Calculate the on-screen size of the parent workpiece in pixels.
-        parent_width_px = self.data.size[0] * view_ppm_x
-        parent_height_px = self.data.size[1] * view_ppm_y
-        if parent_width_px <= 0 or parent_height_px <= 0:
-            return
-
-        # 2. Calculate the "natural" size of the handle in pixels.
-        natural_width_px = tab.width * view_ppm_x
-        natural_length_px = tab.length * view_ppm_y
-
-        # 3. Define minimums
-        MIN_WIDTH_PX = 6.0
-        MIN_LENGTH_PX = 10.0
-
-        # 4. Determine scaling factor required to satisfy minimums while
-        #    maintaining aspect ratio (Tab.width / Tab.length).
-
-        required_scale = 1.0
-
-        # Check if horizontal size is below minimum
-        if natural_width_px < MIN_WIDTH_PX:
-            required_scale = max(
-                required_scale, MIN_WIDTH_PX / natural_width_px
-            )
-
-        # Check if vertical size is below minimum
-        if natural_length_px < MIN_LENGTH_PX:
-            required_scale = max(
-                required_scale, MIN_LENGTH_PX / natural_length_px
-            )
-
-        # 5. Apply the required scale factor to the nominal pixel size
-        #    (If required_scale is 1.0, nothing changes, otherwise we scale up)
-        target_width_px = natural_width_px * required_scale
-        target_length_px = natural_length_px * required_scale
-
-        # 6. The scale factor (normalized to 0..1 space) is the ratio of the
-        #    target pixel size to the parent workpiece's total pixel size.
-        scale_x_norm = target_width_px / parent_width_px
-        scale_y_norm = target_length_px / parent_height_px
-
-        pos_x_norm = px / natural_w
-        pos_y_norm = py / natural_h
-
-        # Build transform: center, scale, rotate, then translate.
-        # The rotation aligns the handle's local X-axis (width) with the
-        # path's tangent. The Y-axis (length) becomes perpendicular.
-        transform = (
-            Matrix.translation(pos_x_norm, pos_y_norm)
-            @ Matrix.rotation(math.degrees(tangent_angle_rad) - 90)
-            @ Matrix.scale(scale_x_norm, scale_y_norm)
-            @ Matrix.translation(-0.5, -0.5)
-        )
-        handle.set_transform(transform)
+            handle.update_transform()

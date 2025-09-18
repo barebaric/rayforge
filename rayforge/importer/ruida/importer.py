@@ -1,7 +1,8 @@
 import logging
 from typing import List, Optional, Tuple
-from ...core.ops import Ops
 from ...core.item import DocItem
+from ...core.geometry import Geometry
+from ...core.vectorization_config import TraceConfig
 from ..base_importer import Importer
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser
@@ -18,7 +19,7 @@ class RuidaImporter(Importer):
     def __init__(self, data: bytes, source_file=None):
         super().__init__(data, source_file)
         self._job_cache: Optional[RuidaJob] = None
-        self._ops_cache: Optional[Ops] = None
+        self._geometry_cache: Optional[Geometry] = None
         self._extents_cache: Optional[Tuple[float, float, float, float]] = None
 
     def _get_job(self) -> RuidaJob:
@@ -35,47 +36,50 @@ class RuidaImporter(Importer):
             self._extents_cache = job.get_extents()
         return self._extents_cache
 
-    def get_doc_items(self) -> Optional[List["DocItem"]]:
+    def get_doc_items(
+        self, vector_config: Optional["TraceConfig"] = None
+    ) -> Optional[List["DocItem"]]:
         from ...core.workpiece import WorkPiece
         from ...core.matrix import Matrix
 
-        ops = self._get_vector_ops()
-        if not ops or ops.is_empty():
+        # Ruida files are always vector, so vector_config is ignored.
+        geometry = self._get_geometry()
+        if not geometry or geometry.is_empty():
             return []
 
-        # Ruida ops are already in mm, with origin at bottom-left of job
-        min_x, min_y, max_x, max_y = ops.rect()
+        # Ruida data is already in mm, with origin at bottom-left of job
+        min_x, min_y, max_x, max_y = geometry.rect()
         width = max(max_x - min_x, 1e-9)
         height = max(max_y - min_y, 1e-9)
 
-        # The parsed ops are already normalized relative to job extents
+        # The parsed geometry is already normalized relative to job extents
         wp = WorkPiece(
             source_file=self.source_file,
             renderer=RUIDA_RENDERER,
-            source_ops=ops,
+            vectors=geometry,
         )
         wp.matrix = Matrix.translation(0, 0) @ Matrix.scale(width, height)
         # Position can be adjusted later by user
 
         return [wp]
 
-    def _get_vector_ops(self) -> Optional[Ops]:
+    def _get_geometry(self) -> Geometry:
         """
-        Returns the parsed vector operations. The coordinate system is
+        Returns the parsed vector geometry. The coordinate system is
         canonical (Y-up, origin at bottom-left of content).
         """
-        if self._ops_cache is not None:
-            return self._ops_cache
+        if self._geometry_cache is not None:
+            return self._geometry_cache
 
         job = self._get_job()
+        geo = Geometry()
         if not job.commands:
-            self._ops_cache = Ops()
-            return self._ops_cache
+            self._geometry_cache = geo
+            return self._geometry_cache
 
         _min_x, min_y, _max_x, max_y = self._get_extents()
         y_flip_val = max_y + min_y
 
-        ops = Ops()
         for cmd in job.commands:
             # Check the command type first, then safely access params.
             if cmd.command_type in ("Move_Abs", "Cut_Abs"):
@@ -89,8 +93,8 @@ class RuidaImporter(Importer):
                 x, y = cmd.params
                 flipped_y = y_flip_val - y
                 if cmd.command_type == "Move_Abs":
-                    ops.move_to(x, flipped_y)
+                    geo.move_to(x, flipped_y)
                 elif cmd.command_type == "Cut_Abs":
-                    ops.line_to(x, flipped_y)
-        self._ops_cache = ops
-        return self._ops_cache
+                    geo.line_to(x, flipped_y)
+        self._geometry_cache = geo
+        return self._geometry_cache

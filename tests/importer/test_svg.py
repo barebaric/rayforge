@@ -29,7 +29,7 @@ def transparent_svg_data() -> bytes:
 def basic_workpiece(basic_svg_data: bytes) -> WorkPiece:
     # Use the importer to create the workpiece, so it gets its size set.
     importer = SvgImporter(basic_svg_data)
-    doc_items = importer.get_doc_items()
+    doc_items = importer.get_doc_items(vector_config=None)
     # FIX: Add assertion to handle None and cast to correct type for linter
     assert doc_items
     return cast(WorkPiece, doc_items[0])
@@ -39,7 +39,7 @@ def basic_workpiece(basic_svg_data: bytes) -> WorkPiece:
 def transparent_workpiece(transparent_svg_data: bytes) -> WorkPiece:
     # Use the importer to create the workpiece, so it gets its size set.
     importer = SvgImporter(transparent_svg_data)
-    doc_items = importer.get_doc_items()
+    doc_items = importer.get_doc_items(vector_config=None)
     # FIX: Add assertion to handle None and cast to correct type for linter
     assert doc_items
     return cast(WorkPiece, doc_items[0])
@@ -50,7 +50,7 @@ class TestSvgImporter:
         self, basic_svg_data: bytes
     ):
         importer = SvgImporter(basic_svg_data, source_file=Path("test.svg"))
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
 
         assert doc_items is not None
         wp = doc_items[0]
@@ -62,7 +62,7 @@ class TestSvgImporter:
         self, transparent_svg_data: bytes
     ):
         importer = SvgImporter(transparent_svg_data)
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
 
         assert doc_items is not None
         wp = doc_items[0]
@@ -95,7 +95,7 @@ class TestSvgRenderer:
     def test_render_chunk_generator(self):
         svg_data = b'<svg width="1000px" height="500px"></svg>'
         importer = SvgImporter(svg_data)
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
         assert doc_items
         workpiece = cast(WorkPiece, doc_items[0])
 
@@ -118,7 +118,7 @@ class TestSvgRenderer:
         empty_svg_data = b'<svg xmlns="http://www.w3.org/2000/svg"/>'
         importer = SvgImporter(empty_svg_data)
         # The importer should still produce a workpiece, even if it has no size
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
         assert doc_items
         workpiece = cast(WorkPiece, doc_items[0])
 

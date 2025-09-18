@@ -1,9 +1,12 @@
 import pytest
 from unittest.mock import MagicMock
+from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stocklayer import StockLayer
+from rayforge.core.import_source import ImportSource
+from rayforge.core.vectorization_config import TraceConfig
 
 
 @pytest.fixture
@@ -23,6 +26,7 @@ def test_doc_initialization(doc):
     assert not isinstance(doc.active_layer, StockLayer)
     assert doc.active_layer.name == "Layer 1"
     assert doc.history_manager is not None
+    assert doc.import_sources == {}
 
 
 def test_add_layer_fires_descendant_added(doc):
@@ -145,3 +149,37 @@ def test_doc_stock_layer_property(doc):
     stock_layer = doc.stock_layer
     assert stock_layer is not None
     assert stock_layer is doc.children[0]
+
+
+def test_doc_serialization_with_import_sources(doc):
+    """Tests that the import_sources registry is serialized correctly."""
+    # Source with vectorization config
+    source1 = ImportSource(
+        source_file=Path("a.png"),
+        data=b"abc",
+        vector_config=TraceConfig(threshold=0.8),
+    )
+    # Source without vectorization config (e.g., an SVG)
+    source2 = ImportSource(source_file=Path("b.svg"), data=b"def")
+    doc.import_sources[source1.uid] = source1
+    doc.import_sources[source2.uid] = source2
+
+    data_dict = doc.to_dict()
+
+    assert "import_sources" in data_dict
+    assert len(data_dict["import_sources"]) == 2
+    assert source1.uid in data_dict["import_sources"]
+    assert source2.uid in data_dict["import_sources"]
+
+    # Check structure of a source with config
+    source1_dict = data_dict["import_sources"][source1.uid]
+    assert source1_dict["uid"] == source1.uid
+    assert source1_dict["source_file"] == "a.png"
+    assert source1_dict["vector_config"] is not None
+    assert source1_dict["vector_config"]["threshold"] == 0.8
+
+    # Check structure of a source without config
+    source2_dict = data_dict["import_sources"][source2.uid]
+    assert source2_dict["uid"] == source2.uid
+    assert source2_dict["source_file"] == "b.svg"
+    assert source2_dict["vector_config"] is None

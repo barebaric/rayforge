@@ -2,16 +2,17 @@ import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, List, Tuple, Callable
-from gi.repository import Gtk, Gio, GLib
 from ..core.item import DocItem
-from ..importer import importers, importer_by_mime_type, importer_by_extension
+from ..importer import importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
 from ..shared.tasker.context import ExecutionContext
 from ..pipeline.job import generate_job_ops
 from ..pipeline.encoder.gcode import GcodeEncoder
+from ..core.vectorization_config import TraceConfig
+from ..core.import_source import ImportSource
+from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from ..mainwindow import MainWindow
     from .editor import DocEditor
     from ..shared.tasker.manager import TaskManager
     from ..config import ConfigManager
@@ -85,100 +86,129 @@ class FileCmd:
             current_pos_x, current_pos_y = item.pos
             item.pos = (current_pos_x + delta_x, current_pos_y + delta_y)
 
-    def import_file(self, win: "MainWindow"):
-        """
-        Shows the file chooser dialog and triggers the import process upon
-        user selection.
-        """
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Open File"))
-
-        filter_list = Gio.ListStore.new(Gtk.FileFilter)
-        all_supported = Gtk.FileFilter()
-        all_supported.set_name(_("All supported"))
-        for importer_class in importers:
-            file_filter = Gtk.FileFilter()
-            if importer_class.label:
-                file_filter.set_name(_(importer_class.label))
-            if importer_class.mime_types:
-                for mime_type in importer_class.mime_types:
-                    file_filter.add_mime_type(mime_type)
-                    all_supported.add_mime_type(mime_type)
-            filter_list.append(file_filter)
-        filter_list.append(all_supported)
-
-        dialog.set_filters(filter_list)
-        dialog.set_default_filter(all_supported)
-
-        dialog.open(win, None, self._on_import_dialog_response, win)
-
-    def _on_import_dialog_response(self, dialog, result, win: "MainWindow"):
-        """Callback for when the user selects a file from the dialog."""
-        try:
-            file = dialog.open_finish(result)
-            if not file:
-                return
-
-            file_path = Path(file.get_path())
-            file_info = file.query_info(
-                Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                Gio.FileQueryInfoFlags.NONE,
-                None,
-            )
-            mime_type = file_info.get_content_type()
-            self.load_file_from_path(file_path, mime_type)
-            # Hide properties widget in case something was selected before
-            # import
-            win.item_revealer.set_reveal_child(False)
-        except Exception:
-            logger.exception("Error opening file")
-
-    def load_file_from_path(self, filename: Path, mime_type: Optional[str]):
+    def load_file_from_path(
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        when_done: Optional[Callable] = None,
+    ):
         """
         Orchestrates the loading of a specific file path using the
-        importer.
+        importer, running the import process in a background task.
         """
-        importer_class = None
-        if mime_type:
-            importer_class = importer_by_mime_type.get(mime_type)
-        if not importer_class:
-            file_extension = filename.suffix.lower()
-            if file_extension:
-                importer_class = importer_by_extension.get(file_extension)
 
-        if not importer_class:
-            logger.error(f"No importer found for '{filename.name}'")
-            return
+        async def import_coro(context: ExecutionContext):
+            # Find importer class
+            importer_class = None
+            if mime_type:
+                importer_class = importer_by_mime_type.get(mime_type)
+            if not importer_class:
+                file_extension = filename.suffix.lower()
+                if file_extension:
+                    importer_class = importer_by_extension.get(file_extension)
 
-        try:
-            file_data = filename.read_bytes()
-            importer = importer_class(file_data, source_file=filename)
-        except Exception as e:
-            logger.error(
-                f"Failed to instantiate importer for {filename.name}: {e}"
+            if not importer_class:
+                msg = f"No importer found for '{filename.name}'"
+                logger.error(msg)
+                context.set_message(f"Error: {msg}")
+                raise ValueError(msg)
+
+            context.set_message(_(f"Importing {filename.name}..."))
+            context.flush()
+
+            # 1. Read file data (blocking I/O)
+            file_data = await asyncio.to_thread(filename.read_bytes)
+
+            # Create a default vector config for now. This will become
+            # user-configurable in the future.
+            vector_config = TraceConfig()
+
+            # 2. Instantiate importer and get items (potentially CPU-bound)
+            def do_import_sync():
+                importer = importer_class(file_data, source_file=filename)
+                return importer.get_doc_items(vector_config)
+
+            imported_items = await asyncio.to_thread(do_import_sync)
+
+            if not imported_items:
+                logger.warning(
+                    f"Importer created no items for '{filename.name}'."
+                )
+                context.set_message(
+                    _("Import failed: No items were created.")
+                )
+                return None  # Return None to signify no items to add.
+
+            # 3. Create, register, and link the import source.
+            import_source = ImportSource(
+                source_file=filename,
+                data=file_data,
+                vector_config=vector_config,
             )
-            return
 
-        cmd_name = _("Import {name}").format(name=filename.name)
+            # Return a tuple of the results for the main thread to handle.
+            context.set_message(_("Import complete!"))
+            context.set_progress(1.0)
+            context.flush()
+            return imported_items, import_source
 
-        imported_items = importer.get_doc_items()
-        if imported_items:
-            self._center_imported_items(imported_items)
+        # This callback runs on the MAIN THREAD after the background task is
+        # finished. It is the only safe place to modify the document.
+        def commit_to_document(task):
+            # First, call the original when_done if it exists.
+            if when_done:
+                when_done(task)
 
-            # Use the editor's helper to get the correct target layer
-            target_layer = self._editor.default_workpiece_layer
+            try:
+                # This will re-raise any exception from the background task.
+                result = task.result()
+                if not result:
+                    return  # No items were imported.
 
-            with self._editor.history_manager.transaction(cmd_name) as t:
+                imported_items, import_source = result
+
+                # 1. Register the import source.
+                self._editor.doc.import_sources[import_source.uid] = (
+                    import_source
+                )
+
+                # 2. Link the generated workpieces back to the source.
+                all_new_workpieces: List[WorkPiece] = []
                 for item in imported_items:
-                    command = ListItemCommand(
-                        owner_obj=target_layer,
-                        item=item,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                    )
-                    t.execute(command)
-        else:
-            logger.error(f"Failed to import any items from '{filename.name}'.")
+                    if isinstance(item, WorkPiece):
+                        all_new_workpieces.append(item)
+                    else:
+                        all_new_workpieces.extend(
+                            item.get_descendants(WorkPiece)
+                        )
+                for wp in all_new_workpieces:
+                    wp.import_source_uid = import_source.uid
+
+                # 3. Center and add them to the document in a transaction.
+                self._center_imported_items(imported_items)
+                target_layer = self._editor.default_workpiece_layer
+                cmd_name = _("Import {name}").format(name=filename.name)
+
+                with self._editor.history_manager.transaction(cmd_name) as t:
+                    for item in imported_items:
+                        command = ListItemCommand(
+                            owner_obj=target_layer,
+                            item=item,
+                            undo_command="remove_child",
+                            redo_command="add_child",
+                        )
+                        t.execute(command)
+            except Exception as e:
+                logger.error(
+                    f"Import task for {filename.name} failed.", exc_info=e
+                )
+
+        # Add the coroutine to the task manager with our safe callback.
+        self._task_manager.add_coroutine(
+            import_coro,
+            key=f"import-{filename.name}",
+            when_done=commit_to_document,
+        )
 
     def export_gcode_to_path(
         self, file_path: Path, when_done: Optional[Callable] = None
@@ -229,38 +259,3 @@ class FileCmd:
         self._task_manager.add_coroutine(
             export_coro, key="export-gcode", when_done=when_done
         )
-
-    def _on_save_dialog_response(self, dialog, result, win: "MainWindow"):
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
-            return
-
-        self.export_gcode_to_path(file_path)
-
-    def export_gcode(self, win: "MainWindow"):
-        """Shows the save file dialog and handles the G-code export process."""
-        # Create a file chooser dialog for saving the file
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Save G-code File"))
-
-        # Set the default file name
-        dialog.set_initial_name("output.gcode")
-
-        # Create a Gio.ListModel for the filters
-        filter_list = Gio.ListStore.new(Gtk.FileFilter)
-        gcode_filter = Gtk.FileFilter()
-        gcode_filter.set_name(_("G-code files"))
-        gcode_filter.add_mime_type("text/x.gcode")
-        filter_list.append(gcode_filter)
-
-        # Set the filters for the dialog
-        dialog.set_filters(filter_list)
-        dialog.set_default_filter(gcode_filter)
-
-        # Show the dialog and handle the response
-        dialog.save(win, None, self._on_save_dialog_response, win)

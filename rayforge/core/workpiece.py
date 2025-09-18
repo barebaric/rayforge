@@ -15,6 +15,7 @@ import warnings
 from dataclasses import asdict
 from copy import deepcopy
 import math
+import numpy as np
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -52,6 +53,7 @@ class WorkPiece(DocItem):
         self.renderer = renderer
         self._data = data
         self.vectors = vectors
+        self.import_source_uid: Optional[str] = None
 
         # The cache for rendered vips images. Key is (width, height).
         # This is the proper place for this state, not monkey-patched.
@@ -129,6 +131,7 @@ class WorkPiece(DocItem):
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
+        world_wp.import_source_uid = self.import_source_uid
         return world_wp
 
     def get_local_size(self) -> Tuple[float, float]:
@@ -153,6 +156,7 @@ class WorkPiece(DocItem):
             "source_file": str(self.source_file),
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
+            "import_source_uid": self.import_source_uid,
         }
 
     @classmethod
@@ -181,6 +185,7 @@ class WorkPiece(DocItem):
 
         wp.tabs = [Tab(**t_data) for t_data in state.get("tabs", [])]
         wp.tabs_enabled = state.get("tabs_enabled", True)
+        wp.import_source_uid = state.get("import_source_uid")
 
         return wp
 
@@ -310,11 +315,18 @@ class WorkPiece(DocItem):
         if local_normal is None:
             return None
 
-        # 2. Transform the vector by the workpiece's world matrix.
-        world_matrix = self.get_world_transform()
-        transformed_vector = world_matrix.transform_vector(local_normal)
+        # For non-uniform scaling, the normal must be transformed by the
+        # inverse transpose of the world matrix to remain perpendicular.
+        world_matrix_3x3 = self.get_world_transform().to_numpy()
+        try:
+            # Get the top-left 2x2 part for the normal transformation
+            m_2x2 = world_matrix_3x3[:2, :2]
+            m_inv_T = np.linalg.inv(m_2x2).T
+            transformed_vector = m_inv_T @ np.array(local_normal)
+        except np.linalg.LinAlgError:
+            # Fallback for non-invertible matrices (e.g., zero scale)
+            return self.get_world_transform().transform_vector(local_normal)
 
-        # 3. Normalize the final vector to ensure it's a unit vector.
         tx, ty = transformed_vector
         norm = math.sqrt(tx**2 + ty**2)
         if norm < 1e-9:

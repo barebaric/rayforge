@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
+    from ..core.vectorization_config import TraceConfig
 
 
 class Importer(ABC):
@@ -26,10 +27,12 @@ class Importer(ABC):
         self.source_file = source_file or Path("Untitled")
 
     @abstractmethod
-    def get_doc_items(self) -> "Optional[List[DocItem]]":
+    def get_doc_items(
+        self, vector_config: Optional["TraceConfig"] = None
+    ) -> "Optional[List[DocItem]]":
         """
         Parses the raw data and returns a list of top-level DocItems
-        (WorkPieces and/or Groups).
+        (WorkPieces and/or Groups) with pre-generated vector geometry.
 
         The returned items should be fully configured but unparented. Their
         transformation matrices should represent their position and scale

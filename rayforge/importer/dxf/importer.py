@@ -15,6 +15,7 @@ from ...core.group import Group
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
 from ...core.item import DocItem
+from ...core.vectorization_config import TraceConfig
 from ..base_importer import Importer
 from .renderer import DXF_RENDERER
 
@@ -43,7 +44,10 @@ class DxfImporter(Importer):
         super().__init__(data, source_file)
         self._blocks_cache: Dict[str, List[DocItem]] = {}
 
-    def get_doc_items(self) -> Optional[List[DocItem]]:
+    def get_doc_items(
+        self, vector_config: Optional["TraceConfig"] = None
+    ) -> Optional[List[DocItem]]:
+        # DXF is a vector format, so the vector_config is ignored.
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")

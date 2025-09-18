@@ -38,7 +38,7 @@ def large_pdf_data() -> bytes:
 def basic_workpiece(basic_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the basic PDF data, sized by the importer."""
     importer = PdfImporter(basic_pdf_data)
-    doc_items = importer.get_doc_items()
+    doc_items = importer.get_doc_items(vector_config=None)
     assert doc_items
     return cast(WorkPiece, doc_items[0])
 
@@ -47,7 +47,7 @@ def basic_workpiece(basic_pdf_data: bytes) -> WorkPiece:
 def large_workpiece(large_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the large PDF data, sized by the importer."""
     importer = PdfImporter(large_pdf_data)
-    doc_items = importer.get_doc_items()
+    doc_items = importer.get_doc_items(vector_config=None)
     assert doc_items
     return cast(WorkPiece, doc_items[0])
 
@@ -60,7 +60,7 @@ class TestPdfImporter:
         Tests the importer creates a WorkPiece with the correct initial size.
         """
         importer = PdfImporter(basic_pdf_data)
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
 
         assert doc_items
         wp = doc_items[0]
@@ -76,7 +76,7 @@ class TestPdfImporter:
     def test_importer_handles_invalid_data(self):
         """Tests the importer creates a WorkPiece even with invalid data."""
         importer = PdfImporter(b"this is not a pdf")
-        doc_items = importer.get_doc_items()
+        doc_items = importer.get_doc_items(vector_config=None)
         assert doc_items is not None and len(doc_items) == 1
         assert isinstance(doc_items[0], WorkPiece)
 

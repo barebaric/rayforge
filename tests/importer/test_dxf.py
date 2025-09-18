@@ -54,7 +54,7 @@ def get_first_workpiece(importer: DxfImporter) -> Optional[WorkPiece]:
     Retrieves the first WorkPiece from the list of document items produced
     by the importer. Assumes the test DXF produces at least one item.
     """
-    items = importer.get_doc_items()
+    items = importer.get_doc_items(vector_config=None)
     if not items:
         return None
     # For these tests, we expect a single WorkPiece.
@@ -67,7 +67,7 @@ def get_first_workpiece(importer: DxfImporter) -> Optional[WorkPiece]:
 # Test cases
 class TestDXFImporter:
     def test_empty_dxf(self, empty_dxf_importer):
-        items = empty_dxf_importer.get_doc_items()
+        items = empty_dxf_importer.get_doc_items(vector_config=None)
         assert items is not None and len(items) == 0
 
     def test_line_conversion(self, line_dxf_importer):
@@ -128,5 +128,5 @@ class TestDXFImporter:
     def test_invalid_dxf_handling(self):
         invalid_dxf = b"invalid dxf content"
         importer = DxfImporter(invalid_dxf)
-        items = importer.get_doc_items()
+        items = importer.get_doc_items(vector_config=None)
         assert items is not None and len(items) == 0

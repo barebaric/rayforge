@@ -132,6 +132,27 @@ class DocEditor:
         finally:
             self.processing_state_changed.disconnect(on_settled)
 
+    async def import_file_from_path(
+        self, filename: Path, mime_type: Optional[str]
+    ) -> None:
+        """
+        Imports a file from the specified path and waits for the operation
+        to complete.
+        """
+        import_future = asyncio.get_running_loop().create_future()
+
+        def when_done_callback(task):
+            try:
+                task.result()  # Re-raises exceptions from the task
+                import_future.set_result(True)
+            except Exception as e:
+                import_future.set_exception(e)
+
+        self.file.load_file_from_path(
+            filename, mime_type, when_done=when_done_callback
+        )
+        await import_future
+
     async def export_gcode_to_path(self, output_path: "Path") -> None:
         """
         Exports the current document to a G-code file at the specified path

@@ -61,6 +61,13 @@ class DocItemPropertiesWidget(Expander):
         self.source_file_row.add_suffix(self.open_source_button)
         rows_container.append(self.source_file_row)
 
+        # Vector count row
+        self.vector_count_row = Adw.ActionRow(
+            title=_("Vector Commands"),
+            visible=False,
+        )
+        rows_container.append(self.vector_count_row)
+
         # X Position Entry
         self.x_row = Adw.SpinRow(
             title=_("X Position"),
@@ -758,6 +765,19 @@ class DocItemPropertiesWidget(Expander):
 
             if is_single_workpiece:
                 workpiece = cast(WorkPiece, item)
+
+                # Show vector command count (depending on the log level)
+                is_debug_and_has_vectors = (
+                    logging.getLogger().getEffectiveLevel() == logging.DEBUG
+                    and workpiece.vectors is not None
+                )
+                self.vector_count_row.set_visible(is_debug_and_has_vectors)
+                if is_debug_and_has_vectors:
+                    vectors = (
+                        len(workpiece.vectors) if workpiece.vectors else 0
+                    )
+                    self.vector_count_row.set_subtitle(f"{vectors} commands")
+
                 try:
                     file_path = Path(workpiece.source_file)
                     if file_path.is_file():
@@ -788,6 +808,7 @@ class DocItemPropertiesWidget(Expander):
                     self.tabs_row.set_visible(False)
             else:
                 self.tabs_row.set_visible(False)
+                self.vector_count_row.set_visible(False)
 
         finally:
             self._in_update = False
