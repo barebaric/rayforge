@@ -14,6 +14,7 @@ from pathlib import Path
 import warnings
 from dataclasses import asdict
 from copy import deepcopy
+import math
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -282,6 +283,44 @@ class WorkPiece(DocItem):
             max_chunk_height=max_chunk_height,
             max_memory_size=max_memory_size,
         )
+
+    def get_tab_direction(self, tab: Tab) -> Optional[Tuple[float, float]]:
+        """
+        Calculates the "outside" direction vector for a given tab in world
+        coordinates.
+
+        The direction is a normalized 2D vector representing the outward
+        normal of the geometry at the tab's location, transformed by the
+        workpiece's rotation and scaling.
+
+        Args:
+            tab: The Tab object for which to find the direction.
+
+        Returns:
+            A tuple (dx, dy) representing the direction vector, or None if
+            the workpiece has no vector data or the path is open.
+        """
+        if self.vectors is None:
+            return None
+
+        # 1. Get the normal vector in the geometry's local space.
+        local_normal = self.vectors.get_outward_normal_at(
+            tab.segment_index, tab.t
+        )
+        if local_normal is None:
+            return None
+
+        # 2. Transform the vector by the workpiece's world matrix.
+        world_matrix = self.get_world_transform()
+        transformed_vector = world_matrix.transform_vector(local_normal)
+
+        # 3. Normalize the final vector to ensure it's a unit vector.
+        tx, ty = transformed_vector
+        norm = math.sqrt(tx**2 + ty**2)
+        if norm < 1e-9:
+            return (1.0, 0.0)  # Fallback
+
+        return (tx / norm, ty / norm)
 
     def dump(self, indent=0):
         print(

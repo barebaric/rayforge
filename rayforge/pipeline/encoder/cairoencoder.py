@@ -2,7 +2,12 @@ import math
 from typing import Tuple
 import cairo
 import logging
-from ...core.ops import (Ops, MoveToCommand, LineToCommand, ArcToCommand)
+from ...core.ops import (
+    Ops,
+    MoveToCommand,
+    LineToCommand,
+    ArcToCommand,
+)
 from .base import OpsEncoder
 
 
@@ -14,13 +19,16 @@ class CairoEncoder(OpsEncoder):
     Encodes a Ops onto a Cairo surface, respecting embedded state commands
     (color, geometry) and machine dimensions for coordinate adjustments.
     """
-    def encode(self,
-               ops: Ops,
-               ctx: cairo.Context,
-               scale: Tuple[float, float],
-               cut_color: Tuple[float, float, float] = (1, 0, 1),
-               travel_color: Tuple[float, float, float] = (.85, .85, .85),
-               show_travel_moves: bool = False) -> None:
+
+    def encode(
+        self,
+        ops: Ops,
+        ctx: cairo.Context,
+        scale: Tuple[float, float],
+        cut_color: Tuple[float, float, float] = (1, 0, 1),
+        travel_color: Tuple[float, float, float] = (0.85, 0.85, 0.85),
+        show_travel_moves: bool = False,
+    ) -> None:
         # Calculate scaling factors from surface and machine dimensions
         # The Ops are in machine coordinates, i.e. zero point
         # at the bottom left, and units are mm.
@@ -30,7 +38,7 @@ class CairoEncoder(OpsEncoder):
         if scale_y == 0:
             return
         ctx.save()
-        ymax = ctx.get_target().get_height()/scale_y  # For Y-axis inversion
+        ymax = ctx.get_target().get_height() / scale_y  # For Y-axis inversion
 
         # Apply coordinate scaling and line width
         ctx.scale(scale_x, scale_y)
@@ -40,7 +48,13 @@ class CairoEncoder(OpsEncoder):
         prev_point_2d = 0, ymax
         for segment in ops.segments():
             for cmd in segment:
-                if cmd.end is None or cmd.is_marker_command():
+                # Skip any command that is just a marker.
+                if cmd.is_marker_command():
+                    continue
+
+                # Now it's safe to assume the command might have an .end
+                # attribute.
+                if cmd.end is None:
                     continue
 
                 x, y, z = cmd.end
@@ -83,12 +97,15 @@ class CairoEncoder(OpsEncoder):
                         center_x = start_x + i
                         center_y = start_y - j
 
-                        radius = math.dist((start_x, start_y),
-                                           (center_x, center_y))
-                        angle1 = math.atan2(start_y - center_y,
-                                            start_x - center_x)
-                        angle2 = math.atan2(adjusted_y - center_y,
-                                            x - center_x)
+                        radius = math.dist(
+                            (start_x, start_y), (center_x, center_y)
+                        )
+                        angle1 = math.atan2(
+                            start_y - center_y, start_x - center_x
+                        )
+                        angle2 = math.atan2(
+                            adjusted_y - center_y, x - center_x
+                        )
 
                         # To draw a CCW arc (clockwise=False) on a flipped
                         # canvas, we must use Cairo's CW function
@@ -101,11 +118,7 @@ class CairoEncoder(OpsEncoder):
                             # A CCW arc (like from DXF) becomes CW when Y-axis
                             # is flipped.
                             ctx.arc_negative(
-                                center_x,
-                                center_y,
-                                radius,
-                                angle1,
-                                angle2
+                                center_x, center_y, radius, angle1, angle2
                             )
 
                         ctx.stroke()

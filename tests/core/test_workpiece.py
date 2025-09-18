@@ -7,6 +7,7 @@ from dataclasses import asdict
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
+from rayforge.core.geometry import Geometry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.importer.svg.renderer import SvgRenderer
 from blinker import Signal
@@ -322,3 +323,47 @@ class TestWorkPiece:
         # Also check a positive angle to ensure no regressions.
         wp.angle = 10.0
         assert wp.angle == pytest.approx(10.0)
+
+    def test_get_tab_direction(self, workpiece_instance):
+        wp = workpiece_instance
+        # Create a simple CCW square geometry
+        geo = Geometry()
+        geo.move_to(0, 0)  # cmd 0
+        geo.line_to(10, 0)  # cmd 1: bottom edge
+        geo.line_to(10, 10)  # cmd 2: right edge
+        geo.close_path()  # cmd 3
+        wp.vectors = geo
+
+        # Case 1: No vectors
+        wp.vectors = None
+        tab = Tab(width=1, segment_index=1, t=0.5)
+        assert wp.get_tab_direction(tab) is None
+        wp.vectors = geo
+
+        # Case 2: No transform
+        wp.matrix = Matrix.identity()
+        tab = Tab(width=1, segment_index=1, t=0.5)  # Midpoint of bottom edge
+        direction = wp.get_tab_direction(tab)
+        assert direction is not None
+        assert direction == pytest.approx((0, -1))
+
+        # Case 3: 90 degree rotation
+        wp.angle = 90
+        direction = wp.get_tab_direction(tab)
+        assert direction is not None
+        # A (0, -1) vector rotated +90 deg becomes (1, 0)
+        assert direction == pytest.approx((1, 0))
+
+        # Case 4: Scale and rotation
+        wp.set_size(20, 10)  # non-uniform scale
+        wp.angle = -90
+        direction = wp.get_tab_direction(tab)
+        assert direction is not None
+        # A (0, -1) vector rotated -90 deg becomes (-1, 0)
+        assert direction == pytest.approx((-1, 0))
+
+        # Case 5: Open path
+        wp.vectors = Geometry()
+        wp.vectors.move_to(0, 0)
+        wp.vectors.line_to(10, 0)
+        assert wp.get_tab_direction(tab) is None

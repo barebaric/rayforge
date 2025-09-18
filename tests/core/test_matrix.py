@@ -34,6 +34,15 @@ class TestMatrix:
         assert m1 != m3
         assert m1 != "not a matrix"
 
+    def test_to_numpy(self):
+        m = Matrix.translation(10, 20)
+        np_arr = m.to_numpy()
+        assert isinstance(np_arr, np.ndarray)
+        assert np.array_equal(np_arr, m.m)
+        # Ensure it's a copy
+        np_arr[0, 2] = 99
+        assert m.m[0, 2] == 10
+
     def test_copying(self):
         m1 = Matrix.rotation(45)
 
@@ -565,8 +574,11 @@ class TestMatrix:
 
         # Verify the transformation on a point
         p_start = (10, 20)
-        p_translated = (-40 + 100, 20)  # (60, 20)
-        assert m_chain.transform_point(p_start) == pytest.approx(p_translated)
+        # 1. Scale -> (20, 40)
+        # 2. Rotate -> (-40, 20)
+        # 3. Translate -> (60, 20)
+        p_final = (60, 20)
+        assert m_chain.transform_point(p_start) == pytest.approx(p_final)
 
     def test_shear(self):
         """Tests the new shear() method."""
@@ -620,8 +632,8 @@ class TestMatrix:
         p_final = Matrix.shear(0.5, 0).transform_point(p_rotated)  # (-15, 10)
         assert m_fluent.transform_point(p) == pytest.approx(p_final)
 
-    def test_get_cairo(self):
-        """Tests the get_cairo() method."""
+    def test_for_cairo(self):
+        """Tests the for_cairo() method."""
         # Cairo matrix format is: (xx, yx, xy, yy, x0, y0)
         # Our matrix is: [[xx, xy, x0], [yx, yy, y0], [0, 0, 1]]
         m = Matrix([[1, 2, 3], [4, 5, 6], [0, 0, 1]])
@@ -675,7 +687,7 @@ class TestMatrix:
         R = Matrix.rotation(45)
         S = Matrix.scale(-2, 3)  # Include reflection
 
-        # Composition order: Shear -> Scale -> Rotate -> Translate
+        # Composition order: Translate -> Rotate -> Scale -> Shear
         M_original = T @ R @ S @ K
 
         # 2. Decompose it

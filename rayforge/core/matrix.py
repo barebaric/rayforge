@@ -99,6 +99,10 @@ class Matrix:
         # copy is sufficient.
         return Matrix(self)
 
+    def to_numpy(self) -> np.ndarray:
+        """Returns a copy of the underlying 3x3 NumPy array."""
+        return self.m.copy()
+
     def to_list(self) -> List[List[float]]:
         """
         Converts the matrix to a nested list, suitable for serialization.
