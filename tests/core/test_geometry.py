@@ -542,3 +542,102 @@ def test_get_outward_normal_at(ccw_square_geometry, cw_square_geometry):
     normal = cw_square_geometry.get_outward_normal_at(4, 0.5)
     assert normal is not None
     assert normal == pytest.approx((0, -1))
+
+
+def test_split_into_components_empty_geometry():
+    geo = Geometry()
+    components = geo.split_into_components()
+    assert len(components) == 0
+
+
+def test_split_into_components_single_contour():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+    geo.line_to(10, 10)
+    components = geo.split_into_components()
+    assert len(components) == 1
+    assert len(components[0].commands) == 3
+
+
+def test_split_into_components_two_separate_shapes():
+    geo = Geometry()
+    # Shape 1
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+    geo.line_to(10, 10)
+    geo.line_to(0, 10)
+    geo.close_path()
+    # Shape 2
+    geo.move_to(20, 20)
+    geo.line_to(30, 20)
+    geo.line_to(30, 30)
+    geo.line_to(20, 30)
+    geo.close_path()
+
+    components = geo.split_into_components()
+    assert len(components) == 2
+    assert len(components[0].commands) == 5
+    assert len(components[1].commands) == 5
+
+
+def test_split_into_components_containment_letter_o():
+    geo = Geometry()
+    # Outer circle (r=10, center=0,0)
+    geo.move_to(10, 0)
+    geo.arc_to(-10, 0, i=-10, j=0, clockwise=False)
+    geo.arc_to(10, 0, i=10, j=0, clockwise=False)
+    # Inner circle (r=5, center=0,0)
+    geo.move_to(5, 0)
+    geo.arc_to(-5, 0, i=-5, j=0, clockwise=False)
+    geo.arc_to(5, 0, i=5, j=0, clockwise=False)
+
+    components = geo.split_into_components()
+    assert len(components) == 1
+    assert len(components[0].commands) == 6  # 2 moves, 4 arcs
+
+
+def test_split_into_components_complex_containment_bullseye():
+    geo = Geometry()
+    # Ring 1 (r=30)
+    geo.move_to(30, 0)
+    geo.arc_to(-30, 0, i=-30, j=0, clockwise=False)
+    geo.arc_to(30, 0, i=30, j=0, clockwise=False)
+    # Ring 2 (r=20)
+    geo.move_to(20, 0)
+    geo.arc_to(-20, 0, i=-20, j=0, clockwise=False)
+    geo.arc_to(20, 0, i=20, j=0, clockwise=False)
+    # Ring 3 (r=10)
+    geo.move_to(10, 0)
+    geo.arc_to(-10, 0, i=-10, j=0, clockwise=False)
+    geo.arc_to(10, 0, i=10, j=0, clockwise=False)
+
+    components = geo.split_into_components()
+    assert len(components) == 1
+    assert len(components[0].commands) == 9
+
+
+def test_split_into_components_adjacent_shapes():
+    geo = Geometry()
+    # Shape 1
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+    geo.line_to(10, 10)
+    geo.close_path()
+    # Shape 2 (shares a vertex, but not contained)
+    geo.move_to(10, 0)
+    geo.line_to(20, 0)
+    geo.line_to(20, 10)
+    geo.close_path()
+
+    components = geo.split_into_components()
+    assert len(components) == 2
+
+
+def test_split_into_components_only_moves():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.move_to(10, 10)
+    geo.move_to(20, 20)
+    components = geo.split_into_components()
+    assert len(components) == 0

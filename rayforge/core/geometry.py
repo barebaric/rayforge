@@ -9,6 +9,7 @@ from typing import (
     TypeVar,
     Dict,
     Any,
+    Set,
 )
 from copy import deepcopy
 import numpy as np
@@ -699,6 +700,153 @@ class Geometry:
             return (ty, -tx)
         else:  # winding == "cw"
             return (-ty, tx)
+
+    def _get_contours(self) -> List[List[Command]]:
+        """Splits the command list into a list of contours."""
+        if not self.commands:
+            return []
+        contours = []
+        current_contour: List[Command] = []
+        for cmd in self.commands:
+            if isinstance(cmd, MoveToCommand):
+                if current_contour:
+                    contours.append(current_contour)
+                current_contour = [cmd]
+            else:
+                if not current_contour:
+                    # Geometry starts with a drawing command, treat (0,0) as
+                    # start
+                    current_contour.append(MoveToCommand((0, 0, 0)))
+                current_contour.append(cmd)
+        if current_contour:
+            contours.append(current_contour)
+        return contours
+
+    @staticmethod
+    def _is_point_in_polygon(
+        point: Tuple[float, float], polygon: List[Tuple[float, float]]
+    ) -> bool:
+        """
+        Checks if a point is inside a polygon using the ray casting algorithm.
+        """
+        x, y = point
+        n = len(polygon)
+        inside = False
+        p1x, p1y = polygon[0]
+        for i in range(n + 1):
+            p2x, p2y = polygon[i % n]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y - p1y) * (p2x - p1x) / (
+                                p2y - p1y
+                            ) + p1x
+                            if p1x == p2x or x <= xinters:
+                                inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+
+    def _get_valid_contours_data(
+        self, contours: List[List[Command]]
+    ) -> List[Dict]:
+        """Filters degenerate contours and pre-calculates their data."""
+        contour_data = []
+        for contour_cmds in contours:
+            # A valid contour must have a move and at least one other command
+            if len(contour_cmds) < 2:
+                continue
+            temp_geo = Geometry()
+            temp_geo.commands = contour_cmds
+            vertices = temp_geo._get_subpath_vertices(0)
+            if not vertices:
+                continue
+            min_x, min_y, max_x, max_y = temp_geo.rect()
+            bbox_center = ((min_x + max_x) / 2, (min_y + max_y) / 2)
+            contour_data.append(
+                {
+                    "cmds": contour_cmds,
+                    "vertices": vertices,
+                    "bbox_center": bbox_center,
+                }
+            )
+        return contour_data
+
+    def _build_adjacency_graph(
+        self, contour_data: List[Dict]
+    ) -> List[List[int]]:
+        """Builds a graph based on contour containment."""
+        num_contours = len(contour_data)
+        adj: List[List[int]] = [[] for _ in range(num_contours)]
+        for i in range(num_contours):
+            for j in range(i + 1, num_contours):
+                data_i, data_j = contour_data[i], contour_data[j]
+                # Check for containment using the center of the bounding box
+                center_i_in_j = self._is_point_in_polygon(
+                    data_i["bbox_center"], data_j["vertices"]
+                )
+                center_j_in_i = self._is_point_in_polygon(
+                    data_j["bbox_center"], data_i["vertices"]
+                )
+                if center_i_in_j or center_j_in_i:
+                    adj[i].append(j)
+                    adj[j].append(i)
+        return adj
+
+    def _find_connected_components_bfs(
+        self, num_contours: int, adj: List[List[int]]
+    ) -> List[List[int]]:
+        """Finds connected components in the graph using BFS."""
+        visited: Set[int] = set()
+        components: List[List[int]] = []
+        for i in range(num_contours):
+            if i not in visited:
+                component = []
+                q = [i]
+                visited.add(i)
+                while q:
+                    u = q.pop(0)
+                    component.append(u)
+                    for v in adj[u]:
+                        if v not in visited:
+                            visited.add(v)
+                            q.append(v)
+                components.append(component)
+        return components
+
+    def split_into_components(self) -> List["Geometry"]:
+        """
+        Analyzes the geometry and splits it into a list of separate,
+        logically connected shapes (components). For example, a letter 'O'
+        with an outer and inner path will be treated as a single component.
+        """
+        if self.is_empty():
+            return []
+
+        contours = self._get_contours()
+        contour_data = self._get_valid_contours_data(contours)
+
+        if not contour_data:
+            return []
+        if len(contour_data) == 1:
+            new_geo = Geometry()
+            new_geo.commands = contour_data[0]["cmds"]
+            return [new_geo]
+
+        adj = self._build_adjacency_graph(contour_data)
+        components = self._find_connected_components_bfs(
+            len(contour_data), adj
+        )
+
+        # Create a new Geometry object for each component
+        result_geometries = []
+        for component_indices in components:
+            component_geo = Geometry()
+            for idx in component_indices:
+                component_geo.commands.extend(contour_data[idx]["cmds"])
+            result_geometries.append(component_geo)
+
+        return result_geometries
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Geometry object to a dictionary."""
