@@ -13,6 +13,9 @@ class Config:
     def __init__(self):
         self.machine: Optional[Machine] = None
         self.theme: str = "system"
+        # Default user preferences for units. Key is quantity, value is
+        # unit name.
+        self.unit_preferences: Dict[str, str] = {"speed": "mm/min"}
         self.changed = Signal()
 
     def set_machine(self, machine: Machine):
@@ -31,16 +34,31 @@ class Config:
         self.theme = theme
         self.changed.send(self)
 
+    def set_unit_preference(self, quantity: str, unit_name: str):
+        """Sets the user's preferred display unit for a quantity."""
+        if self.unit_preferences.get(quantity) == unit_name:
+            return
+        self.unit_preferences[quantity] = unit_name
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
             "theme": self.theme,
+            "unit_preferences": self.unit_preferences,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any], get_machine_by_id) -> "Config":
         config = cls()
         config.theme = data.get("theme", "system")
+
+        # Load unit preferences, falling back to defaults for safety
+        default_prefs = {"speed": "mm/min"}
+        loaded_prefs = data.get("unit_preferences", default_prefs)
+        # Ensure all default keys are present
+        default_prefs.update(loaded_prefs)
+        config.unit_preferences = default_prefs
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

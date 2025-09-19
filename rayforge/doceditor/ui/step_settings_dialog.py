@@ -11,6 +11,7 @@ from ...pipeline.transformer import (
 from ...shared.util.adwfix import get_spinrow_int, get_spinrow_float
 from ...core.doc import Doc
 from ...core.step import Step
+from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 
 
 class StepSettingsDialog(Adw.Window):
@@ -163,36 +164,42 @@ class StepSettingsDialog(Adw.Window):
         cut_speed_adjustment = Gtk.Adjustment(
             lower=0,
             upper=max_cut_speed,
-            step_increment=1,
+            step_increment=10,
             page_increment=100,
         )
         cut_speed_row = Adw.SpinRow(
-            title=_("Cut Speed (mm/min)"),
-            subtitle=_("Max: {max_cut_speed} mm/min").format(
-                max_cut_speed=max_cut_speed
-            ),
+            title=_("Cut Speed"),
+            subtitle=_("Max: {max_speed}"),
             adjustment=cut_speed_adjustment,
         )
-        cut_speed_adjustment.set_value(step.cut_speed)
-        cut_speed_row.connect("changed", self.on_cut_speed_changed)
+        self.cut_speed_helper = UnitSpinRowHelper(
+            spin_row=cut_speed_row,
+            quantity="speed",
+            max_value_in_base=max_cut_speed,
+        )
+        self.cut_speed_helper.set_value_in_base_units(step.cut_speed)
+        self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
         general_group.add(cut_speed_row)
 
         # Add a spin row for travel speed
         travel_speed_adjustment = Gtk.Adjustment(
             lower=0,
             upper=max_travel_speed,
-            step_increment=1,
+            step_increment=10,
             page_increment=100,
         )
         travel_speed_row = Adw.SpinRow(
-            title=_("Travel Speed (mm/min)"),
-            subtitle=_("Max: {max_travel_speed} mm/min").format(
-                max_travel_speed=max_travel_speed
-            ),
+            title=_("Travel Speed"),
+            subtitle=_("Max: {max_speed}"),
             adjustment=travel_speed_adjustment,
         )
-        travel_speed_adjustment.set_value(step.travel_speed)
-        travel_speed_row.connect("changed", self.on_travel_speed_changed)
+        self.travel_speed_helper = UnitSpinRowHelper(
+            spin_row=travel_speed_row,
+            quantity="speed",
+            max_value_in_base=max_travel_speed,
+        )
+        self.travel_speed_helper.set_value_in_base_units(step.travel_speed)
+        self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
@@ -396,8 +403,8 @@ class StepSettingsDialog(Adw.Window):
         self.history_manager.execute(command)
         self.changed.send(self)
 
-    def on_cut_speed_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
+    def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
+        new_value = helper.get_value_in_base_units()
         if new_value == self.step.cut_speed:
             return
         command = ChangePropertyCommand(
@@ -410,8 +417,8 @@ class StepSettingsDialog(Adw.Window):
         self.history_manager.execute(command)
         self.changed.send(self)
 
-    def on_travel_speed_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
+    def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
+        new_value = helper.get_value_in_base_units()
         if new_value == self.step.travel_speed:
             return
         command = ChangePropertyCommand(

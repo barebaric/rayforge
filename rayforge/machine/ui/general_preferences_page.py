@@ -3,6 +3,7 @@ from ..driver import drivers
 from ...shared.util.adwfix import get_spinrow_int
 from ..models.machine import Machine
 from ...shared.varset.varsetwidget import VarSetWidget
+from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -128,34 +129,46 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Max Travel Speed
         travel_speed_adjustment = Gtk.Adjustment(
             lower=0,
-            upper=10000,
-            step_increment=1,
-            page_increment=10,
+            upper=60000,  # Increased upper limit for mm/min
+            step_increment=10,
+            page_increment=100,
         )
-        self.travel_speed_row = Adw.SpinRow(
+        travel_speed_row = Adw.SpinRow(
             title=_("Max Travel Speed"),
-            subtitle=_("Maximum travel speed in mm/min"),
+            subtitle=_("Maximum rapid movement speed"),
             adjustment=travel_speed_adjustment,
         )
-        travel_speed_adjustment.set_value(self.machine.max_travel_speed)
-        self.travel_speed_row.connect("changed", self.on_travel_speed_changed)
-        machine_group.add(self.travel_speed_row)
+        self.travel_speed_helper = UnitSpinRowHelper(
+            spin_row=travel_speed_row,
+            quantity="speed",
+        )
+        self.travel_speed_helper.set_value_in_base_units(
+            self.machine.max_travel_speed
+        )
+        self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
+        machine_group.add(travel_speed_row)
 
         # Max Cut Speed
         cut_speed_adjustment = Gtk.Adjustment(
             lower=0,
-            upper=10000,
-            step_increment=1,
-            page_increment=10,
+            upper=60000,  # Increased upper limit for mm/min
+            step_increment=10,
+            page_increment=100,
         )
-        self.cut_speed_row = Adw.SpinRow(
+        cut_speed_row = Adw.SpinRow(
             title=_("Max Cut Speed"),
-            subtitle=_("Maximum cutting speed in mm/min"),
+            subtitle=_("Maximum cutting speed"),
             adjustment=cut_speed_adjustment,
         )
-        cut_speed_adjustment.set_value(self.machine.max_cut_speed)
-        self.cut_speed_row.connect("changed", self.on_cut_speed_changed)
-        machine_group.add(self.cut_speed_row)
+        self.cut_speed_helper = UnitSpinRowHelper(
+            spin_row=cut_speed_row,
+            quantity="speed",
+        )
+        self.cut_speed_helper.set_value_in_base_units(
+            self.machine.max_cut_speed
+        )
+        self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
+        machine_group.add(cut_speed_row)
 
         # Dimensions
         dimensions_group = Adw.PreferencesGroup(title=_("Dimensions"))
@@ -285,14 +298,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     def on_y_axis_toggled(self, row, _):
         self.machine.set_y_axis_down(row.get_active())
 
-    def on_travel_speed_changed(self, spinrow):
+    def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max travel speed when the value changes."""
-        value = get_spinrow_int(spinrow)
+        if self._is_initializing:
+            return
+        value = helper.get_value_in_base_units()
         self.machine.set_max_travel_speed(value)
 
-    def on_cut_speed_changed(self, spinrow):
+    def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max cut speed when the value changes."""
-        value = get_spinrow_int(spinrow)
+        if self._is_initializing:
+            return
+        value = helper.get_value_in_base_units()
         self.machine.set_max_cut_speed(value)
 
     def on_width_changed(self, spinrow):
