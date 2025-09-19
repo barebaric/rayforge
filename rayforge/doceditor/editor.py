@@ -73,7 +73,7 @@ class DocEditor:
         # Instantiate and link command handlers, passing dependencies.
         self.edit = EditCmd(self)
         self.file = FileCmd(self, self._task_manager, self._config_manager)
-        self.group = GroupCmd(self)
+        self.group = GroupCmd(self, self._task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self._task_manager)
         self.transform = TransformCmd(self)
