@@ -33,8 +33,10 @@ def process_target_wrapper(
     A wrapper that runs in the subprocess, calling the user's function
     and communicating status/results back to the parent via a queue.
     """
-    print("process_target_wrapper() called")
     import logging
+    if log_level == logging.DEBUG:
+        print("rayforge.tasker.process_target_wrapper - DEBUG - Called")
+
     # Set up a null translator for gettext. This ensures that `_()` calls,
     # used for internationalization, do not fail in the subprocess even if
     # a full i18n environment is not present.
