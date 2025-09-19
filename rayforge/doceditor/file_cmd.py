@@ -1,8 +1,9 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, List, Tuple, Callable, cast
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
 from ..core.item import DocItem
+from ..core.matrix import Matrix
 from ..importer import importer_by_mime_type, importer_by_extension
 from ..undo import ListItemCommand
 from ..shared.tasker.context import ExecutionContext
@@ -61,14 +62,19 @@ class FileCmd:
 
         return min_x, min_y, max_x - min_x, max_y - min_y
 
-    def _center_imported_items(self, items: List[DocItem]):
+    def _fit_and_center_imported_items(self, items: List[DocItem]):
         """
-        Calculates the collective bounding box of the imported items and
-        translates them to the center of the machine workspace.
+        Scales imported items to fit within machine boundaries if they are too
+        large, preserving aspect ratio. Then, it centers the items in the
+        workspace.
         """
         machine = self._config_manager.config.machine
         if not machine:
-            return  # Cannot center if machine dimensions are unknown
+            # Cannot scale or center if machine dimensions are unknown
+            logger.warning(
+                "Cannot fit/center imported items: machine dimensions unknown."
+            )
+            return
 
         bbox = self._calculate_items_bbox(items)
         if not bbox:
@@ -77,15 +83,58 @@ class FileCmd:
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
         machine_w, machine_h = machine.dimensions
 
-        # Calculate the translation needed to move the bbox center to the
-        # machine center
+        # Add a margin so items don't touch the edge.
+        # Use 90% of the work area for fitting.
+        margin_factor = 0.90
+        effective_machine_w = machine_w * margin_factor
+        effective_machine_h = machine_h * margin_factor
+
+        # 1. Scale to fit if necessary, preserving aspect ratio
+        scale_factor = 1.0
+        if bbox_w > effective_machine_w or bbox_h > effective_machine_h:
+            scale_w = effective_machine_w / bbox_w if bbox_w > 1e-9 else 1.0
+            scale_h = effective_machine_h / bbox_h if bbox_h > 1e-9 else 1.0
+            scale_factor = min(scale_w, scale_h)
+
+        if scale_factor < 1.0:
+            msg = _(
+                "Imported item was larger than the work area and has been "
+                "scaled down to fit."
+            )
+            logger.info(msg)
+            self._editor.notification_requested.send(self, message=msg)
+
+            # The pivot for scaling should be the center of the bounding box
+            bbox_center_x = bbox_x + bbox_w / 2
+            bbox_center_y = bbox_y + bbox_h / 2
+
+            # The transformation is: T(pivot) @ S(scale) @ T(-pivot)
+            t_to_origin = Matrix.translation(-bbox_center_x, -bbox_center_y)
+            s = Matrix.scale(scale_factor, scale_factor)
+            t_back = Matrix.translation(bbox_center_x, bbox_center_y)
+            transform_matrix = t_back @ s @ t_to_origin
+
+            for item in items:
+                # Pre-multiply to apply the transform in world space
+                item.matrix = transform_matrix @ item.matrix
+
+            # After scaling, recalculate the bounding box for centering
+            bbox = self._calculate_items_bbox(items)
+            if not bbox:
+                return  # Should not happen, but for safety
+            bbox_x, bbox_y, bbox_w, bbox_h = bbox
+
+        # 2. Center the (possibly scaled) items
+        # Calculate translation to move bbox center to the machine center
         delta_x = (machine_w / 2) - (bbox_x + bbox_w / 2)
         delta_y = (machine_h / 2) - (bbox_y + bbox_h / 2)
 
         # Apply the same translation to all top-level imported items
-        for item in items:
-            current_pos_x, current_pos_y = item.pos
-            item.pos = (current_pos_x + delta_x, current_pos_y + delta_y)
+        if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:
+            translation_matrix = Matrix.translation(delta_x, delta_y)
+            for item in items:
+                # Pre-multiply to apply translation in world space
+                item.matrix = translation_matrix @ item.matrix
 
     def load_file_from_path(
         self,
@@ -181,7 +230,7 @@ class FileCmd:
                     wp.import_source_uid = import_source.uid
 
                 # 3. Center and add them to the document in a transaction.
-                self._center_imported_items(imported_items)
+                self._fit_and_center_imported_items(imported_items)
                 target_layer = cast(
                     Layer, self._editor.default_workpiece_layer
                 )
