@@ -453,3 +453,95 @@ def test_shear_property():
     item.shear = 15.0
     assert item.matrix == old_matrix
     assert catcher.call_count == 0
+
+
+def test_add_children_basic():
+    """Tests adding multiple children at once."""
+    parent = GroupItem()
+    c1, c2, c3 = GroupItem(), GroupItem(), GroupItem()
+
+    parent.add_children([c1, c2])
+    assert parent.children == [c1, c2]
+    assert c1.parent is parent
+    assert c2.parent is parent
+
+    parent.add_children([c3], index=1)
+    assert parent.children == [c1, c3, c2]
+    assert c3.parent is parent
+
+    # Test adding an empty list
+    children_before = list(parent.children)
+    parent.add_children([])
+    assert parent.children == children_before
+
+
+def test_remove_children():
+    """Tests removing multiple children at once."""
+    parent = GroupItem()
+    c1, c2, c3, c4 = GroupItem(), GroupItem(), GroupItem(), GroupItem()
+    parent.set_children([c1, c2, c3, c4])
+
+    parent.remove_children([c2, c4])
+    assert parent.children == [c1, c3]
+    assert c2.parent is None
+    assert c4.parent is None
+    assert c1.parent is parent
+    assert c3.parent is parent
+
+    # Test removing non-existent or already removed children
+    children_before = list(parent.children)
+    parent.remove_children([c2, GroupItem()])
+    assert parent.children == children_before
+
+
+def test_add_children_reparenting():
+    """Tests that add_children correctly re-parents items."""
+    p1 = GroupItem("p1")
+    p2 = GroupItem("p2")
+    c1, c2, c3 = GroupItem("c1"), GroupItem("c2"), GroupItem("c3")
+
+    p1.add_children([c1, c2])
+    assert c1.parent is p1
+    assert c2.parent is p1
+    assert len(p1.children) == 2
+
+    p2.add_children([c2, c3])
+    assert len(p1.children) == 1
+    assert p1.children == [c1]
+    assert len(p2.children) == 2
+    assert p2.children == [c2, c3]
+    assert c2.parent is p2
+    assert c3.parent is p2
+
+
+def test_bulk_operations_fire_single_signal():
+    """
+    Verifies that add_children and remove_children only fire a single
+    'updated' signal, not one per child.
+    """
+    parent = GroupItem()
+    c1, c2, c3 = GroupItem(), GroupItem(), GroupItem()
+
+    catcher = SignalCatcher()
+    parent.updated.connect(catcher)
+
+    # Test add_children
+    parent.add_children([c1, c2, c3])
+    assert catcher.call_count == 1
+    assert parent.children == [c1, c2, c3]
+
+    # Test remove_children
+    catcher.reset()
+    parent.remove_children([c1, c3])
+    assert catcher.call_count == 1
+    assert parent.children == [c2]
+
+    # Test adding empty list fires no signal
+    catcher.reset()
+    parent.add_children([])
+    assert catcher.call_count == 0
+
+    # Test removing empty list fires no signal
+    catcher.reset()
+    parent.remove_children([])
+    assert catcher.call_count == 0

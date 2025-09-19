@@ -93,6 +93,7 @@ class _UngroupCommand(Command):
                         "group_uid": group.uid,
                         "group_matrix": group.matrix.copy(),
                         "parent": group.parent,
+                        "group_index": group.parent.children.index(group),
                         "children": list(group.children),
                         "child_matrices": {
                             c.uid: c.matrix.copy() for c in group.children
@@ -128,19 +129,27 @@ class _UngroupCommand(Command):
                 if not parent:
                     continue
 
-                new_child_matrices = self._calculate_ungroup_transforms(group)
+                try:
+                    group_index = parent.children.index(group)
+                except ValueError:
+                    continue  # Should not happen
+
                 children_to_move = list(group.children)
+                new_child_matrices = self._calculate_ungroup_transforms(group)
+
+                # Set new matrices before reparenting
+                for child in children_to_move:
+                    child.matrix = new_child_matrices[child.uid]
 
                 parent.remove_child(group)
-                for child in children_to_move:
-                    parent.add_child(child)
-                    child.matrix = new_child_matrices[child.uid]
+                parent.add_children(children_to_move, index=group_index)
 
     def undo(self) -> None:
         """Reverts the ungrouping by re-creating the original groups."""
         with self.ops_generator.paused():
             for data in reversed(self._undo_data):
                 parent = data["parent"]
+                group_index = data["group_index"]
                 children = data["children"]
                 group = next(
                     (
@@ -153,15 +162,17 @@ class _UngroupCommand(Command):
                 if not group:
                     continue
 
-                # Add group back to its parent and restore its matrix
-                parent.add_child(group)
+                # Restore matrices first
                 group.matrix = data["group_matrix"]
-
-                # Move children back into the re-created group
                 for child in children:
-                    parent.remove_child(child)
-                    group.add_child(child)
                     child.matrix = data["child_matrices"][child.uid]
+
+                # Move children from parent back into the group
+                parent.remove_children(children)
+                group.set_children(children)  # Fast, as group starts empty
+
+                # Add group back to its parent and restore its matrix
+                parent.add_child(group, index=group_index)
 
 
 class GroupCmd:

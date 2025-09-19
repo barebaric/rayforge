@@ -367,6 +367,73 @@ class DocItem(ABC):
         self.descendant_removed.send(self, origin=child)
         self._disconnect_child_signals(child)
 
+    def add_children(
+        self, children_to_add: Iterable[DocItem], index: Optional[int] = None
+    ):
+        """
+        Adds multiple children in a bulk operation to improve performance,
+        sending a single `updated` signal after completion. It quietly
+        re-parents the children if they already belong to another parent.
+
+        Args:
+            children_to_add: An iterable of DocItems to add.
+            index: The index at which to insert the children. If None, they
+                   are appended.
+        """
+        children_list = list(children_to_add)
+        if not children_list:
+            return
+
+        # Quietly detach from any existing parents first.
+        for child in children_list:
+            if child.parent:
+                try:
+                    # Manually remove from old parent's list without signals
+                    child.parent.children.remove(child)
+                    child.parent._disconnect_child_signals(child)
+                except (ValueError, AttributeError):
+                    pass  # Failsafe if tree is in an inconsistent state
+            child.parent = None
+
+        # Add to self's children list
+        if index is None:
+            self.children.extend(children_list)
+        else:
+            self.children[index:index] = children_list
+
+        # Update parent pointers and connect signals
+        for child in children_list:
+            child.parent = self
+            self._connect_child_signals(child)
+
+        self.updated.send(self)
+
+    def remove_children(self, children_to_remove: Iterable[DocItem]):
+        """
+        Removes multiple children in a bulk operation to improve performance,
+        sending a single `updated` signal after all are removed.
+        """
+        # Use UIDs for safe comparison in the set
+        to_remove_uids = {c.uid for c in children_to_remove}
+        if not to_remove_uids:
+            return
+
+        removed_items = [c for c in self.children if c.uid in to_remove_uids]
+        if not removed_items:
+            return
+
+        # Rebuild the list, excluding the removed items
+        self.children = [
+            c for c in self.children if c.uid not in to_remove_uids
+        ]
+
+        # Update parent pointers and disconnect signals for removed items
+        for child in removed_items:
+            child.parent = None
+            self._disconnect_child_signals(child)
+
+        self.updated.send(self)
+
     def set_children(self, new_children: Iterable[DocItem]):
         """
         Correctly updates the list of children by mutating state first,
