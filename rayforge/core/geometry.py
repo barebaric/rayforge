@@ -531,6 +531,8 @@ class Geometry:
         given MoveToCommand index, linearizing any arcs.
         """
         vertices: List[Tuple[float, float]] = []
+        if start_cmd_index >= len(self.commands):
+            return []
         last_pos_3d = self.commands[start_cmd_index].end or (0.0, 0.0, 0.0)
         vertices.append(last_pos_3d[:2])
 
@@ -731,6 +733,8 @@ class Geometry:
         """
         x, y = point
         n = len(polygon)
+        if n < 3:
+            return False
         inside = False
         p1x, p1y = polygon[0]
         for i in range(n + 1):
@@ -750,51 +754,60 @@ class Geometry:
     def _get_valid_contours_data(
         self, contours: List[List[Command]]
     ) -> List[Dict]:
-        """Filters degenerate contours and pre-calculates their data."""
+        """
+        Filters degenerate contours and pre-calculates their data, including
+        whether they are closed.
+        """
         contour_data = []
-        for contour_cmds in contours:
-            # A valid contour must have a move and at least one other command
-            if len(contour_cmds) < 2:
+        for i, contour_cmds in enumerate(contours):
+            if len(contour_cmds) < 2 or not isinstance(
+                contour_cmds[0], MoveToCommand
+            ):
                 continue
+
+            start_cmd = contour_cmds[0]
+            end_cmd = contour_cmds[-1]
+            if not isinstance(start_cmd, MoveToCommand) or not isinstance(
+                end_cmd, MovingCommand
+            ):
+                continue
+
+            start_point = start_cmd.end
+            end_point = end_cmd.end
+            if start_point is None or end_point is None:
+                continue
+
             temp_geo = Geometry()
             temp_geo.commands = contour_cmds
+            min_x, min_y, max_x, max_y = temp_geo.rect()
+            bbox_area = (max_x - min_x) * (max_y - min_y)
+
+            # A contour is closed if its endpoints match AND it encloses an
+            # area. This filters out tiny splines that are technically closed
+            # but have no area.
+            is_closed = (
+                math.isclose(start_point[0], end_point[0])
+                and math.isclose(start_point[1], end_point[1])
+                and bbox_area > 1e-6
+            )
+
             vertices = temp_geo._get_subpath_vertices(0)
             if not vertices:
                 continue
-            min_x, min_y, max_x, max_y = temp_geo.rect()
-            bbox_center = ((min_x + max_x) / 2, (min_y + max_y) / 2)
+
             contour_data.append(
                 {
                     "cmds": contour_cmds,
                     "vertices": vertices,
-                    "bbox_center": bbox_center,
+                    "is_closed": is_closed,
+                    "original_index": i,
                 }
             )
         return contour_data
 
-    def _build_adjacency_graph(
-        self, contour_data: List[Dict]
-    ) -> List[List[int]]:
-        """Builds a graph based on contour containment."""
-        num_contours = len(contour_data)
-        adj: List[List[int]] = [[] for _ in range(num_contours)]
-        for i in range(num_contours):
-            for j in range(i + 1, num_contours):
-                data_i, data_j = contour_data[i], contour_data[j]
-                # Check for containment using the center of the bounding box
-                center_i_in_j = self._is_point_in_polygon(
-                    data_i["bbox_center"], data_j["vertices"]
-                )
-                center_j_in_i = self._is_point_in_polygon(
-                    data_j["bbox_center"], data_i["vertices"]
-                )
-                if center_i_in_j or center_j_in_i:
-                    adj[i].append(j)
-                    adj[j].append(i)
-        return adj
-
+    @staticmethod
     def _find_connected_components_bfs(
-        self, num_contours: int, adj: List[List[int]]
+        num_contours: int, adj: List[List[int]]
     ) -> List[List[int]]:
         """Finds connected components in the graph using BFS."""
         visited: Set[int] = set()
@@ -817,36 +830,80 @@ class Geometry:
     def split_into_components(self) -> List["Geometry"]:
         """
         Analyzes the geometry and splits it into a list of separate,
-        logically connected shapes (components). For example, a letter 'O'
-        with an outer and inner path will be treated as a single component.
+        logically connected shapes (components). If the geometry consists
+        only of open paths, it is treated as a single component.
         """
+        logger.debug("Starting to split_into_components")
         if self.is_empty():
+            logger.debug("Geometry is empty, returning empty list.")
             return []
 
         contours = self._get_contours()
-        contour_data = self._get_valid_contours_data(contours)
+        if len(contours) <= 1:
+            logger.debug("<= 1 contour, returning a copy of the whole.")
+            return [self.copy()]
 
-        if not contour_data:
+        all_contour_data = self._get_valid_contours_data(contours)
+        if not all_contour_data:
+            logger.debug("No valid contours found after filtering.")
             return []
-        if len(contour_data) == 1:
-            new_geo = Geometry()
-            new_geo.commands = contour_data[0]["cmds"]
-            return [new_geo]
 
-        adj = self._build_adjacency_graph(contour_data)
-        components = self._find_connected_components_bfs(
-            len(contour_data), adj
+        # If there are no closed paths, treat everything as one component.
+        if not any(c["is_closed"] for c in all_contour_data):
+            logger.debug("No closed paths found. Returning single component.")
+            return [self.copy()]
+
+        # Build adjacency graph for ALL contours based on containment,
+        # but only closed contours can be parents.
+        num_contours = len(all_contour_data)
+        adj: List[List[int]] = [[] for _ in range(num_contours)]
+        for i in range(num_contours):
+            # A contour can only contain others if it is closed.
+            if not all_contour_data[i]["is_closed"]:
+                continue
+            for j in range(num_contours):
+                if i == j:
+                    continue
+                data_i = all_contour_data[i]
+                data_j = all_contour_data[j]
+                # Test if the first vertex of j is inside i
+                if self._is_point_in_polygon(
+                    data_j["vertices"][0], data_i["vertices"]
+                ):
+                    adj[i].append(j)
+                    adj[j].append(i)
+
+        component_indices_list = self._find_connected_components_bfs(
+            num_contours, adj
         )
+        logger.debug(f"Found {len(component_indices_list)} raw components.")
 
-        # Create a new Geometry object for each component
-        result_geometries = []
-        for component_indices in components:
+        # Process the components. Any component that is composed
+        # entirely of open paths is a "stray" and should be merged.
+        final_geometries: List[Geometry] = []
+        stray_open_geo = Geometry()
+        for i, indices in enumerate(component_indices_list):
             component_geo = Geometry()
-            for idx in component_indices:
-                component_geo.commands.extend(contour_data[idx]["cmds"])
-            result_geometries.append(component_geo)
+            has_closed_path = False
+            for idx in indices:
+                contour = all_contour_data[idx]
+                component_geo.commands.extend(contour["cmds"])
+                if contour["is_closed"]:
+                    has_closed_path = True
 
-        return result_geometries
+            if has_closed_path:
+                final_geometries.append(component_geo)
+            else:
+                # This component only has open paths, save for later merging.
+                stray_open_geo.commands.extend(component_geo.commands)
+
+        if not stray_open_geo.is_empty():
+            logger.debug(
+                "Found stray open paths, creating a final component for them."
+            )
+            final_geometries.append(stray_open_geo)
+
+        return final_geometries
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Geometry object to a dictionary."""

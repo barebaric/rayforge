@@ -641,3 +641,72 @@ def test_split_into_components_only_moves():
     geo.move_to(20, 20)
     components = geo.split_into_components()
     assert len(components) == 0
+
+
+def test_split_into_components_all_open_paths():
+    """Tests that a geometry with only open paths is not split."""
+    geo = Geometry()
+    # Path 1
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    # Path 2
+    geo.move_to(20, 0)
+    geo.line_to(30, 10)
+    # Path 3
+    geo.move_to(0, 20)
+    geo.line_to(10, 30)
+
+    components = geo.split_into_components()
+    # Should be treated as a single component
+    assert len(components) == 1
+    # The returned geometry should be identical to the original
+    assert len(components[0].commands) == len(geo.commands)
+
+
+def test_split_into_components_mixed_paths_no_containment():
+    """
+    Tests a closed shape and separate open paths. They should be split into
+    two components: one for the closed shape, and one for ALL open shapes.
+    """
+    geo = Geometry()
+    # Closed square
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+    geo.line_to(10, 10)
+    geo.line_to(0, 10)
+    geo.close_path()
+    # Open line far away
+    geo.move_to(20, 20)
+    geo.line_to(30, 30)
+    # Another open line far away
+    geo.move_to(40, 40)
+    geo.line_to(50, 50)
+
+    components = geo.split_into_components()
+    assert len(components) == 2
+    # Order is not guaranteed, so find which component is which
+    closed_comp = next((c for c in components if len(c.commands) == 5), None)
+    open_comp = next((c for c in components if len(c.commands) == 4), None)
+    assert closed_comp is not None
+    assert open_comp is not None
+
+
+def test_split_into_components_mixed_paths_with_containment():
+    """
+    Tests a closed shape with an open path inside it. They should be treated
+    as a single component.
+    """
+    geo = Geometry()
+    # Closed square
+    geo.move_to(0, 0)
+    geo.line_to(20, 0)
+    geo.line_to(20, 20)
+    geo.line_to(0, 20)
+    geo.close_path()
+    # Open line inside the square
+    geo.move_to(5, 5)
+    geo.line_to(15, 15)
+
+    components = geo.split_into_components()
+    assert len(components) == 1
+    assert len(components[0].commands) == 7

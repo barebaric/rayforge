@@ -21,6 +21,7 @@ from ..core.step import Step
 from ..core.workpiece import WorkPiece
 from ..core.ops import Ops
 from .steprunner import run_step_in_subprocess
+from ..core.group import Group
 
 if TYPE_CHECKING:
     from ..shared.tasker.task import Task
@@ -230,23 +231,34 @@ class OpsGenerator:
         )
         if isinstance(origin, Step):
             self._update_ops_for_step(origin)
-        elif isinstance(origin, WorkPiece):
-            workpiece = origin
-            workpiece_layer = workpiece.layer
-            if workpiece_layer and workpiece_layer.workflow:
-                for step in workpiece_layer.workflow:
-                    key = (step.uid, workpiece.uid)
-                    if self._ops_cache.get(key, (None, None))[0] is None:
-                        logger.debug(
-                            f"Ops for {key} not found in cache after 'add'. "
-                            "Triggering generation."
-                        )
-                        self._trigger_ops_generation(step, workpiece)
-                    else:
-                        logger.debug(
-                            f"Ops for {key} found in cache after 'add'. "
-                            "Skipping regeneration."
-                        )
+        elif isinstance(origin, (WorkPiece, Group, Layer)):
+            # If a single workpiece is added, this list will have one item.
+            # If a group or layer is added, this will find all workpieces
+            # inside it that need ops generation.
+            workpieces_to_process = []
+            if isinstance(origin, WorkPiece):
+                workpieces_to_process.append(origin)
+            else:  # Group or Layer
+                workpieces_to_process.extend(
+                    origin.get_descendants(of_type=WorkPiece)
+                )
+
+            for workpiece in workpieces_to_process:
+                workpiece_layer = workpiece.layer
+                if workpiece_layer and workpiece_layer.workflow:
+                    for step in workpiece_layer.workflow:
+                        key = (step.uid, workpiece.uid)
+                        if self._ops_cache.get(key, (None, None))[0] is None:
+                            logger.debug(
+                                f"Ops for {key} not found in cache after "
+                                "'add'. Triggering generation."
+                            )
+                            self._trigger_ops_generation(step, workpiece)
+                        else:
+                            logger.debug(
+                                f"Ops for {key} found in cache after 'add'. "
+                                "Skipping regeneration."
+                            )
         elif isinstance(origin, Layer) and origin.workflow:
             for step in origin.workflow:
                 self._update_ops_for_step(step)
@@ -263,9 +275,25 @@ class OpsGenerator:
         )
         if isinstance(origin, Step):
             keys_to_clean = [k for k in self._ops_cache if k[0] == origin.uid]
-        elif isinstance(origin, Layer) and origin.workflow:
-            step_uids = {s.uid for s in origin.workflow}
-            keys_to_clean = [k for k in self._ops_cache if k[0] in step_uids]
+        elif isinstance(origin, WorkPiece):
+            keys_to_clean = [k for k in self._ops_cache if k[1] == origin.uid]
+        elif isinstance(origin, (Group, Layer)):
+            # Find all workpieces that were inside the removed container
+            removed_wp_uids = {
+                wp.uid for wp in origin.get_descendants(of_type=WorkPiece)
+            }
+            if isinstance(origin, Layer) and origin.workflow:
+                # If a whole layer is removed, also clean up its steps
+                step_uids = {s.uid for s in origin.workflow}
+                keys_to_clean = [
+                    k
+                    for k in self._ops_cache
+                    if k[0] in step_uids or k[1] in removed_wp_uids
+                ]
+            else:
+                keys_to_clean = [
+                    k for k in self._ops_cache if k[1] in removed_wp_uids
+                ]
         else:
             return
 
@@ -306,37 +334,45 @@ class OpsGenerator:
         if self.is_paused:
             return  # Changes are handled by reconcile_all() on resume.
 
-        if not isinstance(origin, WorkPiece):
-            return
-
-        wp = origin
-        new_size = wp.size
-        # Read the size of the *currently cached* ops.
-        # Do NOT update the cache here.
-        old_size = self._world_size_cache.get(wp.uid)
-
-        if old_size is None:
-            # If we've never generated for this workpiece before, we must
-            # generate.
-            size_changed = True
-        else:
-            # Compare the new size to the previously cached size.
-            size_changed = not (
-                abs(old_size[0] - new_size[0]) < 1e-9
-                and abs(old_size[1] - new_size[1]) < 1e-9
+        # If a group's transform changes, we need to check all workpieces
+        # inside it.
+        workpieces_to_check = []
+        if isinstance(origin, WorkPiece):
+            workpieces_to_check.append(origin)
+        elif isinstance(origin, Group):
+            workpieces_to_check.extend(
+                origin.get_descendants(of_type=WorkPiece)
             )
 
-        if size_changed:
-            logger.info(
-                f"World size for '{wp.name}' changed live. "
-                f"Old: {old_size}, New: {new_size}. Regenerating ops."
-            )
-            self._update_ops_for_workpiece(wp)
-        else:
-            logger.debug(
-                f"Transform for '{wp.name}' changed but world size is "
-                "stable (translation/rotation only). Skipping regeneration."
-            )
+        for wp in workpieces_to_check:
+            new_size = wp.size
+            # Read the size of the *currently cached* ops.
+            # Do NOT update the cache here.
+            old_size = self._world_size_cache.get(wp.uid)
+
+            if old_size is None:
+                # If we've never generated for this workpiece before, we must
+                # generate.
+                size_changed = True
+            else:
+                # Compare the new size to the previously cached size.
+                size_changed = not (
+                    abs(old_size[0] - new_size[0]) < 1e-9
+                    and abs(old_size[1] - new_size[1]) < 1e-9
+                )
+
+            if size_changed:
+                logger.info(
+                    f"World size for '{wp.name}' changed live. "
+                    f"Old: {old_size}, New: {new_size}. Regenerating ops."
+                )
+                self._update_ops_for_workpiece(wp)
+            else:
+                logger.debug(
+                    f"Transform for '{wp.name}' changed but world size is "
+                    "stable (translation/rotation only). "
+                    "Skipping regeneration."
+                )
 
     def _cleanup_key(self, key: Tuple[str, str]):
         """Removes a cache entry and cancels any associated task."""

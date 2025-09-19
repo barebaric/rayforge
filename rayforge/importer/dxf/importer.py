@@ -66,16 +66,27 @@ class DxfImporter(Importer):
         self._prepare_blocks_cache(doc, scale, min_x_mm, min_y_mm)
         # Parse the main modelspace into a list of DocItems.
         return self._entities_to_doc_items(
-            doc.modelspace(), doc, scale, min_x_mm, min_y_mm
+            doc.modelspace(),
+            doc,
+            scale,
+            min_x_mm,
+            min_y_mm,
+            split_components=True,  # CHANGED
         )
 
     def _prepare_blocks_cache(self, doc, scale: float, tx: float, ty: float):
         """Recursively parses all block definitions into lists of DocItems."""
         self._blocks_cache.clear()
         for block in doc.blocks:
-            # Note: We pass a base transform to handle nested blocks correctly.
+            # When parsing blocks, treat them as single units. Do NOT split.
             self._blocks_cache[block.name] = self._entities_to_doc_items(
-                block, doc, scale, tx, ty, ezdxf.math.Matrix44()
+                block,
+                doc,
+                scale,
+                tx,
+                ty,
+                ezdxf.math.Matrix44(),
+                split_components=False,
             )
 
     def _entities_to_doc_items(
@@ -86,6 +97,7 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
+        split_components: bool = False,
     ) -> List[DocItem]:
         """
         Converts a list of DXF entities into a list of DocItems (WorkPieces
@@ -95,56 +107,112 @@ class DxfImporter(Importer):
         current_geo = Geometry()
         current_solids: List[List[Tuple[float, float]]] = []
 
-        def flush_geo_to_workpiece():
+        def flush_geo_to_workpiece(split: bool):
             """
-            Converts the accumulated Geometry and solid data into a single,
-            normalized WorkPiece.
+            Converts the accumulated Geometry and solid data into one or more
+            WorkPieces. If multiple distinct shapes are found, they are
+            returned within a Group.
             """
             nonlocal current_geo, current_solids
             if current_geo.is_empty():
                 return
 
-            min_x, min_y, max_x, max_y = current_geo.rect()
+            if split:
+                component_geometries = current_geo.split_into_components()
+            else:
+                component_geometries = [current_geo]
 
-            # Normalize geometry and solids to have their origin at (0,0)
-            normalized_geo = deepcopy(current_geo)
-            translate_matrix = np.array(
-                [
-                    [1, 0, 0, -min_x],
-                    [0, 1, 0, -min_y],
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1],
-                ]
-            )
-            normalized_geo.transform(translate_matrix)
+            # Note: For simplicity, solid data is not split across components.
+            # All solids will be associated with the first component.
+            workpieces = []
+            for i, component_geo in enumerate(component_geometries):
+                min_x, min_y, max_x, max_y = component_geo.rect()
 
-            normalized_solids = [
-                [(p[0] - min_x, p[1] - min_y) for p in solid]
-                for solid in current_solids
-            ]
+                # Normalize geometry to have its origin at (0,0)
+                normalized_geo = component_geo.copy()
+                translate_matrix = np.array(
+                    [
+                        [1, 0, 0, -min_x],
+                        [0, 1, 0, -min_y],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1],
+                    ]
+                )
+                normalized_geo.transform(translate_matrix)
 
-            # Serialize solid data for the renderer
-            wp_data = None
-            if normalized_solids:
-                wp_data = json.dumps({"solids": normalized_solids}).encode(
-                    "utf-8"
+                wp_data = None
+                # Only attach solid data to the first component
+                if i == 0 and current_solids:
+                    normalized_solids = [
+                        [(p[0] - min_x, p[1] - min_y) for p in solid]
+                        for solid in current_solids
+                    ]
+                    wp_data = json.dumps({"solids": normalized_solids}).encode(
+                        "utf-8"
+                    )
+
+                wp = WorkPiece(
+                    source_file=self.source_file,
+                    renderer=DXF_RENDERER,
+                    vectors=normalized_geo,
+                    data=wp_data,
                 )
 
-            wp = WorkPiece(
-                source_file=self.source_file,
-                renderer=DXF_RENDERER,
-                vectors=normalized_geo,
-                data=wp_data,  # Store the renderer-specific data
-            )
+                # Set the workpiece's matrix to position and scale it.
+                width = max(max_x - min_x, 1e-9)
+                height = max(max_y - min_y, 1e-9)
+                wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
+                    width, height
+                )
+                workpieces.append(wp)
 
-            # Set the workpiece's matrix to position and scale it correctly.
-            width = max(max_x - min_x, 1e-9)
-            height = max(max_y - min_y, 1e-9)
-            wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
-                width, height
-            )
+            if len(workpieces) > 1:
+                # 1. Calculate collective bounding box of new workpieces.
+                all_corners = []
+                for wp in workpieces:
+                    unit_corners = [(0, 0), (1, 0), (1, 1), (0, 1)]
+                    world_transform = wp.get_world_transform()
+                    all_corners.extend(
+                        [
+                            world_transform.transform_point(c)
+                            for c in unit_corners
+                        ]
+                    )
 
-            result_items.append(wp)
+                if not all_corners:
+                    result_items.extend(workpieces)
+                else:
+                    min_x = min(p[0] for p in all_corners)
+                    min_y = min(p[1] for p in all_corners)
+                    max_x = max(p[0] for p in all_corners)
+                    max_y = max(p[1] for p in all_corners)
+
+                    bbox_x, bbox_y = min_x, min_y
+                    bbox_w = max(max_x - min_x, 1e-9)
+                    bbox_h = max(max_y - min_y, 1e-9)
+
+                    # 2. Create group and set its matrix to match the bbox.
+                    group = Group(name=self.source_file.stem)
+                    group.matrix = Matrix.translation(
+                        bbox_x, bbox_y
+                    ) @ Matrix.scale(bbox_w, bbox_h)
+
+                    # 3. Update workpiece matrices to be relative to the group.
+                    try:
+                        group_inv_matrix = group.matrix.invert()
+                        for wp in workpieces:
+                            wp.matrix = group_inv_matrix @ wp.matrix
+                        # 4. Add children to the group and add group to
+                        # results.
+                        group.set_children(workpieces)
+                        result_items.append(group)
+                    except np.linalg.LinAlgError:
+                        # Fallback if group matrix is not invertible
+                        result_items.extend(workpieces)
+
+            elif workpieces:
+                result_items.append(workpieces[0])
+
             current_geo = Geometry()
             current_solids = []
 
@@ -152,7 +220,7 @@ class DxfImporter(Importer):
             if entity.dxftype() == "INSERT":
                 # An INSERT entity ends the current Geometry run and creates a
                 # Group.
-                flush_geo_to_workpiece()
+                flush_geo_to_workpiece(split_components)
                 block_items = self._blocks_cache.get(entity.dxf.name)
                 if not block_items:
                     continue
@@ -200,7 +268,7 @@ class DxfImporter(Importer):
                     current_geo, entity, doc, scale, tx, ty, parent_transform
                 )
 
-        flush_geo_to_workpiece()  # Flush any remaining Geometry.
+        flush_geo_to_workpiece(split_components)
         return result_items
 
     def _entity_to_geo(self, geo, entity, doc, scale, tx, ty, transform):
