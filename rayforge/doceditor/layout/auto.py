@@ -194,16 +194,69 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             ).format(item_names=item_names)
             self.error_reported.send(self, message=message)
 
-        if not placements:
-            return {}
-
         if context:
             context.set_progress(0.9)
             context.set_message("Calculating final positions...")
 
-        # 5. Compute the final transformation deltas using the
-        # calculated offset.
+        # 5. Compute the final transformation deltas for successfully
+        # placed items.
         deltas = self._compute_deltas_from_placements(placements, group_offset)
+
+        # 6. If any items were unplaced and stock exists, move them
+        #    outside the stock area.
+        if self.unplaced_items and stock_item and stock_item.bbox:
+            logger.info(
+                f"Moving {len(self.unplaced_items)} unplaced items "
+                "outside stock area."
+            )
+            # Calculate a collective bounding box for all unplaced items
+            unplaced_bboxes = [
+                self._get_item_world_bbox(item) for item in self.unplaced_items
+            ]
+            valid_bboxes = [b for b in unplaced_bboxes if b]
+            if valid_bboxes:
+                min_x = min(b[0] for b in valid_bboxes)
+                min_y = min(b[1] for b in valid_bboxes)
+                max_x = max(b[2] for b in valid_bboxes)
+                max_y = max(b[3] for b in valid_bboxes)
+                unplaced_coll_bbox = (min_x, min_y, max_x, max_y)
+
+                # Determine the target position for the collective bbox's
+                # top-left corner.
+                stock_bbox = stock_item.bbox
+                target_x = stock_bbox[0] + stock_bbox[2] + self.margin_mm * 4
+                target_y = stock_bbox[1] + stock_bbox[3]
+
+                # Calculate the single (dx, dy) offset for the whole group
+                dx = target_x - unplaced_coll_bbox[0]
+                dy = target_y - unplaced_coll_bbox[3]
+
+                for item in self.unplaced_items:
+                    # Reset rotation and apply the collective translation
+                    old_world_transform = item.get_world_transform()
+                    tx_old, ty_old = old_world_transform.decompose()[:2]
+
+                    final_x = tx_old + dx
+                    final_y = ty_old + dy
+
+                    T = Matrix.translation(final_x, final_y)
+                    scale_w, scale_h = old_world_transform.get_abs_scale()
+                    S = Matrix.scale(scale_w, scale_h)
+                    final_matrix = T @ S  # Rotation is reset to identity
+
+                    # Calculate the local delta to achieve this
+                    old_local_matrix = item.matrix
+                    if old_local_matrix.has_zero_scale():
+                        continue
+                    old_local_inv = old_local_matrix.invert()
+                    parent_inv = Matrix.identity()
+                    if item.parent:
+                        parent_tfm = item.parent.get_world_transform()
+                        if not parent_tfm.has_zero_scale():
+                            parent_inv = parent_tfm.invert()
+
+                    delta = parent_inv @ final_matrix @ old_local_inv
+                    deltas[item] = delta
 
         logger.info("Pixel-perfect layout complete.")
         return deltas
@@ -508,6 +561,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             A dictionary mapping each DocItem to its required delta matrix.
         """
         deltas: Dict[DocItem, Matrix] = {}
+        if not placements:
+            return deltas
         for item in placements:
             doc_item, delta = self._create_delta_for_placement(
                 item, group_offset
@@ -536,43 +591,61 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # 1. Calculate final position of the rotated bbox corner in world space
         true_x_px = x_px + margin_px
         true_y_px = y_px + margin_px
-        packed_x = group_offset_x + (true_x_px / self.resolution)
-        packed_y = group_offset_y + (true_y_px / self.resolution)
 
-        # 2. Determine final position of the item's origin from bbox data
-        bbox_off_x, bbox_off_y = (
-            item.variant.local_bbox[0],
-            item.variant.local_bbox[1],
-        )
-        final_x = packed_x - bbox_off_x
-        final_y = packed_y - bbox_off_y
-        T = Matrix.translation(final_x, final_y)
-
-        # 3. Determine final rotation
-        target_angle = item.variant.angle_offset
-
-        # 4. Determine the final scale matrix (S) and rotation center.
-        # This is the critical step where Groups are treated differently.
         if isinstance(doc_item, Group):
-            # For a Group, we MUST preserve its existing world scale to avoid
-            # deforming its children. The packer's job is only to move and
-            # rotate the group as a rigid object.
-            current_w, current_h = (
-                doc_item.get_world_transform().get_abs_scale()
+            # A Group is a rigid body. Calculate a pure
+            # rotation/translation delta to move it from its old state to
+            # the new packed state without altering its internal scale/shear.
+            W_old = doc_item.get_world_transform()
+            _, _, angle_old, _, _, _ = W_old.decompose()
+            old_bbox = self._get_item_world_bbox(doc_item)
+            if not old_bbox:
+                return doc_item, Matrix.identity()
+            C_old = (
+                (old_bbox[0] + old_bbox[2]) / 2,
+                (old_bbox[1] + old_bbox[3]) / 2,
             )
-            S = Matrix.scale(current_w, current_h)
-            center_for_rot = (current_w / 2, current_h / 2)
+
+            target_angle = item.variant.angle_offset
+            angle_delta = target_angle - angle_old
+
+            rotated_bbox = item.variant.local_bbox
+            w_mm = rotated_bbox[2] - rotated_bbox[0]
+            h_mm = rotated_bbox[3] - rotated_bbox[1]
+            C_new_px = (
+                true_x_px + (w_mm * self.resolution) / 2,
+                true_y_px + (h_mm * self.resolution) / 2,
+            )
+            C_new = (
+                group_offset_x + C_new_px[0] / self.resolution,
+                group_offset_y + C_new_px[1] / self.resolution,
+            )
+
+            # Create a world-space delta transform: translate, then rotate
+            delta_T = Matrix.translation(
+                C_new[0] - C_old[0], C_new[1] - C_old[1]
+            )
+            delta_R = Matrix.rotation(angle_delta, center=C_old)
+            delta_world = delta_T @ delta_R
+
+            final_matrix = delta_world @ W_old
         else:
-            # For a WorkPiece, we create a new scale based on its original
-            # world size, as it's being laid out from scratch.
+            # For a WorkPiece, reconstruct its transform from scratch.
+            packed_x = group_offset_x + (true_x_px / self.resolution)
+            packed_y = group_offset_y + (true_y_px / self.resolution)
+            bbox_off_x, bbox_off_y = (
+                item.variant.local_bbox[0],
+                item.variant.local_bbox[1],
+            )
+            final_x = packed_x - bbox_off_x
+            final_y = packed_y - bbox_off_y
+            T = Matrix.translation(final_x, final_y)
+            target_angle = item.variant.angle_offset
             w_mm, h_mm = item.variant.unrotated_size_mm
             S = Matrix.scale(w_mm, h_mm)
             center_for_rot = (w_mm / 2, h_mm / 2)
-
-        R = Matrix.rotation(target_angle, center=center_for_rot)
-
-        # 5. Construct the final world matrix from T, R, and S.
-        final_matrix = T @ R @ S
+            R = Matrix.rotation(target_angle, center=center_for_rot)
+            final_matrix = T @ R @ S
 
         # 6. Calculate the delta required to achieve this new world matrix.
         # W_new = P @ (Delta @ L_old) => Delta = P_inv @ W_new @ L_old_inv
@@ -653,31 +726,31 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     ctx.restore()
                     continue
 
-                # Get the workpiece's world transform relative to the
-                # group's AABB.
+                # Get the workpiece's world transform.
                 world_transform = wp.get_world_transform()
-                tx, ty, angle, _, _, _ = world_transform.decompose()
-                x_pos_px = (tx - min_x_world) * self.resolution
 
-                # Correct for Cairo's Y-down coordinate system. We must invert
-                # the Y position relative to the canvas height.
-                y_pos_px = height_px - ((ty - min_y_world) * self.resolution)
+                # Robustly get child's world center and map it to the
+                # Y-down group canvas to create an accurate snapshot.
+                wp_bbox = self._get_item_world_bbox(wp)
+                if not wp_bbox:
+                    ctx.restore()
+                    continue
+                wp_center_x = (wp_bbox[0] + wp_bbox[2]) / 2
+                wp_center_y = (wp_bbox[1] + wp_bbox[3]) / 2
 
-                center_x_px, center_y_px = (
-                    wp_surf.get_width() / 2,
-                    wp_surf.get_height() / 2,
-                )
+                x_pos_px = (wp_center_x - min_x_world) * self.resolution
+                y_pos_px = (max_y_world - wp_center_y) * self.resolution
 
-                # Cairo's rotation center is also affected by the Y-inversion.
-                # The translation must place the workpiece's bottom-left
-                # corner, then adjust for rotation around its center.
+                _, _, angle, _, _, _ = world_transform.decompose()
+
+                # Standard translate-rotate-translate pattern around the center
                 ctx.translate(x_pos_px, y_pos_px)
-                ctx.translate(center_x_px, -center_y_px)
-                ctx.rotate(math.radians(angle))
-                ctx.translate(-center_x_px, -(-center_y_px))
+                ctx.rotate(
+                    -math.radians(angle)
+                )  # Negate for Cairo's clockwise
                 ctx.translate(
-                    0, -wp_surf.get_height()
-                )  # Move to top-left corner for painting
+                    -wp_surf.get_width() / 2, -wp_surf.get_height() / 2
+                )
 
                 ctx.set_source_surface(wp_surf, 0, 0)
                 ctx.paint()
@@ -726,7 +799,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
         # Center the rotated image via translate-rotate-translate.
         ctx.translate(width_px / 2, height_px / 2)
-        ctx.rotate(math.radians(angle_offset))
+        ctx.rotate(-math.radians(angle_offset))
         ctx.translate(-src_w / 2, -src_h / 2)
         ctx.set_source_surface(source_surface, 0, 0)
         ctx.paint()
