@@ -17,6 +17,7 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -277,11 +278,11 @@ class GrblSerialDriver(Driver):
                 )
         logger.debug("Leaving _process_command_queue.")
 
-    async def run(self, ops: Ops, machine: "Machine") -> None:
+    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         self._is_cancelled = False
         self._job_running = True
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine)
+        gcode = encoder.encode(ops, machine, doc)
 
         for line in gcode.splitlines():
             if self._is_cancelled:

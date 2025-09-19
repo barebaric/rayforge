@@ -9,6 +9,7 @@ from .driver import Driver, DeviceStatus, DriverSetupError
 from .grbl_util import parse_state
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ..models.machine import Machine
 
 
@@ -135,9 +136,9 @@ class SmoothieDriver(Driver):
                     f"Command '{cmd.decode()}' not confirmed"
                 ) from e
 
-    async def run(self, ops: Ops, machine: "Machine") -> None:
+    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine)
+        gcode = encoder.encode(ops, machine, doc)
 
         try:
             for line in gcode.splitlines():

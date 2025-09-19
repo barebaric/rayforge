@@ -28,6 +28,7 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ..models.machine import Machine
 
 
@@ -257,11 +258,11 @@ class GrblNetworkDriver(Driver):
             self._on_connection_status_changed(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
-    async def run(self, ops: Ops, machine: "Machine") -> None:
+    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine)
+        gcode = encoder.encode(ops, machine, doc)
 
         try:
             await self._upload(gcode, "rayforge.gcode")

@@ -49,7 +49,7 @@ class MachineCmd:
                 )
                 # The frame op is a single pass; repeat it for visibility.
                 frame *= 20
-                await machine.driver.run(frame, machine)
+                await machine.driver.run(frame, machine, self._editor.doc)
             except Exception:
                 logger.error("Failed to execute framing job", exc_info=True)
                 raise
@@ -71,7 +71,7 @@ class MachineCmd:
                     self._editor.ops_generator,
                     context,
                 )
-                await machine.driver.run(ops, machine)
+                await machine.driver.run(ops, machine, self._editor.doc)
             except Exception:
                 logger.error("Failed to send job to machine", exc_info=True)
                 raise

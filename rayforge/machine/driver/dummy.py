@@ -4,6 +4,7 @@ from ...shared.varset import VarSet
 from typing import Any, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ..models.machine import Machine
 
 
@@ -26,7 +27,7 @@ class NoDeviceDriver(Driver):
     async def connect(self) -> None:
         pass
 
-    async def run(self, ops: Ops, machine: "Machine") -> None:
+    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         pass
 
     async def set_hold(self, hold: bool = True) -> None:

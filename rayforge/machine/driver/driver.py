@@ -9,6 +9,7 @@ from ...debug import debug_log_manager, LogType
 from ..transport import TransportStatus
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
     from ...shared.varset import VarSet
     from ..models.machine import Machine
 
@@ -153,7 +154,7 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def run(self, ops: Ops, machine: "Machine") -> None:
+    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         """
         Converts the given Ops into commands for the machine, and executes
         them.
