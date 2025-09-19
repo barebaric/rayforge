@@ -72,13 +72,11 @@ class GrblSerialDriver(Driver):
         if not baudrate:
             raise DriverSetupError(_("Baud rate must be configured."))
 
-        available_ports = SerialTransport.list_ports()
-        if port not in available_ports:
-            logger.error(
-                f"Serial port {port} not found. Available ports: "
-                f"{available_ports}"
-            )
-            raise DriverSetupError(f"Serial port {port} not found.")
+        # Note that we intentionally do not check if the serial
+        # port exists, as a missing port is a common occurance when
+        # e.g. the USB cable is not plugged in, and not a sign of
+        # misconfiguration.
+
         if port.startswith("/dev/ttyS"):
             logger.warning(
                 f"Port {port} is a hardware serial port, which is unlikely "
