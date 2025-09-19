@@ -270,7 +270,6 @@ class TaskManager:
         )
         context.task = task
         state: Dict[str, Any] = {"result": None, "error": None}
-        clean_shutdown = False
 
         try:
             # Synchronous monitoring loop
@@ -286,20 +285,15 @@ class TaskManager:
             self._check_process_result(process, state, task.key)
 
             # If we reach here, the process exited cleanly with a result.
-            clean_shutdown = True
             task._status = "completed"
             task._progress = 1.0
             task._task_result = state.get("result")
 
         except CancelledError as e:
-            # Cancellation is a controlled, clean shutdown.
-            clean_shutdown = True
             logger.warning(f"Task {task.key}: Process task was cancelled: {e}")
             task._status = "canceled"
             task._task_exception = e
         except Exception as e:
-            # Any other exception (e.g. from non-zero exit code) is an
-            # uncontrolled shutdown.
             logger.error(
                 f"Task {task.key}: Process monitor thread failed.",
                 exc_info=True,
@@ -307,31 +301,31 @@ class TaskManager:
             task._status = "failed"
             task._task_exception = e
         finally:
-            # The cleanup sequence is critical to avoid race conditions.
+            # This unified cleanup logic is crucial to prevent race
+            # conditions with the internal multiprocessing.ResourceTracker.
+            # We take full responsibility for cleaning up the resources
+            # in all cases.
             if process.is_alive():
                 process.terminate()
 
-            # We must always join the process to allow the OS to reap it.
+            # Always join to reap the OS process.
             process.join(timeout=1.0)
 
-            # For a controlled shutdown (success or cancellation), we are
-            # responsible for cleaning up the queue and process handle.
-            if clean_shutdown:
-                try:
-                    queue.close()
-                    queue.join_thread()
-                except (OSError, BrokenPipeError, EOFError):
-                    pass  # Expected errors if process was killed.
-                process.close()
-            # For an uncontrolled shutdown (crash/unexpected exit), we do
-            # NOT touch the queue or process.close(). The internal Python
-            # ResourceTracker is responsible, and interfering will cause a
-            # race condition.
+            try:
+                # Clean up the queue and its feeder thread.
+                queue.close()
+                queue.join_thread()
+            except (OSError, BrokenPipeError, EOFError):
+                # These are expected if the process died unexpectedly.
+                pass
+
+            # Release the resources associated with the process object.
+            process.close()
 
             # Perform the rest of the task state cleanup.
             context.flush()
 
-            # Manually trigger final status update, since run() wasn't used
+            # Manually trigger final status update
             task.status_changed.send(task)
             self._cleanup_task(task)
             if when_done:
