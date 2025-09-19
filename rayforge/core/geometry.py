@@ -331,6 +331,99 @@ class Geometry:
 
         return t_arc, pt_best, dist_sq_best
 
+    def _find_closest_on_arc(
+        self,
+        arc_cmd: ArcToCommand,
+        start_pos: Tuple[float, float, float],
+        x: float,
+        y: float,
+    ) -> Optional[Tuple[float, Tuple[float, float], float]]:
+        """Finds the closest point on an arc, using an analytical method for
+        circular arcs and falling back to linearization for spirals."""
+        p0 = start_pos[:2]
+        p1 = arc_cmd.end[:2]
+        center = (
+            p0[0] + arc_cmd.center_offset[0],
+            p0[1] + arc_cmd.center_offset[1],
+        )
+        radius_start = math.dist(p0, center)
+        radius_end = math.dist(p1, center)
+
+        # If radii differ, it's a spiral. Fall back to linearization.
+        if not math.isclose(radius_start, radius_end):
+            return self._find_closest_on_linearized_arc(
+                arc_cmd, start_pos, x, y
+            )
+
+        radius = radius_start
+        if radius < 1e-9:  # Arc with zero radius, treat as a point.
+            dist_sq = (x - p0[0]) ** 2 + (y - p0[1]) ** 2
+            return 0.0, p0, dist_sq
+
+        # 1. Find point on the full circle closest to (x,y)
+        vec_to_point = (x - center[0], y - center[1])
+        dist_to_center = math.hypot(vec_to_point[0], vec_to_point[1])
+        if dist_to_center < 1e-9:
+            closest_on_circle = p0
+        else:
+            closest_on_circle = (
+                center[0] + vec_to_point[0] / dist_to_center * radius,
+                center[1] + vec_to_point[1] / dist_to_center * radius,
+            )
+
+        # 2. Check if this point lies within the arc's angular sweep.
+        start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
+        end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
+        point_angle = math.atan2(
+            closest_on_circle[1] - center[1], closest_on_circle[0] - center[0]
+        )
+
+        angle_range = end_angle - start_angle
+        angle_to_check = point_angle - start_angle
+
+        # Normalize angles to handle wrapping correctly
+        if arc_cmd.clockwise:
+            if angle_range > 1e-9:
+                angle_range -= 2 * math.pi
+            if angle_to_check > 1e-9:
+                angle_to_check -= 2 * math.pi
+        else:  # counter-clockwise
+            if angle_range < -1e-9:
+                angle_range += 2 * math.pi
+            if angle_to_check < -1e-9:
+                angle_to_check += 2 * math.pi
+
+        is_on_arc = False
+        if arc_cmd.clockwise:
+            if angle_to_check >= angle_range - 1e-9 and angle_to_check <= 1e-9:
+                is_on_arc = True
+        else:  # counter-clockwise
+            if (
+                angle_to_check <= angle_range + 1e-9
+                and angle_to_check >= -1e-9
+            ):
+                is_on_arc = True
+
+        # 3. Determine the final closest point and its parameter `t`
+        if is_on_arc:
+            closest_point = closest_on_circle
+            t = (
+                angle_to_check / angle_range
+                if abs(angle_range) > 1e-9
+                else 0.0
+            )
+        else:
+            dist_sq_p0 = (x - p0[0]) ** 2 + (y - p0[1]) ** 2
+            dist_sq_p1 = (x - p1[0]) ** 2 + (y - p1[1]) ** 2
+            if dist_sq_p0 <= dist_sq_p1:
+                closest_point, t = p0, 0.0
+            else:
+                closest_point, t = p1, 1.0
+
+        dist_sq = (x - closest_point[0]) ** 2 + (y - closest_point[1]) ** 2
+        t = max(0.0, min(1.0, t))  # Clamp due to floating point math
+        return t, closest_point, dist_sq
+
     def find_closest_point(
         self, x: float, y: float
     ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
@@ -379,10 +472,8 @@ class Geometry:
                     closest_info = (i, t, pt)
 
             elif isinstance(cmd, ArcToCommand):
-                # For arcs, find the best sub-segment and its properties
-                result = self._find_closest_on_linearized_arc(
-                    cmd, start_pos, x, y
-                )
+                # Use the optimized arc calculation
+                result = self._find_closest_on_arc(cmd, start_pos, x, y)
                 if result:
                     t_arc, pt_arc, dist_sq_arc = result
                     if dist_sq_arc < min_dist_sq:
@@ -424,9 +515,7 @@ class Geometry:
             )
             return (t, point)
         elif isinstance(cmd, ArcToCommand):
-            result = self._find_closest_on_linearized_arc(
-                cmd, start_point, x, y
-            )
+            result = self._find_closest_on_arc(cmd, start_point, x, y)
             if result:
                 t_arc, pt_arc, _ = result
                 return (t_arc, pt_arc)

@@ -9,7 +9,6 @@ from ..canvas.element import CanvasElement
 from ...core.tab import Tab
 from ...undo import ChangePropertyCommand
 from ...core.matrix import Matrix
-from ...core.geometry import LineToCommand, ArcToCommand
 
 if TYPE_CHECKING:
     from .workpiece import WorkPieceView
@@ -43,9 +42,6 @@ class TabHandleElement(CanvasElement):
         # Cache for geometric calculations, in parent's normalized (0-1) space.
         self._local_pos_norm: Tuple[float, float] = (0.0, 0.0)
         self._local_tangent_norm: Tuple[float, float] = (1.0, 0.0)
-        self._last_closest_segment = tab_data.segment_index
-        self._last_closest_t = tab_data.t
-        self._search_radius = 5  # segments to search around last position
 
     def on_attached(self):
         """Lifecycle hook called when added to the canvas."""
@@ -117,11 +113,11 @@ class TabHandleElement(CanvasElement):
         self, world_dx: float, world_dy: float
     ) -> Tuple[float, float]:
         """
-        Optimized drag behavior that uses a limited search for small mouse
-        movements and a full search for large "jumps".
+        Optimized drag handler that avoids redundant geometry calculations.
         """
         parent_view = cast("WorkPieceView", self.parent)
-        if not self.canvas or not parent_view.data.vectors:
+        vectors = parent_view.data.vectors
+        if not self.canvas or not vectors:
             return world_dx, world_dy
 
         # Get mouse position in world coordinates
@@ -129,7 +125,7 @@ class TabHandleElement(CanvasElement):
             self.canvas._last_mouse_x, self.canvas._last_mouse_y
         )
 
-        # Transform to parent's local normalized space
+        # Transform to parent's local, natural millimeter space
         try:
             inv_parent_world = parent_view.get_world_transform().invert()
             local_x_norm, local_y_norm = inv_parent_world.transform_point(
@@ -138,105 +134,50 @@ class TabHandleElement(CanvasElement):
         except Exception:
             return world_dx, world_dy
 
-        # Convert to mm coordinates in natural space
         natural_size = parent_view.data.get_natural_size()
         if natural_size and None not in natural_size:
             natural_w, natural_h = cast(Tuple[float, float], natural_size)
         else:
             natural_w, natural_h = parent_view.data.get_local_size()
 
-        if natural_w <= 0 or natural_h <= 0:
+        if natural_w <= 1e-9 or natural_h <= 1e-9:
             return world_dx, world_dy
 
         local_x_mm = local_x_norm * natural_w
         local_y_mm = local_y_norm * natural_h
 
-        # --- HYBRID SEARCH LOGIC ---
-        # Decide whether to do a full search or a limited one based on
-        # how far the mouse is from the tab's current position.
-        do_full_search = True
-        current_pos_result = parent_view.data.vectors.get_point_and_tangent_at(
-            self._last_closest_segment, self._last_closest_t
-        )
-        if current_pos_result:
-            current_pos_mm, _ = current_pos_result
-            dist_sq_from_tab = (local_x_mm - current_pos_mm[0]) ** 2 + (
-                local_y_mm - current_pos_mm[1]
-            ) ** 2
-            # Threshold: if mouse is within 20mm, use the faster local search.
-            if dist_sq_from_tab < 400.0:  # 20mm * 20mm
-                do_full_search = False
+        # 1. Find closest point ONCE. This gives us index, t, and position.
+        closest = vectors.find_closest_point(local_x_mm, local_y_mm)
+        if not closest:
+            return world_dx, world_dy
+        segment_index, t, local_pos_mm = closest
 
-        best_segment = self._last_closest_segment
-        best_t = self._last_closest_t
+        # 2. Get the tangent vector. This recalculates the point, but we
+        #    ignore it and use the more precise one from find_closest_point.
+        tangent_result = vectors.get_point_and_tangent_at(segment_index, t)
+        if not tangent_result:
+            return world_dx, world_dy
+        _, local_tangent_mm = tangent_result
 
-        if do_full_search:
-            # Full search: expensive but correct for large jumps
-            closest = parent_view.data.vectors.find_closest_point(
-                local_x_mm, local_y_mm
-            )
-            if closest:
-                best_segment, best_t, _ = closest
-        else:
-            # Limited search for performance during small adjustments.
-            num_commands = len(parent_view.data.vectors.commands)
-            start_idx = max(
-                0, self._last_closest_segment - self._search_radius
-            )
-            end_idx = min(
-                num_commands,
-                self._last_closest_segment + self._search_radius + 1,
-            )
-
-            # 1. Coarse search: find best candidate segment by checking
-            # distance
-            #    to the segment's midpoint. This is cheap.
-            best_candidate_idx = -1
-            min_coarse_dist_sq = float("inf")
-            for i in range(start_idx, end_idx):
-                cmd = parent_view.data.vectors.commands[i]
-                if (
-                    not isinstance(cmd, (LineToCommand, ArcToCommand))
-                    or not cmd.end
-                ):
-                    continue
-
-                point_tangent = (
-                    parent_view.data.vectors.get_point_and_tangent_at(i, 0.5)
-                )
-                if not point_tangent:
-                    continue
-
-                point, _ = point_tangent
-                dist_sq = (local_x_mm - point[0]) ** 2 + (
-                    local_y_mm - point[1]
-                ) ** 2
-                if dist_sq < min_coarse_dist_sq:
-                    min_coarse_dist_sq = dist_sq
-                    best_candidate_idx = i
-
-            # 2. Fine search: do a precise calculation on the best candidate.
-            if best_candidate_idx != -1:
-                precise_result = (
-                    parent_view.data.vectors.find_closest_point_on_segment(
-                        best_candidate_idx, local_x_mm, local_y_mm
-                    )
-                )
-                if precise_result:
-                    t, _ = precise_result
-                    best_segment = best_candidate_idx
-                    best_t = t
-
-        # Update tab data
+        # 3. Update the underlying Tab data model directly.
         tab_to_update = cast(Tab, self.data)
-        tab_to_update.segment_index = best_segment
-        tab_to_update.t = best_t
+        tab_to_update.segment_index = segment_index
+        tab_to_update.t = t
 
-        # Update cache for next search
-        self._last_closest_segment = best_segment
-        self._last_closest_t = best_t
+        # 4. Update the handle's internal geometry caches directly, avoiding
+        #    the expensive update_base_geometry() call. This is the key
+        #    performance optimization.
+        self._local_pos_norm = (
+            local_pos_mm[0] / natural_w,
+            local_pos_mm[1] / natural_h,
+        )
+        self._local_tangent_norm = (
+            local_tangent_mm[0] / natural_w,
+            local_tangent_mm[1] / natural_h,
+        )
 
-        self.update_base_geometry()
+        # The canvas will trigger a render, which will use the new cached
+        # geometry to update the handle's on-screen transform.
         return world_dx, world_dy
 
     def render(self, ctx: cairo.Context):
@@ -249,9 +190,9 @@ class TabHandleElement(CanvasElement):
 
     def update_base_geometry(self):
         """
-        Calculates the handle's position and tangent vector in the parent's
-        local, normalized space and caches them. This is the expensive part
-        of the geometry calculation.
+        Calculates the handle's position and tangent vector based on its
+        data model. This is used for initialization and non-performance
+        -critical updates, but is bypassed by the drag handler.
         """
         parent_view = cast("WorkPieceView", self.parent)
         tab = cast(Tab, self.data)
