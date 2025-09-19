@@ -89,10 +89,8 @@ class AddTabsPopover(Gtk.Popover):
                 ):
                     continue
 
-                step = workpiece.layer.workflow.steps[0]
                 self.editor.tab.add_tabs(
                     workpiece=workpiece,
-                    step=step,
                     count=count,
                     width=width,
                     strategy="equidistant",

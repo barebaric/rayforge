@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import math
-from typing import TYPE_CHECKING, List, Dict, Any, Tuple, Optional
+from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
 
 from ..core.tab import Tab
@@ -12,7 +12,6 @@ from ..core.geometry import (
     MoveToCommand,
 )
 from ..undo import Command
-from ..core.step import Step
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
@@ -21,72 +20,41 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ConfigureTabsCommand(Command):
-    """
-    An undoable command to set tabs and the required transformer on a step.
-    """
+class SetWorkpieceTabsCommand(Command):
+    """An undoable command that sets the list of tabs for a workpiece."""
 
     def __init__(
         self,
         editor: DocEditor,
         workpiece: WorkPiece,
-        step: Step,
         new_tabs: List[Tab],
-        transformer_config: Dict[str, Any],
-        name: str = "Configure Tabs",
+        name: str = "Set Tabs",
     ):
         super().__init__(name=name)
         self.editor = editor
         self.workpiece_uid = workpiece.uid
-        self.step_uid = step.uid
         self.new_tabs = new_tabs
-        self.transformer_config = transformer_config
         self.old_tabs = deepcopy(workpiece.tabs)
-        self.old_opstransformers_dicts = deepcopy(step.opstransformers_dicts)
 
-    def _get_targets(self) -> Optional[Tuple[WorkPiece, Step]]:
-        """Helper to find the model objects from stored UIDs."""
+    def _get_workpiece(self) -> Optional[WorkPiece]:
+        """Helper to find the model object from the stored UID."""
         workpiece = self.editor.doc.find_descendant_by_uid(self.workpiece_uid)
-        step = self.editor.doc.find_descendant_by_uid(self.step_uid)
-        if not isinstance(workpiece, WorkPiece) or not isinstance(step, Step):
-            logger.error(
-                "Could not find target WorkPiece or Step for command."
-            )
-            return None
-        return workpiece, step
+        if isinstance(workpiece, WorkPiece):
+            return workpiece
+        logger.error("Could not find target WorkPiece for command.")
+        return None
 
     def execute(self) -> None:
-        """Applies the new tab configuration."""
-        targets = self._get_targets()
-        if not targets:
-            return
-
-        workpiece, step = targets
-        workpiece.tabs = self.new_tabs
-        # Remove any existing tab transformer to avoid duplicates
-        new_transformers = [
-            t
-            for t in step.opstransformers_dicts
-            if t.get("name") != "TabOpsTransformer"
-        ]
-        new_transformers.append(self.transformer_config)
-        step.opstransformers_dicts = new_transformers
-
-        workpiece.updated.send(workpiece)
-        step.updated.send(step)
+        """Applies the new list of tabs."""
+        workpiece = self._get_workpiece()
+        if workpiece:
+            workpiece.tabs = self.new_tabs
 
     def undo(self) -> None:
-        """Reverts to the previous tab configuration."""
-        targets = self._get_targets()
-        if not targets:
-            return
-
-        workpiece, step = targets
-        workpiece.tabs = self.old_tabs
-        step.opstransformers_dicts = self.old_opstransformers_dicts
-
-        workpiece.updated.send(workpiece)
-        step.updated.send(step)
+        """Reverts to the previous list of tabs."""
+        workpiece = self._get_workpiece()
+        if workpiece:
+            workpiece.tabs = self.old_tabs
 
 
 class TabCmd:
@@ -237,18 +205,15 @@ class TabCmd:
     def add_tabs(
         self,
         workpiece: WorkPiece,
-        step: Step,
         count: int,
         width: float,
         strategy: str = "equidistant",
     ):
         """
-        Creates and applies tabs to a workpiece for a given step using a
-        specified strategy. This is an undoable action.
+        Creates and applies tabs to a workpiece. This is an undoable action.
 
         Args:
             workpiece: The WorkPiece to add tabs to.
-            step: The Step whose pipeline will process the tabs.
             count: The number of tabs to add.
             width: The width of each tab in millimeters.
             strategy: The placement strategy (currently only 'equidistant').
@@ -269,28 +234,21 @@ class TabCmd:
                 f"Tabbing strategy '{strategy}' not implemented."
             )
 
-        transformer_config = {"name": "TabOpsTransformer", "enabled": True}
-
-        cmd = ConfigureTabsCommand(
+        cmd = SetWorkpieceTabsCommand(
             editor=self._editor,
             workpiece=workpiece,
-            step=step,
             new_tabs=new_tabs,
-            transformer_config=transformer_config,
             name=_("Add Tabs"),
         )
         self._editor.history_manager.execute(cmd)
 
-    def add_cardinal_tabs(
-        self, workpiece: WorkPiece, step: Step, width: float
-    ):
+    def add_cardinal_tabs(self, workpiece: WorkPiece, width: float):
         """
-        Creates and applies 4 tabs to a workpiece at the cardinal points
-        (North, South, East, West). This is an undoable action.
+        Creates and applies 4 tabs to a workpiece at the cardinal points. This
+        is an undoable action.
 
         Args:
             workpiece: The WorkPiece to add tabs to.
-            step: The Step whose pipeline will process the tabs.
             width: The width of each tab in millimeters.
         """
         if not workpiece.vectors:
@@ -302,27 +260,59 @@ class TabCmd:
 
         new_tabs = self._calculate_cardinal_tabs(workpiece.vectors, width)
 
-        transformer_config = {"name": "TabOpsTransformer", "enabled": True}
-
-        cmd = ConfigureTabsCommand(
+        cmd = SetWorkpieceTabsCommand(
             editor=self._editor,
             workpiece=workpiece,
-            step=step,
             new_tabs=new_tabs,
-            transformer_config=transformer_config,
             name=_("Add Cardinal Tabs"),
         )
         self._editor.history_manager.execute(cmd)
 
-    def clear_tabs(self, workpiece: WorkPiece, step: Step):
-        """Removes all tabs from a workpiece for a given step."""
-        transformer_config = {"name": "TabOpsTransformer", "enabled": True}
-        cmd = ConfigureTabsCommand(
+    def add_single_tab(
+        self,
+        workpiece: WorkPiece,
+        segment_index: int,
+        t: float,
+        width: float = 3.0,
+        length: float = 1.0,
+    ):
+        """Adds a single new tab to a workpiece. Undoable."""
+        new_tab = Tab(
+            width=width, length=length, segment_index=segment_index, t=t
+        )
+
+        # Create a new list with the added tab
+        new_tabs_list = deepcopy(workpiece.tabs)
+        new_tabs_list.append(new_tab)
+
+        cmd = SetWorkpieceTabsCommand(
             editor=self._editor,
             workpiece=workpiece,
-            step=step,
+            new_tabs=new_tabs_list,
+            name=_("Add Tab"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def remove_single_tab(self, workpiece: WorkPiece, tab_to_remove: Tab):
+        """Removes a single tab from a workpiece. Undoable."""
+        new_tabs_list = [
+            t for t in workpiece.tabs if t.uid != tab_to_remove.uid
+        ]
+
+        cmd = SetWorkpieceTabsCommand(
+            editor=self._editor,
+            workpiece=workpiece,
+            new_tabs=new_tabs_list,
+            name=_("Remove Tab"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def clear_tabs(self, workpiece: WorkPiece):
+        """Removes all tabs from a workpiece."""
+        cmd = SetWorkpieceTabsCommand(
+            editor=self._editor,
+            workpiece=workpiece,
             new_tabs=[],
-            transformer_config=transformer_config,
             name=_("Clear Tabs"),
         )
         self._editor.history_manager.execute(cmd)

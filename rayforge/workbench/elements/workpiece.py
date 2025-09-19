@@ -103,6 +103,84 @@ class WorkPieceView(CanvasElement):
         self._create_or_update_tab_handles()
         self.trigger_update()
 
+    def get_closest_point_on_path(
+        self, world_x: float, world_y: float, threshold_px: float = 5.0
+    ) -> Optional[Dict]:
+        """
+        Checks if a point in world coordinates is close to the workpiece's
+        vector path.
+
+        Args:
+            world_x: The x-coordinate in world space (mm).
+            world_y: The y-coordinate in world space (mm).
+            threshold_px: The maximum distance in screen pixels to be
+                          considered "close".
+
+        Returns:
+            A dictionary with location info
+              `{'segment_index': int, 't': float}`
+            if the point is within the threshold, otherwise None.
+        """
+        if not self.data.vectors or not self.canvas:
+            return None
+
+        work_surface = cast("WorkSurface", self.canvas)
+
+        # 1. Convert pixel threshold to a world-space (mm) threshold
+        ppm_x, _ = work_surface.get_view_scale()
+        if ppm_x < 1e-9:
+            return None
+        threshold_mm = threshold_px / ppm_x
+
+        # 2. Transform click coordinates to local, natural millimeter space
+        try:
+            inv_world_transform = self.get_world_transform().invert()
+            local_x_norm, local_y_norm = inv_world_transform.transform_point(
+                (world_x, world_y)
+            )
+        except Exception:
+            return None  # Transform not invertible
+
+        natural_size = self.data.get_natural_size()
+        if natural_size and None not in natural_size:
+            natural_w, natural_h = cast(Tuple[float, float], natural_size)
+        else:
+            natural_w, natural_h = self.data.get_local_size()
+
+        if natural_w <= 1e-9 or natural_h <= 1e-9:
+            return None
+
+        local_x_mm = local_x_norm * natural_w
+        local_y_mm = local_y_norm * natural_h
+
+        # 3. Find closest point on path in local mm space
+        closest = self.data.vectors.find_closest_point(local_x_mm, local_y_mm)
+        if not closest:
+            return None
+
+        segment_index, t, closest_point_local_mm = closest
+
+        # 4. Transform local closest point back to world space
+        closest_point_norm_x = closest_point_local_mm[0] / natural_w
+        closest_point_norm_y = closest_point_local_mm[1] / natural_h
+        (
+            closest_point_world_x,
+            closest_point_world_y,
+        ) = self.get_world_transform().transform_point(
+            (closest_point_norm_x, closest_point_norm_y)
+        )
+
+        # 5. Perform distance check in world space
+        dist_sq_world = (world_x - closest_point_world_x) ** 2 + (
+            world_y - closest_point_world_y
+        ) ** 2
+
+        if dist_sq_world > threshold_mm**2:
+            return None
+
+        # 6. Return location info if within threshold
+        return {"segment_index": segment_index, "t": t}
+
     def remove(self):
         """Disconnects signals and removes the element from the canvas."""
         logger.debug(f"Removing WorkPieceView for '{self.data.name}'")

@@ -2,7 +2,8 @@ from __future__ import annotations
 import logging
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
+
 from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
@@ -23,6 +24,8 @@ if TYPE_CHECKING:
     from ..undo import HistoryManager
     from ..shared.tasker.manager import TaskManager
     from ..config import ConfigManager
+    from ..core.workpiece import WorkPiece
+    from ..core.tab import Tab
 
 
 logger = logging.getLogger(__name__)
@@ -77,6 +80,30 @@ class DocEditor:
         self.stock = StockCmd(self)
         self.tab = TabCmd(self)
         self.machine = MachineCmd(self)
+
+    def add_tab_from_context(self, context: Dict[str, Any]):
+        """
+        Public handler for the 'add_tab' action, using context from the UI.
+        """
+        workpiece: "WorkPiece" = context["workpiece"]
+        location: Dict[str, Any] = context["location"]
+        segment_index = location["segment_index"]
+        t = location["t"]
+
+        self.tab.add_single_tab(
+            workpiece=workpiece, segment_index=segment_index, t=t
+        )
+
+    def remove_tab_from_context(self, context: Dict[str, Any]):
+        """
+        Public handler for the 'remove_tab' action, using context from the UI.
+        """
+        workpiece: "WorkPiece" = context["workpiece"]
+        tab_to_remove: "Tab" = context["tab_data"]
+
+        self.tab.remove_single_tab(
+            workpiece=workpiece, tab_to_remove=tab_to_remove
+        )
 
     @property
     def machine_dimensions(self) -> Optional[Tuple[float, float]]:

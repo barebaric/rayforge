@@ -16,6 +16,7 @@ from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
+from .elements.tab_handle import TabHandleElement
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -62,6 +63,7 @@ class WorkSurface(Canvas):
         self._cam_visible = cam_visible
         self._laser_dot_pos_mm = 0.0, 0.0
         self._transform_start_states: Dict[CanvasElement, dict] = {}
+        self.right_click_context: Optional[Dict] = None
 
         # The root element is now static and sized in world units (mm).
         self.root.set_size(self.width_mm, self.height_mm)
@@ -119,6 +121,7 @@ class WorkSurface(Canvas):
         self.paste_requested = Signal()
         self.duplicate_requested = Signal()
         self.aspect_ratio_changed = Signal()
+        self.context_changed = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -164,23 +167,58 @@ class WorkSurface(Canvas):
         self, gesture, n_press: int, x: float, y: float
     ):
         """Handles right-clicks to show the context menu."""
+        self.right_click_context = None  # Reset context on each click
         world_x, world_y = self._get_world_coords(x, y)
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
 
         if not hit_elem or hit_elem is self.root:
-            # If clicked on empty space, do nothing.
+            self.context_changed.send(self)
             return
 
-        # If the right-clicked item is not already part of the selection,
-        # clear the old selection and select just this one item.
-        if not hit_elem.selected:
-            self.unselect_all()
-            hit_elem.selected = True
-            self._finalize_selection_state()
+        # Determine the context type based on the hit element
+        # Case 1: Clicked on a TabHandle
+        context_type = None
+        if isinstance(hit_elem, TabHandleElement):
+            parent_wp_view = cast(WorkPieceView, hit_elem.parent)
+            self.right_click_context = {
+                "type": "tab",
+                "tab_data": hit_elem.data,
+                "workpiece": parent_wp_view.data,
+            }
+        # Case 2: Clicked on a WorkPieceView, check for path proximity
+        elif isinstance(hit_elem, WorkPieceView):
+            wp_view = cast(WorkPieceView, hit_elem)
+            location = wp_view.get_closest_point_on_path(
+                world_x, world_y, threshold_px=5.0
+            )
+            if location:
+                self.right_click_context = {
+                    "type": "geometry",
+                    "workpiece": wp_view.data,
+                    "location": location,
+                }
+            else:
+                self.right_click_context = {"type": "item"}
+        # Case 3: Clicked on another selectable item (e.g., a Group)
+        elif hit_elem.selectable:
+            self.right_click_context = {"type": "item"}
 
-        # Now that we're sure there's a relevant selection, delegate to the
-        # context menu module to build and show the menu.
-        context_menu.show_context_menu(self, gesture)
+        # Notify listeners to update action states *before* showing the menu
+        self.context_changed.send(self)
+
+        # Now, call the specific function to show the correct menu
+        if self.right_click_context:
+            context_type = self.right_click_context["type"]
+            if context_type == "item":
+                if not hit_elem.selected:
+                    self.unselect_all()
+                    hit_elem.selected = True
+                    self._finalize_selection_state()
+                context_menu.show_item_context_menu(self, gesture)
+            elif context_type == "geometry":
+                context_menu.show_geometry_context_menu(self, gesture)
+            elif context_type == "tab":
+                context_menu.show_tab_context_menu(self, gesture)
 
     def _update_theme_colors(self):
         """
@@ -339,6 +377,12 @@ class WorkSurface(Canvas):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""
+        # A left-click should clear any lingering right-click context.
+        if gesture.get_button() == Gdk.BUTTON_PRIMARY:
+            if self.right_click_context:
+                self.right_click_context = None
+                self.context_changed.send(self)
+
         # The base Canvas class handles the conversion from widget (pixel)
         # coordinates to world coordinates. We pass them on directly.
         logger.debug(

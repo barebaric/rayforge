@@ -25,6 +25,7 @@ class ActionManager:
         self.doc.descendant_added.connect(self.update_action_states)
         self.doc.descendant_removed.connect(self.update_action_states)
         self.win.surface.selection_changed.connect(self.update_action_states)
+        self.win.surface.context_changed.connect(self.update_action_states)
 
     def register_actions(self):
         """Creates all Gio.SimpleActions and adds them to the window."""
@@ -85,6 +86,8 @@ class ActionManager:
         # Tabbing Actions
         self._add_action("add-tabs-equidistant", self.on_add_tabs_equidistant)
         self._add_action("add-tabs-cardinal", self.on_add_tabs_cardinal)
+        self._add_action("tab-add", self.on_tab_add)
+        self._add_action("tab-remove", self.on_tab_remove)
         self._add_stateful_action(
             "show_tabs",
             self.on_show_tabs_state_change,
@@ -126,6 +129,14 @@ class ActionManager:
         can_add_tabs = any(wp.vectors for wp in target_workpieces)
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
         self.actions["add-tabs-cardinal"].set_enabled(can_add_tabs)
+
+        # Update context-sensitive tab actions based on the surface's public
+        # state
+        context = self.win.surface.right_click_context
+        can_add_single_tab = context and context.get("type") == "geometry"
+        can_remove_single_tab = context and context.get("type") == "tab"
+        self.actions["tab-add"].set_enabled(bool(can_add_single_tab))
+        self.actions["tab-remove"].set_enabled(bool(can_remove_single_tab))
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""
@@ -186,10 +197,8 @@ class ActionManager:
             ):
                 continue
 
-            step = workpiece.layer.workflow.steps[0]
             self.editor.tab.add_cardinal_tabs(
                 workpiece=workpiece,
-                step=step,
                 width=3.0,
             )
 
@@ -198,6 +207,18 @@ class ActionManager:
         state = show_tabs_action.get_state()
         if not (state and state.get_boolean()):
             show_tabs_action.set_state(GLib.Variant.new_boolean(True))
+
+    def on_tab_add(self, action, param):
+        """Handler for adding a single tab via context menu."""
+        context = self.win.surface.right_click_context
+        if context and context.get("type") == "geometry":
+            self.editor.add_tab_from_context(context)
+
+    def on_tab_remove(self, action, param):
+        """Handler for removing a single tab via context menu."""
+        context = self.win.surface.right_click_context
+        if context and context.get("type") == "tab":
+            self.editor.remove_tab_from_context(context)
 
     def on_show_tabs_state_change(self, action, state):
         """

@@ -4,7 +4,12 @@ from .. import config
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import OutlineTracer, EdgeTracer, Rasterizer
-from .transformer import Optimize, Smooth, MultiPassTransformer
+from .transformer import (
+    Optimize,
+    Smooth,
+    MultiPassTransformer,
+    TabOpsTransformer,
+)
 
 
 def create_outline_step(name: Optional[str] = None) -> Step:
@@ -21,6 +26,7 @@ def create_outline_step(name: Optional[str] = None) -> Step:
     ]
     step.opstransformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
+        TabOpsTransformer().to_dict(),
         Optimize(enabled=True).to_dict(),
     ]
     step.post_step_transformers_dicts = [
@@ -46,6 +52,7 @@ def create_contour_step(name: Optional[str] = None) -> Step:
     ]
     step.opstransformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
+        TabOpsTransformer().to_dict(),
         Optimize(enabled=True).to_dict(),
     ]
     step.post_step_transformers_dicts = [
