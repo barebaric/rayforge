@@ -55,6 +55,8 @@ class WorkSurface(Canvas):
         self.zoom_level = 1.0
         self.pan_x_mm = 0.0
         self.pan_y_mm = 0.0
+        self._last_view_scale_x: float = 0.0
+        self._last_view_scale_y: float = 0.0
         self._show_travel_moves = False
         self._workpieces_visible = True
         self.width_mm, self.height_mm = (
@@ -587,21 +589,31 @@ class WorkSurface(Canvas):
         # Update the base Canvas's view_transform
         self.view_transform = final_transform
 
-        # Propagate the view change to elements that depend on it.
-        # WorkPieceView's buffer needs to be re-rendered on zoom to avoid
-        # blurriness. Calling trigger_update handles this for both the
-        # base image and all of its internal ops surfaces.
-        for elem in self.find_by_type(WorkPieceView):
-            wp_view = cast(WorkPieceView, elem)
-            wp_view.trigger_update()
-            wp_view.update_handle_transforms()
+        # Check if the effective scale (pixels-per-mm) has changed. Panning
+        # does not change the scale, but zooming and resizing the window do.
+        # This prevents expensive re-rendering of buffered elements during
+        # panning.
+        new_scale_x, new_scale_y = self.get_view_scale()
+        scale_changed = (
+            abs(new_scale_x - self._last_view_scale_x) > 1e-9
+            or abs(new_scale_y - self._last_view_scale_y) > 1e-9
+        )
 
-        # Update laser dot size to maintain a constant size in pixels.
-        scale_x_ppm, _ = self.get_view_scale()
-        desired_diameter_px = 3.0
-        if scale_x_ppm > 1e-9:
-            diameter_mm = desired_diameter_px / scale_x_ppm
-            self._laser_dot.set_size(diameter_mm, diameter_mm)
+        if scale_changed:
+            self._last_view_scale_x = new_scale_x
+            self._last_view_scale_y = new_scale_y
+
+            # Propagate the view change to elements that depend on it.
+            for elem in self.find_by_type(WorkPieceView):
+                wp_view = cast(WorkPieceView, elem)
+                wp_view.trigger_update()
+                wp_view.update_handle_transforms()
+
+            # Update laser dot size to maintain a constant size in pixels.
+            desired_diameter_px = 3.0
+            if new_scale_x > 1e-9:
+                diameter_mm = desired_diameter_px / new_scale_x
+                self._laser_dot.set_size(diameter_mm, diameter_mm)
 
         self.set_laser_dot_position(
             self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]
