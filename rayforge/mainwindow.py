@@ -189,20 +189,14 @@ class MainWindow(Adw.ApplicationWindow):
                 display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
-        # Create a work area to display the image and paths
+        # Determine initial machine dimensions for the 3D canvas and surface
         if config.machine:
             width_mm, height_mm = config.machine.dimensions
-            ratio = width_mm / height_mm if height_mm > 0 else 1.0
             y_down = getattr(config.machine, "y_axis_down", False)
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
-            ratio = 1.0
             y_down = False
-        self.frame = Gtk.AspectFrame(ratio=ratio, obey_child=False)
-        self.frame.set_margin_start(12)
-        self.frame.set_hexpand(True)
-        self.paned.set_start_child(self.frame)
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -240,13 +234,16 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_editor_notification
         )
 
-        # Create the 3D canvas
+        # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
         self.view_stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
         )
+        self.view_stack.set_margin_start(12)
+        self.view_stack.set_hexpand(True)
+        self.paned.set_start_child(self.view_stack)
+
         self.view_stack.add_named(self.surface, "2d")
-        self.frame.set_child(self.view_stack)
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
@@ -330,9 +327,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.copy_requested.connect(self.on_copy_requested)
         self.surface.paste_requested.connect(self.on_paste_requested)
         self.surface.duplicate_requested.connect(self.on_duplicate_requested)
-        self.surface.aspect_ratio_changed.connect(
-            self._on_surface_aspect_changed
-        )
 
         # Create and add the status monitor widget.
         self.status_monitor = TaskBar(task_mgr)
@@ -562,9 +556,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
         self._update_actions_and_ui()
-
-    def _on_surface_aspect_changed(self, sender, ratio):
-        self.frame.set_ratio(ratio)
 
     def on_config_changed(self, sender, **kwargs):
         # Disconnect from the previously active machine, if any
