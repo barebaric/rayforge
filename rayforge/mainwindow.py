@@ -952,10 +952,13 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def on_select_all(self, action, param):
-        """Selects all workpieces in the document."""
+        """
+        Selects all top-level items (workpieces and groups) in the document.
+        """
         doc = self.doc_editor.doc
-        if doc.all_workpieces:
-            self.surface.select_items(doc.all_workpieces)
+        items_to_select = doc.get_top_level_items()
+        if items_to_select:
+            self.surface.select_items(items_to_select)
 
     def on_duplicate_requested(self, sender, items: List[DocItem]):
         """
