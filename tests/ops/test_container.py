@@ -146,6 +146,47 @@ def test_arc_to(sample_ops):
     assert last_cmd.clockwise is False
 
 
+def test_bezier_to():
+    ops = Ops()
+    ops.move_to(0.0, 0.0, 10.0)
+    ops.bezier_to(
+        c1=(1.0, 1.0, 10.0),
+        c2=(2.0, 1.0, 20.0),
+        end=(3.0, 0.0, 20.0),
+        num_steps=2,
+    )
+
+    assert len(ops.commands) == 3  # move_to + 2 line_to
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert isinstance(ops.commands[2], LineToCommand)
+
+    # Check interpolated points
+    # t=0.5
+    # B(0.5) = 0.125*p0 + 0.375*c1 + 0.375*c2 + 0.125*p1
+    p0 = (0.0, 0.0, 10.0)
+    c1 = (1.0, 1.0, 10.0)
+    c2 = (2.0, 1.0, 20.0)
+    p1 = (3.0, 0.0, 20.0)
+    expected_x = 0.125 * p0[0] + 0.375 * c1[0] + 0.375 * c2[0] + 0.125 * p1[0]
+    expected_y = 0.125 * p0[1] + 0.375 * c1[1] + 0.375 * c2[1] + 0.125 * p1[1]
+    expected_z = 0.125 * p0[2] + 0.375 * c1[2] + 0.375 * c2[2] + 0.125 * p1[2]
+    # This is the endpoint of the first segment (t=0.5).
+    assert ops.commands[1].end == pytest.approx(
+        (expected_x, expected_y, expected_z)
+    )
+
+    # Check final point (t=1.0)
+    assert ops.commands[2].end == pytest.approx(p1)
+
+
+def test_bezier_to_no_start_point():
+    ops = Ops()
+    # Should not raise an error, just do nothing and log a warning.
+    ops.bezier_to((1, 1, 1), (2, 2, 2), (3, 3, 3))
+    assert ops.is_empty()
+
+
 def test_set_power(sample_ops):
     sample_ops.set_power(800)
     last_cmd = sample_ops.commands[-1]

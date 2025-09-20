@@ -1,6 +1,6 @@
 import math
 from typing import List, Tuple, Any, Optional
-
+from itertools import groupby
 import numpy as np
 from scipy.optimize import least_squares
 
@@ -338,3 +338,47 @@ def get_arc_to_polyline_deviation(
 
         max_deviation = max(max_deviation, deviation)
     return max_deviation
+
+
+def remove_duplicates(
+    points: List[Tuple[float, ...]],
+) -> List[Tuple[float, ...]]:
+    """Removes consecutive duplicate points from a list."""
+    return [k for k, v in groupby(points)]
+
+
+def is_clockwise(points: List[Tuple[float, ...]]) -> bool:
+    """
+    Determines if the first three points in a list form a clockwise turn
+    using the 2D cross product.
+    """
+    if len(points) < 3:
+        return False  # Not enough points to determine direction
+
+    p1, p2, p3 = points[0], points[1], points[2]
+    cross_product = (p2[0] - p1[0]) * (p3[1] - p2[1]) - (p2[1] - p1[1]) * (
+        p3[0] - p2[0]
+    )
+    return cross_product < 0
+
+
+def arc_direction_is_clockwise(
+    points: List[Tuple[float, ...]], center: Tuple[float, float]
+) -> bool:
+    """
+    Determines the winding direction of a sequence of points around a center
+    by summing the cross products of vectors from the center to consecutive
+    points. A negative sum indicates a net clockwise rotation.
+    """
+    xc, yc = center
+    cross_product_sum = 0.0
+    for i in range(len(points) - 1):
+        x0, y0 = points[i][:2]
+        x1, y1 = points[i + 1][:2]
+        # Vectors from center to points
+        v0x, v0y = x0 - xc, y0 - yc
+        v1x, v1y = x1 - xc, y1 - yc
+        # 2D Cross product
+        cross_product_sum += v0x * v1y - v0y * v1x
+
+    return cross_product_sum < 0

@@ -247,6 +247,29 @@ class Ops:
             )
         )
 
+    def bezier_to(
+        self,
+        c1: Tuple[float, float, float],
+        c2: Tuple[float, float, float],
+        end: Tuple[float, float, float],
+        num_steps: int = 20,
+    ) -> None:
+        """
+        Adds a cubic Bézier curve approximated by a series of LineToCommands.
+        The curve starts from the current last point in the path. This method
+        requires full 3D coordinates for all control and end points.
+        """
+        if not self.commands or self.commands[-1].end is None:
+            logger.warning("bezier_to called without a starting point.")
+            return
+
+        start_point = self.commands[-1].end
+        segments = linearize.linearize_bezier(
+            start_point, c1, c2, end, num_steps
+        )
+        for _, end_point in segments:
+            self.line_to(*end_point)
+
     def set_power(self, power: float) -> None:
         """
         Sets the intended laser power for subsequent cutting commands.

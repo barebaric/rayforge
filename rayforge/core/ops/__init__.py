@@ -4,6 +4,8 @@ and the Command classes that define those operations.
 """
 
 from .container import Ops
+from . import flip
+from . import group
 from .commands import (
     State,
     Command,
@@ -29,6 +31,8 @@ from .commands import (
 
 __all__ = [
     "Ops",
+    "flip",
+    "group",
     "State",
     "Command",
     "MovingCommand",

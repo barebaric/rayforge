@@ -1,116 +1,21 @@
 import math
-from itertools import groupby
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from ...shared.tasker.proxy import BaseExecutionContext
 from ...core.workpiece import WorkPiece
-from ...core.ops import (
-    Ops,
-    Command,
-    LineToCommand,
-    ArcToCommand,
-    MoveToCommand,
-)
+from ...core.ops import Ops, LineToCommand
+from ...core.ops.group import group_by_command_type
 from ...core.geo.analysis import (
     are_collinear,
     fit_circle_to_points,
     get_arc_to_polyline_deviation,
+    remove_duplicates,
+    arc_direction_is_clockwise,
 )
 from .base import OpsTransformer, ExecutionPhase
 
 
-def remove_duplicates(segment):
-    """
-    Removes *consecutive* duplicates from a list of points.
-    """
-    return [k for (k, v) in groupby(segment)]
-
-
-def is_clockwise(points):
-    """
-    Determines direction using cross product.
-    """
-    if len(points) < 3:
-        return False
-
-    p1, p2, p3 = points[0], points[1], points[2]
-    cross = (p2[0] - p1[0]) * (p3[1] - p2[1]) - (p2[1] - p1[1]) * (
-        p3[0] - p2[0]
-    )
-    return cross < 0
-
-
-def arc_direction(points, center):
-    xc, yc = center
-    cross_sum = 0.0
-    for i in range(len(points) - 1):
-        x0, y0 = points[i][:2]
-        x1, y1 = points[i + 1][:2]
-        dx0 = x0 - xc
-        dy0 = y0 - yc
-        dx1 = x1 - xc
-        dy1 = y1 - yc
-        cross = dx0 * dy1 - dy0 * dx1
-        cross_sum += cross
-    return cross_sum < 0  # True for clockwise
-
-
 def contains_command(segment, cmdcls):
     return any(isinstance(cmd, cmdcls) for cmd in segment)
-
-
-def split_into_segments(commands):
-    """
-    Splits commands into logical segments while tracking current position.
-    - Segments with arc_to are preceded by explicit or implicit move_to.
-    - State commands are standalone segments.
-    """
-    segments = []
-    current_segment: List[Command] = []
-    current_pos = None  # Track current position
-
-    for cmd in commands:
-        if cmd.is_travel_command():
-            # Start new segment
-            if current_segment:
-                segments.append(current_segment)
-            current_segment = [cmd]
-            current_pos = cmd.end
-
-        elif isinstance(cmd, ArcToCommand):
-            # Start new segment
-            if contains_command(current_segment, LineToCommand):
-                segments.append(current_segment)
-                current_segment = [cmd]
-            else:
-                current_segment.append(cmd)
-            current_pos = cmd.end
-
-        elif isinstance(cmd, LineToCommand):
-            # Add to current segment and track position
-            if contains_command(current_segment, ArcToCommand):
-                segments.append(current_segment)
-                current_segment = []
-            if not current_segment:
-                if current_pos is None:
-                    raise ValueError("line_to requires a starting position")
-                current_segment.append(MoveToCommand(current_pos))
-            current_segment.append(cmd)
-            current_pos = cmd.end
-
-        elif cmd.is_state_command() or cmd.is_marker_command():
-            # All other commands are standalone
-            if current_segment:
-                segments.append(current_segment)
-                current_segment = []
-            segments.append([cmd])
-
-        else:
-            raise ValueError(f"Unsupported command: {cmd}")
-
-    if current_segment:
-        segments.append(current_segment)
-
-    return segments
 
 
 class ArcWeld(OpsTransformer):
@@ -156,7 +61,7 @@ class ArcWeld(OpsTransformer):
         workpiece: Optional[WorkPiece] = None,
         context: Optional[BaseExecutionContext] = None,
     ) -> None:
-        segments = split_into_segments(ops.commands)
+        segments = group_by_command_type(ops.commands)
         ops.clear()
 
         for segment in segments:
@@ -237,7 +142,7 @@ class ArcWeld(OpsTransformer):
         i = center[0] - start_point[0]
         j = start_point[1] - center[1]  # Inverted Y-axis
 
-        clockwise = arc_direction(segment[start:end], center)
+        clockwise = arc_direction_is_clockwise(segment[start:end], center)
         ops.arc_to(end_point[0], end_point[1], i, j, clockwise, z=end_point[2])
 
     def _find_longest_valid_arc(self, segment, start_index):

@@ -1,10 +1,14 @@
 import numpy as np
 import math
 import logging
-from copy import copy
-from typing import Optional, List, cast, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple
 from ...core.workpiece import WorkPiece
-from ...core.ops import Ops, State, ArcToCommand, Command, MovingCommand
+from ...core.ops import Ops, State, MovingCommand
+from ...core.ops.flip import flip_segment
+from ...core.ops.group import (
+    group_by_state_continuity,
+    group_by_path_continuity,
+)
 from .base import OpsTransformer, ExecutionPhase
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
 
@@ -15,129 +19,6 @@ logger = logging.getLogger(__name__)
 def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     """Helper for 2D distance calculation on n-dimensional points."""
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
-
-
-def split_long_segments(operations: List[Command]) -> List[List[Command]]:
-    """
-    Split a list of operations such that segments where air assist
-    is enabled are separated from segments where it is not. We also
-    split on marker commands, as their order must be preserved.
-
-    The result is a list of Command lists.
-    """
-    if not operations:
-        return []
-
-    segments: List[List[Command]] = []
-    current_segment: List[Command] = []
-
-    for op in operations:
-        # Markers always create a new segment boundary.
-        if op.is_marker_command():
-            if current_segment:
-                segments.append(current_segment)
-            segments.append([op])  # The marker gets its own segment.
-            current_segment = []
-            continue
-
-        if not current_segment:
-            current_segment.append(op)
-            continue
-
-        last_state = current_segment[-1].state
-        if last_state and op.state and last_state.allow_rapid_change(op.state):
-            current_segment.append(op)
-        else:
-            segments.append(current_segment)
-            current_segment = [op]
-
-    if current_segment:
-        segments.append(current_segment)
-
-    return segments
-
-
-def split_segments(commands: List[Command]) -> List[List[MovingCommand]]:
-    """
-    Split a list of commands into segments. We use it to prepare
-    for reordering the segments for travel distance minimization.
-
-    Returns a list of segments. In other words, a list of
-    List[MovingCommand].
-    """
-    segments = []
-    current_segment = []
-    for cmd in commands:
-        if cmd.is_travel_command():
-            if current_segment:
-                segments.append(current_segment)
-            current_segment = [cmd]
-        elif cmd.is_cutting_command():
-            current_segment.append(cmd)
-        else:
-            raise ValueError(f"unexpected Command {cmd}")
-
-    if current_segment:
-        segments.append(current_segment)
-    return segments
-
-
-def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
-    """
-    The states attached to each point descibe the intended
-    machine state while traveling TO the point.
-
-    Example:
-      state:     A            B            C           D
-      points:   -> move_to 1 -> line_to 2 -> arc_to 3 -> line_to 4
-
-    After flipping this sequence, the state is in the wrong position:
-
-      state:     D            C           B            A
-      points:   -> line_to 4 -> arc_to 3 -> line_to 2 -> move_to 1
-
-    Note that for example the edge between point 3 and 2 no longer has
-    state C, it is B instead. 4 -> 3 should be D, but is C.
-    So we have to shift the state and the command to the next point.
-    Correct:
-
-      state:     A            D            C           B
-      points:   -> move_to 4 -> line_to 3 -> arc_to 2 -> line_to 1
-    """
-    length = len(segment)
-    if length <= 1:
-        return segment
-
-    new_segment = []
-    for i in range(length - 1, -1, -1):
-        cmd = segment[i]
-        prev_cmd = segment[(i + 1) % length]
-        new_cmd = copy(prev_cmd)
-        new_cmd.end = cmd.end
-
-        # Fix arc_to parameters
-        if isinstance(new_cmd, ArcToCommand):
-            # Get original arc (prev op in original segment)
-            orig_cmd = cast(ArcToCommand, segment[i + 1])
-            x_end, y_end, _ = orig_cmd.end
-            i_orig, j_orig = orig_cmd.center_offset
-
-            # Calculate center and new offsets.
-            # new_cmd.end holds the start point of the original arc.
-            x_start, y_start, z_start = new_cmd.end
-            center_x = x_start + i_orig
-            center_y = y_start + j_orig
-            new_i = center_x - x_end
-            new_j = center_y - y_end
-
-            # Update arc parameters
-            new_cmd.end = (x_start, y_start, z_start)
-            new_cmd.center_offset = (new_i, new_j)
-            new_cmd.clockwise = not orig_cmd.clockwise
-
-        new_segment.append(new_cmd)
-
-    return new_segment
 
 
 def greedy_order_segments(
@@ -340,7 +221,7 @@ class Optimize(OpsTransformer):
         logger.debug(f"Command count {len(commands)}")
 
         # Step 2: Splitting long segments
-        long_segments = split_long_segments(commands)
+        long_segments = group_by_state_continuity(commands)
         if context.is_cancelled():
             return
 
@@ -392,7 +273,7 @@ class Optimize(OpsTransformer):
 
             # Step 3: Split long segments into short segments
             context.set_message(_("Finding reorderable paths..."))
-            segments = split_segments(long_segment)
+            segments = group_by_path_continuity(long_segment)
             # Mark this small stage as complete.
             segment_ctx.set_progress(split_sub_weight)
             if not segments:

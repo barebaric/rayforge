@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 import potrace
 from ...core.ops import Ops
-from ...core.geo.linearize import linearize_bezier
 from .base import OpsProducer
 
 if TYPE_CHECKING:
@@ -161,24 +160,16 @@ class PotraceProducer(OpsProducer, ABC):
         if not ops.commands or ops.commands[-1].end is None:
             return
 
-        # Get the 3D start point from the last command in mm space.
-        p0_mm = ops.commands[-1].end
-        start_z = p0_mm[2]
+        # The Z coordinate is constant, taken from the last command's endpoint.
+        start_z = ops.commands[-1].end[2]
 
-        # Transform the 2D pixel control and end points to 2D mm space.
-        c1_mm_2d = self._transform_point(segment.c1)
-        c2_mm_2d = self._transform_point(segment.c2)
-        p1_mm_2d = self._transform_point(segment.end_point)
+        # Transform 2D pixel points to 3D mm-space points for the curve.
+        c1_2d = self._transform_point(segment.c1)
+        c2_2d = self._transform_point(segment.c2)
+        p1_2d = self._transform_point(segment.end_point)
 
-        # Create 3D points for the Bézier curve in mm space.
-        # Assume Z is constant across the curve, matching the Z of start point.
-        c1_mm = (c1_mm_2d[0], c1_mm_2d[1], start_z)
-        c2_mm = (c2_mm_2d[0], c2_mm_2d[1], start_z)
-        p1_mm = (p1_mm_2d[0], p1_mm_2d[1], start_z)
+        c1_3d = (c1_2d[0], c1_2d[1], start_z)
+        c2_3d = (c2_2d[0], c2_2d[1], start_z)
+        p1_3d = (p1_2d[0], p1_2d[1], start_z)
 
-        # Use the generic linearization function.
-        line_segments = linearize_bezier(p0_mm, c1_mm, c2_mm, p1_mm, num_steps)
-
-        # Add the resulting line segments to the Ops object.
-        for _, end_point in line_segments:
-            ops.line_to(*end_point)
+        ops.bezier_to(c1_3d, c2_3d, p1_3d, num_steps)
