@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple
+from typing import Sequence, Tuple
 from gi.repository import Gtk
 from .icons import get_icon
 
@@ -16,7 +16,7 @@ class SplitMenuButton(Gtk.Box):
 
     def __init__(
         self,
-        actions: List[Tuple[str, str, str]],
+        actions: Sequence[Tuple[str, str, str]],
         default_index: int = 0,
         **kwargs,
     ):
@@ -24,7 +24,7 @@ class SplitMenuButton(Gtk.Box):
         Initializes the SplitMenuButton.
 
         Args:
-            actions: A list of tuples, where each tuple contains
+            actions: A sequence of tuples, where each tuple contains
                      (name, icon_name, action_name) for an action.
             default_index: The index of the action to show by default.
         """

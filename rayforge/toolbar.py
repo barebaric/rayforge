@@ -21,8 +21,6 @@ class MainToolbar(Gtk.Box):
             orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs
         )
         # Signals for View-State controls (not app actions)
-        self.camera_visibility_toggled = Signal()
-        self.show_travel_toggled = Signal()
         self.machine_warning_clicked = Signal()
 
         self.set_margin_bottom(2)
@@ -46,29 +44,18 @@ class MainToolbar(Gtk.Box):
         self.append(sep)
 
         self.undo_button = UndoButton()
+        self.undo_button.set_tooltip_text(_("Undo"))
         self.undo_button.set_action_name("win.undo")
         self.append(self.undo_button)
 
         self.redo_button = RedoButton()
+        self.redo_button.set_tooltip_text(_("Redo"))
         self.redo_button.set_action_name("win.redo")
         self.append(self.redo_button)
 
-        # Clear and visibility
+        # Visibility controls
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
-
-        clear_button = Gtk.Button(child=get_icon("eraser-symbolic"))
-        clear_button.set_tooltip_text(_("Remove all workpieces"))
-        clear_button.set_action_name("win.clear")
-        self.append(clear_button)
-
-        # Add Stock button
-        self.add_stock_button = Gtk.Button(
-            child=get_icon("reset-stock-symbolic")
-        )
-        self.add_stock_button.set_tooltip_text(_("Reset stock to default."))
-        self.add_stock_button.set_action_name("win.add_stock")
-        self.append(self.add_stock_button)
 
         # The visibility button is a ToggleButton linked to a stateful action.
         # It manages its own icon state by listening to its "toggled" signal.
@@ -80,13 +67,10 @@ class MainToolbar(Gtk.Box):
         self.visibility_button.set_tooltip_text(
             _("Toggle workpiece visibility")
         )
-        # Link the button to the action. The action will control its state.
         self.visibility_button.set_action_name("win.show_workpieces")
-        # The button updates its own icon when its state changes.
         self.visibility_button.connect("toggled", self._on_visibility_toggled)
         self.append(self.visibility_button)
 
-        # This button also controls view state.
         self.camera_visibility_on_icon = get_icon("camera-on-symbolic")
         self.camera_visibility_off_icon = get_icon("camera-off-symbolic")
         self.camera_visibility_button = Gtk.ToggleButton()
@@ -95,27 +79,16 @@ class MainToolbar(Gtk.Box):
         self.camera_visibility_button.set_tooltip_text(
             _("Toggle camera image visibility")
         )
-        self.camera_visibility_button.connect(
-            "toggled",
-            lambda btn: self.camera_visibility_toggled.send(
-                self, active=btn.get_active()
-            ),
-        )
+        self.camera_visibility_button.set_action_name("win.toggle_camera_view")
         self.append(self.camera_visibility_button)
 
-        # This button also controls view state.
         self.show_travel_button = Gtk.ToggleButton()
         self.show_travel_button.set_child(get_icon("laser-path-symbolic"))
         self.show_travel_button.set_active(False)
         self.show_travel_button.set_tooltip_text(
             _("Toggle travel move visibility")
         )
-        self.show_travel_button.connect(
-            "toggled",
-            lambda btn: self.show_travel_toggled.send(
-                self, active=btn.get_active()
-            ),
-        )
+        self.show_travel_button.set_action_name("win.toggle_travel_view")
         self.append(self.show_travel_button)
 
         # Add a button to open the 3D preview window.
@@ -130,37 +103,33 @@ class MainToolbar(Gtk.Box):
             view_3d_button.set_tooltip_text(_("Show 3D Preview"))
         self.append(view_3d_button)
 
-        # Align buttons
+        # Add a button to toggle tab visibility.
+        self.show_tabs_button = Gtk.ToggleButton()
+        self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
+        self.show_tabs_button.set_active(True)
+        self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
+        self.show_tabs_button.set_action_name("win.show_tabs")
+        self.append(self.show_tabs_button)
+
+        # Arrangement buttons (Consolidated Dropdown)
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        self.align_h_center_button = Gtk.Button(
-            child=get_icon("align-horizontal-center-symbolic")
-        )
-        self.align_h_center_button.set_tooltip_text(_("Center Horizontally"))
-        self.align_h_center_button.set_action_name("win.align-h-center")
-        self.append(self.align_h_center_button)
-
-        self.align_v_center_button = Gtk.Button(
-            child=get_icon("align-vertical-center-symbolic")
-        )
-        self.align_v_center_button.set_tooltip_text(_("Center Vertically"))
-        self.align_v_center_button.set_action_name("win.align-v-center")
-        self.append(self.align_v_center_button)
-
-        # Align Edge buttons (Split Dropdown)
-        # We pass the icon NAME string to the SplitMenuButton, not the widget.
-        align_actions = [
+        arrange_actions = [
+            (
+                _("Center Horizontally"),
+                "align-horizontal-center-symbolic",
+                "win.align-h-center",
+            ),
+            (
+                _("Center Vertically"),
+                "align-vertical-center-symbolic",
+                "win.align-v-center",
+            ),
             (_("Align Left"), "align-left-symbolic", "win.align-left"),
             (_("Align Right"), "align-right-symbolic", "win.align-right"),
             (_("Align Top"), "align-top-symbolic", "win.align-top"),
             (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
-        ]
-        self.align_menu_button = SplitMenuButton(actions=align_actions)
-        self.append(self.align_menu_button)
-
-        # Distribute buttons (Split Dropdown)
-        distribute_actions = [
             (
                 _("Spread Horizontally"),
                 "distribute-horizontal-symbolic",
@@ -171,16 +140,15 @@ class MainToolbar(Gtk.Box):
                 "distribute-vertical-symbolic",
                 "win.spread-v",
             ),
+            (
+                _("Auto Layout (pack workpieces)"),
+                "auto-layout-symbolic",
+                "win.layout-pixel-perfect",
+            ),
         ]
-        self.distribute_menu_button = SplitMenuButton(
-            actions=distribute_actions
-        )
-        self.append(self.distribute_menu_button)
-
-        auto_layout_button = Gtk.Button(child=get_icon("auto-layout-symbolic"))
-        auto_layout_button.set_tooltip_text(_("Auto Layout (pack workpieces)"))
-        auto_layout_button.set_action_name("win.layout-pixel-perfect")
-        self.append(auto_layout_button)
+        self.arrange_menu_button = SplitMenuButton(actions=arrange_actions)
+        self.arrange_menu_button.set_tooltip_text(_("Arrange selection"))
+        self.append(self.arrange_menu_button)
 
         # Tabbing buttons (Split Dropdown)
         tab_actions = [
@@ -198,14 +166,6 @@ class MainToolbar(Gtk.Box):
         self.tab_menu_button = SplitMenuButton(actions=tab_actions)
         self.tab_menu_button.set_tooltip_text(_("Add Tabs to selection"))
         self.append(self.tab_menu_button)
-
-        # Add a button to toggle tab visibility.
-        self.show_tabs_button = Gtk.ToggleButton()
-        self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
-        self.show_tabs_button.set_active(True)
-        self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
-        self.show_tabs_button.set_action_name("win.show_tabs")
-        self.append(self.show_tabs_button)
 
         # Control buttons: home, send, pause, stop
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)

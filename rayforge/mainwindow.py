@@ -201,7 +201,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface = WorkSurface(
             editor=self.doc_editor,
             machine=config.machine,
-            cam_visible=self.toolbar.camera_visibility_button.get_active(),
+            cam_visible=True,  # Will be set by action state
         )
         self.surface.set_hexpand(True)
 
@@ -352,15 +352,27 @@ class MainWindow(Adw.ApplicationWindow):
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
-        """
-        Callback for the stateful 'show_workpieces' action.
-        This will only be called with a valid state value.
-        """
-        # Apply the new state to the application logic
         is_visible = value.get_boolean()
         self.surface.set_workpieces_visible(is_visible)
+        action.set_state(value)
 
-        # Set the action's state, which updates all listening widgets
+    def on_toggle_camera_view_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        self.surface.set_camera_image_visibility(is_visible)
+        button = self.toolbar.camera_visibility_button
+        if is_visible:
+            button.set_child(self.toolbar.camera_visibility_on_icon)
+        else:
+            button.set_child(self.toolbar.camera_visibility_off_icon)
+        action.set_state(value)
+
+    def on_toggle_travel_view_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        self.surface.set_show_travel_moves(is_visible)
         action.set_state(value)
 
     def on_view_top(self, action, param):
@@ -413,11 +425,6 @@ class MainWindow(Adw.ApplicationWindow):
         Most buttons are connected via Gio.Actions. Only view-state toggles
         and special widgets are connected here.
         """
-        self.toolbar.camera_visibility_toggled.connect(
-            self.on_camera_image_visibility_toggled
-        )
-        self.toolbar.show_travel_toggled.connect(self.on_show_travel_toggled)
-
         self.toolbar.machine_warning_clicked.connect(
             self.on_machine_warning_clicked
         )
@@ -787,13 +794,17 @@ class MainWindow(Adw.ApplicationWindow):
         am.get_action("view_iso").set_enabled(is_3d_view_active)
         am.get_action("view_toggle_perspective").set_enabled(is_3d_view_active)
 
-        # Update sensitivity for all alignment buttons
+        # Update sensitivity for Arrangement actions
+        can_distribute = len(self.surface.get_selected_workpieces()) >= 2
         am.get_action("align-h-center").set_enabled(has_selection)
         am.get_action("align-v-center").set_enabled(has_selection)
-        self.toolbar.align_menu_button.set_sensitive(has_selection)
-        self.toolbar.distribute_menu_button.set_sensitive(
-            len(self.surface.get_selected_workpieces()) >= 2
-        )
+        am.get_action("align-left").set_enabled(has_selection)
+        am.get_action("align-right").set_enabled(has_selection)
+        am.get_action("align-top").set_enabled(has_selection)
+        am.get_action("align-bottom").set_enabled(has_selection)
+        am.get_action("spread-h").set_enabled(can_distribute)
+        am.get_action("spread-v").set_enabled(can_distribute)
+        self.toolbar.arrange_menu_button.set_sensitive(has_selection)
 
         # Update sensitivity for Tab buttons
         show_tabs_action = am.get_action("show_tabs")
@@ -838,20 +849,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_open_clicked(self, sender):
         self.on_menu_import(sender)
-
-    def on_camera_image_visibility_toggled(self, sender, active):
-        self.surface.set_camera_image_visibility(active)
-        if active:
-            self.toolbar.camera_visibility_button.set_child(
-                self.toolbar.camera_visibility_on_icon
-            )
-        else:
-            self.toolbar.camera_visibility_button.set_child(
-                self.toolbar.camera_visibility_off_icon
-            )
-
-    def on_show_travel_toggled(self, sender, active):
-        self.surface.set_show_travel_moves(active)
 
     def on_clear_clicked(self, action, param):
         self.doc_editor.edit.clear_all_items()
