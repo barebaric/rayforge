@@ -557,7 +557,7 @@ class Ops:
                 new_ops.add(deepcopy(cmd))
                 continue
 
-            if cmd.end is None:
+            if not isinstance(cmd, MovingCommand):
                 continue
 
             if cmd.is_travel_command():
@@ -565,23 +565,23 @@ class Ops:
                 clipped_pen_pos = None  # A travel move always lifts the pen
                 continue
 
-            # Linearize the command into one or more line segments
-            segments_to_clip: List[
-                Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-            ] = []
-            if isinstance(cmd, LineToCommand):
-                segments_to_clip.append((last_point, cmd.end))
-            elif isinstance(cmd, ArcToCommand):
-                segments_to_clip.extend(
-                    linearize.linearize_arc(cmd, last_point)
-                )
+            # Linearize the command into a series of simpler commands
+            linearized_commands = cmd.linearize(last_point)
 
             # Process each linearized segment
-            for p1, p2 in segments_to_clip:
-                clipped_segment = clipping.clip_line_segment(p1, p2, rect)
+            p_current_segment_start = last_point
+            for l_cmd in linearized_commands:
+                if l_cmd.end is None:
+                    continue
+                p_current_segment_end = l_cmd.end
+
+                clipped_segment = clipping.clip_line_segment(
+                    p_current_segment_start, p_current_segment_end, rect
+                )
                 clipped_pen_pos = self._add_clipped_segment_to_ops(
                     clipped_segment, new_ops, clipped_pen_pos
                 )
+                p_current_segment_start = p_current_segment_end
 
             # The next command starts where the original unclipped command
             # ended
@@ -634,25 +634,23 @@ class Ops:
                 continue
 
             # Linearize cutting command into segments
-            segments_to_process: List[
-                Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-            ] = []
-            if isinstance(cmd, LineToCommand):
-                segments_to_process.append((last_point, cmd.end))
-            elif isinstance(cmd, ArcToCommand):
-                segments_to_process.extend(
-                    linearize.linearize_arc(cmd, last_point)
-                )
+            linearized_commands = cmd.linearize(last_point)
 
-            for p1, p2 in segments_to_process:
+            p_current_segment_start = last_point
+            for l_cmd in linearized_commands:
+                if l_cmd.end is None:
+                    continue
+                p_current_segment_end = l_cmd.end
+
                 kept_segments = clipping.subtract_regions_from_line_segment(
-                    p1, p2, regions
+                    p_current_segment_start, p_current_segment_end, regions
                 )
                 for sub_p1, sub_p2 in kept_segments:
                     if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
                         new_ops.move_to(*sub_p1)
                     new_ops.line_to(*sub_p2)
                     pen_pos = sub_p2
+                p_current_segment_start = p_current_segment_end
 
             last_point = cmd.end
 

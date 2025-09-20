@@ -1,7 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
+from abc import ABC, abstractmethod
+from ..geo import linearize as geo_linearize
 
 
 @dataclass
@@ -69,7 +71,7 @@ class Command:
         return {"type": self.__class__.__name__}
 
 
-class MovingCommand(Command):
+class MovingCommand(Command, ABC):
     end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,15 +79,36 @@ class MovingCommand(Command):
         d["end"] = self.end
         return d
 
+    @abstractmethod
+    def linearize(
+        self, start_point: Tuple[float, float, float]
+    ) -> List[Command]:
+        """
+        Returns a list of simpler commands (e.g., LineToCommand) that
+        approximate this command. For simple commands, it may return a list
+        containing only itself.
+        """
+        pass
+
 
 class MoveToCommand(MovingCommand):
     def is_travel_command(self) -> bool:
         return True
 
+    def linearize(
+        self, start_point: Tuple[float, float, float]
+    ) -> List[Command]:
+        return [self]
+
 
 class LineToCommand(MovingCommand):
     def is_cutting_command(self) -> bool:
         return True
+
+    def linearize(
+        self, start_point: Tuple[float, float, float]
+    ) -> List[Command]:
+        return [self]
 
 
 class ArcToCommand(MovingCommand):
@@ -107,6 +130,35 @@ class ArcToCommand(MovingCommand):
         d["center_offset"] = self.center_offset
         d["clockwise"] = self.clockwise
         return d
+
+    def linearize(
+        self, start_point: Tuple[float, float, float]
+    ) -> List[Command]:
+        """Approximates the arc with a series of LineToCommands."""
+        segments = geo_linearize.linearize_arc(self, start_point)
+        return [LineToCommand(end) for start, end in segments]
+
+    def reverse_geometry(
+        self,
+        original_start: Tuple[float, float, float],
+        original_end: Tuple[float, float, float],
+    ) -> None:
+        """
+        Recalculates the center offset and direction for when this arc
+        is used in a reversed segment. The command's own `end` property is
+        assumed to have already been set to the new endpoint (the original
+        start point).
+        """
+        # Original center is calculated from the original start point
+        center_x = original_start[0] + self.center_offset[0]
+        center_y = original_start[1] + self.center_offset[1]
+
+        # New offset is from the new start point (original end) to the center
+        new_i = center_x - original_end[0]
+        new_j = center_y - original_end[1]
+
+        self.center_offset = (new_i, new_j)
+        self.clockwise = not self.clockwise
 
 
 class SetPowerCommand(Command):

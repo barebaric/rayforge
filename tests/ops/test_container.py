@@ -352,6 +352,26 @@ def test_clip_fully_outside(clip_rect):
     assert len(clipped_ops.commands) == 0
 
 
+def test_clip_with_arc():
+    """Verify clip works on arcs via the new generic linearize interface."""
+    ops = Ops()
+    ops.move_to(0, 50)
+    ops.arc_to(100, 50, i=50, j=0, clockwise=False)  # Semicircle
+    clip_rect = (40.0, 0.0, 60.0, 100.0)  # A vertical slice through the middle
+    clipped_ops = ops.clip(clip_rect)
+
+    # Check that there are drawing commands left
+    drawing_cmds = [c for c in clipped_ops if c.is_cutting_command()]
+    assert len(drawing_cmds) > 0
+
+    # Check that all remaining points are within the rect bounds
+    for cmd in clipped_ops:
+        if isinstance(cmd, MovingCommand):
+            x, y, z = cmd.end
+            assert clip_rect[0] <= x <= clip_rect[2]
+            assert clip_rect[1] <= y <= clip_rect[3]
+
+
 def test_subtract_regions():
     ops = Ops()
     ops.move_to(0, 50, -5)

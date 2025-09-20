@@ -1,6 +1,6 @@
 from copy import copy
-from typing import List, cast
-from .commands import ArcToCommand, MovingCommand
+from typing import List
+from .commands import ArcToCommand, MovingCommand, MoveToCommand
 
 
 def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
@@ -17,34 +17,30 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
     if length <= 1:
         return segment
 
-    new_segment = []
-    for i in range(length - 1, -1, -1):
-        cmd = segment[i]
-        prev_cmd = segment[(i + 1) % length]
-        new_cmd = copy(prev_cmd)
-        new_cmd.end = cmd.end
+    new_segment: List[MovingCommand] = []
 
-        # Fix arc_to parameters
+    # The first command of the new segment is a MoveTo, created from the
+    # original segment's first MoveTo command.
+    first_cmd = MoveToCommand(end=segment[-1].end)
+    first_cmd.state = segment[0].state
+    new_segment.append(first_cmd)
+
+    # Process the rest of the commands in reverse
+    for i in range(length - 2, -1, -1):
+        original_cmd = segment[i + 1]
+        new_cmd = copy(original_cmd)  # Copies type (LineTo, ArcTo) and state
+        new_cmd.end = segment[i].end
+
         if isinstance(new_cmd, ArcToCommand):
-            # Get original arc (prev op in original segment)
-            orig_cmd = cast(ArcToCommand, segment[i + 1])
-            x_end, y_end, _ = orig_cmd.end
-            i_orig, j_orig = orig_cmd.center_offset
-
-            # Calculate center and new offsets.
-            # new_cmd.end holds the start point of the original arc.
-            assert new_cmd.end is not None, "Arc must have an endpoint"
-            x_start, y_start, z_start = new_cmd.end
-            center_x = x_start + i_orig
-            center_y = y_start + j_orig
-            new_i = center_x - x_end
-            new_j = center_y - y_end
-
-            # Update arc parameters
-            new_cmd.end = (x_start, y_start, z_start)
-            new_cmd.center_offset = (new_i, new_j)
-            new_cmd.clockwise = not orig_cmd.clockwise
-
+            # The original arc's start point is the endpoint of the command
+            # before it in the original segment.
+            original_start = segment[i].end
+            assert original_start is not None
+            # Delegate the complex recalculation to the command itself.
+            new_cmd.reverse_geometry(
+                original_start=original_start,
+                original_end=original_cmd.end,
+            )
         new_segment.append(new_cmd)
 
     return new_segment
