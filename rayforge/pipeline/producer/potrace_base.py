@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import potrace
 from ...core.ops import Ops
+from ...core.geo.linearize import linearize_bezier
 from .base import OpsProducer
 
 if TYPE_CHECKING:
@@ -157,40 +158,27 @@ class PotraceProducer(OpsProducer, ABC):
 
     def _flatten_bezier_segment(self, segment, ops: Ops, num_steps: int = 20):
         """Approximates a cubic Bézier curve with small line segments."""
-        if not ops.commands or not ops.commands[-1].end:
+        if not ops.commands or ops.commands[-1].end is None:
             return
 
-        if self.pixels_per_mm is None or not ops.commands:
-            return
+        # Get the 3D start point from the last command in mm space.
+        p0_mm = ops.commands[-1].end
+        start_z = p0_mm[2]
 
-        last_cmd = ops.commands[-1]
-        if last_cmd.end is None:
-            return
+        # Transform the 2D pixel control and end points to 2D mm space.
+        c1_mm_2d = self._transform_point(segment.c1)
+        c2_mm_2d = self._transform_point(segment.c2)
+        p1_mm_2d = self._transform_point(segment.end_point)
 
-        # last_cmd.end is a 3D point (x, y, z), but we only need x and y for
-        # the 2D reverse-transform calculation.
-        start_ops_x, start_ops_y = last_cmd.end[:2]
-        scale_x, scale_y = self.pixels_per_mm
+        # Create 3D points for the Bézier curve in mm space.
+        # Assume Z is constant across the curve, matching the Z of start point.
+        c1_mm = (c1_mm_2d[0], c1_mm_2d[1], start_z)
+        c2_mm = (c2_mm_2d[0], c2_mm_2d[1], start_z)
+        p1_mm = (p1_mm_2d[0], p1_mm_2d[1], start_z)
 
-        # Reverse the transform to get back to the original Potrace pixel
-        # coords
-        start_px = np.array(
-            [
-                (start_ops_x * scale_x) + BORDER_SIZE,
-                (self.original_surface_height - (start_ops_y * scale_y))
-                + BORDER_SIZE,
-            ]
-        )
+        # Use the generic linearization function.
+        line_segments = linearize_bezier(p0_mm, c1_mm, c2_mm, p1_mm, num_steps)
 
-        c1_px = np.array(segment.c1)
-        c2_px = np.array(segment.c2)
-        end_px = np.array(segment.end_point)
-
-        for t in np.linspace(0, 1, num_steps)[1:]:
-            p_px = (
-                (1 - t) ** 3 * start_px
-                + 3 * (1 - t) ** 2 * t * c1_px
-                + 3 * (1 - t) * t**2 * c2_px
-                + t**3 * end_px
-            )
-            ops.line_to(*self._transform_point(p_px))
+        # Add the resulting line segments to the Ops object.
+        for _, end_point in line_segments:
+            ops.line_to(*end_point)

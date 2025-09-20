@@ -3,6 +3,8 @@ from typing import Optional, List, Tuple, Dict, Any
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
 from ...shared.tasker.proxy import BaseExecutionContext
+from ...core.geo.analysis import get_angle_at_vertex
+from ...core.geo.linearize import resample_polyline
 from .base import OpsTransformer, ExecutionPhase
 
 
@@ -180,44 +182,6 @@ class Smooth(OpsTransformer):
         """Calculates the 2D Euclidean distance between two points."""
         return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 
-    def _subdivide_path(
-        self, points: List[Tuple[float, float, float]], is_closed: bool
-    ) -> List[Tuple[float, float, float]]:
-        """Resamples a path, adding points to increase density.
-
-        The density is proportional to the smoothing sigma, ensuring that
-        the path has enough detail to form smooth curves.
-        """
-        if not points:
-            return []
-
-        # Determine the maximum length of a sub-segment.
-        max_len = max(0.1, self._sigma / 4.0)
-        new_points = [points[0]]
-        num_segments = len(points) if is_closed else len(points) - 1
-
-        for i in range(num_segments):
-            p1 = points[i]
-            p2 = points[(i + 1) % len(points)]  # Wraps for closed paths
-            dist = self._distance(p1, p2)
-
-            if dist > max_len:
-                # If a segment is too long, subdivide it.
-                num_sub = math.ceil(dist / max_len)
-                for j in range(1, int(num_sub)):
-                    t = j / num_sub
-                    # Linear interpolation to create new points.
-                    px = p1[0] * (1 - t) + p2[0] * t
-                    py = p1[1] * (1 - t) + p2[1] * t
-                    # Z is constant at this stage, so we can just take p1's Z
-                    new_points.append((px, py, p1[2]))
-
-            # Add the original endpoint, avoiding duplication for closed paths.
-            if not (is_closed and i == num_segments - 1):
-                new_points.append(p2)
-
-        return new_points
-
     def _smooth_sub_segment(
         self, sub_points: List[Tuple[float, float, float]]
     ) -> List[Tuple[float, float, float]]:
@@ -258,7 +222,8 @@ class Smooth(OpsTransformer):
 
         is_closed = self._is_closed(points)
         work_points = points[:-1] if is_closed else points
-        prepared_points = self._subdivide_path(work_points, is_closed)
+        max_len = max(0.1, self._sigma / 4.0)
+        prepared_points = resample_polyline(work_points, max_len, is_closed)
         num_points = len(prepared_points)
 
         if num_points < 3:
@@ -273,7 +238,7 @@ class Smooth(OpsTransformer):
             p_prev = prepared_points[(i - 1 + num_points) % num_points]
             p_curr = prepared_points[i]
             p_next = prepared_points[(i + 1) % num_points]
-            angle = self._angle_between(p_prev, p_curr, p_next)
+            angle = get_angle_at_vertex(p_prev, p_curr, p_next)
 
             # Preserve a corner if its angle is smaller than the threshold.
             # We use `math.isclose` to avoid floating-point errors where an
@@ -353,32 +318,6 @@ class Smooth(OpsTransformer):
         if smoothed:
             smoothed.append(smoothed[0])  # Close the path.
         return smoothed
-
-    def _angle_between(
-        self,
-        p0: Tuple[float, float, float],
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
-    ) -> float:
-        """
-        Calculates the internal angle of the corner at point p1 in the
-        XY plane.
-        """
-        # Create vectors from p1 to p0 and p1 to p2.
-        v1x, v1y = p0[0] - p1[0], p0[1] - p1[1]
-        v2x, v2y = p2[0] - p1[0], p2[1] - p1[1]
-
-        # Calculate magnitudes for normalization.
-        mag_prod = self._distance(p0, p1) * self._distance(p1, p2)
-        if mag_prod == 0:
-            return math.pi  # Straight line if points are coincident.
-
-        # Dot product and normalization to get cosine of the angle.
-        dot = v1x * v2x + v1y * v2y
-        cos_theta = min(1.0, max(-1.0, dot / mag_prod))
-
-        # Return angle in radians.
-        return math.acos(cos_theta)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

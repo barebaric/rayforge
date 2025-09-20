@@ -1,9 +1,15 @@
 import pytest
+import math
+import numpy as np
 from rayforge.core.geo import Geometry
 from rayforge.core.geo.analysis import (
     get_path_winding_order,
     get_point_and_tangent_at,
     get_outward_normal_at,
+    get_angle_at_vertex,
+    are_collinear,
+    fit_circle_to_points,
+    get_arc_to_polyline_deviation,
 )
 
 
@@ -118,3 +124,103 @@ def test_get_outward_normal_at(ccw_square_geometry, cw_square_geometry):
     normal = get_outward_normal_at(cw_square_geometry.commands, 4, 0.5)
     assert normal is not None
     assert normal == pytest.approx((0, -1))
+
+
+def test_get_angle_at_vertex():
+    # 90 degree corner
+    p0, p1, p2 = (0.0, 10.0), (0.0, 0.0), (10.0, 0.0)
+    assert get_angle_at_vertex(p0, p1, p2) == pytest.approx(math.pi / 2)
+
+    # Straight line (180 degrees)
+    p0, p1, p2 = (-10.0, 0.0), (0.0, 0.0), (10.0, 0.0)
+    assert get_angle_at_vertex(p0, p1, p2) == pytest.approx(math.pi)
+
+    # 45 degree corner
+    p0, p1, p2 = (0.0, 10.0), (0.0, 0.0), (10.0, 10.0)
+    assert get_angle_at_vertex(p0, p1, p2) == pytest.approx(math.pi / 4)
+
+    # Coincident points
+    p0, p1, p2 = (10.0, 10.0), (0.0, 0.0), (0.0, 0.0)
+    assert get_angle_at_vertex(p0, p1, p2) == pytest.approx(math.pi)
+
+
+def test_are_collinear():
+    # Collinear points (horizontal)
+    points = [(0.0, 0.0, 0.0), (5.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
+    assert are_collinear(points) is True
+
+    # Collinear points (vertical)
+    points = [(0.0, 0.0, 0.0), (0.0, 5.0, 0.0), (0.0, 10.0, 0.0)]
+    assert are_collinear(points) is True
+
+    # Non-collinear points
+    points = [(0.0, 0.0, 0.0), (1.0, 1.0, 0.0), (2.0, 2.1, 0.0)]
+    assert are_collinear(points) is False
+
+
+def test_fit_circle_to_points_collinear_returns_none():
+    """Test collinear points return None."""
+    points = [(0.0, 0.0, 0.0), (2.0, 2.0, 0.0), (5.0, 5.0, 0.0)]
+    assert fit_circle_to_points(points) is None
+
+
+def test_fit_circle_to_points_perfect_circle():
+    """Test perfect circle fitting."""
+    center = (2.0, 3.0)
+    radius = 5.0
+    angles = np.linspace(0, 2 * np.pi, 20)
+    points = [
+        (
+            center[0] + radius * np.cos(theta),
+            center[1] + radius * np.sin(theta),
+            0.0,
+        )
+        for theta in angles
+    ]
+    result = fit_circle_to_points(points)
+    assert result is not None
+
+    (xc, yc), r, error = result
+    assert xc == pytest.approx(center[0], abs=1e-6)
+    assert yc == pytest.approx(center[1], abs=1e-6)
+    assert r == pytest.approx(radius, abs=1e-6)
+    assert error < 1e-6
+
+
+def test_fit_circle_to_points_noisy_circle():
+    """Test circle fitting with noisy points."""
+    center = (-1.0, 4.0)
+    radius = 3.0
+    np.random.seed(42)  # For reproducibility
+    angles = np.linspace(0, 2 * np.pi, 30)
+    noise = np.random.normal(scale=0.1, size=(len(angles), 2))
+
+    points = [
+        (
+            center[0] + radius * np.cos(theta) + dx,
+            center[1] + radius * np.sin(theta) + dy,
+            0.0,
+        )
+        for (theta, (dx, dy)) in zip(angles, noise)
+    ]
+    result = fit_circle_to_points(points)
+    assert result is not None
+
+    (xc, yc), r, error = result
+    assert xc == pytest.approx(center[0], abs=0.15)
+    assert yc == pytest.approx(center[1], abs=0.15)
+    assert r == pytest.approx(radius, abs=0.15)
+    assert error < 0.2
+
+
+def test_get_arc_to_polyline_deviation_perfect_arc():
+    """Test deviation for a perfect 90-degree arc."""
+    center = (7.0, 3.0)
+    radius = 5.0
+    angles = np.linspace(np.pi / 2, np.pi, 10)
+    points = [
+        (center[0] + radius * np.cos(t), center[1] + radius * np.sin(t), 0.0)
+        for t in angles
+    ]
+    deviation = get_arc_to_polyline_deviation(points, center, radius)
+    assert deviation < 0.05, f"Deviation too large: {deviation}"
