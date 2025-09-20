@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, Tuple, Dict, Any, List
 from abc import ABC, abstractmethod
+import numpy as np
+import math
 from ..geo import linearize as geo_linearize
 
 
@@ -50,6 +52,12 @@ class Command:
     def apply_to_state(self, state: "State") -> None:
         pass
 
+    def distance(
+        self, last_point: Optional[Tuple[float, float, float]]
+    ) -> float:
+        """Calculates the 2D distance covered by this command."""
+        return 0.0
+
     def is_state_command(self) -> bool:
         """Whether this command modifies the machine state (power, speed)."""
         return False
@@ -89,6 +97,17 @@ class MovingCommand(Command, ABC):
         containing only itself.
         """
         pass
+
+    def distance(
+        self, last_point: Optional[Tuple[float, float, float]]
+    ) -> float:
+        """Calculates the 2D distance of the move."""
+        # Use the command's own start_point if it has one (duck typing),
+        # otherwise use the endpoint of the last command.
+        start = getattr(self, "start_point", last_point)
+        if start is None:
+            return 0.0
+        return math.hypot(self.end[0] - start[0], self.end[1] - start[1])
 
 
 class MoveToCommand(MovingCommand):
@@ -329,3 +348,63 @@ class OpsSectionEndCommand(Command):
         d = super().to_dict()
         d["section_type"] = self.section_type.name
         return d
+
+
+class ScanLinePowerCommand(MovingCommand):
+    """
+    A specialized command for raster engraving that encodes a line segment
+    with continuously varying power levels. This is more efficient than a long
+    sequence of SetPower and LineTo commands.
+    """
+
+    def __init__(
+        self,
+        start_point: Tuple[float, float, float],
+        end: Tuple[float, float, float],
+        power_values: bytearray,
+    ) -> None:
+        super().__init__(end)
+        self.start_point = start_point
+        self.power_values = power_values
+
+    def is_cutting_command(self) -> bool:
+        return True
+
+    def linearize(
+        self, start_point: Tuple[float, float, float]
+    ) -> List[Command]:
+        """
+        Deconstructs the scan line into a sequence of SetPower and LineTo
+        commands. The `start_point` parameter from the interface is ignored
+        as this command is self-contained with its own start point.
+        """
+        commands: List[Command] = []
+        num_steps = len(self.power_values)
+        if num_steps == 0:
+            return []
+
+        p_start_vec = np.array(self.start_point)
+        p_end_vec = np.array(self.end)
+        line_vec = p_end_vec - p_start_vec
+
+        last_power = -1  # Sentinel value
+
+        for i in range(num_steps):
+            t = (i + 1) / num_steps
+            current_point = p_start_vec + t * line_vec
+            current_power = self.power_values[i]
+
+            if current_power != last_power:
+                commands.append(SetPowerCommand(current_power))
+                last_power = current_power
+
+            commands.append(LineToCommand(tuple(current_point)))
+        return commands
+
+    def reverse_geometry(self) -> None:
+        """
+        Reverses the command by swapping its start and end points and
+        reversing the array of power values.
+        """
+        self.start_point, self.end = self.end, self.start_point
+        self.power_values.reverse()

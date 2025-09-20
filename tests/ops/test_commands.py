@@ -7,6 +7,8 @@ from rayforge.core.ops.commands import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     SectionType,
+    ScanLinePowerCommand,
+    SetPowerCommand,
 )
 
 
@@ -105,3 +107,66 @@ def test_arc_to_command_reverse_geometry():
     # The new offset should be from (0,10) to (0,0), which is (0, -10).
     assert arc.center_offset[0] == pytest.approx(0)
     assert arc.center_offset[1] == pytest.approx(-10)
+
+
+def test_scan_line_power_command_linearize():
+    """Tests that a ScanLinePowerCommand linearizes correctly."""
+    cmd = ScanLinePowerCommand(
+        start_point=(0, 0, 5),
+        end=(3, 0, 5),
+        power_values=bytearray([100, 200, 200]),
+    )
+    linearized = cmd.linearize((0, 0, 0))
+
+    # Expect 5 commands: Set(100), Line(1,0), Set(200), Line(2,0), Line(3,0)
+    assert len(linearized) == 5
+    # First power set
+    assert isinstance(linearized[0], SetPowerCommand)
+    assert linearized[0].power == 100
+    # First line segment
+    assert isinstance(linearized[1], LineToCommand)
+    assert linearized[1].end == pytest.approx((1.0, 0.0, 5.0))
+    # Second power set
+    assert isinstance(linearized[2], SetPowerCommand)
+    assert linearized[2].power == 200
+    # Second line segment
+    assert isinstance(linearized[3], LineToCommand)
+    assert linearized[3].end == pytest.approx((2.0, 0.0, 5.0))
+    # Third line segment (power is unchanged)
+    assert isinstance(linearized[4], LineToCommand)
+    assert linearized[4].end == pytest.approx((3.0, 0.0, 5.0))
+
+
+def test_scan_line_power_command_reverse_geometry():
+    """Tests the reversal of a ScanLinePowerCommand."""
+    start = (0, 0, 0)
+    end = (10, 10, 10)
+    powers = bytearray([10, 20, 30])
+    cmd = ScanLinePowerCommand(start, end, powers)
+
+    cmd.reverse_geometry()
+
+    assert cmd.start_point == end
+    assert cmd.end == start
+    assert cmd.power_values == bytearray([30, 20, 10])
+
+
+def test_command_distance_calculation():
+    """Tests the distance() method on various command types."""
+    last_point = (0.0, 0.0, 0.0)
+
+    # LineTo should calculate distance from the last point
+    line_cmd = LineToCommand((3.0, 4.0, 0.0))
+    assert line_cmd.distance(last_point) == pytest.approx(5.0)
+
+    # ScanLinePowerCommand should use its own start_point, ignoring last_point
+    scan_cmd = ScanLinePowerCommand(
+        start_point=(10.0, 0.0, 0.0),
+        end=(13.0, 4.0, 0.0),
+        power_values=bytearray(),
+    )
+    assert scan_cmd.distance(last_point) == pytest.approx(5.0)
+
+    # State commands should have zero distance
+    state_cmd = SetPowerCommand(100)
+    assert state_cmd.distance(last_point) == 0.0

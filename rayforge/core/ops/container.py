@@ -347,27 +347,21 @@ class Ops:
 
     def distance(self) -> float:
         """
-        Calculates the total 2D distance of all moves in the XY plane.
+        Calculates the total 2D path length for all moving commands.
         """
         return query.get_total_distance(self.commands)
 
     def cut_distance(self) -> float:
         """
-        Like distance(), but only counts 2D cut distance. This is an
-        Ops-specific concept.
+        Like distance(), but only counts 2D cut distance.
         """
         total = 0.0
-
         last: Optional[Tuple[float, float, float]] = None
         for cmd in self.commands:
-            if cmd.is_travel_command():
-                last = cmd.end
-            elif cmd.is_cutting_command():
-                # treating arcs as lines is probably good enough
-                if last is not None and cmd.end is not None:
-                    total += math.hypot(
-                        cmd.end[0] - last[0], cmd.end[1] - last[1]
-                    )
+            if cmd.is_cutting_command():
+                total += cmd.distance(last)
+
+            if isinstance(cmd, MovingCommand):
                 last = cmd.end
         return total
 

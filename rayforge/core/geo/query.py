@@ -1,4 +1,3 @@
-import math
 from typing import List, Tuple, Any, Optional
 from .primitives import (
     find_closest_point_on_line_segment,
@@ -54,14 +53,9 @@ def get_total_distance(commands: List[Any]) -> float:
     total = 0.0
     last: Optional[Tuple[float, float, float]] = None
     for cmd in commands:
-        cmd_type_name = cmd.__class__.__name__
-        if (
-            cmd_type_name in ("MoveToCommand", "LineToCommand", "ArcToCommand")
-            and hasattr(cmd, "end")
-            and cmd.end
-        ):
-            if last is not None:
-                total += math.hypot(cmd.end[0] - last[0], cmd.end[1] - last[1])
+        total += cmd.distance(last)
+        # Update last point if the command was a move
+        if hasattr(cmd, "end") and cmd.end is not None:
             last = cmd.end
     return total
 

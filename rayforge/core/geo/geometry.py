@@ -20,7 +20,11 @@ from .analysis import (
     get_outward_normal_at,
     get_subpath_vertices,
 )
-from .query import get_bounding_rect, find_closest_point_on_path
+from .query import (
+    get_bounding_rect,
+    find_closest_point_on_path,
+    get_total_distance,
+)
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
@@ -44,6 +48,12 @@ class Command:
     def to_dict(self) -> Dict[str, Any]:
         return {"type": self.__class__.__name__}
 
+    def distance(
+        self, last_point: Optional[Tuple[float, float, float]]
+    ) -> float:
+        """Calculates the 2D distance covered by this command."""
+        return 0.0
+
 
 class MovingCommand(Command):
     """A geometric command that involves movement."""
@@ -54,6 +64,18 @@ class MovingCommand(Command):
         d = super().to_dict()
         d["end"] = self.end
         return d
+
+    def distance(
+        self, last_point: Optional[Tuple[float, float, float]]
+    ) -> float:
+        """
+        Calculates the 2D distance of the move (approximating arcs as lines).
+        """
+        if last_point is None:
+            return 0.0
+        return math.hypot(
+            self.end[0] - last_point[0], self.end[1] - last_point[1]
+        )
 
 
 class MoveToCommand(MovingCommand):
@@ -153,6 +175,10 @@ class Geometry:
 
     def rect(self) -> Tuple[float, float, float, float]:
         return get_bounding_rect(self.commands)
+
+    def distance(self) -> float:
+        """Calculates the total 2D path length for all moving commands."""
+        return get_total_distance(self.commands)
 
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
         v_x = matrix @ np.array([1, 0, 0, 0])

@@ -5,6 +5,7 @@ from rayforge.core.ops import (
     LineToCommand,
     JobStartCommand,
     MovingCommand,
+    ScanLinePowerCommand,
 )
 from rayforge.pipeline.transformer.optimize import (
     Optimize,
@@ -269,3 +270,54 @@ def test_run_preserves_markers():
     starts_after = {c.end for c in moving_cmds_after if c.is_travel_command()}
     assert (10, 0, 0) in starts_after
     assert (110, 100, 0) in starts_after
+
+
+def test_run_optimization_with_scanline_command():
+    """
+    Verify the optimizer can correctly reorder and flip ScanLinePowerCommands.
+    """
+    ops = Ops()
+    ops.set_power(100)
+
+    # Path 1: A simple vector line from (0,0) to (10,0)
+    ops.move_to(0, 0, 0)
+    ops.line_to(10, 0, 0)
+
+    # Path 2: A raster line that should be flipped and placed after Path 1.
+    # Its end is at (10,0), which is contiguous with the end of Path 1.
+    ops.move_to(20, 0, 0)
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(20, 0, 0),
+            end=(10, 0, 0),
+            power_values=bytearray([10, 20, 30]),
+        )
+    )
+
+    optimizer = Optimize()
+    optimizer.run(ops)
+
+    ops.preload_state()
+    travel_after = _calculate_travel_distance(ops)
+
+    # The optimizer should flip the second segment, making the path fully
+    # contiguous and reducing travel distance to zero.
+    assert travel_after == pytest.approx(0.0)
+
+    # Filter out state commands to check the order of moving commands
+    moving_cmds = [c for c in ops.commands if isinstance(c, MovingCommand)]
+
+    # The order should be: Move, Line, Move, ScanLine
+    # The second MoveTo should be from (10,0) to (10,0) with zero length.
+    assert len(moving_cmds) == 4
+    assert isinstance(moving_cmds[0], MoveToCommand)
+    assert isinstance(moving_cmds[1], LineToCommand)
+    assert isinstance(moving_cmds[2], MoveToCommand)
+    assert isinstance(moving_cmds[3], ScanLinePowerCommand)
+
+    # Verify the raster command was correctly flipped
+    flipped_scan_cmd = moving_cmds[3]
+    assert isinstance(flipped_scan_cmd, ScanLinePowerCommand)
+    assert flipped_scan_cmd.start_point == pytest.approx((10.0, 0.0, 0.0))
+    assert flipped_scan_cmd.end == pytest.approx((20.0, 0.0, 0.0))
+    assert flipped_scan_cmd.power_values == bytearray([30, 20, 10])

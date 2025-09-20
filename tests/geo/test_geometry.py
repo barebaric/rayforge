@@ -10,6 +10,7 @@ from rayforge.core.geo import (
     LineToCommand,
     ArcToCommand,
 )
+from rayforge.core.geo.query import get_total_distance
 
 
 def _create_translate_matrix(x, y, z):
@@ -229,6 +230,36 @@ def test_copy_method(sample_geometry):
     # The copy's first command should have its original value
     copied_move_to = cast(MoveToCommand, copied_geo.commands[0])
     assert copied_move_to.end == (0.0, 0.0, 0.0)
+
+
+def test_distance(sample_geometry):
+    """Tests the distance calculation for a Geometry object."""
+    # move(0,0) -> line(10,10) -> arc(20,0)
+    # Approximating arc as a line for distance calc
+    dist1 = math.hypot(10 - 0, 10 - 0)
+    dist2 = math.hypot(20 - 10, 0 - 10)
+    expected_dist = dist1 + dist2
+
+    assert sample_geometry.distance() == pytest.approx(expected_dist)
+    # Also test the query function directly
+    assert get_total_distance(sample_geometry.commands) == pytest.approx(
+        expected_dist
+    )
+
+
+def test_geo_command_distance():
+    last_point = (0.0, 0.0, 0.0)
+    line_cmd = LineToCommand((3.0, 4.0, 0.0))
+    assert line_cmd.distance(last_point) == pytest.approx(5.0)
+
+    move_cmd = MoveToCommand((-3.0, -4.0, 0.0))
+    assert move_cmd.distance(last_point) == pytest.approx(5.0)
+
+    # Arc distance is approximated as a straight line
+    arc_cmd = ArcToCommand(
+        end=(3.0, 4.0, 0.0), center_offset=(0, 0), clockwise=False
+    )
+    assert arc_cmd.distance(last_point) == pytest.approx(5.0)
 
 
 def test_split_into_components_empty_geometry():

@@ -1,6 +1,11 @@
 from copy import copy
-from typing import List
-from .commands import ArcToCommand, MovingCommand, MoveToCommand
+from typing import List, cast
+from .commands import (
+    ArcToCommand,
+    MovingCommand,
+    MoveToCommand,
+    ScanLinePowerCommand,
+)
 
 
 def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
@@ -41,6 +46,18 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
                 original_start=original_start,
                 original_end=original_cmd.end,
             )
+        elif isinstance(new_cmd, ScanLinePowerCommand):
+            # We know original_cmd must also be a ScanLinePowerCommand
+            # because new_cmd is a copy of it.
+            original_scan_cmd = cast(ScanLinePowerCommand, original_cmd)
+
+            # Manually perform the reversal to avoid side-effects on the
+            # original command object.
+            # The new start_point is the original command's end point.
+            new_cmd.start_point = original_scan_cmd.end
+            # The new end point was already set correctly above.
+            # Create a reversed COPY of the power values.
+            new_cmd.power_values = original_scan_cmd.power_values[::-1]
         new_segment.append(new_cmd)
 
     return new_segment

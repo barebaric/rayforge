@@ -2,6 +2,11 @@ import pytest
 import math
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
+from rayforge.core.ops.commands import (
+    MoveToCommand,
+    LineToCommand,
+    ScanLinePowerCommand,
+)
 from rayforge.core.geo.query import (
     get_bounding_rect,
     get_total_distance,
@@ -28,20 +33,62 @@ def test_get_bounding_rect(sample_geometry):
     assert max_y == pytest.approx(10.0)
 
 
-def test_get_total_distance(sample_geometry):
-    # Ops fixture with travel and cutting moves
-    ops = Ops()
-    ops.move_to(0, 0)  # Travel move
-    ops.line_to(3, 4)  # Cutting move, length 5
-    ops.move_to(10, 10)  # Travel move from (3,4), length sqrt(7^2+6^2)
-    dist = get_total_distance(ops.commands)
-    expected = 5.0 + math.hypot(10 - 3, 10 - 4)
-    assert dist == pytest.approx(expected)
+def test_get_bounding_rect_with_ops_commands():
+    """Tests bounding box calculation with a list of ops commands."""
+    ops_list = [
+        MoveToCommand((0, 0, 0)),
+        LineToCommand((10, 0, 0)),
+        LineToCommand((10, 10, 0)),
+    ]
+    min_x, min_y, max_x, max_y = get_bounding_rect(ops_list)
+    assert min_x == pytest.approx(0.0)
+    assert min_y == pytest.approx(0.0)
+    assert max_x == pytest.approx(10.0)
+    assert max_y == pytest.approx(10.0)
 
+
+def test_get_bounding_rect_ignores_travel():
+    """Tests that travel-only moves do not affect the bounding box."""
+    ops_list = [
+        MoveToCommand((0, 0, 0)),
+        LineToCommand((10, 10, 0)),
+        MoveToCommand((100, 100, 0)),  # Should be ignored
+    ]
+    min_x, min_y, max_x, max_y = get_bounding_rect(ops_list)
+    assert min_x == pytest.approx(0.0)
+    assert min_y == pytest.approx(0.0)
+    assert max_x == pytest.approx(10.0)
+    assert max_y == pytest.approx(10.0)
+
+
+def test_get_total_distance_with_geo_commands(sample_geometry):
     # Geometry fixture (all moves are "drawing")
     dist_geo = get_total_distance(sample_geometry.commands)
     expected_geo = math.hypot(10, 10) + math.hypot(10, -10)
     assert dist_geo == pytest.approx(expected_geo)
+
+
+def test_get_total_distance_with_ops_commands():
+    """
+    Tests distance calculation with a list of ops commands,
+    including scanline.
+    """
+    # Ops fixture with travel and cutting moves
+    ops = Ops()
+    ops.move_to(0, 0)  # Travel move from implicit (0,0)
+    ops.line_to(3, 4)  # Cutting move, length 5
+    ops.move_to(10, 10)  # Travel move from (3,4), length sqrt(7^2+6^2)
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(10, 10, 0),
+            end=(20, 10, 0),
+            power_values=bytearray(),
+        )
+    )  # dist 10
+
+    dist = get_total_distance(ops.commands)
+    expected = 5.0 + math.hypot(10 - 3, 10 - 4) + 10.0
+    assert dist == pytest.approx(expected)
 
 
 def test_find_closest_point_on_path_empty_geometry():
