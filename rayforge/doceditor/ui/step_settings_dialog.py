@@ -1,5 +1,5 @@
 from typing import Tuple, Dict, Any, Optional
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...config import config
 from ...undo import HistoryManager, ChangePropertyCommand, DictItemCommand
@@ -52,6 +52,11 @@ class StepSettingsDialog(Adw.Window):
         # each time
         self.set_hide_on_close(False)
         self.connect("close-request", self._on_close_request)
+
+        # Add a key controller to close the dialog on Escape press
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
 
         # The main content area should be scrollable
         scrolled_window = Gtk.ScrolledWindow()
@@ -292,6 +297,16 @@ class StepSettingsDialog(Adw.Window):
                     )
 
         self.changed = Signal()
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        """Handle key press events, closing the dialog on Escape or Ctrl+W."""
+        has_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+
+        # Gdk.KEY_w covers both lowercase 'w' and uppercase 'W'
+        if keyval == Gdk.KEY_Escape or (has_ctrl and keyval == Gdk.KEY_w):
+            self.close()
+            return True
+        return False
 
     def _find_transformer_dict(
         self, transformer_name: str
