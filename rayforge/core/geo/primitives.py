@@ -1,6 +1,5 @@
 import math
 from typing import List, Tuple, Optional, Any
-
 from .linearize import linearize_arc
 
 
@@ -215,3 +214,31 @@ def find_closest_point_on_arc(
     dist_sq = (x - closest_point[0]) ** 2 + (y - closest_point[1]) ** 2
     t = max(0.0, min(1.0, t))
     return t, closest_point, dist_sq
+
+
+def get_segment_region_intersections(
+    p1_2d: Tuple[float, float],
+    p2_2d: Tuple[float, float],
+    regions: List[List[Tuple[float, float]]],
+) -> List[float]:
+    """
+    Calculates intersection points of a line segment with polygon boundaries.
+    """
+    cut_points_t = {0.0, 1.0}
+    for region in regions:
+        for i in range(len(region)):
+            p3 = region[i]
+            p4 = region[(i + 1) % len(region)]
+            intersection = line_segment_intersection(p1_2d, p2_2d, p3, p4)
+
+            if intersection:
+                ix, iy = intersection
+                seg_dx, seg_dy = p2_2d[0] - p1_2d[0], p2_2d[1] - p1_2d[1]
+
+                if abs(seg_dx) > abs(seg_dy):
+                    t = (ix - p1_2d[0]) / seg_dx if seg_dx != 0 else 0.0
+                else:
+                    t = (iy - p1_2d[1]) / seg_dy if seg_dy != 0 else 0.0
+                cut_points_t.add(max(0.0, min(1.0, t)))
+
+    return sorted(list(cut_points_t))

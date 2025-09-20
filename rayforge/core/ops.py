@@ -15,20 +15,12 @@ from typing import (
 from dataclasses import dataclass
 from enum import Enum, auto
 import numpy as np
-from .geo import linearize, primitives, query
+from .geo import linearize, query, clipping
 
 if TYPE_CHECKING:
-    from .geo import Geometry
+    from .geo.geometry import Geometry
 
 logger = logging.getLogger(__name__)
-
-
-# Cohen-Sutherland outcodes
-_INSIDE = 0  # 0000
-_LEFT = 1  # 0001
-_RIGHT = 2  # 0010
-_BOTTOM = 4  # 0100
-_TOP = 8  # 1000
 
 
 @dataclass
@@ -585,30 +577,13 @@ class Ops:
     def distance(self) -> float:
         """
         Calculates the total 2D distance of all moves in the XY plane.
-        Mostly exists to help debug the optimize() method.
         """
-        total = 0.0
-
-        last: Optional[Tuple[float, float, float]] = None
-        for cmd in self.commands:
-            if cmd.is_travel_command():
-                if last is not None and cmd.end is not None:
-                    total += math.hypot(
-                        cmd.end[0] - last[0], cmd.end[1] - last[1]
-                    )
-                last = cmd.end
-            elif cmd.is_cutting_command():
-                # treating arcs as lines is probably good enough
-                if last is not None and cmd.end is not None:
-                    total += math.hypot(
-                        cmd.end[0] - last[0], cmd.end[1] - last[1]
-                    )
-                last = cmd.end
-        return total
+        return query.get_total_distance(self.commands)
 
     def cut_distance(self) -> float:
         """
-        Like distance(), but only counts 2D cut distance.
+        Like distance(), but only counts 2D cut distance. This is an
+        Ops-specific concept.
         """
         total = 0.0
 
@@ -713,20 +688,13 @@ class Ops:
                 last_point_untransformed = original_cmd_end
 
         self.commands = transformed_commands
-        last_move_vec = np.array(
-            [
-                self.last_move_to[0],
-                self.last_move_to[1],
-                self.last_move_to[2],
-                1.0,
-            ]
-        )
+        last_move_vec = np.array([*self.last_move_to, 1.0])
         transformed_last_move_vec = matrix @ last_move_vec
         self.last_move_to = tuple(transformed_last_move_vec[:3])
         return self
 
     def translate(self, dx: float, dy: float, dz: float = 0.0) -> Ops:
-        """Translate geometric commands while preserving relative offsets"""
+        """Translate geometric commands."""
         matrix = np.identity(4)
         matrix[0, 3] = dx
         matrix[1, 3] = dy
@@ -734,10 +702,7 @@ class Ops:
         return self.transform(matrix)
 
     def scale(self, sx: float, sy: float, sz: float = 1.0) -> Ops:
-        """
-        Scales both absolute positions and relative offsets by creating a
-        scaling matrix and calling transform().
-        """
+        """Scales all geometric commands."""
         matrix = np.diag([sx, sy, sz, 1.0])
         return self.transform(matrix)
 
@@ -747,101 +712,24 @@ class Ops:
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
 
-        def _rotate_point(
-            p: Tuple[float, float, float],
-        ) -> Tuple[float, float, float]:
-            x, y, z = p
-            # Translate point to origin
-            translated_x = x - cx
-            translated_y = y - cy
-            # Rotate
-            rotated_x = translated_x * cos_a - translated_y * sin_a
-            rotated_y = translated_x * sin_a + translated_y * cos_a
-            # Translate back and return with original Z
-            return rotated_x + cx, rotated_y + cy, z
+        # Create a 4x4 transformation matrix for rotation around a point
+        # T(-cx, -cy) * R(angle) * T(cx, cy)
+        translate_to_origin = np.identity(4)
+        translate_to_origin[0, 3] = -cx
+        translate_to_origin[1, 3] = -cy
 
-        def _rotate_vector(v: Tuple[float, float]) -> Tuple[float, float]:
-            x, y = v
-            # Rotate vector (no translation)
-            rotated_x = x * cos_a - y * sin_a
-            rotated_y = x * sin_a + y * cos_a
-            return rotated_x, rotated_y
+        rotation_matrix = np.identity(4)
+        rotation_matrix[0, 0] = cos_a
+        rotation_matrix[0, 1] = -sin_a
+        rotation_matrix[1, 0] = sin_a
+        rotation_matrix[1, 1] = cos_a
 
-        for cmd in self.commands:
-            if cmd.end is not None:
-                cmd.end = _rotate_point(cmd.end)
+        translate_back = np.identity(4)
+        translate_back[0, 3] = cx
+        translate_back[1, 3] = cy
 
-            if isinstance(cmd, ArcToCommand):
-                cmd.center_offset = _rotate_vector(cmd.center_offset)
-
-        self.last_move_to = _rotate_point(self.last_move_to)
-        return self
-
-    def _compute_outcode(
-        self, x: float, y: float, rect: Tuple[float, float, float, float]
-    ) -> int:
-        x_min, y_min, x_max, y_max = rect
-        code = _INSIDE
-        if x < x_min:
-            code |= _LEFT
-        elif x > x_max:
-            code |= _RIGHT
-        if y < y_min:
-            code |= _BOTTOM
-        elif y > y_max:
-            code |= _TOP
-        return code
-
-    def _clip_segment(
-        self,
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
-        rect: Tuple[float, float, float, float],
-    ) -> Optional[
-        Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-    ]:
-        """
-        Clips a line segment to a rectangle using Cohen-Sutherland.
-        Returns the clipped segment or None if it's outside. Z is interpolated.
-        """
-        x_min, y_min, x_max, y_max = rect
-        (x1, y1, z1), (x2, y2, z2) = p1, p2
-        outcode1 = self._compute_outcode(x1, y1, rect)
-        outcode2 = self._compute_outcode(x2, y2, rect)
-        dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
-
-        while True:
-            if not (outcode1 | outcode2):  # Trivial accept
-                return (x1, y1, z1), (x2, y2, z2)
-            if outcode1 & outcode2:  # Trivial reject
-                return None
-
-            outcode_out = outcode1 if outcode1 else outcode2
-            x, y, z = 0.0, 0.0, 0.0
-
-            if outcode_out & _TOP:
-                y = y_max
-                x = x1 + dx * (y_max - y1) / dy if dy != 0 else x1
-                z = z1 + dz * (y_max - y1) / dy if dy != 0 else z1
-            elif outcode_out & _BOTTOM:
-                y = y_min
-                x = x1 + dx * (y_min - y1) / dy if dy != 0 else x1
-                z = z1 + dz * (y_min - y1) / dy if dy != 0 else z1
-            elif outcode_out & _RIGHT:
-                x = x_max
-                y = y1 + dy * (x_max - x1) / dx if dx != 0 else y1
-                z = z1 + dz * (x_max - x1) / dx if dx != 0 else z1
-            elif outcode_out & _LEFT:
-                x = x_min
-                y = y1 + dy * (x_min - x1) / dx if dx != 0 else y1
-                z = z1 + dz * (x_min - x1) / dx if dx != 0 else z1
-
-            if outcode_out == outcode1:
-                x1, y1, z1 = x, y, z
-                outcode1 = self._compute_outcode(x1, y1, rect)
-            else:
-                x2, y2, z2 = x, y, z
-                outcode2 = self._compute_outcode(x2, y2, rect)
+        matrix = translate_back @ rotation_matrix @ translate_to_origin
+        return self.transform(matrix)
 
     def _add_clipped_segment_to_ops(
         self,
@@ -919,7 +807,7 @@ class Ops:
 
             # Process each linearized segment
             for p1, p2 in segments_to_clip:
-                clipped_segment = self._clip_segment(p1, p2, rect)
+                clipped_segment = clipping.clip_line_segment(p1, p2, rect)
                 clipped_pen_pos = self._add_clipped_segment_to_ops(
                     clipped_segment, new_ops, clipped_pen_pos
                 )
@@ -933,91 +821,6 @@ class Ops:
     def dump(self) -> None:
         for segment in self.segments():
             print(segment)
-
-    def _get_segment_intersections(
-        self,
-        p1_2d: Tuple[float, float],
-        p2_2d: Tuple[float, float],
-        regions: List[List[Tuple[float, float]]],
-    ) -> List[float]:
-        """
-        Calculates all intersection points of a 2D segment with the
-        boundaries of the given regions.
-        Returns a sorted list of fractional distances 't' (from 0.0 to 1.0)
-        along the segment where intersections occur.
-        """
-        cut_points_t = {0.0, 1.0}
-        for region in regions:
-            for i in range(len(region)):
-                p3 = region[i]
-                p4 = region[(i + 1) % len(region)]
-                intersection = primitives.line_segment_intersection(
-                    p1_2d, p2_2d, p3, p4
-                )
-
-                if intersection:
-                    ix, iy = intersection
-                    seg_dx, seg_dy = p2_2d[0] - p1_2d[0], p2_2d[1] - p1_2d[1]
-
-                    if abs(seg_dx) > abs(seg_dy):
-                        t = (ix - p1_2d[0]) / seg_dx if seg_dx != 0 else 0.0
-                    else:
-                        t = (iy - p1_2d[1]) / seg_dy if seg_dy != 0 else 0.0
-                    cut_points_t.add(max(0.0, min(1.0, t)))
-
-        return sorted(list(cut_points_t))
-
-    def _process_segment_for_subtraction(
-        self,
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
-        regions: List[List[Tuple[float, float]]],
-        new_ops: "Ops",
-        pen_pos: Optional[Tuple[float, float, float]],
-    ) -> Optional[Tuple[float, float, float]]:
-        """
-        Processes a single 3D segment. It is split by the regions, and
-        only the parts outside the regions are added to new_ops.
-        Returns the updated pen position.
-        """
-        sorted_cuts = self._get_segment_intersections(p1[:2], p2[:2], regions)
-
-        for i in range(len(sorted_cuts) - 1):
-            t1, t2 = sorted_cuts[i], sorted_cuts[i + 1]
-            if abs(t1 - t2) < 1e-9:
-                continue
-
-            # Check if the midpoint of this sub-segment is inside any region
-            mid_t = (t1 + t2) / 2.0
-            mid_p = (
-                p1[0] + (p2[0] - p1[0]) * mid_t,
-                p1[1] + (p2[1] - p1[1]) * mid_t,
-            )
-
-            is_inside_any_region = any(
-                primitives.is_point_in_polygon(mid_p, r) for r in regions
-            )
-
-            if not is_inside_any_region:
-                # This sub-segment is kept. Interpolate its 3D coordinates.
-                sub_p1: Tuple[float, float, float] = (
-                    p1[0] + (p2[0] - p1[0]) * t1,
-                    p1[1] + (p2[1] - p1[1]) * t1,
-                    p1[2] + (p2[2] - p1[2]) * t1,
-                )
-                sub_p2: Tuple[float, float, float] = (
-                    p1[0] + (p2[0] - p1[0]) * t2,
-                    p1[1] + (p2[1] - p1[1]) * t2,
-                    p1[2] + (p2[2] - p1[2]) * t2,
-                )
-
-                if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
-                    new_ops.move_to(*sub_p1)
-
-                new_ops.line_to(*sub_p2)
-                pen_pos = sub_p2
-
-        return pen_pos
 
     def subtract_regions(
         self, regions: List[List[Tuple[float, float]]]
@@ -1060,19 +863,25 @@ class Ops:
                 continue
 
             # Linearize cutting command into segments
-            segments: List[
+            segments_to_process: List[
                 Tuple[Tuple[float, float, float], Tuple[float, float, float]]
             ] = []
             if isinstance(cmd, LineToCommand):
-                segments.append((last_point, cmd.end))
+                segments_to_process.append((last_point, cmd.end))
             elif isinstance(cmd, ArcToCommand):
-                segments.extend(linearize.linearize_arc(cmd, last_point))
-
-            # Process each linearized segment
-            for p1, p2 in segments:
-                pen_pos = self._process_segment_for_subtraction(
-                    p1, p2, regions, new_ops, pen_pos
+                segments_to_process.extend(
+                    linearize.linearize_arc(cmd, last_point)
                 )
+
+            for p1, p2 in segments_to_process:
+                kept_segments = clipping.subtract_regions_from_line_segment(
+                    p1, p2, regions
+                )
+                for sub_p1, sub_p2 in kept_segments:
+                    if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
+                        new_ops.move_to(*sub_p1)
+                    new_ops.line_to(*sub_p2)
+                    pen_pos = sub_p2
 
             last_point = cmd.end
 

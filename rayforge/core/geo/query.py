@@ -1,5 +1,5 @@
+import math
 from typing import List, Tuple, Any, Optional
-
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
@@ -45,6 +45,25 @@ def get_bounding_rect(
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
     return min_x, min_y, max_x, max_y
+
+
+def get_total_distance(commands: List[Any]) -> float:
+    """
+    Calculates the total 2D path length for all moving commands in a list.
+    """
+    total = 0.0
+    last: Optional[Tuple[float, float, float]] = None
+    for cmd in commands:
+        cmd_type_name = cmd.__class__.__name__
+        if (
+            cmd_type_name in ("MoveToCommand", "LineToCommand", "ArcToCommand")
+            and hasattr(cmd, "end")
+            and cmd.end
+        ):
+            if last is not None:
+                total += math.hypot(cmd.end[0] - last[0], cmd.end[1] - last[1])
+            last = cmd.end
+    return total
 
 
 def find_closest_point_on_path(

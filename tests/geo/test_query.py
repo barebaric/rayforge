@@ -1,8 +1,10 @@
 import pytest
 import math
 from rayforge.core.geo import Geometry
+from rayforge.core.ops import Ops
 from rayforge.core.geo.query import (
     get_bounding_rect,
+    get_total_distance,
     find_closest_point_on_path,
 )
 
@@ -24,6 +26,22 @@ def test_get_bounding_rect(sample_geometry):
     assert min_y == pytest.approx(0.0)
     assert max_x == pytest.approx(20.0)
     assert max_y == pytest.approx(10.0)
+
+
+def test_get_total_distance(sample_geometry):
+    # Ops fixture with travel and cutting moves
+    ops = Ops()
+    ops.move_to(0, 0)  # Travel move
+    ops.line_to(3, 4)  # Cutting move, length 5
+    ops.move_to(10, 10)  # Travel move from (3,4), length sqrt(7^2+6^2)
+    dist = get_total_distance(ops.commands)
+    expected = 5.0 + math.hypot(10 - 3, 10 - 4)
+    assert dist == pytest.approx(expected)
+
+    # Geometry fixture (all moves are "drawing")
+    dist_geo = get_total_distance(sample_geometry.commands)
+    expected_geo = math.hypot(10, 10) + math.hypot(10, -10)
+    assert dist_geo == pytest.approx(expected_geo)
 
 
 def test_find_closest_point_on_path_empty_geometry():
