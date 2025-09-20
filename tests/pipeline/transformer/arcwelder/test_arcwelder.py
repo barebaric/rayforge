@@ -284,3 +284,21 @@ def test_move_to_handling():
         MoveToCommand,
         LineToCommand,
     ]
+
+
+def test_arc_welder_passes_through_non_weldable_segments():
+    """Verify that ArcWeld does not modify segments with arcs."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.arc_to(10, 10, 5, 0)
+    ops.move_to(20, 20)  # Separate segment
+
+    original_ops_copy = ops.copy()
+
+    welder = ArcWeld()
+    welder.run(ops)
+
+    assert len(ops.commands) == len(original_ops_copy.commands)
+    for cmd_new, cmd_orig in zip(ops.commands, original_ops_copy.commands):
+        assert type(cmd_new) is type(cmd_orig)
+        assert cmd_new.end == cmd_orig.end

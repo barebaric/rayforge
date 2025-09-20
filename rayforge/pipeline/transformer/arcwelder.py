@@ -1,8 +1,13 @@
 import math
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from ...shared.tasker.proxy import BaseExecutionContext
 from ...core.workpiece import WorkPiece
-from ...core.ops import Ops, LineToCommand
+from ...core.ops import (
+    Ops,
+    Command,
+    LineToCommand,
+    MoveToCommand,
+)
 from ...core.ops.group import group_by_command_type
 from ...core.geo.analysis import (
     are_collinear,
@@ -12,10 +17,6 @@ from ...core.geo.analysis import (
     arc_direction_is_clockwise,
 )
 from .base import OpsTransformer, ExecutionPhase
-
-
-def contains_command(segment, cmdcls):
-    return any(isinstance(cmd, cmdcls) for cmd in segment)
 
 
 class ArcWeld(OpsTransformer):
@@ -55,6 +56,14 @@ class ArcWeld(OpsTransformer):
     def description(self) -> str:
         return _("Welds lines into arcs for smoother paths")
 
+    def _is_weldable_segment(self, segment: List[Command]) -> bool:
+        """Checks if a segment contains only MoveTo and LineTo commands."""
+        if not segment:
+            return False
+        return all(
+            isinstance(cmd, (MoveToCommand, LineToCommand)) for cmd in segment
+        )
+
     def run(
         self,
         ops: Ops,
@@ -65,11 +74,12 @@ class ArcWeld(OpsTransformer):
         ops.clear()
 
         for segment in segments:
-            if contains_command(segment, LineToCommand):
+            if self._is_weldable_segment(segment):
                 self.process_segment(
                     [cmd.end for cmd in segment if cmd.end is not None], ops
                 )
             else:
+                # Pass through non-weldable segments (e.g., arcs, markers)
                 for command in segment:
                     ops.add(command)
 
