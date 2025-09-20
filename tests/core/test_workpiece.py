@@ -6,7 +6,7 @@ from dataclasses import asdict
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
-from rayforge.core.geometry import Geometry
+from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.importer.svg.renderer import SvgRenderer
 from blinker import Signal

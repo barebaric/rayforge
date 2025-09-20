@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Tuple
 import numpy as np
 from ...core.item import DocItem
-from ...core.geometry import Geometry
+from ...core.geo import Geometry
 from ...core.vectorization_config import TraceConfig
 from ..base_importer import Importer
 from .renderer import RUIDA_RENDERER

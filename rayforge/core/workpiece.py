@@ -21,7 +21,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ..core.geometry import Geometry
+from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
 from .tab import Tab
@@ -165,7 +165,7 @@ class WorkPiece(DocItem):
         Restores a WorkPiece instance from a dictionary.
         """
         from ..importer import renderer_by_name
-        from ..core.geometry import Geometry
+        from .geo import Geometry
 
         renderer = renderer_by_name[state["renderer_name"]]
         source_file = Path(state["source_file"])

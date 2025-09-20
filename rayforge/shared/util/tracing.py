@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import potrace
 from typing import Tuple, List
-from ...core.geometry import Geometry
+from ...core.geo import Geometry
 
 BORDER_SIZE = 2
 

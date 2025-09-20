@@ -10,7 +10,7 @@ from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 
-from ...core.geometry import Geometry
+from ...core.geo import Geometry
 from ...core.group import Group
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix

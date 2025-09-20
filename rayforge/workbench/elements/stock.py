@@ -2,7 +2,7 @@ import logging
 import math
 import cairo
 from ...core.stock import StockItem
-from ...core.geometry import (
+from ...core.geo import (
     MoveToCommand as GeoMove,
     LineToCommand as GeoLine,
     ArcToCommand as GeoArc,

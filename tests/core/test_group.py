@@ -6,7 +6,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.importer import SVG_RENDERER
 from rayforge.core.stock import StockItem
-from rayforge.core.geometry import Geometry
+from rayforge.core.geo import Geometry
 
 
 @pytest.fixture

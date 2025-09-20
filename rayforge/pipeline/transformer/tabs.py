@@ -10,7 +10,7 @@ from ...core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
 )
-from ...core.geometry import (
+from ...core.geo import (
     LineToCommand as GeoLineToCommand,
     ArcToCommand as GeoArcToCommand,
     MovingCommand as GeoMovingCommand,

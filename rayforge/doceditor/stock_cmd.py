@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from ..core.stock import StockItem
-from ..core.geometry import Geometry
+from ..core.geo import Geometry
 from ..undo import ListItemCommand
 
 if TYPE_CHECKING:

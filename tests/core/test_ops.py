@@ -243,11 +243,7 @@ def test_get_frame(sample_ops):
     assert sum(1 for c in frame if c.is_travel_command()) == 1  # move_to
     assert sum(1 for c in frame if c.is_cutting_command()) == 4  # line_to
 
-    occupied_points = [(0, 0, 0), (10, 10, 0)]
-    xs = [p[0] for p in occupied_points]
-    ys = [p[1] for p in occupied_points]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
+    min_x, min_y, max_x, max_y = sample_ops.rect()
 
     expected_points = [
         (min_x, min_y, 0.0),
@@ -277,11 +273,12 @@ def test_distance(sample_ops):
 
 
 def test_cut_distance(sample_ops):
-    sample_ops.line_to(10, 10, -10)  # Cut with Z change
-    cut_distance = sample_ops.cut_distance()
-    # Distance should be 2D
-    expected = math.dist((0, 0), (10, 10))
-    assert cut_distance == pytest.approx(expected)
+    # Add a travel move to ensure it's not counted
+    sample_ops.move_to(100, 100)
+    cut_dist = sample_ops.cut_distance()
+    # Only the initial line_to(10, 10) from (0,0) should be counted
+    expected = math.hypot(10, 10)
+    assert cut_dist == pytest.approx(expected)
 
 
 def test_segments(sample_ops):
@@ -540,7 +537,7 @@ def test_transform_scale():
     ops.move_to(10, 20, 5)
     # Use a valid arc where start and end points have the same distance to
     # center start=(10,20), center=(15,27), end=(22,22), r^2=74
-    ops.arc_to(22, 22, i=5, j=7, z=-10)
+    ops.arc_to(22, 22, 5, 7, z=-10)
     scale_matrix = _create_scale_matrix(2, 3, 4)
     ops.transform(scale_matrix)
 

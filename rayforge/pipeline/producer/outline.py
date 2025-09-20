@@ -9,7 +9,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
     SectionType,
 )
-from ...core.geometry import (
+from ...core.geo import (
     Geometry,
     Command as GeometryCommand,
     MoveToCommand,

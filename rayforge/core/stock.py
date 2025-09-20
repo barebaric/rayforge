@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 
 from .item import DocItem
-from .geometry import Geometry
+from .geo import Geometry
 from .matrix import Matrix
 
 

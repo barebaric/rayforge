@@ -15,9 +15,10 @@ from typing import (
 from dataclasses import dataclass
 from enum import Enum, auto
 import numpy as np
+from .geo import linearize, primitives, query
 
 if TYPE_CHECKING:
-    from .geometry import Geometry
+    from .geo import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -399,16 +400,16 @@ class Ops:
         """
         Creates an Ops object from a Geometry object, converting its path.
         """
-        from . import geometry as geo_module
+        from . import geo
 
         new_ops = cls()
         for cmd in geometry.commands:
-            # Explicitly convert from geometry.Command to ops.Command
-            if isinstance(cmd, geo_module.MoveToCommand):
+            # Explicitly convert from geo.Command to ops.Command
+            if isinstance(cmd, geo.MoveToCommand):
                 new_ops.add(MoveToCommand(cmd.end))
-            elif isinstance(cmd, geo_module.LineToCommand):
+            elif isinstance(cmd, geo.LineToCommand):
                 new_ops.add(LineToCommand(cmd.end))
-            elif isinstance(cmd, geo_module.ArcToCommand):
+            elif isinstance(cmd, geo.ArcToCommand):
                 new_ops.add(
                     ArcToCommand(cmd.end, cmd.center_offset, cmd.clockwise)
                 )
@@ -553,27 +554,7 @@ class Ops:
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
         """
-        occupied_points: List[Tuple[float, float, float]] = []
-        last_point: Optional[Tuple[float, float, float]] = None
-        for cmd in self.commands:
-            if cmd.is_travel_command() and cmd.end:
-                last_point = cmd.end
-            elif cmd.is_cutting_command() and cmd.end:
-                if last_point is not None:
-                    occupied_points.append(last_point)
-                occupied_points.append(cmd.end)
-                last_point = cmd.end
-
-        if not occupied_points:
-            return 0.0, 0.0, 0.0, 0.0
-
-        xs = [p[0] for p in occupied_points if p]
-        ys = [p[1] for p in occupied_points if p]
-        if not xs or not ys:
-            return 0.0, 0.0, 0.0, 0.0
-        min_x, max_x = min(xs), max(xs)
-        min_y, max_y = min(ys), max(ys)
-        return min_x, min_y, max_x, max_y
+        return query.get_bounding_rect(self.commands)
 
     def get_frame(
         self,
@@ -698,7 +679,7 @@ class Ops:
                 # Use the last known untransformed point as the start for
                 # linearization
                 start_point = last_point_untransformed or (0.0, 0.0, 0.0)
-                segments = self._linearize_arc(cmd, start_point)
+                segments = linearize.linearize_arc(cmd, start_point)
                 for p1, p2 in segments:
                     point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
                     transformed_vec = matrix @ point_vec
@@ -862,58 +843,6 @@ class Ops:
                 x2, y2, z2 = x, y, z
                 outcode2 = self._compute_outcode(x2, y2, rect)
 
-    def _linearize_arc(
-        self, arc_cmd: ArcToCommand, start_point: Tuple[float, float, float]
-    ) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
-        """Converts an ArcToCommand into a list of line segments."""
-        segments: List[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ] = []
-        p0 = start_point
-        p1 = arc_cmd.end
-        if p1 is None:
-            return []
-        z0, z1 = p0[2], p1[2]
-
-        center = (
-            p0[0] + arc_cmd.center_offset[0],
-            p0[1] + arc_cmd.center_offset[1],
-        )
-        radius = math.dist(p0[:2], center)
-        if radius == 0:
-            # If radius is zero, it's just a line from p0 to p1
-            return [(p0, p1)]
-
-        start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
-        end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
-
-        # Robust angle normalization to handle atan2 wrap-around
-        angle_range = end_angle - start_angle
-        if arc_cmd.clockwise:
-            if angle_range > 0:
-                angle_range -= 2 * math.pi
-        else:  # Counter-clockwise
-            if angle_range < 0:
-                angle_range += 2 * math.pi
-
-        arc_len = abs(angle_range * radius)
-        # Use ~0.5mm segments for linearization
-        num_segments = max(2, int(arc_len / 0.5))
-
-        prev_pt = p0
-        for i in range(1, num_segments + 1):
-            t = i / num_segments
-            angle = start_angle + angle_range * t
-            z = z0 + (z1 - z0) * t
-            next_pt = (
-                center[0] + radius * math.cos(angle),
-                center[1] + radius * math.sin(angle),
-                z,
-            )
-            segments.append((prev_pt, next_pt))
-            prev_pt = next_pt
-        return segments
-
     def _add_clipped_segment_to_ops(
         self,
         segment: Optional[
@@ -984,7 +913,9 @@ class Ops:
             if isinstance(cmd, LineToCommand):
                 segments_to_clip.append((last_point, cmd.end))
             elif isinstance(cmd, ArcToCommand):
-                segments_to_clip.extend(self._linearize_arc(cmd, last_point))
+                segments_to_clip.extend(
+                    linearize.linearize_arc(cmd, last_point)
+                )
 
             # Process each linearized segment
             for p1, p2 in segments_to_clip:
@@ -1003,64 +934,6 @@ class Ops:
         for segment in self.segments():
             print(segment)
 
-    def _is_point_inside_polygon(
-        self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
-    ) -> bool:
-        """
-        Checks if a 2D point is inside a 2D polygon using the Ray Casting
-        algorithm. This implementation is robust against horizontal edges.
-        """
-        x, y = point
-        n = len(polygon)
-        if n == 0:
-            return False
-
-        inside = False
-        p1x, p1y = polygon[0]
-        for i in range(n + 1):
-            p2x, p2y = polygon[i % n]
-            # Check if the horizontal ray at y intersects with the edge
-            # (p1, p2)
-            if (p1y > y) != (p2y > y):
-                # Calculate the x-coordinate of the intersection
-                x_intersect = (p2x - p1x) * (y - p1y) / (p2y - p1y) + p1x
-                # If the point is to the left of the intersection, we have a
-                # crossing
-                if x < x_intersect:
-                    inside = not inside
-            p1x, p1y = p2x, p2y
-        return inside
-
-    def _line_intersection(
-        self,
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
-        p3: Tuple[float, float],
-        p4: Tuple[float, float],
-    ) -> Optional[Tuple[float, float]]:
-        """
-        Finds the intersection point of two line segments (p1,p2) and (p3,p4).
-        Returns the intersection point or None.
-        """
-        x1, y1 = p1
-        x2, y2 = p2
-        x3, y3 = p3
-        x4, y4 = p4
-
-        den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        if abs(den) < 1e-9:
-            return None  # Parallel or collinear
-
-        t_num = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
-        u_num = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3))
-
-        t = t_num / den
-        u = u_num / den
-
-        if 0 <= t <= 1 and 0 <= u <= 1:
-            return (x1 + t * (x2 - x1), y1 + t * (y2 - y1))
-        return None
-
     def _get_segment_intersections(
         self,
         p1_2d: Tuple[float, float],
@@ -1078,7 +951,9 @@ class Ops:
             for i in range(len(region)):
                 p3 = region[i]
                 p4 = region[(i + 1) % len(region)]
-                intersection = self._line_intersection(p1_2d, p2_2d, p3, p4)
+                intersection = primitives.line_segment_intersection(
+                    p1_2d, p2_2d, p3, p4
+                )
 
                 if intersection:
                     ix, iy = intersection
@@ -1120,7 +995,7 @@ class Ops:
             )
 
             is_inside_any_region = any(
-                self._is_point_inside_polygon(mid_p, r) for r in regions
+                primitives.is_point_in_polygon(mid_p, r) for r in regions
             )
 
             if not is_inside_any_region:
@@ -1191,7 +1066,7 @@ class Ops:
             if isinstance(cmd, LineToCommand):
                 segments.append((last_point, cmd.end))
             elif isinstance(cmd, ArcToCommand):
-                segments.extend(self._linearize_arc(cmd, last_point))
+                segments.extend(linearize.linearize_arc(cmd, last_point))
 
             # Process each linearized segment
             for p1, p2 in segments:

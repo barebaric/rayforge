@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
 
 from ..core.tab import Tab
-from ..core.geometry import (
+from ..core.geo import (
     Geometry,
     LineToCommand,
     ArcToCommand,

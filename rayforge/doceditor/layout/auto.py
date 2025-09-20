@@ -13,7 +13,8 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 
-from ...core.geometry import MoveToCommand, LineToCommand, ArcToCommand
+from ...core.geo import MoveToCommand, LineToCommand, ArcToCommand
+from ...core.geo.linearize import linearize_arc
 from ...core.matrix import Matrix
 from ...core.group import Group
 from ...core.item import DocItem
@@ -308,7 +309,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             elif isinstance(cmd, LineToCommand):
                 ctx.line_to(end[0], end[1])
             elif isinstance(cmd, ArcToCommand):
-                segments = geometry_for_render._linearize_arc(cmd, last_pos)
+                segments = linearize_arc(cmd, last_pos)
                 for _, p2 in segments:
                     ctx.line_to(p2[0], p2[1])
             if end is not None:

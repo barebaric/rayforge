@@ -17,7 +17,7 @@ from svgelements import (
 from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.vectorization_config import TraceConfig
-from ...core.geometry import Geometry
+from ...core.geo import Geometry
 from ...shared.util.tracing import trace_surface
 from ..base_importer import Importer
 from .renderer import SVG_RENDERER

@@ -1,5 +1,5 @@
 from rayforge.core.stock import StockItem
-from rayforge.core.geometry import Geometry
+from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 
 

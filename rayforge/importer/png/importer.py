@@ -11,7 +11,7 @@ from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ..base_importer import Importer
 from ...core.vectorization_config import TraceConfig
-from ...core.geometry import Geometry
+from ...core.geo import Geometry
 from ...shared.util.tracing import trace_surface
 from .renderer import PNG_RENDERER
 
