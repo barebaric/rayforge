@@ -1,8 +1,9 @@
 # flake8: noqa:F401
 import inspect
 from .base import OpsProducer
-from .outline import OutlineTracer
+from .depth import DepthEngraver
 from .edge import EdgeTracer
+from .outline import OutlineTracer
 from .rasterize import Rasterizer
 
 producer_by_name = dict(
@@ -18,6 +19,7 @@ producer_by_name = dict(
 __all__ = [
     "OpsProducer",
     "OutlineTracer",
+    "DepthEngraver",
     "EdgeTracer",
     "Rasterizer",
     "producer_by_name",

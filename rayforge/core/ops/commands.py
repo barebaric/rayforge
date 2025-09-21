@@ -359,12 +359,10 @@ class ScanLinePowerCommand(MovingCommand):
 
     def __init__(
         self,
-        start_point: Tuple[float, float, float],
         end: Tuple[float, float, float],
         power_values: bytearray,
     ) -> None:
         super().__init__(end)
-        self.start_point = start_point
         self.power_values = power_values
 
     def is_cutting_command(self) -> bool:
@@ -373,7 +371,6 @@ class ScanLinePowerCommand(MovingCommand):
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the command to a dictionary."""
         d = super().to_dict()
-        d["start_point"] = self.start_point
         d["power_values"] = list(self.power_values)
         return d
 
@@ -382,15 +379,15 @@ class ScanLinePowerCommand(MovingCommand):
     ) -> List[Command]:
         """
         Deconstructs the scan line into a sequence of SetPower and LineTo
-        commands. The `start_point` parameter from the interface is ignored
-        as this command is self-contained with its own start point.
+        commands. The `start_point` parameter from the interface is now
+        required.
         """
         commands: List[Command] = []
         num_steps = len(self.power_values)
         if num_steps == 0:
             return []
 
-        p_start_vec = np.array(self.start_point)
+        p_start_vec = np.array(start_point)
         p_end_vec = np.array(self.end)
         line_vec = p_end_vec - p_start_vec
 
@@ -408,10 +405,58 @@ class ScanLinePowerCommand(MovingCommand):
             commands.append(LineToCommand(tuple(current_point)))
         return commands
 
-    def reverse_geometry(self) -> None:
+    def split_by_power(
+        self, start_point: Tuple[float, float, float], min_power: int
+    ) -> List[Command]:
         """
-        Reverses the command by swapping its start and end points and
-        reversing the array of power values.
+        Splits the scanline into multiple segments
+          (MoveTo, ScanLinePowerCommand)
+        based on a power threshold, creating segments for only the "on" parts.
+        This method does NOT add overscan; it creates commands with the exact
+        geometry of the active segments.
+
+        Args:
+            start_point: The (x, y, z) starting point of the full scanline.
+            min_power: Power values <= this will be considered "off".
+
+        Returns:
+            A list of Command objects representing the active segments.
         """
-        self.start_point, self.end = self.end, self.start_point
-        self.power_values.reverse()
+        if not self.power_values:
+            return []
+
+        powers = np.array(self.power_values, dtype=np.uint8)
+        is_on = powers > min_power
+        if not np.any(is_on):
+            return []  # Fully blank line
+
+        # Find contiguous blocks of "on" pixels
+        padded = np.concatenate(([False], is_on, [False]))
+        diffs = np.diff(padded.astype(int))
+        starts = np.where(diffs == 1)[0]
+        ends = np.where(diffs == -1)[0]
+
+        p_start_vec = np.array(start_point)
+        p_end_vec = np.array(self.end)
+        line_vec = p_end_vec - p_start_vec
+
+        result_commands: List[Command] = []
+        num_steps = len(self.power_values)
+
+        for start_idx, end_idx in zip(starts, ends):
+            # A chunk from start_idx to end_idx-1
+            t_start = start_idx / num_steps
+            t_end = end_idx / num_steps
+
+            chunk_start_pt = p_start_vec + t_start * line_vec
+            chunk_end_pt = p_start_vec + t_end * line_vec
+
+            power_slice = self.power_values[start_idx:end_idx]
+
+            move_cmd = MoveToCommand(tuple(chunk_start_pt))
+            scan_cmd = ScanLinePowerCommand(
+                tuple(chunk_end_pt), bytearray(power_slice)
+            )
+            result_commands.extend([move_cmd, scan_cmd])
+
+        return result_commands

@@ -3,7 +3,7 @@ from typing import Optional
 from .. import config
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
-from .producer import OutlineTracer, EdgeTracer, Rasterizer
+from .producer import OutlineTracer, EdgeTracer, Rasterizer, DepthEngraver
 from .transformer import (
     Optimize,
     Smooth,
@@ -81,6 +81,28 @@ def create_raster_step(name: Optional[str] = None) -> Step:
     ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+    ]
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
+    return step
+
+
+def create_depth_engrave_step(name: Optional[str] = None) -> Step:
+    """Factory to create and configure a Depth Engrave step."""
+    assert config.config.machine
+    step = Step(
+        typelabel=_("Depth Engrave"),
+        name=name,
+    )
+    step.opsproducer_dict = DepthEngraver().to_dict()
+    step.modifiers_dicts = [
+        MakeTransparent().to_dict(),
+        ToGrayscale().to_dict(),
+    ]
+    step.opstransformers_dicts = [Optimize(enabled=False).to_dict()]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
     ]
     step.laser_dict = config.config.machine.heads[0].to_dict()
     step.max_cut_speed = config.config.machine.max_cut_speed

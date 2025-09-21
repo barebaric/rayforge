@@ -1,17 +1,13 @@
-from typing import Tuple, Dict, Any, Optional
+from typing import Tuple
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...config import config
-from ...undo import HistoryManager, ChangePropertyCommand, DictItemCommand
-from ...pipeline.transformer import (
-    OpsTransformer,
-    Smooth,
-    MultiPassTransformer,
-)
-from ...shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ...undo import HistoryManager, ChangePropertyCommand
 from ...core.doc import Doc
 from ...core.step import Step
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...pipeline.transformer import OpsTransformer
+from .step_settings import WIDGET_REGISTRY
 
 
 class StepSettingsDialog(Adw.Window):
@@ -70,78 +66,27 @@ class StepSettingsDialog(Adw.Window):
         page = Adw.PreferencesPage()
         scrolled_window.set_child(page)
 
-        # Find the MultiPass transformer to bind UI controls to it
-        multipass_transformer_dict = self._find_transformer_dict(
-            "MultiPassTransformer"
-        )
-        multipass_transformer = None
-        if multipass_transformer_dict:
-            multipass_transformer = MultiPassTransformer.from_dict(
-                multipass_transformer_dict
-            )
+        # 1. Producer Settings
+        producer_dict = self.step.opsproducer_dict
+        if producer_dict:
+            producer_name = producer_dict.get("type")
+            if producer_name:
+                WidgetClass = WIDGET_REGISTRY.get(producer_name)
+                if WidgetClass:
+                    widget = WidgetClass(
+                        title=self.step.typelabel,
+                        target_dict=producer_dict,
+                        page=page,
+                        step=self.step,
+                        history_manager=self.history_manager,
+                    )
+                    page.add(widget)
 
-        # General Settings group
+        # 2. General Settings
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
         page.add(general_group)
 
-        if multipass_transformer and multipass_transformer_dict:
-            # Add a spin row for passes
-            passes_adjustment = Gtk.Adjustment(
-                lower=1, upper=100, step_increment=1, page_increment=10
-            )
-            passes_row = Adw.SpinRow(
-                title=_("Number of Passes"),
-                subtitle=_("How often to repeat this step"),
-                adjustment=passes_adjustment,
-            )
-            passes_adjustment.set_value(multipass_transformer.passes)
-            general_group.add(passes_row)
-
-            # Add a spin row for Z step down
-            z_step_adjustment = Gtk.Adjustment(
-                lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
-            )
-            z_step_row = Adw.SpinRow(
-                title=_("Z Step-Down per Pass (mm)"),
-                subtitle=_(
-                    "Distance to lower Z-axis for each subsequent pass"
-                ),
-                adjustment=z_step_adjustment,
-                digits=2,
-            )
-            z_step_adjustment.set_value(multipass_transformer.z_step_down)
-            general_group.add(z_step_row)
-
-            # Connect signals
-            passes_row.connect(
-                "changed",
-                self.on_passes_changed,
-                multipass_transformer_dict,
-                z_step_row,  # Pass z_step_row to control its sensitivity
-            )
-            z_step_row.connect(
-                "changed",
-                self.on_z_step_down_changed,
-                multipass_transformer_dict,
-            )
-
-            # Set initial sensitivity for the z_step_row
-            z_step_row.set_sensitive(multipass_transformer.passes > 1)
-
-        else:
-            # Fallback for old steps that might not have the transformer yet
-            passes_adjustment = Gtk.Adjustment(
-                lower=1, upper=100, step_increment=1, page_increment=10
-            )
-            passes_row = Adw.SpinRow(
-                title=_("Number of Passes (Legacy)"),
-                subtitle=_("This step needs to be updated"),
-                adjustment=passes_adjustment,
-            )
-            passes_row.set_sensitive(False)
-            general_group.add(passes_row)
-
-        # Add a slider for power
+        # Power Slider
         power_row = Adw.ActionRow(title=_("Power (%)"))
         power_adjustment = Gtk.Adjustment(
             upper=100, step_increment=1, page_increment=10
@@ -214,87 +159,39 @@ class StepSettingsDialog(Adw.Window):
         air_assist_row.connect("notify::active", self.on_air_assist_changed)
         general_group.add(air_assist_row)
 
-        # Advanced/Optimization Settings
+        # 3. Path Post-Processing Transformers
         if self.step.opstransformers_dicts:
-            advanced_group = Adw.PreferencesGroup(
-                title=_("Path Post-Processing"),
-                description=_(
-                    "These steps are applied after path generation and"
-                    " can improve quality or reduce job time."
-                ),
-            )
-            page.add(advanced_group)
+            for t_dict in self.step.opstransformers_dicts:
+                transformer_name = t_dict.get("name")
+                if transformer_name:
+                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    if WidgetClass:
+                        transformer = OpsTransformer.from_dict(t_dict)
+                        widget = WidgetClass(
+                            title=transformer.label,
+                            target_dict=t_dict,
+                            page=page,
+                            step=self.step,
+                            history_manager=self.history_manager,
+                        )
+                        page.add(widget)
 
-            for transformer_dict in self.step.opstransformers_dicts:
-                transformer = OpsTransformer.from_dict(transformer_dict)
-                switch_row = Adw.SwitchRow(
-                    title=transformer.label, subtitle=transformer.description
-                )
-                switch_row.set_active(transformer.enabled)
-                advanced_group.add(switch_row)
-                switch_row.connect(
-                    "notify::active",
-                    self.on_transformer_toggled,
-                    transformer_dict,
-                )
-
-                if isinstance(transformer, Smooth):
-                    # Smoothness Amount Setting (Slider)
-                    smooth_amount_row = Adw.ActionRow(title=_("Smoothness"))
-                    smooth_adj = Gtk.Adjustment(
-                        lower=0, upper=100, step_increment=1, page_increment=10
-                    )
-                    smooth_scale = Gtk.Scale(
-                        orientation=Gtk.Orientation.HORIZONTAL,
-                        adjustment=smooth_adj,
-                        digits=0,
-                        draw_value=True,
-                    )
-                    smooth_adj.set_value(transformer.amount)
-                    smooth_scale.set_size_request(200, -1)
-                    smooth_amount_row.add_suffix(smooth_scale)
-                    advanced_group.add(smooth_amount_row)
-
-                    # Corner Angle Threshold Setting
-                    corner_angle_adj = Gtk.Adjustment(
-                        lower=0, upper=179, step_increment=1, page_increment=10
-                    )
-                    corner_angle_row = Adw.SpinRow(
-                        title=_("Corner Angle Threshold"),
-                        subtitle=_(
-                            "Angles sharper than this are kept as corners"
-                            " (degrees)"
-                        ),
-                        adjustment=corner_angle_adj,
-                    )
-                    corner_angle_adj.set_value(
-                        transformer.corner_angle_threshold
-                    )
-                    advanced_group.add(corner_angle_row)
-
-                    # Set initial sensitivity
-                    is_enabled = transformer.enabled
-                    smooth_amount_row.set_sensitive(is_enabled)
-                    corner_angle_row.set_sensitive(is_enabled)
-
-                    # Connect signals
-                    switch_row.connect(
-                        "notify::active",
-                        self.on_smooth_switch_sensitivity_toggled,
-                        smooth_amount_row,
-                        corner_angle_row,
-                    )
-                    smooth_scale.connect(
-                        "value-changed",
-                        lambda scale, t_dict=transformer_dict: self._debounce(
-                            self.on_smoothness_changed, scale, t_dict
-                        ),
-                    )
-                    corner_angle_row.connect(
-                        "changed",
-                        self.on_corner_angle_changed,
-                        transformer_dict,
-                    )
+        # 4. Post-Step (Assembly) Transformers
+        if self.step.post_step_transformers_dicts:
+            for t_dict in self.step.post_step_transformers_dicts:
+                transformer_name = t_dict.get("name")
+                if transformer_name:
+                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    if WidgetClass:
+                        transformer = OpsTransformer.from_dict(t_dict)
+                        widget = WidgetClass(
+                            title=transformer.label,
+                            target_dict=t_dict,
+                            page=page,
+                            step=self.step,
+                            history_manager=self.history_manager,
+                        )
+                        page.add(widget)
 
         self.changed = Signal()
 
@@ -307,21 +204,6 @@ class StepSettingsDialog(Adw.Window):
             self.close()
             return True
         return False
-
-    def _find_transformer_dict(
-        self, transformer_name: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Finds the dictionary for a specific transformer by its class name
-        in either the main or post-assembly transformer lists.
-        """
-        for t_dict in self.step.opstransformers_dicts:
-            if t_dict.get("name") == transformer_name:
-                return t_dict
-        for t_dict in self.step.post_step_transformers_dicts:
-            if t_dict.get("name") == transformer_name:
-                return t_dict
-        return None
 
     def _on_close_request(self, window):
         # Clean up the debounce timer when the window is closed to prevent
@@ -356,50 +238,6 @@ class StepSettingsDialog(Adw.Window):
         self._debounced_callback = None
         self._debounced_args = ()
         return GLib.SOURCE_REMOVE
-
-    def on_passes_changed(
-        self,
-        spin_row,
-        transformer_dict: Dict[str, Any],
-        z_step_row: Adw.SpinRow,
-    ):
-        new_value = get_spinrow_int(spin_row)
-        z_step_row.set_sensitive(new_value > 1)
-        if new_value == transformer_dict.get("passes"):
-            return
-
-        def _on_stepdown_changed():
-            self.step.post_step_transformer_changed.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=transformer_dict,
-            key="passes",
-            new_value=new_value,
-            name=_("Change number of passes"),
-            on_change_callback=_on_stepdown_changed,
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_z_step_down_changed(
-        self, spin_row, transformer_dict: Dict[str, Any]
-    ):
-        new_value = get_spinrow_float(spin_row)
-        if new_value == transformer_dict.get("z_step_down"):
-            return
-
-        def _on_stepdown_changed():
-            self.step.post_step_transformer_changed.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=transformer_dict,
-            key="z_step_down",
-            new_value=new_value,
-            name=_("Change Z Step-Down"),
-            on_change_callback=_on_stepdown_changed,
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
 
     def on_power_changed(self, scale):
         max_power = (
@@ -456,54 +294,6 @@ class StepSettingsDialog(Adw.Window):
             new_value=new_value,
             setter_method_name="set_air_assist",
             name=_("Toggle air assist"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_smooth_switch_sensitivity_toggled(
-        self, row, pspec, amount_row, angle_row
-    ):
-        is_active = row.get_active()
-        amount_row.set_sensitive(is_active)
-        angle_row.set_sensitive(is_active)
-
-    def on_smoothness_changed(self, scale, transformer_dict: Dict[str, Any]):
-        new_value = int(scale.get_value())
-        command = DictItemCommand(
-            target_dict=transformer_dict,
-            key="amount",
-            new_value=new_value,
-            name=_("Change smoothness"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_corner_angle_changed(
-        self, spin_row, transformer_dict: Dict[str, Any]
-    ):
-        new_value = get_spinrow_int(spin_row)
-        command = DictItemCommand(
-            target_dict=transformer_dict,
-            key="corner_angle_threshold",
-            new_value=new_value,
-            name=_("Change corner angle"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_transformer_toggled(
-        self, row, pspec, transformer_dict: Dict[str, Any]
-    ):
-        new_value = row.get_active()
-        label = transformer_dict.get("label", "Transformer")
-        command = DictItemCommand(
-            target_dict=transformer_dict,
-            key="enabled",
-            new_value=new_value,
-            name=_("Toggle '{label}'").format(label=label),
-            on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
         self.changed.send(self)

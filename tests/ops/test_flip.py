@@ -5,6 +5,7 @@ from rayforge.core.ops import (
     LineToCommand,
     ArcToCommand,
     MovingCommand,
+    ScanLinePowerCommand,
 )
 from rayforge.core.ops.flip import flip_segment
 
@@ -66,3 +67,25 @@ def test_flip_segment_with_arc():
     # Center is (5,0). New start is (0,0). New end is (10,0).
     # New offset i,j is from the new start (0,0) to center (5,0)
     assert flipped_arc.center_offset == pytest.approx((5, 0))
+
+
+def test_flip_segment_with_scanline():
+    """Tests that flipping a segment with a ScanLinePowerCommand works."""
+    powers = bytearray([10, 20, 30])
+    segment: List[MovingCommand] = [
+        MoveToCommand((0, 0, 0)),
+        ScanLinePowerCommand(end=(10, 10, 10), power_values=powers),
+    ]
+
+    flipped = flip_segment(segment)
+    assert len(flipped) == 2
+    assert isinstance(flipped[0], MoveToCommand)
+    assert isinstance(flipped[1], ScanLinePowerCommand)
+
+    # Check geometry
+    assert flipped[0].end == (10, 10, 10)
+    assert flipped[1].end == (0, 0, 0)
+
+    # Check power values
+    flipped_scan = cast(ScanLinePowerCommand, flipped[1])
+    assert flipped_scan.power_values == bytearray([30, 20, 10])

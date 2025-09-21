@@ -1,9 +1,18 @@
 import numpy as np
 import math
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, cast
 from ...core.workpiece import WorkPiece
-from ...core.ops import Ops, State, MovingCommand
+from ...core.ops import (
+    Ops,
+    State,
+    MovingCommand,
+    Command,
+    ScanLinePowerCommand,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
+    SectionType,
+)
 from ...core.ops.flip import flip_segment
 from ...core.ops.group import (
     group_by_state_continuity,
@@ -19,6 +28,50 @@ logger = logging.getLogger(__name__)
 def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     """Helper for 2D distance calculation on n-dimensional points."""
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+
+
+def group_mixed_continuity(
+    commands: List[MovingCommand],
+) -> List[List[MovingCommand]]:
+    """
+    Splits a command list into continuous path segments. It correctly pairs
+    a MoveTo command with a subsequent ScanLinePowerCommand to form a single
+    optimizable raster segment. Vector paths are grouped as before.
+    """
+    segments: List[List[MovingCommand]] = []
+    if not commands:
+        return []
+
+    i = 0
+    while i < len(commands):
+        # A segment must start with a travel command (MoveTo).
+        start_cmd = commands[i]
+        if not start_cmd.is_travel_command():
+            # This handles malformed lists or finds the next MoveTo.
+            i += 1
+            continue
+
+        # Check what follows the travel move
+        if (i + 1) < len(commands) and isinstance(
+            commands[i + 1], ScanLinePowerCommand
+        ):
+            # This is a raster segment: [MoveTo, ScanLinePowerCommand]
+            current_segment = [start_cmd, commands[i + 1]]
+            segments.append(current_segment)
+            i += 2  # Consume both commands
+        else:
+            # This is a standard vector segment. Consume all cutting commands.
+            current_segment = [start_cmd]
+            i += 1
+            while i < len(commands) and commands[i].is_cutting_command():
+                # Defensively handle mixed vector/raster types
+                if isinstance(commands[i], ScanLinePowerCommand):
+                    break
+                current_segment.append(commands[i])
+                i += 1
+            segments.append(current_segment)
+
+    return segments
 
 
 def greedy_order_segments(
@@ -37,37 +90,38 @@ def greedy_order_segments(
     if not segments:
         return []
 
-    context.set_total(len(segments))
+    # Make a shallow copy of the list so we can pop from it
+    remaining = list(segments)
+
+    context.set_total(len(remaining))
     ordered: List[List[MovingCommand]] = []
-    current_seg = segments[0]
+
+    # Take the first segment as is
+    current_seg = remaining.pop(0)
     ordered.append(current_seg)
     current_pos = np.array(current_seg[-1].end)
-    remaining = segments[1:]
     context.set_progress(1)
 
     while remaining:
         if context.is_cancelled():
             return ordered
 
-        # Find the index of the best next path to take, i.e. the
-        # Command that adds the smalles amount of travel distance.
+        # Vectorized distance calculation to all start and end points
         starts = np.array([seg[0].end for seg in remaining])
         ends = np.array([seg[-1].end for seg in remaining])
+
         d_starts = np.linalg.norm(starts[:, :2] - current_pos[:2], axis=1)
         d_ends = np.linalg.norm(ends[:, :2] - current_pos[:2], axis=1)
+
+        # Find the minimum distance for each segment (start or end)
         candidate_dists = np.minimum(d_starts, d_ends)
         best_idx = int(np.argmin(candidate_dists))
+
         best_seg = remaining.pop(best_idx)
 
-        # Flip candidate if its end is closer.
+        # If the end was closer, flip the segment
         if d_ends[best_idx] < d_starts[best_idx]:
             best_seg = flip_segment(best_seg)
-
-        start_cmd = best_seg[0]
-        if not start_cmd.is_travel_command():
-            end_cmd = best_seg[-1]
-            best_seg[0], best_seg[-1] = best_seg[-1], best_seg[0]
-            start_cmd.end, end_cmd.end = end_cmd.end, start_cmd.end
 
         ordered.append(best_seg)
         current_pos = np.array(best_seg[-1].end)
@@ -79,32 +133,53 @@ def greedy_order_segments(
 def flip_segments(
     context: BaseExecutionContext, ordered: List[List[MovingCommand]]
 ) -> List[List[MovingCommand]]:
+    """
+    Iteratively flips individual segments if doing so reduces the travel
+    distance to the next segment.
+    """
     improved = True
-    context.set_total(1)  # Simple task, just needs cancellation check
+    context.set_total(1)
     while improved:
         if context.is_cancelled():
             return ordered
         improved = False
+
+        # Iterate through segments, comparing the cost of the current
+        # orientation
+        # with the cost if the segment were flipped.
         for i in range(1, len(ordered)):
-            # Calculate cost of travel (=travel distance from last segment
-            # +travel distance to next segment)
-            prev_segment_end = ordered[i - 1][-1].end
-            segment = ordered[i]
-            cost = _dist_2d(prev_segment_end, segment[0].end)
-            if i < len(ordered) - 1:
-                cost += _dist_2d(segment[-1].end, ordered[i + 1][0].end)
+            prev_segment = ordered[i - 1]
+            current_segment = ordered[i]
 
-            # Flip and calculate the flipped cost.
-            flipped = flip_segment(segment)
-            flipped_cost = _dist_2d(prev_segment_end, flipped[0].end)
-            if i < len(ordered) - 1:
-                flipped_cost += _dist_2d(
-                    flipped[-1].end, ordered[i + 1][0].end
-                )
+            prev_end = prev_segment[-1].end
+            curr_start = current_segment[0].end
+            curr_end = current_segment[-1].end
 
-            # Choose the shorter one.
-            if flipped_cost < cost:
-                ordered[i] = flipped
+            # Calculate cost with current orientation
+
+            # Cost of travel from previous segment to this one
+            current_cost = _dist_2d(prev_end, curr_start)
+
+            # Calculate potential cost if flipped
+
+            # Potential cost of travel from previous segment to the *end*
+            # (flipped start)
+            potential_cost = _dist_2d(prev_end, curr_end)
+
+            # Factor in the cost to the next segment
+            if i < len(ordered) - 1:
+                next_start = ordered[i + 1][0].end
+
+                # Add travel from current end to next start
+                current_cost += _dist_2d(curr_end, next_start)
+
+                # Add travel from flipped end (current start) to next start
+                potential_cost += _dist_2d(curr_start, next_start)
+
+            # If the potential cost is lower, commit to the flip.
+            if potential_cost < current_cost:
+                # flip_segment creates a new, correctly flipped segment.
+                ordered[i] = flip_segment(current_segment)
                 improved = True
     context.set_progress(1)
     return ordered
@@ -132,25 +207,35 @@ def two_opt(
         improved = False
         for i in range(n - 2):
             for j in range(i + 2, n):
-                a_end = ordered[i][-1]
-                b_start = ordered[i + 1][0]
-                e_end = ordered[j][-1]
+                a_end = ordered[i][-1].end
+                b_start = ordered[i + 1][0].end
+                e_end = ordered[j][-1].end
+
                 if j < n - 1:
-                    f_start = ordered[j + 1][0]
-                    curr_cost = _dist_2d(a_end.end, b_start.end) + _dist_2d(
-                        e_end.end, f_start.end
+                    f_start = ordered[j + 1][0].end
+
+                    # Current path:
+                    # ... -> A_end -> B_start -> ... -> E_end -> F_start -> ...
+                    curr_cost = _dist_2d(a_end, b_start) + _dist_2d(
+                        e_end, f_start
                     )
-                    new_cost = _dist_2d(a_end.end, e_end.end) + _dist_2d(
-                        b_start.end, f_start.end
+
+                    # New path:
+                    # ... -> A_end -> E_end -> ... -> B_start -> F_start -> ...
+                    new_cost = _dist_2d(a_end, e_end) + _dist_2d(
+                        b_start, f_start
                     )
                 else:
-                    curr_cost = _dist_2d(a_end.end, b_start.end)
-                    new_cost = _dist_2d(a_end.end, e_end.end)
+                    # J is the last segment
+                    curr_cost = _dist_2d(a_end, b_start)
+                    new_cost = _dist_2d(a_end, e_end)
+
                 if new_cost < curr_cost:
+                    # Decision made. Now perform the mutation.
                     sub = ordered[i + 1 : j + 1]
                     # Reverse order and flip each segment.
-                    for n in range(len(sub)):
-                        sub[n] = flip_segment(sub[n])
+                    for k in range(len(sub)):
+                        sub[k] = flip_segment(sub[k])
                     ordered[i + 1 : j + 1] = sub[::-1]
                     improved = True
         iter_count += 1
@@ -217,8 +302,49 @@ class Optimize(OpsTransformer):
         ops.preload_state()
         if context.is_cancelled():
             return
-        commands = [c for c in ops if not c.is_state_command()]
-        logger.debug(f"Command count {len(commands)}")
+
+        # Expand ScanLinePowerCommands into smaller, optimizable segments.
+        # This makes raster optimization possible by breaking up full-width
+        # scans.
+        RASTER_MIN_POWER = 0  # power level (0-255) to be considered "off"
+
+        expanded_commands: List[Command] = []
+        last_end_pos = (0.0, 0.0, 0.0)
+
+        for cmd in ops.commands:
+            if isinstance(cmd, ScanLinePowerCommand):
+                start_point_for_scan = last_end_pos
+                sub_commands = cmd.split_by_power(
+                    start_point_for_scan, RASTER_MIN_POWER
+                )
+
+                if sub_commands:
+                    # The sub_commands contain new MoveTo commands. This
+                    # makes the MoveTo that preceded the original ScanLine
+                    # redundant. Remove it.
+                    if (
+                        expanded_commands
+                        and expanded_commands[-1].is_travel_command()
+                        and expanded_commands[-1].end == start_point_for_scan
+                    ):
+                        expanded_commands.pop()
+
+                if cmd.state:
+                    for sub_cmd in sub_commands:
+                        sub_cmd.state = cmd.state
+                expanded_commands.extend(sub_commands)
+            else:
+                expanded_commands.append(cmd)
+
+            if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                last_end_pos = cmd.end
+
+        # The rest of the optimization process uses this expanded command list
+        commands = [c for c in expanded_commands if not c.is_state_command()]
+        logger.debug(
+            f"Original command count {len(ops.commands)},"
+            f" expanded for optimization to {len(commands)}"
+        )
 
         # Step 2: Splitting long segments
         long_segments = group_by_state_continuity(commands)
@@ -237,6 +363,7 @@ class Optimize(OpsTransformer):
         )
 
         result = []
+        is_raster_section = False
         total_long_segments = len(long_segments)
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
@@ -245,6 +372,13 @@ class Optimize(OpsTransformer):
             # If the segment is a marker, just pass it through without
             # optimizing
             if long_segment and long_segment[0].is_marker_command():
+                marker = long_segment[0]
+                if isinstance(marker, OpsSectionStartCommand):
+                    if marker.section_type == SectionType.RASTER_FILL:
+                        is_raster_section = True
+                elif isinstance(marker, OpsSectionEndCommand):
+                    if marker.section_type == SectionType.RASTER_FILL:
+                        is_raster_section = False
                 result.append(long_segment)
                 # Still need to advance the progress bar for this segment
                 optimize_ctx.set_progress((i + 1) / total_long_segments)
@@ -273,7 +407,15 @@ class Optimize(OpsTransformer):
 
             # Step 3: Split long segments into short segments
             context.set_message(_("Finding reorderable paths..."))
-            segments = group_by_path_continuity(long_segment)
+
+            # Use the appropriate grouping strategy based on section type
+            if is_raster_section:
+                segments = group_mixed_continuity(
+                    cast(List[MovingCommand], long_segment)
+                )
+            else:
+                segments = group_by_path_continuity(long_segment)
+
             # Mark this small stage as complete.
             segment_ctx.set_progress(split_sub_weight)
             if not segments:

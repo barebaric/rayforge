@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import TYPE_CHECKING, Optional, List, Tuple
 from ...core.ops import (
     Ops,
@@ -11,6 +12,7 @@ from ...core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    ScanLinePowerCommand,
     JobStartCommand,
     JobEndCommand,
     LayerStartCommand,
@@ -54,6 +56,7 @@ class GcodeEncoder(OpsEncoder):
         )
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
+        self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
 
     @classmethod
@@ -69,6 +72,7 @@ class GcodeEncoder(OpsEncoder):
         """Main encoding workflow"""
         # Set the coordinate format based on the machine's precision setting
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
+        self.current_pos = (0.0, 0.0, 0.0)
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -123,12 +127,23 @@ class GcodeEncoder(OpsEncoder):
                 self._set_air_assist(gcode, False)
             case MoveToCommand():
                 self._handle_move_to(gcode, *cmd.end)
+                self.current_pos = cmd.end
             case LineToCommand():
                 self._handle_line_to(gcode, *cmd.end)
+                self.current_pos = cmd.end
+            case ScanLinePowerCommand():
+                # Deconstruct into simpler commands that the encoder already
+                # understands.
+                sub_commands = cmd.linearize(self.current_pos)
+                for sub_cmd in sub_commands:
+                    self._handle_command(gcode, sub_cmd, context)
+                # To avoid float precision errors, explicitly set the final pos
+                self.current_pos = cmd.end
             case ArcToCommand():
                 self._handle_arc_to(
                     gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
+                self.current_pos = cmd.end
             case JobStartCommand():
                 self._emit_scripts(gcode, context, ScriptTrigger.JOB_START)
             case JobEndCommand():
@@ -184,11 +199,23 @@ class GcodeEncoder(OpsEncoder):
     ) -> None:
         """
         Updates the target power. If power is set to 0 while the laser is
-        active, it will be turned off. This method does NOT turn the laser on.
+        active, it will be turned off. This method does NOT turn the laser on,
+        but it WILL update the power level if the laser is already on.
         """
-        self.power = min(power, machine.heads[0].max_power)
-        if self.laser_active and self.power <= 0:
-            self._laser_off(gcode)
+        new_power = min(power, machine.heads[0].max_power)
+
+        # Avoid emitting redundant power commands
+        if self.power is not None and math.isclose(new_power, self.power):
+            return
+
+        self.power = new_power
+
+        if self.laser_active:
+            if self.power > 0:
+                power_val = self.dialect.format_laser_power(self.power)
+                gcode.append(self.dialect.laser_on.format(power=power_val))
+            else:  # power <= 0
+                self._laser_off(gcode)
 
     def _set_air_assist(self, gcode: List[str], state: bool) -> None:
         """Update air assist state with dialect commands"""

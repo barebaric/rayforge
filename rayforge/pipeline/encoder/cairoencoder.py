@@ -27,9 +27,9 @@ class CairoEncoder(OpsEncoder):
         ctx: cairo.Context,
         scale: Tuple[float, float],
         cut_color: Tuple[float, float, float] = (1, 0, 1),
-        travel_color: Tuple[float, float, float] = (0.85, 0.85, 0.85),
+        travel_color: Tuple[float, float, float] = (1.0, 0.4, 0.0),
         show_travel_moves: bool = False,
-        drawable_height_px: Optional[int] = None,
+        drawable_height: Optional[float] = None,
     ) -> None:
         # Calculate scaling factors from surface and machine dimensions
         # The Ops are in machine coordinates, i.e. zero point
@@ -43,20 +43,25 @@ class CairoEncoder(OpsEncoder):
 
         target_surface = ctx.get_target()
         if isinstance(target_surface, cairo.RecordingSurface):
-            # For a RecordingSurface, extents are in user space units (mm).
-            # The ymax for inversion is simply the height of the extents.
-            extents = target_surface.get_extents()
-            if extents:
-                _x, _y, _w, h = extents
-                ymax = h
+            # For a RecordingSurface, the ymax for inversion should be the
+            # actual content height, not the full extent of the padded surface.
+            # The drawable_height parameter is repurposed to pass this value.
+            if drawable_height is not None:
+                ymax = drawable_height
             else:
-                ymax = 0  # Should not happen if surface has extents.
+                # Fallback if height isn't provided (should not happen now)
+                extents = target_surface.get_extents()
+                if extents:
+                    _x, _y, _w, h = extents
+                    ymax = h
+                else:
+                    ymax = 0
         else:
             # For ImageSurface, use the explicitly provided drawable height
             # to prevent miscalculations when the context is pre-translated.
             height_px = (
-                drawable_height_px
-                if drawable_height_px is not None
+                drawable_height
+                if drawable_height is not None
                 else target_surface.get_height()
             )
             ymax = height_px / scale_y
@@ -107,11 +112,11 @@ class CairoEncoder(OpsEncoder):
                         if not cmd.power_values:
                             continue
 
-                        start_x, start_y, _ = cmd.start_point
+                        start_x, start_y = prev_point_2d
                         end_x, end_y, _ = cmd.end
 
                         # Use Cairo's coordinate system (Y-down)
-                        cairo_start_y = ymax - start_y
+                        cairo_start_y = start_y
                         cairo_end_y = ymax - end_y
 
                         grad = cairo.LinearGradient(
@@ -127,22 +132,31 @@ class CairoEncoder(OpsEncoder):
                                 # stop for the previous color just before
                                 # this one.
                                 if i > 0:
-                                    p_old = last_power / 255.0
+                                    p_old = 1.0 - (last_power / 100.0)
+                                    alpha_old = 1.0 if last_power > 0 else 0.0
                                     offset_old = (i / num_steps) - 1e-9
-                                    grad.add_color_stop_rgb(
-                                        offset_old, p_old, p_old, p_old
+                                    grad.add_color_stop_rgba(
+                                        offset_old,
+                                        p_old,
+                                        p_old,
+                                        p_old,
+                                        alpha_old,
                                     )
 
-                                p_new = power / 255.0
+                                p_new = 1.0 - (power / 100.0)
+                                alpha_new = 1.0 if power > 0 else 0.0
                                 offset_new = i / num_steps
-                                grad.add_color_stop_rgb(
-                                    offset_new, p_new, p_new, p_new
+                                grad.add_color_stop_rgba(
+                                    offset_new, p_new, p_new, p_new, alpha_new
                                 )
                                 last_power = power
 
                         # Add final color stop for the last segment
-                        p_final = last_power / 255.0
-                        grad.add_color_stop_rgb(1.0, p_final, p_final, p_final)
+                        p_final = 1.0 - (last_power / 100.0)
+                        alpha_final = 1.0 if last_power > 0 else 0.0
+                        grad.add_color_stop_rgba(
+                            1.0, p_final, p_final, p_final, alpha_final
+                        )
 
                         # Draw the entire scan line with the gradient
                         ctx.new_path()

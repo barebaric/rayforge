@@ -625,11 +625,8 @@ class WorkSurface(Canvas):
             self._show_travel_moves = show
             # Re-render all ops surfaces on all workpiece views
             for elem in self.find_by_type(WorkPieceView):
-                assert isinstance(elem, WorkPieceView)
-                # Tell the view to re-render its ops.
-                # A simple trigger_update won't work if the ops data hasn't
-                # changed.
-                elem.trigger_ops_rerender()
+                wp_view = cast(WorkPieceView, elem)
+                wp_view.on_travel_visibility_changed()
 
     def _create_and_add_layer_element(self, layer: "Layer"):
         """Creates a new LayerElement and adds it to the canvas root."""

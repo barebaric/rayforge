@@ -132,7 +132,6 @@ class Ops:
             elif cmd_type == "ScanLinePowerCommand":
                 new_ops.add(
                     ScanLinePowerCommand(
-                        start_point=tuple(cmd_data["start_point"]),
                         end=tuple(cmd_data["end"]),
                         power_values=bytearray(cmd_data["power_values"]),
                     )
@@ -440,12 +439,6 @@ class Ops:
                 transformed_vec = matrix @ point_vec
                 cmd.end = tuple(transformed_vec[:3])
 
-                # Handle commands that have their own explicit start_point
-                if isinstance(cmd, ScanLinePowerCommand):
-                    start_vec = np.array([*cmd.start_point, 1.0])
-                    transformed_start_vec = matrix @ start_vec
-                    cmd.start_point = tuple(transformed_start_vec[:3])
-
                 if isinstance(cmd, ArcToCommand):
                     # For uniform transforms, we transform the center offset
                     # vector by the 3x3 rotation/scaling part of the matrix.
@@ -573,14 +566,14 @@ class Ops:
             # linearization.
             if isinstance(cmd, ScanLinePowerCommand):
                 clipped_segment = clipping.clip_line_segment(
-                    cmd.start_point, cmd.end, rect
+                    last_point, cmd.end, rect
                 )
                 if clipped_segment:
                     new_start, new_end = clipped_segment
 
                     # Calculate the start and end `t` values (0-1) of the
                     # clipped segment relative to the original line.
-                    p_start_orig = np.array(cmd.start_point)
+                    p_start_orig = np.array(last_point)
                     p_end_orig = np.array(cmd.end)
                     vec_orig = p_end_orig - p_start_orig
                     len_sq = np.dot(vec_orig, vec_orig)
@@ -609,24 +602,23 @@ class Ops:
                     new_power_values = cmd.power_values[idx_start:idx_end]
 
                     if new_power_values:
-                        new_cmd = ScanLinePowerCommand(
-                            new_start, new_end, new_power_values
-                        )
-                        # A scan line is a cutting move; a MoveTo might be
-                        # needed.
+                        # Since scanlines are discrete, we always need a move
                         if (
                             clipped_pen_pos is None
                             or math.dist(clipped_pen_pos, new_start) > 1e-6
                         ):
                             new_ops.move_to(*new_start)
-                        new_ops.add(new_cmd)
+                        new_ops.add(
+                            ScanLinePowerCommand(new_end, new_power_values)
+                        )
                         clipped_pen_pos = new_end
 
                 last_point = cmd.end
                 continue  # Skip the generic linearization below
 
             if cmd.is_travel_command():
-                last_point = cmd.end
+                if cmd.end is not None:
+                    last_point = cmd.end
                 clipped_pen_pos = None  # A travel move always lifts the pen
                 continue
 
@@ -650,7 +642,8 @@ class Ops:
 
             # The next command starts where the original unclipped command
             # ended
-            last_point = cmd.end
+            if cmd.end is not None:
+                last_point = cmd.end
 
         return new_ops
 
@@ -686,7 +679,7 @@ class Ops:
             new_ops.add(deepcopy(self.commands[i]))
 
         for cmd in self.commands:
-            if not isinstance(cmd, MovingCommand):
+            if not isinstance(cmd, MovingCommand) or cmd.end is None:
                 # State/marker commands are handled as they appear
                 # between moves
                 if not new_ops.commands or new_ops.commands[-1] is not cmd:
@@ -696,6 +689,46 @@ class Ops:
             if isinstance(cmd, MoveToCommand):
                 last_point = cmd.end
                 pen_pos = None  # Pen is up
+                continue
+
+            if isinstance(cmd, ScanLinePowerCommand):
+                kept_segments = clipping.subtract_regions_from_line_segment(
+                    last_point, cmd.end, regions
+                )
+                num_values = len(cmd.power_values)
+                p_start_orig = np.array(last_point)
+                p_end_orig = np.array(cmd.end)
+                vec_orig = p_end_orig - p_start_orig
+                len_sq = np.dot(vec_orig, vec_orig)
+
+                for new_start, new_end in kept_segments:
+                    if len_sq > 1e-9:
+                        t_start = (
+                            np.dot(
+                                np.array(new_start) - p_start_orig, vec_orig
+                            )
+                            / len_sq
+                        )
+                        t_end = (
+                            np.dot(np.array(new_end) - p_start_orig, vec_orig)
+                            / len_sq
+                        )
+                    else:
+                        t_start, t_end = 0.0, 1.0
+
+                    idx_start = int(num_values * t_start)
+                    idx_end = int(num_values * t_end)
+                    new_power = cmd.power_values[idx_start:idx_end]
+
+                    if new_power:
+                        if (
+                            pen_pos is None
+                            or math.dist(pen_pos, new_start) > 1e-6
+                        ):
+                            new_ops.move_to(*new_start)
+                        new_ops.add(ScanLinePowerCommand(new_end, new_power))
+                        pen_pos = new_end
+                last_point = cmd.end
                 continue
 
             # Linearize cutting command into segments
@@ -722,8 +755,8 @@ class Ops:
         self.commands = new_ops.commands
         # Update last_move_to to a valid point if ops is not empty
         if new_ops.commands:
-            for cmd in reversed(new_ops.commands):
-                if isinstance(cmd, MoveToCommand):
-                    self.last_move_to = cmd.end
+            for cmd_rev in reversed(new_ops.commands):
+                if isinstance(cmd_rev, MoveToCommand):
+                    self.last_move_to = cmd_rev.end
                     break
         return self

@@ -248,12 +248,12 @@ def test_arc_to_command_reverse_geometry():
 
 def test_scan_line_power_command_linearize():
     """Tests that a ScanLinePowerCommand linearizes correctly."""
+    start_point = (0, 0, 5)
     cmd = ScanLinePowerCommand(
-        start_point=(0, 0, 5),
         end=(3, 0, 5),
         power_values=bytearray([100, 200, 200]),
     )
-    linearized = cmd.linearize((0, 0, 0))
+    linearized = cmd.linearize(start_point)
 
     # Expect 5 commands: Set(100), Line(1,0), Set(200), Line(2,0), Line(3,0)
     assert len(linearized) == 5
@@ -280,41 +280,25 @@ def test_scan_line_power_command_linearize_empty():
     yields no commands.
     """
     cmd = ScanLinePowerCommand(
-        start_point=(0, 0, 5),
         end=(3, 0, 5),
         power_values=bytearray([]),
     )
-    linearized = cmd.linearize((0, 0, 0))
+    linearized = cmd.linearize((0, 0, 5))
     assert linearized == []
 
 
 def test_scan_line_power_command_properties_and_dict():
     """Tests the properties and serialization of ScanLinePowerCommand."""
     cmd = ScanLinePowerCommand(
-        start_point=(0, 0, 5),
         end=(3, 0, 5),
         power_values=bytearray([100, 200]),
     )
     assert cmd.is_cutting_command()
     data = cmd.to_dict()
     assert data["type"] == "ScanLinePowerCommand"
-    assert data["start_point"] == (0, 0, 5)
+    assert "start_point" not in data
     assert data["end"] == (3, 0, 5)
     assert data["power_values"] == [100, 200]
-
-
-def test_scan_line_power_command_reverse_geometry():
-    """Tests the reversal of a ScanLinePowerCommand."""
-    start = (0, 0, 0)
-    end = (10, 10, 10)
-    powers = bytearray([10, 20, 30])
-    cmd = ScanLinePowerCommand(start, end, powers)
-
-    cmd.reverse_geometry()
-
-    assert cmd.start_point == end
-    assert cmd.end == start
-    assert cmd.power_values == bytearray([30, 20, 10])
 
 
 def test_command_distance_calculation():
@@ -331,13 +315,12 @@ def test_command_distance_calculation():
     )
     assert arc_cmd.distance((10.0, 0.0, 0.0)) == pytest.approx(5.0)
 
-    # ScanLinePowerCommand should use its own start_point, ignoring last_point
+    # ScanLinePowerCommand should now behave like LineTo
     scan_cmd = ScanLinePowerCommand(
-        start_point=(10.0, 0.0, 0.0),
         end=(13.0, 4.0, 0.0),
         power_values=bytearray(),
     )
-    assert scan_cmd.distance(last_point) == pytest.approx(5.0)
+    assert scan_cmd.distance((10.0, 0.0, 0.0)) == pytest.approx(5.0)
 
     # State commands should have zero distance
     state_cmd = SetPowerCommand(100)
@@ -348,3 +331,76 @@ def test_moving_command_distance_with_no_last_point():
     """Tests that distance() returns 0 if no start point is available."""
     cmd = LineToCommand((3, 4, 0))
     assert cmd.distance(None) == 0.0
+
+
+def test_scan_line_power_command_split_by_power_simple():
+    """Tests splitting a scanline with one central active segment."""
+    start_point = (0.0, 10.0, 0.0)
+    end_point = (10.0, 10.0, 0.0)
+    powers = bytearray([0, 0, 100, 100, 100, 100, 0, 0, 0, 0])
+    cmd = ScanLinePowerCommand(end=end_point, power_values=powers)
+
+    min_power = 50
+
+    result = cmd.split_by_power(start_point, min_power)
+
+    assert len(result) == 2
+    move_cmd, scan_cmd = result
+    assert isinstance(move_cmd, MoveToCommand)
+    assert isinstance(scan_cmd, ScanLinePowerCommand)
+
+    # Active segment: t=0.2 to t=0.6 -> x=2.0 to x=6.0
+    assert move_cmd.end == pytest.approx((2.0, 10.0, 0.0))
+    assert scan_cmd.end == pytest.approx((6.0, 10.0, 0.0))
+    assert scan_cmd.power_values == bytearray([100, 100, 100, 100])
+
+
+def test_scan_line_power_command_split_by_power_multiple():
+    """Tests splitting a scanline with multiple active segments."""
+    start_point = (0.0, 20.0, 0.0)
+    end_point = (10.0, 20.0, 0.0)
+    powers = bytearray([100, 100, 0, 0, 200, 200, 200, 0, 150, 150])
+    cmd = ScanLinePowerCommand(end=end_point, power_values=powers)
+
+    result = cmd.split_by_power(start_point, min_power=50)
+
+    assert len(result) == 6
+    # --- Seg 1 (idx 0-1) t=0.0 to t=0.2 -> x=0 to x=2
+    move1, scan1 = result[0], result[1]
+    assert isinstance(scan1, ScanLinePowerCommand)
+    assert move1.end == pytest.approx((0.0, 20.0, 0.0))
+    assert scan1.end == pytest.approx((2.0, 20.0, 0.0))
+    assert scan1.power_values == bytearray([100, 100])
+
+    # --- Seg 2 (idx 4-6) t=0.4 to t=0.7 -> x=4 to x=7
+    move2, scan2 = result[2], result[3]
+    assert isinstance(scan2, ScanLinePowerCommand)
+    assert move2.end == pytest.approx((4.0, 20.0, 0.0))
+    assert scan2.end == pytest.approx((7.0, 20.0, 0.0))
+    assert scan2.power_values == bytearray([200, 200, 200])
+
+    # --- Seg 3 (idx 8-9) t=0.8 to t=1.0 -> x=8 to x=10
+    move3, scan3 = result[4], result[5]
+    assert isinstance(scan3, ScanLinePowerCommand)
+    assert move3.end == pytest.approx((8.0, 20.0, 0.0))
+    assert scan3.end == pytest.approx((10.0, 20.0, 0.0))
+    assert scan3.power_values == bytearray([150, 150])
+
+
+def test_scan_line_power_command_split_by_power_fully_on():
+    """
+    Tests splitting a scanline that is entirely above the power threshold.
+    """
+    start_point = (10, 10, 0)
+    end_point = (20, 10, 0)
+    powers = bytearray([100, 150, 200])
+    cmd = ScanLinePowerCommand(end=end_point, power_values=powers)
+
+    result = cmd.split_by_power(start_point, min_power=50)
+
+    assert len(result) == 2
+    move_cmd, scan_cmd = result
+    assert isinstance(scan_cmd, ScanLinePowerCommand)
+    assert move_cmd.end == pytest.approx((10.0, 10.0, 0.0))
+    assert scan_cmd.end == pytest.approx((20.0, 10.0, 0.0))
+    assert scan_cmd.power_values == powers

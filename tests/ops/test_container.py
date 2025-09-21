@@ -367,7 +367,7 @@ def test_clip_with_arc():
 
     # Check that all remaining points are within the rect bounds
     for cmd in clipped_ops:
-        if isinstance(cmd, MovingCommand):
+        if isinstance(cmd, MovingCommand) and cmd.end is not None:
             x, y, z = cmd.end
             assert clip_rect[0] <= x <= clip_rect[2]
             assert clip_rect[1] <= y <= clip_rect[3]
@@ -376,9 +376,9 @@ def test_clip_with_arc():
 def test_clip_scanlinepowercommand_start_outside():
     """Tests clipping a scanline that starts outside and ends inside."""
     ops = Ops()
+    ops.move_to(0, 50, 10)
     ops.add(
         ScanLinePowerCommand(
-            start_point=(0, 50, 10),
             end=(100, 50, 10),
             power_values=bytearray(range(100)),
         )
@@ -393,8 +393,8 @@ def test_clip_scanlinepowercommand_start_outside():
     # 1. Verify it's still a ScanLinePowerCommand (not linearized)
     assert isinstance(clipped_cmd, ScanLinePowerCommand)
 
-    # 2. Verify new geometry
-    assert clipped_cmd.start_point == pytest.approx((50, 50, 10))
+    # 2. Verify new geometry (starts at the clip boundary)
+    assert clipped_ops.commands[0].end == pytest.approx((50, 50, 10))
     assert clipped_cmd.end == pytest.approx((100, 50, 10))
 
     # 3. Verify power values are sliced correctly (original was 100 values)
@@ -408,9 +408,9 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     """Tests a scanline that crosses the clip rect with Z interpolation."""
     ops = Ops()
     # Line from (-50, 50, 0) to (150, 50, 200) -> total length 200
+    ops.move_to(-50, 50, 0)
     ops.add(
         ScanLinePowerCommand(
-            start_point=(-50, 50, 0),
             end=(150, 50, 200),
             power_values=bytearray(range(200)),
         )
@@ -428,7 +428,9 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     expected_z_start = 0 + (0.25 * 200)  # 50
     expected_z_end = 0 + (0.75 * 200)  # 150
 
-    assert clipped_cmd.start_point == pytest.approx((0, 50, expected_z_start))
+    assert clipped_ops.commands[0].end == pytest.approx(
+        (0, 50, expected_z_start)
+    )
     assert clipped_cmd.end == pytest.approx((100, 50, expected_z_end))
 
     # Power values should be sliced from index 50 to 150.
@@ -441,9 +443,9 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
 def test_clip_scanlinepowercommand_fully_outside():
     """Tests that a fully outside scanline is removed."""
     ops = Ops()
+    ops.move_to(200, 50, 10)
     ops.add(
         ScanLinePowerCommand(
-            start_point=(200, 50, 10),
             end=(300, 50, 10),
             power_values=bytearray(range(100)),
         )
@@ -487,18 +489,19 @@ def test_serialization_with_section_markers():
 def test_translate_with_scanline():
     """Tests that translate() correctly transforms ScanLinePowerCommand."""
     ops = Ops()
+    ops.move_to(10, 20, 30)
     ops.add(
         ScanLinePowerCommand(
-            start_point=(10, 20, 30),
             end=(40, 50, 60),
             power_values=bytearray([1, 2, 3]),
         )
     )
     ops.translate(5, -10, 15)
 
-    translated_cmd = cast(ScanLinePowerCommand, ops.commands[0])
+    move_cmd = cast(MoveToCommand, ops.commands[0])
+    translated_cmd = cast(ScanLinePowerCommand, ops.commands[1])
     assert isinstance(translated_cmd, ScanLinePowerCommand)
 
-    # Check if both start_point and end are translated
-    assert translated_cmd.start_point == pytest.approx((15, 10, 45))
+    # Check if both start_point (from move_to) and end are translated
+    assert move_cmd.end == pytest.approx((15, 10, 45))
     assert translated_cmd.end == pytest.approx((45, 40, 75))

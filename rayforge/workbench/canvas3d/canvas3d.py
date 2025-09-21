@@ -548,10 +548,12 @@ class Canvas3D(Gtk.GLArea):
 
     def set_show_travel_moves(self, visible: bool):
         """Sets the visibility of travel moves in the 3D view."""
-        if self._show_travel_moves == visible or not self.ops_renderer:
+        if self._show_travel_moves == visible:
             return
-
         self._show_travel_moves = visible
+
+        if not self.ops_renderer:
+            return
 
         if self._ops_vtx_cache:
             (

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Cairo has a hard limit on surface dimensions.
 CAIRO_MAX_DIMENSION = 30000
 OPS_MARGIN_PX = 5
+REC_MARGIN_MM = 0.1  # A small "safe area" margin in mm for recordings
 
 
 class WorkPieceView(CanvasElement):
@@ -48,6 +49,7 @@ class WorkPieceView(CanvasElement):
         self.data: WorkPiece = workpiece
         self.ops_generator = ops_generator
         self._base_image_visible = True
+        self._surface: Optional[cairo.ImageSurface] = None
 
         self._ops_surfaces: Dict[str, Optional[cairo.ImageSurface]] = {}
         self._ops_recordings: Dict[str, Optional[cairo.RecordingSurface]] = {}
@@ -323,13 +325,23 @@ class WorkPieceView(CanvasElement):
         if world_w <= 1e-9 or world_h <= 1e-9:
             return None
 
-        # A recording surface is unitless; we record in the native mm space.
-        extents = (0.0, 0.0, world_w, world_h)
+        # Create the recording surface with a small margin to prevent
+        # strokes on the boundary from being clipped by the recording's
+        # extents.
+        extents = (
+            -REC_MARGIN_MM,
+            -REC_MARGIN_MM,
+            world_w + 2 * REC_MARGIN_MM,
+            world_h + 2 * REC_MARGIN_MM,
+        )
         surface = cairo.RecordingSurface(
             cairo.CONTENT_COLOR_ALPHA,
             extents,  # type: ignore
         )
         ctx = cairo.Context(surface)
+        # Translate the context so that the (0,0) for the encoder is offset
+        # by the margin, placing the content in the middle of the safe area.
+        ctx.translate(REC_MARGIN_MM, REC_MARGIN_MM)
 
         # We are drawing 1:1 in mm space, so scale is 1.0.
         encoder_ppms = (1.0, 1.0)
@@ -337,7 +349,17 @@ class WorkPieceView(CanvasElement):
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface._show_travel_moves
         encoder = CairoEncoder()
-        encoder.encode(ops, ctx, encoder_ppms, show_travel_moves=show_travel)
+
+        # Pass the true content height (world_h) to the encoder.
+        # This allows it to perform the Y-flip correctly within the now-larger
+        # recording surface, fixing the vertical alignment issue.
+        encoder.encode(
+            ops,
+            ctx,
+            encoder_ppms,
+            show_travel_moves=show_travel,
+            drawable_height=world_h,  # In mm for RecordingSurface
+        )
 
         return step.uid, surface, generation_id
 
@@ -444,7 +466,9 @@ class WorkPieceView(CanvasElement):
             scale_y = content_h_px / world_h if world_h > 1e-9 else 1.0
             ctx.scale(scale_x, scale_y)
 
-            ctx.set_source_surface(recording, 0, 0)
+            # When setting the source, we must offset it by the negative
+            # of the recording margin to align the content correctly.
+            ctx.set_source_surface(recording, -REC_MARGIN_MM, -REC_MARGIN_MM)
             ctx.paint()
             ctx.restore()
         else:
@@ -464,7 +488,7 @@ class WorkPieceView(CanvasElement):
                 ctx,
                 ppms,
                 show_travel_moves=show_travel,
-                drawable_height_px=content_h_px,
+                drawable_height=content_h_px,
             )
 
         return step_uid, surface, generation_id
@@ -505,7 +529,7 @@ class WorkPieceView(CanvasElement):
             ctx,
             ppms,
             show_travel_moves=show_travel,
-            drawable_height_px=content_h_px,
+            drawable_height=content_h_px,
         )
 
         # Trigger a redraw to show the progress
@@ -681,6 +705,20 @@ class WorkPieceView(CanvasElement):
             )
             self.data.matrix = self.transform.copy()
 
+    def on_travel_visibility_changed(self):
+        """
+        Invalidates cached ops recordings to reflect the new travel move
+        visibility state. This should be called by the parent WorkSurface.
+        """
+        logger.debug(
+            "Travel visibility changed, invalidating ops vector recordings."
+        )
+        # Clearing the recordings is the key step. The next
+        # `trigger_ops_rerender`
+        # will see they are missing and schedule a re-recording.
+        self._ops_recordings.clear()
+        self.trigger_ops_rerender()
+
     def trigger_ops_rerender(self):
         """Triggers a re-render of all applicable ops for this workpiece."""
         if not self.data.layer or not self.data.layer.workflow:
@@ -688,10 +726,23 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
         applicable_steps = self.data.layer.workflow.steps
         for step in applicable_steps:
-            # Only trigger a fast rasterization if a recording already exists.
+            gen_id = self._ops_generation_ids.get(step.uid, 0)
             if self._ops_recordings.get(step.uid):
-                gen_id = self._ops_generation_ids.get(step.uid, 0)
+                # FAST PATH: Recording exists, just trigger rasterization.
                 self._trigger_ops_rasterization(step, generation_id=gen_id)
+            else:
+                # SLOW PATH: Recording is missing. We need to re-record it.
+                # This logic mimics _on_ops_generation_finished.
+                logger.debug(
+                    f"No recording for step '{step.uid}', re-recording."
+                )
+                if future := self._ops_render_futures.pop(step.uid, None):
+                    future.cancel()
+                future = self._executor.submit(
+                    self._record_ops_drawing_async, step, gen_id
+                )
+                self._ops_render_futures[step.uid] = future
+                future.add_done_callback(self._on_ops_drawing_recorded)
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""

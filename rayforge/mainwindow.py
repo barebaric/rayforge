@@ -21,6 +21,7 @@ from .pipeline.steps import (
     create_contour_step,
     create_outline_step,
     create_raster_step,
+    create_depth_engrave_step,
 )
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
@@ -300,6 +301,7 @@ class MainWindow(Adw.ApplicationWindow):
             create_contour_step,
             create_outline_step,
             create_raster_step,
+            create_depth_engrave_step,
         ]
         self.workflowview = WorkflowView(
             initial_workflow, step_factories=step_factories

@@ -1,18 +1,31 @@
+"""
+Shader sources for the 3D workbench.
+"""
+
 SIMPLE_VERTEX_SHADER = """
 #version 330 core
 layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec4 aColor;
 uniform mat4 uMVP;
+out vec4 vColor;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
+    vColor = aColor;
 }
 """
 
 SIMPLE_FRAGMENT_SHADER = """
 #version 330 core
 out vec4 FragColor;
+in vec4 vColor;
 uniform vec4 uColor;
+uniform float uUseVertexColor;
 void main() {
-    FragColor = uColor;
+    if (uUseVertexColor > 0.5) {
+        FragColor = vColor;
+    } else {
+        FragColor = uColor;
+    }
 }
 """
 
