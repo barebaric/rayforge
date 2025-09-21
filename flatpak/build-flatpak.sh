@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e
 
 # Make sure script is started from repo root.
-if [ "$0" != 'flatpak/build-flatpak.sh' ]; then
+if [ "$(pwd)" != "$(git rev-parse --show-toplevel)" ]; then
     echo -e '\033[31m(ERROR)\033[0m: Script called from wrong dir. Please start from the root of the repository'
     exit 1
 fi
