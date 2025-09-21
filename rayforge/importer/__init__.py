@@ -3,6 +3,8 @@ from typing import Dict
 from .base_importer import Importer
 from .base_renderer import Renderer
 from .shared.ops_renderer import OPS_RENDERER
+from .bmp.importer import BmpImporter
+from .bmp.renderer import BMP_RENDERER
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
 from .pdf.importer import PdfImporter
@@ -38,6 +40,7 @@ for base in importers:
         importer_by_extension[extension] = base
 
 renderer_by_name: Dict[str, Renderer] = {
+    "BmpRenderer": BMP_RENDERER,
     "DxfRenderer": DXF_RENDERER,
     "OpsRenderer": OPS_RENDERER,
     "PngRenderer": PNG_RENDERER,
@@ -47,6 +50,7 @@ renderer_by_name: Dict[str, Renderer] = {
 }
 
 renderer_by_importer_name: Dict[str, Renderer] = {
+    "BmpImporter": BMP_RENDERER,
     "DxfImporter": DXF_RENDERER,
     "OpsRenderer": OPS_RENDERER,
     "PngImporter": PNG_RENDERER,
@@ -56,6 +60,7 @@ renderer_by_importer_name: Dict[str, Renderer] = {
 }
 
 __all__ = [
+    "BmpImporter",
     "DxfImporter",
     "PdfImporter",
     "PngImporter",
