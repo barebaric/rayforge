@@ -50,6 +50,7 @@ class WorkPieceView(CanvasElement):
         self._base_image_visible = True
 
         self._ops_surfaces: Dict[str, Optional[cairo.ImageSurface]] = {}
+        self._ops_recordings: Dict[str, Optional[cairo.RecordingSurface]] = {}
         self._ops_visibility: Dict[str, bool] = {}
         self._ops_render_futures: Dict[str, Future] = {}
         self._ops_generation_ids: Dict[
@@ -229,9 +230,10 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Clearing ops surface for step '{step_uid}'")
         if future := self._ops_render_futures.pop(step_uid, None):
             future.cancel()
-        if self._ops_surfaces.pop(step_uid, None):
-            if self.canvas:
-                self.canvas.queue_draw()
+        self._ops_surfaces.pop(step_uid, None)
+        self._ops_recordings.pop(step_uid, None)
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def _on_model_content_changed(self, workpiece: WorkPiece):
         """Handler for when the workpiece model's content changes."""
@@ -290,50 +292,135 @@ class WorkPieceView(CanvasElement):
         step = sender
         logger.debug(
             f"Ops generation finished for step '{step.uid}'. "
-            f"Scheduling async surface render for gen_id {generation_id}."
+            f"Scheduling async recording of drawing commands."
         )
-
-        # Ensure the local generation ID is set for this step.
-        # This handles cases where _on_ops_generation_starting might have been
-        # missed (e.g., if WorkPieceView was instantiated late or re-created).
-        # This makes sure that the _on_ops_surface_rendered callback will
-        # have a matching generation_id to compare against.
         self._ops_generation_ids[step.uid] = generation_id
 
         if future := self._ops_render_futures.pop(step.uid, None):
             future.cancel()
         future = self._executor.submit(
-            self._render_ops_surface_async, step, generation_id
+            self._record_ops_drawing_async, step, generation_id
         )
         self._ops_render_futures[step.uid] = future
-        future.add_done_callback(self._on_ops_surface_rendered)
+        future.add_done_callback(self._on_ops_drawing_recorded)
 
-    def _render_ops_surface_async(
+    def _record_ops_drawing_async(
         self, step: Step, generation_id: int
-    ) -> Optional[Tuple[str, cairo.ImageSurface, int]]:
+    ) -> Optional[Tuple[str, cairo.RecordingSurface, int]]:
         """
-        Renders the complete, final Ops to a NEW, flicker-free surface in a
-        background thread.
+        "Draws" the ops to a RecordingSurface. This captures all vector
+        commands and is done only when ops data changes.
         """
         logger.debug(
-            f"Rendering FINAL ops surface for workpiece "
-            f"'{self.data.name}', step '{step.uid}', gen_id {generation_id}"
+            f"Recording vector ops for workpiece "
+            f"'{self.data.name}', step '{step.uid}'"
         )
         ops = self.ops_generator.get_ops(step, self.data)
         if not ops or not self.canvas:
             return None
 
-        # Create a new surface from scratch
+        world_w, world_h = self.data.size
+        if world_w <= 1e-9 or world_h <= 1e-9:
+            return None
+
+        # A recording surface is unitless; we record in the native mm space.
+        extents = (0.0, 0.0, world_w, world_h)
+        surface = cairo.RecordingSurface(
+            cairo.CONTENT_COLOR_ALPHA,
+            extents,  # type: ignore
+        )
+        ctx = cairo.Context(surface)
+
+        # We are drawing 1:1 in mm space, so scale is 1.0.
+        encoder_ppms = (1.0, 1.0)
+
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface._show_travel_moves
+        encoder = CairoEncoder()
+        encoder.encode(ops, ctx, encoder_ppms, show_travel_moves=show_travel)
+
+        return step.uid, surface, generation_id
+
+    def _on_ops_drawing_recorded(self, future: Future):
+        """Callback executed when the async ops recording is done."""
+        if future.cancelled():
+            return
+        if exc := future.exception():
+            logger.error(f"Error recording ops drawing: {exc}", exc_info=exc)
+            return
+        result = future.result()
+        if not result:
+            return
+
+        step_uid, recording, received_gen_id = result
+
+        if received_gen_id != self._ops_generation_ids.get(step_uid):
+            logger.debug(
+                f"Ignoring stale ops recording for step '{step_uid}'."
+            )
+            return
+
+        logger.debug(f"Applying new ops recording for step '{step_uid}'.")
+        self._ops_recordings[step_uid] = recording
+
+        # Find the Step object to trigger the initial rasterization.
+        found_step = None
+        if self.data.layer and self.data.layer.workflow:
+            for step_obj in self.data.layer.workflow.steps:
+                if step_obj.uid == step_uid:
+                    found_step = step_obj
+                    break
+        if found_step:
+            self._trigger_ops_rasterization(found_step, received_gen_id)
+        else:
+            logger.warning(
+                "Could not find step '%s' to rasterize after recording.",
+                step_uid,
+            )
+
+    def _trigger_ops_rasterization(self, step: Step, generation_id: int):
+        """
+        Schedules the fast async rasterization of ops using the cached
+        recording.
+        """
+        step_uid = step.uid
+        if future := self._ops_render_futures.get(step_uid):
+            if not future.done():
+                return  # A rasterization is already in progress.
+
+        future = self._executor.submit(
+            self._rasterize_ops_surface_async, step, generation_id
+        )
+        self._ops_render_futures[step_uid] = future
+        future.add_done_callback(self._on_ops_surface_rendered)
+
+    def _rasterize_ops_surface_async(
+        self, step: Step, generation_id: int
+    ) -> Optional[Tuple[str, cairo.ImageSurface, int]]:
+        """
+        Renders ops to an ImageSurface, using the cached RecordingSurface
+        for a huge speedup if it is available.
+        """
+        step_uid = step.uid
+        logger.debug(
+            f"Rasterizing ops surface for step '{step_uid}', "
+            f"gen_id {generation_id}"
+        )
+        if not self.canvas:
+            return None
+
         work_surface = cast("WorkSurface", self.canvas)
         world_w, world_h = self.data.size
         view_ppm_x, view_ppm_y = work_surface.get_view_scale()
         content_width_px = round(world_w * view_ppm_x)
         content_height_px = round(world_h * view_ppm_y)
 
-        surface_width = content_width_px + 2 * OPS_MARGIN_PX
-        surface_height = content_height_px + 2 * OPS_MARGIN_PX
-        surface_width = min(surface_width, CAIRO_MAX_DIMENSION)
-        surface_height = min(surface_height, CAIRO_MAX_DIMENSION)
+        surface_width = min(
+            content_width_px + 2 * OPS_MARGIN_PX, CAIRO_MAX_DIMENSION
+        )
+        surface_height = min(
+            content_height_px + 2 * OPS_MARGIN_PX, CAIRO_MAX_DIMENSION
+        )
 
         if (
             surface_width <= 2 * OPS_MARGIN_PX
@@ -341,36 +428,46 @@ class WorkPieceView(CanvasElement):
         ):
             return None
 
-        # Create the new, clean surface for the final render.
         surface = cairo.ImageSurface(
             cairo.FORMAT_ARGB32, surface_width, surface_height
         )
         ctx = cairo.Context(surface)
+        ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
+        recording = self._ops_recordings.get(step_uid)
+        content_w_px = surface_width - 2 * OPS_MARGIN_PX
+        content_h_px = surface_height - 2 * OPS_MARGIN_PX
 
-        # Transform the coordinate system to be Y-UP for the CairoEncoder,
-        # which expects to draw in a Y-UP world where (0,0) is bottom-left.
-        ctx.translate(OPS_MARGIN_PX, surface_height + OPS_MARGIN_PX)
-        ctx.scale(1, -1)
+        if recording:
+            # FAST PATH: Replay the cached vector drawing commands.
+            ctx.save()
+            scale_x = content_w_px / world_w if world_w > 1e-9 else 1.0
+            scale_y = content_h_px / world_h if world_h > 1e-9 else 1.0
+            ctx.scale(scale_x, scale_y)
 
-        # After clamping the surface, the actual content dimensions might have
-        # changed. Recalculate them here to ensure the encoder scales the
-        # ops correctly to fit the available space.
-        content_width_px = surface_width - 2 * OPS_MARGIN_PX
-        content_height_px = surface_height - 2 * OPS_MARGIN_PX
+            ctx.set_source_surface(recording, 0, 0)
+            ctx.paint()
+            ctx.restore()
+        else:
+            # SLOW FALLBACK: No recording yet, render from Ops directly.
+            ops = self.ops_generator.get_ops(step, self.data)
+            if not ops:
+                return None
 
-        # Calculate the pixels-per-millimeter needed for the encoder.
-        # This scale must be based on the workpiece's dimensions
-        # (world_w, world_h), not the ops' own bounding box, to ensure a
-        # consistent coordinate system and prevent gaps.
-        encoder_ppm_x = content_width_px / world_w if world_w > 1e-9 else 1.0
-        encoder_ppm_y = content_height_px / world_h if world_h > 1e-9 else 1.0
-        ppms = (encoder_ppm_x, encoder_ppm_y)
+            encoder_ppm_x = content_w_px / world_w if world_w > 1e-9 else 1.0
+            encoder_ppm_y = content_h_px / world_h if world_h > 1e-9 else 1.0
+            ppms = (encoder_ppm_x, encoder_ppm_y)
 
-        show_travel = work_surface._show_travel_moves
-        encoder = CairoEncoder()
-        encoder.encode(ops, ctx, ppms, show_travel_moves=show_travel)
+            show_travel = work_surface._show_travel_moves
+            encoder = CairoEncoder()
+            encoder.encode(
+                ops,
+                ctx,
+                ppms,
+                show_travel_moves=show_travel,
+                drawable_height_px=content_h_px,
+            )
 
-        return step.uid, surface, generation_id
+        return step_uid, surface, generation_id
 
     def _on_ops_chunk_available(
         self,
@@ -396,14 +493,20 @@ class WorkPieceView(CanvasElement):
         if not prepared:
             return
 
-        _, ctx, ppms = prepared
+        _surface, ctx, ppms, content_h_px = prepared
 
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface._show_travel_moves
 
         # Encode just the chunk onto the existing surface
         encoder = CairoEncoder()
-        encoder.encode(chunk, ctx, ppms, show_travel_moves=show_travel)
+        encoder.encode(
+            chunk,
+            ctx,
+            ppms,
+            show_travel_moves=show_travel,
+            drawable_height_px=content_h_px,
+        )
 
         # Trigger a redraw to show the progress
         if self.canvas:
@@ -412,12 +515,12 @@ class WorkPieceView(CanvasElement):
     def _prepare_ops_surface_and_context(
         self, step: Step
     ) -> Optional[
-        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float]]
+        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float], int]
     ]:
         """
         Used by chunk rendering. Ensures an ops surface exists for a step,
-        creating it if necessary. Returns the surface, a transformed Cairo
-        context, and the pixels-per-mm scale.
+        creating it if necessary. Returns the surface, a transformed context,
+        scale, and content height.
         """
         if not self.canvas:
             return None
@@ -433,10 +536,12 @@ class WorkPieceView(CanvasElement):
             content_width_px = round(world_w * view_ppm_x)
             content_height_px = round(world_h * view_ppm_y)
 
-            surface_width = content_width_px + 2 * OPS_MARGIN_PX
-            surface_height = content_height_px + 2 * OPS_MARGIN_PX
-            surface_width = min(surface_width, CAIRO_MAX_DIMENSION)
-            surface_height = min(surface_height, CAIRO_MAX_DIMENSION)
+            surface_width = min(
+                content_width_px + 2 * OPS_MARGIN_PX, CAIRO_MAX_DIMENSION
+            )
+            surface_height = min(
+                content_height_px + 2 * OPS_MARGIN_PX, CAIRO_MAX_DIMENSION
+            )
 
             if (
                 surface_width <= 2 * OPS_MARGIN_PX
@@ -450,13 +555,10 @@ class WorkPieceView(CanvasElement):
             self._ops_surfaces[step_uid] = surface
 
         ctx = cairo.Context(surface)
-        surface_height = surface.get_height()
+        # Set the origin to the top-left of the content area.
+        ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
 
-        # Transform the coordinate system to be Y-UP for the CairoEncoder.
-        ctx.translate(OPS_MARGIN_PX, surface_height + OPS_MARGIN_PX)
-        ctx.scale(1, -1)
-
-        # Calculate the pixels-per-millimeter needed for the encoder.
+        # Calculate the pixels-per-millimeter and content height for encoder.
         world_w, world_h = self.data.size
         content_width_px = surface.get_width() - 2 * OPS_MARGIN_PX
         content_height_px = surface.get_height() - 2 * OPS_MARGIN_PX
@@ -464,7 +566,7 @@ class WorkPieceView(CanvasElement):
         encoder_ppm_y = content_height_px / world_h if world_h > 1e-9 else 1.0
         ppms = (encoder_ppm_x, encoder_ppm_y)
 
-        return surface, ctx, ppms
+        return surface, ctx, ppms, content_height_px
 
     def _on_ops_surface_rendered(self, future: Future):
         """Callback executed when the async ops rendering is done."""
@@ -534,6 +636,8 @@ class WorkPieceView(CanvasElement):
             ctx: The cairo context to draw on.
         """
         if self._base_image_visible:
+            # This handles the Y-flip for the base image and restores the
+            # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)
 
         # Draw Ops Surfaces
@@ -542,6 +646,7 @@ class WorkPieceView(CanvasElement):
                 continue
 
             ctx.save()
+
             surface_w = surface.get_width()
             surface_h = surface.get_height()
             content_w_px = surface_w - 2 * OPS_MARGIN_PX
@@ -551,14 +656,18 @@ class WorkPieceView(CanvasElement):
                 ctx.restore()
                 continue
 
-            # 1. Scale the 1x1 Y-UP space to the ops's content dimensions.
+            # To draw our Y-DOWN pixel surface into the current Y-UP context,
+            # we must apply the same Y-flip transform that super().draw() uses.
+            cairo_content_matrix = cairo.Matrix(
+                *self.content_transform.for_cairo()
+            )
+            ctx.transform(cairo_content_matrix)
+            # The context is now a 1x1 Y-DOWN space.
+
+            # Scale this space to match the pixel dimensions of the content.
             ctx.scale(1.0 / content_w_px, 1.0 / content_h_px)
 
-            # 2. Draw the Y-DOWN surface, offsetting by the margin.
-            # The content on the ops surface was rendered "upside down"
-            # into a Y-UP context. When we draw that Y-DOWN surface into our
-            # Y-UP canvas context, the two flips cancel out, and it appears
-            # correctly.
+            # Paint the surface, offsetting for the margin.
             ctx.set_source_surface(surface, -OPS_MARGIN_PX, -OPS_MARGIN_PX)
             ctx.get_source().set_filter(cairo.FILTER_GOOD)
             ctx.paint()
@@ -579,22 +688,10 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
         applicable_steps = self.data.layer.workflow.steps
         for step in applicable_steps:
-            if self.ops_generator.get_ops(step, self.data) is None:
-                logger.debug(
-                    f"Skipping ops rerender for step '{step.uid}'; "
-                    "ops not yet available in cache."
-                )
-                continue
-
-            # Re-use the existing generation ID to avoid race conditions.
-            # This ID comes from the _ops_generation_ids, which gets
-            # updated in _on_ops_generation_finished, ensuring it always holds
-            # the ID of the render currently being requested by *this*
-            # WorkPieceView.
-            gen_id = self._ops_generation_ids.get(step.uid, 0)
-            self._on_ops_generation_finished(
-                step, self.data, generation_id=gen_id
-            )
+            # Only trigger a fast rasterization if a recording already exists.
+            if self._ops_recordings.get(step.uid):
+                gen_id = self._ops_generation_ids.get(step.uid, 0)
+                self._trigger_ops_rasterization(step, generation_id=gen_id)
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""
