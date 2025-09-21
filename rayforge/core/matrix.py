@@ -103,6 +103,16 @@ class Matrix:
         """Returns a copy of the underlying 3x3 NumPy array."""
         return self.m.copy()
 
+    def to_4x4_numpy(self) -> np.ndarray:
+        """
+        Converts the 3x3 affine matrix to a 4x4 numpy array suitable for
+        3D transformations where Z is preserved.
+        """
+        m44 = np.identity(4, dtype=float)
+        m44[0:2, 0:2] = self.m[0:2, 0:2]  # Copy rotation/scale/shear part
+        m44[0:2, 3] = self.m[0:2, 2]  # Copy translation part
+        return m44
+
     def to_list(self) -> List[List[float]]:
         """
         Converts the matrix to a nested list, suitable for serialization.

@@ -46,17 +46,23 @@ class TestMatrix:
     def test_copying(self):
         m1 = Matrix.rotation(45)
 
-        # Test shallow copy
+        # Test shallow copy using copy.copy()
         m2 = copy.copy(m1)
         assert m1 == m2
         assert m1 is not m2
         assert m1.m is not m2.m
 
-        # Test deep copy
+        # Test deep copy using copy.deepcopy()
         m3 = copy.deepcopy(m1)
         assert m1 == m3
         assert m1 is not m3
         assert m1.m is not m3.m
+
+        # Test the .copy() method
+        m4 = m1.copy()
+        assert m1 == m4
+        assert m1 is not m4
+        assert m1.m is not m4.m
 
     def test_representation(self):
         m = Matrix.translation(10, -20.5)
@@ -698,3 +704,45 @@ class TestMatrix:
 
         # 4. Assert that the matrices are equal
         assert M_original == M_recomposed
+
+    def test_to_4x4_numpy(self):
+        """Tests the conversion to a 4x4 numpy array."""
+        m = Matrix.translation(10, 20) @ Matrix.rotation(90)
+        # Our 3x3:
+        # [[ 0, -1, 10],
+        #  [ 1,  0, 20],
+        #  [ 0,  0,  1]]
+        m44 = m.to_4x4_numpy()
+
+        expected = np.array(
+            [
+                [0, -1, 0, 10],
+                [1, 0, 0, 20],
+                [0, 0, 1, 0],  # Z-axis is preserved
+                [0, 0, 0, 1],
+            ]
+        )
+        assert m44.shape == (4, 4)
+        assert np.allclose(m44, expected)
+
+        # Test identity
+        m_ident = Matrix.identity()
+        m44_ident = m_ident.to_4x4_numpy()
+        assert np.allclose(m44_ident, np.identity(4))
+
+    def test_list_conversion(self):
+        """Tests to_list() and from_list() for serialization."""
+        list_data = [[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [0.0, 0.0, 1.0]]
+        m1 = Matrix(list_data)
+
+        # Test to_list()
+        m1_list = m1.to_list()
+        assert isinstance(m1_list, list)
+        assert all(isinstance(row, list) for row in m1_list)
+        # Use np.allclose for float comparison of nested lists
+        assert np.allclose(m1_list, list_data)
+
+        # Test from_list() and round-trip
+        m2 = Matrix.from_list(m1_list)
+        assert isinstance(m2, Matrix)
+        assert m1 == m2
