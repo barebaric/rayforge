@@ -1,9 +1,11 @@
 import logging
+import math
 from pathlib import Path
 from typing import List, Optional, Callable, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
+from .shared.tasker.task import Task
 from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -11,6 +13,8 @@ from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
 from .core.layer import Layer
+from .core.matrix import Matrix
+from .core.ops import Ops
 from .core.stock import StockItem
 from .core.stocklayer import StockLayer
 from .pipeline.steps import (
@@ -233,6 +237,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.notification_requested.connect(
             self._on_editor_notification
         )
+        self.doc_editor.document_settled.connect(self._on_document_settled)
 
         # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
@@ -373,6 +378,8 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         self.surface.set_show_travel_moves(is_visible)
+        if canvas3d_initialized and hasattr(self, "canvas3d"):
+            self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
     def on_view_top(self, action, param):
@@ -535,6 +542,74 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_editor_notification(self, sender, message: str):
         """Shows a toast when requested by the DocEditor."""
         self.toast_overlay.add_toast(Adw.Toast.new(message))
+
+    def _aggregate_ops_for_3d_view(self) -> Ops:
+        """
+        Gathers all generated Ops from the document, transforms them into
+        world coordinates, and merges them into a single Ops object for 3D
+        rendering. This is a heavy function and should be run in a background
+        thread.
+        """
+        full_ops = Ops()
+        doc = self.doc_editor.doc
+        generator = self.doc_editor.ops_generator
+
+        for layer in doc.layers:
+            if not layer.workflow:
+                continue
+
+            # Process workpieces in the layer
+            for workpiece in layer.all_workpieces:
+                # Get the final transform from workpiece-local to world space
+                world_transform = workpiece.get_world_transform()
+                tx, ty, angle, sx, sy, skew = world_transform.decompose()
+
+                # Re-compose the matrix without the scale component, as the ops
+                # are already scaled to the workpiece's final size.
+                # Note: sy's sign is preserved to handle reflections correctly.
+                transform_without_scale = Matrix.compose(
+                    tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
+                )
+
+                # Accumulate ops from all steps for this workpiece
+                for step in layer.workflow.steps:
+                    workpiece_ops = generator.get_ops(step, workpiece)
+                    if workpiece_ops:
+                        # Transform from local to world coordinates
+                        workpiece_ops.transform(
+                            transform_without_scale.to_4x4_numpy()
+                        )
+                        full_ops.extend(workpiece_ops)
+        return full_ops
+
+    def _on_3d_ops_aggregated(self, task: Task):
+        """
+        Callback executed on the main thread after the background aggregation
+        of 3D toolpaths is complete.
+        """
+        if task.get_status() != "completed":
+            logger.warning("3D toolpath aggregation failed or was cancelled.")
+            return
+
+        aggregated_ops = task.result()
+        if canvas3d_initialized and hasattr(self, "canvas3d"):
+            logger.debug("Background aggregation finished. Updating 3D view.")
+            self.canvas3d.set_ops(aggregated_ops)
+
+    def _on_document_settled(self, sender):
+        """
+        Called when all background processing is complete. Kicks off a
+        background task to aggregate the final toolpaths for the 3D view.
+        """
+        if canvas3d_initialized and hasattr(self, "canvas3d"):
+            # This key ensures that if another document change happens quickly,
+            # the previous (now stale) aggregation task will be cancelled.
+            task_key = "aggregate-3d-ops"
+            task_mgr.run_thread(
+                self._aggregate_ops_for_3d_view,
+                when_done=self._on_3d_ops_aggregated,
+                key=task_key,
+            )
 
     def _on_selection_changed(
         self,

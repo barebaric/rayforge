@@ -35,6 +35,7 @@ from .commands import (
     SectionType,
     OpsSectionStartCommand,
     OpsSectionEndCommand,
+    ScanLinePowerCommand,
 )
 
 
@@ -126,6 +127,14 @@ class Ops:
                 new_ops.add(
                     OpsSectionEndCommand(
                         section_type=SectionType[cmd_data["section_type"]]
+                    )
+                )
+            elif cmd_type == "ScanLinePowerCommand":
+                new_ops.add(
+                    ScanLinePowerCommand(
+                        start_point=tuple(cmd_data["start_point"]),
+                        end=tuple(cmd_data["end"]),
+                        power_values=bytearray(cmd_data["power_values"]),
                     )
                 )
             else:
@@ -431,6 +440,12 @@ class Ops:
                 transformed_vec = matrix @ point_vec
                 cmd.end = tuple(transformed_vec[:3])
 
+                # Handle commands that have their own explicit start_point
+                if isinstance(cmd, ScanLinePowerCommand):
+                    start_vec = np.array([*cmd.start_point, 1.0])
+                    transformed_start_vec = matrix @ start_vec
+                    cmd.start_point = tuple(transformed_start_vec[:3])
+
                 if isinstance(cmd, ArcToCommand):
                     # For uniform transforms, we transform the center offset
                     # vector by the 3x3 rotation/scaling part of the matrix.
@@ -553,6 +568,62 @@ class Ops:
 
             if not isinstance(cmd, MovingCommand):
                 continue
+
+            # Special handling for ScanLinePowerCommand to prevent
+            # linearization.
+            if isinstance(cmd, ScanLinePowerCommand):
+                clipped_segment = clipping.clip_line_segment(
+                    cmd.start_point, cmd.end, rect
+                )
+                if clipped_segment:
+                    new_start, new_end = clipped_segment
+
+                    # Calculate the start and end `t` values (0-1) of the
+                    # clipped segment relative to the original line.
+                    p_start_orig = np.array(cmd.start_point)
+                    p_end_orig = np.array(cmd.end)
+                    vec_orig = p_end_orig - p_start_orig
+                    len_sq = np.dot(vec_orig, vec_orig)
+
+                    if len_sq > 1e-9:
+                        t_start = (
+                            np.dot(
+                                np.array(new_start) - p_start_orig, vec_orig
+                            )
+                            / len_sq
+                        )
+                        t_end = (
+                            np.dot(np.array(new_end) - p_start_orig, vec_orig)
+                            / len_sq
+                        )
+                    else:
+                        t_start, t_end = 0.0, 1.0
+
+                    t_start = max(0.0, min(1.0, t_start))
+                    t_end = max(0.0, min(1.0, t_end))
+
+                    # Slice the power_values array based on the `t` values.
+                    num_values = len(cmd.power_values)
+                    idx_start = int(num_values * t_start)
+                    idx_end = int(num_values * t_end)
+                    new_power_values = cmd.power_values[idx_start:idx_end]
+
+                    if new_power_values:
+                        new_cmd = ScanLinePowerCommand(
+                            new_start, new_end, new_power_values
+                        )
+                        # A scan line is a cutting move; a MoveTo might be
+                        # needed.
+                        if (
+                            clipped_pen_pos is None
+                            or math.dist(clipped_pen_pos, new_start) > 1e-6
+                        ):
+                            new_ops.move_to(*new_start)
+                        new_ops.add(new_cmd)
+                        clipped_pen_pos = new_end
+
+                last_point = cmd.end
+                continue  # Skip the generic linearization below
 
             if cmd.is_travel_command():
                 last_point = cmd.end

@@ -130,6 +130,39 @@ class TaskManager:
         # ThreadPoolExecutor.
         return await self._loop.run_in_executor(None, func, *args)
 
+    def run_thread(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        key: Optional[Any] = None,
+        when_done: Optional[Callable[[Task], None]] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Creates, configures, and schedules a task to run a synchronous function
+        in a background thread.
+        """
+
+        async def thread_wrapper(
+            context: ExecutionContext, *args: Any, **kwargs: Any
+        ) -> Any:
+            # This is running inside the TaskManager's event loop thread.
+            # We use run_in_executor to move the blocking call to a *different*
+            # thread (from the default thread pool executor), ensuring the
+            # TaskManager's own event loop is not blocked.
+            result = await self.run_in_executor(func, *args, **kwargs)
+            return result
+
+        # We create a task with the async wrapper.
+        # The original sync function's args/kwargs are passed through.
+        task = Task(thread_wrapper, *args, key=key, **kwargs)
+        self.add_task(task, when_done)
+
+        # Schedule the async wrapper to be run.
+        asyncio.run_coroutine_threadsafe(
+            self._run_task(task, when_done), self._loop
+        )
+
     def run_process(
         self,
         func: Callable[..., Any],

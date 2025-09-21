@@ -15,6 +15,7 @@ from .shaders import (
     TEXT_FRAGMENT_SHADER,
     TEXT_VERTEX_SHADER,
 )
+from ...shared.tasker import task_mgr, Task
 
 
 logging.basicConfig(level=logging.INFO)
@@ -44,7 +45,11 @@ class Canvas3D(Gtk.GLArea):
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.ops_renderer: Optional[OpsRenderer] = None
         self.sphere_renderer: Optional[SphereRenderer] = None
-        self._pending_ops: Optional[Ops] = None
+        self._ops_preparation_task: Optional[Task] = None
+        self._ops_vtx_cache: Optional[
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        ] = None
+        self._show_travel_moves: bool = False
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
@@ -199,6 +204,8 @@ class Canvas3D(Gtk.GLArea):
         logger.info("GLArea unrealized. Cleaning up GL resources.")
         self.make_current()
         try:
+            if self._ops_preparation_task:
+                self._ops_preparation_task.cancel()
             if self.axis_renderer:
                 self.axis_renderer.cleanup()
             if self.ops_renderer:
@@ -299,18 +306,10 @@ class Canvas3D(Gtk.GLArea):
 
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
-        if not self.camera:
+        if not self.camera or not self._gl_initialized:
             return False
 
         self._update_theme_colors()
-
-        # If there are new ops waiting, upload them to the GPU.
-        # This handles the race condition where set_ops is called before
-        # the GL context is initialized.
-        if self._pending_ops is not None and self.ops_renderer:
-            logger.debug("Processing pending ops in on_render.")
-            self.ops_renderer.update_ops(self._pending_ops)
-            self._pending_ops = None  # Consume the pending ops
 
         try:
             GL.glViewport(0, 0, self.camera.width, self.camera.height)
@@ -547,11 +546,81 @@ class Canvas3D(Gtk.GLArea):
             self.camera.dolly(dy)
             self.queue_render()
 
+    def set_show_travel_moves(self, visible: bool):
+        """Sets the visibility of travel moves in the 3D view."""
+        if self._show_travel_moves == visible or not self.ops_renderer:
+            return
+
+        self._show_travel_moves = visible
+
+        if self._ops_vtx_cache:
+            (
+                cut_verts,
+                travel_verts,
+                raster_verts,
+                raster_colors,
+            ) = self._ops_vtx_cache
+            travel_verts_to_render = (
+                travel_verts if visible else np.array([], dtype=np.float32)
+            )
+            self.ops_renderer.update_from_vertex_data(
+                cut_verts,
+                travel_verts_to_render,
+                raster_verts,
+                raster_colors,
+            )
+            self.queue_render()
+
+    def _on_ops_prepared(self, task: Task):
+        """
+        Callback for when the background ops preparation task is finished.
+        """
+        if task.get_status() != "completed" or not self.ops_renderer:
+            return
+
+        # Cache the full vertex data from the background task
+        self._ops_vtx_cache = task.result()
+        if not self._ops_vtx_cache:
+            return
+
+        (
+            cut_verts,
+            travel_verts,
+            raster_verts,
+            raster_colors,
+        ) = self._ops_vtx_cache
+
+        # Determine which travel vertices to show based on the current toggle
+        # state
+        travel_verts_to_render = (
+            travel_verts
+            if self._show_travel_moves
+            else np.array([], dtype=np.float32)
+        )
+
+        # This part runs on the main thread and is fast (just GPU uploads)
+        self.ops_renderer.update_from_vertex_data(
+            cut_verts, travel_verts_to_render, raster_verts, raster_colors
+        )
+        self.queue_render()
+
     def set_ops(self, ops: Ops):
         """
-        Stores the given operations and schedules a redraw. This is safe to
-        call from any thread, even before the widget is realized.
+        Schedules the given operations to be prepared for rendering in a
+        background thread. This method is safe to call from any thread.
         """
-        logger.debug("Received new ops. Storing and queueing render.")
-        self._pending_ops = ops
-        self.queue_render()
+        if not self.ops_renderer:
+            return
+
+        logger.debug("Received new ops. Scheduling background preparation.")
+
+        # This key ensures that if a new set_ops is called while an old one is
+        # still being prepared, the old one is cancelled.
+        task_key = (id(self), "prepare-3d-ops-vertices")
+
+        self._ops_preparation_task = task_mgr.run_thread(
+            self.ops_renderer.prepare_vertex_data,
+            ops,
+            key=task_key,
+            when_done=self._on_ops_prepared,
+        )
