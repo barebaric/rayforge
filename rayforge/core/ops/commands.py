@@ -370,6 +370,13 @@ class ScanLinePowerCommand(MovingCommand):
     def is_cutting_command(self) -> bool:
         return True
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the command to a dictionary."""
+        d = super().to_dict()
+        d["start_point"] = self.start_point
+        d["power_values"] = list(self.power_values)
+        return d
+
     def linearize(
         self, start_point: Tuple[float, float, float]
     ) -> List[Command]:

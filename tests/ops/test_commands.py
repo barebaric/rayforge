@@ -9,6 +9,16 @@ from rayforge.core.ops.commands import (
     SectionType,
     ScanLinePowerCommand,
     SetPowerCommand,
+    SetCutSpeedCommand,
+    SetTravelSpeedCommand,
+    EnableAirAssistCommand,
+    DisableAirAssistCommand,
+    JobStartCommand,
+    JobEndCommand,
+    LayerStartCommand,
+    LayerEndCommand,
+    WorkpieceStartCommand,
+    WorkpieceEndCommand,
 )
 
 
@@ -36,18 +46,118 @@ def test_command_inheritance():
     assert not line_cmd.is_travel_command()
 
 
-def test_section_markers_are_marker_commands():
-    start_cmd = OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "uid123")
-    end_cmd = OpsSectionEndCommand(SectionType.VECTOR_OUTLINE)
-    assert start_cmd.is_marker_command()
-    assert end_cmd.is_marker_command()
-    # Also check they aren't other types
-    assert not start_cmd.is_state_command()
-    assert not start_cmd.is_cutting_command()
-    assert not start_cmd.is_travel_command()
+def test_command_repr():
+    """Ensures the __repr__ method works without error."""
+    cmd = LineToCommand((1, 2, 3))
+    rep = repr(cmd)
+    assert "LineToCommand" in rep
+    assert "'end': (1, 2, 3)" in rep
 
 
-def test_command_serialization():
+def test_set_power_command():
+    cmd = SetPowerCommand(power=150)
+    state = State(power=0)
+    cmd.apply_to_state(state)
+    assert state.power == 150
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetPowerCommand"
+    assert data["power"] == 150
+
+
+def test_set_cut_speed_command():
+    cmd = SetCutSpeedCommand(speed=1000)
+    state = State(cut_speed=0)
+    cmd.apply_to_state(state)
+    assert state.cut_speed == 1000
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetCutSpeedCommand"
+    assert data["speed"] == 1000
+
+
+def test_set_travel_speed_command():
+    cmd = SetTravelSpeedCommand(speed=5000)
+    state = State(travel_speed=0)
+    cmd.apply_to_state(state)
+    assert state.travel_speed == 5000
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetTravelSpeedCommand"
+    assert data["speed"] == 5000
+
+
+def test_enable_air_assist_command():
+    cmd = EnableAirAssistCommand()
+    state = State(air_assist=False)
+    cmd.apply_to_state(state)
+    assert state.air_assist is True
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "EnableAirAssistCommand"
+
+
+def test_disable_air_assist_command():
+    cmd = DisableAirAssistCommand()
+    state = State(air_assist=True)
+    cmd.apply_to_state(state)
+    assert state.air_assist is False
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "DisableAirAssistCommand"
+
+
+# --- Marker Command Tests ---
+
+
+@pytest.mark.parametrize(
+    "cmd_class, args",
+    [
+        (JobStartCommand, ()),
+        (JobEndCommand, ()),
+        (LayerStartCommand, ("layer-1",)),
+        (LayerEndCommand, ("layer-1",)),
+        (WorkpieceStartCommand, ("wp-1",)),
+        (WorkpieceEndCommand, ("wp-1",)),
+        (OpsSectionStartCommand, (SectionType.VECTOR_OUTLINE, "wp-1")),
+        (OpsSectionEndCommand, (SectionType.VECTOR_OUTLINE,)),
+    ],
+)
+def test_all_marker_commands(cmd_class, args):
+    """Tests that all marker commands identify as such and not other types."""
+    cmd = cmd_class(*args)
+    assert cmd.is_marker_command()
+    assert not cmd.is_cutting_command()
+    assert not cmd.is_travel_command()
+    assert not cmd.is_state_command()
+
+
+def test_job_marker_serialization():
+    start = JobStartCommand().to_dict()
+    assert start["type"] == "JobStartCommand"
+    end = JobEndCommand().to_dict()
+    assert end["type"] == "JobEndCommand"
+
+
+def test_layer_marker_serialization():
+    start = LayerStartCommand("layer-abc").to_dict()
+    assert start["type"] == "LayerStartCommand"
+    assert start["layer_uid"] == "layer-abc"
+    end = LayerEndCommand("layer-abc").to_dict()
+    assert end["type"] == "LayerEndCommand"
+    assert end["layer_uid"] == "layer-abc"
+
+
+def test_workpiece_marker_serialization():
+    start = WorkpieceStartCommand("wp-123").to_dict()
+    assert start["type"] == "WorkpieceStartCommand"
+    assert start["workpiece_uid"] == "wp-123"
+    end = WorkpieceEndCommand("wp-123").to_dict()
+    assert end["type"] == "WorkpieceEndCommand"
+    assert end["workpiece_uid"] == "wp-123"
+
+
+def test_ops_section_serialization():
     start_cmd = OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-abc")
     data = start_cmd.to_dict()
     assert data["type"] == "OpsSectionStartCommand"
@@ -60,12 +170,30 @@ def test_command_serialization():
     assert data["section_type"] == "RASTER_FILL"
 
 
-def test_line_to_command_linearize():
-    """Tests that a LineToCommand linearizes to itself."""
-    cmd = LineToCommand((10, 20, 30))
+def test_move_to_command():
+    """Tests MoveToCommand-specific methods."""
+    cmd = MoveToCommand((10, 20, 30))
+    # Test linearize
     linearized = cmd.linearize((0, 0, 0))
     assert len(linearized) == 1
     assert linearized[0] is cmd
+    # Test serialization
+    data = cmd.to_dict()
+    assert data["type"] == "MoveToCommand"
+    assert data["end"] == (10, 20, 30)
+
+
+def test_line_to_command_linearize_and_dict():
+    """Tests that a LineToCommand linearizes to itself and serializes."""
+    cmd = LineToCommand((10, 20, 30))
+    # Test linearize
+    linearized = cmd.linearize((0, 0, 0))
+    assert len(linearized) == 1
+    assert linearized[0] is cmd
+    # Test serialization
+    data = cmd.to_dict()
+    assert data["type"] == "LineToCommand"
+    assert data["end"] == (10, 20, 30)
 
 
 def test_arc_to_command_linearize():
@@ -82,6 +210,15 @@ def test_arc_to_command_linearize():
     # Check that the chain of linearized segments matches the original arc
     final_point = linearized[-1].end
     assert final_point == pytest.approx(arc_cmd.end)
+
+
+def test_arc_to_command_serialization():
+    cmd = ArcToCommand(end=(0, 10, 5), center_offset=(-10, 0), clockwise=False)
+    data = cmd.to_dict()
+    assert data["type"] == "ArcToCommand"
+    assert data["end"] == (0, 10, 5)
+    assert data["center_offset"] == (-10, 0)
+    assert data["clockwise"] is False
 
 
 def test_arc_to_command_reverse_geometry():
@@ -137,6 +274,35 @@ def test_scan_line_power_command_linearize():
     assert linearized[4].end == pytest.approx((3.0, 0.0, 5.0))
 
 
+def test_scan_line_power_command_linearize_empty():
+    """
+    Tests that linearizing a ScanLinePowerCommand with no power values
+    yields no commands.
+    """
+    cmd = ScanLinePowerCommand(
+        start_point=(0, 0, 5),
+        end=(3, 0, 5),
+        power_values=bytearray([]),
+    )
+    linearized = cmd.linearize((0, 0, 0))
+    assert linearized == []
+
+
+def test_scan_line_power_command_properties_and_dict():
+    """Tests the properties and serialization of ScanLinePowerCommand."""
+    cmd = ScanLinePowerCommand(
+        start_point=(0, 0, 5),
+        end=(3, 0, 5),
+        power_values=bytearray([100, 200]),
+    )
+    assert cmd.is_cutting_command()
+    data = cmd.to_dict()
+    assert data["type"] == "ScanLinePowerCommand"
+    assert data["start_point"] == (0, 0, 5)
+    assert data["end"] == (3, 0, 5)
+    assert data["power_values"] == [100, 200]
+
+
 def test_scan_line_power_command_reverse_geometry():
     """Tests the reversal of a ScanLinePowerCommand."""
     start = (0, 0, 0)
@@ -159,6 +325,12 @@ def test_command_distance_calculation():
     line_cmd = LineToCommand((3.0, 4.0, 0.0))
     assert line_cmd.distance(last_point) == pytest.approx(5.0)
 
+    # ArcTo should calculate chord distance from the last point
+    arc_cmd = ArcToCommand(
+        end=(13.0, 4.0, 0.0), center_offset=(0, 0), clockwise=True
+    )
+    assert arc_cmd.distance((10.0, 0.0, 0.0)) == pytest.approx(5.0)
+
     # ScanLinePowerCommand should use its own start_point, ignoring last_point
     scan_cmd = ScanLinePowerCommand(
         start_point=(10.0, 0.0, 0.0),
@@ -170,3 +342,9 @@ def test_command_distance_calculation():
     # State commands should have zero distance
     state_cmd = SetPowerCommand(100)
     assert state_cmd.distance(last_point) == 0.0
+
+
+def test_moving_command_distance_with_no_last_point():
+    """Tests that distance() returns 0 if no start point is available."""
+    cmd = LineToCommand((3, 4, 0))
+    assert cmd.distance(None) == 0.0

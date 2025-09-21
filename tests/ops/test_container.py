@@ -16,6 +16,7 @@ from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     SectionType,
+    ScanLinePowerCommand,
 )
 
 
@@ -372,6 +373,86 @@ def test_clip_with_arc():
             assert clip_rect[1] <= y <= clip_rect[3]
 
 
+def test_clip_scanlinepowercommand_start_outside():
+    """Tests clipping a scanline that starts outside and ends inside."""
+    ops = Ops()
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(0, 50, 10),
+            end=(100, 50, 10),
+            power_values=bytearray(range(100)),
+        )
+    )
+    clip_rect = (50, 0, 150, 100)
+    clipped_ops = ops.clip(clip_rect)
+
+    assert len(clipped_ops.commands) == 2  # MoveTo, ScanLinePowerCommand
+    assert isinstance(clipped_ops.commands[0], MoveToCommand)
+    clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
+
+    # 1. Verify it's still a ScanLinePowerCommand (not linearized)
+    assert isinstance(clipped_cmd, ScanLinePowerCommand)
+
+    # 2. Verify new geometry
+    assert clipped_cmd.start_point == pytest.approx((50, 50, 10))
+    assert clipped_cmd.end == pytest.approx((100, 50, 10))
+
+    # 3. Verify power values are sliced correctly (original was 100 values)
+    # The clip starts 50% of the way through the line.
+    assert len(clipped_cmd.power_values) == 50
+    assert clipped_cmd.power_values[0] == 50
+    assert clipped_cmd.power_values[-1] == 99
+
+
+def test_clip_scanlinepowercommand_crossing_with_z_interp():
+    """Tests a scanline that crosses the clip rect with Z interpolation."""
+    ops = Ops()
+    # Line from (-50, 50, 0) to (150, 50, 200) -> total length 200
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(-50, 50, 0),
+            end=(150, 50, 200),
+            power_values=bytearray(range(200)),
+        )
+    )
+    clip_rect = (0, 0, 100, 100)
+    clipped_ops = ops.clip(clip_rect)
+
+    assert len(clipped_ops.commands) == 2
+    clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
+    assert isinstance(clipped_cmd, ScanLinePowerCommand)
+
+    # The line starts 50 units before x=0 and ends 50 units after x=100.
+    # The clipped portion is from x=0 to x=100.
+    # t_start = 50 / 200 = 0.25. t_end = 150 / 200 = 0.75
+    expected_z_start = 0 + (0.25 * 200)  # 50
+    expected_z_end = 0 + (0.75 * 200)  # 150
+
+    assert clipped_cmd.start_point == pytest.approx((0, 50, expected_z_start))
+    assert clipped_cmd.end == pytest.approx((100, 50, expected_z_end))
+
+    # Power values should be sliced from index 50 to 150.
+    expected_len = int(200 * 0.75) - int(200 * 0.25)
+    assert len(clipped_cmd.power_values) == expected_len
+    assert clipped_cmd.power_values[0] == 50
+    assert clipped_cmd.power_values[-1] == 149
+
+
+def test_clip_scanlinepowercommand_fully_outside():
+    """Tests that a fully outside scanline is removed."""
+    ops = Ops()
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(200, 50, 10),
+            end=(300, 50, 10),
+            power_values=bytearray(range(100)),
+        )
+    )
+    clip_rect = (0, 0, 100, 100)
+    clipped_ops = ops.clip(clip_rect)
+    assert len(clipped_ops.commands) == 0
+
+
 def test_subtract_regions():
     ops = Ops()
     ops.move_to(0, 50, -5)
@@ -401,3 +482,23 @@ def test_serialization_with_section_markers():
     assert start_cmd.section_type == SectionType.RASTER_FILL
     assert start_cmd.workpiece_uid == "wp-abc"
     assert end_cmd.section_type == SectionType.RASTER_FILL
+
+
+def test_translate_with_scanline():
+    """Tests that translate() correctly transforms ScanLinePowerCommand."""
+    ops = Ops()
+    ops.add(
+        ScanLinePowerCommand(
+            start_point=(10, 20, 30),
+            end=(40, 50, 60),
+            power_values=bytearray([1, 2, 3]),
+        )
+    )
+    ops.translate(5, -10, 15)
+
+    translated_cmd = cast(ScanLinePowerCommand, ops.commands[0])
+    assert isinstance(translated_cmd, ScanLinePowerCommand)
+
+    # Check if both start_point and end are translated
+    assert translated_cmd.start_point == pytest.approx((15, 10, 45))
+    assert translated_cmd.end == pytest.approx((45, 40, 75))
