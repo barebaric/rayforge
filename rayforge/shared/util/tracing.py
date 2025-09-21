@@ -6,12 +6,178 @@ from typing import Tuple, List
 from ...core.geo import Geometry
 
 BORDER_SIZE = 2
+# A safety limit to prevent processing pathologically complex images.
+# If potrace generates more paths than this, we fall back to convex hulls.
+MAX_VECTORS_LIMIT = 25000
+
+
+def _get_component_areas(boolean_image: np.ndarray) -> np.ndarray:
+    """
+    Analyzes a boolean image and returns the areas (in pixels) of all
+    distinct components.
+
+    Args:
+        boolean_image: A NumPy array of dtype=bool.
+
+    Returns:
+        A NumPy array of integer areas for each detected component.
+    """
+    if not np.any(boolean_image):
+        return np.array([], dtype=int)
+
+    # Convert boolean image to uint8 for OpenCV
+    img_uint8 = boolean_image.astype(np.uint8)
+
+    # Find and get stats for each component.
+    # The first label (0) is the background.
+    output = cv2.connectedComponentsWithStats(img_uint8, connectivity=8)
+    _num_labels, _labels, stats, _centroids = output
+
+    # We only care about the areas of the actual components,
+    # not the background.
+    # stats[0] is the background, so we slice from index 1.
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    return areas
+
+
+def _find_adaptive_area_threshold(areas: np.ndarray) -> int:
+    """
+    Analyzes component areas to find a dynamic threshold for separating
+    content from noise by identifying the "knee" in the size histogram.
+
+    Args:
+        areas: A NumPy array of component areas.
+
+    Returns:
+        The minimum area (in pixels) a component should have to be considered
+        "content".
+    """
+    if areas.size == 0:
+        return 0
+
+    bin_counts = np.bincount(areas)
+    if len(bin_counts) <= 1:
+        return 0
+
+    # Find the most frequent area (ignoring background at index 0).
+    most_common_area_idx = int(np.argmax(bin_counts[1:])) + 1
+    peak_count = bin_counts[most_common_area_idx]
+
+    # FIX: A new, more robust heuristic to detect clean geometric images.
+    # If the most common feature is large, it's not noise.
+    if most_common_area_idx > 10:
+        return 2
+
+    # If the peak count is very low, it's also likely a clean image.
+    if peak_count < 10:
+        return 2
+
+    drop_off_threshold = peak_count * 0.01
+
+    # Find the last area index that is considered part of the noise cluster.
+    # Noise is defined as any area with a count above the drop-off threshold.
+    significant_indices = np.where(bin_counts > drop_off_threshold)[0]
+    if significant_indices.size > 0:
+        # The threshold is one pixel larger than the last noisy area size.
+        last_noisy_area = significant_indices[-1]
+        threshold = last_noisy_area + 1
+    else:
+        # Should not happen if peak_count >= 10, but as a fallback:
+        threshold = 2
+
+    return max(2, threshold)
+
+
+def _filter_image_by_component_area(
+    boolean_image: np.ndarray, min_area: int
+) -> np.ndarray:
+    """
+    Removes all components from a boolean image that have an area smaller
+    than the provided minimum area.
+
+    Args:
+        boolean_image: The source boolean image.
+        min_area: The minimum number of pixels for a component to be kept.
+
+    Returns:
+        A new boolean image with small components removed.
+    """
+    if min_area <= 1:
+        return boolean_image.copy()
+
+    img_uint8 = boolean_image.astype(np.uint8)
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        img_uint8, connectivity=8
+    )
+
+    # Create a new blank image
+    filtered_image = np.zeros_like(boolean_image, dtype=bool)
+
+    # Iterate through each component (skipping background label 0)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+            # If the component is large enough, add it to our new image
+            filtered_image[labels == i] = True
+
+    return filtered_image
+
+
+def _get_hulls_from_image(
+    boolean_image: np.ndarray,
+    scale_x: float,
+    scale_y: float,
+    height_px: int,
+) -> List[Geometry]:
+    """
+    Fallback function: Finds contours in the image, calculates the convex hull
+    for each, and returns them as a list of Geometry objects.
+
+    Args:
+        boolean_image: The clean boolean image containing only major shapes.
+        scale_x: Pixels per millimeter (X).
+        scale_y: Pixels per millimeter (Y).
+        height_px: Original height of the source surface in pixels.
+
+    Returns:
+        A list of Geometry objects, each representing a convex hull.
+    """
+    geometries = []
+    # findContours requires uint8 format
+    img_uint8 = boolean_image.astype(np.uint8) * 255
+    contours, _ = cv2.findContours(
+        img_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    def _transform_point(p: Tuple[float, float]) -> Tuple[float, float]:
+        px, py = p
+        ops_px = px - BORDER_SIZE
+        ops_py = height_px - (py - BORDER_SIZE)
+        return ops_px / scale_x, ops_py / scale_y
+
+    for contour in contours:
+        if len(contour) < 3:
+            continue  # A hull requires at least 3 points
+
+        hull_points = cv2.convexHull(contour).squeeze(axis=1)
+
+        geo = Geometry()
+        start_pt = _transform_point(tuple(hull_points[0]))
+        geo.move_to(start_pt[0], start_pt[1])
+
+        for point in hull_points[1:]:
+            pt = _transform_point(tuple(point))
+            geo.line_to(pt[0], pt[1])
+
+        geo.close_path()
+        geometries.append(geo)
+
+    return geometries
 
 
 def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     """
-    Prepares a Cairo surface for Potrace by converting it to a NumPy
-    array of dtype=bool. Dark areas of the source image will be `True`.
+    Prepares a Cairo surface for Potrace, including an adaptive denoising
+    pipeline to remove small, irrelevant features before tracing.
     """
     surface_format = surface.get_format()
     channels = 4 if surface_format == cairo.FORMAT_ARGB32 else 3
@@ -25,7 +191,7 @@ def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     )
 
     border_color = [255] * channels
-    img = cv2.copyMakeBorder(
+    img_with_border = cv2.copyMakeBorder(
         img,
         BORDER_SIZE,
         BORDER_SIZE,
@@ -36,13 +202,25 @@ def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     )
 
     if channels == 4:
-        alpha = img[:, :, 3]
-        img[alpha == 0] = 255
+        alpha = img_with_border[:, :, 3]
+        img_with_border[alpha == 0] = 255
 
     gray = cv2.cvtColor(
-        img, cv2.COLOR_BGR2GRAY if channels == 3 else cv2.COLOR_BGRA2GRAY
+        img_with_border,
+        cv2.COLOR_BGR2GRAY if channels == 3 else cv2.COLOR_BGRA2GRAY,
     )
-    return gray < 128
+    boolean_image = gray < 128
+
+    # Adaptive Denoising Pipeline
+    component_areas = _get_component_areas(boolean_image)
+    if component_areas.size > 0:
+        min_area_threshold = _find_adaptive_area_threshold(component_areas)
+        cleaned_image = _filter_image_by_component_area(
+            boolean_image, min_area_threshold
+        )
+        return cleaned_image
+
+    return boolean_image
 
 
 def _curves_to_geometry(
@@ -72,11 +250,8 @@ def _curves_to_geometry(
                 geo.line_to(c[0], c[1])
                 geo.line_to(end[0], end[1])
             else:
-                # Approximate bezier curve with line segments
                 last_cmd = geo.commands[-1]
                 if last_cmd.end is None:
-                    # This should not happen in a valid path, but it makes
-                    # the code robust and satisfies the type checker.
                     continue
                 start_ops = last_cmd.end[:2]
 
@@ -110,24 +285,42 @@ def trace_surface(
     surface: cairo.ImageSurface, pixels_per_mm: Tuple[float, float]
 ) -> List[Geometry]:
     """
-    Traces a Cairo surface and returns a list of Geometry objects, one for
-    each distinct path found. Coordinates are in millimeters.
+    Traces a Cairo surface and returns a list of Geometry objects. It now
+    includes an adaptive pre-processing step to handle noisy images and a
+    fallback mechanism for overly complex vector results.
     """
-    boolean_image = _prepare_surface_for_potrace(surface)
+    cleaned_boolean_image = _prepare_surface_for_potrace(surface)
+
+    if not np.any(cleaned_boolean_image):
+        return []
 
     # Use aggressive parameters for high fidelity
-    potrace_path = potrace.Bitmap(boolean_image).trace(
+    potrace_result = potrace.Bitmap(cleaned_boolean_image).trace(
         turdsize=1,
         opttolerance=0.055,
         alphamax=0,
         turnpolicy=potrace.TURNPOLICY_MINORITY,
     )
 
-    if not potrace_path:
+    if not potrace_result:
         return []
 
+    # Convert iterable Path to a list to get its length.
+    potrace_path_list = list(potrace_result)
+
+    # Fallback Mechanism
+    if len(potrace_path_list) >= MAX_VECTORS_LIMIT:
+        # Image is too complex, fall back to convex hulls of major components
+        return _get_hulls_from_image(
+            cleaned_boolean_image,
+            pixels_per_mm[0],
+            pixels_per_mm[1],
+            surface.get_height(),
+        )
+
+    # Normal High-Fidelity Path
     return _curves_to_geometry(
-        list(potrace_path),
+        potrace_path_list,
         pixels_per_mm[0],
         pixels_per_mm[1],
         surface.get_height(),
