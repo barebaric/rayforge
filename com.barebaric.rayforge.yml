@@ -20,6 +20,8 @@ modules:
   - flatpak/python3-pybind11.json       # scipy-python requirement
   - flatpak/python3-openblas.json       # scipy-python requirement
   - flatpak/python3-vips.json
+  - flatpak/python3-agg.json
+  - flatpak/python3-potrace.json
   - flatpak/python3-setuptools.json
   - flatpak/python3-setuptools-git-versioning.json
   - flatpak/python3-requirements.json

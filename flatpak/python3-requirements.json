@@ -532,16 +532,16 @@
             ]
         },
         {
-            "name": "python3-potracer",
+            "name": "python3-pypotrace",
             "buildsystem": "simple",
             "build-commands": [
-                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"potracer~=0.0.4\" --no-build-isolation"
+                "python3 setup.py install --prefix=${FLATPAK_DEST}"
             ],
             "sources": [
                 {
-                    "type": "file",
-                    "url": "https://files.pythonhosted.org/packages/d4/5f/d84189372d95ffd144ae515907f775d385863dc3fb7e123331428c8a2a3e/potracer-0.0.4.tar.gz",
-                    "sha256": "32cbdb984446066bcfbe8b600142a54b90fa6da274b69219473205d6e4c09713"
+                    "type": "archive",
+                    "url": "https://files.pythonhosted.org/packages/d7/58/bcd8a2b090e51100e690c61c245974b923911255757fd3367f0aa8c2c0cb/pypotrace-0.3.tar.gz",
+                    "sha256": "b019b30a1f45c83e399af479d17405ed26de9b4c1dcb74676dfa00ec30effff7"
                 }
             ]
         },
