@@ -3,6 +3,8 @@ import pytest
 from pathlib import Path
 from typing import Optional, Tuple
 from dataclasses import asdict
+from rayforge.core.doc import Doc
+from rayforge.core.import_source import ImportSource
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
@@ -25,58 +27,89 @@ def sample_svg_data() -> bytes:
 
 
 @pytest.fixture
-def workpiece_instance(sample_svg_data: bytes) -> WorkPiece:
-    """Creates a default WorkPiece instance for testing."""
-    return WorkPiece(
-        Path("test_rect.svg"),
+def doc_with_workpiece(
+    sample_svg_data: bytes,
+) -> Tuple[Doc, WorkPiece, ImportSource]:
+    """
+    Creates a Doc with a single WorkPiece linked to an ImportSource,
+    which is the correct way to test a WorkPiece's data-dependent methods.
+    """
+    doc = Doc()
+    source = ImportSource(
+        source_file=Path("test_rect.svg"),
+        original_data=sample_svg_data,
         renderer=SvgRenderer(),
-        data=sample_svg_data,
     )
+    doc.add_import_source(source)
+    wp = WorkPiece(name="test_rect.svg")
+    wp.import_source_uid = source.uid
+    doc.active_layer.add_child(wp)
+    return doc, wp, source
+
+
+@pytest.fixture
+def workpiece_instance(
+    doc_with_workpiece: Tuple[Doc, WorkPiece, ImportSource],
+):
+    """Provides the WorkPiece instance from the doc_with_workpiece fixture."""
+    return doc_with_workpiece[1]
 
 
 class TestWorkPiece:
-    def test_initialization(self, workpiece_instance):
+    def test_initialization(self, workpiece_instance, sample_svg_data):
         wp = workpiece_instance
+        assert wp.name == "test_rect.svg"
         assert wp.source_file == Path("test_rect.svg")
         assert isinstance(wp.renderer, SvgRenderer)
+        assert wp.data == sample_svg_data
+        assert wp.source is not None
+        assert wp.source.original_data == sample_svg_data
         assert wp.pos == pytest.approx((0.0, 0.0))
-        # Default size is 1x1mm at the origin
         assert wp.size == pytest.approx((1.0, 1.0))
         assert wp.angle == pytest.approx(0.0)
-        # A 1x1mm object at the origin results in an identity matrix.
         assert wp.matrix == Matrix.identity()
         assert isinstance(wp.updated, Signal)
         assert isinstance(wp.transform_changed, Signal)
         assert wp.tabs == []
         assert wp.tabs_enabled is True
-        assert wp.import_source_uid is None
+        assert wp.import_source_uid is not None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
         assert hasattr(workpiece_instance, "get_world_transform")
 
-    def test_serialization_deserialization(self, workpiece_instance):
-        wp = workpiece_instance
+    def test_serialization_deserialization(self, doc_with_workpiece):
+        doc, wp, source = doc_with_workpiece
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
         wp.import_source_uid = "source-123"
         data_dict = wp.to_dict()
 
+        # Key check: renderer and source_file are NOT part of the workpiece
+        # dict
+        assert "renderer_name" not in data_dict
+        assert "source_file" not in data_dict
+        assert "data" not in data_dict
         assert "size" not in data_dict
         assert isinstance(data_dict["matrix"], list)
-        assert data_dict["renderer_name"] == "SvgRenderer"
         assert data_dict["import_source_uid"] == "source-123"
 
-        # No patch is needed. The global renderer_by_name registry is assumed
-        # to be populated, and from_dict should find the renderer there.
         new_wp = WorkPiece.from_dict(data_dict)
 
-        assert isinstance(new_wp, WorkPiece)
-        assert new_wp.source_file == wp.source_file
+        # A free-floating workpiece cannot access its source properties
+        assert new_wp.data is None
+        assert new_wp.renderer is None
+        assert new_wp.source_file is None
+
+        # Add it to the doc to link it to its source
+        source.uid = "source-123"  # Ensure UID matches for lookup
+        doc.add_import_source(source)
+        doc.active_layer.add_child(new_wp)
+
+        assert new_wp.name == wp.name
+        assert new_wp.source_file == source.source_file
         assert isinstance(new_wp.renderer, SvgRenderer)
-        # Note: due to inconsistency, order matters.
-        # Here we check the final state matches.
         assert new_wp.pos == pytest.approx(wp.pos)
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
@@ -156,7 +189,6 @@ class TestWorkPiece:
     def test_get_default_size_fallback(self):
         """
         Tests the fallback sizing logic when a renderer has no natural size.
-        This still requires a mock to simulate the specific condition.
         """
 
         class MockNoSizeRenderer(SvgRenderer):
@@ -165,11 +197,19 @@ class TestWorkPiece:
             ) -> Optional[Tuple[float, float]]:
                 return None
 
-        wp = WorkPiece(
-            Path("nosize.dat"), renderer=MockNoSizeRenderer(), data=b""
+        # Setup doc and source with the mock renderer
+        doc = Doc()
+        source = ImportSource(
+            source_file=Path("nosize.dat"),
+            original_data=b"",
+            renderer=MockNoSizeRenderer(),
         )
-        # The size should fall back to the provided bounds if aspect ratio
-        # cannot be determined.
+        doc.add_import_source(source)
+        wp = WorkPiece("nosize.dat")
+        wp.import_source_uid = source.uid
+        doc.active_layer.add_child(wp)
+
+        # The size should fall back to the provided bounds
         assert wp.get_default_size(
             bounds_width=400.0, bounds_height=300.0
         ) == (400.0, 300.0)
@@ -213,11 +253,7 @@ class TestWorkPiece:
         captured = capsys.readouterr()
 
         # The print() with commas adds a space separator.
-        # "  " * 1 -> "  ", plus print's space -> 3 spaces
-        expected = (
-            f"   {workpiece_instance.source_file} "
-            f"{workpiece_instance.renderer.__class__.__name__}\n"
-        )
+        expected = "   test_rect.svg SvgRenderer\n"
         assert captured.out == expected
 
     def test_get_world_transform_simple_translation(self, workpiece_instance):

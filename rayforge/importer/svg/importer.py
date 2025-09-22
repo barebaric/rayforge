@@ -18,8 +18,9 @@ from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
+from ...core.import_source import ImportSource
 from ...shared.util.tracing import trace_surface
-from ..base_importer import Importer
+from ..base_importer import Importer, ImportPayload
 from .renderer import SVG_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class SvgImporter(Importer):
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
-    ) -> Optional[List[DocItem]]:
+    ) -> Optional[ImportPayload]:
         """
         Generates DocItems from SVG data.
 
@@ -48,61 +49,72 @@ class SvgImporter(Importer):
         If vector_config is None, it attempts to parse the SVG path and
         shape data directly for a high-fidelity vector import.
         """
-        if vector_config is not None:
-            # Path 1: Render to bitmap and trace
-            return self._get_doc_items_from_trace(vector_config)
-        else:
-            # Path 2: Direct vector parsing
-            return self._get_doc_items_direct()
-
-    def _get_doc_items_from_trace(
-        self, vector_config: TraceConfig
-    ) -> Optional[List[DocItem]]:
-        # This is the original tracing implementation.
-        wp = WorkPiece(
+        source = ImportSource(
             source_file=self.source_file,
+            original_data=self.raw_data,
             renderer=SVG_RENDERER,
-            data=self.raw_data,
         )
 
+        if vector_config is not None:
+            # Path 1: Render to bitmap and trace
+            items = self._get_doc_items_from_trace(source, vector_config)
+        else:
+            # Path 2: Direct vector parsing
+            items = self._get_doc_items_direct(source)
+
+        if not items:
+            return None
+
+        return ImportPayload(source=source, items=items)
+
+    def _get_doc_items_from_trace(
+        self, source: ImportSource, vector_config: TraceConfig
+    ) -> Optional[List[DocItem]]:
+        """
+        Renders raw SVG data to a bitmap, traces it, and creates a WorkPiece.
+        """
         try:
-            # Get the SVG's natural size in millimeters.
-            size_mm = SVG_RENDERER.get_natural_size(
-                wp, px_factor=MM_PER_PX_FALLBACK
+            size_mm = SVG_RENDERER.calculate_natural_size_from_data(
+                self.raw_data, px_factor=MM_PER_PX_FALLBACK
             )
-            if size_mm and size_mm[0] and size_mm[1]:
-                wp.set_size(size_mm[0], size_mm[1])
-            else:
-                size_mm = None
         except Exception:
-            return [wp]
+            size_mm = None
 
-        if not size_mm:
-            return [wp]
+        traced_geo: Optional[Geometry] = None
 
-        w_mm, h_mm = size_mm
-        # Render at a reasonable resolution for tracing
-        w_px, h_px = 2048, 2048
-        surface = SVG_RENDERER.render_to_pixels(wp, w_px, h_px)
-        if not surface:
-            return [wp]
+        if size_mm and size_mm[0] and size_mm[1]:
+            w_mm, h_mm = size_mm
+            w_px, h_px = 2048, 2048
 
-        pixels_per_mm = (w_px / w_mm, h_px / h_mm)
+            surface = SVG_RENDERER.render_to_pixels_from_data(
+                self.raw_data, w_px, h_px
+            )
 
-        geometries = trace_surface(surface, pixels_per_mm)
-        if not geometries:
-            return [wp]
+            if surface:
+                pixels_per_mm = (w_px / w_mm, h_px / h_mm)
+                geometries = trace_surface(surface, pixels_per_mm)
 
-        # Combine all traced paths into a single Geometry object.
-        combined_geo = Geometry()
-        for geo in geometries:
-            combined_geo.commands.extend(geo.commands)
+                if geometries:
+                    combined_geo = Geometry()
+                    for geo in geometries:
+                        combined_geo.commands.extend(geo.commands)
+                    traced_geo = combined_geo
 
-        # Update the workpiece with the generated vectors.
-        wp.vectors = combined_geo
+        # Always create a workpiece, adding size and vectors if available.
+        wp = WorkPiece(name=self.source_file.stem)
+        wp.import_source_uid = source.uid
+
+        if size_mm and size_mm[0] and size_mm[1]:
+            wp.set_size(size_mm[0], size_mm[1])
+
+        if traced_geo:
+            wp.vectors = traced_geo
+
         return [wp]
 
-    def _get_doc_items_direct(self) -> Optional[List[DocItem]]:
+    def _get_doc_items_direct(
+        self, source: ImportSource
+    ) -> Optional[List[DocItem]]:
         """
         Parses SVG vector data directly, handling viewBox and unit conversions
         to ensure the vector geometry matches the rendered size.
@@ -125,7 +137,7 @@ class SvgImporter(Importer):
             )
             # Fallback to tracing if essential attributes for direct import
             # are missing.
-            return self._get_doc_items_from_trace(TraceConfig())
+            return self._get_doc_items_from_trace(source, TraceConfig())
 
         logger.info(f"SVG raw width/height: {svg.width}, {svg.height}")
         logger.info(f"SVG viewBox: {svg.viewbox}")
@@ -139,12 +151,9 @@ class SvgImporter(Importer):
         )
 
         # Get margins to trim
-        wp_temp = WorkPiece(
-            source_file=self.source_file,
-            renderer=SVG_RENDERER,
-            data=self.raw_data,
+        left, top, right, bottom = SVG_RENDERER._get_margins_from_data(
+            self.raw_data
         )
-        left, top, right, bottom = SVG_RENDERER._get_margins(wp_temp)
         logger.info(
             f"Margins: left={left:.4f}, top={top:.4f}, "
             f"right={right:.4f}, bottom={bottom:.4f}"
@@ -276,7 +285,7 @@ class SvgImporter(Importer):
             logger.warning(
                 "Invalid content bounds; falling back to trace method."
             )
-            return self._get_doc_items_from_trace(TraceConfig())
+            return self._get_doc_items_from_trace(source, TraceConfig())
             # Fallback
 
         # Calculate scales based on content bounds to fill the final dimensions
@@ -332,12 +341,8 @@ class SvgImporter(Importer):
         )
 
         # Create the final workpiece.
-        wp = WorkPiece(
-            source_file=self.source_file,
-            renderer=SVG_RENDERER,
-            data=self.raw_data,
-            vectors=geo,
-        )
+        wp = WorkPiece(name=self.source_file.stem, vectors=geo)
+        wp.import_source_uid = source.uid
 
         # Set the size to the final millimeter dimensions.
         wp.set_size(final_width_mm, final_height_mm)

@@ -15,15 +15,15 @@ from ..shared.util import parse_length, to_mm
 class SvgRenderer(Renderer):
     """Renders SVG data from a WorkPiece."""
 
-    def _get_margins(
-        self, workpiece: "WorkPiece"
+    def _get_margins_from_data(
+        self, data: bytes
     ) -> Tuple[float, float, float, float]:
-        # Margin calculation logic moved here from old importer
+        """Calculates content margins from raw SVG data."""
         measurement_size = 1000.0
-        if not workpiece.data:
+        if not data:
             return 0.0, 0.0, 0.0, 0.0
         try:
-            root = ET.fromstring(workpiece.data)
+            root = ET.fromstring(data)
             root.set("width", f"{measurement_size}px")
             root.set("height", f"{measurement_size}px")
             root.set("preserveAspectRatio", "none")
@@ -45,13 +45,14 @@ class SvgRenderer(Renderer):
         except (pyvips.Error, ET.ParseError):
             return 0.0, 0.0, 0.0, 0.0
 
-    def get_natural_size(
-        self, workpiece: "WorkPiece", px_factor: float = 0.0
+    def calculate_natural_size_from_data(
+        self, data: bytes, px_factor: float = 0.0
     ) -> Optional[Tuple[float, float]]:
-        if not workpiece.data:
+        """Calculates the trimmed natural size from raw SVG data."""
+        if not data:
             return None
         try:
-            root = ET.fromstring(workpiece.data)
+            root = ET.fromstring(data)
             w_str = root.get("width")
             h_str = root.get("height")
             if not w_str or not h_str:
@@ -66,17 +67,27 @@ class SvgRenderer(Renderer):
         except (ValueError, ET.ParseError):
             return None
 
-        left, top, right, bottom = self._get_margins(workpiece)
+        left, top, right, bottom = self._get_margins_from_data(data)
         return w_mm * (1 - left - right), h_mm * (1 - top - bottom)
 
-    def _render_to_vips_image(
-        self, workpiece: "WorkPiece", width: int, height: int
-    ) -> Optional[pyvips.Image]:
+    def get_natural_size(
+        self, workpiece: "WorkPiece", px_factor: float = 0.0
+    ) -> Optional[Tuple[float, float]]:
         if not workpiece.data:
             return None
+        return self.calculate_natural_size_from_data(
+            workpiece.data, px_factor=px_factor
+        )
+
+    def _render_vips_from_data(
+        self, data: bytes, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        """Renders raw SVG data to a pyvips Image."""
+        if not data:
+            return None
         try:
-            left, top, right, bottom = self._get_margins(workpiece)
-            root = ET.fromstring(workpiece.data)
+            left, top, right, bottom = self._get_margins_from_data(data)
+            root = ET.fromstring(data)
 
             vb_str = root.get("viewBox")
             if vb_str:
@@ -102,6 +113,42 @@ class SvgRenderer(Renderer):
             return pyvips.Image.svgload_buffer(ET.tostring(root))
         except (pyvips.Error, ET.ParseError, ValueError, TypeError):
             return None
+
+    def _render_to_vips_image(
+        self, workpiece: "WorkPiece", width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        if not workpiece.data:
+            return None
+        return self._render_vips_from_data(workpiece.data, width, height)
+
+    def render_to_pixels_from_data(
+        self, data: bytes, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """Renders raw SVG data directly to a Cairo surface."""
+        final_image = self._render_vips_from_data(data, width, height)
+        if not final_image:
+            return None
+
+        if final_image.bands < 4:
+            final_image = final_image.bandjoin(255)
+
+        # Vips RGBA -> Cairo BGRA
+        b, g, r, a = (
+            final_image[2],
+            final_image[1],
+            final_image[0],
+            final_image[3],
+        )
+        bgra_image = b.bandjoin([g, r, a])
+        mem_buffer = bgra_image.write_to_memory()
+
+        return cairo.ImageSurface.create_for_data(
+            mem_buffer,
+            cairo.FORMAT_ARGB32,
+            final_image.width,
+            final_image.height,
+            final_image.width * 4,
+        )
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
+from rayforge.core.import_source import ImportSource
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.shared.tasker.manager import CancelledError
@@ -41,9 +42,10 @@ def mock_ops_generator():
 
 @pytest.fixture
 def real_workpiece():
-    wp = WorkPiece(
-        Path("wp1"), SVG_RENDERER, b'<svg width="10" height="10" />'
-    )
+    """Creates a realistic workpiece with a size and position."""
+    # A workpiece must have a source to be rendered.
+    # The data here informs the mock generator's scaling logic.
+    wp = WorkPiece(name="wp1.svg")
     # Set properties in an order that is predictable and on-canvas.
     # 1. Set size first, which will adjust position to keep center at origin.
     wp.set_size(40, 30)
@@ -73,16 +75,22 @@ async def test_generate_job_ops_assembles_correctly(
     step.post_step_transformers_dicts = [multi_pass_transformer.to_dict()]
 
     layer.workflow.add_step(step)
+
+    # Link the workpiece to a source and add it to the document
+    source = ImportSource(
+        Path("wp1.svg"),
+        b'<svg width="10" height="10" />',
+        renderer=SVG_RENDERER,
+    )
+    doc.add_import_source(source)
+    real_workpiece.import_source_uid = source.uid
     layer.add_workpiece(real_workpiece)
 
     base_ops = Ops()
     base_ops.move_to(0, 0)
     base_ops.line_to(10, 0)
-    # When get_ops is called, it will be scaled by the workpiece size.
-    # Original ops are in a 10x10 "pixel" space (from SVG).
-    # Workpiece is 40x30 mm. So, scale factors are (40/10=4, 30/10=3).
     # The mock needs to return the *unscaled* ops. The generator's get_ops
-    # method handles the scaling.
+    # method handles the scaling based on natural size from the source data.
     mock_ops_generator.get_ops.return_value = base_ops
 
     # Act
@@ -128,11 +136,19 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
         step = create_outline_step()
     layer.workflow.add_step(step)
 
-    wp1 = WorkPiece(Path("wp1"), SVG_RENDERER, b"")
+    # Setup sources for the workpieces
+    source1 = ImportSource(Path("wp1"), b"", renderer=SVG_RENDERER)
+    source2 = ImportSource(Path("wp2"), b"", renderer=SVG_RENDERER)
+    doc.add_import_source(source1)
+    doc.add_import_source(source2)
+
+    wp1 = WorkPiece("wp1")
+    wp1.import_source_uid = source1.uid
     wp1.set_size(10, 10)
     wp1.pos = (0, 0)
 
-    wp2 = WorkPiece(Path("wp2"), SVG_RENDERER, b"")
+    wp2 = WorkPiece("wp2")
+    wp2.import_source_uid = source2.uid
     wp2.set_size(10, 10)
     wp2.pos = (20, 20)
 

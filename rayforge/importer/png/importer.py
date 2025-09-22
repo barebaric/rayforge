@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, List
+from typing import Optional
 import logging
 import cairo
 
@@ -7,11 +7,11 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer
+from ..base_importer import Importer, ImportPayload
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
+from ...core.import_source import ImportSource
 from ...shared.util.tracing import trace_surface
 from .renderer import PNG_RENDERER
 
@@ -26,11 +26,18 @@ class PngImporter(Importer):
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
-    ) -> Optional[List[DocItem]]:
+    ) -> Optional[ImportPayload]:
         if not vector_config:
             # In the new async model, raster importers MUST receive a config.
             logger.error("PngImporter requires a vector_config to trace.")
             return None
+
+        source = ImportSource(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=PNG_RENDERER,
+            vector_config=vector_config,
+        )
 
         try:
             image = pyvips.Image.pngload_buffer(self.raw_data)
@@ -70,7 +77,7 @@ class PngImporter(Importer):
         #    positioned relative to the top-left of the image.
         geometries = trace_surface(surface, pixels_per_mm)
         if not geometries:
-            return []
+            return ImportPayload(source=source, items=[])
 
         # 4. Combine all traced paths into a single Geometry object.
         #    DO NOT normalize or transform them.
@@ -80,14 +87,13 @@ class PngImporter(Importer):
 
         # 5. Create the final workpiece. It represents the ENTIRE image.
         final_wp = WorkPiece(
-            source_file=self.source_file,
-            renderer=PNG_RENDERER,
+            name=self.source_file.stem,
             vectors=combined_geo,
-            data=self.raw_data,
         )
+        final_wp.import_source_uid = source.uid
         # The workpiece's size is the full physical size of the PNG.
         final_wp.set_size(width_mm, height_mm)
         # The initial position is (0,0). FileCmd will center it later.
         final_wp.pos = (0, 0)
 
-        return [final_wp]
+        return ImportPayload(source=source, items=[final_wp])

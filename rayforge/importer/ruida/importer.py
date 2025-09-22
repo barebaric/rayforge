@@ -1,10 +1,11 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import numpy as np
 from ...core.item import DocItem
 from ...core.geo import Geometry
 from ...core.vectorization_config import TraceConfig
-from ..base_importer import Importer
+from ..base_importer import Importer, ImportPayload
+from ...core.import_source import ImportSource
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser
 from .job import RuidaJob
@@ -20,33 +21,26 @@ class RuidaImporter(Importer):
     mime_types = ("application/x-rd-file", "application/octet-stream")
     extensions = (".rd",)
 
-    def __init__(self, data: bytes, source_file=None):
-        super().__init__(data, source_file)
-        self._job_cache: Optional[RuidaJob] = None
-        self._geometry_cache: Optional[Geometry] = None
-        self._extents_cache: Optional[Tuple[float, float, float, float]] = None
-
     def _get_job(self) -> RuidaJob:
-        """Parses the Ruida data and caches the resulting job."""
-        if self._job_cache is None:
-            parser = RuidaParser(self.raw_data)
-            self._job_cache = parser.parse()
-        return self._job_cache
-
-    def _get_extents(self) -> Tuple[float, float, float, float]:
-        """Gets the extents of the job, using a cache."""
-        if self._extents_cache is None:
-            job = self._get_job()
-            self._extents_cache = job.get_extents()
-        return self._extents_cache
+        """Parses the Ruida data into a job object."""
+        parser = RuidaParser(self.raw_data)
+        return parser.parse()
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
-    ) -> Optional[List["DocItem"]]:
+    ) -> Optional[ImportPayload]:
         # Ruida files are always vector, so vector_config is ignored.
-        geometry = self._get_geometry()
+        job = self._get_job()
+        geometry = self._get_geometry(job)
+
         if not geometry or geometry.is_empty():
-            return []
+            return None
+
+        source = ImportSource(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=RUIDA_RENDERER,
+        )
 
         component_geometries = geometry.split_into_components()
 
@@ -69,16 +63,15 @@ class RuidaImporter(Importer):
             normalized_geo.transform(translate_matrix)
 
             # Create a workpiece for this component
-            wp = WorkPiece(
-                source_file=self.source_file,
-                renderer=RUIDA_RENDERER,
-                vectors=normalized_geo,
-            )
+            wp = WorkPiece(name=self.source_file.stem, vectors=normalized_geo)
+            wp.import_source_uid = source.uid
             wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
                 width, height
             )
+
             workpieces.append(wp)
 
+        items: List[DocItem]
         if len(workpieces) > 1:
             # 1. Calculate collective bounding box of new workpieces.
             all_corners = []
@@ -91,53 +84,50 @@ class RuidaImporter(Importer):
                 )
 
             if not all_corners:
-                return workpieces  # Fallback
+                items = workpieces  # Fallback
+            else:
+                min_x = min(p[0] for p in all_corners)
+                min_y = min(p[1] for p in all_corners)
+                max_x = max(p[0] for p in all_corners)
+                max_y = max(p[1] for p in all_corners)
+                bbox_x, bbox_y = min_x, min_y
+                bbox_w = max(max_x - min_x, 1e-9)
+                bbox_h = max(max_y - min_y, 1e-9)
 
-            min_x = min(p[0] for p in all_corners)
-            min_y = min(p[1] for p in all_corners)
-            max_x = max(p[0] for p in all_corners)
-            max_y = max(p[1] for p in all_corners)
-            bbox_x, bbox_y = min_x, min_y
-            bbox_w = max(max_x - min_x, 1e-9)
-            bbox_h = max(max_y - min_y, 1e-9)
+                # 2. Create group and set its matrix to match the bbox.
+                group = Group(name=self.source_file.stem)
+                group.matrix = Matrix.translation(
+                    bbox_x, bbox_y
+                ) @ Matrix.scale(bbox_w, bbox_h)
 
-            # 2. Create group and set its matrix to match the bbox.
-            group = Group(name=self.source_file.stem)
-            group.matrix = Matrix.translation(bbox_x, bbox_y) @ Matrix.scale(
-                bbox_w, bbox_h
-            )
-
-            # 3. Update workpiece matrices to be relative to the group.
-            try:
-                group_inv_matrix = group.matrix.invert()
-                for wp in workpieces:
-                    wp.matrix = group_inv_matrix @ wp.matrix
-                # 4. Add children and return the configured group.
-                group.set_children(workpieces)
-                return [group]
-            except np.linalg.LinAlgError:
-                return workpieces  # Fallback
+                # 3. Update workpiece matrices to be relative to the group.
+                try:
+                    group_inv_matrix = group.matrix.invert()
+                    for wp in workpieces:
+                        wp.matrix = group_inv_matrix @ wp.matrix
+                    # 4. Add children and return the configured group.
+                    group.set_children(workpieces)
+                    items = [group]
+                except np.linalg.LinAlgError:
+                    items = workpieces  # Fallback
 
         elif workpieces:
-            return workpieces
+            items = workpieces
+        else:
+            items = []
 
-        return []
+        return ImportPayload(source=source, items=items)
 
-    def _get_geometry(self) -> Geometry:
+    def _get_geometry(self, job: RuidaJob) -> Geometry:
         """
         Returns the parsed vector geometry. The coordinate system is
         canonical (Y-up, origin at bottom-left of content).
         """
-        if self._geometry_cache is not None:
-            return self._geometry_cache
-
-        job = self._get_job()
         geo = Geometry()
         if not job.commands:
-            self._geometry_cache = geo
-            return self._geometry_cache
+            return geo
 
-        _min_x, min_y, _max_x, max_y = self._get_extents()
+        _min_x, min_y, _max_x, max_y = job.get_extents()
         y_flip_val = max_y + min_y
 
         for cmd in job.commands:
@@ -156,5 +146,4 @@ class RuidaImporter(Importer):
                     geo.move_to(x, flipped_y)
                 elif cmd.command_type == "Cut_Abs":
                     geo.line_to(x, flipped_y)
-        self._geometry_cache = geo
-        return self._geometry_cache
+        return geo

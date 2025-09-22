@@ -3,10 +3,11 @@ from unittest.mock import MagicMock
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
 from rayforge.importer import SVG_RENDERER
+from rayforge.core.doc import Doc
+from rayforge.core.import_source import ImportSource
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Laser, Machine
-from rayforge.core.doc import Doc
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
 
@@ -60,11 +61,8 @@ def mock_task_mgr():
 
 @pytest.fixture
 def real_workpiece():
-    svg_data = b"""
-    <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
-    <rect width="10" height="10" />
-    </svg>"""
-    workpiece = WorkPiece(Path("real_workpiece.svg"), SVG_RENDERER, svg_data)
+    """Creates a lightweight WorkPiece with transforms, but no source."""
+    workpiece = WorkPiece(name="real_workpiece.svg")
     workpiece.set_size(50, 30)
     workpiece.pos = 10, 20
     return workpiece
@@ -81,15 +79,32 @@ def doc():
 
 
 class TestOpsGenerator:
+    # This data is used by multiple tests to create the ImportSource.
+    svg_data = b"""
+    <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+    <rect width="10" height="10" />
+    </svg>"""
+
+    def _setup_doc_with_workpiece(self, doc, workpiece):
+        """Helper to correctly link a workpiece to a source within a doc."""
+        source = ImportSource(
+            Path(workpiece.name),
+            original_data=self.svg_data,
+            renderer=SVG_RENDERER,
+        )
+        doc.add_import_source(source)
+        workpiece.import_source_uid = source.uid
+        doc.active_layer.add_workpiece(workpiece)
+        return doc.active_layer
+
     def test_reconcile_all_triggers_ops_generation(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
 
         # Act
         # The OpsGenerator is now created with the mock manager injected.
@@ -102,11 +117,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
 
         generator = OpsGenerator(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
@@ -134,11 +148,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
 
         generator = OpsGenerator(doc, mock_task_mgr)
         # The constructor has already called run_process once.
@@ -158,11 +171,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
 
         # Reset the mock to ignore the initial setup call.
@@ -178,11 +190,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
         mock_task_mgr.run_process.assert_called_once()  # Verify initial call
 
@@ -210,11 +221,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
         mock_task_mgr.run_process.assert_called_once()  # Verify initial call
 
@@ -242,11 +252,10 @@ class TestOpsGenerator:
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
-        layer = doc.active_layer
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        layer.add_workpiece(real_workpiece)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
 
         mock_task_mgr.run_process.reset_mock()

@@ -10,8 +10,6 @@ from ..shared.tasker.context import ExecutionContext
 from ..pipeline.job import generate_job_ops
 from ..pipeline.encoder.gcode import GcodeEncoder
 from ..core.vectorization_config import TraceConfig
-from ..core.import_source import ImportSource
-from ..core.workpiece import WorkPiece
 from ..core.layer import Layer
 
 if TYPE_CHECKING:
@@ -170,32 +168,24 @@ class FileCmd:
             # 1. Read file data (blocking I/O)
             file_data = await asyncio.to_thread(filename.read_bytes)
 
-            # 2. Instantiate importer and get items (potentially CPU-bound)
+            # 2. Instantiate importer and get the payload (CPU-bound)
             def do_import_sync():
                 importer = importer_class(file_data, source_file=filename)
                 return importer.get_doc_items(vector_config)
 
-            imported_items = await asyncio.to_thread(do_import_sync)
+            import_payload = await asyncio.to_thread(do_import_sync)
 
-            if not imported_items:
+            if not import_payload or not import_payload.items:
                 logger.warning(
                     f"Importer created no items for '{filename.name}'."
                 )
                 context.set_message(_("Import failed: No items were created."))
                 return None  # Return None to signify no items to add.
 
-            # 3. Create, register, and link the import source.
-            import_source = ImportSource(
-                source_file=filename,
-                data=file_data,
-                vector_config=vector_config,
-            )
-
-            # Return a tuple of the results for the main thread to handle.
             context.set_message(_("Import complete!"))
             context.set_progress(1.0)
             context.flush()
-            return imported_items, import_source
+            return import_payload
 
         # This callback runs on the MAIN THREAD after the background task is
         # finished. It is the only safe place to modify the document.
@@ -206,30 +196,19 @@ class FileCmd:
 
             try:
                 # This will re-raise any exception from the background task.
-                result = task.result()
-                if not result:
+                payload = task.result()
+                if not payload:
                     return  # No items were imported.
 
-                imported_items, import_source = result
+                # 1. Register the import source with the document.
+                if payload.source:
+                    self._editor.doc.add_import_source(payload.source)
 
-                # 1. Register the import source.
-                self._editor.doc.import_sources[import_source.uid] = (
-                    import_source
-                )
+                # The importer is now responsible for linking WorkPieces to
+                # the source, so we no longer need to do it here.
 
-                # 2. Link the generated workpieces back to the source.
-                all_new_workpieces: List[WorkPiece] = []
-                for item in imported_items:
-                    if isinstance(item, WorkPiece):
-                        all_new_workpieces.append(item)
-                    else:
-                        all_new_workpieces.extend(
-                            item.get_descendants(WorkPiece)
-                        )
-                for wp in all_new_workpieces:
-                    wp.import_source_uid = import_source.uid
-
-                # 3. Center and add them to the document in a transaction.
+                # 2. Center and add them to the document in a transaction.
+                imported_items = payload.items
                 self._fit_and_center_imported_items(imported_items)
                 target_layer = cast(
                     Layer, self._editor.default_workpiece_layer

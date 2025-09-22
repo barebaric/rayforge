@@ -29,6 +29,7 @@ from .tab import Tab
 if TYPE_CHECKING:
     from .layer import Layer
     from ..importer.base_renderer import Renderer
+    from .import_source import ImportSource
 
 
 logger = logging.getLogger(__name__)
@@ -37,21 +38,16 @@ logger = logging.getLogger(__name__)
 class WorkPiece(DocItem):
     """
     Represents a real-world workpiece. It is a lightweight data container,
-    holding its source data (_data, geometry), its transformation matrix,
-    and a Renderer for display. It is completely decoupled from importers.
+    holding its vector geometry, its transformation matrix, and a link to its
+    source. It is completely decoupled from importers.
     """
 
     def __init__(
         self,
-        source_file: Path,
-        renderer: "Renderer",
-        data: Optional[bytes] = None,
+        name: str,
         vectors: Optional[Geometry] = None,
     ):
-        super().__init__(name=source_file.name)
-        self.source_file = source_file
-        self.renderer = renderer
-        self._data = data
+        super().__init__(name=name)
         self.vectors = vectors
         self.import_source_uid: Optional[str] = None
 
@@ -65,20 +61,37 @@ class WorkPiece(DocItem):
     def clear_render_cache(self):
         """
         Invalidates and clears all cached renders for this workpiece.
-        Should be called if the underlying _data or geometry changes.
+        Should be called if the underlying source data changes.
         """
         self._render_cache.clear()
 
     @property
-    def data(self) -> Optional[bytes]:
-        return self._data
+    def source(self) -> "Optional[ImportSource]":
+        """
+        Convenience property to retrieve the full ImportSource object from the
+        document's central registry.
+        """
+        if self.doc and self.import_source_uid:
+            return self.doc.get_import_source_by_uid(self.import_source_uid)
+        return None
 
-    @data.setter
-    def data(self, new_data: Optional[bytes]):
-        if self._data != new_data:
-            self._data = new_data
-            self.clear_render_cache()
-            self.updated.send(self)
+    @property
+    def data(self) -> Optional[bytes]:
+        """Retrieves the raw source data from the linked ImportSource."""
+        source = self.source
+        return source.data if source else None
+
+    @property
+    def source_file(self) -> Optional[Path]:
+        """Retrieves the source file path from the linked ImportSource."""
+        source = self.source
+        return source.source_file if source else None
+
+    @property
+    def renderer(self) -> "Optional[Renderer]":
+        """Retrieves the renderer from the linked ImportSource."""
+        source = self.source
+        return source.renderer if source else None
 
     @property
     def tabs(self) -> List[Tab]:
@@ -123,11 +136,8 @@ class WorkPiece(DocItem):
         """
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
-        world_wp = WorkPiece(
-            self.source_file, self.renderer, self._data, self.vectors
-        )
+        world_wp = WorkPiece(self.name, self.vectors)
         world_wp.uid = self.uid  # Preserve UID for tracking
-        world_wp.name = self.name
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
@@ -150,10 +160,7 @@ class WorkPiece(DocItem):
             "uid": self.uid,
             "name": self.name,
             "matrix": self._matrix.to_list(),
-            "renderer_name": self.renderer.__class__.__name__,
             "vectors": self.vectors.to_dict() if self.vectors else None,
-            "data": self._data,
-            "source_file": str(self.source_file),
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
             "import_source_uid": self.import_source_uid,
@@ -164,23 +171,17 @@ class WorkPiece(DocItem):
         """
         Restores a WorkPiece instance from a dictionary.
         """
-        from ..importer import renderer_by_name
         from .geo import Geometry
 
-        renderer = renderer_by_name[state["renderer_name"]]
-        source_file = Path(state["source_file"])
         vectors = (
             Geometry.from_dict(state["vectors"]) if state["vectors"] else None
         )
 
         wp = cls(
-            source_file=source_file,
-            renderer=renderer,
-            data=state["data"],
+            name=state["name"],
             vectors=vectors,
         )
         wp.uid = state["uid"]
-        wp.name = state["name"]
         wp.matrix = Matrix.from_list(state["matrix"])
 
         wp.tabs = [Tab(**t_data) for t_data in state.get("tabs", [])]
@@ -190,7 +191,8 @@ class WorkPiece(DocItem):
         return wp
 
     def get_natural_size(self) -> Optional[Tuple[float, float]]:
-        return self.renderer.get_natural_size(self)
+        renderer = self.renderer
+        return renderer.get_natural_size(self) if renderer else None
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         size = self.get_natural_size()
@@ -236,7 +238,12 @@ class WorkPiece(DocItem):
     def render_to_pixels(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        return self.renderer.render_to_pixels(self, width, height)
+        renderer = self.renderer
+        return (
+            renderer.render_to_pixels(self, width, height)
+            if renderer
+            else None
+        )
 
     def render_for_ops(
         self,
@@ -256,9 +263,7 @@ class WorkPiece(DocItem):
         target_width_px = int(width_mm * pixels_per_mm_x)
         target_height_px = int(height_mm * pixels_per_mm_y)
 
-        return self.renderer.render_to_pixels(
-            self, target_width_px, target_height_px
-        )
+        return self.render_to_pixels(target_width_px, target_height_px)
 
     def render_chunk(
         self,
@@ -280,7 +285,11 @@ class WorkPiece(DocItem):
         width = int(current_size[0] * pixels_per_mm_x)
         height = int(current_size[1] * pixels_per_mm_y)
 
-        yield from self.renderer.render_chunk(
+        renderer = self.renderer
+        if not renderer:
+            return
+
+        yield from renderer.render_chunk(
             self,
             width,
             height,
@@ -335,9 +344,10 @@ class WorkPiece(DocItem):
         return (tx / norm, ty / norm)
 
     def dump(self, indent=0):
-        print(
-            "  " * indent, self.source_file, self.renderer.__class__.__name__
-        )
+        source_file = self.source_file
+        renderer = self.renderer
+        renderer_name = renderer.__class__.__name__ if renderer else "None"
+        print("  " * indent, source_file, renderer_name)
 
     @property
     def pos_machine(self) -> Optional[Tuple[float, float]]:

@@ -1,6 +1,7 @@
 import cairo
 import io
 import warnings
+import logging
 from typing import Optional, Tuple
 from pypdf import PdfReader
 
@@ -12,35 +13,44 @@ from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
 from ..shared.util import to_mm
 
+logger = logging.getLogger(__name__)
+
 
 class PdfRenderer(Renderer):
     """Renders PDF data from a WorkPiece."""
+
+    def render_data_to_vips_image(
+        self, data: bytes, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        """Renders raw PDF data to a pyvips Image of specific dimensions."""
+        if not data:
+            return None
+        try:
+            reader = PdfReader(io.BytesIO(data))
+            media_box = reader.pages[0].mediabox
+            natural_w_mm = to_mm(float(media_box.width), "pt")
+
+            dpi = (width / natural_w_mm) * 25.4 if natural_w_mm > 0 else 300
+
+            image = pyvips.Image.pdfload_buffer(data, dpi=dpi)
+            if not isinstance(image, pyvips.Image) or image.width == 0:
+                return None
+
+            h_scale = width / image.width
+            v_scale = height / image.height
+            return image.resize(h_scale, vscale=v_scale)
+        except Exception:
+            logger.warning(
+                "Failed to render PDF data to vips image.", exc_info=True
+            )
+            return None
 
     def _render_to_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[pyvips.Image]:
         if not workpiece.data:
             return None
-        try:
-            # Estimate required DPI for pyvips to render close to the target
-            # pixel width. This avoids excessive down/upscaling.
-            size = self.get_natural_size(workpiece)
-            if size and size[0] is not None:
-                w_mm = size[0]
-                dpi = (width / w_mm) * 25.4 if w_mm > 0 else 300
-            else:
-                dpi = 300  # fallback
-
-            image = pyvips.Image.pdfload_buffer(workpiece.data, dpi=dpi)
-            if not isinstance(image, pyvips.Image) or image.width == 0:
-                return None
-
-            # Resize precisely to the target dimensions
-            h_scale = width / image.width
-            v_scale = height / image.height
-            return image.resize(h_scale, vscale=v_scale)
-        except pyvips.Error:
-            return None
+        return self.render_data_to_vips_image(workpiece.data, width, height)
 
     def get_natural_size(
         self, workpiece: "WorkPiece"
@@ -55,12 +65,14 @@ class PdfRenderer(Renderer):
                 to_mm(float(media_box.height), "pt"),
             )
         except Exception:
+            logger.warning(
+                "Failed to get natural size from PDF data.", exc_info=True
+            )
             return None
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        # FIX: Use the cache-aware helper from the base class.
         final_image = self.get_or_create_vips_image(workpiece, width, height)
         if not final_image:
             return None

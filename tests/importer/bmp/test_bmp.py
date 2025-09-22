@@ -3,6 +3,7 @@ import cairo
 import struct
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 from rayforge.importer.bmp.importer import BmpImporter
 from rayforge.importer.bmp.renderer import BMP_RENDERER
@@ -14,6 +15,8 @@ from rayforge.importer.bmp.parser import (
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.import_source import ImportSource
+from rayforge.core.matrix import Matrix
 
 TEST_DATA_DIR = Path(__file__).parent
 
@@ -79,12 +82,31 @@ def bmp_truncated_data(bmp_24bit_data: bytes) -> bytes:
 # --- Workpiece Fixture ---
 
 
+def _setup_workpiece_with_context(
+    importer: BmpImporter,
+) -> WorkPiece:
+    """Helper to run importer and correctly link workpiece to its source."""
+    payload = importer.get_doc_items(vector_config=TraceConfig())
+    assert payload is not None and len(payload.items) == 1
+    source = payload.source
+    wp = cast(WorkPiece, payload.items[0])
+
+    mock_doc = Mock()
+    mock_doc.import_sources = {source.uid: source}
+    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+
+    mock_parent = Mock()
+    mock_parent.doc = mock_doc
+    mock_parent.get_world_transform.return_value = Matrix.identity()
+    wp.parent = mock_parent
+
+    return wp
+
+
 @pytest.fixture
 def one_bit_workpiece(bmp_1bit_data: bytes) -> WorkPiece:
     importer = BmpImporter(bmp_1bit_data)
-    doc_items = importer.get_doc_items(vector_config=TraceConfig())
-    assert doc_items and len(doc_items) == 1
-    return cast(WorkPiece, doc_items[0])
+    return _setup_workpiece_with_context(importer)
 
 
 class TestBmpParser:
@@ -201,11 +223,13 @@ class TestBmpImporter:
         """Tests the importer creates a WorkPiece for all supported formats."""
         bmp_data = request.getfixturevalue(bmp_data_fixture)
         importer = BmpImporter(bmp_data)
-        doc_items = importer.get_doc_items(vector_config=TraceConfig())
+        payload = importer.get_doc_items(vector_config=TraceConfig())
 
-        assert doc_items and len(doc_items) == 1
-        wp = doc_items[0]
+        assert payload and payload.items and len(payload.items) == 1
+        assert isinstance(payload.source, ImportSource)
+        wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
+        assert wp.import_source_uid == payload.source.uid
         expected_width = 72 * 25.4 / 96.0
         expected_height = 48 * 25.4 / 96.0
         assert wp.size == pytest.approx((expected_width, expected_height))
@@ -245,17 +269,29 @@ class TestBmpRenderer:
         assert surface.get_width() == 144
         assert surface.get_height() == 96
 
-    def test_renderer_handles_invalid_data_gracefully(
-        self, unsupported_8bit_bmp_data: bytes
-    ):
+    def test_renderer_handles_invalid_data_gracefully(self):
         """
         Test that the renderer does not raise exceptions for a WorkPiece
         with unsupported data.
         """
-        invalid_wp = WorkPiece(
+        source = ImportSource(
             source_file=Path("invalid.bmp"),
-            data=unsupported_8bit_bmp_data,
+            original_data=b"not a valid bmp",
             renderer=BMP_RENDERER,
         )
+        invalid_wp = WorkPiece(name="invalid")
+        invalid_wp.import_source_uid = source.uid
+
+        # Mock document context
+        mock_doc = Mock()
+        mock_doc.import_sources = {source.uid: source}
+        mock_doc.get_import_source_by_uid.side_effect = (
+            mock_doc.import_sources.get
+        )
+        mock_parent = Mock()
+        mock_parent.doc = mock_doc
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        invalid_wp.parent = mock_parent
+
         assert BMP_RENDERER.get_natural_size(invalid_wp) is None
         assert BMP_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None

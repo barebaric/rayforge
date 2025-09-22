@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, List
+from typing import Optional
 import logging
 import cairo
 
@@ -10,14 +10,14 @@ with warnings.catch_warnings():
     except ImportError:
         raise ImportError("The BMP importer requires the pyvips library.")
 
-from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer
+from ..base_importer import Importer, ImportPayload
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
+from ...core.import_source import ImportSource
 from ...shared.util.tracing import trace_surface
-from .renderer import BMP_RENDERER
 from .parser import parse_bmp
+from .renderer import BMP_RENDERER
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +29,20 @@ class BmpImporter(Importer):
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
-    ) -> Optional[List[DocItem]]:
+    ) -> Optional[ImportPayload]:
         if not vector_config:
             logger.error("BmpImporter requires a vector_config to trace.")
             return None
 
-        # Step 1: Use the parser to get clean pixel data and metadata.
+        # Step 1: Create the ImportSource to hold the original data and config
+        source = ImportSource(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=BMP_RENDERER,
+            vector_config=vector_config,
+        )
+
+        # Step 2: Use the parser to get clean pixel data and metadata.
         parsed_data = parse_bmp(self.raw_data)
         if not parsed_data:
             logger.error(
@@ -46,7 +54,7 @@ class BmpImporter(Importer):
         rgba_bytes, width, height, dpi_x, dpi_y = parsed_data
 
         try:
-            # Step 2: Create a clean pyvips image from the RGBA buffer.
+            # Step 3: Create a clean pyvips image from the RGBA buffer.
             image = pyvips.Image.new_from_memory(
                 rgba_bytes, width, height, 4, "uchar"
             )
@@ -56,7 +64,7 @@ class BmpImporter(Importer):
             )
             return None
 
-        # Step 3: Proceed with the known-good pyvips image for tracing.
+        # Step 4: Proceed with the known-good pyvips image for tracing.
         width_mm = width * (25.4 / dpi_x)
         height_mm = height * (25.4 / dpi_y)
         pixels_per_mm = (width / width_mm, height / height_mm)
@@ -75,18 +83,18 @@ class BmpImporter(Importer):
 
         geometries = trace_surface(surface, pixels_per_mm)
         if not geometries:
-            return []
+            return ImportPayload(source=source, items=[])
 
         combined_geo = Geometry()
         for geo in geometries:
             combined_geo.commands.extend(geo.commands)
 
         final_wp = WorkPiece(
-            source_file=self.source_file,
-            renderer=BMP_RENDERER,
+            name=self.source_file.stem,
             vectors=combined_geo,
-            data=self.raw_data,
         )
+        final_wp.import_source_uid = source.uid
         final_wp.set_size(width_mm, height_mm)
         final_wp.pos = (0, 0)
-        return [final_wp]
+
+        return ImportPayload(source=source, items=[final_wp])

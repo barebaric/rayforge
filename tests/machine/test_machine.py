@@ -1,21 +1,23 @@
+from typing import Tuple
 import pytest
 import pytest_asyncio
 import asyncio
 from pathlib import Path
 from functools import partial
 
-from rayforge.machine.models.machine import Machine
-from rayforge.machine.driver.dummy import NoDeviceDriver
-from rayforge.doceditor.editor import DocEditor
-from rayforge.machine.cmd import MachineCmd
 from rayforge.core.doc import Doc
+from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.editor import DocEditor
+from rayforge.importer import SVG_RENDERER
+from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.laser import Laser
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.driver.dummy import NoDeviceDriver
+from rayforge.pipeline.generator import OpsGenerator
 from rayforge.shared.tasker import task_mgr as global_task_mgr
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.pipeline.generator import OpsGenerator
-from rayforge.importer import SVG_RENDERER
 from rayforge.config import initialize_managers
 
 
@@ -88,13 +90,18 @@ def doc_editor(doc: Doc, test_config_manager) -> DocEditor:
     return editor
 
 
-def create_test_workpiece() -> WorkPiece:
-    """Creates a simple WorkPiece from SVG data for testing."""
+def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
+    """Creates a simple WorkPiece and its linked ImportSource for testing."""
     svg_data = b'<svg><path d="M0,0 L10,10"/></svg>'
     source_file = Path("test.svg")
-    return WorkPiece(
-        source_file=source_file, renderer=SVG_RENDERER, data=svg_data
+    source = ImportSource(
+        source_file=source_file,
+        original_data=svg_data,
+        renderer=SVG_RENDERER,
     )
+    workpiece = WorkPiece(name=source_file.name)
+    workpiece.import_source_uid = source.uid
+    return workpiece, source
 
 
 async def wait_for_tasks_to_finish():
@@ -139,7 +146,9 @@ class TestMachine:
         Verify that sending a job correctly calls the driver's run method
         with the expected arguments, including the `doc`.
         """
-        doc.active_layer.add_child(create_test_workpiece())
+        wp, source = create_test_workpiece_and_source()
+        doc.add_import_source(source)
+        doc.active_layer.add_child(wp)
 
         run_spy = mocker.spy(machine.driver, "run")
         machine_cmd = MachineCmd(doc_editor)
@@ -160,7 +169,10 @@ class TestMachine:
         self, doc: Doc, machine: Machine, doc_editor: DocEditor, mocker
     ):
         """Verify that framing a job calls the driver's run method."""
-        doc.active_layer.add_child(create_test_workpiece())
+        wp, source = create_test_workpiece_and_source()
+        doc.add_import_source(source)
+        doc.active_layer.add_child(wp)
+
         laser = Laser()
         laser.frame_power = 1  # Must be an integer
         machine.heads = [laser]

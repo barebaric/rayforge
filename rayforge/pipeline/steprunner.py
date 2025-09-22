@@ -123,7 +123,7 @@ def run_step_in_subprocess(
 
         if not size_mm or size_mm[0] <= 0 or size_mm[1] <= 0:
             logger.warning(
-                f"Cannot generate vector ops for '{workpiece.source_file}' "
+                f"Cannot generate vector ops for '{workpiece.name}' "
                 "without a valid, positive size. Skipping."
             )
             return
@@ -193,7 +193,7 @@ def run_step_in_subprocess(
 
         if not size or size[0] <= 0 or size[1] <= 0:
             logger.warning(
-                f"Cannot generate raster ops for '{workpiece.source_file}' "
+                f"Cannot generate raster ops for '{workpiece.name}' "
                 "without a defined size. Skipping."
             )
             return
@@ -252,9 +252,7 @@ def run_step_in_subprocess(
     # === Main execution logic for the subprocess ===
 
     proxy.set_message(
-        _("Generating path for '{name}'").format(
-            name=workpiece.source_file.name
-        )
+        _("Generating path for '{name}'").format(name=workpiece.name)
     )
     final_ops = _create_initial_ops()
     final_pixel_size = None
@@ -313,7 +311,7 @@ def run_step_in_subprocess(
                 proxy.set_message(
                     _("Applying '{transformer}' on '{workpiece}'").format(
                         transformer=transformer.label,
-                        workpiece=workpiece.source_file.name,
+                        workpiece=workpiece.name,
                     )
                 )
                 # Create a proxy for this transformer's slice of progress
@@ -337,9 +335,7 @@ def run_step_in_subprocess(
         final_ops.add(DisableAirAssistCommand())
 
     proxy.set_message(
-        _("Finalizing '{workpiece}'").format(
-            workpiece=workpiece.source_file.name
-        )
+        _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
     )
     proxy.set_progress(1.0)
 

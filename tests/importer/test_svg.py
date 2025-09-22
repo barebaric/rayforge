@@ -2,6 +2,7 @@ import pytest
 import cairo
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 from rayforge.importer.svg.importer import SvgImporter, MM_PER_PX_FALLBACK
 from rayforge.importer.svg.renderer import SVG_RENDERER
@@ -13,6 +14,28 @@ from rayforge.core.geo import (
     MoveToCommand,
     LineToCommand,
 )
+from rayforge.core.matrix import Matrix
+
+
+def _setup_workpiece_with_context(
+    importer: SvgImporter, vector_config=None
+) -> WorkPiece:
+    """Helper to run importer and correctly link workpiece to its source."""
+    payload = importer.get_doc_items(vector_config=vector_config)
+    assert payload is not None
+    source = payload.source
+    wp = cast(WorkPiece, payload.items[0])
+
+    mock_doc = Mock()
+    mock_doc.import_sources = {source.uid: source}
+    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+
+    mock_parent = Mock()
+    mock_parent.doc = mock_doc
+    mock_parent.get_world_transform.return_value = Matrix.identity()
+    wp.parent = mock_parent
+
+    return wp
 
 
 @pytest.fixture
@@ -45,22 +68,14 @@ def square_svg_data() -> bytes:
 
 @pytest.fixture
 def basic_workpiece(basic_svg_data: bytes) -> WorkPiece:
-    # Use the importer to create the workpiece, so it gets its size set.
     importer = SvgImporter(basic_svg_data)
-    doc_items = importer.get_doc_items(vector_config=None)
-    # Add assertion to handle None and cast to correct type for linter
-    assert doc_items
-    return cast(WorkPiece, doc_items[0])
+    return _setup_workpiece_with_context(importer)
 
 
 @pytest.fixture
 def transparent_workpiece(transparent_svg_data: bytes) -> WorkPiece:
-    # Use the importer to create the workpiece, so it gets its size set.
     importer = SvgImporter(transparent_svg_data)
-    doc_items = importer.get_doc_items(vector_config=None)
-    # Add assertion to handle None and cast to correct type for linter
-    assert doc_items
-    return cast(WorkPiece, doc_items[0])
+    return _setup_workpiece_with_context(importer)
 
 
 class TestSvgImporter:
@@ -68,10 +83,10 @@ class TestSvgImporter:
         self, basic_svg_data: bytes
     ):
         importer = SvgImporter(basic_svg_data, source_file=Path("test.svg"))
-        doc_items = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vector_config=None)
 
-        assert doc_items is not None
-        wp = doc_items[0]
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
         # The importer should set the size from the SVG's 'mm' dimensions.
         assert wp.size == pytest.approx((100.0, 50.0))
@@ -80,10 +95,10 @@ class TestSvgImporter:
         self, transparent_svg_data: bytes
     ):
         importer = SvgImporter(transparent_svg_data)
-        doc_items = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vector_config=None)
 
-        assert doc_items is not None
-        wp = doc_items[0]
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
         # The SVG content is 100px wide. The importer should convert this
         # to mm using the fallback DPI.
         expected_size_mm = 100.0 * MM_PER_PX_FALLBACK
@@ -95,10 +110,10 @@ class TestSvgImporter:
         extraction and transformation.
         """
         importer = SvgImporter(square_svg_data)
-        doc_items = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vector_config=None)
 
-        assert doc_items is not None
-        wp = doc_items[0]
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
 
         # Verify workpiece size based on SVG width/height, considering content
@@ -150,10 +165,10 @@ class TestSvgImporter:
         # Removed 'resolution' parameter as it doesn't exist in TraceConfig
         trace_config = TraceConfig(threshold=0.5)
 
-        doc_items = importer.get_doc_items(vector_config=trace_config)
+        payload = importer.get_doc_items(vector_config=trace_config)
 
-        assert doc_items is not None
-        wp = doc_items[0]
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
 
         # The transparent_svg_data defines a 200px SVG with a 100x100px green
@@ -214,13 +229,11 @@ class TestSvgRenderer:
         assert surface.get_height() == 100
 
     def test_render_chunk_generator(self):
-        # This SVG is missing viewBox, width, height, so it falls back
-        # to tracing based on the fix provided earlier.
-        svg_data = b'<svg width="1000px" height="500px"></svg>'
+        svg_data = (
+            b'<svg width="1000px" height="500px" viewBox="0 0 1000 500"></svg>'
+        )
         importer = SvgImporter(svg_data)
-        doc_items = importer.get_doc_items(vector_config=None)
-        assert doc_items  # Now passes due to fallback to trace
-        workpiece = cast(WorkPiece, doc_items[0])
+        workpiece = _setup_workpiece_with_context(importer)
 
         # The workpiece.render_chunk will use its current size and the
         # px_per_mm factor to determine total pixels.
@@ -244,19 +257,14 @@ class TestSvgRenderer:
         assert len(chunks) == 6  # 3 cols x 2 rows
 
     def test_edge_cases(self):
-        # This SVG is empty, so it falls back to tracing.
         empty_svg_data = b'<svg xmlns="http://www.w3.org/2000/svg"/>'
         importer = SvgImporter(empty_svg_data)
-        doc_items = importer.get_doc_items(vector_config=None)
-        assert doc_items  # Now passes due to fallback to trace
-        workpiece = cast(WorkPiece, doc_items[0])
+        workpiece = _setup_workpiece_with_context(importer)
 
-        # Now test the renderer with this workpiece.
         # An empty SVG without width/height attributes means get_natural_size
         # returns None.
         assert SVG_RENDERER.get_natural_size(workpiece) is None
 
         # When get_natural_size returns None, the importer does not set
         # an explicit size.
-        # It defaults to (1.0, 1.0) according to previous test runs.
-        assert workpiece.size == (1.0, 1.0)  # Corrected expectation
+        assert workpiece.size == (1.0, 1.0)

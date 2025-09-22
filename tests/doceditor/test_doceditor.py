@@ -126,7 +126,8 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     # Assert state after the import task has mutated the document
     assert len(editor.doc.all_workpieces) == 1
-    assert editor.doc.all_workpieces[0].name == "10x10_square.svg"
+    # FIX: Assert against the file stem, which is the new default name.
+    assert editor.doc.all_workpieces[0].name == "10x10_square"
     assert editor.is_processing, "OpsGenerator should be busy after import"
 
     # Wait 1: Await the reactive processing triggered by the load.

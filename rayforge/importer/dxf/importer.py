@@ -1,5 +1,4 @@
 import io
-import json
 import logging
 from copy import deepcopy
 from typing import Iterable, Optional, List, Dict, Tuple
@@ -16,7 +15,8 @@ from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ...core.vectorization_config import TraceConfig
-from ..base_importer import Importer
+from ...core.import_source import ImportSource
+from ..base_importer import Importer, ImportPayload
 from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -40,51 +40,72 @@ class DxfImporter(Importer):
     mime_types = ("image/vnd.dxf",)
     extensions = (".dxf",)
 
-    def __init__(self, data: bytes, source_file=None):
-        super().__init__(data, source_file)
-        self._blocks_cache: Dict[str, List[DocItem]] = {}
-
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
-    ) -> Optional[List[DocItem]]:
+    ) -> Optional[ImportPayload]:
         # DXF is a vector format, so the vector_config is ignored.
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError:
-            return []
+            return None
 
         bounds = self._get_bounds_mm(doc)
+
+        # Create the ImportSource. It's valid even for an empty file.
+        source = ImportSource(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=DXF_RENDERER,
+            metadata={"is_vector": True},
+        )
+
         if not bounds or not bounds[2] or not bounds[3]:
-            return []
+            return ImportPayload(source=source, items=[])
 
         scale = self._get_scale_to_mm(doc)
         min_x_mm, min_y_mm, _, _ = bounds
+        blocks_cache: Dict[str, List[DocItem]] = {}
 
         # Pre-parse all block definitions into DocItem templates.
-        self._prepare_blocks_cache(doc, scale, min_x_mm, min_y_mm)
+        self._prepare_blocks_cache(
+            doc, scale, min_x_mm, min_y_mm, source, blocks_cache
+        )
         # Parse the main modelspace into a list of DocItems.
-        return self._entities_to_doc_items(
+        items = self._entities_to_doc_items(
             doc.modelspace(),
             doc,
             scale,
             min_x_mm,
             min_y_mm,
-            split_components=True,  # CHANGED
+            source,
+            blocks_cache,
+            split_components=True,
         )
+        return ImportPayload(source=source, items=items)
 
-    def _prepare_blocks_cache(self, doc, scale: float, tx: float, ty: float):
+    def _prepare_blocks_cache(
+        self,
+        doc,
+        scale: float,
+        tx: float,
+        ty: float,
+        source: ImportSource,
+        blocks_cache: Dict[str, List[DocItem]],
+    ):
         """Recursively parses all block definitions into lists of DocItems."""
-        self._blocks_cache.clear()
+        blocks_cache.clear()
         for block in doc.blocks:
             # When parsing blocks, treat them as single units. Do NOT split.
-            self._blocks_cache[block.name] = self._entities_to_doc_items(
+            blocks_cache[block.name] = self._entities_to_doc_items(
                 block,
                 doc,
                 scale,
                 tx,
                 ty,
+                source,
+                blocks_cache,
                 ezdxf.math.Matrix44(),
                 split_components=False,
             )
@@ -96,6 +117,8 @@ class DxfImporter(Importer):
         scale: float,
         tx: float,
         ty: float,
+        source: ImportSource,
+        blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
         split_components: bool = False,
     ) -> List[DocItem]:
@@ -122,8 +145,14 @@ class DxfImporter(Importer):
             else:
                 component_geometries = [current_geo]
 
-            # Note: For simplicity, solid data is not split across components.
-            # All solids will be associated with the first component.
+            # Store solid data in the import source's metadata.
+            # This is done only once for the entire set of geometries.
+            if source and current_solids:
+                # To keep it simple, we just append to any existing solids.
+                existing_solids = source.metadata.get("solids", [])
+                existing_solids.extend(current_solids)
+                source.metadata["solids"] = existing_solids
+
             workpieces = []
             for i, component_geo in enumerate(component_geometries):
                 min_x, min_y, max_x, max_y = component_geo.rect()
@@ -140,23 +169,11 @@ class DxfImporter(Importer):
                 )
                 normalized_geo.transform(translate_matrix)
 
-                wp_data = None
-                # Only attach solid data to the first component
-                if i == 0 and current_solids:
-                    normalized_solids = [
-                        [(p[0] - min_x, p[1] - min_y) for p in solid]
-                        for solid in current_solids
-                    ]
-                    wp_data = json.dumps({"solids": normalized_solids}).encode(
-                        "utf-8"
-                    )
-
                 wp = WorkPiece(
-                    source_file=self.source_file,
-                    renderer=DXF_RENDERER,
+                    name=self.source_file.stem,
                     vectors=normalized_geo,
-                    data=wp_data,
                 )
+                wp.import_source_uid = source.uid
 
                 # Set the workpiece's matrix to position and scale it.
                 width = max(max_x - min_x, 1e-9)
@@ -221,7 +238,7 @@ class DxfImporter(Importer):
                 # An INSERT entity ends the current Geometry run and creates a
                 # Group.
                 flush_geo_to_workpiece(split_components)
-                block_items = self._blocks_cache.get(entity.dxf.name)
+                block_items = blocks_cache.get(entity.dxf.name)
                 if not block_items:
                     continue
 

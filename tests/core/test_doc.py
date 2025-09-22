@@ -7,6 +7,7 @@ from rayforge.core.step import Step
 from rayforge.core.stocklayer import StockLayer
 from rayforge.core.import_source import ImportSource
 from rayforge.core.vectorization_config import TraceConfig
+from rayforge.importer.svg.renderer import SvgRenderer
 
 
 @pytest.fixture
@@ -31,7 +32,11 @@ def test_doc_initialization(doc):
 
 def test_add_and_get_import_source(doc):
     """Tests the getter and setter for import sources."""
-    source = ImportSource(source_file=Path("a.png"), data=b"abc")
+    source = ImportSource(
+        source_file=Path("a.png"),
+        original_data=b"abc",
+        renderer=SvgRenderer(),
+    )
 
     # Test adding a source
     doc.add_import_source(source)
@@ -177,11 +182,16 @@ def test_doc_serialization_with_import_sources(doc):
     # Source with vectorization config
     source1 = ImportSource(
         source_file=Path("a.png"),
-        data=b"abc",
+        original_data=b"abc",
+        renderer=SvgRenderer(),
         vector_config=TraceConfig(threshold=0.8),
     )
     # Source without vectorization config (e.g., an SVG)
-    source2 = ImportSource(source_file=Path("b.svg"), data=b"def")
+    source2 = ImportSource(
+        source_file=Path("b.svg"),
+        original_data=b"def",
+        renderer=SvgRenderer(),
+    )
     doc.add_import_source(source1)
     doc.add_import_source(source2)
 
@@ -196,6 +206,7 @@ def test_doc_serialization_with_import_sources(doc):
     source1_dict = data_dict["import_sources"][source1.uid]
     assert source1_dict["uid"] == source1.uid
     assert source1_dict["source_file"] == "a.png"
+    assert source1_dict["renderer_name"] == "SvgRenderer"
     assert source1_dict["vector_config"] is not None
     assert source1_dict["vector_config"]["threshold"] == 0.8
 
@@ -203,4 +214,5 @@ def test_doc_serialization_with_import_sources(doc):
     source2_dict = data_dict["import_sources"][source2.uid]
     assert source2_dict["uid"] == source2.uid
     assert source2_dict["source_file"] == "b.svg"
+    assert source2_dict["renderer_name"] == "SvgRenderer"
     assert source2_dict["vector_config"] is None

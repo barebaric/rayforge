@@ -1,10 +1,8 @@
 import pytest
-from pathlib import Path
 from rayforge.core.group import Group
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
-from rayforge.importer import SVG_RENDERER
 from rayforge.core.stock import StockItem
 from rayforge.core.geo import Geometry
 
@@ -14,8 +12,7 @@ def workpiece_factory():
     """Provides a factory to create dummy WorkPiece instances for testing."""
 
     def _create_workpiece(name="test_wp"):
-        # The actual data doesn't matter for these tests.
-        return WorkPiece(Path(f"{name}.svg"), SVG_RENDERER, b"<svg></svg>")
+        return WorkPiece(name=f"{name}.svg")
 
     return _create_workpiece
 
@@ -300,10 +297,7 @@ def test_deserialization_skips_stock_item_child():
                 "type": "workpiece",
                 "name": "test.svg",
                 "matrix": Matrix.identity().to_list(),
-                "renderer_name": "SvgRenderer",
                 "vectors": None,
-                "data": b"",
-                "source_file": "test.svg",
             },
             {
                 "uid": "stock-uid",

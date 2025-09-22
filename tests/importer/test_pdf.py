@@ -3,10 +3,13 @@ import io
 import cairo
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 from rayforge.importer.pdf.importer import PdfImporter
 from rayforge.importer.pdf.renderer import PDF_RENDERER
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.import_source import ImportSource
+from rayforge.core.matrix import Matrix
 
 
 def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
@@ -20,6 +23,31 @@ def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
     surface.finish()
     buf.seek(0)
     return buf.getvalue()
+
+
+def _setup_workpiece_with_context(
+    importer: PdfImporter, vector_config=None
+) -> WorkPiece:
+    """Helper to run importer and correctly link workpiece to its source."""
+    payload = importer.get_doc_items(vector_config=vector_config)
+    assert payload is not None
+    source = payload.source
+    wp = cast(WorkPiece, payload.items[0])
+
+    # Mock the document context so workpiece.source resolves correctly
+    mock_doc = Mock()
+    mock_doc.import_sources = {source.uid: source}
+    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+
+    # By setting a mock parent with a `doc` property, we allow the
+    # workpiece's `doc` property to resolve to our mock.
+    mock_parent = Mock()
+    mock_parent.doc = mock_doc
+    # CRITICAL FIX: Configure the mock to return a valid Matrix
+    mock_parent.get_world_transform.return_value = Matrix.identity()
+    wp.parent = mock_parent
+
+    return wp
 
 
 @pytest.fixture
@@ -38,18 +66,14 @@ def large_pdf_data() -> bytes:
 def basic_workpiece(basic_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the basic PDF data, sized by the importer."""
     importer = PdfImporter(basic_pdf_data)
-    doc_items = importer.get_doc_items(vector_config=None)
-    assert doc_items
-    return cast(WorkPiece, doc_items[0])
+    return _setup_workpiece_with_context(importer)
 
 
 @pytest.fixture
 def large_workpiece(large_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the large PDF data, sized by the importer."""
     importer = PdfImporter(large_pdf_data)
-    doc_items = importer.get_doc_items(vector_config=None)
-    assert doc_items
-    return cast(WorkPiece, doc_items[0])
+    return _setup_workpiece_with_context(importer)
 
 
 class TestPdfImporter:
@@ -60,11 +84,16 @@ class TestPdfImporter:
         Tests the importer creates a WorkPiece with the correct initial size.
         """
         importer = PdfImporter(basic_pdf_data)
-        doc_items = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vector_config=None)
 
-        assert doc_items
-        wp = doc_items[0]
+        assert payload
+        assert isinstance(payload.source, ImportSource)
+        assert payload.source.original_data == basic_pdf_data
+        assert len(payload.items) == 1
+
+        wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
+        assert wp.import_source_uid == payload.source.uid
 
         # The importer should set the size based on the PDF's natural
         # dimensions.
@@ -76,9 +105,11 @@ class TestPdfImporter:
     def test_importer_handles_invalid_data(self):
         """Tests the importer creates a WorkPiece even with invalid data."""
         importer = PdfImporter(b"this is not a pdf")
-        doc_items = importer.get_doc_items(vector_config=None)
-        assert doc_items is not None and len(doc_items) == 1
-        assert isinstance(doc_items[0], WorkPiece)
+        payload = importer.get_doc_items(vector_config=None)
+        assert payload is not None
+        assert isinstance(payload.source, ImportSource)
+        assert len(payload.items) == 1
+        assert isinstance(payload.items[0], WorkPiece)
 
 
 class TestPdfRenderer:
@@ -134,11 +165,24 @@ class TestPdfRenderer:
         """
         Test that the renderer does not raise exceptions for invalid data.
         """
-        invalid_wp = WorkPiece(
+        source = ImportSource(
             source_file=Path("invalid.pdf"),
+            original_data=b"not a valid pdf",
             renderer=PDF_RENDERER,
-            data=b"not a valid pdf",
         )
+        invalid_wp = WorkPiece(name="invalid")
+        invalid_wp.import_source_uid = source.uid
+
+        # Mock document context
+        mock_doc = Mock()
+        mock_doc.import_sources = {source.uid: source}
+        mock_doc.get_import_source_by_uid.side_effect = (
+            mock_doc.import_sources.get
+        )
+        mock_parent = Mock()
+        mock_parent.doc = mock_doc
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        invalid_wp.parent = mock_parent
 
         assert PDF_RENDERER.get_natural_size(invalid_wp) is None
         assert PDF_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None
