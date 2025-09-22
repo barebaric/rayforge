@@ -510,10 +510,18 @@ class OpsGenerator:
         # subprocess (where it has no parent hierarchy), we create a new
         # instance with its world-transform "baked in" as its local matrix.
         world_workpiece = workpiece.in_world()
+        workpiece_dict = world_workpiece.to_dict()
+
+        # Hydrate the dictionary with the data needed for rendering in the
+        # isolated subprocess.
+        renderer = workpiece.renderer
+        if renderer:
+            workpiece_dict["data"] = workpiece.data
+            workpiece_dict["renderer_name"] = renderer.__class__.__name__
 
         task = self._task_manager.run_process(
             run_step_in_subprocess,
-            world_workpiece.to_dict(),
+            workpiece_dict,
             step.opsproducer_dict,
             step.modifiers_dicts,
             step.opstransformers_dicts,
@@ -598,9 +606,15 @@ class OpsGenerator:
                 task, key, step, workpiece, generation_size
             )
         else:
+            # Check source_file before using it in the log message
+            wp_name = (
+                workpiece.source_file.name
+                if workpiece.source_file
+                else workpiece.name
+            )
             logger.warning(
                 f"Ops generation for '{step.name}' / "
-                f"'{workpiece.source_file}' failed. "
+                f"'{wp_name}' failed. "
                 f"Status: {task.get_status()}."
             )
             self._ops_cache[key] = (None, None)
@@ -633,9 +647,14 @@ class OpsGenerator:
             if ops is not None:
                 self._world_size_cache[workpiece.uid] = generation_size
         except Exception as e:
+            # Check source_file before using it in the log message
+            wp_name = (
+                workpiece.source_file.name
+                if workpiece.source_file
+                else workpiece.name
+            )
             logger.error(
-                f"Error getting result for '{step.name}' on "
-                f"'{workpiece.source_file}': {e}",
+                f"Error getting result for '{step.name}' on '{wp_name}': {e}",
                 exc_info=True,
             )
             self._ops_cache[key] = (None, None)

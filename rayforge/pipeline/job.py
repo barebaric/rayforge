@@ -176,9 +176,14 @@ async def generate_job_ops(
                         raise CancelledError("Operation cancelled")
                     processed_items += 1
                     context.set_progress(processed_items / total_items)
+                    wp_name = (
+                        workpiece.source_file.name
+                        if workpiece.source_file
+                        else workpiece.name
+                    )
                     context.set_message(
                         _("Processing '{workpiece}' in '{step}'").format(
-                            workpiece=workpiece.source_file.name,
+                            workpiece=wp_name,
                             step=step.name,
                         )
                     )

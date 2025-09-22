@@ -55,13 +55,17 @@ class WorkPiece(DocItem):
         # This is the proper place for this state, not monkey-patched.
         self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
+        # Transient attributes for deserialized instances in subprocesses
+        self._data: Optional[bytes] = None
+        self._renderer: Optional["Renderer"] = None
+
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
 
     def clear_render_cache(self):
         """
         Invalidates and clears all cached renders for this workpiece.
-        Should be called if the underlying source data changes.
+        Should be called if the underlying _data or geometry changes.
         """
         self._render_cache.clear()
 
@@ -77,7 +81,10 @@ class WorkPiece(DocItem):
 
     @property
     def data(self) -> Optional[bytes]:
-        """Retrieves the raw source data from the linked ImportSource."""
+        """Retrieves the raw source data."""
+        # Prioritize transient data for isolated/subprocess instances
+        if self._data is not None:
+            return self._data
         source = self.source
         return source.data if source else None
 
@@ -89,7 +96,10 @@ class WorkPiece(DocItem):
 
     @property
     def renderer(self) -> "Optional[Renderer]":
-        """Retrieves the renderer from the linked ImportSource."""
+        """Retrieves the renderer."""
+        # Prioritize transient renderer for isolated/subprocess instances
+        if self._renderer is not None:
+            return self._renderer
         source = self.source
         return source.renderer if source else None
 
@@ -142,6 +152,9 @@ class WorkPiece(DocItem):
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.import_source_uid = self.import_source_uid
+        # Link back to the original parent to allow resolving
+        # .source, .data etc
+        world_wp.parent = self.parent
         return world_wp
 
     def get_local_size(self) -> Tuple[float, float]:
@@ -172,6 +185,7 @@ class WorkPiece(DocItem):
         Restores a WorkPiece instance from a dictionary.
         """
         from .geo import Geometry
+        from ..importer import renderer_by_name
 
         vectors = (
             Geometry.from_dict(state["vectors"]) if state["vectors"] else None
@@ -187,6 +201,14 @@ class WorkPiece(DocItem):
         wp.tabs = [Tab(**t_data) for t_data in state.get("tabs", [])]
         wp.tabs_enabled = state.get("tabs_enabled", True)
         wp.import_source_uid = state.get("import_source_uid")
+
+        # Hydrate with transient data if provided for subprocesses
+        if "data" in state:
+            wp._data = state["data"]
+        if "renderer_name" in state:
+            renderer_name = state["renderer_name"]
+            if renderer_name in renderer_by_name:
+                wp._renderer = renderer_by_name[renderer_name]
 
         return wp
 
