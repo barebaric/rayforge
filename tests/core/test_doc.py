@@ -29,6 +29,27 @@ def test_doc_initialization(doc):
     assert doc.import_sources == {}
 
 
+def test_add_and_get_import_source(doc):
+    """Tests the getter and setter for import sources."""
+    source = ImportSource(source_file=Path("a.png"), data=b"abc")
+
+    # Test adding a source
+    doc.add_import_source(source)
+    assert len(doc.import_sources) == 1
+    assert source.uid in doc.import_sources
+
+    # Test retrieving the source
+    retrieved_source = doc.get_import_source_by_uid(source.uid)
+    assert retrieved_source is source
+
+    # Test retrieving a non-existent source
+    assert doc.get_import_source_by_uid("non-existent-uid") is None
+
+    # Test that adding a non-ImportSource object raises a TypeError
+    with pytest.raises(TypeError):
+        doc.add_import_source("not a source")
+
+
 def test_add_layer_fires_descendant_added(doc):
     """Test adding a layer fires descendant_added with the layer as origin."""
     initial_layer_count = len(doc.layers)
@@ -161,8 +182,8 @@ def test_doc_serialization_with_import_sources(doc):
     )
     # Source without vectorization config (e.g., an SVG)
     source2 = ImportSource(source_file=Path("b.svg"), data=b"def")
-    doc.import_sources[source1.uid] = source1
-    doc.import_sources[source2.uid] = source2
+    doc.add_import_source(source1)
+    doc.add_import_source(source2)
 
     data_dict = doc.to_dict()
 

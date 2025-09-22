@@ -58,6 +58,18 @@ class Doc(DocItem):
             },
         }
 
+    def get_import_source_by_uid(self, uid: str) -> Optional[ImportSource]:
+        """
+        Retrieves an ImportSource from the document's registry by its UID.
+        """
+        return self.import_sources.get(uid)
+
+    def add_import_source(self, source: ImportSource):
+        """Adds or updates an ImportSource in the document's registry."""
+        if not isinstance(source, ImportSource):
+            raise TypeError("Only ImportSource objects can be added.")
+        self.import_sources[source.uid] = source
+
     @property
     def doc(self) -> "Doc":
         """The root Doc object is itself."""
