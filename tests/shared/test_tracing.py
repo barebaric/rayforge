@@ -1,5 +1,6 @@
 import numpy as np
 import cairo
+from unittest.mock import MagicMock
 from rayforge.shared.util.tracing import (
     _get_component_areas,
     _find_adaptive_area_threshold,
@@ -15,15 +16,26 @@ def _create_test_surface(array: np.ndarray) -> cairo.ImageSurface:
         raise ValueError("Input array must be 2D")
 
     h, w = array.shape
-    # Convert grayscale (0-255) to BGRA for Cairo
+    # Convert grayscale (0-255) to BGRA for Cairo with full alpha
     bgra_array = np.zeros((h, w, 4), dtype=np.uint8)
     gray_3channel = np.stack([array] * 3, axis=-1)
     bgra_array[..., :3] = gray_3channel[..., ::-1]  # RGB -> BGR
     bgra_array[..., 3] = 255  # Full alpha
 
-    # Pass a memoryview to satisfy stricter type checkers like Pylance
     return cairo.ImageSurface.create_for_data(
         memoryview(bgra_array), cairo.FORMAT_ARGB32, w, h
+    )
+
+
+def _create_test_surface_with_alpha(array: np.ndarray) -> cairo.ImageSurface:
+    """Creates a Cairo ARGB32 surface from a 4-channel BGRA numpy array."""
+    if array.ndim != 3 or array.shape[2] != 4:
+        raise ValueError("Input array must be HxWx4")
+    h, w, _ = array.shape
+    # Ensure contiguous memory for Cairo
+    contiguous_array = np.ascontiguousarray(array)
+    return cairo.ImageSurface.create_for_data(
+        memoryview(contiguous_array), cairo.FORMAT_ARGB32, w, h
     )
 
 
@@ -108,6 +120,24 @@ def test_trace_surface_clean_path():
     assert isinstance(geometries[0], Geometry)
 
 
+def test_trace_transparent_png_avoids_framing():
+    """
+    Tests tracing a transparent image to ensure no framing artifacts are
+    created from an incorrectly handled border.
+    """
+    # Create a 50x50 BGRA array, fully transparent
+    bgra_array = np.zeros((50, 50, 4), dtype=np.uint8)
+    # Draw an opaque black square in the middle. B,G,R,A
+    bgra_array[10:40, 10:40] = [0, 0, 0, 255]
+
+    surface = _create_test_surface_with_alpha(bgra_array)
+    geometries = trace_surface(surface, pixels_per_mm=(1.0, 1.0))
+
+    # With the fix, only the central square should be traced.
+    # Without the fix, this would find 2 or 3 geometries (the square + frames).
+    assert len(geometries) == 1
+
+
 def test_trace_surface_denoising_path():
     """
     Tests tracing a noisy image. Should filter noise and trace the
@@ -131,8 +161,9 @@ def test_trace_surface_empty_result():
     """Tests that an all-white or all-noise image returns an empty list."""
     # Create a deterministic grid of 1px noise to avoid flaky tests.
     img = np.full((100, 100), 255, dtype=np.uint8)
-    # Every second pixel is black, ensuring no components are larger than 1px.
-    img[::2, ::2] = 0
+    # Every third pixel is black, ensuring no components are connected,
+    # even diagonally. All components will have an area of 1px.
+    img[::3, ::3] = 0
 
     surface = _create_test_surface(img)
     geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
@@ -190,3 +221,40 @@ def test_trace_surface_edge_touching_shape():
     # The border added during processing should ensure the shape is found.
     assert len(geometries) == 1
     assert isinstance(geometries[0], Geometry)
+
+
+def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
+    """
+    Tests the fallback to a single convex hull if potrace fails on a
+    non-empty image.
+    """
+    # Create a MagicMock for the potrace.Bitmap class itself.
+    # This mock class will be returned when potrace.Bitmap(...) is called.
+    mock_bitmap_class = MagicMock()
+
+    # Configure the 'trace' method of the *instance* returned by
+    # mock_bitmap_class (i.e., mock_bitmap_class.return_value is the
+    # instance, its .trace method should return None).
+    mock_bitmap_class.return_value.trace.return_value = None
+
+    # Patch potrace.Bitmap to be our mock class.
+    monkeypatch.setattr("potrace.Bitmap", mock_bitmap_class)
+
+    # Create an image with two distinct, non-touching squares
+    img = np.full((100, 100), 255, dtype=np.uint8)
+    img[10:30, 10:30] = 0
+    img[70:90, 70:90] = 0
+
+    surface = _create_test_surface(img)
+    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+
+    # We should get exactly ONE geometry object back
+    assert len(geometries) == 1
+    geo = geometries[0]
+    assert isinstance(geo, Geometry)
+
+    # The convex hull of two diagonally offset squares is a hexagon
+    # (6 vertices).
+    # A 6-vertex shape results in 7 commands:
+    # 1 MoveTo, 5 LineTo's, and 1 final LineTo from close_path().
+    assert len(geo.commands) == 7

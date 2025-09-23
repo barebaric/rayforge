@@ -2,11 +2,11 @@ import cairo
 from typing import Optional, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
-    from ...core.workpiece import WorkPiece
+    from ..core.workpiece import WorkPiece
 
-from ...core.ops import Ops
-from ...pipeline.encoder.cairoencoder import CairoEncoder
-from ..base_renderer import Renderer
+from ..core.ops import Ops
+from ..pipeline.encoder.cairoencoder import CairoEncoder
+from .base_renderer import Renderer
 
 # Cairo has a hard limit on surface dimensions, often 32767.
 # We use a slightly more conservative value to be safe.

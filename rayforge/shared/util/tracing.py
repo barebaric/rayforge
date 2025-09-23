@@ -3,7 +3,10 @@ import numpy as np
 import cv2
 import potrace
 from typing import Tuple, List
+import logging
 from ...core.geo import Geometry
+
+logger = logging.getLogger(__name__)
 
 BORDER_SIZE = 2
 # A safety limit to prevent processing pathologically complex images.
@@ -174,6 +177,59 @@ def _get_hulls_from_image(
     return geometries
 
 
+def _get_single_hull_from_image(
+    boolean_image: np.ndarray,
+    scale_x: float,
+    scale_y: float,
+    height_px: int,
+) -> List[Geometry]:
+    """
+    Fallback for when Potrace fails. Calculates a single convex hull that
+    encompasses all content in the image.
+
+    Args:
+        boolean_image: The boolean image containing all shapes.
+        scale_x: Pixels per millimeter (X).
+        scale_y: Pixels per millimeter (Y).
+        height_px: Original height of the source surface in pixels.
+
+    Returns:
+        A list containing a single Geometry object for the enclosing hull,
+        or an empty list if no content was found.
+    """
+    img_uint8 = boolean_image.astype(np.uint8) * 255
+    contours, _ = cv2.findContours(
+        img_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    if not contours:
+        return []
+
+    # Combine all points from all contours into a single array
+    all_points = np.vstack(contours)
+    if len(all_points) < 3:
+        return []
+
+    hull_points = cv2.convexHull(all_points).squeeze(axis=1)
+
+    def _transform_point(p: Tuple[float, float]) -> Tuple[float, float]:
+        px, py = p
+        ops_px = px - BORDER_SIZE
+        ops_py = height_px - (py - BORDER_SIZE)
+        return ops_px / scale_x, ops_py / scale_y
+
+    geo = Geometry()
+    start_pt = _transform_point(tuple(hull_points[0]))
+    geo.move_to(start_pt[0], start_pt[1])
+
+    for point in hull_points[1:]:
+        pt = _transform_point(tuple(point))
+        geo.line_to(pt[0], pt[1])
+
+    geo.close_path()
+    return [geo]
+
+
 def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     """
     Prepares a Cairo surface for Potrace, including an adaptive denoising
@@ -190,30 +246,66 @@ def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
         .copy()
     )
 
-    border_color = [255] * channels
-    img_with_border = cv2.copyMakeBorder(
-        img,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        cv2.BORDER_CONSTANT,
-        value=border_color,
-    )
+    # Determine if we should use the alpha channel for tracing.
+    # This is true only if the image has an alpha channel AND it's not
+    # completely opaque (which would make the alpha channel useless).
+    use_alpha = channels == 4 and not np.all(img[:, :, 3] == 255)
 
-    if channels == 4:
+    if use_alpha:
+        # For transparent images, the "background" is transparency.
+        # The border must also be transparent to avoid being traced.
+        border_color = [0, 0, 0, 0]
+        img_with_border = cv2.copyMakeBorder(
+            img,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            cv2.BORDER_CONSTANT,
+            value=border_color,
+        )
         alpha = img_with_border[:, :, 3]
-        img_with_border[alpha == 0] = 255
+        boolean_image = alpha > 10
+    else:
+        # For opaque images, we add a guaranteed white border.
+        border_color = [255] * channels
+        img_with_border = cv2.copyMakeBorder(
+            img,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            BORDER_SIZE,
+            cv2.BORDER_CONSTANT,
+            value=border_color,
+        )
+        gray = cv2.cvtColor(
+            img_with_border,
+            cv2.COLOR_BGRA2GRAY if channels == 4 else cv2.COLOR_BGR2GRAY,
+        )
 
-    gray = cv2.cvtColor(
-        img_with_border,
-        cv2.COLOR_BGR2GRAY if channels == 3 else cv2.COLOR_BGRA2GRAY,
-    )
-    boolean_image = gray < 128
+        # Use a background-aware heuristic for all opaque images.
+        # This handles both light-on-dark and dark-on-light content.
+        otsu_threshold, _ = cv2.threshold(
+            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
 
-    # Adaptive Denoising Pipeline
+        # We know the background color because we added a white border.
+        # If the background is brighter than the threshold, we trace dark
+        # objects. If the background is darker, we trace light objects.
+        if 255 > otsu_threshold:
+            threshold_type = cv2.THRESH_BINARY_INV
+        else:
+            threshold_type = cv2.THRESH_BINARY
+
+        _, thresh_img = cv2.threshold(
+            gray, otsu_threshold, 255, threshold_type
+        )
+        boolean_image = thresh_img > 0
+
+    # Denoising for images that have actual
+    # distinct components (like text on a solid background).
     component_areas = _get_component_areas(boolean_image)
-    if component_areas.size > 0:
+    if component_areas.size > 1:
         min_area_threshold = _find_adaptive_area_threshold(component_areas)
         cleaned_image = _filter_image_by_component_area(
             boolean_image, min_area_threshold
@@ -303,12 +395,19 @@ def trace_surface(
     )
 
     if not potrace_result:
-        return []
+        # If Potrace fails or produces no path for a non-empty image,
+        # fall back to returning a single convex hull of the entire shape.
+        return _get_single_hull_from_image(
+            cleaned_boolean_image,
+            pixels_per_mm[0],
+            pixels_per_mm[1],
+            surface.get_height(),
+        )
 
     # Convert iterable Path to a list to get its length.
     potrace_path_list = list(potrace_result)
 
-    # Fallback Mechanism
+    # Fallback Mechanism for excessive complexity
     if len(potrace_path_list) >= MAX_VECTORS_LIMIT:
         # Image is too complex, fall back to convex hulls of major components
         return _get_hulls_from_image(

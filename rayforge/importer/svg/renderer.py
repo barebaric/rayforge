@@ -9,7 +9,7 @@ with warnings.catch_warnings():
 
 from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
-from ..shared.util import parse_length, to_mm
+from ..util import parse_length, to_mm
 
 
 class SvgRenderer(Renderer):

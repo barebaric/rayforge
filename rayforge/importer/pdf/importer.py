@@ -2,16 +2,16 @@ from typing import Optional, List
 import logging
 import io
 import numpy as np
-import cairo
 from pypdf import PdfReader, PdfWriter, Transformation
 from ...core.workpiece import WorkPiece
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.matrix import Matrix
 from ...shared.util.tracing import trace_surface
-from ..shared.util import to_mm
+from ..util import to_mm
 from ...core.import_source import ImportSource
 from ..base_importer import Importer, ImportPayload
+from .. import image_util
 from .renderer import PDF_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -115,18 +115,16 @@ class PdfImporter(Importer):
         if not vips_image:
             return None
 
-        # This conversion logic is from Renderer.render_to_pixels
-        if vips_image.bands < 4:
-            vips_image = vips_image.bandjoin(255)
-        b, g, r, a = vips_image[2], vips_image[1], vips_image[0], vips_image[3]
-        bgra_image = b.bandjoin([g, r, a])
-        mem_buffer = bgra_image.write_to_memory()
-        surface = cairo.ImageSurface.create_for_data(
-            mem_buffer,
-            cairo.FORMAT_ARGB32,
-            vips_image.width,
-            vips_image.height,
-        )
+        # Normalize the image.
+        normalized_image = image_util.normalize_to_rgba(vips_image)
+        if not normalized_image:
+            logger.warning("Failed to normalize vips image for tracing.")
+            return None
+
+        surface = image_util.vips_rgba_to_cairo_surface(normalized_image)
+        if not surface:
+            logger.warning("Failed to convert vips image to cairo surface.")
+            return None
 
         pixels_per_mm = (w_px / w_mm, h_px / h_mm) if w_mm and h_mm else (1, 1)
         geometries = trace_surface(surface, pixels_per_mm)

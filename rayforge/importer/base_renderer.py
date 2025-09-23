@@ -10,6 +10,8 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from . import image_util
+
 if TYPE_CHECKING:
     from ..core.workpiece import WorkPiece
 
@@ -61,6 +63,7 @@ class Renderer(ABC):
         b, g, r, a = vips_image[0], vips_image[1], vips_image[2], vips_image[3]
         return r.bandjoin([g, b, a])
 
+    # BUG FIX: Corrected typo from double underscore to single
     def get_or_create_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[pyvips.Image]:
@@ -165,19 +168,15 @@ class Renderer(ABC):
                     continue
 
                 chunk: pyvips.Image = vips_image.crop(left, top, width, height)
-                if chunk.bands < 4:
-                    chunk = chunk.bandjoin(255)
 
-                # Vips RGBA -> Cairo BGRA
-                b, g, r, a = chunk[2], chunk[1], chunk[0], chunk[3]
-                bgra_chunk = b.bandjoin([g, r, a])
-                mem_buffer: memoryview = bgra_chunk.write_to_memory()
+                normalized_chunk = image_util.normalize_to_rgba(chunk)
+                if not normalized_chunk:
+                    logger.warning(
+                        f"Could not normalize chunk at ({left},{top})"
+                    )
+                    continue
 
-                surface = cairo.ImageSurface.create_for_data(
-                    mem_buffer,
-                    cairo.FORMAT_ARGB32,
-                    chunk.width,
-                    chunk.height,
-                    chunk.width * 4,
+                surface = image_util.vips_rgba_to_cairo_surface(
+                    normalized_chunk
                 )
                 yield surface, (left, top)

@@ -1,6 +1,6 @@
 import cairo
 from typing import Optional, TYPE_CHECKING, Tuple
-from ..shared.ops_renderer import OPS_RENDERER
+from ..ops_renderer import OPS_RENDERER
 from ..base_renderer import Renderer
 
 if TYPE_CHECKING:

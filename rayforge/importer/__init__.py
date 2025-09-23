@@ -2,7 +2,7 @@ import inspect
 from typing import Dict
 from .base_importer import Importer
 from .base_renderer import Renderer
-from .shared.ops_renderer import OPS_RENDERER
+from .ops_renderer import OPS_RENDERER
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
 from .dxf.importer import DxfImporter

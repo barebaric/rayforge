@@ -1,7 +1,6 @@
 import warnings
 from typing import Optional
 import logging
-import cairo
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -13,8 +12,8 @@ from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
 from ...shared.util.tracing import trace_surface
+from .. import image_util
 from .renderer import PNG_RENDERER
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,72 +27,73 @@ class PngImporter(Importer):
         self, vector_config: Optional["TraceConfig"] = None
     ) -> Optional[ImportPayload]:
         if not vector_config:
-            # In the new async model, raster importers MUST receive a config.
             logger.error("PngImporter requires a vector_config to trace.")
             return None
+
+        try:
+            # Use the specific PNG loader with random access for consistency.
+            image = pyvips.Image.pngload_buffer(
+                self.raw_data, access=pyvips.Access.RANDOM
+            )
+            logger.info(
+                f"Successfully loaded PNG with pyvips: "
+                f"{image.width}x{image.height}, "
+                f"{image.bands} bands, format {image.format}"
+            )
+        except pyvips.Error as e:
+            logger.error(
+                f"pyvips failed to load PNG buffer: {e}", exc_info=True
+            )
+            return None
+
+        metadata = image_util.extract_vips_metadata(image)
 
         source = ImportSource(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PNG_RENDERER,
             vector_config=vector_config,
+            metadata=metadata,
         )
 
-        try:
-            image = pyvips.Image.pngload_buffer(self.raw_data)
-        except pyvips.Error:
-            return None  # Return None if the PNG data is invalid
+        normalized_image = image_util.normalize_to_rgba(image)
+        if not normalized_image:
+            logger.error("Failed to normalize image to RGBA format.")
+            return None
+        logger.info("Normalized image to RGBA.")
 
-        # 1. Prepare image for tracing by converting to a Cairo surface
-        if image.bands < 4:
-            image = image.bandjoin(255)  # Ensure alpha channel
-        b, g, r, a = image[2], image[1], image[0], image[3]
-        bgra_image = b.bandjoin([g, r, a])
-        mem_buffer: memoryview = bgra_image.write_to_memory()
-        surface = cairo.ImageSurface.create_for_data(
-            mem_buffer,
-            cairo.FORMAT_ARGB32,
-            image.width,
-            image.height,
-            image.width * 4,
+        surface = image_util.vips_rgba_to_cairo_surface(normalized_image)
+        logger.debug(
+            f"Converted to cairo surface: "
+            f"{surface.get_width()}x{surface.get_height()}"
         )
 
-        # 2. Determine physical size of the entire image
-        width_mm, height_mm = image.width, image.height
-        try:
-            # VIPS stores resolution as pixels per millimeter
-            xres = image.get("xres")
-            yres = image.get("yres")
-            width_mm = image.width / xres
-            height_mm = image.height / yres
-        except pyvips.Error:
-            # Fallback to a standard 96 DPI if no resolution is set
-            width_mm = image.width * (25.4 / 96.0)
-            height_mm = image.height * (25.4 / 96.0)
-
+        width_mm, height_mm = image_util.get_physical_size_mm(image)
         pixels_per_mm = (image.width / width_mm, image.height / height_mm)
 
-        # 3. Trace the surface. The returned vectors are already correctly
-        #    positioned relative to the top-left of the image.
         geometries = trace_surface(surface, pixels_per_mm)
-        if not geometries:
-            return ImportPayload(source=source, items=[])
-
-        # 4. Combine all traced paths into a single Geometry object.
-        #    DO NOT normalize or transform them.
         combined_geo = Geometry()
-        for geo in geometries:
-            combined_geo.commands.extend(geo.commands)
 
-        # 5. Create the final workpiece. It represents the ENTIRE image.
-        final_wp = WorkPiece(
-            name=self.source_file.stem,
-            vectors=combined_geo,
-        )
+        if geometries:
+            logger.info(f"Successfully traced {len(geometries)} vector paths.")
+            for geo in geometries:
+                combined_geo.commands.extend(geo.commands)
+        else:
+            logger.warning(
+                "Tracing did not produce any vector geometries. "
+                "Creating a workpiece with a frame around the image instead."
+            )
+            # Create a rectangle representing the full image boundary using
+            # the Geometry class methods.
+            combined_geo.move_to(0, 0)
+            combined_geo.line_to(width_mm, 0)
+            combined_geo.line_to(width_mm, height_mm)
+            combined_geo.line_to(0, height_mm)
+            combined_geo.close_path()
+
+        final_wp = WorkPiece(name=self.source_file.stem, vectors=combined_geo)
         final_wp.import_source_uid = source.uid
-        # The workpiece's size is the full physical size of the PNG.
         final_wp.set_size(width_mm, height_mm)
-        # The initial position is (0,0). FileCmd will center it later.
         final_wp.pos = (0, 0)
 
         return ImportPayload(source=source, items=[final_wp])

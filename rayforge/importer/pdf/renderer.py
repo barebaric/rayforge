@@ -11,7 +11,7 @@ with warnings.catch_warnings():
 
 from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
-from ..shared.util import to_mm
+from ..util import to_mm
 
 logger = logging.getLogger(__name__)
 
