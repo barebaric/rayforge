@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
 from ..core.item import DocItem
 from ..core.matrix import Matrix
-from ..importer import importer_by_mime_type, importer_by_extension
+from ..importer import import_file
 from ..undo import ListItemCommand
 from ..shared.tasker.context import ExecutionContext
 from ..pipeline.job import generate_job_ops
@@ -147,39 +147,21 @@ class FileCmd:
         """
 
         async def import_coro(context: ExecutionContext):
-            # Find importer class
-            importer_class = None
-            if mime_type:
-                importer_class = importer_by_mime_type.get(mime_type)
-            if not importer_class:
-                file_extension = filename.suffix.lower()
-                if file_extension:
-                    importer_class = importer_by_extension.get(file_extension)
-
-            if not importer_class:
-                msg = f"No importer found for '{filename.name}'"
-                logger.error(msg)
-                context.set_message(f"Error: {msg}")
-                raise ValueError(msg)
-
             context.set_message(_(f"Importing {filename.name}..."))
             context.flush()
 
-            # 1. Read file data (blocking I/O)
-            file_data = await asyncio.to_thread(filename.read_bytes)
-
-            # 2. Instantiate importer and get the payload (CPU-bound)
-            def do_import_sync():
-                importer = importer_class(file_data, source_file=filename)
-                return importer.get_doc_items(vector_config)
-
-            import_payload = await asyncio.to_thread(do_import_sync)
+            # The import_file function handles I/O and CPU work, so we run
+            # the whole thing in a background thread.
+            import_payload = await asyncio.to_thread(
+                import_file, filename, mime_type, vector_config
+            )
 
             if not import_payload or not import_payload.items:
+                msg = _("Import failed: No items were created.")
                 logger.warning(
                     f"Importer created no items for '{filename.name}'."
                 )
-                context.set_message(_("Import failed: No items were created."))
+                context.set_message(msg)
                 return None  # Return None to signify no items to add.
 
             context.set_message(_("Import complete!"))

@@ -1,6 +1,10 @@
 import inspect
-from typing import Dict
-from .base_importer import Importer
+import logging
+import mimetypes
+from pathlib import Path
+from typing import Dict, Optional, Union
+from ..core.vectorization_config import TraceConfig
+from .base_importer import Importer, ImportPayload
 from .base_renderer import Renderer
 from .ops_renderer import OPS_RENDERER
 from .bmp.importer import BmpImporter
@@ -15,6 +19,9 @@ from .ruida.importer import RuidaImporter
 from .ruida.renderer import RUIDA_RENDERER
 from .svg.importer import SvgImporter
 from .svg.renderer import SVG_RENDERER
+
+
+logger = logging.getLogger(__name__)
 
 
 def isimporter(obj):
@@ -38,6 +45,72 @@ importer_by_extension = dict()
 for base in importers:
     for extension in base.extensions:
         importer_by_extension[extension] = base
+
+
+def import_file(
+    source: Union[Path, bytes],
+    mime_type: Optional[str] = None,
+    vector_config: Optional[TraceConfig] = None,
+) -> Optional[ImportPayload]:
+    """
+    A high-level convenience function to import a file from a path or raw
+    data. It automatically determines the correct importer to use.
+
+    The importer is chosen based on this priority:
+    1. The provided `mime_type` override.
+    2. The MIME type guessed from the filename (if `source` is a Path).
+    3. The file extension (if `source` is a Path).
+
+    Args:
+        source: The pathlib.Path to the file or the raw bytes data.
+        mime_type: An optional MIME type to force a specific importer.
+        vector_config: An optional TraceConfig for vectorization.
+
+    Returns:
+        An ImportPayload containing the source and doc items, or None if
+        the import fails or no suitable importer is found.
+    """
+    # If source is a path and no override is given, guess the MIME type.
+    if isinstance(source, Path) and not mime_type:
+        mime_type, _ = mimetypes.guess_type(source)
+
+    # 1. Determine importer class
+    importer_class = None
+    if mime_type:
+        importer_class = importer_by_mime_type.get(mime_type)
+
+    if not importer_class and isinstance(source, Path):
+        file_extension = source.suffix.lower()
+        if file_extension:
+            importer_class = importer_by_extension.get(file_extension)
+
+    if not importer_class:
+        logger.error(f"No importer found for source: {source}")
+        return None
+
+    # 2. Prepare data and source path
+    if isinstance(source, Path):
+        source_file = source
+        try:
+            file_data = source.read_bytes()
+        except IOError as e:
+            logger.error(f"Could not read file {source}: {e}")
+            return None
+    else:  # is bytes
+        source_file = Path("Untitled")
+        file_data = source
+
+    # 3. Execute importer
+    try:
+        importer = importer_class(file_data, source_file=source_file)
+        return importer.get_doc_items(vector_config)
+    except Exception as e:
+        logger.error(
+            f"Importer {importer_class.__name__} failed for {source_file}",
+            exc_info=e,
+        )
+        return None
+
 
 renderer_by_name: Dict[str, Renderer] = {
     "BmpRenderer": BMP_RENDERER,
@@ -66,6 +139,7 @@ __all__ = [
     "PngImporter",
     "RuidaImporter",
     "SvgImporter",
+    "import_file",
     "importers",
     "importer_by_name",
     "importer_by_mime_type",
