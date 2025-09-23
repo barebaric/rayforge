@@ -21,7 +21,6 @@ modules:
   - python3-openblas.yml       # scipy-python requirement
   - python3-pyvips.yml
   - python3-pypotrace.yml
-  - python3-setuptools.yml
   - python3-setuptools-git-versioning.yml
   - python3-requirements.yml
 
