@@ -142,7 +142,8 @@ class WorkPiece(DocItem):
         transformation matrix is the world transformation matrix of this one.
         This effectively "bakes" the parent transformations into the object,
         making it suitable for serialization or use in contexts without a
-        document hierarchy.
+        document hierarchy. It also hydrates the instance with the necessary
+        data for rendering in isolated environments like subprocesses.
         """
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
@@ -152,9 +153,17 @@ class WorkPiece(DocItem):
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.import_source_uid = self.import_source_uid
-        # Link back to the original parent to allow resolving
-        # .source, .data etc
-        world_wp.parent = self.parent
+
+        # Hydrate with data and renderer for use in isolated contexts
+        # like subprocesses where the document link is lost.
+        source = self.source
+        if source:
+            # Use the public .data property to get the correct render data
+            world_wp._data = source.data
+            world_wp._renderer = source.renderer
+
+        # Do NOT link back to the parent. The point of this method is to
+        # create a self-contained object suitable for serialization.
         return world_wp
 
     def get_local_size(self) -> Tuple[float, float]:

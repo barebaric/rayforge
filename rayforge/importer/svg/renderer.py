@@ -9,103 +9,41 @@ with warnings.catch_warnings():
 
 from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
-from ..util import parse_length, to_mm
 
 
 class SvgRenderer(Renderer):
     """Renders SVG data from a WorkPiece."""
 
-    def _get_margins_from_data(
-        self, data: bytes
-    ) -> Tuple[float, float, float, float]:
-        """Calculates content margins from raw SVG data."""
-        measurement_size = 1000.0
-        if not data:
-            return 0.0, 0.0, 0.0, 0.0
-        try:
-            root = ET.fromstring(data)
-            root.set("width", f"{measurement_size}px")
-            root.set("height", f"{measurement_size}px")
-            root.set("preserveAspectRatio", "none")
-
-            img = pyvips.Image.svgload_buffer(ET.tostring(root))
-            if img.bands < 4:
-                img = img.bandjoin(255)
-
-            left, top, w, h = img.find_trim()
-            if w == 0 or h == 0:
-                return 0.0, 0.0, 0.0, 0.0
-
-            return (
-                left / measurement_size,
-                top / measurement_size,
-                (measurement_size - (left + w)) / measurement_size,
-                (measurement_size - (top + h)) / measurement_size,
-            )
-        except (pyvips.Error, ET.ParseError):
-            return 0.0, 0.0, 0.0, 0.0
-
-    def calculate_natural_size_from_data(
-        self, data: bytes, px_factor: float = 0.0
-    ) -> Optional[Tuple[float, float]]:
-        """Calculates the trimmed natural size from raw SVG data."""
-        if not data:
-            return None
-        try:
-            root = ET.fromstring(data)
-            w_str = root.get("width")
-            h_str = root.get("height")
-            if not w_str or not h_str:
-                return None
-
-            w_val, w_unit = parse_length(w_str)
-            h_val, h_unit = parse_length(h_str)
-
-            w_mm = to_mm(w_val, w_unit, px_factor=px_factor)
-            h_mm = to_mm(h_val, h_unit, px_factor=px_factor)
-
-        except (ValueError, ET.ParseError):
-            return None
-
-        left, top, right, bottom = self._get_margins_from_data(data)
-        return w_mm * (1 - left - right), h_mm * (1 - top - bottom)
-
     def get_natural_size(
-        self, workpiece: "WorkPiece", px_factor: float = 0.0
+        self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
-        if not workpiece.data:
+        """
+        Calculates the trimmed natural size from pre-calculated metadata.
+        """
+        source = workpiece.source
+        if not source or not source.metadata:
             return None
-        return self.calculate_natural_size_from_data(
-            workpiece.data, px_factor=px_factor
-        )
+
+        metadata = source.metadata
+        w = metadata.get("trimmed_width_mm")
+        h = metadata.get("trimmed_height_mm")
+
+        if w is None or h is None:
+            return None
+
+        return w, h
 
     def _render_vips_from_data(
         self, data: bytes, width: int, height: int
     ) -> Optional[pyvips.Image]:
-        """Renders raw SVG data to a pyvips Image."""
+        """
+        Renders raw SVG data to a pyvips Image by setting its pixel dimensions.
+        Expects data to be pre-trimmed for content.
+        """
         if not data:
             return None
         try:
-            left, top, right, bottom = self._get_margins_from_data(data)
             root = ET.fromstring(data)
-
-            vb_str = root.get("viewBox")
-            if vb_str:
-                vb_x, vb_y, vb_w, vb_h = map(float, vb_str.split())
-            else:
-                w_str, h_str = root.get("width"), root.get("height")
-                if not w_str or not h_str:
-                    return None
-                w_val, _ = parse_length(w_str)
-                h_val, _ = parse_length(h_str)
-                vb_x, vb_y, vb_w, vb_h = 0, 0, w_val, h_val
-
-            new_vb_x = vb_x + (left * vb_w)
-            new_vb_y = vb_y + (top * vb_h)
-            new_vb_w = vb_w * (1 - left - right)
-            new_vb_h = vb_h * (1 - top - bottom)
-            root.set("viewBox", f"{new_vb_x} {new_vb_y} {new_vb_w} {new_vb_h}")
-
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
             root.set("preserveAspectRatio", "none")
@@ -117,14 +55,20 @@ class SvgRenderer(Renderer):
     def _render_to_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[pyvips.Image]:
-        if not workpiece.data:
+        # Use the workpiece's data property, which correctly handles both
+        # attached (via .source) and transient/subprocess instances.
+        data_to_render = workpiece.data
+        if not data_to_render:
             return None
-        return self._render_vips_from_data(workpiece.data, width, height)
+
+        return self._render_vips_from_data(data_to_render, width, height)
 
     def render_to_pixels_from_data(
         self, data: bytes, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """Renders raw SVG data directly to a Cairo surface."""
+        if not data:
+            return None
         final_image = self._render_vips_from_data(data, width, height)
         if not final_image:
             return None

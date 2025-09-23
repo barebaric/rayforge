@@ -1,6 +1,7 @@
 import io
 from typing import Optional, List
 import logging
+from xml.etree import ElementTree as ET
 import numpy as np
 from svgelements import (
     SVG,
@@ -11,7 +12,6 @@ from svgelements import (
     Arc,
     CubicBezier,
     QuadraticBezier,
-    Length,
 )
 
 from ...core.item import DocItem
@@ -22,14 +22,9 @@ from ...core.import_source import ImportSource
 from ...shared.util.tracing import trace_surface
 from ..base_importer import Importer, ImportPayload
 from .renderer import SVG_RENDERER
+from .svgutil import get_natural_size, trim_svg, PPI
 
 logger = logging.getLogger(__name__)
-
-# A standard fallback conversion factor for pixel units when no other
-# context is provided. Corresponds to 96 DPI.
-# (1 inch / 96 px) * 25.4 mm/inch
-PPI = 96.0
-MM_PER_PX_FALLBACK = 25.4 / PPI
 
 
 class SvgImporter(Importer):
@@ -49,11 +44,41 @@ class SvgImporter(Importer):
         If vector_config is None, it attempts to parse the SVG path and
         shape data directly for a high-fidelity vector import.
         """
+        # Process the SVG: trim it
+        trimmed_data = trim_svg(self.raw_data)
+
+        # Create import source.
         source = ImportSource(
             source_file=self.source_file,
             original_data=self.raw_data,
+            working_data=trimmed_data,
             renderer=SVG_RENDERER,
         )
+
+        # Read metadata.
+        metadata = {}
+        try:
+            # Get size of original, untrimmed SVG
+            untrimmed_size = get_natural_size(self.raw_data)
+            if untrimmed_size:
+                metadata["untrimmed_width_mm"] = untrimmed_size[0]
+                metadata["untrimmed_height_mm"] = untrimmed_size[1]
+
+            # Get size of the new, trimmed SVG
+            trimmed_size = get_natural_size(trimmed_data)
+            if trimmed_size:
+                metadata["trimmed_width_mm"] = trimmed_size[0]
+                metadata["trimmed_height_mm"] = trimmed_size[1]
+
+            # Get viewBox from trimmed SVG for direct import
+            root = ET.fromstring(trimmed_data)
+            vb_str = root.get("viewBox")
+            if vb_str:
+                metadata["viewbox"] = tuple(map(float, vb_str.split()))
+
+            source.metadata.update(metadata)
+        except Exception:
+            logger.warning("Could not calculate SVG metadata: {e}")
 
         if vector_config is not None:
             # Path 1: Render to bitmap and trace
@@ -71,41 +96,48 @@ class SvgImporter(Importer):
         self, source: ImportSource, vector_config: TraceConfig
     ) -> Optional[List[DocItem]]:
         """
-        Renders raw SVG data to a bitmap, traces it, and creates a WorkPiece.
+        Renders trimmed SVG data to a bitmap, traces it, and creates a
+        WorkPiece.
         """
-        try:
-            size_mm = SVG_RENDERER.calculate_natural_size_from_data(
-                self.raw_data, px_factor=MM_PER_PX_FALLBACK
-            )
-        except Exception:
-            size_mm = None
+        size_mm = None
+        if source.metadata:
+            w = source.metadata.get("trimmed_width_mm")
+            h = source.metadata.get("trimmed_height_mm")
+            if w is not None and h is not None:
+                size_mm = (w, h)
+
+        # If we can't determine a size, we can't trace. Return None.
+        if not size_mm or not size_mm[0] or not size_mm[1]:
+            logger.warning("failed to find a size")
+            return None
+
+        if not source.working_data:
+            logger.error("source has no data to trace")
+            return None
 
         traced_geo: Optional[Geometry] = None
+        w_mm, h_mm = size_mm
+        w_px, h_px = 2048, 2048
 
-        if size_mm and size_mm[0] and size_mm[1]:
-            w_mm, h_mm = size_mm
-            w_px, h_px = 2048, 2048
+        surface = SVG_RENDERER.render_to_pixels_from_data(
+            source.working_data, w_px, h_px
+        )
 
-            surface = SVG_RENDERER.render_to_pixels_from_data(
-                self.raw_data, w_px, h_px
-            )
+        if surface:
+            pixels_per_mm = (w_px / w_mm, h_px / h_mm)
+            geometries = trace_surface(surface, pixels_per_mm)
 
-            if surface:
-                pixels_per_mm = (w_px / w_mm, h_px / h_mm)
-                geometries = trace_surface(surface, pixels_per_mm)
-
-                if geometries:
-                    combined_geo = Geometry()
-                    for geo in geometries:
-                        combined_geo.commands.extend(geo.commands)
-                    traced_geo = combined_geo
+            if geometries:
+                combined_geo = Geometry()
+                for geo in geometries:
+                    combined_geo.commands.extend(geo.commands)
+                traced_geo = combined_geo
 
         # Always create a workpiece, adding size and vectors if available.
         wp = WorkPiece(name=self.source_file.stem)
         wp.import_source_uid = source.uid
 
-        if size_mm and size_mm[0] and size_mm[1]:
-            wp.set_size(size_mm[0], size_mm[1])
+        wp.set_size(size_mm[0], size_mm[1])
 
         if traced_geo:
             wp.vectors = traced_geo
@@ -116,12 +148,16 @@ class SvgImporter(Importer):
         self, source: ImportSource
     ) -> Optional[List[DocItem]]:
         """
-        Parses SVG vector data directly, handling viewBox and unit conversions
-        to ensure the vector geometry matches the rendered size.
+        Parses trimmed SVG vector data directly, handling viewBox and unit
+        conversions to ensure the vector geometry matches the final size.
         """
+        if not source.working_data:
+            logger.error("source has no data to trace")
+            return None
+
         try:
-            # Correctly wrap the raw byte data in an in-memory stream object.
-            svg_stream = io.BytesIO(self.raw_data)
+            # Correctly wrap the trimmed byte data in an in-memory stream.
+            svg_stream = io.BytesIO(source.working_data)
             svg = SVG.parse(svg_stream, ppi=PPI)
         except Exception as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
@@ -130,7 +166,11 @@ class SvgImporter(Importer):
         # --- Establish Authoritative Dimensions and Transformation ---
         # The key to matching the rendered output is to honor the `viewBox`.
         # The `width` and `height` attributes define the final rendered size.
-        if svg.viewbox is None or svg.width is None or svg.height is None:
+        if (
+            not source.metadata.get("viewbox")
+            or not source.metadata.get("trimmed_width_mm")
+            or not source.metadata.get("trimmed_height_mm")
+        ):
             logger.warning(
                 "SVG is missing viewBox, width, or height attributes; "
                 "falling back to trace method for direct import."
@@ -142,48 +182,43 @@ class SvgImporter(Importer):
         logger.info(f"SVG raw width/height: {svg.width}, {svg.height}")
         logger.info(f"SVG viewBox: {svg.viewbox}")
 
-        # Get full rendered dimensions in millimeters.
-        full_width_mm = Length(svg.width).value(ppi=PPI) * MM_PER_PX_FALLBACK
-        full_height_mm = Length(svg.height).value(ppi=PPI) * MM_PER_PX_FALLBACK
+        # Get final dimensions in millimeters from the trimmed SVG metadata.
+        final_width_mm = source.metadata.get("trimmed_width_mm", 0.0)
+        final_height_mm = source.metadata.get("trimmed_height_mm", 0.0)
 
-        logger.info(
-            f"Full dimensions: {full_width_mm:.3f}mm x {full_height_mm:.3f}mm"
-        )
-
-        # Get margins to trim
-        left, top, right, bottom = SVG_RENDERER._get_margins_from_data(
-            self.raw_data
-        )
-        logger.info(
-            f"Margins: left={left:.4f}, top={top:.4f}, "
-            f"right={right:.4f}, bottom={bottom:.4f}"
-        )
-
-        # Calculate trimmed dimensions
-        final_width_mm = full_width_mm * (1 - left - right)
-        final_height_mm = full_height_mm * (1 - top - bottom)
         logger.info(
             f"Final dimensions: {final_width_mm:.3f}mm x "
             f"{final_height_mm:.3f}mm"
         )
 
+        # Get the bounding box of the SVG content from svgelements.
+        try:
+            bbox = svg.bbox(with_stroke=True)
+            if bbox is None:
+                # This can happen if the SVG contains no visible geometry.
+                logger.warning(
+                    "svgelements could not determine SVG bounds"
+                    " (no visible content); "
+                    "falling back to trace method."
+                )
+                return self._get_doc_items_from_trace(source, TraceConfig())
+            min_x, min_y, max_x, max_y = bbox
+        except Exception as e:
+            logger.warning(
+                f"Error calculating SVG bounds with svgelements ({e}); "
+                "falling back to trace method."
+            )
+            return self._get_doc_items_from_trace(source, TraceConfig())
+
         geo = Geometry()
         # Average scale for tolerance adjustment
-        # (using full dimensions as fallback)
-        avg_scale = (full_width_mm + full_height_mm) / 2 / 960
-        # Assuming typical viewBox size
-        tolerance = 0.1 / avg_scale  # 0.1mm in final units
+        # Use max to avoid division by zero if one dimension is zero
+        avg_dim = max(final_width_mm, final_height_mm, 1.0)
+        avg_scale = avg_dim / 960  # Assuming typical viewBox size
+        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
         logger.debug(
             f"Average scale estimate: {avg_scale:.6f}, "
             f"tolerance: {tolerance:.6f}"
-        )
-
-        # Track bounds before transformation
-        min_x, min_y, max_x, max_y = (
-            float("inf"),
-            float("inf"),
-            float("-inf"),
-            float("-inf"),
         )
 
         for shape in svg.elements():
@@ -201,12 +236,6 @@ class SvgImporter(Importer):
                     continue
 
                 end_x, end_y = float(seg.end.x), float(seg.end.y)
-
-                # Update pre-transform bounds
-                min_x = min(min_x, end_x)
-                min_y = min(min_y, end_y)
-                max_x = max(max_x, end_x)
-                max_y = max(max_y, end_y)
 
                 if isinstance(seg, Move):
                     geo.move_to(end_x, end_y)
@@ -265,11 +294,6 @@ class SvgImporter(Importer):
                         ):
                             px, py = float(p.x), float(p.y)
                             geo.line_to(px, py)
-                            # Update bounds for bezier points too
-                            min_x = min(min_x, px)
-                            min_y = min(min_y, py)
-                            max_x = max(max_x, px)
-                            max_y = max(max_y, py)
 
         logger.info(
             f"Pre-transform bounds: x=[{min_x:.3f}, {max_x:.3f}], "
