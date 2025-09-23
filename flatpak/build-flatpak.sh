@@ -12,4 +12,4 @@ flatpak run org.flatpak.Builder \
     --force-clean --sandbox --user --install --ccache \
     --install-deps-from=flathub \
     --mirror-screenshots-url=https://dl.flathub.org/media/ \
-    --repo=repo builddir com.barebaric.rayforge.yml
+    --repo=repo builddir flatpak/com.barebaric.rayforge.yml
