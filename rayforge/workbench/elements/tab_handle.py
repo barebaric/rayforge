@@ -43,6 +43,9 @@ class TabHandleElement(CanvasElement):
         self._local_pos_norm: Tuple[float, float] = (0.0, 0.0)
         self._local_tangent_norm: Tuple[float, float] = (1.0, 0.0)
 
+        # Holds the transient state during a drag
+        self._dragged_tab_state: Optional[Tab] = None
+
     def on_attached(self):
         """Lifecycle hook called when added to the canvas."""
         assert self.canvas
@@ -62,13 +65,12 @@ class TabHandleElement(CanvasElement):
         drag_target: Optional[CanvasElement] = None,
     ):
         """Called by the canvas when a move operation starts."""
-        # The drag_target is the specific element being manipulated, which
-        # is exactly what we need. This is more robust than checking the
-        # general selection ('elements' list).
         if drag_target is self:
             parent_view = cast("WorkPieceView", self.parent)
-            # Store a deepcopy of the entire tabs list for the undo command
+            # 1. Store the "before" state for the undo command.
             self._initial_tabs_state = deepcopy(parent_view.data.tabs)
+            # 2. Create a transient copy of the tab data to modify during drag.
+            self._dragged_tab_state = deepcopy(cast(Tab, self.data))
             logger.debug(f"Drag begin for tab {self.data.uid}")
 
     def _on_drag_end(
@@ -78,19 +80,35 @@ class TabHandleElement(CanvasElement):
         drag_target: Optional[CanvasElement] = None,
     ):
         """Called by the canvas when a move operation ends."""
-        # Check against the explicit drag_target.
-        if drag_target is self and self._initial_tabs_state is not None:
+        if (
+            drag_target is self
+            and self._initial_tabs_state is not None
+            and self._dragged_tab_state is not None
+        ):
             parent_view = cast("WorkPieceView", self.parent)
             work_surface = cast("WorkSurface", self.canvas)
             doc = work_surface.editor.doc
 
-            # The new state is the current state of the model's tabs list,
-            # which was modified live during the drag.
-            new_tabs_state = deepcopy(parent_view.data.tabs)
+            # 1. Create the "after" state from the "before" state.
+            new_tabs_state = deepcopy(self._initial_tabs_state)
 
-            # Do not modify the model directly. Create a command with the
-            # old and new states, and let the history manager apply the change.
-            # This ensures a single, correct 'updated' signal is fired.
+            # 2. Find the dragged tab in the new list and update it with the
+            # final state from our transient copy.
+            found = False
+            for i, tab in enumerate(new_tabs_state):
+                if tab.uid == self.data.uid:
+                    new_tabs_state[i] = self._dragged_tab_state
+                    found = True
+                    break
+
+            if not found:
+                logger.error("Could not find dragged tab to finalize move.")
+                self._initial_tabs_state = None
+                self._dragged_tab_state = None
+                return
+
+            # 3. Create a command to perform the atomic update. The model
+            # is still in the "old" state, so we can execute directly.
             cmd = ChangePropertyCommand(
                 target=parent_view.data,
                 property_name="tabs",
@@ -98,22 +116,20 @@ class TabHandleElement(CanvasElement):
                 old_value=self._initial_tabs_state,
                 name=_("Move Tab"),
             )
-            # The model is currently in the 'new' state due to live dragging.
-            # We must set it back to the 'old' state so the undo manager can
-            # correctly apply the 'new' state and record the change.
-            # We bypass the public property setter to avoid firing a premature,
-            # incorrect update signal, thus fixing the race condition.
-            parent_view.data._tabs = self._initial_tabs_state
             doc.history_manager.execute(cmd)
 
+            # 4. Clean up transient state.
             self._initial_tabs_state = None
+            self._dragged_tab_state = None
             logger.debug(f"Drag end for tab {self.data.uid}")
 
     def handle_drag_move(
         self, world_dx: float, world_dy: float
     ) -> Tuple[float, float]:
         """
-        Optimized drag handler that avoids redundant geometry calculations.
+        Performs calculations to move the handle along the path, updating only
+        the handle's local state for a fast preview. The document model is NOT
+        modified during this operation.
         """
         parent_view = cast("WorkPieceView", self.parent)
         vectors = parent_view.data.vectors
@@ -146,27 +162,25 @@ class TabHandleElement(CanvasElement):
         local_x_mm = local_x_norm * natural_w
         local_y_mm = local_y_norm * natural_h
 
-        # 1. Find closest point ONCE. This gives us index, t, and position.
+        # 1. Find the closest point on the geometry path.
         closest = vectors.find_closest_point(local_x_mm, local_y_mm)
         if not closest:
             return world_dx, world_dy
         segment_index, t, local_pos_mm = closest
 
-        # 2. Get the tangent vector. This recalculates the point, but we
-        #    ignore it and use the more precise one from find_closest_point.
+        # 2. Get the tangent for orientation.
         tangent_result = vectors.get_point_and_tangent_at(segment_index, t)
         if not tangent_result:
             return world_dx, world_dy
         _, local_tangent_mm = tangent_result
 
-        # 3. Update the underlying Tab data model directly.
-        tab_to_update = cast(Tab, self.data)
-        tab_to_update.segment_index = segment_index
-        tab_to_update.t = t
+        # 3. Update the temporary copy, NOT the document model's data.
+        if self._dragged_tab_state:
+            self._dragged_tab_state.segment_index = segment_index
+            self._dragged_tab_state.t = t
 
-        # 4. Update the handle's internal geometry caches directly, avoiding
-        #    the expensive update_base_geometry() call. This is the key
-        #    performance optimization.
+        # 4. Update the handle's internal geometry caches for fast visual
+        # preview.
         self._local_pos_norm = (
             local_pos_mm[0] / natural_w,
             local_pos_mm[1] / natural_h,
@@ -176,8 +190,11 @@ class TabHandleElement(CanvasElement):
             local_tangent_mm[1] / natural_h,
         )
 
-        # The canvas will trigger a render, which will use the new cached
-        # geometry to update the handle's on-screen transform.
+        # 5. Updating the transform. This will trigger a redraw.
+        # See the drag_handler_controls_transform constructor argument
+        # above.
+        self.update_transform()
+
         return world_dx, world_dy
 
     def render(self, ctx: cairo.Context):
@@ -192,7 +209,7 @@ class TabHandleElement(CanvasElement):
         """
         Calculates the handle's position and tangent vector based on its
         data model. This is used for initialization and non-performance
-        -critical updates, but is bypassed by the drag handler.
+        -critical updates.
         """
         parent_view = cast("WorkPieceView", self.parent)
         tab = cast(Tab, self.data)
