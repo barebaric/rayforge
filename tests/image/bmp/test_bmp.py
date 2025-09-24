@@ -4,10 +4,10 @@ import struct
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
-from rayforge.importer import import_file
-from rayforge.importer.base_importer import ImportPayload
-from rayforge.importer.bmp.renderer import BMP_RENDERER
-from rayforge.importer.bmp.parser import (
+from rayforge.image import import_file
+from rayforge.image.base_importer import ImportPayload
+from rayforge.image.bmp.renderer import BMP_RENDERER
+from rayforge.image.bmp.parser import (
     parse_bmp,
     parse_dib_header,
     _validate_format,

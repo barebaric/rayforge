@@ -4,7 +4,7 @@ import ezdxf
 from typing import Optional
 from unittest.mock import Mock
 
-from rayforge.importer.dxf.importer import DxfImporter
+from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
 

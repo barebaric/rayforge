@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
-from rayforge.importer.svg.importer import SvgImporter
-from rayforge.importer.svg.renderer import SVG_RENDERER
-from rayforge.importer.svg.svgutil import MM_PER_PX
-from rayforge.importer.util import parse_length
+from rayforge.image.svg.importer import SvgImporter
+from rayforge.image.svg.renderer import SVG_RENDERER
+from rayforge.image.svg.svgutil import MM_PER_PX
+from rayforge.image.util import parse_length
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.vectorization_config import TraceConfig
 from rayforge.core.geo import (

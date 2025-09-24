@@ -4,7 +4,7 @@ import cv2
 import potrace
 from typing import Tuple, List
 import logging
-from ...core.geo import Geometry
+from ..core.geo import Geometry
 
 logger = logging.getLogger(__name__)
 

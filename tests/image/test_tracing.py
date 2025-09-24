@@ -1,7 +1,7 @@
 import numpy as np
 import cairo
 from unittest.mock import MagicMock
-from rayforge.shared.util.tracing import (
+from rayforge.image.tracing import (
     _get_component_areas,
     _find_adaptive_area_threshold,
     _filter_image_by_component_area,
@@ -175,7 +175,7 @@ def test_trace_surface_hull_fallback_path(monkeypatch):
     Tests the fallback to convex hulls when vector count is too high.
     A checkerboard is perfect for generating many distinct vectors.
     """
-    monkeypatch.setattr("rayforge.shared.util.tracing.MAX_VECTORS_LIMIT", 50)
+    monkeypatch.setattr("rayforge.image.tracing.MAX_VECTORS_LIMIT", 50)
 
     # Create a white canvas
     img = np.full((100, 100), 255, dtype=np.uint8)

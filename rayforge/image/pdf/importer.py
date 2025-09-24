@@ -7,7 +7,7 @@ from ...core.workpiece import WorkPiece
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.matrix import Matrix
-from ...shared.util.tracing import trace_surface
+from ..tracing import trace_surface
 from ..util import to_mm
 from ...core.import_source import ImportSource
 from ..base_importer import Importer, ImportPayload

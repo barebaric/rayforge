@@ -11,8 +11,8 @@ from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.importer.svg.renderer import SvgRenderer
-from rayforge.importer import import_file
+from rayforge.image.svg.renderer import SvgRenderer
+from rayforge.image import import_file
 
 
 @pytest.fixture

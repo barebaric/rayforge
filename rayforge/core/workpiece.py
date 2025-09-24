@@ -28,7 +28,7 @@ from .tab import Tab
 
 if TYPE_CHECKING:
     from .layer import Layer
-    from ..importer.base_renderer import Renderer
+    from ..image.base_renderer import Renderer
     from .import_source import ImportSource
 
 
@@ -194,7 +194,7 @@ class WorkPiece(DocItem):
         Restores a WorkPiece instance from a dictionary.
         """
         from .geo import Geometry
-        from ..importer import renderer_by_name
+        from ..image import renderer_by_name
 
         vectors = (
             Geometry.from_dict(state["vectors"]) if state["vectors"] else None

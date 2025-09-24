@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 from rayforge.core.vectorization_config import TraceConfig
 from rayforge.core.import_source import ImportSource
-from rayforge.importer.svg.renderer import SvgRenderer
+from rayforge.image.svg.renderer import SvgRenderer
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ class TestImportSource:
             "metadata": {"natural_size": [100, 50]},
         }
         with patch.dict(
-            "rayforge.importer.renderer_by_name",
+            "rayforge.image.renderer_by_name",
             {"SvgRenderer": SvgRenderer()},
             clear=True,
         ):
@@ -127,7 +127,7 @@ class TestImportSource:
             "metadata": {},
         }
         with patch.dict(
-            "rayforge.importer.renderer_by_name",
+            "rayforge.image.renderer_by_name",
             {"SvgRenderer": SvgRenderer()},
             clear=True,
         ):
@@ -154,7 +154,7 @@ class TestImportSource:
             "metadata": {},
         }
         with patch.dict(
-            "rayforge.importer.renderer_by_name",
+            "rayforge.image.renderer_by_name",
             {"SvgRenderer": SvgRenderer()},
             clear=True,
         ):

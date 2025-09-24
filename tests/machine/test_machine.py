@@ -10,7 +10,7 @@ from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
-from rayforge.importer import SVG_RENDERER
+from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine

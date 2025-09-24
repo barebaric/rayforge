@@ -1,7 +1,7 @@
 import logging
 from typing import Callable, TYPE_CHECKING, Any
 from gi.repository import Gtk, Gio
-from ...importer import importers
+from ...image import importers
 
 if TYPE_CHECKING:
     from ...mainwindow import MainWindow

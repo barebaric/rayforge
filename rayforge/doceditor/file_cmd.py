@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
 from ..core.item import DocItem
 from ..core.matrix import Matrix
-from ..importer import import_file
+from ..image import import_file
 from ..undo import ListItemCommand
 from ..shared.tasker.context import ExecutionContext
 from ..pipeline.job import generate_job_ops

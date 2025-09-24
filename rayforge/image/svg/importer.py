@@ -19,7 +19,7 @@ from ...core.workpiece import WorkPiece
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
-from ...shared.util.tracing import trace_surface
+from ..tracing import trace_surface
 from ..base_importer import Importer, ImportPayload
 from .renderer import SVG_RENDERER
 from .svgutil import get_natural_size, trim_svg, PPI

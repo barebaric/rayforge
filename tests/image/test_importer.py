@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from rayforge.importer import import_file
+from rayforge.image import import_file
 from rayforge.core.vectorization_config import TraceConfig
 from rayforge.core.workpiece import WorkPiece
 
@@ -14,7 +14,7 @@ def tests_root() -> Path:
 class TestImporter:
     def test_import_svg_by_path(self, tests_root: Path):
         """Tests importing an SVG file using its path."""
-        svg_path = tests_root / "importer/svg/nested-rect.svg"
+        svg_path = tests_root / "image/svg/nested-rect.svg"
         payload = import_file(svg_path)
 
         assert payload is not None
@@ -27,7 +27,7 @@ class TestImporter:
 
     def test_import_png_by_path_with_tracing(self, tests_root: Path):
         """Tests importing and vectorizing a PNG using its path."""
-        png_path = tests_root / "importer/png/color.png"
+        png_path = tests_root / "image/png/color.png"
         payload = import_file(png_path, vector_config=TraceConfig())
 
         assert payload is not None
@@ -41,7 +41,7 @@ class TestImporter:
 
     def test_import_by_data_with_mime(self, tests_root: Path):
         """Tests importing from bytes data when a MIME type is provided."""
-        svg_path = tests_root / "importer/svg/nested-rect.svg"
+        svg_path = tests_root / "image/svg/nested-rect.svg"
         svg_data = svg_path.read_bytes()
 
         payload = import_file(svg_data, mime_type="image/svg+xml")
@@ -57,7 +57,7 @@ class TestImporter:
         Tests that importing from bytes data fails without a MIME type,
         as there's no extension to infer the importer from.
         """
-        svg_path = tests_root / "importer/svg/nested-rect.svg"
+        svg_path = tests_root / "image/svg/nested-rect.svg"
         svg_data = svg_path.read_bytes()
 
         payload = import_file(svg_data)

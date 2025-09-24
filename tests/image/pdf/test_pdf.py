@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
-from rayforge.importer.pdf.importer import PdfImporter
-from rayforge.importer.pdf.renderer import PDF_RENDERER
+from rayforge.image.pdf.importer import PdfImporter
+from rayforge.image.pdf.renderer import PDF_RENDERER
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.import_source import ImportSource
 from rayforge.core.matrix import Matrix

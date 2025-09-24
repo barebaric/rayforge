@@ -11,7 +11,7 @@ from ..base_importer import Importer, ImportPayload
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
-from ...shared.util.tracing import trace_surface
+from ..tracing import trace_surface
 from .. import image_util
 from .renderer import PNG_RENDERER
 

@@ -7,7 +7,7 @@ from rayforge.core.step import Step
 from rayforge.core.stocklayer import StockLayer
 from rayforge.core.import_source import ImportSource
 from rayforge.core.vectorization_config import TraceConfig
-from rayforge.importer.svg.renderer import SvgRenderer
+from rayforge.image.svg.renderer import SvgRenderer
 
 
 @pytest.fixture

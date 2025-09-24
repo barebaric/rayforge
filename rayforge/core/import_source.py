@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 from .vectorization_config import TraceConfig
 
 if TYPE_CHECKING:
-    from ..importer.base_renderer import Renderer
+    from ..image.base_renderer import Renderer
 
 
 @dataclass
@@ -62,7 +62,7 @@ class ImportSource:
     @classmethod
     def from_dict(cls, state: Dict[str, Any]) -> ImportSource:
         """Deserializes a dictionary into an ImportSource instance."""
-        from ..importer import renderer_by_name
+        from ..image import renderer_by_name
 
         config_data = state.get("vector_config")
         vector_config = TraceConfig(**config_data) if config_data else None

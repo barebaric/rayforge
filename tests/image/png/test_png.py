@@ -7,9 +7,9 @@ from rayforge.core.vectorization_config import TraceConfig
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.import_source import ImportSource
 from rayforge.core.matrix import Matrix
-from rayforge.importer.png.importer import PngImporter
-from rayforge.importer.png.renderer import PNG_RENDERER
-from rayforge.importer import renderer_by_name
+from rayforge.image.png.importer import PngImporter
+from rayforge.image.png.renderer import PNG_RENDERER
+from rayforge.image import renderer_by_name
 
 # Assume the test PNGs are in the same directory as this test file
 TEST_DATA_DIR = Path(__file__).parent

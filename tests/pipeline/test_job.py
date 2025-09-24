@@ -11,7 +11,7 @@ from rayforge.shared.tasker.manager import CancelledError
 from rayforge.pipeline.job import generate_job_ops
 from rayforge.pipeline.steps import create_outline_step
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
-from rayforge.importer import SVG_RENDERER
+from rayforge.image import SVG_RENDERER
 
 
 @pytest.fixture

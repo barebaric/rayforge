@@ -9,7 +9,7 @@ with warnings.catch_warnings():
     import pyvips
     from pyvips import GValue
 
-from rayforge.importer import image_util as util
+from rayforge.image import image_util as util
 
 # Assume the test PNGs are in the same directory as this test file
 TEST_DATA_DIR = Path(__file__).parent / "png"

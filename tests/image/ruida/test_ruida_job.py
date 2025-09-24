@@ -1,5 +1,5 @@
 import pytest
-from rayforge.importer.ruida.job import RuidaJob, RuidaLayer, RuidaCommand
+from rayforge.image.ruida.job import RuidaJob, RuidaLayer, RuidaCommand
 
 
 def test_ruidajob_creation():

@@ -3,7 +3,7 @@ import struct
 from pathlib import Path
 from pytest_mock import MockerFixture  # Import the mocker fixture type
 
-from rayforge.importer.ruida.parser import RuidaParser, _unscramble
+from rayforge.image.ruida.parser import RuidaParser, _unscramble
 
 
 def _scramble(byte_val: int) -> int:
@@ -84,7 +84,7 @@ def test_parser_on_simple_square(
     This test is now independent of the RuidaCommand class implementation.
     """
     # Mock the RuidaCommand class within the parser's namespace
-    mock_cmd_cls = mocker.patch("rayforge.importer.ruida.parser.RuidaCommand")
+    mock_cmd_cls = mocker.patch("rayforge.image.ruida.parser.RuidaCommand")
 
     data = simple_square_rd_file.read_bytes()
     parser = RuidaParser(data)

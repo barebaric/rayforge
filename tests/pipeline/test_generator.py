@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
-from rayforge.importer import SVG_RENDERER
+from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.workpiece import WorkPiece
