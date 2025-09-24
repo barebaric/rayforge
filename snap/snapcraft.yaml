@@ -41,7 +41,7 @@ parts:
       mkdir -p ../install/bin
       gcc -g -O0 -Wall -Wstrict-prototypes -fPIC -shared semwraplib.c -o ../install/bin/semwraplib.so -ldl
     build-packages:
-    - build-essential
+      - build-essential
 
   rayforge:
     plugin: python
@@ -52,13 +52,9 @@ parts:
       - python3-pip
       - python3-setuptools
       - libvips-dev
-      - libagg-dev
-      - libpotrace-dev
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
-      - libagg2t64
-      - libpotrace0
     parse-info: [share/metainfo/com.barebaric.rayforge.metainfo.xml]
     override-pull: |
       craftctl default
@@ -68,8 +64,6 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs
 
       # Symlink ALL required libraries into our new generic directory
-      ln -s ../x86_64-linux-gnu/libpotrace.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libpotrace.so.0
-      ln -s ../x86_64-linux-gnu/libagg.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libagg.so.2
       ln -s ../x86_64-linux-gnu/libvips.so.42 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libvips.so.42
       ln -s ../x86_64-linux-gnu/libfftw3.so.3 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libfftw3.so.3
       ln -s ../x86_64-linux-gnu/libcfitsio.so.10 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libcfitsio.so.10
@@ -86,5 +80,5 @@ parts:
       ln -s ../x86_64-linux-gnu/libIex-3_1.so.30 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libIex-3_1.so.30
       ln -s ../x86_64-linux-gnu/libsz.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libsz.so.2
       ln -s ../x86_64-linux-gnu/libaec.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libaec.so.0
-      
+
       snapcraftctl build

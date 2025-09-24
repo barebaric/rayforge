@@ -96,7 +96,7 @@ def get_dependency_info() -> dict:
         ("opencv-python", "OpenCV"),
         ("numpy", "NumPy"),
         ("scipy", "SciPy"),
-        ("pypotrace", "pypotrace"),
+        ("vtracer", "vtracer"),
     ]:
         ver = _get_version(pkg_name)
         graphics_deps.append((display_name, ver))
@@ -154,9 +154,7 @@ class AboutDialog(Adw.Window):
         )
         # Also give feedback on the headerbar copy button if it exists
         if hasattr(self, "header_copy_button"):
-            self.header_copy_button.set_child(
-                get_icon("check-symbolic")
-            )
+            self.header_copy_button.set_child(get_icon("check-symbolic"))
             GLib.timeout_add(
                 2000,
                 lambda: self.header_copy_button.set_child(
@@ -240,7 +238,7 @@ class AboutDialog(Adw.Window):
         sys_info_row.set_activatable(True)
 
         self.inline_copy_button = Gtk.Button(
-            child=get_icon("copy-symbolic")
+            child=get_icon("edit-copy-symbolic")
         )
         self.inline_copy_button.set_valign(Gtk.Align.CENTER)
         self.inline_copy_button.add_css_class("flat")
@@ -248,7 +246,7 @@ class AboutDialog(Adw.Window):
         self.inline_copy_button.connect("clicked", self._on_copy_info_clicked)
         sys_info_row.add_suffix(self.inline_copy_button)
 
-        sys_info_row.add_suffix(get_icon("next-symbolic"))
+        sys_info_row.add_suffix(get_icon("go-next-symbolic"))
         sys_info_row.connect(
             "activated",
             lambda w: self.view_stack.set_visible_child_name("sysinfo"),
@@ -298,14 +296,14 @@ class AboutDialog(Adw.Window):
         self.main_title = Adw.WindowTitle(title=_("About Rayforge"))
         self.sysinfo_title = Adw.WindowTitle(title=_("System Information"))
 
-        self.back_button = Gtk.Button(child=get_icon("previous-symbolic"))
+        self.back_button = Gtk.Button(child=get_icon("go-previous-symbolic"))
         self.back_button.connect(
             "clicked", lambda w: self.view_stack.set_visible_child_name("main")
         )
         self.header_bar.pack_start(self.back_button)
 
         self.header_copy_button = Gtk.Button(
-            child=get_icon("copy-symbolic")
+            child=get_icon("edit-copy-symbolic")
         )
         self.header_copy_button.set_tooltip_text(_("Copy System Information"))
         self.header_copy_button.connect("clicked", self._on_copy_info_clicked)
