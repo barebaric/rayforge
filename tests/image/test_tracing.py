@@ -1,6 +1,6 @@
 import numpy as np
 import cairo
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 from rayforge.image.tracing import (
     _get_component_areas,
     _find_adaptive_area_threshold,
@@ -225,36 +225,37 @@ def test_trace_surface_edge_touching_shape():
 
 def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
     """
-    Tests the fallback to a single convex hull if potrace fails on a
-    non-empty image.
+    Tests that the correct fallback function (get_enclosing_hull) is called
+    if potrace fails on a non-empty image.
     """
-    # Create a MagicMock for the potrace.Bitmap class itself.
-    # This mock class will be returned when potrace.Bitmap(...) is called.
+    # Mock potrace to simulate failure
     mock_bitmap_class = MagicMock()
-
-    # Configure the 'trace' method of the *instance* returned by
-    # mock_bitmap_class (i.e., mock_bitmap_class.return_value is the
-    # instance, its .trace method should return None).
     mock_bitmap_class.return_value.trace.return_value = None
-
-    # Patch potrace.Bitmap to be our mock class.
     monkeypatch.setattr("potrace.Bitmap", mock_bitmap_class)
 
-    # Create an image with two distinct, non-touching squares
+    # Mock the hull function to verify it gets called
+    mock_get_hull = MagicMock(return_value=["mocked_geometry"])
+    monkeypatch.setattr(
+        "rayforge.image.tracing.get_enclosing_hull", mock_get_hull
+    )
+
+    # Create a simple image that would normally trace fine
     img = np.full((100, 100), 255, dtype=np.uint8)
     img[10:30, 10:30] = 0
-    img[70:90, 70:90] = 0
-
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
 
-    # We should get exactly ONE geometry object back
-    assert len(geometries) == 1
-    geo = geometries[0]
-    assert isinstance(geo, Geometry)
+    # Call the main function
+    result = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
 
-    # The convex hull of two diagonally offset squares is a hexagon
-    # (6 vertices).
-    # A 6-vertex shape results in 7 commands:
-    # 1 MoveTo, 5 LineTo's, and 1 final LineTo from close_path().
-    assert len(geo.commands) == 7
+    # Assert that our mocked hull function was called and its result returned
+    mock_get_hull.assert_called_once()
+    # Check some of the arguments passed to the mock
+    # ANY is used for the numpy array as comparing them directly can be tricky
+    mock_get_hull.assert_called_with(
+        ANY,
+        10.0,
+        10.0,
+        100,
+        2,  # scale_x, scale_y, height, border_size
+    )
+    assert result == ["mocked_geometry"]

@@ -5,6 +5,7 @@ import potrace
 from typing import Tuple, List
 import logging
 from ..core.geo import Geometry
+from .hull import get_enclosing_hull
 
 logger = logging.getLogger(__name__)
 
@@ -177,59 +178,6 @@ def _get_hulls_from_image(
     return geometries
 
 
-def _get_single_hull_from_image(
-    boolean_image: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> List[Geometry]:
-    """
-    Fallback for when Potrace fails. Calculates a single convex hull that
-    encompasses all content in the image.
-
-    Args:
-        boolean_image: The boolean image containing all shapes.
-        scale_x: Pixels per millimeter (X).
-        scale_y: Pixels per millimeter (Y).
-        height_px: Original height of the source surface in pixels.
-
-    Returns:
-        A list containing a single Geometry object for the enclosing hull,
-        or an empty list if no content was found.
-    """
-    img_uint8 = boolean_image.astype(np.uint8) * 255
-    contours, _ = cv2.findContours(
-        img_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    if not contours:
-        return []
-
-    # Combine all points from all contours into a single array
-    all_points = np.vstack(contours)
-    if len(all_points) < 3:
-        return []
-
-    hull_points = cv2.convexHull(all_points).squeeze(axis=1)
-
-    def _transform_point(p: Tuple[float, float]) -> Tuple[float, float]:
-        px, py = p
-        ops_px = px - BORDER_SIZE
-        ops_py = height_px - (py - BORDER_SIZE)
-        return ops_px / scale_x, ops_py / scale_y
-
-    geo = Geometry()
-    start_pt = _transform_point(tuple(hull_points[0]))
-    geo.move_to(start_pt[0], start_pt[1])
-
-    for point in hull_points[1:]:
-        pt = _transform_point(tuple(point))
-        geo.line_to(pt[0], pt[1])
-
-    geo.close_path()
-    return [geo]
-
-
 def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     """
     Prepares a Cairo surface for Potrace, including an adaptive denoising
@@ -397,11 +345,12 @@ def trace_surface(
     if not potrace_result:
         # If Potrace fails or produces no path for a non-empty image,
         # fall back to returning a single convex hull of the entire shape.
-        return _get_single_hull_from_image(
+        return get_enclosing_hull(
             cleaned_boolean_image,
             pixels_per_mm[0],
             pixels_per_mm[1],
             surface.get_height(),
+            BORDER_SIZE,
         )
 
     # Convert iterable Path to a list to get its length.
