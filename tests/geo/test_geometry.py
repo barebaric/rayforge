@@ -313,3 +313,61 @@ def test_split_into_components_containment_letter_o():
     components = geo.split_into_components()
     assert len(components) == 1
     assert len(components[0].commands) == 6  # 2 moves, 4 arcs
+
+
+def test_from_points():
+    """Tests the Geometry.from_points classmethod."""
+    # Test case 1: Empty list
+    geo_empty = Geometry.from_points([])
+    assert geo_empty.is_empty()
+
+    # Test case 2: Single point
+    geo_single = Geometry.from_points([(10, 20)])
+    assert len(geo_single.commands) == 1
+    assert isinstance(geo_single.commands[0], MoveToCommand)
+    assert geo_single.commands[0].end == (10, 20, 0)
+    assert geo_single.last_move_to == (10, 20, 0)
+    # A single point doesn't get closed
+    assert not any(
+        isinstance(cmd, LineToCommand) for cmd in geo_single.commands
+    )
+
+    # Test case 3: Triangle (closed by default)
+    points = [(0, 0), (10, 0), (5, 10)]
+    geo_triangle = Geometry.from_points(points)
+    assert len(geo_triangle.commands) == 4
+    assert isinstance(geo_triangle.commands[0], MoveToCommand)
+    assert geo_triangle.commands[0].end == (0, 0, 0)
+    assert isinstance(geo_triangle.commands[3], LineToCommand)
+    assert geo_triangle.commands[3].end == (0, 0, 0)  # from close_path
+
+    # Test case 4: Triangle (open)
+    geo_triangle_open = Geometry.from_points(points, close=False)
+    assert len(geo_triangle_open.commands) == 3
+    assert isinstance(geo_triangle_open.commands[0], MoveToCommand)
+    assert geo_triangle_open.commands[0].end == (0, 0, 0)
+    assert isinstance(geo_triangle_open.commands[2], LineToCommand)
+    assert geo_triangle_open.commands[2].end == (5, 10, 0)  # last point
+    # Final check: end point is not the start point
+    assert (
+        geo_triangle_open.commands[-1].end
+        != geo_triangle_open.commands[0].end
+    )
+
+    # Test case 5: Points with Z coordinates (closed)
+    points_3d = [(0, 0, 1), (10, 0, 2), (5, 10, 3)]
+    geo_3d = Geometry.from_points(points_3d)
+    assert len(geo_3d.commands) == 4
+    assert geo_3d.commands[0].end == (0, 0, 1)
+    assert geo_3d.commands[1].end == (10, 0, 2)
+    assert geo_3d.commands[2].end == (5, 10, 3)
+    assert geo_3d.commands[3].end == (0, 0, 1)  # from close_path
+    assert geo_3d.last_move_to == (0, 0, 1)
+
+    # Test case 6: Points with Z coordinates (open)
+    geo_3d_open = Geometry.from_points(points_3d, close=False)
+    assert len(geo_3d_open.commands) == 3
+    assert geo_3d_open.commands[0].end == (0, 0, 1)
+    assert geo_3d_open.commands[1].end == (10, 0, 2)
+    assert geo_3d_open.commands[2].end == (5, 10, 3)
+    assert geo_3d_open.last_move_to == (0, 0, 1)

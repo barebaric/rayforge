@@ -10,6 +10,8 @@ from typing import (
     Dict,
     Any,
     Set,
+    Iterable,
+    Type,
 )
 from copy import deepcopy
 import numpy as np
@@ -488,6 +490,46 @@ class Geometry:
             final_geometries.append(stray_open_geo)
 
         return final_geometries
+
+    @classmethod
+    def from_points(
+        cls: Type[T_Geometry],
+        points: Iterable[Tuple[float, ...]],
+        close: bool = True,
+    ) -> T_Geometry:
+        """
+        Creates a Geometry path from a list of points.
+
+        Args:
+            points: An iterable of points, where each point is a tuple of
+                    (x, y) or (x, y, z).
+            close: If True (default), a final segment will be added to close
+                   the path, forming a polygon. If False, an open polyline
+                   is created.
+
+        Returns:
+            A new Geometry instance representing the polygon or polyline.
+        """
+        new_geo = cls()
+        point_iterator = iter(points)
+
+        try:
+            first_point = next(point_iterator)
+        except StopIteration:
+            return new_geo  # Return empty geometry for empty list
+
+        new_geo.move_to(*first_point)
+
+        has_segments = False
+        for point in point_iterator:
+            new_geo.line_to(*point)
+            has_segments = True
+
+        # Only close the path if requested and it's a valid path
+        if close and has_segments:
+            new_geo.close_path()
+
+        return new_geo
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Geometry object to a dictionary."""
