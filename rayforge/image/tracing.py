@@ -5,7 +5,7 @@ import potrace
 from typing import Tuple, List
 import logging
 from ..core.geo import Geometry
-from .hull import get_enclosing_hull, polygon_to_geometry
+from .hull import get_enclosing_hull, get_hulls_from_image
 from .denoise import denoise_boolean_image
 
 logger = logging.getLogger(__name__)
@@ -14,44 +14,6 @@ BORDER_SIZE = 2
 # A safety limit to prevent processing pathologically complex images.
 # If potrace generates more paths than this, we fall back to convex hulls.
 MAX_VECTORS_LIMIT = 25000
-
-
-def _get_hulls_from_image(
-    boolean_image: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> List[Geometry]:
-    """
-    Fallback function: Finds contours in the image, calculates the convex hull
-    for each, and returns them as a list of Geometry objects.
-
-    Args:
-        boolean_image: The clean boolean image containing only major shapes.
-        scale_x: Pixels per millimeter (X).
-        scale_y: Pixels per millimeter (Y).
-        height_px: Original height of the source surface in pixels.
-
-    Returns:
-        A list of Geometry objects, each representing a convex hull.
-    """
-    geometries = []
-    img_uint8 = boolean_image.astype(np.uint8) * 255
-    contours, _ = cv2.findContours(
-        img_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    for contour in contours:
-        # A hull requires at least 3 points, which is checked inside
-        # polygon_to_geometry.
-        hull_points = cv2.convexHull(contour)
-        geo = polygon_to_geometry(
-            hull_points, scale_x, scale_y, height_px, BORDER_SIZE
-        )
-        if geo:
-            geometries.append(geo)
-
-    return geometries
 
 
 def prepare_surface(surface: cairo.ImageSurface) -> np.ndarray:
@@ -227,11 +189,12 @@ def trace_surface(
     # Fallback Mechanism for excessive complexity
     if len(potrace_path_list) >= MAX_VECTORS_LIMIT:
         # Image is too complex, fall back to convex hulls of major components
-        return _get_hulls_from_image(
+        return get_hulls_from_image(
             cleaned_boolean_image,
             pixels_per_mm[0],
             pixels_per_mm[1],
             surface.get_height(),
+            BORDER_SIZE
         )
 
     # Normal High-Fidelity Path

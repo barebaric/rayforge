@@ -111,6 +111,46 @@ def get_enclosing_hull(
     )
 
 
+def get_hulls_from_image(
+    boolean_image: np.ndarray,
+    scale_x: float,
+    scale_y: float,
+    height_px: int,
+    border_size: int,
+) -> List[Geometry]:
+    """
+    Finds all distinct contours in a boolean image, calculates the convex
+    hull for each, and returns them as a list of Geometry objects.
+
+    Args:
+        boolean_image: The clean boolean image containing only major shapes.
+        scale_x: Pixels per millimeter (X).
+        scale_y: Pixels per millimeter (Y).
+        height_px: Original height of the source surface in pixels.
+        border_size: The pixel border size added during pre-processing.
+
+    Returns:
+        A list of Geometry objects, each representing a convex hull.
+    """
+    geometries = []
+    img_uint8 = boolean_image.astype(np.uint8) * 255
+    contours, _ = cv2.findContours(
+        img_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    for contour in contours:
+        # A hull requires at least 3 points, which is checked inside
+        # polygon_to_geometry.
+        hull_points = cv2.convexHull(contour)
+        geo = polygon_to_geometry(
+            hull_points, scale_x, scale_y, height_px, border_size
+        )
+        if geo:
+            geometries.append(geo)
+
+    return geometries
+
+
 def get_concave_hull(
     boolean_image: np.ndarray,
     scale_x: float,
