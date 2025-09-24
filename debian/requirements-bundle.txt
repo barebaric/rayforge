@@ -1,2 +1,2 @@
-pypotrace==0.3
 pyvips==3.0.0
+vtracer==0.6.11

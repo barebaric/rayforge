@@ -15,3 +15,4 @@ PyYAML==6.0.2
 scipy==1.15.2
 svgelements==1.9.6
 websockets==14.2
+vtracer==0.6.11
