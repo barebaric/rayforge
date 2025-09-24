@@ -48,8 +48,8 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         the offset shape(s).
     """
     new_geo = type(geometry)()
-    contours = geometry._get_contours()
-    contour_data = geometry._get_valid_contours_data(contours)
+    contour_geometries = geometry.split_into_contours()
+    contour_data = geometry._get_valid_contours_data(contour_geometries)
 
     logger.debug(f"Running grow_geometry with offset: {offset}")
 
@@ -59,7 +59,7 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
             logger.debug("Contour is not closed, skipping.")
             continue
 
-        vertices = [v[:2] for v in data["vertices"]]
+        vertices = data["vertices"]
 
         # If the last vertex is a duplicate of the first for closed paths,
         # remove it.
@@ -74,13 +74,9 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
             logger.debug("Contour has < 3 vertices, skipping.")
             continue
 
-        try:
-            original_signed_area = get_subpath_area(
-                geometry.commands, geometry.commands.index(data["cmds"][0])
-            )
-            logger.debug(f"Original signed area: {original_signed_area}")
-        except (ValueError, IndexError):
-            continue
+        contour_geo = data["geo"]
+        original_signed_area = get_subpath_area(contour_geo.commands, 0)
+        logger.debug(f"Original signed area: {original_signed_area}")
 
         new_vertices: List[Tuple[float, float]] = []
         for j in range(len(vertices)):
@@ -153,15 +149,15 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
             # Not enough new vertices to form a polygon, skipping.
             continue
 
-        contour_geo = type(geometry).from_points(
+        new_contour_geo = type(geometry).from_points(
             [(v[0], v[1], 0.0) for v in new_vertices], close=True
         )
 
-        if contour_geo.is_empty():
+        if new_contour_geo.is_empty():
             # Generated contour geometry is empty, skipping.
             continue
 
-        new_signed_area = get_subpath_area(contour_geo.commands, 0)
+        new_signed_area = get_subpath_area(new_contour_geo.commands, 0)
 
         if abs(new_signed_area) < 1e-9:
             # New area is degenerate, discarding.
@@ -174,7 +170,7 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
             # Winding order flipped. Discarding contour.
             continue
 
-        new_geo.commands.extend(contour_geo.commands)
+        new_geo.commands.extend(new_contour_geo.commands)
 
     logger.debug("Grow_geometry finished")
     return new_geo

@@ -50,20 +50,16 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
         return False  # Other geometry is degenerate
     test_point = other_segments[0][0][:2]
 
-    self_contours = container._get_contours()
-    self_contour_data = container._get_valid_contours_data(self_contours)
+    self_contours_geo = container.split_into_contours()
+    self_contour_data = container._get_valid_contours_data(self_contours_geo)
     closed_contours = [c for c in self_contour_data if c["is_closed"]]
     if not closed_contours:
         return False  # Self has no closed contours to contain anything
 
     winding_number = 0
     for contour in closed_contours:
-        try:
-            start_cmd = contour["cmds"][0]
-            start_idx = container.commands.index(start_cmd)
-            area = get_subpath_area(container.commands, start_idx)
-        except (ValueError, IndexError):
-            continue
+        # A single contour geometry always starts at command index 0
+        area = get_subpath_area(contour["geo"].commands, 0)
 
         if is_point_in_polygon(test_point, contour["vertices"]):
             if area > 1e-9:  # CCW (outer boundary)

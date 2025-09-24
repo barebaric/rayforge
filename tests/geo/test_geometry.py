@@ -347,6 +347,29 @@ def test_split_into_components_containment_letter_o():
     assert len(components[0].commands) == 6  # 2 moves, 4 arcs
 
 
+def test_split_into_contours_method(sample_geometry):
+    """Tests the split_into_contours method on the Geometry class."""
+    # sample_geometry has one MoveTo, so it's one contour.
+    contours = sample_geometry.split_into_contours()
+    assert len(contours) == 1
+    assert len(contours[0].commands) == len(sample_geometry.commands)
+
+    # Add another contour
+    sample_geometry.move_to(100, 100)
+    sample_geometry.line_to(110, 110)
+
+    contours = sample_geometry.split_into_contours()
+    assert len(contours) == 2
+    assert len(contours[0].commands) == 3  # original M, L, A
+    assert len(contours[1].commands) == 2  # new M, L
+
+    # Check content of the split contours
+    assert isinstance(contours[0].commands[0], MoveToCommand)
+    assert contours[0].commands[0].end == (0, 0, 0)
+    assert isinstance(contours[1].commands[0], MoveToCommand)
+    assert contours[1].commands[0].end == (100, 100, 0)
+
+
 def test_segments():
     """Tests the segments() method for extracting point lists."""
     # Test case 1: Empty geometry

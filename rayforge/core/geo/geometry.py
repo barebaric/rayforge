@@ -20,7 +20,6 @@ from .analysis import (
     get_path_winding_order,
     get_point_and_tangent_at,
     get_outward_normal_at,
-    get_subpath_vertices,
     get_subpath_area,
 )
 from .query import (
@@ -395,43 +394,22 @@ class Geometry:
         """
         return get_outward_normal_at(self.commands, segment_index, t)
 
-    def _get_contours(self) -> List[List[Command]]:
-        """Splits the command list into a list of contours."""
-        if not self.commands:
-            return []
-        contours = []
-        current_contour: List[Command] = []
-        for cmd in self.commands:
-            if isinstance(cmd, MoveToCommand):
-                if current_contour:
-                    contours.append(current_contour)
-                current_contour = [cmd]
-            else:
-                if not current_contour:
-                    # Geometry starts with a drawing command, treat (0,0)
-                    # as start
-                    current_contour.append(MoveToCommand((0, 0, 0)))
-                current_contour.append(cmd)
-        if current_contour:
-            contours.append(current_contour)
-        return contours
-
     def _get_valid_contours_data(
-        self, contours: List[List[Command]]
+        self, contour_geometries: List["Geometry"]
     ) -> List[Dict]:
         """
         Filters degenerate contours and pre-calculates their data, including
         whether they are closed.
         """
         contour_data = []
-        for i, contour_cmds in enumerate(contours):
-            if len(contour_cmds) < 2 or not isinstance(
-                contour_cmds[0], MoveToCommand
+        for i, contour_geo in enumerate(contour_geometries):
+            if len(contour_geo.commands) < 2 or not isinstance(
+                contour_geo.commands[0], MoveToCommand
             ):
                 continue
 
-            start_cmd = contour_cmds[0]
-            end_cmd = contour_cmds[-1]
+            start_cmd = contour_geo.commands[0]
+            end_cmd = contour_geo.commands[-1]
             if not isinstance(start_cmd, MovingCommand) or not isinstance(
                 end_cmd, MovingCommand
             ):
@@ -442,7 +420,7 @@ class Geometry:
             if start_point is None or end_point is None:
                 continue
 
-            min_x, min_y, max_x, max_y = get_bounding_rect(contour_cmds)
+            min_x, min_y, max_x, max_y = contour_geo.rect()
             bbox_area = (max_x - min_x) * (max_y - min_y)
 
             is_closed = (
@@ -451,24 +429,17 @@ class Geometry:
                 and bbox_area > 1e-6
             )
 
-            # Find the index of the start command in the full command list to
-            # pass to get_subpath_vertices. This is inefficient but necessary
-            # until `split_into_components` is also refactored.
-            try:
-                start_idx_in_full_list = self.commands.index(start_cmd)
-                vertices = get_subpath_vertices(
-                    self.commands, start_idx_in_full_list
-                )
-            except ValueError:
-                vertices = []
-
-            if not vertices:
+            # A single-contour geometry by definition has only one segment list
+            segments = contour_geo.segments()
+            if not segments:
                 continue
+            vertices_3d = segments[0]
+            vertices_2d = [p[:2] for p in vertices_3d]
 
             contour_data.append(
                 {
-                    "cmds": contour_cmds,
-                    "vertices": vertices,
+                    "geo": contour_geo,
+                    "vertices": vertices_2d,
                     "is_closed": is_closed,
                     "original_index": i,
                 }
@@ -507,12 +478,12 @@ class Geometry:
             logger.debug("Geometry is empty, returning empty list.")
             return []
 
-        contours = self._get_contours()
-        if len(contours) <= 1:
+        contour_geometries = self.split_into_contours()
+        if len(contour_geometries) <= 1:
             logger.debug("<= 1 contour, returning a copy of the whole.")
             return [self.copy()]
 
-        all_contour_data = self._get_valid_contours_data(contours)
+        all_contour_data = self._get_valid_contours_data(contour_geometries)
         if not all_contour_data:
             logger.debug("No valid contours found after filtering.")
             return []
@@ -549,7 +520,7 @@ class Geometry:
             has_closed_path = False
             for idx in indices:
                 contour = all_contour_data[idx]
-                component_geo.commands.extend(contour["cmds"])
+                component_geo.commands.extend(contour["geo"].commands)
                 if contour["is_closed"]:
                     has_closed_path = True
 
@@ -565,6 +536,15 @@ class Geometry:
             final_geometries.append(stray_open_geo)
 
         return final_geometries
+
+    def split_into_contours(self) -> List["Geometry"]:
+        """
+        Splits the geometry into a list of separate, single-contour
+        Geometry objects.
+        """
+        from . import contours  # Local import to prevent circular dependency
+
+        return contours.split_into_contours(self)
 
     def has_self_intersections(self, fail_on_t_junction: bool = False) -> bool:
         """

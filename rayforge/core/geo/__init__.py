@@ -5,6 +5,7 @@ generic and have no knowledge of the high-level objects that use them.
 """
 
 from . import analysis
+from . import contours
 from . import fitting
 from . import intersect
 from . import linearize
@@ -22,6 +23,7 @@ from .geometry import (
 
 __all__ = [
     "analysis",
+    "contours",
     "fitting",
     "intersect",
     "linearize",
