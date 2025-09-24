@@ -4,7 +4,7 @@ from typing import Tuple, Optional, List
 from ..core.geo import Geometry
 
 
-def _polygon_to_geometry(
+def polygon_to_geometry(
     points: np.ndarray,
     scale_x: float,
     scale_y: float,
@@ -106,7 +106,7 @@ def get_enclosing_hull(
         return None
 
     hull_points = cv2.convexHull(all_points)
-    return _polygon_to_geometry(
+    return polygon_to_geometry(
         hull_points, scale_x, scale_y, height_px, border_size
     )
 

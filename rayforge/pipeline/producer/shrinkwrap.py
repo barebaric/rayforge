@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional, TYPE_CHECKING
 from .base import OpsProducer
 from ...image.hull import get_concave_hull
-from ...image.tracing import prepare_surface_for_potrace
+from ...image.tracing import prepare_surface
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -53,7 +53,7 @@ class HullProducer(OpsProducer):
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
 
-        boolean_image = prepare_surface_for_potrace(surface)
+        boolean_image = prepare_surface(surface)
 
         if np.any(boolean_image):
             if pixels_per_mm:

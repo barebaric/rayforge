@@ -1,13 +1,7 @@
 import numpy as np
 import cairo
 from unittest.mock import MagicMock, ANY
-from rayforge.image.tracing import (
-    _get_component_areas,
-    _find_adaptive_area_threshold,
-    _filter_image_by_component_area,
-    trace_surface,
-    Geometry,
-)
+from rayforge.image.tracing import trace_surface, Geometry
 
 
 def _create_test_surface(array: np.ndarray) -> cairo.ImageSurface:
@@ -37,77 +31,6 @@ def _create_test_surface_with_alpha(array: np.ndarray) -> cairo.ImageSurface:
     return cairo.ImageSurface.create_for_data(
         memoryview(contiguous_array), cairo.FORMAT_ARGB32, w, h
     )
-
-
-def test_get_component_areas():
-    """Tests if component areas are correctly identified."""
-    img = np.array(
-        [
-            [255, 255, 255, 255, 255, 255, 255],
-            [255, 0, 0, 255, 0, 255, 255],
-            [255, 0, 0, 255, 255, 255, 255],
-            [255, 255, 255, 255, 255, 255, 255],
-            [255, 255, 0, 0, 0, 255, 255],
-            [255, 255, 0, 0, 0, 255, 255],
-        ],
-        dtype=np.uint8,
-    )
-    boolean_image = img < 128
-    areas = _get_component_areas(boolean_image)
-    assert sorted(areas.tolist()) == [1, 4, 6]
-
-
-def test_get_component_areas_empty_image():
-    """Tests behavior with an image containing no components."""
-    img = np.full((10, 10), 255, dtype=np.uint8)
-    boolean_image = img < 128
-    areas = _get_component_areas(boolean_image)
-    assert areas.size == 0
-
-
-def test_find_adaptive_area_threshold_noisy_image():
-    """Tests threshold finding for a typically noisy image histogram."""
-    areas = np.concatenate(
-        [
-            np.ones(1000, dtype=int),
-            np.full(500, 2, dtype=int),
-            np.full(5, 10, dtype=int),
-            np.full(2, 100, dtype=int),
-        ]
-    )
-    # The robust heuristic finds the last significant noise area is 2.
-    # Therefore, the threshold to keep components should be 3.
-    assert _find_adaptive_area_threshold(areas) == 3
-
-
-def test_find_adaptive_area_threshold_clean_image():
-    """Tests threshold finding for a clean image with only large components."""
-    areas = np.array([100, 150, 200, 500])
-    # The code now detects this is a clean image (peak is at area > 10)
-    # and correctly returns the minimum default.
-    assert _find_adaptive_area_threshold(areas) == 2
-
-
-def test_find_adaptive_area_threshold_empty():
-    """Tests threshold finding with no areas."""
-    assert _find_adaptive_area_threshold(np.array([])) == 0
-
-
-def test_filter_image_by_component_area():
-    """Tests if small components are correctly removed from an image."""
-    img = np.array(
-        [
-            [255, 255, 255, 255, 255],
-            [255, 0, 255, 0, 0],
-            [255, 255, 255, 0, 0],
-            [255, 255, 255, 0, 0],
-        ],
-        dtype=np.uint8,
-    )
-    boolean_image = img < 128
-    filtered = _filter_image_by_component_area(boolean_image, min_area=5)
-    assert np.sum(filtered) == 6
-    assert np.sum(boolean_image) == 7
 
 
 def test_trace_surface_clean_path():
