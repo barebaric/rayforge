@@ -83,6 +83,7 @@ jobs:
             mingw-w64-x86_64-python-pytest-cov
             mingw-w64-x86_64-python-pytest-mock
             mingw-w64-x86_64-python-scipy
+            mingw-w64-x86_64-python-svgelements
             mingw-w64-x86_64-python-websockets
             mingw-w64-x86_64-python-yaml
             mingw-w64-x86_64-toolchain
