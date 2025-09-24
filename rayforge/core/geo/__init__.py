@@ -10,6 +10,7 @@ from . import intersect
 from . import linearize
 from . import primitives
 from . import query
+from . import transform
 from .geometry import (
     Geometry,
     Command,
@@ -26,6 +27,7 @@ __all__ = [
     "linearize",
     "primitives",
     "query",
+    "transform",
     "Geometry",
     "Command",
     "MovingCommand",

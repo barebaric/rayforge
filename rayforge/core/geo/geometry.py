@@ -288,6 +288,27 @@ class Geometry:
         self.last_move_to = tuple(transformed_last_move_vec[:3])
         return self
 
+    def grow(self: T_Geometry, amount: float) -> T_Geometry:
+        """
+        Offsets the contours of any closed shape in the geometry by a
+        given amount.
+
+        This method grows (positive offset) or shrinks (negative offset) the
+        area enclosed by closed paths. Arcs are linearized into polylines for
+        the offsetting process. Open paths are ignored and not included in
+        the returned geometry.
+
+        Args:
+            amount: The distance to offset the geometry. Positive values
+                    expand the shape, negative values contract it.
+
+        Returns:
+            A new Geometry object containing the offset shape(s).
+        """
+        from . import transform  # Local import to prevent circular dependency
+
+        return transform.grow_geometry(self, amount)
+
     def find_closest_point(
         self, x: float, y: float
     ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
