@@ -1,7 +1,7 @@
 import logging
 import math
 from pathlib import Path
-from typing import List, Optional, Callable, cast
+from typing import List, Optional, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
@@ -17,12 +17,7 @@ from .core.matrix import Matrix
 from .core.ops import Ops
 from .core.stock import StockItem
 from .core.stocklayer import StockLayer
-from .pipeline.steps import (
-    create_contour_step,
-    create_outline_step,
-    create_raster_step,
-    create_depth_engrave_step,
-)
+from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
@@ -297,14 +292,8 @@ class MainWindow(Adw.ApplicationWindow):
         # The WorkflowView will be updated when a layer is activated.
         initial_workflow = self.doc_editor.doc.active_layer.workflow
         assert initial_workflow, "Initial active layer must have a workflow"
-        step_factories: List[Callable] = [
-            create_contour_step,
-            create_outline_step,
-            create_raster_step,
-            create_depth_engrave_step,
-        ]
         self.workflowview = WorkflowView(
-            initial_workflow, step_factories=step_factories
+            initial_workflow, step_factories=STEP_FACTORIES
         )
         self.workflowview.set_margin_top(20)
         self.workflowview.set_margin_end(12)
@@ -425,9 +414,13 @@ class MainWindow(Adw.ApplicationWindow):
             and not first_workpiece_layer.workflow.has_steps()
         ):
             workflow = first_workpiece_layer.workflow
+            # The first factory in the list is the default step type
             default_step = create_contour_step()
             workflow.add_step(default_step)
-            logger.info("Added default Contour step to initial document.")
+            logger.info(
+                f"Added default '{default_step.typelabel}' step to "
+                "initial document."
+            )
 
     def _connect_toolbar_signals(self):
         """Connects signals from the MainToolbar to their handlers.

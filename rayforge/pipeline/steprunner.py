@@ -105,10 +105,9 @@ def run_step_in_subprocess(
         1. True Vector: If the workpiece's importer provides vector data
            directly (e.g., from an SVG), it is processed without rasterization.
            The resulting Ops are in the vector's "natural" coordinate system.
-        2. Render-and-Trace: If no direct vector data is available, the
-           workpiece is rendered to a high-resolution bitmap, which is then
-           traced by a producer like Potrace. The resulting Ops are in pixel
-           coordinates.
+        2. Render-and-Trace: If no direct vector data is available, or if the
+           producer requires it, the workpiece is rendered to a bitmap, which
+           is then traced. The resulting Ops are in pixel coordinates.
 
         In both cases, this function yields the unscaled Ops and the dimensions
         of their coordinate system, allowing for efficient caching and scaling
@@ -129,9 +128,10 @@ def run_step_in_subprocess(
             return
 
         # Path 1: True vector source (e.g., SVG).
-        if workpiece.vectors:
+        if workpiece.vectors and not opsproducer.requires_full_render:
             logger.debug(
-                "Workpiece has vectors. Using direct vector processing."
+                "Workpiece has vectors and producer does not require a full "
+                "render. Using direct vector processing."
             )
             geometry_ops = _trace_and_modify_surface(surface=None, scaler=None)
 
@@ -149,8 +149,15 @@ def run_step_in_subprocess(
             yield geometry_ops, (w_mm, h_mm), 1.0
             return
 
-        # Path 2: Vector source that needs to be rendered and traced.
-        logger.debug("No direct vector ops. Falling back to render-and-trace.")
+        # Path 2: Render-and-trace.
+        if opsproducer.requires_full_render:
+            logger.debug(
+                "Producer requires a full render. Forcing render-and-trace."
+            )
+        else:
+            logger.debug(
+                "No direct vector ops. Falling back to render-and-trace."
+            )
         px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
         target_width = int(size_mm[0] * px_per_mm_x)
         target_height = int(size_mm[1] * px_per_mm_y)
@@ -198,10 +205,27 @@ def run_step_in_subprocess(
             )
             return
 
-        total_height_px = size[1] * settings["pixels_per_mm"][1]
         px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
 
-        # render_chunk is an iterator that yields surfaces for processing.
+        # Special case for scalable producers that need a full render.
+        if opsproducer.requires_full_render:
+            logger.debug("Producer requires full render, bypassing chunking.")
+            target_width = int(size[0] * px_per_mm_x)
+            target_height = int(size[1] * px_per_mm_y)
+            surface = workpiece.render_to_pixels(target_width, target_height)
+            if not surface:
+                return
+
+            full_ops = _trace_and_modify_surface(
+                surface, (px_per_mm_x, px_per_mm_y)
+            )
+            yield full_ops, None, 1.0
+            surface.flush()
+            return
+
+        # --- Default chunking behavior ---
+        total_height_px = size[1] * px_per_mm_y
+
         chunk_iter = workpiece.render_chunk(
             px_per_mm_x,
             px_per_mm_y,

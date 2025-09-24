@@ -1,9 +1,15 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List, Callable
 from .. import config
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
-from .producer import OutlineTracer, EdgeTracer, Rasterizer, DepthEngraver
+from .producer import (
+    OutlineTracer,
+    EdgeTracer,
+    Rasterizer,
+    DepthEngraver,
+    HullProducer,
+)
 from .transformer import (
     Optimize,
     Smooth,
@@ -108,3 +114,39 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
+
+
+def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
+    """Factory to create and configure a Shrinkwrap (concave hull) step."""
+    assert config.config.machine
+    step = Step(
+        typelabel=_("Shrink Wrap"),
+        name=name,
+    )
+    # Use the HullProducer with a default gravity to create the effect
+    step.opsproducer_dict = HullProducer(gravity=0.15).to_dict()
+    step.modifiers_dicts = [
+        MakeTransparent().to_dict(),
+        ToGrayscale().to_dict(),
+    ]
+    step.opstransformers_dicts = [
+        Smooth(enabled=False, amount=20).to_dict(),
+        TabOpsTransformer().to_dict(),
+        Optimize(enabled=True).to_dict(),
+    ]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+    ]
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
+    return step
+
+
+STEP_FACTORIES: List[Callable[[Optional[str]], Step]] = [
+    create_contour_step,
+    create_outline_step,
+    create_raster_step,
+    create_depth_engrave_step,
+    create_shrinkwrap_step,
+]

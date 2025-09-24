@@ -4,9 +4,9 @@ from ...core.doc import Doc
 from ...core.step import Step
 from ...icons import get_icon
 from ...undo.models.property_cmd import ChangePropertyCommand
-from .step_settings_dialog import StepSettingsDialog
 from ...shared.ui.formatter import format_value
 from ...config import config
+from .step_settings_dialog import StepSettingsDialog
 
 
 class StepBox(Adw.ActionRow):

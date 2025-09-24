@@ -178,7 +178,7 @@ def _get_hulls_from_image(
     return geometries
 
 
-def _prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
+def prepare_surface_for_potrace(surface: cairo.ImageSurface) -> np.ndarray:
     """
     Prepares a Cairo surface for Potrace, including an adaptive denoising
     pipeline to remove small, irrelevant features before tracing.
@@ -329,7 +329,7 @@ def trace_surface(
     includes an adaptive pre-processing step to handle noisy images and a
     fallback mechanism for overly complex vector results.
     """
-    cleaned_boolean_image = _prepare_surface_for_potrace(surface)
+    cleaned_boolean_image = prepare_surface_for_potrace(surface)
 
     if not np.any(cleaned_boolean_image):
         return []
@@ -345,13 +345,14 @@ def trace_surface(
     if not potrace_result:
         # If Potrace fails or produces no path for a non-empty image,
         # fall back to returning a single convex hull of the entire shape.
-        return get_enclosing_hull(
+        geo = get_enclosing_hull(
             cleaned_boolean_image,
             pixels_per_mm[0],
             pixels_per_mm[1],
             surface.get_height(),
             BORDER_SIZE,
         )
+        return [geo] if geo else []
 
     # Convert iterable Path to a list to get its length.
     potrace_path_list = list(potrace_result)

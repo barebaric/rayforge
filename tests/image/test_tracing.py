@@ -234,7 +234,7 @@ def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
     monkeypatch.setattr("potrace.Bitmap", mock_bitmap_class)
 
     # Mock the hull function to verify it gets called
-    mock_get_hull = MagicMock(return_value=["mocked_geometry"])
+    mock_get_hull = MagicMock(return_value="mocked_geometry")
     monkeypatch.setattr(
         "rayforge.image.tracing.get_enclosing_hull", mock_get_hull
     )

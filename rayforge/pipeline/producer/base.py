@@ -35,6 +35,16 @@ class OpsProducer(ABC):
         """
         return True
 
+    @property
+    def requires_full_render(self) -> bool:
+        """
+        Returns True if a producer requires the entire workpiece to be
+        rendered into a single surface, even if its output is scalable.
+        This is essential for algorithms that need a global view of the image,
+        like hulling, and forces the pipeline to provide a raster input.
+        """
+        return False
+
     def to_dict(self) -> dict:
         """
         Serializes the producer configuration to a dictionary.
