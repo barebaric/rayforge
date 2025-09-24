@@ -69,7 +69,7 @@ def run_step_in_subprocess(
 
         This is a central part of the pipeline. It first runs all configured
         modifiers (e.g., ToGrayscale) on the input surface if it exists. Then,
-        it calls the main OpsProducer (e.g., Potrace, Rasterizer) to generate
+        it calls the main OpsProducer (e.g., Rasterizer) to generate
         the machine operations.
 
         Args:
@@ -174,7 +174,7 @@ def run_step_in_subprocess(
         if not surface:
             return
 
-        # The producer (e.g., PotraceProducer) will trace the bitmap.
+        # The producer will trace the bitmap.
         # By passing `scaler=None`, it is expected to return ops in PIXEL
         # coordinates with a Y-up convention.
         geometry_ops = _trace_and_modify_surface(surface, None)

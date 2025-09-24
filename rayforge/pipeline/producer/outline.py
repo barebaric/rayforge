@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class OutlineTracer(OpsProducer):
     """
-    Uses the Potrace engine and filters the results to trace only the
+    Uses a tracer and filters the results to keep only the
     outermost paths of a shape, ignoring any holes.
     """
 

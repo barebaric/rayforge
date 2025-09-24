@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class EdgeTracer(OpsProducer):
     """
-    Uses the Potrace engine to trace all paths in a shape, including
+    Uses the tracer to find all paths in a shape, including
     both external outlines and internal holes.
     """
 
