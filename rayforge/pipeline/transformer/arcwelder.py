@@ -10,11 +10,13 @@ from ...core.ops import (
 )
 from ...core.ops.group import group_by_command_type
 from ...core.geo.analysis import (
+    remove_duplicates,
+    arc_direction_is_clockwise,
+)
+from ...core.geo.fitting import (
     are_collinear,
     fit_circle_to_points,
     get_arc_to_polyline_deviation,
-    remove_duplicates,
-    arc_direction_is_clockwise,
 )
 from .base import OpsTransformer, ExecutionPhase
 

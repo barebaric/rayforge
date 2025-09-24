@@ -1,19 +1,16 @@
 import pytest
 import math
-import numpy as np
 from rayforge.core.geo import Geometry
 from rayforge.core.geo.analysis import (
     get_path_winding_order,
     get_point_and_tangent_at,
     get_outward_normal_at,
     get_angle_at_vertex,
-    are_collinear,
-    fit_circle_to_points,
-    get_arc_to_polyline_deviation,
     remove_duplicates,
     is_clockwise,
     arc_direction_is_clockwise,
     get_subpath_area,
+    encloses,
 )
 
 
@@ -169,156 +166,6 @@ def test_get_angle_at_vertex():
     assert get_angle_at_vertex(p0, p1, p2) == pytest.approx(math.pi)
 
 
-def test_are_collinear():
-    # Collinear points (horizontal)
-    points = [(0.0, 0.0, 0.0), (5.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
-    assert are_collinear(points) is True
-
-    # Collinear points (vertical)
-    points = [(0.0, 0.0, 0.0), (0.0, 5.0, 0.0), (0.0, 10.0, 0.0)]
-    assert are_collinear(points) is True
-
-    # Non-collinear points
-    points = [(0.0, 0.0, 0.0), (1.0, 1.0, 0.0), (2.0, 2.1, 0.0)]
-    assert are_collinear(points) is False
-
-
-def test_fit_circle_to_points_collinear_returns_none():
-    """Test collinear points return None."""
-    points = [(0.0, 0.0, 0.0), (2.0, 2.0, 0.0), (5.0, 5.0, 0.0)]
-    assert fit_circle_to_points(points) is None
-
-
-def test_fit_circle_to_points_perfect_circle():
-    """Test perfect circle fitting."""
-    center = (2.0, 3.0)
-    radius = 5.0
-    angles = np.linspace(0, 2 * np.pi, 20)
-    points = [
-        (
-            center[0] + radius * np.cos(theta),
-            center[1] + radius * np.sin(theta),
-            0.0,
-        )
-        for theta in angles
-    ]
-    result = fit_circle_to_points(points)
-    assert result is not None
-
-    (xc, yc), r, error = result
-    assert xc == pytest.approx(center[0], abs=1e-6)
-    assert yc == pytest.approx(center[1], abs=1e-6)
-    assert r == pytest.approx(radius, abs=1e-6)
-    assert error < 1e-6
-
-
-def test_fit_circle_to_points_noisy_circle():
-    """Test circle fitting with noisy points."""
-    center = (-1.0, 4.0)
-    radius = 3.0
-    np.random.seed(42)  # For reproducibility
-    angles = np.linspace(0, 2 * np.pi, 30)
-    noise = np.random.normal(scale=0.1, size=(len(angles), 2))
-
-    points = [
-        (
-            center[0] + radius * np.cos(theta) + dx,
-            center[1] + radius * np.sin(theta) + dy,
-            0.0,
-        )
-        for (theta, (dx, dy)) in zip(angles, noise)
-    ]
-    result = fit_circle_to_points(points)
-    assert result is not None
-
-    (xc, yc), r, error = result
-    assert xc == pytest.approx(center[0], abs=0.15)
-    assert yc == pytest.approx(center[1], abs=0.15)
-    assert r == pytest.approx(radius, abs=0.15)
-    assert error < 0.2
-
-
-def test_fit_circle_to_points_insufficient_points():
-    """Test 1-2 points or duplicates return None."""
-    assert fit_circle_to_points([(0.0, 0.0, 0.0)]) is None
-    assert fit_circle_to_points([(1.0, 2.0, 0.0), (3.0, 4.0, 0.0)]) is None
-    assert (
-        fit_circle_to_points(
-            [(5.0, 5.0, 0.0), (5.0, 5.0, 0.0), (5.0, 5.0, 0.0)]
-        )
-        is None
-    )
-
-
-def test_fit_circle_to_points_small_radius():
-    """Test small-radius circle fitting."""
-    center = (0.0, 0.0)
-    radius = 0.1
-    angles = np.linspace(0, 2 * np.pi, 10)
-    points = [
-        (
-            center[0] + radius * np.cos(theta),
-            center[1] + radius * np.sin(theta),
-            0.0,
-        )
-        for theta in angles
-    ]
-    result = fit_circle_to_points(points)
-    assert result is not None
-    (xc, yc), r, error = result
-    assert r == pytest.approx(radius, rel=0.01)
-
-
-def test_fit_circle_to_points_semicircle_accuracy():
-    """
-    Verify fit_circle() returns correct parameters for a perfect semicircle.
-    """
-    center = (5.0, 0.0)
-    radius = 10.0
-    angles = np.linspace(0, np.pi, 20)
-    points = [
-        (
-            center[0] + radius * np.cos(theta),
-            center[1] + radius * np.sin(theta),
-            0.0,
-        )
-        for theta in angles
-    ]
-    result = fit_circle_to_points(points)
-    assert result is not None
-    (xc, yc), r, error = result
-    assert np.isclose(xc, 5.0, atol=0.001)
-    assert np.isclose(yc, 0.0, atol=0.001)
-    assert np.isclose(r, 10.0, rtol=0.001)
-    assert error < 1e-6
-
-
-def test_get_arc_to_polyline_deviation_perfect_arc():
-    """Test deviation for a perfect 90-degree arc."""
-    center = (7.0, 3.0)
-    radius = 5.0
-    angles = np.linspace(np.pi / 2, np.pi, 10)
-    points = [
-        (center[0] + radius * np.cos(t), center[1] + radius * np.sin(t), 0.0)
-        for t in angles
-    ]
-    deviation = get_arc_to_polyline_deviation(points, center, radius)
-    assert deviation < 0.05, f"Deviation too large: {deviation}"
-
-
-def test_get_arc_to_polyline_deviation_too_large():
-    """Test deviation for a coarse 90-degree arc is correctly high."""
-    center = (7.0, 3.0)
-    radius = 5.0
-    angles = np.linspace(np.pi / 2, np.pi, 5)  # Coarse sampling
-    points = [
-        (center[0] + radius * np.cos(t), center[1] + radius * np.sin(t), 0.0)
-        for t in angles
-    ]
-    deviation = get_arc_to_polyline_deviation(points, center, radius)
-    assert deviation > 0.05, f"Expected larger deviation: {deviation}"
-
-
 def test_remove_duplicates():
     points = [(1.0, 1.0), (1.0, 1.0), (2.0, 2.0), (2.0, 2.0)]
     assert remove_duplicates(points) == [(1.0, 1.0), (2.0, 2.0)]
@@ -424,3 +271,78 @@ def test_arc_direction_is_small_radius_arc():
         (0.9, 1.0, 0.0),
     ]
     assert arc_direction_is_clockwise(points, center) is True
+
+
+def test_encloses_simple():
+    """Test a simple case of one square enclosing another."""
+    outer = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    inner = Geometry.from_points([(2, 2), (8, 2), (8, 8), (2, 8)])
+    assert outer.encloses(inner) is True
+    assert encloses(outer, inner) is True  # Also test direct function call
+    assert inner.encloses(outer) is False
+
+
+def test_encloses_separate():
+    """Test non-enclosing, separate shapes."""
+    geo1 = Geometry.from_points([(0, 0), (5, 0), (5, 5), (0, 5)])
+    geo2 = Geometry.from_points([(10, 10), (15, 10), (15, 15), (10, 15)])
+    assert geo1.encloses(geo2) is False
+    assert geo2.encloses(geo1) is False
+
+
+def test_encloses_intersecting():
+    """Test intersecting shapes do not enclose."""
+    geo1 = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    geo2 = Geometry.from_points([(5, 5), (15, 5), (15, 15), (5, 15)])
+    assert geo1.encloses(geo2) is False
+    assert geo2.encloses(geo1) is False
+
+
+def test_encloses_touching():
+    """Test touching shapes do not enclose."""
+    geo1 = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    geo2 = Geometry.from_points([(10, 0), (20, 0), (20, 10), (10, 10)])
+    assert geo1.encloses(geo2) is False
+    assert geo2.encloses(geo1) is False
+
+
+def test_encloses_with_hole():
+    """Test enclosure in a shape with a hole."""
+    # Outer CCW rect
+    outer = Geometry.from_points([(0, 0), (20, 0), (20, 20), (0, 20)])
+    # Inner CW rect (the hole)
+    hole = Geometry.from_points([(5, 5), (5, 15), (15, 15), (15, 5)])
+
+    donut = outer.copy()
+    donut.commands.extend(hole.commands)
+
+    # Shape fully inside the donut's material
+    content_inside = Geometry.from_points([(1, 1), (4, 1), (4, 4), (1, 4)])
+    assert donut.encloses(content_inside) is True
+
+    # Shape fully inside the donut's hole
+    content_in_hole = Geometry.from_points(
+        [(7, 7), (13, 7), (13, 13), (7, 13)]
+    )
+    assert donut.encloses(content_in_hole) is False
+
+
+def test_encloses_bbox_contained_but_path_outside():
+    """
+    Test a C-shape where the bbox contains the other shape, but path does not.
+    """
+    c_shape = Geometry.from_points(
+        [
+            (0, 0),
+            (10, 0),
+            (10, 1),
+            (1, 1),
+            (1, 9),
+            (10, 9),
+            (10, 10),
+            (0, 10),
+        ],
+        close=True,
+    )
+    other = Geometry.from_points([(2, 4), (5, 4), (5, 6), (2, 6)])
+    assert c_shape.encloses(other) is False

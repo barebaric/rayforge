@@ -143,7 +143,7 @@ def test_find_longest_valid_arc():
 
 def test_is_valid_arc():
     welder = ArcWeld(tolerance=0.1)
-    from rayforge.core.geo.analysis import fit_circle_to_points
+    from rayforge.core.geo.fitting import fit_circle_to_points
 
     # Test 1: Valid arc
     valid_arc = ((10.0, 10.0), 50.0, 0.05)
@@ -189,7 +189,7 @@ def test_is_valid_arc():
 
 def test_is_valid_arc_angular_continuity():
     welder = ArcWeld(tolerance=0.1)
-    from rayforge.core.geo.analysis import fit_circle_to_points
+    from rayforge.core.geo.fitting import fit_circle_to_points
 
     # Exact points on a circle (radius 5, center (0,0))
     angles = np.deg2rad([0, 30, 60, 90])

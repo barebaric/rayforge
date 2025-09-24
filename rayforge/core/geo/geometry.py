@@ -571,6 +571,25 @@ class Geometry:
         # intersections.
         return check_intersection(self.commands, other.commands)
 
+    def encloses(self, other: "Geometry") -> bool:
+        """
+        Checks if this geometry fully encloses another geometry.
+
+        This method performs a series of checks to determine containment.
+        The 'other' geometry must be fully inside this geometry's boundary,
+        not intersecting it, and not located within any of this geometry's
+        holes.
+
+        Args:
+            other: The Geometry object to check for containment.
+
+        Returns:
+            True if this geometry encloses the other, False otherwise.
+        """
+        from . import analysis  # Local import to prevent circular dependency
+
+        return analysis.encloses(self, other)
+
     @classmethod
     def from_points(
         cls: Type[T_Geometry],
