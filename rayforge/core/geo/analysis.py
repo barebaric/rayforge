@@ -41,6 +41,34 @@ def get_subpath_vertices(
     return vertices
 
 
+def get_subpath_area(commands: List[Any], start_cmd_index: int) -> float:
+    """
+    Calculates the signed area of a subpath using the shoelace formula.
+    Returns 0 for open or degenerate paths.
+    """
+    vertices = get_subpath_vertices(commands, start_cmd_index)
+    if len(vertices) < 3:
+        return 0.0
+
+    # A subpath is closed if its first and last vertices are the same.
+    p_start, p_end = vertices[0], vertices[-1]
+    if not (
+        math.isclose(p_start[0], p_end[0])
+        and math.isclose(p_start[1], p_end[1])
+    ):
+        return 0.0
+
+    # Shoelace formula to calculate signed area
+    area = 0.0
+    # The last point is a duplicate of the first, so we can ignore it.
+    for i in range(len(vertices) - 1):
+        p1 = vertices[i]
+        p2 = vertices[i + 1]
+        area += (p1[0] * p2[1]) - (p2[0] * p1[1])
+
+    return area / 2.0
+
+
 def get_path_winding_order(commands: List[Any], segment_index: int) -> str:
     """
     Determines winding order ('cw', 'ccw', 'unknown') for the subpath at a
@@ -57,16 +85,7 @@ def get_path_winding_order(commands: List[Any], segment_index: int) -> str:
     if subpath_start_index == -1:
         return "unknown"
 
-    vertices = get_subpath_vertices(commands, subpath_start_index)
-    if len(vertices) < 3:
-        return "unknown"  # Not a closed polygon
-
-    # Shoelace formula to calculate signed area
-    area = 0.0
-    for i in range(len(vertices)):
-        p1 = vertices[i]
-        p2 = vertices[(i + 1) % len(vertices)]
-        area += (p1[0] * p2[1]) - (p2[0] * p1[1])
+    area = get_subpath_area(commands, subpath_start_index)
 
     # Convention: positive area is CCW, negative is CW in a Y-up system
     if abs(area) < 1e-9:

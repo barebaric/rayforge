@@ -21,6 +21,7 @@ from .analysis import (
     get_point_and_tangent_at,
     get_outward_normal_at,
     get_subpath_vertices,
+    get_subpath_area,
 )
 from .query import (
     get_bounding_rect,
@@ -181,6 +182,22 @@ class Geometry:
     def distance(self) -> float:
         """Calculates the total 2D path length for all moving commands."""
         return get_total_distance(self.commands)
+
+    def area(self) -> float:
+        """
+        Calculates the total area of all closed subpaths in the geometry.
+
+        This method correctly handles complex shapes with holes by summing the
+        signed areas of each subpath (contour). An outer, counter-clockwise
+        path will have a positive area, while an inner, clockwise path (a hole)
+        will have a negative area. The absolute value of the final sum is
+        returned.
+        """
+        total_signed_area = 0.0
+        for i, cmd in enumerate(self.commands):
+            if isinstance(cmd, MoveToCommand):
+                total_signed_area += get_subpath_area(self.commands, i)
+        return abs(total_signed_area)
 
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
         v_x = matrix @ np.array([1, 0, 0, 0])
@@ -490,6 +507,23 @@ class Geometry:
             final_geometries.append(stray_open_geo)
 
         return final_geometries
+
+    def has_self_intersections(self) -> bool:
+        """
+        Checks if any subpath within the geometry intersects with itself.
+        Adjacent segments meeting at a vertex are not considered intersections.
+        """
+        from .intersect import check_self_intersection  # Local import
+
+        return check_self_intersection(self.commands)
+
+    def intersects_with(self, other: "Geometry") -> bool:
+        """
+        Checks if this geometry's path intersects with another geometry's path.
+        """
+        from .intersect import check_intersection  # Local import
+
+        return check_intersection(self.commands, other.commands)
 
     @classmethod
     def from_points(

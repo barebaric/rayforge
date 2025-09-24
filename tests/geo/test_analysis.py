@@ -13,6 +13,7 @@ from rayforge.core.geo.analysis import (
     remove_duplicates,
     is_clockwise,
     arc_direction_is_clockwise,
+    get_subpath_area,
 )
 
 
@@ -23,7 +24,7 @@ def ccw_square_geometry():
     geo.line_to(10, 0)  # cmd 1: bottom
     geo.line_to(10, 10)  # cmd 2: right
     geo.line_to(0, 10)  # cmd 3: top
-    geo.close_path()  # cmd 4: left
+    geo.close_path()  # cmd 4: left (back to 0,0)
     return geo
 
 
@@ -34,8 +35,29 @@ def cw_square_geometry():
     geo.line_to(0, 10)  # cmd 1: left
     geo.line_to(10, 10)  # cmd 2: top
     geo.line_to(10, 0)  # cmd 3: right
-    geo.close_path()  # cmd 4: bottom
+    geo.close_path()  # cmd 4: bottom (back to 0,0)
     return geo
+
+
+def test_get_subpath_area(ccw_square_geometry, cw_square_geometry):
+    # Test CCW (positive area)
+    # 10x10 square area = 100.0
+    area_ccw = get_subpath_area(ccw_square_geometry.commands, 0)
+    assert area_ccw == pytest.approx(100.0)
+
+    # Test CW (negative area)
+    area_cw = get_subpath_area(cw_square_geometry.commands, 0)
+    assert area_cw == pytest.approx(-100.0)
+
+    # Test open path
+    open_geo = Geometry.from_points([(0, 0), (10, 10)], close=False)
+    area_open = get_subpath_area(open_geo.commands, 0)
+    assert area_open == 0.0
+
+    # Test degenerate path (single point)
+    point_geo = Geometry.from_points([(5, 5)], close=False)
+    area_point = get_subpath_area(point_geo.commands, 0)
+    assert area_point == 0.0
 
 
 def test_get_winding_order(ccw_square_geometry, cw_square_geometry):

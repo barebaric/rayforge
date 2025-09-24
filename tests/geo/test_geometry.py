@@ -262,6 +262,38 @@ def test_geo_command_distance():
     assert arc_cmd.distance(last_point) == pytest.approx(5.0)
 
 
+def test_area():
+    # Test case 1: Empty and open paths
+    assert Geometry().area() == 0.0
+    assert Geometry.from_points([(0, 0), (10, 10)], close=False).area() == 0.0
+
+    # Test case 2: Simple 10x10 CCW square
+    square = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    assert square.area() == pytest.approx(100.0)
+
+    # Test case 3: Simple 10x10 CW square (should have same positive area)
+    square_cw = Geometry.from_points([(0, 0), (0, 10), (10, 10), (10, 0)])
+    assert square_cw.area() == pytest.approx(100.0)
+
+    # Test case 4: Shape with a hole
+    # Outer CCW square (0,0) -> (10,10)
+    geo_with_hole = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    # Inner CW square (hole) (2,2) -> (8,8)
+    hole = Geometry.from_points([(2, 2), (2, 8), (8, 8), (8, 2)])
+    geo_with_hole.commands.extend(hole.commands)
+    # Expected area = 100 - (6*6) = 64
+    assert geo_with_hole.area() == pytest.approx(64.0)
+
+    # Test case 5: Two separate shapes
+    geo_two_shapes = Geometry.from_points([(0, 0), (5, 0), (5, 5), (0, 5)])
+    second_shape = Geometry.from_points(
+        [(10, 10), (15, 10), (15, 15), (10, 15)]
+    )
+    geo_two_shapes.commands.extend(second_shape.commands)
+    # Expected area = 25 + 25 = 50
+    assert geo_two_shapes.area() == pytest.approx(50.0)
+
+
 def test_split_into_components_empty_geometry():
     geo = Geometry()
     components = geo.split_into_components()
@@ -350,8 +382,7 @@ def test_from_points():
     assert geo_triangle_open.commands[2].end == (5, 10, 0)  # last point
     # Final check: end point is not the start point
     assert (
-        geo_triangle_open.commands[-1].end
-        != geo_triangle_open.commands[0].end
+        geo_triangle_open.commands[-1].end != geo_triangle_open.commands[0].end
     )
 
     # Test case 5: Points with Z coordinates (closed)

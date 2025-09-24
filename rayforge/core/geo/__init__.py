@@ -5,6 +5,7 @@ generic and have no knowledge of the high-level objects that use them.
 """
 
 from . import analysis
+from . import intersect
 from . import linearize
 from . import primitives
 from . import query
@@ -19,6 +20,7 @@ from .geometry import (
 
 __all__ = [
     "analysis",
+    "intersect",
     "linearize",
     "primitives",
     "query",
