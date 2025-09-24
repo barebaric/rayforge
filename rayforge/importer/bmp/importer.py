@@ -58,6 +58,11 @@ class BmpImporter(Importer):
             image = pyvips.Image.new_from_memory(
                 rgba_bytes, width, height, 4, "uchar"
             )
+            # Explicitly set the color interpretation.
+            # This tells pyvips that the 4 bands are sRGB + Alpha, which is
+            # required for band extraction to work reliably.
+            image = image.copy(interpretation=pyvips.Interpretation.SRGB)
+
         except pyvips.Error as e:
             logger.error(
                 "Failed to create pyvips image from parsed BMP data: %s", e
@@ -65,29 +70,47 @@ class BmpImporter(Importer):
             return None
 
         # Step 4: Proceed with the known-good pyvips image for tracing.
+        # Avoid division by zero if DPI is missing/invalid.
+        dpi_x = dpi_x or 96.0
+        dpi_y = dpi_y or 96.0
         width_mm = width * (25.4 / dpi_x)
         height_mm = height * (25.4 / dpi_y)
         pixels_per_mm = (width / width_mm, height / height_mm)
 
+        # Convert to BGRA for Cairo (which expects ARGB32 in machine
+        # byte order, effectively BGRA on little-endian systems).
         b, g, r, a = image[2], image[1], image[0], image[3]
         bgra_image = b.bandjoin([g, r, a])
-        cairo_mem_buffer: memoryview = bgra_image.write_to_memory()
 
-        surface = cairo.ImageSurface.create_for_data(
-            cairo_mem_buffer,
-            cairo.FORMAT_ARGB32,
-            width,
-            height,
-            width * 4,
-        )
+        # Create a self-managed Cairo surface and copy data into it row-by-row.
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        cairo_buffer = surface.get_data()
+        vips_pixel_data = bgra_image.write_to_memory()
+        cairo_stride = surface.get_stride()
+        vips_row_bytes = width * 4
 
+        for y in range(height):
+            cairo_row_start = y * cairo_stride
+            vips_row_start = y * vips_row_bytes
+
+            cairo_buffer[
+                cairo_row_start : cairo_row_start + vips_row_bytes
+            ] = vips_pixel_data[
+                vips_row_start : vips_row_start + vips_row_bytes
+            ]
+
+        surface.mark_dirty()
+
+        # Step 5: Trace the surface and create the WorkPiece.
         geometries = trace_surface(surface, pixels_per_mm)
-        if not geometries:
-            return ImportPayload(source=source, items=[])
 
+        # Always combine geometries into a single WorkPiece, even if the
+        # list is empty. An empty list results in a WorkPiece with empty
+        # vectors.
         combined_geo = Geometry()
-        for geo in geometries:
-            combined_geo.commands.extend(geo.commands)
+        if geometries:
+            for geo in geometries:
+                combined_geo.commands.extend(geo.commands)
 
         final_wp = WorkPiece(
             name=self.source_file.stem,

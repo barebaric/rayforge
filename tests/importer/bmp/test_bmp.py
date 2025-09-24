@@ -4,8 +4,8 @@ import struct
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
-
-from rayforge.importer.bmp.importer import BmpImporter
+from rayforge.importer import import_file
+from rayforge.importer.base_importer import ImportPayload
 from rayforge.importer.bmp.renderer import BMP_RENDERER
 from rayforge.importer.bmp.parser import (
     parse_bmp,
@@ -37,8 +37,13 @@ def bmp_32bit_data() -> bytes:
 
 
 @pytest.fixture
-def unsupported_8bit_bmp_data() -> bytes:
+def bmp_8bit_data() -> bytes:
     return (TEST_DATA_DIR / "img-8-bit-color.bmp").read_bytes()
+
+
+@pytest.fixture
+def bmp_8bit_gray_v5_header_data() -> bytes:
+    return (TEST_DATA_DIR / "img-8-bit-gray-2.bmp").read_bytes()
 
 
 @pytest.fixture
@@ -79,15 +84,25 @@ def bmp_truncated_data(bmp_24bit_data: bytes) -> bytes:
     return bmp_24bit_data[:-100]
 
 
-# --- Workpiece Fixture ---
+@pytest.fixture
+def import_payload_helper():
+    """A helper that wraps import_file for convenience."""
+
+    def _import(
+        data: bytes, source_file: Path = Path("test.bmp")
+    ) -> ImportPayload:
+        payload = import_file(
+            source=data,
+            mime_type="image/bmp",
+            vector_config=TraceConfig(),
+        )
+        assert payload is not None, "import_file failed to produce a payload"
+        return payload
+
+    return _import
 
 
-def _setup_workpiece_with_context(
-    importer: BmpImporter,
-) -> WorkPiece:
-    """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vector_config=TraceConfig())
-    assert payload is not None and len(payload.items) == 1
+def _setup_workpiece_with_context(payload: ImportPayload) -> WorkPiece:
     source = payload.source
     wp = cast(WorkPiece, payload.items[0])
 
@@ -104,9 +119,19 @@ def _setup_workpiece_with_context(
 
 
 @pytest.fixture
-def one_bit_workpiece(bmp_1bit_data: bytes) -> WorkPiece:
-    importer = BmpImporter(bmp_1bit_data)
-    return _setup_workpiece_with_context(importer)
+def one_bit_workpiece(
+    import_payload_helper, bmp_1bit_data: bytes
+) -> WorkPiece:
+    payload = import_payload_helper(bmp_1bit_data)
+    return _setup_workpiece_with_context(payload)
+
+
+@pytest.fixture
+def eight_bit_workpiece(
+    import_payload_helper, bmp_8bit_data: bytes
+) -> WorkPiece:
+    payload = import_payload_helper(bmp_8bit_data)
+    return _setup_workpiece_with_context(payload)
 
 
 class TestBmpParser:
@@ -118,6 +143,28 @@ class TestBmpParser:
         assert header_info and header_info[2] == 1, "Test file is not 1-bit"
         parsed = parse_bmp(bmp_1bit_data)
         assert parsed and parsed[1] == 72 and parsed[2] == 48
+
+    def test_parse_8bit_format(self, bmp_8bit_data: bytes):
+        """Verify parsing of an 8-bit BMP file."""
+        header_info = parse_dib_header(bmp_8bit_data)
+        assert header_info and header_info[2] == 8, "Test file is not 8-bit"
+        parsed = parse_bmp(bmp_8bit_data)
+        assert parsed and parsed[1] == 72 and parsed[2] == 48
+
+    def test_parse_8bit_v5_header_format(
+        self, bmp_8bit_gray_v5_header_data: bytes
+    ):
+        """Verify parsing of an 8-bit BMP with a V5 header."""
+        header_info = parse_dib_header(bmp_8bit_gray_v5_header_data)
+        assert header_info and header_info[2] == 8, "Test file is not 8-bit"
+
+        parsed = parse_bmp(bmp_8bit_gray_v5_header_data)
+        assert parsed, "Parser failed to process 8-bit V5 header file"
+
+        rgba_buffer, width, height, _, _ = parsed
+        assert width == 300
+        assert height == 358
+        assert len(rgba_buffer) == 300 * 358 * 4
 
     def test_parse_24bit_format(self, bmp_24bit_data: bytes):
         """Verify parsing of a 24-bit BMP file."""
@@ -140,10 +187,6 @@ class TestBmpParser:
         parsed = parse_bmp(bmp_core_header_data)
         assert parsed and parsed[1] == 16 and parsed[2] == 16
 
-    def test_parse_unsupported_format(self, unsupported_8bit_bmp_data: bytes):
-        """Tests that the parser returns None for 8-bit BMPs."""
-        assert parse_bmp(unsupported_8bit_bmp_data) is None
-
     def test_parse_invalid_data(self):
         """Tests that the parser returns None for non-BMP or malformed data."""
         assert parse_bmp(b"this is not a bmp") is None
@@ -163,10 +206,10 @@ class TestBmpParserHelpers:
         "bpp, compression, expected",
         [
             (1, 0, True),
+            (8, 0, True),
             (24, 0, True),
             (32, 0, True),
             (32, 3, True),  # BI_BITFIELDS
-            (8, 0, False),  # Unsupported bpp
             (16, 0, False),  # Unsupported bpp
             (24, 1, False),  # Unsupported RLE compression
         ],
@@ -214,45 +257,61 @@ class TestBmpImporter:
     """Tests the BmpImporter class."""
 
     @pytest.mark.parametrize(
-        "bmp_data_fixture",
-        ["bmp_1bit_data", "bmp_24bit_data", "bmp_32bit_data"],
+        "bmp_data_fixture, expected_dims",
+        [
+            ("bmp_1bit_data", (72, 48)),
+            ("bmp_8bit_data", (72, 48)),
+            ("bmp_24bit_data", (72, 48)),
+            ("bmp_32bit_data", (72, 48)),
+            ("bmp_8bit_gray_v5_header_data", (300, 358)),
+        ],
     )
     def test_importer_creates_workpiece_for_supported_types(
-        self, bmp_data_fixture, request
+        self, bmp_data_fixture, expected_dims, request, import_payload_helper
     ):
         """Tests the importer creates a WorkPiece for all supported formats."""
         bmp_data = request.getfixturevalue(bmp_data_fixture)
-        importer = BmpImporter(bmp_data)
-        payload = importer.get_doc_items(vector_config=TraceConfig())
+        payload = import_payload_helper(bmp_data)
 
         assert payload and payload.items and len(payload.items) == 1
         assert isinstance(payload.source, ImportSource)
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
         assert wp.import_source_uid == payload.source.uid
-        expected_width = 72 * 25.4 / 96.0
-        expected_height = 48 * 25.4 / 96.0
-        assert wp.size == pytest.approx((expected_width, expected_height))
 
-    def test_importer_handles_unsupported_format(
-        self, unsupported_8bit_bmp_data: bytes
-    ):
-        """Tests the importer returns None for an unsupported bit depth."""
-        importer = BmpImporter(unsupported_8bit_bmp_data)
-        assert importer.get_doc_items(vector_config=TraceConfig()) is None
+        # Use the actual DPI from the file for the size assertion.
+        # The importer uses the file's DPI, so the test must do the same.
+        parsed_data = parse_bmp(bmp_data)
+        assert parsed_data is not None
+        _, _, _, dpi_x, dpi_y = parsed_data
+        dpi_x = dpi_x or 96.0
+        dpi_y = dpi_y or 96.0
+
+        expected_w_px, expected_h_px = expected_dims
+        expected_width_mm = expected_w_px * 25.4 / dpi_x
+        expected_height_mm = expected_h_px * 25.4 / dpi_y
+        assert wp.size == pytest.approx(
+            (expected_width_mm, expected_height_mm)
+        )
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for malformed/invalid data."""
-        importer = BmpImporter(b"this is not a bmp file")
-        assert importer.get_doc_items(vector_config=TraceConfig()) is None
+        assert (
+            import_file(b"this is not a bmp file", mime_type="image/bmp")
+            is None
+        )
 
 
 class TestBmpRenderer:
     """Tests the BmpRenderer class."""
 
-    def test_get_natural_size(self, one_bit_workpiece: WorkPiece):
+    @pytest.mark.parametrize(
+        "workpiece_fixture", ["one_bit_workpiece", "eight_bit_workpiece"]
+    )
+    def test_get_natural_size(self, workpiece_fixture, request):
         """Test natural size calculation on the renderer."""
-        size = BMP_RENDERER.get_natural_size(one_bit_workpiece)
+        workpiece = request.getfixturevalue(workpiece_fixture)
+        size = BMP_RENDERER.get_natural_size(workpiece)
         assert size is not None
         width_mm, height_mm = size
         expected_width = 72 * 25.4 / 96.0
@@ -260,10 +319,14 @@ class TestBmpRenderer:
         assert width_mm == pytest.approx(expected_width)
         assert height_mm == pytest.approx(expected_height)
 
-    def test_render_to_pixels(self, one_bit_workpiece: WorkPiece):
+    @pytest.mark.parametrize(
+        "workpiece_fixture", ["one_bit_workpiece", "eight_bit_workpiece"]
+    )
+    def test_render_to_pixels(self, workpiece_fixture, request):
         """Test rendering to a Cairo surface."""
+        workpiece = request.getfixturevalue(workpiece_fixture)
         surface = BMP_RENDERER.render_to_pixels(
-            one_bit_workpiece, width=144, height=96
+            workpiece, width=144, height=96
         )
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 144
@@ -272,7 +335,7 @@ class TestBmpRenderer:
     def test_renderer_handles_invalid_data_gracefully(self):
         """
         Test that the renderer does not raise exceptions for a WorkPiece
-        with unsupported data.
+        with invalid data.
         """
         source = ImportSource(
             source_file=Path("invalid.bmp"),

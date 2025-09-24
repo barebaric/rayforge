@@ -14,15 +14,15 @@ _COMPRESSION_NONE = 0
 _COMPRESSION_BITFIELDS = 3
 
 # Supported bit depths
-_SUPPORTED_BPP = (1, 24, 32)
+_SUPPORTED_BPP = 1, 8, 24, 32
 
 
 def parse_bmp(data: bytes) -> Optional[Tuple[bytes, int, int, float, float]]:
     """
     Parse a BMP file and extract image data and metadata.
 
-    Supports uncompressed 1-bit, 24-bit, and 32-bit BMPs. Handles both
-    BITMAPINFOHEADER and the older BITMAPCOREHEADER formats.
+    Supports uncompressed 1-bit, 8-bit, 24-bit, and 32-bit BMPs. Handles
+    BITMAPINFOHEADER, BITMAPV5HEADER, and the older BITMAPCOREHEADER formats.
 
     Args:
         data: Raw bytes of the BMP file.
@@ -57,11 +57,17 @@ def parse_bmp(data: bytes) -> Optional[Tuple[bytes, int, int, float, float]]:
         if not _validate_format(bits_per_pixel, compression):
             return None
 
-        if bits_per_pixel == 1:
-            dib_header_size = struct.unpack("<I", data[14:18])[0]
-            is_core = dib_header_size == _BITMAPCOREHEADER_SIZE
-            rgba_buffer = _parse_1bit_data(
-                data, width, height, pixel_data_start, is_top_down, is_core
+        dib_header_size = struct.unpack("<I", data[14:18])[0]
+
+        if bits_per_pixel in (1, 8):
+            rgba_buffer = _parse_paletted_data(
+                data,
+                width,
+                height,
+                pixel_data_start,
+                is_top_down,
+                dib_header_size,
+                bits_per_pixel=bits_per_pixel,
             )
         else:
             rgba_buffer = _parse_rgb_data(
@@ -79,7 +85,7 @@ def parse_bmp(data: bytes) -> Optional[Tuple[bytes, int, int, float, float]]:
         return bytes(rgba_buffer), width, height, dpi_x, dpi_y
 
     except (struct.error, IndexError, ValueError) as e:
-        logger.error("Failed to parse BMP headers or data: %s", e)
+        logger.error(f"Failed to parse BMP headers or data: {e}")
         return None
 
 
@@ -111,8 +117,9 @@ def parse_file_header(data: bytes) -> Optional[int]:
         return None
 
     try:
-        _, _, _, pixel_data_offset = struct.unpack("<IHHI", data[2:14])
-        logger.debug("Pixel data starts at offset %d", pixel_data_offset)
+        # bfOffBits is the 4 bytes at offset 10
+        (pixel_data_offset,) = struct.unpack("<I", data[10:14])
+        logger.debug(f"Pixel data starts at offset {pixel_data_offset}")
         return pixel_data_offset
     except struct.error:
         logger.error("Failed to unpack file header.")
@@ -142,7 +149,7 @@ def parse_dib_header(
         return None
 
     dib_header_size = struct.unpack("<I", data[14:18])[0]
-    logger.debug("DIB header size = %d", dib_header_size)
+    logger.debug(f"DIB header size = {dib_header_size}")
 
     if dib_header_size == _BITMAPINFOHEADER_SIZE:
         return _parse_info_header(data)
@@ -151,7 +158,7 @@ def parse_dib_header(
     elif dib_header_size == _BITMAPV5HEADER_SIZE:
         return _parse_v5_header(data)
     else:
-        logger.error("Unsupported DIB header size: %d", dib_header_size)
+        logger.error(f"Unsupported DIB header size: {dib_header_size}")
         return None
 
 
@@ -175,12 +182,8 @@ def _parse_info_header(
     is_top_down = raw_height < 0
 
     logger.debug(
-        "INFOHEADER width=%d height=%d bpp=%d compression=%d is_top_down=%s",
-        width,
-        height,
-        bits_per_pixel,
-        compression,
-        is_top_down,
+        f"INFOHEADER width={width} height={height} bpp={bits_per_pixel} "
+        f"compression={compression} is_top_down={is_top_down}"
     )
     return (
         width,
@@ -224,7 +227,7 @@ def _parse_core_header(
     is_top_down = False
 
     logger.debug(
-        "COREHEADER width=%d height=%d bpp=%d", width, height, bits_per_pixel
+        f"COREHEADER width={width} height={height} bpp={bits_per_pixel}"
     )
     return (
         width,
@@ -242,75 +245,27 @@ def _validate_format(bits_per_pixel: int, compression: int) -> bool:
     # Allow BI_RGB (0) and BI_BITFIELDS (3), which is used for uncompressed
     # 32bpp images.
     if compression not in (_COMPRESSION_NONE, _COMPRESSION_BITFIELDS):
-        logger.error("Unsupported compression type: %d", compression)
+        logger.error(f"Unsupported compression type: {compression}")
         return False
 
     if bits_per_pixel not in _SUPPORTED_BPP:
         logger.error(
-            "Unsupported bpp: %d. Only %s are supported.",
-            bits_per_pixel,
-            _SUPPORTED_BPP,
+            f"Unsupported bpp: {bits_per_pixel}. "
+            f"Only {_SUPPORTED_BPP} are supported."
         )
         return False
 
     return True
 
 
-def _parse_1bit_data(
-    data: bytes,
-    width: int,
-    height: int,
-    pixel_data_start: int,
-    is_top_down: bool,
-    is_core_header: bool,
-) -> Optional[bytearray]:
-    """Parse 1-bit monochrome BMP data with a color palette."""
-    logger.debug("Detected 1-bit BMP: %dx%d px", width, height)
-
-    dib_header_size = (
-        _BITMAPCOREHEADER_SIZE if is_core_header else _BITMAPINFOHEADER_SIZE
-    )
-    palette_offset = 14 + dib_header_size
-
-    if is_core_header:
-        palette = _parse_1bit_core_palette(data, palette_offset)
-    else:
-        palette = _parse_1bit_info_palette(data, palette_offset)
-
-    if palette is None:
-        return None
-
-    row_bytes = (width + 7) // 8
-    row_size_padded = (row_bytes + 3) & ~3
-    logger.debug("row_bytes=%d row_size_padded=%d", row_bytes, row_size_padded)
-
-    rgba_buffer = bytearray(width * height * 4)
-    for y in range(height):
-        row_offset = _get_row_offset(
-            y, height, row_size_padded, pixel_data_start, is_top_down
-        )
-        if row_offset + row_bytes > len(data):
-            logger.error(
-                "Row %d start (%d) exceeds data length (%d).",
-                y,
-                row_offset,
-                len(data),
-            )
-            return None
-        row_data = data[row_offset : row_offset + row_size_padded]
-        _process_1bit_row(row_data, width, y, palette, rgba_buffer)
-
-    return rgba_buffer
-
-
-def _parse_1bit_info_palette(
-    data: bytes, palette_offset: int
+def _parse_info_palette(
+    data: bytes, palette_offset: int, num_colors: int
 ) -> Optional[List[Tuple[int, int, int, int]]]:
-    """Parse a 1-bit BMP palette with 4-byte RGBQUAD entries."""
-    palette_size = 2 * 4
+    """Parse a BMP palette with 4-byte RGBQUAD entries."""
+    palette_size = num_colors * 4
     if len(data) < palette_offset + palette_size:
         logger.error(
-            "Palette bytes (RGBQUAD) not present at offset %d.", palette_offset
+            f"Palette bytes (RGBQUAD) not present at offset {palette_offset}."
         )
         return None
 
@@ -319,19 +274,19 @@ def _parse_1bit_info_palette(
         b, g, r, _ = data[palette_offset + i : palette_offset + i + 4]
         palette.append((r, g, b, 255))
 
-    logger.debug("Palette entries (INFO): %s", palette)
+    logger.debug(f"Palette entries (INFO) read for {num_colors} colors.")
     return palette
 
 
-def _parse_1bit_core_palette(
-    data: bytes, palette_offset: int
+def _parse_core_palette(
+    data: bytes, palette_offset: int, num_colors: int
 ) -> Optional[List[Tuple[int, int, int, int]]]:
-    """Parse a 1-bit BMP palette with 3-byte RGBTRIPLE entries."""
-    palette_size = 2 * 3
+    """Parse a BMP palette with 3-byte RGBTRIPLE entries."""
+    palette_size = num_colors * 3
     if len(data) < palette_offset + palette_size:
         logger.error(
-            "Palette bytes (RGBTRIPLE) not present at offset %d.",
-            palette_offset,
+            f"Palette bytes (RGBTRIPLE) not present at "
+            f"offset {palette_offset}."
         )
         return None
 
@@ -340,8 +295,70 @@ def _parse_1bit_core_palette(
         b, g, r = data[palette_offset + i : palette_offset + i + 3]
         palette.append((r, g, b, 255))  # Convert to RGBA
 
-    logger.debug("Palette entries (CORE): %s", palette)
+    logger.debug(f"Palette entries (CORE) read for {num_colors} colors.")
     return palette
+
+
+def _parse_paletted_data(
+    data: bytes,
+    width: int,
+    height: int,
+    pixel_data_start: int,
+    is_top_down: bool,
+    dib_header_size: int,
+    bits_per_pixel: int,
+) -> Optional[bytearray]:
+    """Helper for parsing 1-bit and 8-bit paletted data."""
+    is_core_header = dib_header_size == _BITMAPCOREHEADER_SIZE
+    palette_offset = 14 + dib_header_size
+    max_colors = 2**bits_per_pixel
+
+    if is_core_header:
+        num_colors = max_colors
+        palette = _parse_core_palette(data, palette_offset, num_colors)
+    else:
+        colors_used_offset = 14 + 32  # Offset of biClrUsed field
+        colors_used = struct.unpack(
+            "<I", data[colors_used_offset : colors_used_offset + 4]
+        )[0]
+        num_colors = colors_used if colors_used > 0 else max_colors
+        palette = _parse_info_palette(data, palette_offset, num_colors)
+
+    if palette is None:
+        return None
+
+    if bits_per_pixel == 1:
+        row_bytes = (width + 7) // 8
+        process_row_func = _process_1bit_row
+    else:  # bits_per_pixel == 8
+        row_bytes = width
+        process_row_func = _process_8bit_row
+
+    row_size_padded = (row_bytes + 3) & ~3
+    logger.debug(
+        f"bpp={bits_per_pixel} "
+        f"row_bytes={row_bytes} "
+        f"row_size_padded={row_size_padded}"
+    )
+
+    rgba_buffer = bytearray(width * height * 4)
+    for y in range(height):
+        row_offset = _get_row_offset(
+            y, height, row_size_padded, pixel_data_start, is_top_down
+        )
+
+        slice_end = row_offset + row_size_padded
+        if slice_end > len(data):
+            logger.error(
+                f"Row {y} slice end ({slice_end}) exceeds data length "
+                f"({len(data)}). File is likely truncated."
+            )
+            return None
+
+        row_data = data[row_offset:slice_end]
+        process_row_func(row_data, width, y, palette, rgba_buffer)
+
+    return rgba_buffer
 
 
 def _parse_rgb_data(
@@ -356,7 +373,7 @@ def _parse_rgb_data(
     bytes_per_pixel = bits_per_pixel // 8
     row_size_padded = (width * bytes_per_pixel + 3) & ~3
     logger.debug(
-        "%d-bit image, row size padded=%d", bits_per_pixel, row_size_padded
+        f"{bits_per_pixel}-bit image, row size padded={row_size_padded}"
     )
 
     rgba_buffer = bytearray(width * height * 4)
@@ -364,15 +381,16 @@ def _parse_rgb_data(
         row_offset = _get_row_offset(
             y, height, row_size_padded, pixel_data_start, is_top_down
         )
-        if row_offset + width * bytes_per_pixel > len(data):
+
+        slice_end = row_offset + row_size_padded
+        if slice_end > len(data):
             logger.error(
-                "Row %d start (%d) exceeds data length (%d).",
-                y,
-                row_offset,
-                len(data),
+                f"Row {y} slice end ({slice_end}) exceeds data length "
+                f"({len(data)}). File is likely truncated."
             )
             return None
-        row_data = data[row_offset : row_offset + width * bytes_per_pixel]
+
+        row_data = data[row_offset:slice_end]
         _process_rgb_row(row_data, width, bytes_per_pixel, y, rgba_buffer)
 
     return rgba_buffer
@@ -401,6 +419,26 @@ def _process_1bit_row(
         byte_val = row_data[x // 8]
         bit = (byte_val >> (7 - (x % 8))) & 1
         r, g, b, a = palette[bit]
+        rgba_buffer[dest_row_start + x * 4 : dest_row_start + x * 4 + 4] = (
+            r,
+            g,
+            b,
+            a,
+        )
+
+
+def _process_8bit_row(
+    row_data: bytes,
+    width: int,
+    y: int,
+    palette: List[Tuple[int, int, int, int]],
+    rgba_buffer: bytearray,
+):
+    """Process a single row of 8-bit paletted data."""
+    dest_row_start = y * width * 4
+    for x in range(width):
+        palette_index = row_data[x]
+        r, g, b, a = palette[palette_index]
         rgba_buffer[dest_row_start + x * 4 : dest_row_start + x * 4 + 4] = (
             r,
             g,
