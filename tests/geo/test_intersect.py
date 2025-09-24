@@ -16,6 +16,20 @@ def figure_eight_geometry() -> Geometry:
     )
 
 
+@pytest.fixture
+def t_junction_geometry() -> Geometry:
+    """A shape with a T-junction that is not a true crossing."""
+    geo = Geometry()
+    geo.move_to(-10, 0)
+    geo.line_to(10, 0)  # Segment 1: from (-10,0) to (10,0)
+    geo.line_to(10, 10)  # Segment 2
+    geo.line_to(0, 10)  # Segment 3
+    geo.line_to(
+        0, 0
+    )  # Segment 4: from (0,10) to (0,0). Its endpoint lies on Segment 1.
+    return geo
+
+
 def test_no_self_intersection_square(square_geometry):
     """A simple square should not have self-intersections."""
     assert not square_geometry.has_self_intersections()
@@ -35,6 +49,21 @@ def test_no_self_intersection_touching_endpoint():
     geo.line_to(5, 0)
     geo.line_to(10, 10)
     assert not geo.has_self_intersections()
+
+
+def test_self_intersection_t_junction_configurable(t_junction_geometry):
+    """
+    A T-junction should not be a self-intersection by default, but can be
+    configured to fail.
+    """
+    # By default, T-junctions are allowed (not considered intersections)
+    assert not t_junction_geometry.has_self_intersections(
+        fail_on_t_junction=False
+    )
+    assert not t_junction_geometry.has_self_intersections()  # Test default
+
+    # With the flag, it should be detected as an intersection
+    assert t_junction_geometry.has_self_intersections(fail_on_t_junction=True)
 
 
 def test_self_intersection_with_arc():

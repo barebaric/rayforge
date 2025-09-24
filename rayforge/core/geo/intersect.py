@@ -48,48 +48,25 @@ def _commands_intersect(
     commands1: List[Command],
     commands2: List[Command],
     is_self_check: bool = False,
+    fail_on_t_junction: bool = False,
 ) -> bool:
     """Core logic to check for intersections between two command lists."""
     for i in range(len(commands1)):
         cmd1 = commands1[i]
-        if not isinstance(cmd1, (LineToCommand, ArcToCommand)):
+        if not isinstance(cmd1, (LineToCommand, ArcToCommand)) or not cmd1.end:
             continue
 
+        # Check against subsequent segments. i + 1 is used to check adjacent
+        # segments, which is necessary for cases like an arc being crossed
+        # by the following line segment.
         start_idx_j = i + 1 if is_self_check else 0
         for j in range(start_idx_j, len(commands2)):
             cmd2 = commands2[j]
-            if not isinstance(cmd2, (LineToCommand, ArcToCommand)):
+            if (
+                not isinstance(cmd2, (LineToCommand, ArcToCommand))
+                or not cmd2.end
+            ):
                 continue
-
-            # Get the original (pre-linearization) endpoints for adjacency
-            # check
-            start1 = _get_command_start_point(commands1, i)
-            end1 = cmd1.end
-            start2 = _get_command_start_point(commands2, j)
-            end2 = cmd2.end
-            if not end1 or not end2:
-                continue
-
-            # Determine if the two original commands share a vertex
-            shared_vertex = None
-            if is_self_check:
-                p1, p2, p3, p4 = start1[:2], end1[:2], start2[:2], end2[:2]
-                if all(
-                    math.isclose(a, b, abs_tol=1e-9) for a, b in zip(p2, p3)
-                ):
-                    shared_vertex = p2
-                elif all(
-                    math.isclose(a, b, abs_tol=1e-9) for a, b in zip(p1, p4)
-                ):
-                    shared_vertex = p1
-                elif all(
-                    math.isclose(a, b, abs_tol=1e-9) for a, b in zip(p1, p3)
-                ):
-                    shared_vertex = p1
-                elif all(
-                    math.isclose(a, b, abs_tol=1e-9) for a, b in zip(p2, p4)
-                ):
-                    shared_vertex = p2
 
             segments1 = _get_segments_for_command(commands1, i)
             segments2 = _get_segments_for_command(commands2, j)
@@ -101,21 +78,59 @@ def _commands_intersect(
                     )
 
                     if intersection:
-                        if shared_vertex:
-                            # If adjacent, ignore intersections at shared
-                            # vertex
-                            dist_sq = (
-                                intersection[0] - shared_vertex[0]
-                            ) ** 2 + (intersection[1] - shared_vertex[1]) ** 2
-                            if dist_sq < 1e-12:
-                                continue  # It's a connection, not a crossing
+                        is_adjacent_check = is_self_check and (j == i + 1)
 
-                        # Found a valid intersection
+                        # Case 1: Adjacent segments in a self-check.
+                        if is_adjacent_check:
+                            # An intersection is only ignored if it's their
+                            # shared vertex. Any other intersection is a true
+                            # self-intersection.
+                            shared_vertex = cmd1.end[:2]
+                            is_at_shared_vertex = all(
+                                math.isclose(a, b, abs_tol=1e-9)
+                                for a, b in zip(intersection, shared_vertex)
+                            )
+                            if is_at_shared_vertex:
+                                continue  # Ignore the normal connection point.
+                            else:
+                                return True  # It's a true self-intersection.
+
+                        # Case 2: Non-adjacent segments. Here, an intersection
+                        # at any vertex is considered a T-junction or a shared
+                        # corner, which can be ignored.
+                        is_at_endpoint1 = all(
+                            math.isclose(a, b, abs_tol=1e-9)
+                            for a, b in zip(intersection, seg1_p1[:2])
+                        ) or all(
+                            math.isclose(a, b, abs_tol=1e-9)
+                            for a, b in zip(intersection, seg1_p2[:2])
+                        )
+
+                        is_at_endpoint2 = all(
+                            math.isclose(a, b, abs_tol=1e-9)
+                            for a, b in zip(intersection, seg2_p1[:2])
+                        ) or all(
+                            math.isclose(a, b, abs_tol=1e-9)
+                            for a, b in zip(intersection, seg2_p2[:2])
+                        )
+
+                        is_at_vertex = is_at_endpoint1 or is_at_endpoint2
+
+                        if (
+                            is_self_check
+                            and is_at_vertex
+                            and not fail_on_t_junction
+                        ):
+                            continue
+
+                        # It's a "real" crossing intersection.
                         return True
     return False
 
 
-def check_self_intersection(commands: List[Command]) -> bool:
+def check_self_intersection(
+    commands: List[Command], fail_on_t_junction: bool = False
+) -> bool:
     """
     Checks if a path defined by a list of commands self-intersects.
 
@@ -128,10 +143,9 @@ def check_self_intersection(commands: List[Command]) -> bool:
         if isinstance(cmd, MoveToCommand):
             if len(current_subpath) > 1:
                 subpaths.append(current_subpath)
-            # Start new subpath with the MoveTo for context
             current_subpath = [cmd]
         elif isinstance(cmd, (LineToCommand, ArcToCommand)):
-            if not current_subpath:  # Path starts with a drawing command
+            if not current_subpath:
                 current_subpath.append(MoveToCommand((0.0, 0.0, 0.0)))
             current_subpath.append(cmd)
 
@@ -140,7 +154,10 @@ def check_self_intersection(commands: List[Command]) -> bool:
 
     for subpath_commands in subpaths:
         if _commands_intersect(
-            subpath_commands, subpath_commands, is_self_check=True
+            subpath_commands,
+            subpath_commands,
+            is_self_check=True,
+            fail_on_t_junction=fail_on_t_junction,
         ):
             return True
 
@@ -148,7 +165,16 @@ def check_self_intersection(commands: List[Command]) -> bool:
 
 
 def check_intersection(
-    commands1: List[Command], commands2: List[Command]
+    commands1: List[Command],
+    commands2: List[Command],
+    fail_on_t_junction: bool = False,
 ) -> bool:
     """Checks if two paths defined by command lists intersect."""
-    return _commands_intersect(commands1, commands2, is_self_check=False)
+    # Note: fail_on_t_junction is not used for non-self checks, as a T-junction
+    # between two separate paths is always a valid intersection.
+    return _commands_intersect(
+        commands1,
+        commands2,
+        is_self_check=False,
+        fail_on_t_junction=fail_on_t_junction,
+    )

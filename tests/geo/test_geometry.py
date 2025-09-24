@@ -347,6 +347,48 @@ def test_split_into_components_containment_letter_o():
     assert len(components[0].commands) == 6  # 2 moves, 4 arcs
 
 
+def test_segments():
+    """Tests the segments() method for extracting point lists."""
+    # Test case 1: Empty geometry
+    geo_empty = Geometry()
+    assert geo_empty.segments() == []
+
+    # Test case 2: Single open path
+    geo_open = Geometry()
+    geo_open.move_to(0, 0, 1)
+    geo_open.line_to(10, 0, 2)
+    geo_open.arc_to(10, 10, i=0, j=5, z=3)
+    expected_open = [[(0, 0, 1), (10, 0, 2), (10, 10, 3)]]
+    assert geo_open.segments() == expected_open
+
+    # Test case 3: Single closed path
+    geo_closed = Geometry.from_points([(0, 0), (10, 0), (0, 10)])
+    expected_closed = [[(0, 0, 0), (10, 0, 0), (0, 10, 0), (0, 0, 0)]]
+    assert geo_closed.segments() == expected_closed
+
+    # Test case 4: Multiple disjoint segments
+    geo_multi = Geometry()
+    # Segment 1
+    geo_multi.move_to(0, 0)
+    geo_multi.line_to(1, 1)
+    # Segment 2
+    geo_multi.move_to(10, 10)
+    geo_multi.line_to(11, 11)
+    geo_multi.line_to(12, 12)
+    expected_multi = [
+        [(0, 0, 0), (1, 1, 0)],
+        [(10, 10, 0), (11, 11, 0), (12, 12, 0)],
+    ]
+    assert geo_multi.segments() == expected_multi
+
+    # Test case 5: Path starting with a LineTo (implicit start at 0,0,0)
+    geo_implicit_start = Geometry()
+    geo_implicit_start.line_to(5, 5)
+    geo_implicit_start.line_to(10, 0)
+    expected_implicit = [[(0, 0, 0), (5, 5, 0), (10, 0, 0)]]
+    assert geo_implicit_start.segments() == expected_implicit
+
+
 def test_from_points():
     """Tests the Geometry.from_points classmethod."""
     # Test case 1: Empty list
@@ -402,3 +444,40 @@ def test_from_points():
     assert geo_3d_open.commands[1].end == (10, 0, 2)
     assert geo_3d_open.commands[2].end == (5, 10, 3)
     assert geo_3d_open.last_move_to == (0, 0, 1)
+
+
+def test_dump_and_load(sample_geometry):
+    """
+    Tests the dump() and load() methods for space-efficient serialization.
+    """
+    # Test with a non-empty geometry
+    dumped_data = sample_geometry.dump()
+    loaded_geo = Geometry.load(dumped_data)
+
+    assert dumped_data["last_move_to"] == list(sample_geometry.last_move_to)
+    assert len(dumped_data["commands"]) == 3
+    # M 0 0 0
+    assert dumped_data["commands"][0] == ["M", 0.0, 0.0, 0.0]
+    # L 10 10 0
+    assert dumped_data["commands"][1] == ["L", 10.0, 10.0, 0.0]
+    # A 20 0 0 5 -10 1 (default clockwise is True)
+    assert dumped_data["commands"][2] == ["A", 20.0, 0.0, 0.0, 5.0, -10.0, 1]
+
+    assert loaded_geo.last_move_to == sample_geometry.last_move_to
+    assert len(loaded_geo.commands) == len(sample_geometry.commands)
+    for original_cmd, loaded_cmd in zip(
+        sample_geometry.commands, loaded_geo.commands
+    ):
+        assert type(original_cmd) is type(loaded_cmd)
+        # Easy way to check all attributes are the same
+        assert original_cmd.to_dict() == loaded_cmd.to_dict()
+
+    # Test with an empty geometry
+    empty_geo = Geometry()
+    dumped_empty = empty_geo.dump()
+    loaded_empty = Geometry.load(dumped_empty)
+
+    assert dumped_empty["last_move_to"] == [0.0, 0.0, 0.0]
+    assert dumped_empty["commands"] == []
+    assert loaded_empty.is_empty()
+    assert loaded_empty.last_move_to == (0.0, 0.0, 0.0)
