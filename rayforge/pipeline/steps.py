@@ -124,7 +124,7 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
         name=name,
     )
     # Use the HullProducer with a default gravity to create the effect
-    step.opsproducer_dict = HullProducer(gravity=0.15).to_dict()
+    step.opsproducer_dict = HullProducer(gravity=0.0).to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
