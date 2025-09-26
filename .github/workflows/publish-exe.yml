@@ -36,7 +36,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version_clean=$VERSION_CLEAN" >> $GITHUB_OUTPUT
 
-      - name: Set up MSYS2 and C Toolchain
+      - name: Set up MSYS2 and Native Dependencies
         id: msys2
         uses: msys2/setup-msys2@v2
         with:
@@ -47,35 +47,34 @@ jobs:
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-gobject-introspection
 
-      - name: Set up environment
-        shell: msys2 {0}
+      - name: Configure Environment for Pixi
+        shell: bash
         run: |
-          MSYS2_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):[/\\]|/d/|g; s|\\|/|g')
-          echo "MSYS2_PATH=$MSYS2_PATH" >> $GITHUB_ENV
-          echo "$MSYS2_PATH/mingw64/bin" >> $GITHUB_PATH
-          echo "$MSYS2_PATH/usr/bin" >> $GITHUB_PATH
-          echo "MSYS2_PATH=$MSYS2_PATH" > $GITHUB_WORKSPACE/.msys2_env
+          MSYS2_LOCATION="${{ steps.msys2.outputs.msys2-location }}"
+          
+          # Prepend MSYS2 bin directory to the GitHub Actions PATH.
+          # This is the crucial step that ensures MSYS2's tools are found before Conda's.
+          echo "$MSYS2_LOCATION/mingw64/bin" >> $GITHUB_PATH
 
+          # Explicitly set PKG_CONFIG_PATH to find MSYS2's library definition files.
+          echo "PKG_CONFIG_PATH=$MSYS2_LOCATION/mingw64/lib/pkgconfig" >> $GITHUB_ENV
+          
       - name: Set up Pixi
         uses: prefix-dev/setup-pixi@v0.9.0
         with:
           cache: true
 
       - name: Install Dependencies with Pixi
-        shell: msys2 {0}
-        env:
-          PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
         run: pixi install -e windows-build
 
       - name: Compile Translations
-        shell: msys2 {0}
         run: pixi run -e windows-build compile-translations
 
       - name: Build Executable
-        shell: msys2 {0}
         env:
-          MSYS2_PREFIX: ${{ runner.temp }}/msys64/mingw64
+          MSYS2_PREFIX: ${{ steps.msys2.outputs.msys2-location }}/mingw64
         run: pixi run -e windows-build build-exe ${{ steps.set-version.outputs.version_clean }}
 
       - name: Upload Artifact
