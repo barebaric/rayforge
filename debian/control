@@ -21,7 +21,7 @@ Homepage: https://github.com/barebaric/rayforge
 
 Package: rayforge
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
+Depends: ${shlibs:Depends}, ${misc:Depends}, python3 (>= 3.10~),
   python3-gi, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libvips42t64,
   adwaita-icon-theme, python3-numpy, python3-scipy, python3-serial-asyncio,
   python3-opencv, python3-ezdxf, python3-pypdf, python3-yaml, python3-aiohttp,
