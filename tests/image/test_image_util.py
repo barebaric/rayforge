@@ -56,7 +56,6 @@ class TestMetadataExtraction:
         """Verify that basic image properties are correctly extracted."""
         image = pyvips.Image.pngload_buffer(color_png_data)
         metadata = util.extract_vips_metadata(image)
-        assert metadata["image_format"] == "PNG"
         assert metadata["width"] == 300
         assert metadata["height"] == 358
         assert metadata["bands"] == 4
@@ -113,18 +112,6 @@ class TestMetadataExtraction:
 
 class TestImageLoadingAndSizing:
     """Tests for `load_vips_image_from_data` and `get_physical_size_mm`."""
-
-    def test_load_vips_image_from_valid_data(self, color_png_data: bytes):
-        """Ensures valid PNG data loads correctly."""
-        image = util.load_vips_image_from_data(color_png_data)
-        assert isinstance(image, pyvips.Image)
-        assert image
-        assert image.width == 300
-
-    def test_load_vips_image_from_invalid_data(self):
-        """Ensures invalid data returns None without raising an exception."""
-        image = util.load_vips_image_from_data(b"this is not a png")
-        assert image is None
 
     def test_get_physical_size_with_resolution(self):
         """Test physical size calculation with resolution metadata present."""
@@ -195,7 +182,7 @@ class TestCairoConversion:
 
     def test_conversion_preserves_size_and_format(self, color_png_data: bytes):
         """Verify the output surface has the correct dimensions and format."""
-        image = util.load_vips_image_from_data(color_png_data)
+        image = pyvips.Image.pngload_buffer(color_png_data)
         normalized = util.normalize_to_rgba(image)
         assert normalized is not None
         surface = util.vips_rgba_to_cairo_surface(normalized)
@@ -209,7 +196,7 @@ class TestCairoConversion:
         """
         Verify the RGBA to BGRA channel shuffling by sampling a known pixel.
         """
-        image = util.load_vips_image_from_data(color_png_data)
+        image = util.pyvips.Image.pngload_buffer(color_png_data)
         normalized = util.normalize_to_rgba(image)
         assert normalized is not None
         surface = util.vips_rgba_to_cairo_surface(normalized)

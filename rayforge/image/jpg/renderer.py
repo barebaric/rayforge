@@ -11,18 +11,17 @@ from ..base_renderer import Renderer
 from .. import image_util
 
 
-class PngRenderer(Renderer):
-    """Renders PNG data from a WorkPiece."""
+class JpgRenderer(Renderer):
+    """Renders JPEG data from a WorkPiece."""
 
     def get_natural_size(
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
         if not workpiece.data:
             return None
+        # This utility function is format-agnostic
         try:
-            image = pyvips.Image.pngload_buffer(
-                workpiece.data, access=pyvips.Access.RANDOM
-            )
+            image = pyvips.Image.jpegload_buffer(workpiece.data)
         except pyvips.Error:
             return None
         return image_util.get_physical_size_mm(image) if image else None
@@ -33,10 +32,9 @@ class PngRenderer(Renderer):
         if not workpiece.data:
             return None
 
+        # This utility function is format-agnostic
         try:
-            image = pyvips.Image.pngload_buffer(
-                workpiece.data, access=pyvips.Access.RANDOM
-            )
+            image = pyvips.Image.jpegload_buffer(workpiece.data)
         except pyvips.Error:
             return None
         if not image:
@@ -56,6 +54,7 @@ class PngRenderer(Renderer):
         if not resized_image:
             return None
 
+        # The rest of the rendering pipeline is also format-agnostic
         normalized_image = image_util.normalize_to_rgba(resized_image)
         if not normalized_image:
             return None
@@ -63,4 +62,5 @@ class PngRenderer(Renderer):
         return image_util.vips_rgba_to_cairo_surface(normalized_image)
 
 
-PNG_RENDERER = PngRenderer()
+# Create an instance for the importer to use
+JPG_RENDERER = JpgRenderer()

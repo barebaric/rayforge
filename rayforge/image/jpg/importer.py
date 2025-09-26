@@ -13,46 +13,45 @@ from ...core.geo import Geometry
 from ...core.import_source import ImportSource
 from ..tracing import trace_surface
 from .. import image_util
-from .renderer import PNG_RENDERER
+from .renderer import JPG_RENDERER
 
 logger = logging.getLogger(__name__)
 
 
-class PngImporter(Importer):
-    label = "PNG files"
-    mime_types = ("image/png",)
-    extensions = (".png",)
+class JpgImporter(Importer):
+    label = "JPEG files"
+    mime_types = ("image/jpeg",)
+    extensions = (".jpg", ".jpeg")
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
     ) -> Optional[ImportPayload]:
         if not vector_config:
-            logger.error("PngImporter requires a vector_config to trace.")
+            logger.error("JpgImporter requires a vector_config to trace.")
             return None
 
         try:
-            # Use the specific PNG loader with random access for consistency.
-            image = pyvips.Image.pngload_buffer(
+            image = pyvips.Image.jpegload_buffer(
                 self.raw_data, access=pyvips.Access.RANDOM
             )
             logger.info(
-                f"Successfully loaded PNG with pyvips: "
+                f"Successfully loaded JPEG with pyvips: "
                 f"{image.width}x{image.height}, "
                 f"{image.bands} bands, format {image.format}"
             )
         except pyvips.Error as e:
             logger.error(
-                f"pyvips failed to load PNG buffer: {e}", exc_info=True
+                f"pyvips failed to load JPEG buffer: {e}", exc_info=True
             )
             return None
 
         metadata = image_util.extract_vips_metadata(image)
-        metadata["image_format"] = "PNG"
+        metadata["image_format"] = "JPEG"
 
         source = ImportSource(
             source_file=self.source_file,
             original_data=self.raw_data,
-            renderer=PNG_RENDERER,
+            renderer=JPG_RENDERER,
             vector_config=vector_config,
             metadata=metadata,
         )
@@ -84,8 +83,7 @@ class PngImporter(Importer):
                 "Tracing did not produce any vector geometries. "
                 "Creating a workpiece with a frame around the image instead."
             )
-            # Create a rectangle representing the full image boundary using
-            # the Geometry class methods.
+            # Create a rectangle representing the full image boundary.
             combined_geo.move_to(0, 0)
             combined_geo.line_to(width_mm, 0)
             combined_geo.line_to(width_mm, height_mm)

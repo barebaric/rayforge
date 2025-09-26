@@ -1,7 +1,6 @@
 import warnings
 from typing import Optional, Tuple, Dict, Any
 import logging
-
 import cairo
 import numpy
 
@@ -17,7 +16,6 @@ def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
     Extracts file-based and content-based metadata from a pyvips Image.
     """
     metadata = {
-        "image_format": "PNG",
         "width": image.width,
         "height": image.height,
         "bands": image.bands,
@@ -50,14 +48,6 @@ def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
         except Exception as e:
             logger.debug(f"Could not read metadata field '{field}': {e}")
     return metadata
-
-
-def load_vips_image_from_data(data: bytes) -> Optional[pyvips.Image]:
-    """Loads a pyvips image from PNG byte data."""
-    try:
-        return pyvips.Image.pngload_buffer(data, access=pyvips.Access.RANDOM)
-    except pyvips.Error:
-        return None
 
 
 def get_physical_size_mm(image: pyvips.Image) -> Tuple[float, float]:
