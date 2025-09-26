@@ -3,7 +3,7 @@ name: Publish .deb to PPA
 on:
   push:
     branches:
-      - main
+      - "*"
     tags:
       - "*"
 
