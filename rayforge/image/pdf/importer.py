@@ -151,9 +151,29 @@ class PdfImporter(Importer):
         Returns:
             Tuple of (width, height) in pixels.
         """
-        w_px = 2048
-        h_px = int(w_px * (h_mm / w_mm)) if w_mm > 0 else 2048
-        return w_px, h_px
+        TARGET_MEGAPIXELS = 8.0
+        MAX_DIM = 8192
+
+        if w_mm <= 0 or h_mm <= 0:
+            return 2048, 2048
+
+        target_pixels = TARGET_MEGAPIXELS * 1024 * 1024
+        aspect_ratio = h_mm / w_mm if w_mm > 0 else 1.0
+
+        if aspect_ratio == 0:
+            aspect_ratio = 1.0
+
+        w_px = int((target_pixels / aspect_ratio) ** 0.5)
+        h_px = int(w_px * aspect_ratio)
+
+        if w_px > MAX_DIM:
+            w_px = MAX_DIM
+            h_px = int(w_px * aspect_ratio)
+        if h_px > MAX_DIM:
+            h_px = MAX_DIM
+            w_px = int(h_px / aspect_ratio) if aspect_ratio > 0 else MAX_DIM
+
+        return max(w_px, 1), max(h_px, 1)
 
     def _combine_geometries(self, geometries: List[Geometry]) -> Geometry:
         """Combine multiple geometries into a single Geometry object.
@@ -192,11 +212,10 @@ class PdfImporter(Importer):
             return None
 
         pt_per_mm = 72 / 25.4
-        page_height_pt = h_mm * pt_per_mm
         left_pt = min_x * pt_per_mm
-        bottom_pt = page_height_pt - max_y * pt_per_mm
+        bottom_pt = min_y * pt_per_mm
         right_pt = max_x * pt_per_mm
-        top_pt = page_height_pt - min_y * pt_per_mm
+        top_pt = max_y * pt_per_mm
         crop_width_pt = right_pt - left_pt
         crop_height_pt = top_pt - bottom_pt
 
