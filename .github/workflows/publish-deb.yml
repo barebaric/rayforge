@@ -61,13 +61,25 @@ jobs:
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
-      - name: Build BINARY package for testing
-        id: build_binary
+      - name: Build All Packages (Source and Binary)
+        id: build_packages
+        env:
+          TARGET_DISTRIBUTION: ${{ matrix.distro.codename }}
         run: |
           chmod +x ./scripts/build-deb.sh
-          ./scripts/build-deb.sh
-          DEB_FILE=$(find dist -name "*.deb" -type f | head -n 1)
-          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+          ./scripts/build-deb.sh --source
+          DEB_FILE_PATH=$(find dist -name "*.deb" -type f | head -n 1)
+          if [ -z "$DEB_FILE_PATH" ]; then
+            echo "::error::Build failed, no .deb file found in dist/ directory."
+            exit 1
+          fi
+
+          # Extract just the filename from the path
+          DEB_FILENAME=$(basename "$DEB_FILE_PATH")
+
+          # Output both the full path (for testing) and the filename (for the artifact)
+          echo "deb_file_path=$DEB_FILE_PATH" >> $GITHUB_OUTPUT
+          echo "deb_filename=$DEB_FILENAME" >> $GITHUB_OUTPUT
 
       - name: Install runtime dependencies for testing
         run: |
@@ -75,7 +87,8 @@ jobs:
 
       - name: Test package installation
         run: |
-          sudo apt-get install -y ./${{ steps.build_binary.outputs.deb_file }}
+          # Use the full path for the installation
+          sudo apt-get install -y ./${{ steps.build_packages.outputs.deb_file_path }}
 
       - name: Run smoke test
         run: |
@@ -84,14 +97,6 @@ jobs:
           # Verify the main executable is in the PATH and can be run
           # This simple command proves the installation was successful.
           rayforge --version
-
-      - name: Clean build artifacts before final build
-        run: rm -rf dist/*
-
-      - name: Build SOURCE package for PPA upload
-        env:
-          TARGET_DISTRIBUTION: ${{ matrix.distro.codename }}
-        run: ./scripts/build-deb.sh --source
 
       - name: Sign source package
         env:
@@ -105,8 +110,8 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: deb-packages-${{ matrix.distro.codename }}
-          path: dist/*
+          name: ${{ steps.build_packages.outputs.deb_filename }}
+          path: ${{ steps.build_packages.outputs.deb_file_path }}
 
       - name: Upload to PPA
         if: startsWith(github.ref, 'refs/tags/')
