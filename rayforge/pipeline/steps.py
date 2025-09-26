@@ -44,7 +44,9 @@ def create_outline_step(name: Optional[str] = None) -> Step:
     return step
 
 
-def create_contour_step(name: Optional[str] = None) -> Step:
+def create_contour_step(
+    name: Optional[str] = None, optimize: bool = True
+) -> Step:
     """Factory to create and configure a Contour step."""
     assert config.config.machine
     step = Step(
@@ -59,8 +61,11 @@ def create_contour_step(name: Optional[str] = None) -> Step:
     step.opstransformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
-        Optimize(enabled=True).to_dict(),
     ]
+    if optimize:
+        step.opstransformers_dicts.append(
+            Optimize(enabled=True).to_dict(),
+        )
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]

@@ -2,6 +2,7 @@ import numpy as np
 import math
 import logging
 from typing import Optional, List, Dict, Any, Tuple, cast
+from scipy.spatial import cKDTree  # type: ignore
 from ...core.workpiece import WorkPiece
 from ...core.ops import (
     Ops,
@@ -74,13 +75,97 @@ def group_mixed_continuity(
     return segments
 
 
+def kdtree_order_segments(
+    context: BaseExecutionContext, segments: List[List[MovingCommand]]
+) -> List[List[MovingCommand]]:
+    """
+    Orders segments using a nearest-neighbor search accelerated by a k-d tree.
+    This provides a fast and robust O(N log N) implementation.
+    """
+    n = len(segments)
+    if n < 2:
+        return segments
+
+    context.set_total(n)
+
+    # 1. Build the "geographic map" (k-d tree).
+    # We create a list of all start/end points. Point 2*i is the start of
+    # segment i, and point 2*i+1 is the end.
+    all_points = np.zeros((n * 2, 2))
+    for i, seg in enumerate(segments):
+        all_points[2 * i] = seg[0].end[:2]
+        all_points[2 * i + 1] = seg[-1].end[:2]
+
+    kdtree = cKDTree(all_points)
+    ordered_segments = []
+    visited_mask = np.zeros(n, dtype=bool)
+
+    # 2. Pick a starting point and initialize.
+    current_segment_idx = 0
+    current_seg = segments[current_segment_idx]
+    ordered_segments.append(current_seg)
+    visited_mask[current_segment_idx] = True
+    current_pos = np.array(current_seg[-1].end[:2])
+    context.set_progress(1)
+
+    # 3. Iteratively find the closest unvisited segment.
+    while len(ordered_segments) < n:
+        if context.is_cancelled():
+            return ordered_segments
+
+        # Query for several neighbors. k must be large enough to find an
+        # unvisited point, even if the closest points belong to an already
+        # visited segment. A small constant is a good heuristic.
+        # Scipy's cKDTree handles k > number of points gracefully.
+        k = 10
+
+        distances, indices = kdtree.query(current_pos, k=k)
+
+        # Handle case where k=1 or query returns a single value
+        if not hasattr(indices, "__iter__"):
+            indices = [indices]
+
+        found_next = False
+        for point_idx in indices:
+            segment_idx = point_idx // 2
+            if not visited_mask[segment_idx]:
+                # This is our next segment.
+                next_seg = segments[segment_idx]
+                is_end_point = point_idx % 2 == 1
+
+                # If the connection is to the segment's end, flip it.
+                if is_end_point:
+                    next_seg = flip_segment(next_seg)
+
+                ordered_segments.append(next_seg)
+                visited_mask[segment_idx] = True
+                current_pos = np.array(next_seg[-1].end[:2])
+                found_next = True
+                break
+
+        if not found_next:
+            # This case should not be reached if k is chosen correctly.
+            # If it is, it indicates a problem with finding a nearest neighbor.
+            logger.error("Path optimizer could not find a next segment.")
+            # Add remaining segments to avoid losing paths, though they won't
+            # be ordered
+            for i in range(n):
+                if not visited_mask[i]:
+                    ordered_segments.append(segments[i])
+            break
+
+        context.set_progress(len(ordered_segments))
+
+    return ordered_segments
+
+
 def greedy_order_segments(
     context: BaseExecutionContext,
     segments: List[List[MovingCommand]],
 ) -> List[List[MovingCommand]]:
     """
     Greedy ordering using vectorized math.dist computations.
-    Part of the path optimization algorithm.
+    O(N^2) complexity.
 
     It is assumed that the input segments contain only Command objects
     that are NOT state commands (such as 'set_power'), so it is
@@ -130,135 +215,6 @@ def greedy_order_segments(
     return ordered
 
 
-def flip_segments(
-    context: BaseExecutionContext, ordered: List[List[MovingCommand]]
-) -> List[List[MovingCommand]]:
-    """
-    Iteratively flips individual segments if doing so reduces the travel
-    distance to the next segment.
-    """
-    improved = True
-    context.set_total(1)
-    while improved:
-        if context.is_cancelled():
-            return ordered
-        improved = False
-
-        # Iterate through segments, comparing the cost of the current
-        # orientation
-        # with the cost if the segment were flipped.
-        for i in range(1, len(ordered)):
-            prev_segment = ordered[i - 1]
-            current_segment = ordered[i]
-
-            prev_end = prev_segment[-1].end
-            curr_start = current_segment[0].end
-            curr_end = current_segment[-1].end
-
-            # Calculate cost with current orientation
-
-            # Cost of travel from previous segment to this one
-            current_cost = _dist_2d(prev_end, curr_start)
-
-            # Calculate potential cost if flipped
-
-            # Potential cost of travel from previous segment to the *end*
-            # (flipped start)
-            potential_cost = _dist_2d(prev_end, curr_end)
-
-            # Factor in the cost to the next segment
-            if i < len(ordered) - 1:
-                next_start = ordered[i + 1][0].end
-
-                # Add travel from current end to next start
-                current_cost += _dist_2d(curr_end, next_start)
-
-                # Add travel from flipped end (current start) to next start
-                potential_cost += _dist_2d(curr_start, next_start)
-
-            # If the potential cost is lower, commit to the flip.
-            if potential_cost < current_cost:
-                # flip_segment creates a new, correctly flipped segment.
-                ordered[i] = flip_segment(current_segment)
-                improved = True
-    context.set_progress(1)
-    return ordered
-
-
-def farthest_insertion_order_segments(
-    context: BaseExecutionContext, segments: List[List[MovingCommand]]
-) -> List[List[MovingCommand]]:
-    """
-    Orders segments using the Farthest Insertion heuristic. This is a single-
-    pass O(n^2) algorithm that is much faster than 2-opt for large n.
-    """
-    n = len(segments)
-    if n < 2:
-        return segments
-
-    context.set_total(n)
-    points = np.array([seg[0].end[:2] for seg in segments])
-
-    # --- O(n^2) Farthest Insertion Implementation ---
-
-    # 1. Initialization
-    remaining_mask = np.ones(n, dtype=bool)
-    start_idx = 0
-    tour_indices = [start_idx]
-    remaining_mask[start_idx] = False
-    context.set_progress(1)
-    dists = np.linalg.norm(points - points[start_idx], axis=1)
-
-    while len(tour_indices) < n:
-        if context.is_cancelled():
-            break
-
-        # 2. Select the farthest point.
-        dists_of_remaining = np.where(remaining_mask, dists, -1.0)
-        farthest_idx = int(np.argmax(dists_of_remaining))
-
-        # 3. Find the best insertion position.
-        min_cost_increase = float("inf")
-        best_insert_pos = -1
-        farthest_point = points[farthest_idx]
-        for i in range(len(tour_indices)):
-            p1_idx = tour_indices[i]
-            p2_idx = tour_indices[(i + 1) % len(tour_indices)]
-            p1 = points[p1_idx]
-            p2 = points[p2_idx]
-            cost_increase = (
-                np.linalg.norm(p1 - farthest_point)
-                + np.linalg.norm(farthest_point - p2)
-                - np.linalg.norm(p1 - p2)
-            )
-            if cost_increase < min_cost_increase:
-                min_cost_increase = cost_increase
-                best_insert_pos = i + 1
-
-        # 4. Insert the point and update state.
-        tour_indices.insert(best_insert_pos, farthest_idx)
-        remaining_mask[farthest_idx] = False
-        context.set_progress(len(tour_indices))
-
-        # 5. Update the minimum distances for all remaining points.
-        new_dists_to_farthest = np.linalg.norm(points - farthest_point, axis=1)
-        dists = np.minimum(dists, new_dists_to_farthest)
-
-    ordered = [segments[i] for i in tour_indices]
-
-    # 6. Final pass to ensure segments are correctly oriented (flipped).
-    for i in range(n):
-        current_segment = ordered[i]
-        prev_end = ordered[i - 1][-1].end
-        dist_as_is = _dist_2d(prev_end, current_segment[0].end)
-        dist_flipped = _dist_2d(prev_end, current_segment[-1].end)
-        if dist_flipped < dist_as_is:
-            ordered[i] = flip_segment(current_segment)
-
-    context.set_progress(n)
-    return ordered
-
-
 def two_opt(
     context: BaseExecutionContext,
     ordered: List[List[MovingCommand]],
@@ -266,7 +222,6 @@ def two_opt(
 ) -> List[List[MovingCommand]]:
     """
     2-opt: try reversing entire sub-sequences if that lowers the travel cost.
-    Uses a simplified linear progress model based on the iteration count.
     """
     n = len(ordered)
     if n < 3:
@@ -326,33 +281,22 @@ def two_opt(
 
 class Optimize(OpsTransformer):
     """
-    Uses the 2-opt swap algorithm to address the Traveline Salesman Problem
-    to minimize travel moves in the commands.
+    Optimizes toolpaths to minimize travel distance using a hybrid approach.
 
-    This is made harder by the fact that some commands cannot be
-    reordered. For example, if the Ops contains multiple commands
-    to toggle air-assist, we cannot reorder the operations without
-    ensuring that air-assist remains on for the sections that need it.
-    Ops optimization may lead to a situation where the number of
-    air assist toggles is multiplied, which could be detrimental
-    to the health of the air pump.
+    For all paths, it first performs a fast nearest-neighbor search accelerated
+    by a k-d tree to establish a good initial order. For paths with fewer
+    segments than a set threshold, it then applies the 2-opt algorithm as a
+    final refinement step to achieve a higher quality result.
 
-    To avoid these problems, we implement the following process:
-
-    1. Preprocess the command list, duplicating the intended
-       state (e.g. cutting, power, ...) and attaching it to each
-       command. Here we also drop all state commands.
-
-    2. Split the command list into non-reorderable segments. Segment in
-       this step means an "as long as possible" sequence that may still
-       include sub-segments, as long as those sub-segments are
-       reorderable.
-
-    3. Split the long segments into short, re-orderable sub sequences.
-
-    4. Re-order the sub sequences to minimize travel distance.
-
-    5. Re-assemble the Ops object.
+    The process is:
+    1. Preprocess the command list to attach state (power, speed, etc.) to
+       each moving command.
+    2. Group commands into continuous, reorderable path segments.
+    3. For each group of segments:
+       a. Generate a good initial path using the k-d tree nearest-neighbor
+          algorithm.
+       b. If the path is short enough, refine it with 2-opt.
+    4. Re-assemble the final command list with state commands re-inserted.
     """
 
     @property
@@ -377,7 +321,7 @@ class Optimize(OpsTransformer):
         if context is None:
             context = ExecutionContext()
 
-        # Threshold for switching from 2-opt to a faster heuristic
+        # Threshold for applying the slower, higher-quality 2-opt refinement.
         TWO_OPT_THRESHOLD = 1000
 
         # Step 1: Preprocessing
@@ -429,7 +373,7 @@ class Optimize(OpsTransformer):
             f" expanded for optimization to {len(commands)}"
         )
 
-        # Step 2: Splitting long segments
+        # Step 2: Splitting into non-reorderable long segments
         long_segments = group_by_state_continuity(commands)
         if context.is_cancelled():
             return
@@ -475,7 +419,7 @@ class Optimize(OpsTransformer):
         cumulative_workload = 0.0
 
         result = []
-        is_raster_section = False  # Reset for the main loop
+        is_raster_section = False
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
                 return
@@ -492,6 +436,8 @@ class Optimize(OpsTransformer):
                 else 0
             )
 
+            # If the segment is a marker, just pass it through without
+            # optimizing
             if long_segment and long_segment[0].is_marker_command():
                 marker = long_segment[0]
                 if isinstance(marker, OpsSectionStartCommand):
@@ -519,17 +465,7 @@ class Optimize(OpsTransformer):
                 base_progress=base_progress, progress_range=progress_range
             )
 
-            # Define weights for the internal stages of optimizing one
-            # segment.
-            split_sub_weight = 0.05
-            greedy_weight = 0.4
-            flip_weight = 0.2
-            refinement_weight = 0.35
-
-            # Step 3: Split long segments into short segments
-            context.set_message(_("Finding reorderable paths..."))
-
-            # Use the appropriate grouping strategy based on section type
+            # Step 3: Split long segments into reorderable sub-segments
             if is_raster_section:
                 segments = group_mixed_continuity(
                     cast(List[MovingCommand], long_segment)
@@ -537,52 +473,43 @@ class Optimize(OpsTransformer):
             else:
                 segments = group_by_path_continuity(long_segment)
 
-            # Mark this small stage as complete.
-            segment_ctx.set_progress(split_sub_weight)
             if not segments:
                 cumulative_workload += current_workload
                 continue
 
-            current_base = split_sub_weight
+            # Step 4: Hybrid Optimization
+            # Use k-d tree for a fast, high-quality initial sort.
+            kdtree_weight = 0.7
+            two_opt_weight = 0.3
+            apply_2_opt = len(segments) < TWO_OPT_THRESHOLD
 
-            # Step 4: Re-order segments
-            # First, order them using a greedy algorithm
-            context.set_message(_("Ordering paths..."))
-            greedy_ctx = segment_ctx.sub_context(
-                base_progress=current_base, progress_range=greedy_weight
-            )
-            segments = greedy_order_segments(greedy_ctx, segments)
-            current_base += greedy_weight
-            segment_ctx.set_progress(current_base)
+            kdtree_ctx = segment_ctx
+            if apply_2_opt:
+                kdtree_ctx = segment_ctx.sub_context(
+                    base_progress=0.0, progress_range=kdtree_weight
+                )
 
-            # Second, flip segments to shorten distance (fast, no detailed
-            # progress needed)
-            context.set_message(_("Flipping segments for improvement..."))
-            flip_ctx = segment_ctx.sub_context(
-                base_progress=current_base, progress_range=flip_weight
-            )
-            segments = flip_segments(flip_ctx, segments)
-            current_base += flip_weight
-            segment_ctx.set_progress(current_base)
+            segment_ctx.set_message(_("Finding nearest paths..."))
+            ordered_segments = kdtree_order_segments(kdtree_ctx, segments)
 
-            # Apply 2-opt algorithm
-            refinement_ctx = segment_ctx.sub_context(
-                base_progress=current_base, progress_range=refinement_weight
-            )
-            if len(segments) >= TWO_OPT_THRESHOLD:
+            # For smaller jobs, apply 2-opt for refinement.
+            if apply_2_opt:
                 logger.info(
-                    f"Segment count ({len(segments)}) is high, "
-                    f"falling back to Farthest Insertion instead of 2-opt."
+                    f"Path is small ({len(segments)} segments), "
+                    "applying 2-opt refinement."
                 )
-                refinement_ctx.set_message(
-                    _("Using Farthest Insertion for large path...")
+                two_opt_ctx = segment_ctx.sub_context(
+                    base_progress=kdtree_weight,
+                    progress_range=two_opt_weight,
                 )
-                segments = farthest_insertion_order_segments(
-                    refinement_ctx, segments
-                )
+                segment_ctx.set_message(_("Applying 2-opt refinement..."))
+                segments = two_opt(two_opt_ctx, ordered_segments, 10)
             else:
-                refinement_ctx.set_message(_("Applying 2-opt refinement..."))
-                segments = two_opt(refinement_ctx, segments, 10)
+                logger.info(
+                    f"Path is large ({len(segments)} segments), "
+                    "skipping 2-opt refinement."
+                )
+                segments = ordered_segments
 
             result.append(segments)
             cumulative_workload += current_workload
