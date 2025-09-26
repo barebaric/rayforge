@@ -13,16 +13,22 @@ jobs:
     uses: ./.github/workflows/lint-test.yml
 
   publish-to-ppa:
-    name: Build, Test, and Publish to PPA
+    name: Build and Publish to PPA for ${{ matrix.distro.name }}
     needs: [lint-test]
-    runs-on: ubuntu-latest
+    # Define a build matrix for different Ubuntu versions
+    strategy:
+      matrix:
+        distro:
+          - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
+          - { name: "Ubuntu 22.04", codename: "jammy", runner: "ubuntu-22.04" }
+    runs-on: ${{ matrix.distro.runner }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: >
           sudo apt-get update && sudo apt-get install -y
           build-essential
@@ -47,41 +53,29 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
         run: |
-          # Import the key from secrets
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
-
-          # We add 'head -n 1' to ensure we only get the first fingerprint,
-          # preventing errors from sub-keys.
           KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -n 1 | awk -F: '{print $10}')
-
-          # Verify that we got a fingerprint
           if [ -z "$KEY_FINGERPRINT" ]; then
             echo "::error::Could not extract GPG key fingerprint."
             exit 1
           fi
-
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
       - name: Build BINARY package for testing
         id: build_binary
         run: |
-          # Run the build script WITHOUT --source to produce a .deb file
           chmod +x ./scripts/build-deb.sh
           ./scripts/build-deb.sh
-          # Find the name of the generated .deb file and make it available to other steps
           DEB_FILE=$(find dist -name "*.deb" -type f | head -n 1)
           echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
 
       - name: Install runtime dependencies for testing
         run: |
-          # This command reads debian/control and installs all packages
-          # listed in the 'Depends' field automatically.
           sudo mk-build-deps --install --tool="apt-get -y" debian/control
 
       - name: Test package installation
         run: |
-          # Add './' to make the path unambiguous for apt.
           sudo apt-get install -y ./${{ steps.build_binary.outputs.deb_file }}
 
       - name: Run smoke test
@@ -96,6 +90,8 @@ jobs:
         run: rm -rf dist/*
 
       - name: Build SOURCE package for PPA upload
+        env:
+          TARGET_DISTRIBUTION: ${{ matrix.distro.codename }}
         run: ./scripts/build-deb.sh --source
 
       - name: Sign source package
@@ -103,16 +99,16 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          # Create a temporary file for the GPG passphrase.
           echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
-
-          # Sign the package using the -p flag, which is compatible with older debsign versions.
           debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" dist/*.changes
-
-          # Securely remove the temporary passphrase file.
           rm /tmp/passphrase.txt
 
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-packages-${{ matrix.distro.codename }}
+          path: dist/*
+
       - name: Upload to PPA
-        # This step will only run when the trigger is a tag push
         if: startsWith(github.ref, 'refs/tags/')
         run: dput ppa:knipknap/rayforge dist/*.changes

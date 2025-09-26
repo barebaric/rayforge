@@ -105,8 +105,8 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
 # The `dch` commands are safe to run in the current environment
 if [[ "${1:-}" == "--source" ]]; then
-    TARGET_DISTRIBUTION="noble"
-    dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
+    TARGET_DIST="${TARGET_DISTRIBUTION:-noble}"
+    dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DIST}1" --distribution "$TARGET_DIST" "New PPA release for ${TARGET_DIST}."
     
     # Use env -i to get a clean environment, and pass in ONLY the variables we need.
     env -i \
