@@ -20,7 +20,6 @@ jobs:
       matrix:
         distro:
           - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
-          - { name: "Ubuntu 22.04", codename: "jammy", runner: "ubuntu-22.04" }
     runs-on: ${{ matrix.distro.runner }}
     steps:
       - uses: actions/checkout@v4
