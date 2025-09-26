@@ -185,6 +185,80 @@ def flip_segments(
     return ordered
 
 
+def farthest_insertion_order_segments(
+    context: BaseExecutionContext, segments: List[List[MovingCommand]]
+) -> List[List[MovingCommand]]:
+    """
+    Orders segments using the Farthest Insertion heuristic. This is a single-
+    pass O(n^2) algorithm that is much faster than 2-opt for large n.
+    """
+    n = len(segments)
+    if n < 2:
+        return segments
+
+    context.set_total(n)
+    points = np.array([seg[0].end[:2] for seg in segments])
+
+    # --- O(n^2) Farthest Insertion Implementation ---
+
+    # 1. Initialization
+    remaining_mask = np.ones(n, dtype=bool)
+    start_idx = 0
+    tour_indices = [start_idx]
+    remaining_mask[start_idx] = False
+    context.set_progress(1)
+    dists = np.linalg.norm(points - points[start_idx], axis=1)
+
+    while len(tour_indices) < n:
+        if context.is_cancelled():
+            break
+
+        # 2. Select the farthest point.
+        dists_of_remaining = np.where(remaining_mask, dists, -1.0)
+        farthest_idx = int(np.argmax(dists_of_remaining))
+
+        # 3. Find the best insertion position.
+        min_cost_increase = float("inf")
+        best_insert_pos = -1
+        farthest_point = points[farthest_idx]
+        for i in range(len(tour_indices)):
+            p1_idx = tour_indices[i]
+            p2_idx = tour_indices[(i + 1) % len(tour_indices)]
+            p1 = points[p1_idx]
+            p2 = points[p2_idx]
+            cost_increase = (
+                np.linalg.norm(p1 - farthest_point)
+                + np.linalg.norm(farthest_point - p2)
+                - np.linalg.norm(p1 - p2)
+            )
+            if cost_increase < min_cost_increase:
+                min_cost_increase = cost_increase
+                best_insert_pos = i + 1
+
+        # 4. Insert the point and update state.
+        tour_indices.insert(best_insert_pos, farthest_idx)
+        remaining_mask[farthest_idx] = False
+        context.set_progress(len(tour_indices))
+
+        # 5. Update the minimum distances for all remaining points.
+        new_dists_to_farthest = np.linalg.norm(points - farthest_point, axis=1)
+        dists = np.minimum(dists, new_dists_to_farthest)
+
+    ordered = [segments[i] for i in tour_indices]
+
+    # 6. Final pass to ensure segments are correctly oriented (flipped).
+    for i in range(n):
+        current_segment = ordered[i]
+        prev_end = ordered[i - 1][-1].end
+        dist_as_is = _dist_2d(prev_end, current_segment[0].end)
+        dist_flipped = _dist_2d(prev_end, current_segment[-1].end)
+        if dist_flipped < dist_as_is:
+            ordered[i] = flip_segment(current_segment)
+
+    context.set_progress(n)
+    return ordered
+
+
 def two_opt(
     context: BaseExecutionContext,
     ordered: List[List[MovingCommand]],
@@ -192,10 +266,12 @@ def two_opt(
 ) -> List[List[MovingCommand]]:
     """
     2-opt: try reversing entire sub-sequences if that lowers the travel cost.
+    Uses a simplified linear progress model based on the iteration count.
     """
     n = len(ordered)
     if n < 3:
         return ordered
+
     iter_count = 0
     improved = True
     context.set_total(max_iter)
@@ -204,9 +280,13 @@ def two_opt(
         if context.is_cancelled():
             return ordered
         context.set_progress(iter_count)
+
         improved = False
         for i in range(n - 2):
             for j in range(i + 2, n):
+                if context.is_cancelled():
+                    return ordered
+
                 a_end = ordered[i][-1].end
                 b_start = ordered[i + 1][0].end
                 e_end = ordered[j][-1].end
@@ -297,6 +377,9 @@ class Optimize(OpsTransformer):
         if context is None:
             context = ExecutionContext()
 
+        # Threshold for switching from 2-opt to a faster heuristic
+        TWO_OPT_THRESHOLD = 1000
+
         # Step 1: Preprocessing
         context.set_message(_("Preprocessing for optimization..."))
         ops.preload_state()
@@ -362,15 +445,53 @@ class Optimize(OpsTransformer):
             base_progress=0.0, progress_range=optimize_weight
         )
 
-        result = []
+        # Pre-calculate the number of sub-segments in each long segment to
+        # create a weighted progress bar that reflects the actual workload.
         is_raster_section = False
-        total_long_segments = len(long_segments)
+        segment_workloads = []
+        for long_segment in long_segments:
+            workload = 0
+            if long_segment and not long_segment[0].is_marker_command():
+                # This mirrors the logic in the main loop to determine segment
+                # type
+                marker = next(
+                    (c for c in long_segment if c.is_marker_command()), None
+                )
+                if isinstance(marker, OpsSectionStartCommand):
+                    is_raster_section = (
+                        marker.section_type == SectionType.RASTER_FILL
+                    )
+                # Now, calculate the number of sub-segments
+                if is_raster_section:
+                    sub_segments = group_mixed_continuity(
+                        cast(List[MovingCommand], long_segment)
+                    )
+                else:
+                    sub_segments = group_by_path_continuity(long_segment)
+                workload = len(sub_segments)
+            segment_workloads.append(max(1, workload))  # Min 1 unit of work
+
+        total_workload = sum(segment_workloads)
+        cumulative_workload = 0.0
+
+        result = []
+        is_raster_section = False  # Reset for the main loop
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
                 return
 
             # If the segment is a marker, just pass it through without
             # optimizing
+            current_workload = segment_workloads[i]
+            progress_range = (
+                current_workload / total_workload if total_workload > 0 else 0
+            )
+            base_progress = (
+                cumulative_workload / total_workload
+                if total_workload > 0
+                else 0
+            )
+
             if long_segment and long_segment[0].is_marker_command():
                 marker = long_segment[0]
                 if isinstance(marker, OpsSectionStartCommand):
@@ -380,22 +501,22 @@ class Optimize(OpsTransformer):
                     if marker.section_type == SectionType.RASTER_FILL:
                         is_raster_section = False
                 result.append(long_segment)
-                # Still need to advance the progress bar for this segment
-                optimize_ctx.set_progress((i + 1) / total_long_segments)
+                cumulative_workload += current_workload
+                optimize_ctx.set_progress(
+                    cumulative_workload / total_workload
+                    if total_workload > 0
+                    else 1.0
+                )
                 continue
 
             context.set_message(
                 _("Optimizing segment {i}/{total}...").format(
-                    i=i + 1, total=total_long_segments
+                    i=i + 1, total=len(long_segments)
                 )
             )
 
-            # This sub-context manages all optimization steps for ONE
-            # long_segment. Its progress is a slice of the parent
-            # optimize_ctx's progress.
             segment_ctx = optimize_ctx.sub_context(
-                base_progress=i / total_long_segments,
-                progress_range=1 / total_long_segments,
+                base_progress=base_progress, progress_range=progress_range
             )
 
             # Define weights for the internal stages of optimizing one
@@ -403,7 +524,7 @@ class Optimize(OpsTransformer):
             split_sub_weight = 0.05
             greedy_weight = 0.4
             flip_weight = 0.2
-            two_opt_weight = 0.15
+            refinement_weight = 0.35
 
             # Step 3: Split long segments into short segments
             context.set_message(_("Finding reorderable paths..."))
@@ -419,6 +540,7 @@ class Optimize(OpsTransformer):
             # Mark this small stage as complete.
             segment_ctx.set_progress(split_sub_weight)
             if not segments:
+                cumulative_workload += current_workload
                 continue
 
             current_base = split_sub_weight
@@ -443,14 +565,27 @@ class Optimize(OpsTransformer):
             current_base += flip_weight
             segment_ctx.set_progress(current_base)
 
-            # Apply 2-opt algorithm (has detailed progress)
-            context.set_message(_("Applying 2-opt refinement..."))
-            two_opt_ctx = segment_ctx.sub_context(
-                base_progress=current_base, progress_range=two_opt_weight
+            # Apply 2-opt algorithm
+            refinement_ctx = segment_ctx.sub_context(
+                base_progress=current_base, progress_range=refinement_weight
             )
-            segments = two_opt(two_opt_ctx, segments, 1000)
+            if len(segments) >= TWO_OPT_THRESHOLD:
+                logger.info(
+                    f"Segment count ({len(segments)}) is high, "
+                    f"falling back to Farthest Insertion instead of 2-opt."
+                )
+                refinement_ctx.set_message(
+                    _("Using Farthest Insertion for large path...")
+                )
+                segments = farthest_insertion_order_segments(
+                    refinement_ctx, segments
+                )
+            else:
+                refinement_ctx.set_message(_("Applying 2-opt refinement..."))
+                segments = two_opt(refinement_ctx, segments, 10)
 
             result.append(segments)
+            cumulative_workload += current_workload
 
         # Ensure the optimization part reports full completion.
         optimize_ctx.set_progress(1.0)
@@ -467,10 +602,7 @@ class Optimize(OpsTransformer):
                 flat_result_segments.extend(item)
             else:
                 flat_result_segments.append(item)
-
-        total_reassemble_segments = len(flat_result_segments)
-        reassemble_ctx.set_total(total_reassemble_segments)
-
+        reassemble_ctx.set_total(len(flat_result_segments))
         ops.commands = []
         prev_state = State()
         for i, segment in enumerate(flat_result_segments):

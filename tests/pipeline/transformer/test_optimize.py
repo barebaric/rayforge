@@ -13,6 +13,7 @@ from rayforge.pipeline.transformer.optimize import (
     flip_segments,
     two_opt,
     _dist_2d,
+    farthest_insertion_order_segments,
 )
 from rayforge.shared.tasker.context import (
     BaseExecutionContext,
@@ -112,6 +113,53 @@ def test_two_opt(ctx):
     assert optimized[1][0].end == (1, 0, 0)  # start of flipped sC
     assert optimized[2][0].end == (11, 10, 0)  # start of flipped sB
     assert optimized[3] is sD
+
+
+def test_farthest_insertion_order_segments(ctx: BaseExecutionContext):
+    """
+    Test the Farthest Insertion heuristic for tour construction and flipping.
+    """
+    # Setup: Define four short, disconnected segments at the corners of a
+    # square.
+    # Segment C is defined backwards to test the final flipping pass.
+    seg_a = [MoveToCommand((0, 0, 0)), LineToCommand((1, 0, 0))]
+    seg_b = [MoveToCommand((100, 0, 0)), LineToCommand((101, 0, 0))]
+    seg_c = [MoveToCommand((101, 100, 0)), LineToCommand((100, 100, 0))]
+    seg_d = [MoveToCommand((0, 100, 0)), LineToCommand((1, 100, 0))]
+
+    # Jumble the order to ensure the algorithm sorts them correctly.
+    segments = [seg_d, seg_a, seg_c, seg_b]
+
+    ordered_segments = farthest_insertion_order_segments(ctx, segments)
+    assert len(ordered_segments) == 4
+
+    # Test 1: Verify that a valid tour was created.
+    # The final set of segments should be the original four, just reordered
+    # and possibly replaced with their flipped versions.
+    original_endpoints = {
+        tuple(s[0].end) for s in [seg_a, seg_b, seg_c, seg_d]
+    } | {tuple(s[-1].end) for s in [seg_a, seg_b, seg_c, seg_d]}
+    final_startpoints = {tuple(s[0].end) for s in ordered_segments}
+
+    assert len(final_startpoints) == 4
+    assert final_startpoints.issubset(original_endpoints)
+
+    # Test 2: Verify the reversed segment was flipped correctly.
+    # The optimal tour is A -> B -> flipped(C) -> D.
+    # Find the segment that corresponds to the original seg_c.
+    seg_c_output = None
+    for seg in ordered_segments:
+        # A segment is identified by its set of endpoints, regardless of flip.
+        endpoints = {tuple(seg[0].end), tuple(seg[-1].end)}
+        if endpoints == {(101, 100, 0), (100, 100, 0)}:
+            seg_c_output = seg
+            break
+    assert seg_c_output is not None, "Segment C not found in output"
+
+    # In the optimal tour, seg_c will follow seg_b (which ends near (101,0)).
+    # The closest point on seg_c is (100,100), not (101,100).
+    # Therefore, the final pass MUST have flipped seg_c.
+    assert seg_c_output[0].end == pytest.approx((100, 100, 0))
 
 
 def _calculate_travel_distance(ops: Ops) -> float:
