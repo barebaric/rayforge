@@ -39,7 +39,7 @@
     <display_length compare="ge">768</display_length>
   </recommends>
 
-  <icon type="local">share/icons/hicolor/scalable/apps/com.barebaric.rayforge.svg</icon>
+  <icon type="local">com.barebaric.rayforge.svg</icon>
 
   <branding>
     <color type="primary" scheme_preference="light">#efb0a1</color>
@@ -54,7 +54,7 @@
   </screenshots>
 
   <releases>
-    <release version="0.1" date="2025-02-08">
+    <release version="0.22" date="2025-09-20">
       <description>
         <p>This is the initial release.</p>
       </description>
