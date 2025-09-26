@@ -49,26 +49,21 @@ jobs:
             mingw-w64-x86_64-libvips
             mingw-w64-x86_64-gobject-introspection
 
-      - name: Configure Environment for Pixi
+      - name: Configure Environment
         shell: bash
         run: |
           MSYS2_LOCATION="${{ steps.msys2.outputs.msys2-location }}"
 
-          # 1. Prepend MSYS2 bin directory to the GitHub Actions PATH.
-          # This ensures its tools (gcc, pkg-config) are found first.
-          echo "Adding $MSYS2_LOCATION/mingw64/bin to PATH"
+          # 1. Add MSYS2 to the PATH to find pkg-config.exe
           echo "$MSYS2_LOCATION/mingw64/bin" >> $GITHUB_PATH
 
-          # 2. Set PKG_CONFIG_PATH for packages that use it (PyGObject).
-          echo "Setting PKG_CONFIG_PATH to $MSYS2_LOCATION/mingw64/lib/pkgconfig"
+          # 2. Set PKG_CONFIG_PATH for Meson-based builds (like PyGObject)
           echo "PKG_CONFIG_PATH=$MSYS2_LOCATION/mingw64/lib/pkgconfig" >> $GITHUB_ENV
 
-          # 3. Force the C/C++ compiler to be the one from MSYS2.
-          # This ensures build tools use the MinGW GCC, which knows where to find
-          # its own libraries (like libvips). This overrides the MSVC default.
-          echo "Setting CC to use MinGW GCC"
-          echo "CC=$MSYS2_LOCATION/mingw64/bin/gcc.exe" >> $GITHUB_ENV
-          echo "CXX=$MSYS2_LOCATION/mingw64/bin/g++.exe" >> $GITHUB_ENV
+          # 3. Add MSYS2 paths to the MSVC environment variables.
+          echo "Adding MSYS2 paths to INCLUDE and LIB for MSVC"
+          echo "INCLUDE=$MSYS2_LOCATION/mingw64/include;${{ env.INCLUDE }}" >> $GITHUB_ENV
+          echo "LIB=$MSYS2_LOCATION/mingw64/lib;${{ env.LIB }}" >> $GITHUB_ENV
 
       - name: Set up Pixi
         uses: prefix-dev/setup-pixi@v0.9.0
