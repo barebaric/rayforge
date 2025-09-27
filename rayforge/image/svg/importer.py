@@ -2,7 +2,6 @@ import io
 from typing import Optional, List
 import logging
 from xml.etree import ElementTree as ET
-import numpy as np
 from svgelements import (
     SVG,
     Path,
@@ -14,13 +13,14 @@ from svgelements import (
     QuadraticBezier,
 )
 
-from ...core.item import DocItem
-from ...core.workpiece import WorkPiece
-from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
-from ..tracing import trace_surface
+from ...core.item import DocItem
+from ...core.matrix import Matrix
+from ...core.vectorization_config import TraceConfig
+from ...core.workpiece import WorkPiece
 from ..base_importer import Importer, ImportPayload
+from ..tracing import trace_surface
 from .renderer import SVG_RENDERER
 from .svgutil import get_natural_size, trim_svg, PPI
 
@@ -77,8 +77,8 @@ class SvgImporter(Importer):
                 metadata["viewbox"] = tuple(map(float, vb_str.split()))
 
             source.metadata.update(metadata)
-        except Exception:
-            logger.warning("Could not calculate SVG metadata: {e}")
+        except Exception as e:
+            logger.warning(f"Could not calculate SVG metadata: {e}")
 
         if vector_config is not None:
             # Path 1: Render to bitmap and trace
@@ -115,7 +115,6 @@ class SvgImporter(Importer):
             logger.error("source has no data to trace")
             return None
 
-        traced_geo: Optional[Geometry] = None
         w_mm, h_mm = size_mm
         w_px, h_px = 2048, 2048
 
@@ -123,24 +122,28 @@ class SvgImporter(Importer):
             source.working_data, w_px, h_px
         )
 
-        if surface:
-            pixels_per_mm = (w_px / w_mm, h_px / h_mm)
-            geometries = trace_surface(surface, pixels_per_mm)
+        wp = WorkPiece(name=self.source_file.stem)
+        wp.import_source_uid = source.uid
 
+        if surface:
+            geometries = trace_surface(surface)
             if geometries:
                 combined_geo = Geometry()
                 for geo in geometries:
                     combined_geo.commands.extend(geo.commands)
-                traced_geo = combined_geo
 
-        # Always create a workpiece, adding size and vectors if available.
-        wp = WorkPiece(name=self.source_file.stem)
-        wp.import_source_uid = source.uid
+                # Normalize the pixel-based geometry to a 1x1 unit square
+                if surface.get_width() > 0 and surface.get_height() > 0:
+                    norm_x = 1.0 / surface.get_width()
+                    norm_y = 1.0 / surface.get_height()
+                    norm_matrix = Matrix.scale(norm_x, norm_y)
+                    combined_geo.transform(norm_matrix.to_4x4_numpy())
 
+                wp.vectors = combined_geo
+
+        # Always set the size. If tracing failed, the workpiece will be empty
+        # but correctly sized.
         wp.set_size(size_mm[0], size_mm[1])
-
-        if traced_geo:
-            wp.vectors = traced_geo
 
         return [wp]
 
@@ -310,76 +313,33 @@ class SvgImporter(Importer):
                 "Invalid content bounds; falling back to trace method."
             )
             return self._get_doc_items_from_trace(source, TraceConfig())
-            # Fallback
 
-        # Calculate scales based on content bounds to fill the final dimensions
-        scale_x = final_width_mm / content_width
-        scale_y = final_height_mm / content_height
+        # First, translate the Y-down geometry to its own origin.
+        translation_matrix = Matrix.translation(-min_x, -min_y)
+        geo.transform(translation_matrix.to_4x4_numpy())
 
-        logger.debug(
-            f"Content-based scale factors: x={scale_x:.6f}, y={scale_y:.6f}"
-        )
+        # Second, scale the translated geometry to a 1x1 unit box.
+        norm_matrix = Matrix.scale(1.0 / content_width, 1.0 / content_height)
+        geo.transform(norm_matrix.to_4x4_numpy())
 
-        # Build 4x4 transformation matrix
-        # Order: translate content to origin -> scale -> flip Y ->
-        # translate Y to bottom
-        t_origin = np.array(
-            [[1, 0, 0, -min_x], [0, 1, 0, -min_y], [0, 0, 1, 0], [0, 0, 0, 1]]
-        )
-        s = np.array(
-            [
-                [scale_x, 0, 0, 0],
-                [0, scale_y, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1],
-            ]
-        )
-        f_y = np.array(
-            [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
-        )
-        t_height = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, final_height_mm],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1],
-            ]
-        )
+        # Third, flip the now-normalized Y-down geometry to be Y-up.
+        # This is a scale of -1 on Y, followed by a translation of +1 on Y
+        # to move it back into the positive quadrant.
+        flip_matrix = Matrix.scale(1.0, -1.0)
+        flip_matrix = flip_matrix.post_translate(0, -1.0)
+        geo.transform(flip_matrix.to_4x4_numpy())
 
-        transform_matrix = t_height @ f_y @ s @ t_origin
-        logger.debug(f"4x4 Transform matrix:\n{transform_matrix}")
-
-        # Apply the transformation to the entire generated geometry.
-        geo.transform(transform_matrix)
-
-        # Get post-transform bounds
-        post_min_x, post_min_y, post_max_x, post_max_y = geo.rect()
-        logger.info(
-            f"Post-transform bounds: x=[{post_min_x:.3f}, "
-            f"{post_max_x:.3f}], y=[{post_min_y:.3f}, "
-            f"{post_max_y:.3f}]"
-        )
-        logger.info(
-            f"Post-transform size: {post_max_x - post_min_x:.3f} x "
-            f"{post_max_y - post_min_y:.3f}"
-        )
-
-        # Create the final workpiece.
+        # Create the final workpiece with the now-normalized, Y-up vectors.
         wp = WorkPiece(name=self.source_file.stem, vectors=geo)
         wp.import_source_uid = source.uid
 
         # Set the size to the final millimeter dimensions.
         wp.set_size(final_width_mm, final_height_mm)
-        wp.pos = (0, 0)  # FileCmd will center it later.
+        wp.pos = (0, 0)
 
         logger.info(
             f"Workpiece set size: {final_width_mm:.3f}mm x "
             f"{final_height_mm:.3f}mm"
-        )
-        logger.info(
-            f"Vector bounds vs workpiece size: "
-            f"{post_max_x - post_min_x:.3f} vs {final_width_mm:.3f} | "
-            f"{post_max_y - post_min_y:.3f} vs {final_height_mm:.3f}"
         )
 
         return [wp]

@@ -1,6 +1,5 @@
 import pytest
 import cairo
-from unittest.mock import MagicMock
 from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
@@ -11,6 +10,7 @@ from rayforge.core.ops import (
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
 from rayforge.machine.models.machine import Laser
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture
@@ -33,6 +33,15 @@ def white_surface() -> cairo.ImageSurface:
     ctx.set_source_rgb(1, 1, 1)  # White
     ctx.paint()
     return surface
+
+
+@pytest.fixture
+def mock_workpiece() -> WorkPiece:
+    """Returns a mock workpiece with a default size."""
+    wp = WorkPiece(name="mock_wp")
+    wp.uid = "wp_123"
+    wp.set_size(10.0, 10.0)  # 10mm x 10mm
+    return wp
 
 
 def test_initialization_defaults(producer: DepthEngraver):
@@ -121,25 +130,25 @@ def test_run_wraps_ops_in_section_markers(
     producer: DepthEngraver,
     laser: Laser,
     white_surface: cairo.ImageSurface,
+    mock_workpiece: WorkPiece,
 ):
     """
     Even with an empty result from a white surface, the output should be
     correctly wrapped in start and end section commands.
     """
     # Arrange
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = "wp_123"
-    # Set min_power to 0 to trigger the "skip white line" optimization
-    producer.min_power = 0
+    producer.min_power = (
+        0  # Set min_power to 0 to trigger the "skip white line" optimization
+    )
 
     # Act
-    ops = producer.run(
-        laser, white_surface, (10, 10), workpiece=mock_workpiece
+    artifact = producer.run(
+        laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
 
     # Assert
-    assert len(ops.commands) == 2
-    start_cmd, end_cmd = ops.commands
+    assert len(artifact.ops.commands) == 2
+    start_cmd, end_cmd = artifact.ops.commands
     assert isinstance(start_cmd, OpsSectionStartCommand)
     assert start_cmd.section_type == SectionType.RASTER_FILL
     assert start_cmd.workpiece_uid == "wp_123"
@@ -148,24 +157,22 @@ def test_run_wraps_ops_in_section_markers(
 
 
 def test_run_with_empty_surface_returns_empty_ops(
-    producer: DepthEngraver, laser: Laser
+    producer: DepthEngraver, laser: Laser, mock_workpiece: WorkPiece
 ):
     """
     Test that a zero-dimension surface produces no errors and empty Ops.
     """
     empty_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = "wp_123"
-    ops = producer.run(
-        laser, empty_surface, (10, 10), workpiece=mock_workpiece
+    artifact = producer.run(
+        laser, empty_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
     # Should only contain the start/end markers
-    assert len(ops.commands) == 2
-    assert isinstance(ops.commands[0], OpsSectionStartCommand)
-    assert isinstance(ops.commands[1], OpsSectionEndCommand)
+    assert len(artifact.ops.commands) == 2
+    assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
+    assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
 
 
-def test_power_modulation_logic(laser: Laser):
+def test_power_modulation_logic(laser: Laser, mock_workpiece: WorkPiece):
     """Tests the power modulation logic with solid color blocks."""
     # Arrange: Create a 10px wide surface with solid blocks.
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 1)
@@ -176,21 +183,23 @@ def test_power_modulation_logic(laser: Laser):
     ctx.set_source_rgb(1, 1, 1)  # White
     ctx.rectangle(9, 0, 1, 1)
     ctx.fill()
+    mock_workpiece.set_size(1.0, 0.1)  # 1mm wide, 0.1mm tall
 
     producer = DepthEngraver(
         depth_mode=DepthMode.POWER_MODULATION,
         min_power=10,
         max_power=90,
-        line_interval=0.1,  # Corresponds to 1 pixel row with px/mm=10
+        line_interval=0.1,  # Corresponds to 1 pixel row
         overscan=0,
     )
-    mock_workpiece = MagicMock(uid="wp_solid")
 
     # Act
-    ops = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
     # Assert
-    scan_cmds = [c for c in ops if isinstance(c, ScanLinePowerCommand)]
+    scan_cmds = [
+        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
+    ]
     assert len(scan_cmds) == 1
     power_vals = scan_cmds[0].power_values
     # Solid Black (start) should be exactly max_power
@@ -199,7 +208,7 @@ def test_power_modulation_logic(laser: Laser):
     assert power_vals[-1] == 10
 
 
-def test_multi_pass_logic(laser: Laser):
+def test_multi_pass_logic(laser: Laser, mock_workpiece: WorkPiece):
     """Tests the multi-pass logic with stepped gray values."""
     # Arrange: 3 bars: black, gray (127), white
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 10)
@@ -213,6 +222,7 @@ def test_multi_pass_logic(laser: Laser):
     ctx.set_source_rgb(1, 1, 1)  # White -> pass_map value 0
     ctx.rectangle(2, 0, 1, 10)
     ctx.fill()
+    mock_workpiece.set_size(0.3, 1.0)  # 0.3mm wide, 1mm tall
 
     producer = DepthEngraver(
         depth_mode=DepthMode.MULTI_PASS,
@@ -221,14 +231,13 @@ def test_multi_pass_logic(laser: Laser):
         overscan=0,
         line_interval=0.1,  # One line per pixel row
     )
-    mock_workpiece = MagicMock(uid="wp_multipass")
 
     # Act
-    ops = producer.run(laser, surface, (1, 10), workpiece=mock_workpiece)
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
     # Assert: Group commands by their Z-coordinate
     lines_by_z = {}
-    for cmd in ops.commands:
+    for cmd in artifact.ops.commands:
         if isinstance(cmd, LineToCommand):
             z = round(cmd.end[2], 2)
             lines_by_z.setdefault(z, 0)

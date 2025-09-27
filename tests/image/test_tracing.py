@@ -38,7 +38,7 @@ def test_trace_surface_clean_path():
     img = np.full((100, 100), 255, dtype=np.uint8)
     img[25:75, 25:75] = 0
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    geometries = trace_surface(surface)
     assert len(geometries) == 1
     assert isinstance(geometries[0], Geometry)
 
@@ -54,7 +54,7 @@ def test_trace_transparent_png_avoids_framing():
     bgra_array[10:40, 10:40] = [0, 0, 0, 255]
 
     surface = _create_test_surface_with_alpha(bgra_array)
-    geometries = trace_surface(surface, pixels_per_mm=(1.0, 1.0))
+    geometries = trace_surface(surface)
 
     # With the fix, only the central square should be traced.
     # Without the fix, this would find 2 or 3 geometries (the square + frames).
@@ -74,7 +74,7 @@ def test_trace_surface_denoising_path():
     img[1::10, 2::10] = 0
 
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    geometries = trace_surface(surface)
     # The adaptive filter should calculate a threshold of 3 and remove all
     # 1px and 2px components, leaving only the main square.
     assert len(geometries) == 1
@@ -89,7 +89,7 @@ def test_trace_surface_empty_result():
     img[::3, ::3] = 0
 
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    geometries = trace_surface(surface)
     assert geometries == []
 
 
@@ -111,7 +111,7 @@ def test_trace_surface_hull_fallback_path(monkeypatch):
                 img[start_row : start_row + 8, start_col : start_col + 8] = 0
 
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    geometries = trace_surface(surface)
 
     # There are 50 non-touching black squares (components).
     assert len(geometries) == 50
@@ -139,7 +139,7 @@ def test_trace_surface_edge_touching_shape():
     img[0:50, 0:50] = 0
 
     surface = _create_test_surface(img)
-    geometries = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    geometries = trace_surface(surface)
 
     # The border added during processing should ensure the shape is found.
     assert len(geometries) == 1
@@ -168,7 +168,7 @@ def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
     surface = _create_test_surface(img)
 
     # Call the main function
-    result = trace_surface(surface, pixels_per_mm=(10.0, 10.0))
+    result = trace_surface(surface)
 
     # Assert that our mocked hull function was called and its result returned
     mock_get_hull.assert_called_once()
@@ -176,9 +176,9 @@ def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
     # ANY is used for the numpy array as comparing them directly can be tricky
     mock_get_hull.assert_called_with(
         ANY,
-        10.0,
-        10.0,
+        1.0,  # scale_x is now 1.0 (pixel units)
+        1.0,  # scale_y is now 1.0 (pixel units)
         100,
-        2,  # scale_x, scale_y, height, border_size
+        2,
     )
     assert result == ["mocked_geometry"]

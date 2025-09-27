@@ -10,6 +10,7 @@ from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
+from rayforge.pipeline.producer.base import PipelineArtifact, CoordinateSystem
 
 
 @pytest.fixture(autouse=True)
@@ -63,8 +64,7 @@ def mock_task_mgr():
 def real_workpiece():
     """Creates a lightweight WorkPiece with transforms, but no source."""
     workpiece = WorkPiece(name="real_workpiece.svg")
-    workpiece.set_size(50, 30)
-    workpiece.pos = 10, 20
+    # Importer will set size and pos, we simulate it in the setup helper.
     return workpiece
 
 
@@ -81,8 +81,8 @@ def doc():
 class TestOpsGenerator:
     # This data is used by multiple tests to create the ImportSource.
     svg_data = b"""
-    <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
-    <rect width="10" height="10" />
+    <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
+    <rect width="50" height="30" />
     </svg>"""
 
     def _setup_doc_with_workpiece(self, doc, workpiece):
@@ -94,6 +94,9 @@ class TestOpsGenerator:
         )
         doc.add_import_source(source)
         workpiece.import_source_uid = source.uid
+        # Simulate importer setting the size and pos
+        workpiece.set_size(50, 30)
+        workpiece.pos = 10, 20
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
@@ -129,8 +132,16 @@ class TestOpsGenerator:
         # Act
         expected_ops = Ops()
         expected_ops.commands.append(LineToCommand((1, 1, 0)))
-        expected_pixel_size = (100, 100)
-        expected_result = (expected_ops, expected_pixel_size)
+
+        # The result from the subprocess is a serialized PipelineArtifact
+        expected_artifact = PipelineArtifact(
+            ops=expected_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+            generation_size=real_workpiece.size,
+        )
+        expected_result = expected_artifact.to_dict()
 
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task_to_complete.key
@@ -200,11 +211,15 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
+        artifact = PipelineArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        # The result needs to be a tuple (Ops, pixel_size)
-        mock_finished_task.result.return_value = (Ops(), (1, 1))
+        mock_finished_task.result.return_value = artifact.to_dict()
         initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
@@ -213,8 +228,8 @@ class TestOpsGenerator:
         real_workpiece.pos = 50, 50
 
         # Assert
-        # The `descendant_transform_changed` signal fires, but the generator
-        # should be smart enough to see the world size hasn't changed.
+        # The `descendant_transform_changed` signal fires, but for
+        # scalable ops, this should not trigger a regeneration.
         mock_task_mgr.run_process.assert_not_called()
 
     def test_workpiece_angle_change_does_not_regenerate(
@@ -231,11 +246,15 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
+        artifact = PipelineArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        # The result needs to be a tuple (Ops, pixel_size)
-        mock_finished_task.result.return_value = (Ops(), (1, 1))
+        mock_finished_task.result.return_value = artifact.to_dict()
         initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
@@ -257,6 +276,22 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
+        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
+
+        # Simulate the completion of the initial generation task to populate
+        # the cache.
+        initial_task = mock_task_mgr.created_tasks[0]
+        initial_artifact = PipelineArtifact(
+            ops=Ops(),
+            is_scalable=False,  # Not scalable to ensure size change matters
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=real_workpiece.size,  # size it was generated for
+        )
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = initial_task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = initial_artifact.to_dict()
+        initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
 

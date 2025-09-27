@@ -6,11 +6,12 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
-from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
+from ...core.matrix import Matrix
+from ...core.workpiece import WorkPiece
+from ...core.vectorization_config import TraceConfig
+from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
 from .. import image_util
 from .renderer import JPG_RENDERER
@@ -68,10 +69,11 @@ class JpgImporter(Importer):
             f"{surface.get_width()}x{surface.get_height()}"
         )
 
+        # Determine physical size first
         width_mm, height_mm = image_util.get_physical_size_mm(image)
-        pixels_per_mm = (image.width / width_mm, image.height / height_mm)
 
-        geometries = trace_surface(surface, pixels_per_mm)
+        # Trace the surface to get geometry in PIXEL coordinates
+        geometries = trace_surface(surface)
         combined_geo = Geometry()
 
         if geometries:
@@ -83,15 +85,28 @@ class JpgImporter(Importer):
                 "Tracing did not produce any vector geometries. "
                 "Creating a workpiece with a frame around the image instead."
             )
-            # Create a rectangle representing the full image boundary.
+            # Create a rectangle representing the full image boundary in PIXEL
+            # coordinates.
             combined_geo.move_to(0, 0)
-            combined_geo.line_to(width_mm, 0)
-            combined_geo.line_to(width_mm, height_mm)
-            combined_geo.line_to(0, height_mm)
+            combined_geo.line_to(image.width, 0)
+            combined_geo.line_to(image.width, image.height)
+            combined_geo.line_to(0, image.height)
             combined_geo.close_path()
 
+        # 1. Normalize the pixel-based geometry to a 1x1 unit square.
+        if image.width > 0 and image.height > 0:
+            norm_scale_x = 1.0 / image.width
+            norm_scale_y = 1.0 / image.height
+            normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
+
+            # 2. Apply the transform using the correct method signature.
+            combined_geo.transform(normalization_matrix.to_4x4_numpy())
+
+        # 3. Create the WorkPiece with the now-normalized vectors.
         final_wp = WorkPiece(name=self.source_file.stem, vectors=combined_geo)
         final_wp.import_source_uid = source.uid
+
+        # 4. Apply the final physical size via the matrix. This is now correct.
         final_wp.set_size(width_mm, height_mm)
         final_wp.pos = (0, 0)
 

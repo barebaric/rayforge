@@ -15,6 +15,7 @@ from ..base_importer import Importer, ImportPayload
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
+from ...core.matrix import Matrix
 from ..tracing import trace_surface
 from .parser import parse_bmp
 from .renderer import BMP_RENDERER
@@ -75,7 +76,6 @@ class BmpImporter(Importer):
         dpi_y = dpi_y or 96.0
         width_mm = width * (25.4 / dpi_x)
         height_mm = height * (25.4 / dpi_y)
-        pixels_per_mm = (width / width_mm, height / height_mm)
 
         # Convert to BGRA for Cairo (which expects ARGB32 in machine
         # byte order, effectively BGRA on little-endian systems).
@@ -102,7 +102,7 @@ class BmpImporter(Importer):
         surface.mark_dirty()
 
         # Step 5: Trace the surface and create the WorkPiece.
-        geometries = trace_surface(surface, pixels_per_mm)
+        geometries = trace_surface(surface)
 
         # Always combine geometries into a single WorkPiece, even if the
         # list is empty. An empty list results in a WorkPiece with empty
@@ -112,11 +112,21 @@ class BmpImporter(Importer):
             for geo in geometries:
                 combined_geo.commands.extend(geo.commands)
 
+        # Normalize the pixel-based geometry to a 1x1 unit square.
+        if width > 0 and height > 0:
+            norm_scale_x = 1.0 / width
+            norm_scale_y = 1.0 / height
+            normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
+            combined_geo.transform(normalization_matrix.to_4x4_numpy())
+
+        # Create the WorkPiece with the normalized vectors.
         final_wp = WorkPiece(
             name=self.source_file.stem,
             vectors=combined_geo,
         )
         final_wp.import_source_uid = source.uid
+
+        # Apply the final physical size via the matrix. This is now correct.
         final_wp.set_size(width_mm, height_mm)
         final_wp.pos = (0, 0)
 

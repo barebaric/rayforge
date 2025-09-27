@@ -4,6 +4,7 @@ from typing import Optional, TYPE_CHECKING
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...image.hull import get_concave_hull
 from ...image.tracing import prepare_surface
+from ...core.matrix import Matrix
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -46,7 +47,9 @@ class ShrinkWrapProducer(OpsProducer):
         y_offset_mm: float = 0.0,
     ) -> PipelineArtifact:
         if workpiece is None:
-            raise ValueError("HullProducer requires a workpiece context.")
+            raise ValueError(
+                "ShrinkWrapProducer requires a workpiece context."
+            )
 
         final_ops = Ops()
         final_ops.add(
@@ -56,35 +59,39 @@ class ShrinkWrapProducer(OpsProducer):
         boolean_image = prepare_surface(surface)
 
         if np.any(boolean_image):
-            # Since this is a scalable producer operating on a raster image,
-            # we generate the geometry in pixel coordinates (scale = 1.0).
-            # The OpsGenerator will scale this to the final mm size.
-            px_per_mm_x, px_per_mm_y = 1.0, 1.0
-
-            height_px = surface.get_height()
-
-            # get_concave_hull handles both convex (gravity=0) and concave
-            # cases, creating the "rubber band with gravity" effect.
+            # The hull is generated in pixel coordinates.
             geometry = get_concave_hull(
                 boolean_image=boolean_image,
-                scale_x=px_per_mm_x,
-                scale_y=px_per_mm_y,
-                height_px=height_px,
+                scale_x=1.0,  # Generate in pixels
+                scale_y=1.0,  # Generate in pixels
+                height_px=surface.get_height(),
                 border_size=BORDER_SIZE,
                 gravity=self.gravity,
             )
 
             if geometry:
                 hull_ops = Ops.from_geometry(geometry)
+
+                # Scale the pixel-based ops to their final millimeter size.
+                width_mm, height_mm = workpiece.size
+                px_width, px_height = surface.get_width(), surface.get_height()
+
+                if px_width > 0 and px_height > 0:
+                    scale_x = width_mm / px_width
+                    scale_y = height_mm / px_height
+                    scaling_matrix = Matrix.scale(scale_x, scale_y)
+                    hull_ops.transform(scaling_matrix.to_4x4_numpy())
+
                 final_ops.extend(hull_ops)
 
         final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
         return PipelineArtifact(
             ops=final_ops,
-            is_scalable=True,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-            source_dimensions=(surface.get_width(), surface.get_height()),
+            is_scalable=True,  # Source data is vector, so it's scalable
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=workpiece.size,
+            generation_size=workpiece.size,
         )
 
     @property

@@ -22,9 +22,35 @@ class ImportPayload(NamedTuple):
 class Importer(ABC):
     """
     An abstract base class that defines the interface for all importers.
+
     An Importer acts as a factory, taking raw file data and producing a
-    self-contained payload containing an ImportSource and a list of
-    DocItems (WorkPieces and/or Groups).
+    self-contained `ImportPayload`. This payload contains the `ImportSource`
+    (the link to the original file) and a list of `DocItem` objects
+    (typically `WorkPiece` instances) ready to be added to a document.
+
+    Architectural Contract:
+    -----------------------
+    To prevent "double transformation" bugs, all importers MUST follow a strict
+    separation of concerns between an object's intrinsic shape and its
+    physical transformation in the document.
+
+    1.  **Generate Normalized Vectors**: The vector geometry created by the
+        importer should represent the object's SHAPE, normalized to a standard
+        unit size (e.g., fitting within a 1x1 box) while preserving the
+        original aspect ratio.
+
+    2.  **Assign to WorkPiece**: This normalized `Geometry` is assigned to
+        `WorkPiece.vectors`. At this point, the `WorkPiece`'s transformation
+        matrix should be the identity matrix (scale=1).
+
+    3.  **Apply Physical Size via Matrix**: The importer then determines the
+        object's intended physical size in millimeters and calls
+        `WorkPiece.set_size()`. This method correctly applies the physical
+        dimensions by modifying the `WorkPiece.matrix`, scaling the
+        normalized vectors to their final size.
+
+    This ensures that the scale is applied only once, through the matrix,
+    and that `WorkPiece.vectors` remains a pure representation of shape.
     """
 
     label: str
