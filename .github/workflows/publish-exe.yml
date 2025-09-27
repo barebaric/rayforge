@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    #if: false # Temporarily disable this workflow
+    if: false # Temporarily disable this workflow
     runs-on: windows-2025
     outputs:
       version: ${{ steps.set-version.outputs.version }}
