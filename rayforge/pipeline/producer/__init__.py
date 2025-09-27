@@ -3,7 +3,7 @@ import inspect
 from .base import OpsProducer
 from .depth import DepthEngraver
 from .edge import EdgeTracer
-from .shrinkwrap import HullProducer
+from .shrinkwrap import ShrinkWrapProducer
 from .outline import OutlineTracer
 from .rasterize import Rasterizer
 
@@ -22,7 +22,7 @@ __all__ = [
     "OutlineTracer",
     "DepthEngraver",
     "EdgeTracer",
-    "HullProducer",
+    "ShrinkWrapProducer",
     "Rasterizer",
     "producer_by_name",
 ]

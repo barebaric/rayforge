@@ -2,7 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING, cast, Tuple
 from gi.repository import Gtk, Adw, GLib
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer
-from ....pipeline.producer.shrinkwrap import HullProducer
+from ....pipeline.producer.shrinkwrap import ShrinkWrapProducer
 from ....undo import DictItemCommand
 
 if TYPE_CHECKING:
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ....undo import HistoryManager
 
 
-class HullProducerSettingsWidget(StepComponentSettingsWidget):
+class ShrinkWrapProducerSettingsWidget(StepComponentSettingsWidget):
     """UI for configuring the HullProducer."""
 
     def __init__(
@@ -21,7 +21,7 @@ class HullProducerSettingsWidget(StepComponentSettingsWidget):
         history_manager: "HistoryManager",
         **kwargs,
     ):
-        producer = cast(HullProducer, OpsProducer.from_dict(target_dict))
+        producer = cast(ShrinkWrapProducer, OpsProducer.from_dict(target_dict))
 
         super().__init__(
             target_dict=target_dict,

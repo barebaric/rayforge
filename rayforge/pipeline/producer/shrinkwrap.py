@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 BORDER_SIZE = 2
 
 
-class HullProducer(OpsProducer):
+class ShrinkWrapProducer(OpsProducer):
     """
     Generates a single vector hull that encloses all content on a surface.
 
