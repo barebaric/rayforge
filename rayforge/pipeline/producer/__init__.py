@@ -1,6 +1,6 @@
 # flake8: noqa:F401
 import inspect
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact
 from .depth import DepthEngraver
 from .edge import EdgeTracer
 from .shrinkwrap import ShrinkWrapProducer

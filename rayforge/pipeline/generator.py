@@ -11,6 +11,7 @@ the final job assembler.
 
 from __future__ import annotations
 import logging
+import math
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
@@ -22,6 +23,7 @@ from ..core.workpiece import WorkPiece
 from ..core.ops import Ops
 from .steprunner import run_step_in_subprocess
 from ..core.group import Group
+from .producer.base import PipelineArtifact
 
 if TYPE_CHECKING:
     from ..shared.tasker.task import Task
@@ -59,10 +61,8 @@ class OpsGenerator:
 
     # Type alias for the structure of the operations cache.
     # Key: (step_uid, workpiece_uid)
-    # Value: (Ops object, pixel_dimensions_tuple)
-    OpsCacheType = Dict[
-        Tuple[str, str], Tuple[Optional[Ops], Optional[Tuple[int, int]]]
-    ]
+    # Value: PipelineArtifact
+    OpsCacheType = Dict[Tuple[str, str], Optional[PipelineArtifact]]
 
     def __init__(self, doc: "Doc", task_manager: "TaskManager"):
         """
@@ -76,7 +76,6 @@ class OpsGenerator:
         self._doc: Doc = Doc()
         self._task_manager = task_manager
         self._ops_cache: OpsGenerator.OpsCacheType = {}
-        self._world_size_cache: Dict[str, Tuple[float, float]] = {}
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
         self._active_tasks: Dict[Tuple[str, str], "Task"] = {}
         self._pause_count = 0
@@ -116,7 +115,6 @@ class OpsGenerator:
             # Ensure cache is fully cleared in case some items had no active
             # tasks
             self._ops_cache.clear()
-            self._world_size_cache.clear()
             self._generation_id_map.clear()
 
         self._doc = new_doc
@@ -248,7 +246,7 @@ class OpsGenerator:
                 if workpiece_layer and workpiece_layer.workflow:
                     for step in workpiece_layer.workflow:
                         key = (step.uid, workpiece.uid)
-                        if self._ops_cache.get(key, (None, None))[0] is None:
+                        if self._ops_cache.get(key) is None:
                             logger.debug(
                                 f"Ops for {key} not found in cache after "
                                 "'add'. Triggering generation."
@@ -324,62 +322,64 @@ class OpsGenerator:
 
     def _on_descendant_transform_changed(self, sender, *, origin):
         """
-        Smartly handles transform changes. If the world size changes, the cache
-        is invalidated, and regeneration is triggered. This only runs when the
-        generator is not paused.
+        Smartly handles transform changes. For scalable ops, it sends an
+        update notification. For non-scalable ops, it defers regeneration
+        if paused.
         """
         logger.debug(
             f"{self.__class__.__name__}._on_descendant_transform_changed"
         )
-        if self.is_paused:
-            return  # Changes are handled by reconcile_all() on resume.
 
         # If a group's transform changes, we need to check all workpieces
         # inside it.
         workpieces_to_check = []
         if isinstance(origin, WorkPiece):
             workpieces_to_check.append(origin)
-        elif isinstance(origin, Group):
+        elif isinstance(origin, (Group, Layer)):
             workpieces_to_check.extend(
                 origin.get_descendants(of_type=WorkPiece)
             )
 
         for wp in workpieces_to_check:
-            new_size = wp.size
-            # Read the size of the *currently cached* ops.
-            # Do NOT update the cache here.
-            old_size = self._world_size_cache.get(wp.uid)
+            wp_layer = wp.layer
+            if not wp_layer or not wp_layer.workflow:
+                continue
 
-            if old_size is None:
-                # If we've never generated for this workpiece before, we must
-                # generate.
-                size_changed = True
-            else:
-                # Compare the new size to the previously cached size.
-                size_changed = not (
-                    abs(old_size[0] - new_size[0]) < 1e-9
-                    and abs(old_size[1] - new_size[1]) < 1e-9
-                )
+            for step in wp_layer.workflow:
+                key = (step.uid, wp.uid)
+                artifact = self._ops_cache.get(key)
+                if not artifact:
+                    continue
 
-            if size_changed:
-                logger.info(
-                    f"World size for '{wp.name}' changed live. "
-                    f"Old: {old_size}, New: {new_size}. Regenerating ops."
-                )
-                self._update_ops_for_workpiece(wp)
-            else:
-                logger.debug(
-                    f"Transform for '{wp.name}' changed but world size is "
-                    "stable (translation/rotation only). "
-                    "Skipping regeneration."
-                )
+                if artifact.is_scalable:
+                    # This is a cheap notification. It's safe to send
+                    # immediately, even during a paused drag operation,
+                    # so the UI can update live.
+                    generation_id = self._generation_id_map.get(key, 0)
+                    self.ops_generation_finished.send(
+                        step, workpiece=wp, generation_id=generation_id
+                    )
+                else:
+                    # This is an expensive regeneration. It MUST be
+                    # guarded by the pause check. On resume,
+                    # reconcile_all will handle the regeneration.
+                    if self.is_paused:
+                        continue
+
+                    old_size = artifact.generation_size
+                    new_size = wp.size
+                    if old_size != new_size:
+                        logger.info(
+                            "Size for non-scalable op '{wp.name}' changed. "
+                            f"Old: {old_size}, New: {new_size}. Regenerating."
+                        )
+                        self._trigger_ops_generation(step, wp)
 
     def _cleanup_key(self, key: Tuple[str, str]):
         """Removes a cache entry and cancels any associated task."""
         logger.debug(f"{self.__class__.__name__}._cleanup_key called")
         logger.debug(f"OpsGenerator: Cleaning up key {key}.")
         self._ops_cache.pop(key, None)
-        self._world_size_cache.pop(key[1], None)
         self._generation_id_map.pop(key, None)
         self._active_tasks.pop(key, None)
         self._task_manager.cancel_task(key)
@@ -390,8 +390,7 @@ class OpsGenerator:
 
         This method compares the complete set of (Step, WorkPiece) pairs in
         the document with its internal cache. It starts generation for any new
-        or invalidated items (based on world size) and cleans up tasks/cache
-        for obsolete items.
+        or invalidated items and cleans up tasks/cache for obsolete items.
         """
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
         if self.is_paused:
@@ -417,21 +416,12 @@ class OpsGenerator:
                 for workpiece in layer.all_workpieces:
                     key = (step.uid, workpiece.uid)
                     is_valid = False
-                    if key in self._ops_cache:
-                        ops, _ = self._ops_cache[key]
-                        if ops is not None:
-                            # Perform the critical validity check.
-                            old_size = self._world_size_cache.get(
-                                workpiece.uid
-                            )
-                            new_size = workpiece.size
-                            if old_size is not None:
-                                size_changed = not (
-                                    abs(old_size[0] - new_size[0]) < 1e-9
-                                    and abs(old_size[1] - new_size[1]) < 1e-9
-                                )
-                                if not size_changed:
-                                    is_valid = True
+                    artifact = self._ops_cache.get(key)
+                    if artifact:
+                        is_valid = (
+                            artifact.is_scalable
+                            or artifact.generation_size == workpiece.size
+                        )
 
                     if not is_valid:
                         self._trigger_ops_generation(step, workpiece)
@@ -474,24 +464,30 @@ class OpsGenerator:
             return
 
         key = step.uid, workpiece.uid
+
+        # If a task is already running for this key, cancel it before starting
+        # a new one.
+        if key in self._active_tasks:
+            logger.debug(f"Cancelling existing task for key {key}.")
+            self._task_manager.cancel_task(key)
+            self._active_tasks.pop(key, None)
+
         generation_id = self._generation_id_map.get(key, 0) + 1
         self._generation_id_map[key] = generation_id
 
         self.ops_generation_starting.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
-        self._ops_cache[key] = (None, None)
+        self._ops_cache[key] = None
 
         was_busy = self.is_busy
         s_uid, w_uid = step.uid, workpiece.uid
 
-        # Capture the size we are generating for and pass it to the callback.
+        # Capture the size we are generating for and pass it to the subprocess.
         generation_size = workpiece.size
 
         def when_done_callback(task: "Task"):
-            self._on_generation_complete(
-                task, s_uid, w_uid, generation_id, generation_size
-            )
+            self._on_generation_complete(task, s_uid, w_uid, generation_id)
 
         settings = {
             "power": step.power,
@@ -528,6 +524,7 @@ class OpsGenerator:
             step.laser_dict,
             settings,
             generation_id,
+            generation_size,
             key=key,
             when_done=when_done_callback,
             when_event=self._on_task_event_received,
@@ -570,7 +567,6 @@ class OpsGenerator:
         s_uid: str,
         w_uid: str,
         task_generation_id: int,
-        generation_size: Tuple[float, float],
     ):
         """
         Callback for when an ops generation task finishes.
@@ -602,9 +598,7 @@ class OpsGenerator:
             return
 
         if task.get_status() == "completed":
-            self._handle_completed_task(
-                task, key, step, workpiece, generation_size
-            )
+            self._handle_completed_task(task, key, step, workpiece)
         else:
             # Check source_file before using it in the log message
             wp_name = (
@@ -617,7 +611,7 @@ class OpsGenerator:
                 f"'{wp_name}' failed. "
                 f"Status: {task.get_status()}."
             )
-            self._ops_cache[key] = (None, None)
+            self._ops_cache[key] = None
 
         self.ops_generation_finished.send(
             step, workpiece=workpiece, generation_id=task_generation_id
@@ -633,19 +627,18 @@ class OpsGenerator:
         key: Tuple[str, str],
         step: Step,
         workpiece: WorkPiece,
-        generation_size: Tuple[float, float],
     ):
         """Processes the result of a successfully completed task."""
         logger.debug(
             f"{self.__class__.__name__}._handle_completed_task called"
         )
         try:
-            result = task.result()
-            ops, px_size = result if result else (None, None)
-            # Atomically update both caches upon success.
-            self._ops_cache[key] = (ops, px_size)
-            if ops is not None:
-                self._world_size_cache[workpiece.uid] = generation_size
+            result_dict = task.result()
+            if result_dict:
+                artifact = PipelineArtifact.from_dict(result_dict)
+                self._ops_cache[key] = artifact
+            else:
+                self._ops_cache[key] = None
         except Exception as e:
             # Check source_file before using it in the log message
             wp_name = (
@@ -657,7 +650,7 @@ class OpsGenerator:
                 f"Error getting result for '{step.name}' on '{wp_name}': {e}",
                 exc_info=True,
             )
-            self._ops_cache[key] = (None, None)
+            self._ops_cache[key] = None
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
@@ -665,8 +658,7 @@ class OpsGenerator:
 
         This is the primary method for consumers (like the UI or the job
         assembler) to get the result of the pipeline. It returns a deep copy
-        of the cached Ops. If the ops were generated from a source with a
-        specific pixel size (e.g., a vector trace of an SVG), this method
+        of the cached Ops. If the ops are scalable, this method
         scales them to the workpiece's current physical size in millimeters.
 
         Args:
@@ -682,22 +674,21 @@ class OpsGenerator:
         if any(s <= 0 for s in workpiece.size):
             return None
 
-        raw_ops, pixel_size = self._ops_cache.get(key, (None, None))
+        artifact = self._ops_cache.get(key)
 
-        if raw_ops is None:
-            logger.debug(f"get_ops for {key}: No ops found in cache.")
+        if artifact is None:
+            logger.debug(f"get_ops for {key}: No artifact found in cache.")
             return None
         else:
             logger.debug(
-                f"get_ops for {key}: Found raw_ops with "
-                f"{len(raw_ops.commands)} "
-                f"commands. Pixel size: {pixel_size}."
+                f"get_ops for {key}: Found artifact. "
+                f"Scalable: {artifact.is_scalable}."
             )
 
-        ops = deepcopy(raw_ops)
+        ops = deepcopy(artifact.ops)
 
-        if pixel_size:
-            self._scale_ops_to_workpiece_size(ops, pixel_size, workpiece)
+        if artifact.is_scalable:
+            self._scale_ops_to_workpiece_size(ops, artifact, workpiece)
 
         logger.debug(
             f"get_ops for {key}: Returning final ops with {len(ops.commands)} "
@@ -706,24 +697,37 @@ class OpsGenerator:
         return ops
 
     def _scale_ops_to_workpiece_size(
-        self, ops: Ops, px_size: Tuple[int, int], workpiece: "WorkPiece"
+        self, ops: Ops, artifact: PipelineArtifact, workpiece: "WorkPiece"
     ):
         """
-        Scales an Ops object from its generated pixel size to the workpiece's
-        current physical size in millimeters.
+        Scales an Ops object from its source coordinate system to the
+        workpiece's current physical size in millimeters.
         """
         logger.debug(
             f"{self.__class__.__name__}._scale_ops_to_workpiece_size called"
         )
-        traced_width_px, traced_height_px = px_size
+        if not artifact.source_dimensions:
+            logger.warning(
+                "Cannot scale ops: artifact is missing source size."
+            )
+            return
+
+        source_width, source_height = artifact.source_dimensions
         size = workpiece.size
         if not size:
             return
 
         final_width_mm, final_height_mm = size
 
-        if traced_width_px > 0 and traced_height_px > 0:
-            scale_x = final_width_mm / traced_width_px
-            scale_y = final_height_mm / traced_height_px
+        scale_x = 1.0
+        if source_width > 1e-9:
+            scale_x = final_width_mm / source_width
+
+        scale_y = 1.0
+        if source_height > 1e-9:
+            scale_y = final_height_mm / source_height
+
+        # Only apply scaling if it's not a no-op
+        if not (math.isclose(scale_x, 1.0) and math.isclose(scale_y, 1.0)):
             logger.debug(f"Scaling ops by ({scale_x}, {scale_y})")
             ops.scale(scale_x, scale_y)

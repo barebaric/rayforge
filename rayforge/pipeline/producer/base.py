@@ -1,9 +1,57 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+from enum import Enum, auto
+from dataclasses import dataclass, asdict
 from ...core.ops import Ops
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+
+
+class CoordinateSystem(Enum):
+    """Defines the coordinate space in which Ops were generated."""
+
+    PIXEL_SPACE = auto()
+    NATIVE_VECTOR_SPACE = auto()
+    MILLIMETER_SPACE = auto()
+
+
+@dataclass
+class PipelineArtifact:
+    """A self-describing container for the output of an OpsProducer."""
+
+    ops: Ops
+    is_scalable: bool
+    source_coordinate_system: CoordinateSystem
+    source_dimensions: Optional[Tuple[float, float]] = None
+    generation_size: Optional[Tuple[float, float]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Serializes the artifact to a dictionary for inter-process transfer.
+        """
+        data = asdict(self)
+        data["ops"] = self.ops.to_dict()
+        data["source_coordinate_system"] = self.source_coordinate_system.name
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "PipelineArtifact":
+        """Deserializes a dictionary back into a PipelineArtifact instance."""
+        return cls(
+            ops=Ops.from_dict(data["ops"]),
+            is_scalable=data["is_scalable"],
+            source_coordinate_system=CoordinateSystem[
+                data["source_coordinate_system"]
+            ],
+            source_dimensions=tuple(data["source_dimensions"])
+            if data["source_dimensions"]
+            else None,
+            generation_size=tuple(data["generation_size"])
+            if data["generation_size"]
+            else None,
+        )
 
 
 class OpsProducer(ABC):
@@ -24,7 +72,7 @@ class OpsProducer(ABC):
         *,
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
-    ) -> Ops:
+    ) -> PipelineArtifact:
         pass
 
     def can_scale(self) -> bool:

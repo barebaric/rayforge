@@ -1,5 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...image.tracing import trace_surface
 from ...core.geo import Geometry, contours
 from ...core.ops import (
@@ -27,7 +27,7 @@ class OutlineTracer(OpsProducer):
         *,
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
-    ) -> Ops:
+    ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("OutlineTracer requires a workpiece context.")
 
@@ -37,6 +37,9 @@ class OutlineTracer(OpsProducer):
         )
 
         source_contours: List[Geometry] = []
+        source_dims = None
+        coord_system = CoordinateSystem.PIXEL_SPACE
+
         # If the workpiece has vectors, split them into contours.
         if (
             workpiece
@@ -44,9 +47,14 @@ class OutlineTracer(OpsProducer):
             and not workpiece.vectors.is_empty()
         ):
             source_contours = workpiece.vectors.split_into_contours()
+            coord_system = CoordinateSystem.NATIVE_VECTOR_SPACE
+            _x, _y, w_mm, h_mm = workpiece.vectors.rect()
+            source_dims = (w_mm, h_mm)
         # If no vectors, fall back to raster tracing the surface.
         else:
             source_contours = trace_surface(surface, pixels_per_mm)
+            coord_system = CoordinateSystem.PIXEL_SPACE
+            source_dims = (surface.get_width(), surface.get_height())
 
         # Apply the centralized, reusable filtering algorithm.
         external_contours = contours.filter_to_external_contours(
@@ -60,4 +68,10 @@ class OutlineTracer(OpsProducer):
 
         final_ops.extend(outline_ops)
         final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
-        return final_ops
+
+        return PipelineArtifact(
+            ops=final_ops,
+            is_scalable=True,
+            source_coordinate_system=coord_system,
+            source_dimensions=source_dims,
+        )

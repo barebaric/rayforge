@@ -1,7 +1,7 @@
 import cairo
 import numpy as np
 from typing import Optional, TYPE_CHECKING
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...image.hull import get_concave_hull
 from ...image.tracing import prepare_surface
 from ...core.ops import (
@@ -44,7 +44,7 @@ class ShrinkWrapProducer(OpsProducer):
         *,
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
-    ) -> Ops:
+    ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("HullProducer requires a workpiece context.")
 
@@ -56,11 +56,10 @@ class ShrinkWrapProducer(OpsProducer):
         boolean_image = prepare_surface(surface)
 
         if np.any(boolean_image):
-            if pixels_per_mm:
-                px_per_mm_x, px_per_mm_y = pixels_per_mm
-            else:
-                # We are in scalable mode, work in pixel coordinates
-                px_per_mm_x, px_per_mm_y = 1.0, 1.0
+            # Since this is a scalable producer operating on a raster image,
+            # we generate the geometry in pixel coordinates (scale = 1.0).
+            # The OpsGenerator will scale this to the final mm size.
+            px_per_mm_x, px_per_mm_y = 1.0, 1.0
 
             height_px = surface.get_height()
 
@@ -80,7 +79,13 @@ class ShrinkWrapProducer(OpsProducer):
                 final_ops.extend(hull_ops)
 
         final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
-        return final_ops
+
+        return PipelineArtifact(
+            ops=final_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+            source_dimensions=(surface.get_width(), surface.get_height()),
+        )
 
     @property
     def requires_full_render(self) -> bool:
