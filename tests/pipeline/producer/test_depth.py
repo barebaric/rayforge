@@ -56,9 +56,9 @@ def test_initialization_defaults(producer: DepthEngraver):
     assert producer.num_depth_levels == 5
 
 
-def test_can_scale_is_false(producer: DepthEngraver):
+def test_is_vector_producer_is_false(producer: DepthEngraver):
     """The producer is for rastering, so it should not be scalable."""
-    assert producer.can_scale() is False
+    assert producer.is_vector_producer() is False
 
 
 def test_serialization_and_deserialization():

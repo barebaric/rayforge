@@ -9,6 +9,7 @@ from .producer import (
     Rasterizer,
     DepthEngraver,
     ShrinkWrapProducer,
+    FrameProducer,
 )
 from .transformer import (
     Optimize,
@@ -148,10 +149,34 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     return step
 
 
+def create_frame_step(name: Optional[str] = None) -> Step:
+    """Factory to create and configure a Frame step."""
+    assert config.config.machine
+    step = Step(
+        typelabel=_("Frame Outline"),
+        name=name,
+    )
+    step.opsproducer_dict = FrameProducer(offset=1.0).to_dict()
+    # FrameProducer does not use image data, so no modifiers are needed.
+    step.modifiers_dicts = []
+    step.opstransformers_dicts = [
+        TabOpsTransformer().to_dict(),
+        Optimize(enabled=True).to_dict(),
+    ]
+    step.post_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+    ]
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
+    return step
+
+
 STEP_FACTORIES: List[Callable[[Optional[str]], Step]] = [
     create_contour_step,
     create_outline_step,
     create_raster_step,
     create_depth_engrave_step,
     create_shrinkwrap_step,
+    create_frame_step,
 ]

@@ -323,7 +323,7 @@ class DepthEngraver(OpsProducer):
             is_reversed = not is_reversed
         return ops
 
-    def can_scale(self) -> bool:
+    def is_vector_producer(self) -> bool:
         return False
 
     def to_dict(self) -> dict:

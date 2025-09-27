@@ -124,11 +124,18 @@ class OpsProducer(ABC):
     ) -> PipelineArtifact:
         pass
 
-    def can_scale(self) -> bool:
+    def is_vector_producer(self) -> bool:
         """
-        Returns True if the produced Ops object is scalable. This allows
-        the consumer to cache the Ops object more often, as it does not
-        need to be re-made just because the input image was resized.
+        Specifies the generation strategy for the producer.
+
+        - True: Use the vector/full-render path. The producer can handle
+          vector inputs directly, or it traces a single, fully-rendered
+          raster image.
+        - False: Use the chunked raster path. The producer requires the
+          input to be rendered and fed to it in horizontal strips.
+
+        This controls the *process* of generation, while the artifact's
+        `is_scalable` flag controls the caching behavior of the *product*.
         """
         return True
 

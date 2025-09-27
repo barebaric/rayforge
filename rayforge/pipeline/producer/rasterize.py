@@ -186,5 +186,5 @@ class Rasterizer(OpsProducer):
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
 
-    def can_scale(self) -> bool:
+    def is_vector_producer(self) -> bool:
         return False

@@ -1,16 +1,17 @@
-from typing import Dict, Any, Tuple, TYPE_CHECKING
-from gi.repository import Gtk, Adw, GLib
+from typing import Dict, Any, TYPE_CHECKING
+from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
+from ....shared.util.adwfix import get_spinrow_int
+from ....shared.util.glib import DebounceMixin
 from ....pipeline.transformer import Smooth
 from ....undo import DictItemCommand
-from ....shared.util.adwfix import get_spinrow_int
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....undo import HistoryManager
 
 
-class SmoothSettingsWidget(StepComponentSettingsWidget):
+class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
     """UI for configuring the Smooth transformer."""
 
     def __init__(
@@ -31,10 +32,6 @@ class SmoothSettingsWidget(StepComponentSettingsWidget):
             history_manager=history_manager,
             **kwargs,
         )
-
-        self._debounce_timer = 0
-        self._debounced_callback = None
-        self._debounced_args: Tuple = ()
 
         # Main toggle switch
         switch_row = Adw.SwitchRow(title=_("Enable Smoothing"))
@@ -89,21 +86,6 @@ class SmoothSettingsWidget(StepComponentSettingsWidget):
             lambda scale: self._debounce(self._on_amount_changed, scale),
         )
         corner_row.connect("changed", self._on_corner_angle_changed)
-
-    def _debounce(self, callback, *args):
-        if self._debounce_timer > 0:
-            GLib.source_remove(self._debounce_timer)
-        self._debounced_callback = callback
-        self._debounced_args = args
-        self._debounce_timer = GLib.timeout_add(
-            150, self._commit_debounced_change
-        )
-
-    def _commit_debounced_change(self):
-        if self._debounced_callback:
-            self._debounced_callback(*self._debounced_args)
-        self._debounce_timer = 0
-        return GLib.SOURCE_REMOVE
 
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()

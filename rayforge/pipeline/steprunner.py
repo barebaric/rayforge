@@ -267,7 +267,7 @@ def run_step_in_subprocess(
     )
     initial_ops = _create_initial_ops()
     final_artifact = None
-    is_vector = opsproducer.can_scale()
+    is_vector = opsproducer.is_vector_producer()
 
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight

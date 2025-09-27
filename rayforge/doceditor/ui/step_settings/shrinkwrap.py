@@ -1,6 +1,7 @@
-from typing import Dict, Any, TYPE_CHECKING, cast, Tuple
-from gi.repository import Gtk, Adw, GLib
+from typing import Dict, Any, TYPE_CHECKING, cast
+from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
+from ....shared.util.glib import DebounceMixin
 from ....pipeline.producer.base import OpsProducer
 from ....pipeline.producer.shrinkwrap import ShrinkWrapProducer
 from ....undo import DictItemCommand
@@ -10,7 +11,9 @@ if TYPE_CHECKING:
     from ....undo import HistoryManager
 
 
-class ShrinkWrapProducerSettingsWidget(StepComponentSettingsWidget):
+class ShrinkWrapProducerSettingsWidget(
+    DebounceMixin, StepComponentSettingsWidget
+):
     """UI for configuring the HullProducer."""
 
     def __init__(
@@ -31,16 +34,10 @@ class ShrinkWrapProducerSettingsWidget(StepComponentSettingsWidget):
             **kwargs,
         )
 
-        self._debounce_timer = 0
-        self._debounced_callback = None
-        self._debounced_args: Tuple = ()
-
         # Gravity setting (Slider)
         gravity_row = Adw.ActionRow(
             title=_("Gravity"),
-            subtitle=_(
-                "Pulls the hull inward. 0.0 is a standard convex hull"
-            ),
+            subtitle=_("Pulls the hull inward. 0.0 is a standard convex hull"),
         )
         gravity_adj = Gtk.Adjustment(
             lower=0.0, upper=1.0, step_increment=0.01, page_increment=0.1
@@ -61,21 +58,6 @@ class ShrinkWrapProducerSettingsWidget(StepComponentSettingsWidget):
             "value-changed",
             lambda scale: self._debounce(self._on_gravity_changed, scale),
         )
-
-    def _debounce(self, callback, *args):
-        if self._debounce_timer > 0:
-            GLib.source_remove(self._debounce_timer)
-        self._debounced_callback = callback
-        self._debounced_args = args
-        self._debounce_timer = GLib.timeout_add(
-            150, self._commit_debounced_change
-        )
-
-    def _commit_debounced_change(self):
-        if self._debounced_callback:
-            self._debounced_callback(*self._debounced_args)
-        self._debounce_timer = 0
-        return GLib.SOURCE_REMOVE
 
     def _on_gravity_changed(self, scale):
         new_value = scale.get_value()
