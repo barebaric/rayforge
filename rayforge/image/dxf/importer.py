@@ -41,7 +41,7 @@ class DxfImporter(Importer):
     extensions = (".dxf",)
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vector_config: Optional[TraceConfig] = None
     ) -> Optional[ImportPayload]:
         # DXF is a vector format, so the vector_config is ignored.
         try:
@@ -145,10 +145,7 @@ class DxfImporter(Importer):
             else:
                 component_geometries = [current_geo]
 
-            # Store solid data in the import source's metadata.
-            # This is done only once for the entire set of geometries.
             if source and current_solids:
-                # To keep it simple, we just append to any existing solids.
                 existing_solids = source.metadata.get("solids", [])
                 existing_solids.extend(current_solids)
                 source.metadata["solids"] = existing_solids
@@ -156,18 +153,18 @@ class DxfImporter(Importer):
             workpieces = []
             for i, component_geo in enumerate(component_geometries):
                 min_x, min_y, max_x, max_y = component_geo.rect()
+                width = max(max_x - min_x, 1e-9)
+                height = max(max_y - min_y, 1e-9)
 
-                # Normalize geometry to have its origin at (0,0)
+                # Normalize the component geometry to its own origin and
+                # 1x1 size
                 normalized_geo = component_geo.copy()
-                translate_matrix = np.array(
-                    [
-                        [1, 0, 0, -min_x],
-                        [0, 1, 0, -min_y],
-                        [0, 0, 1, 0],
-                        [0, 0, 0, 1],
-                    ]
-                )
-                normalized_geo.transform(translate_matrix)
+                translation_matrix = Matrix.translation(-min_x, -min_y)
+                normalized_geo.transform(translation_matrix.to_4x4_numpy())
+
+                if width > 0 and height > 0:
+                    norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
+                    normalized_geo.transform(norm_matrix.to_4x4_numpy())
 
                 wp = WorkPiece(
                     name=self.source_file.stem,
@@ -176,8 +173,6 @@ class DxfImporter(Importer):
                 wp.import_source_uid = source.uid
 
                 # Set the workpiece's matrix to position and scale it.
-                width = max(max_x - min_x, 1e-9)
-                height = max(max_y - min_y, 1e-9)
                 wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
                     width, height
                 )
@@ -235,8 +230,6 @@ class DxfImporter(Importer):
 
         for entity in entities:
             if entity.dxftype() == "INSERT":
-                # An INSERT entity ends the current Geometry run and creates a
-                # Group.
                 flush_geo_to_workpiece(split_components)
                 block_items = blocks_cache.get(entity.dxf.name)
                 if not block_items:
@@ -245,20 +238,15 @@ class DxfImporter(Importer):
                 group = Group(name=entity.dxf.name)
                 group.set_children(deepcopy(block_items))
 
-                # Calculate the transformation for this block instance.
                 m = entity.matrix44()
                 if parent_transform:
                     m = parent_transform @ m
                 ux, uy, uz, pos = m.get_components()
 
-                # Convert the 4x4 ezdxf matrix to our 3x3 document matrix.
-                # This matrix is in original DXF units and coordinates.
                 instance_matrix = Matrix(
                     [[ux.x, uy.x, pos.x], [ux.y, uy.y, pos.y], [0, 0, 1]]
                 )
 
-                # Apply the global scale and translation to bring it into
-                # the final document coordinate system.
                 global_transform = Matrix.translation(-tx, -ty) @ Matrix.scale(
                     scale, scale
                 )
@@ -267,8 +255,6 @@ class DxfImporter(Importer):
                 result_items.append(group)
 
             elif entity.dxftype() == "SOLID":
-                # A SOLID contributes to both Geometry (outline) and
-                # data (fill)
                 self._solid_to_geo_and_data(
                     current_geo,
                     current_solids,
@@ -279,8 +265,6 @@ class DxfImporter(Importer):
                     parent_transform,
                 )
             else:
-                # Append vector data from other entities to the current
-                # Geometry.
                 self._entity_to_geo(
                     current_geo, entity, doc, scale, tx, ty, parent_transform
                 )

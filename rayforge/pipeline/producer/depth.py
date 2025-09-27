@@ -4,7 +4,7 @@ import math
 import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Tuple
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -70,7 +70,7 @@ class DepthEngraver(OpsProducer):
         *,
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
-    ) -> Ops:
+    ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
@@ -85,7 +85,11 @@ class DepthEngraver(OpsProducer):
         height_px = surface.get_height()
         if width_px == 0 or height_px == 0:
             final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
-            return final_ops
+            return PipelineArtifact(
+                ops=final_ops,
+                is_scalable=False,
+                source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            )
 
         stride = surface.get_stride()
         buf = surface.get_data()
@@ -118,7 +122,11 @@ class DepthEngraver(OpsProducer):
 
         final_ops.extend(mode_ops)
         final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
-        return final_ops
+        return PipelineArtifact(
+            ops=final_ops,
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
 
     def _run_power_modulation(
         self,
@@ -315,7 +323,7 @@ class DepthEngraver(OpsProducer):
             is_reversed = not is_reversed
         return ops
 
-    def can_scale(self) -> bool:
+    def is_vector_producer(self) -> bool:
         return False
 
     def to_dict(self) -> dict:

@@ -151,16 +151,14 @@ class TestSvgImporter:
         assert isinstance(cmds[4], LineToCommand)
 
         # Check the overall bounds of the imported geometry.
-        # The 80x80 rect from (10,10) in a 100x100 viewBox, scaled to an
-        # 80x80 mm workpiece, should result in geometry occupying the full
-        # 0 to 80 mm range in both axes.
+        # The geometry must be normalized to a 1x1 unit.
         geo_rect_min_x, geo_rect_min_y, geo_rect_max_x, geo_rect_max_y = (
             wp.vectors.rect()
         )
         assert geo_rect_min_x == pytest.approx(0.0)
         assert geo_rect_min_y == pytest.approx(0.0)
-        assert geo_rect_max_x == pytest.approx(80.0, 3)
-        assert geo_rect_max_y == pytest.approx(80.0, 3)
+        assert geo_rect_max_x == pytest.approx(1.0)
+        assert geo_rect_max_y == pytest.approx(1.0)
 
     def test_traced_bitmap_import_geometry(self, transparent_svg_data: bytes):
         """
@@ -177,9 +175,7 @@ class TestSvgImporter:
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
 
-        # The transparent_svg_data defines a 200px SVG with a 100x100px green
-        # square. The importer will trim the SVG to the 100x100px content.
-        # This will be converted to mm using MM_PER_PX.
+        # The content is trimmed to 100x100px, which is converted to mm.
         expected_content_size_mm = 100.0 * MM_PER_PX
         assert wp.size == pytest.approx(
             (expected_content_size_mm, expected_content_size_mm)
@@ -190,18 +186,16 @@ class TestSvgImporter:
         assert isinstance(wp.vectors, Geometry)
         assert len(wp.vectors.commands) > 4
 
-        # Check the overall bounds of the traced geometry.
+        # Check the overall bounds of the TRACED geometry.
+        # Per the new architecture, the vectors MUST be normalized to a
+        # 1x1 box.
         geo_rect_min_x, geo_rect_min_y, geo_rect_max_x, geo_rect_max_y = (
             wp.vectors.rect()
         )
         assert geo_rect_min_x == pytest.approx(0.0, abs=1e-3)
         assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)
-        assert geo_rect_max_x == pytest.approx(
-            expected_content_size_mm, abs=1e-3
-        )
-        assert geo_rect_max_y == pytest.approx(
-            expected_content_size_mm, abs=1e-3
-        )
+        assert geo_rect_max_x == pytest.approx(1.0, abs=1e-3)
+        assert geo_rect_max_y == pytest.approx(1.0, abs=1e-3)
 
 
 class TestSvgRenderer:

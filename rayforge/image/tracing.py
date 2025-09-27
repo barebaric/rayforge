@@ -486,23 +486,21 @@ def _count_svg_subpaths(svg_str: str) -> int:
 
 def _fallback_to_hulls_from_image(
     cleaned_boolean_image: np.ndarray,
-    pixels_per_mm_x: float,
-    pixels_per_mm_y: float,
     surface_height: int,
 ) -> List[Geometry]:
     """Generates convex hulls from an image as a fallback."""
     logger.debug("Entering _fallback_to_hulls_from_image")
     return get_hulls_from_image(
         cleaned_boolean_image,
-        pixels_per_mm_x,
-        pixels_per_mm_y,
+        1.0,
+        1.0,
         surface_height,
         BORDER_SIZE,
     )
 
 
 def trace_surface(
-    surface: cairo.ImageSurface, pixels_per_mm: Tuple[float, float]
+    surface: cairo.ImageSurface,
 ) -> List[Geometry]:
     """
     Traces a Cairo surface and returns a list of Geometry objects. It uses
@@ -521,8 +519,8 @@ def trace_surface(
     if not success:
         return _fallback_to_enclosing_hull(
             cleaned_boolean_image,
-            pixels_per_mm[0],
-            pixels_per_mm[1],
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
             surface.get_height(),
         )
 
@@ -533,8 +531,8 @@ def trace_surface(
         logger.error(f"vtracer failed: {e}")
         return _fallback_to_enclosing_hull(
             cleaned_boolean_image,
-            pixels_per_mm[0],
-            pixels_per_mm[1],
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
             surface.get_height(),
         )
 
@@ -546,8 +544,6 @@ def trace_surface(
             )
             return _fallback_to_hulls_from_image(
                 cleaned_boolean_image,
-                pixels_per_mm[0],
-                pixels_per_mm[1],
                 surface.get_height(),
             )
         if total_sub_paths >= MAX_VECTORS_LIMIT:
@@ -557,19 +553,15 @@ def trace_surface(
             )
             return _fallback_to_hulls_from_image(
                 cleaned_boolean_image,
-                pixels_per_mm[0],
-                pixels_per_mm[1],
                 surface.get_height(),
             )
     except ET.ParseError:
         logger.error("Failed to parse SVG from vtracer, falling back.")
         return _fallback_to_enclosing_hull(
             cleaned_boolean_image,
-            pixels_per_mm[0],
-            pixels_per_mm[1],
             surface.get_height(),
         )
 
     return _svg_string_to_geometries(
-        svg_str, pixels_per_mm[0], pixels_per_mm[1], surface.get_height()
+        svg_str, 1.0, 1.0, surface.get_height()
     )

@@ -16,6 +16,7 @@ def run_step_in_subprocess(
     laser_dict: dict[str, Any],
     settings: dict,
     generation_id: int,
+    generation_size: Tuple[float, float],
 ):
     """
     The main entry point for generating operations for a single
@@ -40,7 +41,7 @@ def run_step_in_subprocess(
     logger.debug(f"Starting step execution with settings: {settings}")
 
     from .modifier import Modifier
-    from .producer import OpsProducer
+    from .producer import OpsProducer, PipelineArtifact
     from .transformer import OpsTransformer, ExecutionPhase
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
@@ -62,7 +63,7 @@ def run_step_in_subprocess(
         scaler: Optional[Tuple[float, float]],
         *,
         y_offset_mm: float = 0.0,
-    ) -> Ops:
+    ) -> PipelineArtifact:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
         vector data.
@@ -82,7 +83,8 @@ def run_step_in_subprocess(
                 by raster operations.
 
         Returns:
-            An Ops object containing the generated operations.
+            A PipelineArtifact object containing the generated operations
+              and metadata.
         """
         for modifier in modifiers:
             # Modifiers only work on pixel surfaces, so skip if None
@@ -97,7 +99,7 @@ def run_step_in_subprocess(
             y_offset_mm=y_offset_mm,
         )
 
-    def _execute_vector() -> Iterator[Tuple[Ops, Tuple[float, float], float]]:
+    def _execute_vector() -> Iterator[Tuple[PipelineArtifact, float]]:
         """
         Handles Ops generation for scalable (vector) operations.
 
@@ -114,9 +116,8 @@ def run_step_in_subprocess(
         by the OpsGenerator.
 
         Yields:
-            A single tuple containing the complete Ops, the dimensions
-            (width, height) of the coordinate system, and a progress value
-            of 1.0.
+            A single tuple containing the complete PipelineArtifact and a
+            progress value of 1.0.
         """
         size_mm = workpiece.size
 
@@ -133,20 +134,8 @@ def run_step_in_subprocess(
                 "Workpiece has vectors and producer does not require a full "
                 "render. Using direct vector processing."
             )
-            geometry_ops = _trace_and_modify_surface(surface=None, scaler=None)
-
-            # The generated ops are already in millimeters. We must report
-            # their actual millimeter bounding box as the "source size" to
-            # prevent incorrect re-scaling by the OpsGenerator.
-            _x, _y, w_mm, h_mm = geometry_ops.rect()
-
-            # If the geometry has no area (e.g., a single point or line),
-            # provide a fallback size to avoid division by zero.
-            if w_mm <= 1e-6 or h_mm <= 1e-6:
-                logger.warning("Vector Ops have no area. Using fallback size.")
-                w_mm, h_mm = 1.0, 1.0
-
-            yield geometry_ops, (w_mm, h_mm), 1.0
+            artifact = _trace_and_modify_surface(surface=None, scaler=None)
+            yield artifact, 1.0
             return
 
         # Path 2: Render-and-trace.
@@ -174,27 +163,24 @@ def run_step_in_subprocess(
         if not surface:
             return
 
-        # The producer will trace the bitmap.
-        # By passing `scaler=None`, it is expected to return ops in PIXEL
-        # coordinates with a Y-up convention.
-        geometry_ops = _trace_and_modify_surface(surface, None)
+        # The producer (e.g., EdgeTracer) will trace the bitmap and return
+        # an artifact with pixel coordinates.
+        artifact = _trace_and_modify_surface(surface, None)
 
-        yield geometry_ops, (surface.get_width(), surface.get_height()), 1.0
+        yield artifact, 1.0
         surface.flush()
 
-    def _execute_raster() -> Iterator[Tuple[Ops, None, float]]:
+    def _execute_raster() -> Iterator[Tuple[PipelineArtifact, float]]:
         """
         Handles Ops generation for non-scalable (raster) operations.
 
         This function renders the workpiece in horizontal chunks to manage
-        memory usage. For each chunk, it generates Ops that are already scaled
-        to final millimeter coordinates and correctly positioned. These chunks
+        memory usage. For each chunk, it generates an artifact containing Ops
+        that are already scaled to final millimeter coordinates. These chunks
         are yielded progressively to provide UI feedback.
 
         Yields:
-            A tuple for each chunk: (chunk_ops, None, progress). `chunk_ops`
-            are in mm, the pixel size is `None` (as they are pre-scaled), and
-            `progress` is a float from 0.0 to 1.0.
+            A tuple for each chunk: (chunk_artifact, progress).
         """
         size = workpiece.size
 
@@ -216,10 +202,10 @@ def run_step_in_subprocess(
             if not surface:
                 return
 
-            full_ops = _trace_and_modify_surface(
+            full_artifact = _trace_and_modify_surface(
                 surface, (px_per_mm_x, px_per_mm_y)
             )
-            yield full_ops, None, 1.0
+            yield full_artifact, 1.0
             surface.flush()
             return
 
@@ -243,8 +229,9 @@ def run_step_in_subprocess(
             # chunks.
             y_offset_from_top_mm = y_offset_px / px_per_mm_y
 
-            # The Rasterizer producer returns Ops pre-scaled to millimeters.
-            chunk_ops = _trace_and_modify_surface(
+            # The Rasterizer producer returns an artifact with Ops pre-scaled
+            # to millimeters.
+            chunk_artifact = _trace_and_modify_surface(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
                 y_offset_mm=y_offset_from_top_mm,
@@ -256,9 +243,9 @@ def run_step_in_subprocess(
                 size[1] * px_per_mm_y - (surface.get_height() + y_offset_px)
             ) / px_per_mm_y
             x_offset_mm = x_offset_px / px_per_mm_x
-            chunk_ops.translate(x_offset_mm, y_offset_mm)
+            chunk_artifact.ops.translate(x_offset_mm, y_offset_mm)
 
-            yield chunk_ops, None, progress
+            yield chunk_artifact, progress
             surface.flush()
 
     def _create_initial_ops() -> Ops:
@@ -278,9 +265,9 @@ def run_step_in_subprocess(
     proxy.set_message(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
-    final_ops = _create_initial_ops()
-    final_pixel_size = None
-    is_vector = opsproducer.can_scale()
+    initial_ops = _create_initial_ops()
+    final_artifact = None
+    is_vector = opsproducer.is_vector_producer()
 
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight
@@ -291,23 +278,34 @@ def run_step_in_subprocess(
     )
     execute_iterator = _execute_vector() if is_vector else _execute_raster()
 
-    for chunk, chunk_pixel_size, execute_progress in execute_iterator:
+    for chunk_artifact, execute_progress in execute_iterator:
         execute_ctx.set_progress(execute_progress)
-        if chunk_pixel_size:
-            final_pixel_size = chunk_pixel_size
 
-        if chunk:
-            # Send intermediate chunks for raster operations
-            # to provide responsive UI feedback during long-running jobs.
-            if not is_vector:
-                proxy.send_event(
-                    "ops_chunk",
-                    {"chunk": chunk, "generation_id": generation_id},
-                )
-            final_ops += chunk
+        if final_artifact is None:
+            final_artifact = chunk_artifact
+            # Prepend the initial state commands (power, speed, etc.)
+            final_artifact.ops.commands = (
+                initial_ops.commands + final_artifact.ops.commands
+            )
+        else:
+            final_artifact.ops.extend(chunk_artifact.ops)
+
+        # Send intermediate chunks for raster operations
+        if not is_vector:
+            proxy.send_event(
+                "ops_chunk",
+                {
+                    "chunk": chunk_artifact.ops,
+                    "generation_id": generation_id,
+                },
+            )
 
     # Ensure path generation is marked as 100% complete before continuing.
     execute_ctx.set_progress(1.0)
+
+    if final_artifact is None:
+        # If no artifact was produced (e.g., empty image), return None
+        return None
 
     # --- Transform phase ---
     enabled_transformers = [t for t in opstransformers if t.enabled]
@@ -346,7 +344,7 @@ def run_step_in_subprocess(
                 # transformer.run now runs synchronously and may use the
                 # proxy to report its own fine-grained progress.
                 transformer.run(
-                    final_ops,
+                    final_artifact.ops,
                     workpiece=workpiece,
                     context=transformer_run_proxy,
                 )
@@ -356,14 +354,15 @@ def run_step_in_subprocess(
                 processed_count += 1
 
     if settings["air_assist"]:
-        final_ops.add(DisableAirAssistCommand())
+        final_artifact.ops.add(DisableAirAssistCommand())
 
     proxy.set_message(
         _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
     )
     proxy.set_progress(1.0)
 
-    # Return the Ops and the pixel size (if any). The OpsGenerator will use
-    # this to scale the ops correctly. For rasters, pixel size is None, as
-    # they are already in their final millimeter coordinate system.
-    return final_ops, final_pixel_size
+    # Attach the workpiece size for which this artifact was generated. This
+    # is crucial for the generator's cache invalidation logic.
+    final_artifact.generation_size = generation_size
+
+    return final_artifact.to_dict()

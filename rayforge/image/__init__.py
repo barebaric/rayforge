@@ -6,11 +6,13 @@ from typing import Dict, Optional, Union
 from ..core.vectorization_config import TraceConfig
 from .base_importer import Importer, ImportPayload
 from .base_renderer import Renderer
-from .ops_renderer import OPS_RENDERER
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
+from .jpg.importer import JpgImporter
+from .jpg.renderer import JPG_RENDERER
+from .ops_renderer import OPS_RENDERER
 from .pdf.importer import PdfImporter
 from .pdf.renderer import PDF_RENDERER
 from .png.importer import PngImporter
@@ -115,6 +117,7 @@ def import_file(
 renderer_by_name: Dict[str, Renderer] = {
     "BmpRenderer": BMP_RENDERER,
     "DxfRenderer": DXF_RENDERER,
+    "JpgRenderer": JPG_RENDERER,
     "OpsRenderer": OPS_RENDERER,
     "PngRenderer": PNG_RENDERER,
     "PdfRenderer": PDF_RENDERER,
@@ -125,6 +128,7 @@ renderer_by_name: Dict[str, Renderer] = {
 renderer_by_importer_name: Dict[str, Renderer] = {
     "BmpImporter": BMP_RENDERER,
     "DxfImporter": DXF_RENDERER,
+    "JpgRenderer": JPG_RENDERER,
     "OpsRenderer": OPS_RENDERER,
     "PngImporter": PNG_RENDERER,
     "PdfImporter": PDF_RENDERER,
@@ -135,6 +139,7 @@ renderer_by_importer_name: Dict[str, Renderer] = {
 __all__ = [
     "BmpImporter",
     "DxfImporter",
+    "JpgImporter",
     "PdfImporter",
     "PngImporter",
     "RuidaImporter",

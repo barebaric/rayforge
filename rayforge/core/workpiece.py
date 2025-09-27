@@ -49,6 +49,25 @@ class WorkPiece(DocItem):
     ):
         super().__init__(name=name)
         self.vectors = vectors
+        """
+        The normalized vector geometry defining the intrinsic shape.
+
+        This `Geometry` object represents the workpiece's shape, normalized
+        to fit within a 1x1 unit reference box. This separation of intrinsic
+        shape from its world transformation is crucial for preventing
+        rendering and processing errors.
+
+        The local coordinate space of this normalized geometry has the
+        following properties:
+
+        - **Reference Size**: The geometry is scaled to fit within a box
+          that is approximately 1 unit wide by 1 unit tall.
+        - **Origin (0,0)**: The anchor point is the bottom-left corner of the
+          geometry's bounding box.
+        - **Transformation**: The vector data itself is static. All physical
+          sizing, positioning, and rotation are handled by applying the
+          `WorkPiece.matrix` to this normalized shape.
+        """
         self.import_source_uid: Optional[str] = None
 
         # The cache for rendered vips images. Key is (width, height).
