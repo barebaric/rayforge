@@ -23,6 +23,7 @@ def rasterize_horizontally(
     pixels_per_mm=(10, 10),
     raster_size_mm=0.1,
     y_offset_mm=0.0,
+    threshold=128,
 ):
     """
     Generate an engraving path for a Cairo surface, focusing on horizontal
@@ -35,6 +36,7 @@ def rasterize_horizontally(
                         millimeters.
         y_offset_mm: The absolute vertical offset of this surface chunk
                      from the top of the entire workpiece (in mm).
+        threshold: The brightness value (0-255) to consider black.
 
     Returns:
         A Ops object containing the optimized engraving path.
@@ -61,7 +63,7 @@ def rasterize_horizontally(
     bw_image = 0.2989 * red + 0.5870 * green + 0.1140 * blue
 
     # Threshold to black and white
-    bw_image = (bw_image < 128).astype(np.uint8)
+    bw_image = (bw_image < threshold).astype(np.uint8)
 
     # Optionally handle transparency (e.g., treat fully transparent
     # pixels as white)
@@ -149,6 +151,7 @@ def rasterize_vertically(
     pixels_per_mm=(10, 10),
     raster_size_mm=0.1,
     x_offset_mm=0.0,
+    threshold=128,
 ):
     """
     Generate an engraving path for a Cairo surface, focusing on vertical
@@ -161,6 +164,7 @@ def rasterize_vertically(
                         millimeters.
         x_offset_mm: The absolute horizontal offset of this surface chunk
                      from the left of the entire workpiece (in mm).
+        threshold: The brightness value (0-255) to consider black.
 
     Returns:
         A Ops object containing the optimized engraving path.
@@ -184,9 +188,9 @@ def rasterize_vertically(
     alpha = data[:, :, 3]
 
     # Convert to grayscale and threshold
-    bw_image = (0.2989 * red + 0.5870 * green + 0.1140 * blue < 128).astype(
-        np.uint8
-    )
+    bw_image = (
+        0.2989 * red + 0.5870 * green + 0.1140 * blue < threshold
+    ).astype(np.uint8)
     bw_image[alpha == 0] = 0
 
     # Find bounding box
@@ -243,20 +247,27 @@ class Rasterizer(OpsProducer):
     across filled pixels in the surface.
     """
 
-    def __init__(self, cross_hatch: bool = False):
+    def __init__(self, cross_hatch: bool = False, threshold: int = 128):
         super().__init__()
         self.cross_hatch = cross_hatch
+        self.threshold = threshold
 
     def to_dict(self):
         return {
             "type": self.__class__.__name__,
-            "params": {"cross_hatch": self.cross_hatch},
+            "params": {
+                "cross_hatch": self.cross_hatch,
+                "threshold": self.threshold,
+            },
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Rasterizer":
         params = data.get("params", {})
-        return cls(cross_hatch=params.get("cross_hatch", False))
+        return cls(
+            cross_hatch=params.get("cross_hatch", False),
+            threshold=params.get("threshold", 128),
+        )
 
     def run(
         self,
@@ -288,6 +299,7 @@ class Rasterizer(OpsProducer):
             pixels_per_mm,
             laser.spot_size_mm[1],
             y_offset_mm=y_offset_mm,
+            threshold=self.threshold,
         )
         final_ops.extend(raster_ops)
 
@@ -300,6 +312,7 @@ class Rasterizer(OpsProducer):
                 pixels_per_mm,
                 laser.spot_size_mm[0],
                 x_offset_mm=x_offset_mm,
+                threshold=self.threshold,
             )
             final_ops.extend(vertical_ops)
 
