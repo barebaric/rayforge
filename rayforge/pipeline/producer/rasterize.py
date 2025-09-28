@@ -184,7 +184,9 @@ def rasterize_vertically(
     alpha = data[:, :, 3]
 
     # Convert to grayscale and threshold
-    bw_image = (0.2989 * red + 0.5870 * green + 0.1140 * blue < 128).astype(np.uint8)
+    bw_image = (0.2989 * red + 0.5870 * green + 0.1140 * blue < 128).astype(
+        np.uint8
+    )
     bw_image[alpha == 0] = 0
 
     # Find bounding box
@@ -217,9 +219,11 @@ def rasterize_vertically(
         if x1 >= width:
             continue
 
-        col = bw_image[y_min:y_max + 1, x1]
+        col = bw_image[y_min : y_max + 1, x1]
 
-        black_segments = np.where(np.diff(np.hstack(([0], col, [0]))))[0].reshape(-1, 2)
+        black_segments = np.where(
+            np.diff(np.hstack(([0], col, [0])))
+        )[0].reshape(-1, 2)
         for start, end in black_segments:
             if col[start] == 1:
                 start_mm = (y_min + start + 0.5) / pixels_per_mm_y
@@ -253,7 +257,6 @@ class Rasterizer(OpsProducer):
     def from_dict(cls, data):
         params = data.get("params", {})
         return cls(cross_hatch=params.get("cross_hatch", False))
-
 
     def run(
         self,
