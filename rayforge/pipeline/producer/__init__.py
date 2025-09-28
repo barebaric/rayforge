@@ -4,9 +4,8 @@ from .base import OpsProducer, PipelineArtifact
 from .depth import DepthEngraver
 from .edge import EdgeTracer
 from .frame import FrameProducer
-from .shrinkwrap import ShrinkWrapProducer
-from .outline import OutlineTracer
 from .rasterize import Rasterizer
+from .shrinkwrap import ShrinkWrapProducer
 
 producer_by_name = dict(
     [
@@ -20,11 +19,10 @@ producer_by_name = dict(
 
 __all__ = [
     "OpsProducer",
-    "OutlineTracer",
     "DepthEngraver",
     "EdgeTracer",
     "FrameProducer",
-    "ShrinkWrapProducer",
     "Rasterizer",
+    "ShrinkWrapProducer",
     "producer_by_name",
 ]

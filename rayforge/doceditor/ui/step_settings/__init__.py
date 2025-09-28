@@ -1,6 +1,7 @@
 from typing import Dict, Type
 from .base import StepComponentSettingsWidget
 from .depth_engraver import DepthEngraverSettingsWidget
+from .edge import EdgeTracerSettingsWidget
 from .frame import FrameProducerSettingsWidget
 from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
@@ -13,6 +14,7 @@ from .rasterizer import RasterizerSettingsWidget
 # to their corresponding UI widget classes (Type).
 WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "DepthEngraver": DepthEngraverSettingsWidget,
+    "EdgeTracer": EdgeTracerSettingsWidget,
     "FrameProducer": FrameProducerSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
@@ -25,6 +27,7 @@ __all__ = [
     "StepComponentSettingsWidget",
     "WIDGET_REGISTRY",
     "DepthEngraverSettingsWidget",
+    "EdgeTracerSettingsWidget",
     "FrameProducerSettingsWidget",
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
