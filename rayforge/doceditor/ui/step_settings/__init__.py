@@ -5,6 +5,7 @@ from .smooth import SmoothSettingsWidget
 from .depth_engraver import DepthEngraverSettingsWidget
 from .optimize import OptimizeSettingsWidget
 from .shrinkwrap import HullProducerSettingsWidget
+from .rasterizer import RasterizerSettingsWidget
 
 # This registry maps the class names of pipeline components (str)
 # to their corresponding UI widget classes (Type).
@@ -14,6 +15,7 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "DepthEngraver": DepthEngraverSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
     "HullProducer": HullProducerSettingsWidget,
+    "Rasterizer": RasterizerSettingsWidget,
 }
 
 __all__ = [
@@ -24,4 +26,5 @@ __all__ = [
     "DepthEngraverSettingsWidget",
     "OptimizeSettingsWidget",
     "HullProducerSettingsWidget",
+    "RasterizerSettingsWidget",
 ]
