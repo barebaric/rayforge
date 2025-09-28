@@ -31,7 +31,6 @@ class CairoEncoder(OpsEncoder):
         travel_color: Tuple[float, float, float] = (1.0, 0.4, 0.0),
         zero_power_color: Tuple[float, float, float] = (1.0, 0.2, 0.5),
         show_travel_moves: bool = False,
-        show_zero_power_moves: bool = True,
         drawable_height: Optional[float] = None,
     ) -> None:
         """
@@ -45,12 +44,12 @@ class CairoEncoder(OpsEncoder):
             travel_color: RGB color for travel moves.
             zero_power_color: RGB color for cutting moves with zero power.
             show_travel_moves: Whether to draw travel moves.
-            show_zero_power_moves: Whether to draw zero-power cutting moves.
             drawable_height: Optional explicit height of the drawable area.
         """
         scale_x, scale_y = scale
         if scale_y == 0:
             return
+        show_zero_power_moves = show_travel_moves
 
         ctx.save()
         try:
@@ -213,7 +212,10 @@ class CairoEncoder(OpsEncoder):
         zero_power_color: Tuple[float, float, float],
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
-        """Handles a ScanLinePowerCommand by drawing a gradient-filled line."""
+        """
+        Handles a ScanLinePowerCommand by splitting it into chunks of
+        zero-power and non-zero-power segments and drawing them accordingly.
+        """
         if not cmd.power_values:
             return prev_point_2d
 
@@ -221,59 +223,143 @@ class CairoEncoder(OpsEncoder):
         ctx.set_source_rgb(*cut_color)
         ctx.stroke()
 
+        start_x, start_y = prev_point_2d
         end_x, end_y, _ = cmd.end
         cairo_end_y = ymax - end_y
 
-        # Handle case where entire scanline is at zero power
+        # Optimization: Handle case where entire scanline is at zero power
         if all(p == 0 for p in cmd.power_values):
             if show_zero_power_moves:
                 ctx.set_source_rgb(*zero_power_color)
-                ctx.move_to(*prev_point_2d)
+                ctx.move_to(start_x, start_y)
                 ctx.line_to(end_x, cairo_end_y)
                 ctx.stroke()
             ctx.move_to(end_x, cairo_end_y)
             return end_x, cairo_end_y
 
-        start_x, start_y = prev_point_2d
-        grad = cairo.LinearGradient(start_x, start_y, end_x, cairo_end_y)
-
+        # Deconstruct scanline into zero and non-zero power chunks
+        p_start_vec = (start_x, start_y)
+        line_vec = (end_x - start_x, cairo_end_y - start_y)
         num_steps = len(cmd.power_values)
-        last_power = -1
 
-        for i, power in enumerate(cmd.power_values):
-            if power == last_power:
-                continue
+        if num_steps == 0:
+            ctx.move_to(end_x, cairo_end_y)
+            return end_x, cairo_end_y
 
-            # Create a sharp transition by adding a stop for the previous color
-            if i > 0:
-                p_old = 1.0 - (last_power / 100.0)
-                alpha_old = 1.0 if last_power > 0 else 0.0
-                offset_old = (i / num_steps) - 1e-9
-                grad.add_color_stop_rgba(
-                    offset_old, p_old, p_old, p_old, alpha_old
+        chunk_start_idx = 0
+        is_zero_chunk = cmd.power_values[0] == 0
+
+        for i in range(1, num_steps):
+            is_current_zero = cmd.power_values[i] == 0
+            if is_current_zero != is_zero_chunk:
+                # End of a chunk. Process it.
+                self._draw_scanline_chunk(
+                    ctx,
+                    p_start_vec,
+                    line_vec,
+                    num_steps,
+                    chunk_start_idx,
+                    i,
+                    cmd.power_values[chunk_start_idx:i],
+                    is_zero_chunk,
+                    zero_power_color,
+                    show_zero_power_moves,
                 )
+                # Start a new chunk
+                chunk_start_idx = i
+                is_zero_chunk = is_current_zero
 
-            p_new = 1.0 - (power / 100.0)
-            alpha_new = 1.0 if power > 0 else 0.0
-            offset_new = i / num_steps
-            grad.add_color_stop_rgba(
-                offset_new, p_new, p_new, p_new, alpha_new
-            )
-            last_power = power
-
-        # Add final color stop for the last segment
-        p_final = 1.0 - (last_power / 100.0)
-        alpha_final = 1.0 if last_power > 0 else 0.0
-        grad.add_color_stop_rgba(1.0, p_final, p_final, p_final, alpha_final)
-
-        ctx.new_path()
-        ctx.move_to(start_x, start_y)
-        ctx.line_to(end_x, cairo_end_y)
-        ctx.set_source(grad)
-        ctx.stroke()
+        # Process the final chunk
+        self._draw_scanline_chunk(
+            ctx,
+            p_start_vec,
+            line_vec,
+            num_steps,
+            chunk_start_idx,
+            num_steps,
+            cmd.power_values[chunk_start_idx:num_steps],
+            is_zero_chunk,
+            zero_power_color,
+            show_zero_power_moves,
+        )
 
         ctx.move_to(end_x, cairo_end_y)
         return end_x, cairo_end_y
+
+    def _draw_scanline_chunk(
+        self,
+        ctx: cairo.Context,
+        p_start_vec: Tuple[float, float],
+        line_vec: Tuple[float, float],
+        total_steps: int,
+        start_idx: int,
+        end_idx: int,
+        power_slice: bytes,
+        is_zero_chunk: bool,
+        zero_power_color: Tuple[float, float, float],
+        show_zero_power_moves: bool,
+    ):
+        """Draws a single segment (chunk) of a scanline."""
+        if start_idx >= end_idx:
+            return
+
+        # Calculate chunk geometry
+        t_start = start_idx / total_steps
+        t_end = end_idx / total_steps
+
+        chunk_start_pt = (
+            p_start_vec[0] + t_start * line_vec[0],
+            p_start_vec[1] + t_start * line_vec[1],
+        )
+        chunk_end_pt = (
+            p_start_vec[0] + t_end * line_vec[0],
+            p_start_vec[1] + t_end * line_vec[1],
+        )
+
+        if is_zero_chunk:
+            if show_zero_power_moves:
+                ctx.new_path()
+                ctx.move_to(*chunk_start_pt)
+                ctx.line_to(*chunk_end_pt)
+                ctx.set_source_rgb(*zero_power_color)
+                ctx.stroke()
+        else:  # is non-zero chunk
+            grad = cairo.LinearGradient(
+                chunk_start_pt[0],
+                chunk_start_pt[1],
+                chunk_end_pt[0],
+                chunk_end_pt[1],
+            )
+            num_chunk_steps = len(power_slice)
+            last_power = -1
+
+            for i, power in enumerate(power_slice):
+                if power == last_power:
+                    continue
+
+                if i > 0 and num_chunk_steps > 1:
+                    p_old = 1.0 - (last_power / 100.0)
+                    offset_old = (i / num_chunk_steps) - 1e-9
+                    grad.add_color_stop_rgba(
+                        offset_old, p_old, p_old, p_old, 1.0
+                    )
+
+                p_new = 1.0 - (power / 100.0)
+                offset_new = (
+                    i / num_chunk_steps if num_chunk_steps > 0 else 0.0
+                )
+                grad.add_color_stop_rgba(offset_new, p_new, p_new, p_new, 1.0)
+                last_power = power
+
+            if last_power != -1:
+                p_final = 1.0 - (last_power / 100.0)
+                grad.add_color_stop_rgba(1.0, p_final, p_final, p_final, 1.0)
+
+            ctx.new_path()
+            ctx.move_to(*chunk_start_pt)
+            ctx.line_to(*chunk_end_pt)
+            ctx.set_source(grad)
+            ctx.stroke()
 
     def _handle_arc_to(
         self,
