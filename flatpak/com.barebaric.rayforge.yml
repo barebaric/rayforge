@@ -11,7 +11,6 @@ finish-args:
   - --device=all
   - --env=DISPLAY=:0
   - --share=network
-  - --talk-name=org.freedesktop.DBus
 
 modules:
   - python3-meson-python.yml   # This is a numpy/scipy requirement

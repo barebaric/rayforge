@@ -18,7 +18,7 @@ modules:
         sources:
           - type: archive
             url: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
-            sha1: 256b4fb858c66bc38117afde7c722016d2e265f3
+            sha256: be8248a17dedd6ccbaab2fcc45835bb0502d062e40fbded3bc56028ce5eb7acc
       - name: agg
         buildsystem: cmake-ninja
         builddir: true
