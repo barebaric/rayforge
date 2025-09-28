@@ -489,13 +489,7 @@ class OpsGenerator:
         def when_done_callback(task: "Task"):
             self._on_generation_complete(task, s_uid, w_uid, generation_id)
 
-        settings = {
-            "power": step.power,
-            "cut_speed": step.cut_speed,
-            "travel_speed": step.travel_speed,
-            "air_assist": step.air_assist,
-            "pixels_per_mm": step.pixels_per_mm,
-        }
+        settings = step.get_process_settings()
         if not all([step.opsproducer_dict, step.laser_dict]):
             logger.error(
                 f"Step '{step.name}' is not fully configured. Skipping."

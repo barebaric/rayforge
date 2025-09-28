@@ -82,6 +82,16 @@ class Step(DocItem, ABC):
             "children": [child.to_dict() for child in self.children],
         }
 
+    def get_process_settings(self) -> Dict[str, Any]:
+        """Bundles all physical process parameters into a dictionary."""
+        return {
+            "power": self.power,
+            "cut_speed": self.cut_speed,
+            "travel_speed": self.travel_speed,
+            "air_assist": self.air_assist,
+            "pixels_per_mm": self.pixels_per_mm,
+        }
+
     @property
     def workflow(self) -> Optional["Workflow"]:
         """Returns the parent workflow, if it exists."""
