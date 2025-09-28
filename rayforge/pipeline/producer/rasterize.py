@@ -9,7 +9,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
     SectionType,
 )
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -115,12 +115,12 @@ def rasterize_horizontally(
         if y1 >= height:  # Ensure we don't go out of bounds
             continue
 
-        row = bw_image[y1, x_min:x_max + 1]
+        row = bw_image[y1, x_min : x_max + 1]
 
         # Find the start and end of black segments in the current row
-        black_segments = np.where(
-            np.diff(np.hstack(([0], row, [0])))
-        )[0].reshape(-1, 2)
+        black_segments = np.where(np.diff(np.hstack(([0], row, [0]))))[
+            0
+        ].reshape(-1, 2)
         for start, end in black_segments:
             if row[start] == 1:  # Only process black segments
                 # Use center-to-center toolpath convention for X-axis.
@@ -263,7 +263,7 @@ class Rasterizer(OpsProducer):
         *,
         workpiece: "Optional[WorkPiece]" = None,
         y_offset_mm: float = 0.0,
-    ):
+    ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("Rasterizer requires a workpiece context.")
 
@@ -300,7 +300,11 @@ class Rasterizer(OpsProducer):
             final_ops.extend(vertical_ops)
 
         final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
-        return final_ops
+        return PipelineArtifact(
+            ops=final_ops,
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
 
-    def can_scale(self) -> bool:
+    def is_vector_producer(self) -> bool:
         return False

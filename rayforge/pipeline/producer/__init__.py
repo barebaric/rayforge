@@ -1,9 +1,10 @@
 # flake8: noqa:F401
 import inspect
-from .base import OpsProducer
+from .base import OpsProducer, PipelineArtifact
 from .depth import DepthEngraver
 from .edge import EdgeTracer
-from .shrinkwrap import HullProducer
+from .frame import FrameProducer
+from .shrinkwrap import ShrinkWrapProducer
 from .outline import OutlineTracer
 from .rasterize import Rasterizer
 
@@ -22,7 +23,8 @@ __all__ = [
     "OutlineTracer",
     "DepthEngraver",
     "EdgeTracer",
-    "HullProducer",
+    "FrameProducer",
+    "ShrinkWrapProducer",
     "Rasterizer",
     "producer_by_name",
 ]

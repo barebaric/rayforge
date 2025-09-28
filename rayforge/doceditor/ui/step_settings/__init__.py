@@ -1,30 +1,35 @@
 from typing import Dict, Type
 from .base import StepComponentSettingsWidget
-from .multipass import MultiPassSettingsWidget
-from .smooth import SmoothSettingsWidget
 from .depth_engraver import DepthEngraverSettingsWidget
+from .frame import FrameProducerSettingsWidget
+from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
-from .shrinkwrap import HullProducerSettingsWidget
+from .shrinkwrap import ShrinkWrapProducerSettingsWidget
+from .smooth import SmoothSettingsWidget
 from .rasterizer import RasterizerSettingsWidget
+
 
 # This registry maps the class names of pipeline components (str)
 # to their corresponding UI widget classes (Type).
 WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
-    "MultiPassTransformer": MultiPassSettingsWidget,
-    "Smooth": SmoothSettingsWidget,
     "DepthEngraver": DepthEngraverSettingsWidget,
+    "FrameProducer": FrameProducerSettingsWidget,
+    "MultiPassTransformer": MultiPassSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
-    "HullProducer": HullProducerSettingsWidget,
-    "Rasterizer": RasterizerSettingsWidget,
+    "ShrinkWrapProducer": ShrinkWrapProducerSettingsWidget,
+    "Smooth": SmoothSettingsWidget,
+    "Rasterizer": RasterizerSettingsWidget
 }
 
 __all__ = [
     "StepComponentSettingsWidget",
     "WIDGET_REGISTRY",
-    "MultiPassSettingsWidget",
-    "SmoothSettingsWidget",
     "DepthEngraverSettingsWidget",
+    "FrameProducerSettingsWidget",
+    "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
     "HullProducerSettingsWidget",
-    "RasterizerSettingsWidget",
+    "ShrinkWrapProducerSettingsWidget",
+    "SmoothSettingsWidget",
+    "RasterizerSettingsWidget"
 ]

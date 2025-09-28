@@ -93,19 +93,21 @@ def prepare_surface(surface: cairo.ImageSurface) -> np.ndarray:
 
 
 def _curves_to_geometry(
-    curves: List[potrace.Curve], scale_x: float, scale_y: float, height_px: int
+    curves: List[potrace.Curve], height_px: int
 ) -> List[Geometry]:
     """
-    Converts Potrace curves into a list of separate Geometry objects, scaled
-    to millimeter units.
+    Converts Potrace curves into a list of separate Geometry objects in a
+    Y-up pixel coordinate system.
     """
     geometries = []
 
     def _transform_point(p: Tuple[float, float]) -> Tuple[float, float]:
         px, py = p
+        # Subtract border offset and flip Y-axis to create a
+        # bottom-left origin system, but keep units as pixels.
         ops_px = px - BORDER_SIZE
         ops_py = height_px - (py - BORDER_SIZE)
-        return ops_px / scale_x, ops_py / scale_y
+        return ops_px, ops_py
 
     for curve in curves:
         geo = Geometry()
@@ -126,8 +128,8 @@ def _curves_to_geometry(
 
                 start_px = np.array(
                     [
-                        (start_ops[0] * scale_x) + BORDER_SIZE,
-                        (height_px - (start_ops[1] * scale_y)) + BORDER_SIZE,
+                        start_ops[0] + BORDER_SIZE,
+                        (height_px - start_ops[1]) + BORDER_SIZE,
                     ]
                 )
                 c1_px = np.array(segment.c1)
@@ -151,12 +153,11 @@ def _curves_to_geometry(
 
 
 def trace_surface(
-    surface: cairo.ImageSurface, pixels_per_mm: Tuple[float, float]
+    surface: cairo.ImageSurface,
 ) -> List[Geometry]:
     """
-    Traces a Cairo surface and returns a list of Geometry objects. It now
-    includes an adaptive pre-processing step to handle noisy images and a
-    fallback mechanism for overly complex vector results.
+    Traces a Cairo surface and returns a list of Geometry objects in pixel
+    coordinates with a bottom-left origin.
     """
     cleaned_boolean_image = prepare_surface(surface)
 
@@ -172,12 +173,11 @@ def trace_surface(
     )
 
     if not potrace_result:
-        # If Potrace fails or produces no path for a non-empty image,
-        # fall back to returning a single convex hull of the entire shape.
+        # If Potrace fails, fall back to a single convex hull (in pixels).
         geo = get_enclosing_hull(
             cleaned_boolean_image,
-            pixels_per_mm[0],
-            pixels_per_mm[1],
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
             surface.get_height(),
             BORDER_SIZE,
         )
@@ -191,16 +191,14 @@ def trace_surface(
         # Image is too complex, fall back to convex hulls of major components
         return get_hulls_from_image(
             cleaned_boolean_image,
-            pixels_per_mm[0],
-            pixels_per_mm[1],
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
             surface.get_height(),
-            BORDER_SIZE
+            BORDER_SIZE,
         )
 
     # Normal High-Fidelity Path
     return _curves_to_geometry(
         potrace_path_list,
-        pixels_per_mm[0],
-        pixels_per_mm[1],
         surface.get_height(),
     )

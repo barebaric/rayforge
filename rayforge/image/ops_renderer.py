@@ -24,16 +24,16 @@ class OpsRenderer(Renderer):
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
         """
-        For vector geometry, the natural size is the bounding box of
-        the geometry.
+        For vector geometry, the natural size is the physical size of
+        the workpiece as determined by the importer. This is stored in the
+        workpiece's matrix.
         """
         if not workpiece.vectors or workpiece.vectors.is_empty():
             return None
 
-        min_x, min_y, max_x, max_y = workpiece.vectors.rect()
-        width = max_x - min_x
-        height = max_y - min_y
-        return width, height
+        # The .size property reads the physical scale from the matrix.
+        # This fulfills the contract of returning the untransformed size in mm.
+        return workpiece.size
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
@@ -70,9 +70,7 @@ class OpsRenderer(Renderer):
 
         # Calculate scaling to fit the workpiece's local geometry into
         # the surface
-        geo_min_x, geo_min_y, geo_max_x, geo_max_y = (
-            workpiece.vectors.rect()
-        )
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = workpiece.vectors.rect()
         geo_width = geo_max_x - geo_min_x
         geo_height = geo_max_y - geo_min_y
 

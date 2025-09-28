@@ -51,16 +51,14 @@ class RuidaImporter(Importer):
             height = max(max_y - min_y, 1e-9)
 
             # Normalize the component geometry to have its origin at (0,0)
+            # and a 1x1 size
             normalized_geo = component_geo.copy()
-            translate_matrix = np.array(
-                [
-                    [1, 0, 0, -min_x],
-                    [0, 1, 0, -min_y],
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1],
-                ]
-            )
-            normalized_geo.transform(translate_matrix)
+            translate_matrix = Matrix.translation(-min_x, -min_y)
+            normalized_geo.transform(translate_matrix.to_4x4_numpy())
+
+            if width > 0 and height > 0:
+                norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
+                normalized_geo.transform(norm_matrix.to_4x4_numpy())
 
             # Create a workpiece for this component
             wp = WorkPiece(name=self.source_file.stem, vectors=normalized_geo)

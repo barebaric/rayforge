@@ -7,10 +7,11 @@ with warnings.catch_warnings():
     import pyvips
 
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
 from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
 from ...core.import_source import ImportSource
+from ...core.matrix import Matrix
+from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
 from .. import image_util
 from .renderer import PNG_RENDERER
@@ -31,7 +32,6 @@ class PngImporter(Importer):
             return None
 
         try:
-            # Use the specific PNG loader with random access for consistency.
             image = pyvips.Image.pngload_buffer(
                 self.raw_data, access=pyvips.Access.RANDOM
             )
@@ -69,10 +69,7 @@ class PngImporter(Importer):
             f"{surface.get_width()}x{surface.get_height()}"
         )
 
-        width_mm, height_mm = image_util.get_physical_size_mm(image)
-        pixels_per_mm = (image.width / width_mm, image.height / height_mm)
-
-        geometries = trace_surface(surface, pixels_per_mm)
+        geometries = trace_surface(surface)
         combined_geo = Geometry()
 
         if geometries:
@@ -84,16 +81,31 @@ class PngImporter(Importer):
                 "Tracing did not produce any vector geometries. "
                 "Creating a workpiece with a frame around the image instead."
             )
-            # Create a rectangle representing the full image boundary using
-            # the Geometry class methods.
             combined_geo.move_to(0, 0)
-            combined_geo.line_to(width_mm, 0)
-            combined_geo.line_to(width_mm, height_mm)
-            combined_geo.line_to(0, height_mm)
+            combined_geo.line_to(image.width, 0)
+            combined_geo.line_to(image.width, image.height)
+            combined_geo.line_to(0, image.height)
             combined_geo.close_path()
+
+        # 1. Calculate independent scale factors for X and Y to map the
+        #    pixel geometry into a 1x1 unit square.
+        if image.width > 0 and image.height > 0:
+            norm_scale_x = 1.0 / image.width
+            norm_scale_y = 1.0 / image.height
+
+            # 2. Create a non-uniform scaling matrix.
+            normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
+
+            # 3. Apply this transform to the geometry data.
+            combined_geo.transform(normalization_matrix.to_4x4_numpy())
 
         final_wp = WorkPiece(name=self.source_file.stem, vectors=combined_geo)
         final_wp.import_source_uid = source.uid
+
+        width_mm, height_mm = image_util.get_physical_size_mm(image)
+
+        # This call is now architecturally sound. It applies the physical size
+        # via the matrix to a true 1x1 normalized shape.
         final_wp.set_size(width_mm, height_mm)
         final_wp.pos = (0, 0)
 

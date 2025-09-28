@@ -51,7 +51,9 @@ class WorkPieceView(CanvasElement):
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
-        self._ops_surfaces: Dict[str, Optional[cairo.ImageSurface]] = {}
+        self._ops_surfaces: Dict[
+            str, Optional[Tuple[cairo.ImageSurface, Tuple[float, ...]]]
+        ] = {}
         self._ops_recordings: Dict[str, Optional[cairo.RecordingSurface]] = {}
         self._ops_visibility: Dict[str, bool] = {}
         self._ops_render_futures: Dict[str, Future] = {}
@@ -322,26 +324,35 @@ class WorkPieceView(CanvasElement):
             return None
 
         world_w, world_h = self.data.size
-        if world_w <= 1e-9 or world_h <= 1e-9:
+
+        # Calculate the union of the workpiece bounds and the ops bounds to
+        # ensure the recording surface is large enough.
+        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+        union_x1 = min(0.0, ops_x1)
+        union_y1 = min(0.0, ops_y1)
+        union_x2 = max(world_w, ops_x2)
+        union_y2 = max(world_h, ops_y2)
+
+        union_w = union_x2 - union_x1
+        union_h = union_y2 - union_y1
+
+        if union_w <= 1e-9 or union_h <= 1e-9:
             return None
 
         # Create the recording surface with a small margin to prevent
         # strokes on the boundary from being clipped by the recording's
-        # extents.
+        # extents. The extents define the user-space coordinate system.
         extents = (
-            -REC_MARGIN_MM,
-            -REC_MARGIN_MM,
-            world_w + 2 * REC_MARGIN_MM,
-            world_h + 2 * REC_MARGIN_MM,
+            union_x1 - REC_MARGIN_MM,
+            union_y1 - REC_MARGIN_MM,
+            union_w + 2 * REC_MARGIN_MM,
+            union_h + 2 * REC_MARGIN_MM,
         )
         surface = cairo.RecordingSurface(
             cairo.CONTENT_COLOR_ALPHA,
-            extents,  # type: ignore
+            extents,
         )
         ctx = cairo.Context(surface)
-        # Translate the context so that the (0,0) for the encoder is offset
-        # by the margin, placing the content in the middle of the safe area.
-        ctx.translate(REC_MARGIN_MM, REC_MARGIN_MM)
 
         # We are drawing 1:1 in mm space, so scale is 1.0.
         encoder_ppms = (1.0, 1.0)
@@ -350,9 +361,9 @@ class WorkPieceView(CanvasElement):
         show_travel = work_surface._show_travel_moves
         encoder = CairoEncoder()
 
-        # Pass the true content height (world_h) to the encoder.
-        # This allows it to perform the Y-flip correctly within the now-larger
-        # recording surface, fixing the vertical alignment issue.
+        # Pass the workpiece height to the encoder. Ops coordinates are
+        # relative to the workpiece's Y-up coordinate system, so the flip
+        # must be relative to the workpiece height.
         encoder.encode(
             ops,
             ctx,
@@ -418,10 +429,13 @@ class WorkPieceView(CanvasElement):
 
     def _rasterize_ops_surface_async(
         self, step: Step, generation_id: int
-    ) -> Optional[Tuple[str, cairo.ImageSurface, int]]:
+    ) -> Optional[
+        Tuple[str, cairo.ImageSurface, int, Tuple[float, float, float, float]]
+    ]:
         """
         Renders ops to an ImageSurface, using the cached RecordingSurface
-        for a huge speedup if it is available.
+        for a huge speedup if it is available. Also returns the mm bounding
+        box of the rendered content.
         """
         step_uid = step.uid
         logger.debug(
@@ -431,11 +445,41 @@ class WorkPieceView(CanvasElement):
         if not self.canvas:
             return None
 
-        work_surface = cast("WorkSurface", self.canvas)
+        recording = self._ops_recordings.get(step_uid)
         world_w, world_h = self.data.size
+
+        # Determine the millimeter dimensions and offset of the content.
+        if recording:
+            try:
+                # FAST PATH: use extents from the recording surface.
+                rec_x, rec_y, rec_w, rec_h = recording.get_extents()
+                content_x_mm = rec_x + REC_MARGIN_MM
+                content_y_mm = rec_y + REC_MARGIN_MM
+                content_w_mm = rec_w - 2 * REC_MARGIN_MM
+                content_h_mm = rec_h - 2 * REC_MARGIN_MM
+            except Exception:
+                logger.warning(f"Could not get extents for '{step_uid}'")
+                return None
+        else:
+            # Slow fallback calculate bounds from ops.
+            ops = self.ops_generator.get_ops(step, self.data)
+            if not ops:
+                return None
+            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+            union_x1 = min(0.0, ops_x1)
+            union_y1 = min(0.0, ops_y1)
+            union_x2 = max(world_w, ops_x2)
+            union_y2 = max(world_h, ops_y2)
+            content_x_mm = union_x1
+            content_y_mm = union_y1
+            content_w_mm = union_x2 - union_x1
+            content_h_mm = union_y2 - union_y1
+
+        bbox_mm = (content_x_mm, content_y_mm, content_w_mm, content_h_mm)
+        work_surface = cast("WorkSurface", self.canvas)
         view_ppm_x, view_ppm_y = work_surface.get_view_scale()
-        content_width_px = round(world_w * view_ppm_x)
-        content_height_px = round(world_h * view_ppm_y)
+        content_width_px = round(content_w_mm * view_ppm_x)
+        content_height_px = round(content_h_mm * view_ppm_y)
 
         surface_width = min(
             content_width_px + 2 * OPS_MARGIN_PX, CAIRO_MAX_DIMENSION
@@ -455,43 +499,53 @@ class WorkPieceView(CanvasElement):
         )
         ctx = cairo.Context(surface)
         ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
-        recording = self._ops_recordings.get(step_uid)
-        content_w_px = surface_width - 2 * OPS_MARGIN_PX
-        content_h_px = surface_height - 2 * OPS_MARGIN_PX
 
         if recording:
             # FAST PATH: Replay the cached vector drawing commands.
             ctx.save()
-            scale_x = content_w_px / world_w if world_w > 1e-9 else 1.0
-            scale_y = content_h_px / world_h if world_h > 1e-9 else 1.0
-            ctx.scale(scale_x, scale_y)
-
-            # When setting the source, we must offset it by the negative
-            # of the recording margin to align the content correctly.
-            ctx.set_source_surface(recording, -REC_MARGIN_MM, -REC_MARGIN_MM)
+            # 1. Scale context to match mm units.
+            ctx.scale(view_ppm_x, view_ppm_y)
+            # 2. The content area's top-left is at (content_x_mm, content_y_mm)
+            #    in world space. Translate the context so that its origin (0,0)
+            #    corresponds to the world's origin (0,0).
+            ctx.translate(-content_x_mm, -content_y_mm)
+            # 3. Set the recording as the source. Its internal coordinates
+            #    are already in world mm, so we can now paint it directly.
+            ctx.set_source_surface(recording, 0, 0)
             ctx.paint()
             ctx.restore()
         else:
             # SLOW FALLBACK: No recording yet, render from Ops directly.
             ops = self.ops_generator.get_ops(step, self.data)
             if not ops:
-                return None
+                return None  # Should not happen as we checked above
 
-            encoder_ppm_x = content_w_px / world_w if world_w > 1e-9 else 1.0
-            encoder_ppm_y = content_h_px / world_h if world_h > 1e-9 else 1.0
+            encoder_ppm_x = (
+                content_width_px / content_w_mm if content_w_mm > 1e-9 else 1
+            )
+            encoder_ppm_y = (
+                content_height_px / content_h_mm if content_h_mm > 1e-9 else 1
+            )
             ppms = (encoder_ppm_x, encoder_ppm_y)
+
+            # Translate context to draw the union box content correctly.
+            ctx.translate(
+                -content_x_mm * encoder_ppm_x, -content_y_mm * encoder_ppm_y
+            )
 
             show_travel = work_surface._show_travel_moves
             encoder = CairoEncoder()
+            # Y-flip height must be workpiece height in pixels.
+            drawable_h_px = world_h * encoder_ppm_y
             encoder.encode(
                 ops,
                 ctx,
                 ppms,
                 show_travel_moves=show_travel,
-                drawable_height=content_h_px,
+                drawable_height=drawable_h_px,
             )
 
-        return step_uid, surface, generation_id
+        return step_uid, surface, generation_id, bbox_mm
 
     def _on_ops_chunk_available(
         self,
@@ -550,12 +604,13 @@ class WorkPieceView(CanvasElement):
             return None
 
         step_uid = step.uid
-        surface = self._ops_surfaces.get(step_uid)
+        surface_tuple = self._ops_surfaces.get(step_uid)
+        world_w, world_h = self.data.size
 
         # If surface doesn't exist (e.g., first chunk), create it.
-        if surface is None:
+        # Chunk rendering will be clipped to workpiece bounds for now.
+        if surface_tuple is None:
             work_surface = cast("WorkSurface", self.canvas)
-            world_w, world_h = self.data.size
             view_ppm_x, view_ppm_y = work_surface.get_view_scale()
             content_width_px = round(world_w * view_ppm_x)
             content_height_px = round(world_h * view_ppm_y)
@@ -576,14 +631,18 @@ class WorkPieceView(CanvasElement):
             surface = cairo.ImageSurface(
                 cairo.FORMAT_ARGB32, surface_width, surface_height
             )
-            self._ops_surfaces[step_uid] = surface
+            # Store with workpiece bounds. This will be replaced by the
+            # final render with the correct, larger bounds.
+            workpiece_bbox = (0.0, 0.0, world_w, world_h)
+            self._ops_surfaces[step_uid] = (surface, workpiece_bbox)
+        else:
+            surface, _ = surface_tuple
 
         ctx = cairo.Context(surface)
         # Set the origin to the top-left of the content area.
         ctx.translate(OPS_MARGIN_PX, OPS_MARGIN_PX)
 
         # Calculate the pixels-per-millimeter and content height for encoder.
-        world_w, world_h = self.data.size
         content_width_px = surface.get_width() - 2 * OPS_MARGIN_PX
         content_height_px = surface.get_height() - 2 * OPS_MARGIN_PX
         encoder_ppm_x = content_width_px / world_w if world_w > 1e-9 else 1.0
@@ -608,7 +667,7 @@ class WorkPieceView(CanvasElement):
             logger.debug("Ops surface render future returned no result.")
             return
 
-        step_uid, new_surface, received_generation_id = result
+        step_uid, new_surface, received_generation_id, bbox_mm = result
 
         # Ignore results from a previous generation request.
         if received_generation_id != self._ops_generation_ids.get(step_uid):
@@ -622,7 +681,7 @@ class WorkPieceView(CanvasElement):
         logger.debug(
             f"Applying newly rendered ops surface for step '{step_uid}'."
         )
-        self._ops_surfaces[step_uid] = new_surface
+        self._ops_surfaces[step_uid] = (new_surface, bbox_mm)
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
@@ -665,30 +724,49 @@ class WorkPieceView(CanvasElement):
             super().draw(ctx)
 
         # Draw Ops Surfaces
-        for step_uid, surface in self._ops_surfaces.items():
-            if not self._ops_visibility.get(step_uid, True) or not surface:
+        for step_uid, surface_tuple in self._ops_surfaces.items():
+            if (
+                not self._ops_visibility.get(step_uid, True)
+                or not surface_tuple
+            ):
+                continue
+
+            surface, bbox_mm = surface_tuple
+            ops_x, ops_y, ops_w, ops_h = cast(Tuple[float, ...], bbox_mm)
+            world_w, world_h = self.data.size
+
+            if (
+                world_w < 1e-9
+                or world_h < 1e-9
+                or ops_w < 1e-9
+                or ops_h < 1e-9
+            ):
                 continue
 
             ctx.save()
 
-            surface_w = surface.get_width()
-            surface_h = surface.get_height()
-            content_w_px = surface_w - 2 * OPS_MARGIN_PX
-            content_h_px = surface_h - 2 * OPS_MARGIN_PX
+            # The drawing context is a 1x1 Y-UP space relative to the
+            # workpiece.
+            # We first transform to where the ops content should be placed
+            # and scaled, in this normalized space.
+            ctx.translate(ops_x / world_w, ops_y / world_h)
+            ctx.scale(ops_w / world_w, ops_h / world_h)
+
+            # Now we have a 1x1 Y-UP box that represents the ops bounding box.
+            # Draw the Y-DOWN pixel surface into it, which requires a Y-flip.
+            ctx.translate(0, 1)
+            ctx.scale(1, -1)
+
+            # Scale our 1x1 box to match the pixel dimensions of the surface.
+            surface_w_px = surface.get_width()
+            surface_h_px = surface.get_height()
+            content_w_px = surface_w_px - 2 * OPS_MARGIN_PX
+            content_h_px = surface_h_px - 2 * OPS_MARGIN_PX
 
             if content_w_px <= 0 or content_h_px <= 0:
                 ctx.restore()
                 continue
 
-            # To draw our Y-DOWN pixel surface into the current Y-UP context,
-            # we must apply the same Y-flip transform that super().draw() uses.
-            cairo_content_matrix = cairo.Matrix(
-                *self.content_transform.for_cairo()
-            )
-            ctx.transform(cairo_content_matrix)
-            # The context is now a 1x1 Y-DOWN space.
-
-            # Scale this space to match the pixel dimensions of the content.
             ctx.scale(1.0 / content_w_px, 1.0 / content_h_px)
 
             # Paint the surface, offsetting for the margin.
