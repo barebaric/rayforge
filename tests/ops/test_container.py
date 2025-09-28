@@ -217,6 +217,28 @@ def test_enable_disable_air_assist(empty_ops):
     assert isinstance(empty_ops.commands[-1], DisableAirAssistCommand)
 
 
+def test_rect_default_ignores_travel():
+    """Tests that Ops.rect() ignores travel moves by default."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    ops.move_to(100, 100)  # This move should be ignored
+    min_x, min_y, max_x, max_y = ops.rect()
+    assert (min_x, min_y, max_x, max_y) == (0.0, 0.0, 10.0, 10.0)
+
+
+def test_rect_includes_travel():
+    """Tests that Ops.rect(include_travel=True) includes travel moves."""
+    ops = Ops()
+    ops.move_to(-20, -20)
+    ops.line_to(10, 10)
+    ops.move_to(100, 100)  # This move should be included
+    min_x, min_y, max_x, max_y = ops.rect(include_travel=True)
+    # Points considered: (-20,-20), (10,10) from first segment,
+    # and (10,10), (100,100) from second
+    assert (min_x, min_y, max_x, max_y) == (-20.0, -20.0, 100.0, 100.0)
+
+
 def test_get_frame(sample_ops):
     frame = sample_ops.get_frame(power=1000, speed=500)
     assert sum(1 for c in frame if c.is_travel_command()) == 1  # move_to

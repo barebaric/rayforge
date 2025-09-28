@@ -146,6 +146,11 @@ class WorkSurface(Canvas):
         # This property holds the canonical global state for tab visibility.
         self._tabs_globally_visible: bool = True
 
+    @property
+    def show_travel_moves(self) -> bool:
+        """Returns True if travel moves should be rendered."""
+        return self._show_travel_moves
+
     def get_global_tab_visibility(self) -> bool:
         """
         Returns the current global visibility state for tab handles. This is

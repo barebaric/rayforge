@@ -324,10 +324,12 @@ class WorkPieceView(CanvasElement):
             return None
 
         world_w, world_h = self.data.size
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
 
         # Calculate the union of the workpiece bounds and the ops bounds to
         # ensure the recording surface is large enough.
-        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(include_travel=show_travel)
         union_x1 = min(0.0, ops_x1)
         union_y1 = min(0.0, ops_y1)
         union_x2 = max(world_w, ops_x2)
@@ -348,17 +350,18 @@ class WorkPieceView(CanvasElement):
             union_w + 2 * REC_MARGIN_MM,
             union_h + 2 * REC_MARGIN_MM,
         )
+        # The pycairo type stubs are incorrect for RecordingSurface; they don't
+        # specify that a tuple is a valid type for `extents`. We ignore the
+        # type checker here as the code is functionally correct.
         surface = cairo.RecordingSurface(
             cairo.CONTENT_COLOR_ALPHA,
-            extents,
+            extents,  # type: ignore
         )
         ctx = cairo.Context(surface)
 
         # We are drawing 1:1 in mm space, so scale is 1.0.
         encoder_ppms = (1.0, 1.0)
 
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface._show_travel_moves
         encoder = CairoEncoder()
 
         # Pass the workpiece height to the encoder. Ops coordinates are
@@ -447,17 +450,20 @@ class WorkPieceView(CanvasElement):
 
         recording = self._ops_recordings.get(step_uid)
         world_w, world_h = self.data.size
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
 
         # Determine the millimeter dimensions and offset of the content.
         if recording:
-            try:
-                # FAST PATH: use extents from the recording surface.
-                rec_x, rec_y, rec_w, rec_h = recording.get_extents()
+            # FAST PATH: use extents from the recording surface.
+            extents = recording.get_extents()
+            if extents:
+                rec_x, rec_y, rec_w, rec_h = extents
                 content_x_mm = rec_x + REC_MARGIN_MM
                 content_y_mm = rec_y + REC_MARGIN_MM
                 content_w_mm = rec_w - 2 * REC_MARGIN_MM
                 content_h_mm = rec_h - 2 * REC_MARGIN_MM
-            except Exception:
+            else:
                 logger.warning(f"Could not get extents for '{step_uid}'")
                 return None
         else:
@@ -465,7 +471,9 @@ class WorkPieceView(CanvasElement):
             ops = self.ops_generator.get_ops(step, self.data)
             if not ops:
                 return None
-            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(
+                include_travel=show_travel
+            )
             union_x1 = min(0.0, ops_x1)
             union_y1 = min(0.0, ops_y1)
             union_x2 = max(world_w, ops_x2)
@@ -476,7 +484,6 @@ class WorkPieceView(CanvasElement):
             content_h_mm = union_y2 - union_y1
 
         bbox_mm = (content_x_mm, content_y_mm, content_w_mm, content_h_mm)
-        work_surface = cast("WorkSurface", self.canvas)
         view_ppm_x, view_ppm_y = work_surface.get_view_scale()
         content_width_px = round(content_w_mm * view_ppm_x)
         content_height_px = round(content_h_mm * view_ppm_y)
@@ -533,7 +540,6 @@ class WorkPieceView(CanvasElement):
                 -content_x_mm * encoder_ppm_x, -content_y_mm * encoder_ppm_y
             )
 
-            show_travel = work_surface._show_travel_moves
             encoder = CairoEncoder()
             # Y-flip height must be workpiece height in pixels.
             drawable_h_px = world_h * encoder_ppm_y
@@ -574,7 +580,7 @@ class WorkPieceView(CanvasElement):
         _surface, ctx, ppms, content_h_px = prepared
 
         work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface._show_travel_moves
+        show_travel = work_surface.show_travel_moves
 
         # Encode just the chunk onto the existing surface
         encoder = CairoEncoder()

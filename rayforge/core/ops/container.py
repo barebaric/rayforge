@@ -320,12 +320,19 @@ class Ops:
         """
         self.commands.append(DisableAirAssistCommand())
 
-    def rect(self) -> Tuple[float, float, float, float]:
+    def rect(
+        self, include_travel: bool = False
+    ) -> Tuple[float, float, float, float]:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
+
+        Args:
+            include_travel: If True, travel moves are included in the bounds.
         """
-        return query.get_bounding_rect(self.commands)
+        return query.get_bounding_rect(
+            self.commands, include_travel=include_travel
+        )
 
     def get_frame(
         self,
