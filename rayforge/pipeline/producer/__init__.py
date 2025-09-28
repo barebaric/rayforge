@@ -1,6 +1,6 @@
 # flake8: noqa:F401
 import inspect
-from .base import OpsProducer, PipelineArtifact
+from .base import OpsProducer, PipelineArtifact, CutSide
 from .depth import DepthEngraver
 from .edge import EdgeTracer
 from .frame import FrameProducer

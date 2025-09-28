@@ -2,7 +2,7 @@ import cairo
 import numpy as np
 import math
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -221,9 +221,9 @@ def rasterize_vertically(
 
         col = bw_image[y_min : y_max + 1, x1]
 
-        black_segments = np.where(
-            np.diff(np.hstack(([0], col, [0])))
-        )[0].reshape(-1, 2)
+        black_segments = np.where(np.diff(np.hstack(([0], col, [0]))))[
+            0
+        ].reshape(-1, 2)
         for start, end in black_segments:
             if col[start] == 1:
                 start_mm = (y_min + start + 0.5) / pixels_per_mm_y
@@ -254,7 +254,7 @@ class Rasterizer(OpsProducer):
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: Dict[str, Any]) -> "Rasterizer":
         params = data.get("params", {})
         return cls(cross_hatch=params.get("cross_hatch", False))
 
@@ -265,6 +265,7 @@ class Rasterizer(OpsProducer):
         pixels_per_mm,
         *,
         workpiece: "Optional[WorkPiece]" = None,
+        settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
     ) -> PipelineArtifact:
         if workpiece is None:

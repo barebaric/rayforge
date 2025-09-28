@@ -143,6 +143,7 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
 
     # --- 3. ASSERT ---
     assert output_gcode_path.exists()
+    print(output_gcode_path.read_text())
     generated_lines = (
         output_gcode_path.read_text(encoding="utf-8").strip().splitlines()
     )

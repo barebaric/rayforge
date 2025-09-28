@@ -3,7 +3,7 @@ import numpy as np
 import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...core.ops import (
     Ops,
@@ -47,14 +47,7 @@ class DepthEngraver(OpsProducer):
         self.line_interval = line_interval
         self.bidirectional = bidirectional
         self.overscan = overscan
-        # Handle string-to-enum conversion for deserialization
-        if isinstance(depth_mode, str):
-            try:
-                self.depth_mode = DepthMode[depth_mode]
-            except KeyError:
-                self.depth_mode = DepthMode.POWER_MODULATION
-        else:
-            self.depth_mode = depth_mode
+        self.depth_mode = depth_mode
         self.speed = speed
         self.min_power = min_power
         self.max_power = max_power
@@ -69,6 +62,7 @@ class DepthEngraver(OpsProducer):
         pixels_per_mm,
         *,
         workpiece: "Optional[WorkPiece]" = None,
+        settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
     ) -> PipelineArtifact:
         if workpiece is None:
@@ -328,9 +322,32 @@ class DepthEngraver(OpsProducer):
 
     def to_dict(self) -> dict:
         """Serializes the producer configuration."""
-        params = self.__dict__.copy()
-        params["depth_mode"] = self.depth_mode.name
         return {
             "type": self.__class__.__name__,
-            "params": params,
+            "params": {
+                "scan_angle": self.scan_angle,
+                "line_interval": self.line_interval,
+                "bidirectional": self.bidirectional,
+                "overscan": self.overscan,
+                "depth_mode": self.depth_mode.name,
+                "speed": self.speed,
+                "min_power": self.min_power,
+                "max_power": self.max_power,
+                "power": self.power,
+                "num_depth_levels": self.num_depth_levels,
+                "z_step_down": self.z_step_down,
+            },
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DepthEngraver":
+        """Deserializes a dictionary into a DepthEngraver instance."""
+        params = data.get("params", {}).copy()
+        # Handle enum conversion during deserialization
+        depth_mode_str = params.get("depth_mode", "POWER_MODULATION")
+        try:
+            depth_mode = DepthMode[depth_mode_str]
+        except KeyError:
+            depth_mode = DepthMode.POWER_MODULATION
+        params["depth_mode"] = depth_mode
+        return cls(**params)

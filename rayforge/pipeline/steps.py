@@ -44,6 +44,7 @@ def create_contour_step(
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
@@ -102,7 +103,7 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
         typelabel=_("Shrink Wrap"),
         name=name,
     )
-    step.opsproducer_dict = ShrinkWrapProducer(gravity=0.0).to_dict()
+    step.opsproducer_dict = ShrinkWrapProducer().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
@@ -116,6 +117,7 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
@@ -128,7 +130,7 @@ def create_frame_step(name: Optional[str] = None) -> Step:
         typelabel=_("Frame Outline"),
         name=name,
     )
-    step.opsproducer_dict = FrameProducer(offset=1.0).to_dict()
+    step.opsproducer_dict = FrameProducer().to_dict()
     # FrameProducer does not use image data, so no modifiers are needed.
     step.modifiers_dicts = []
     step.opstransformers_dicts = [
@@ -139,6 +141,7 @@ def create_frame_step(name: Optional[str] = None) -> Step:
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
