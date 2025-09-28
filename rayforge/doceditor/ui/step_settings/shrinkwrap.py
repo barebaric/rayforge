@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ShrinkWrapProducerSettingsWidget(
     DebounceMixin, StepComponentSettingsWidget
 ):
-    """UI for configuring the HullProducer."""
+    """UI for configuring the ShrinkWrapProducer."""
 
     def __init__(
         self,

@@ -29,7 +29,7 @@ class ShrinkWrapProducer(OpsProducer):
 
     def __init__(self, gravity: float = 0.0):
         """
-        Initializes the HullProducer.
+        Initializes the producer.
 
         Args:
             gravity: A factor from 0.0 to 1.0. 0.0 results in a normal convex

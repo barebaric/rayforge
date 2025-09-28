@@ -31,7 +31,6 @@ __all__ = [
     "FrameProducerSettingsWidget",
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
-    "HullProducerSettingsWidget",
     "ShrinkWrapProducerSettingsWidget",
     "SmoothSettingsWidget",
     "RasterizerSettingsWidget"
