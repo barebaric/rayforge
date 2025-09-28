@@ -49,6 +49,7 @@ class WorkSurface(Canvas):
     ):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
+        self.grid_size = 1.0  # Set snap grid to 1mm in world coordinates
         self.editor = editor
         self.doc = self.editor.doc
         self.machine = None  # will be assigned by set_machine() below

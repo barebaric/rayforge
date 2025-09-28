@@ -46,6 +46,7 @@ class Canvas(Gtk.DrawingArea):
     """
 
     BASE_HANDLE_SIZE = 20.0
+    SNAP_ANGLE_DEGREES = 5.0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -57,6 +58,7 @@ class Canvas(Gtk.DrawingArea):
             canvas=self,
             parent=self,
         )
+        self.grid_size = 5
         self.view_transform: Matrix = Matrix.identity()
         # The primary element within the current selection, which receives
         # keyboard focus. This is a persistent state.
@@ -644,6 +646,35 @@ class Canvas(Gtk.DrawingArea):
         self._update_framing_selection()  # Update selection live
         self.queue_draw()
 
+    def _calculate_snap_offset(
+        self, target_pos: float, size: float, grid_size: float
+    ) -> float:
+        """
+        Calculates the snap adjustment for one axis, considering both edges.
+        It returns the smallest offset needed to align either the start or
+        the end of the object with the grid.
+        """
+        if grid_size <= 0:
+            return 0.0
+
+        # Target positions of the two edges
+        target_start = target_pos
+        target_end = target_pos + size
+
+        # The closest grid line for each edge
+        snap_start = round(target_start / grid_size) * grid_size
+        snap_end = round(target_end / grid_size) * grid_size
+
+        # The adjustment needed to snap each edge
+        delta_start = snap_start - target_start
+        delta_end = snap_end - target_end
+
+        # Return the adjustment with the smallest absolute magnitude
+        if abs(delta_start) < abs(delta_end):
+            return delta_start
+        else:
+            return delta_end
+
     def on_mouse_drag(self, gesture, offset_x: float, offset_y: float):
         """
         Handles an active drag, dispatching to transform-specific methods.
@@ -733,6 +764,95 @@ class Canvas(Gtk.DrawingArea):
         world_dx = current_world_x - start_world_x
         world_dy = current_world_y - start_world_y
 
+        if self._ctrl_pressed:
+            if self._moving:
+                if self._selection_group and self._active_origin:
+                    # Snap group move to grid using its AABB
+                    initial_x, initial_y, w, h = self._active_origin
+                    target_x = initial_x + world_dx
+                    target_y = initial_y + world_dy
+
+                    snap_offset_x = self._calculate_snap_offset(
+                        target_x, w, self.grid_size
+                    )
+                    snap_offset_y = self._calculate_snap_offset(
+                        target_y, h, self.grid_size
+                    )
+
+                    world_dx += snap_offset_x
+                    world_dy += snap_offset_y
+
+                elif self._drag_target and self._initial_world_transform:
+                    # Snap single element move using its world AABB
+                    elem = self._drag_target
+                    target_transform = (
+                        Matrix.translation(world_dx, world_dy)
+                        @ self._initial_world_transform
+                    )
+                    w, h = elem.width, elem.height
+                    local_corners = [(0, 0), (w, 0), (w, h), (0, h)]
+                    world_corners = [
+                        target_transform.transform_point(p)
+                        for p in local_corners
+                    ]
+
+                    x_coords = [c[0] for c in world_corners]
+                    y_coords = [c[1] for c in world_corners]
+                    min_x, max_x = min(x_coords), max(x_coords)
+                    min_y, max_y = min(y_coords), max(y_coords)
+
+                    snap_offset_x = self._calculate_snap_offset(
+                        min_x, max_x - min_x, self.grid_size
+                    )
+                    snap_offset_y = self._calculate_snap_offset(
+                        min_y, max_y - min_y, self.grid_size
+                    )
+
+                    world_dx += snap_offset_x
+                    world_dy += snap_offset_y
+
+            elif self._rotating and self._rotation_pivot:
+                # Snap rotation to configured degree increments
+                initial_angle_deg = 0.0
+                if self._initial_world_transform:
+                    initial_angle_deg = (
+                        self._initial_world_transform.get_rotation()
+                    )
+
+                pivot_x, pivot_y = self._rotation_pivot
+                current_mouse_angle_deg = math.degrees(
+                    math.atan2(
+                        current_world_y - pivot_y, current_world_x - pivot_x
+                    )
+                )
+
+                angle_delta_deg = (
+                    current_mouse_angle_deg - self._drag_start_angle
+                )
+                angle_delta_deg = (angle_delta_deg + 180) % 360 - 180
+                target_angle_deg = initial_angle_deg + angle_delta_deg
+
+                snapped_angle_deg = (
+                    round(target_angle_deg / self.SNAP_ANGLE_DEGREES)
+                    * self.SNAP_ANGLE_DEGREES
+                )
+                snapped_delta_deg = snapped_angle_deg - initial_angle_deg
+                snapped_mouse_angle_deg = (
+                    self._drag_start_angle + snapped_delta_deg
+                )
+
+                dist = math.hypot(
+                    current_world_x - pivot_x, current_world_y - pivot_y
+                )
+                snapped_mouse_angle_rad = math.radians(snapped_mouse_angle_deg)
+                current_world_x = pivot_x + dist * math.cos(
+                    snapped_mouse_angle_rad
+                )
+                current_world_y = pivot_y + dist * math.sin(
+                    snapped_mouse_angle_rad
+                )
+
+        # Dispatch to transform handlers (copied from base class)
         if self._selection_group:
             if self._moving:
                 self._selection_group.apply_move(world_dx, world_dy)
