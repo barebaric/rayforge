@@ -96,10 +96,12 @@ def test_run_with_empty_surface_returns_empty_ops():
     laser = MagicMock()
     rasterizer = Rasterizer()
     mock_workpiece = MagicMock(uid="wp_123")
-    ops = rasterizer.run(laser, empty_surface, (10, 10), workpiece=mock_workpiece)
-    assert len(ops.commands) == 2
-    assert isinstance(ops.commands[0], OpsSectionStartCommand)
-    assert isinstance(ops.commands[1], OpsSectionEndCommand)
+    artifact = rasterizer.run(
+        laser, empty_surface, (10, 10), workpiece=mock_workpiece
+    )
+    assert len(artifact.ops.commands) == 2
+    assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
+    assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
 
 
 def test_rasterizer_run_wraps_ops_in_section_markers(white_surface):
@@ -107,9 +109,9 @@ def test_rasterizer_run_wraps_ops_in_section_markers(white_surface):
     laser = MagicMock()
     rasterizer = Rasterizer()
     mock_workpiece = MagicMock(uid="wp_123")
-    ops = rasterizer.run(laser, white_surface, (10, 10), workpiece=mock_workpiece)
-    assert len(ops.commands) == 2
-    start_cmd, end_cmd = ops.commands
+    artifact = rasterizer.run(laser, white_surface, (10, 10), workpiece=mock_workpiece)
+    assert len(artifact.ops.commands) == 2
+    start_cmd, end_cmd = artifact.ops.commands
     assert isinstance(start_cmd, OpsSectionStartCommand)
     assert start_cmd.section_type == SectionType.RASTER_FILL
     assert start_cmd.workpiece_uid == "wp_123"
@@ -126,13 +128,15 @@ def test_rasterizer_cross_hatch(black_surface):
     workpiece.bbox = (0, 0, 10, 10)
 
     rasterizer = Rasterizer(cross_hatch=True)
-    ops = rasterizer.run(laser, black_surface, pixels_per_mm=(10, 10), workpiece=workpiece)
+    artifact = rasterizer.run(
+        laser, black_surface, pixels_per_mm=(10, 10), workpiece=workpiece
+    )
 
     horizontal_lines = 0
     vertical_lines = 0
     last_pos = None
 
-    for cmd in ops.commands:
+    for cmd in artifact.ops.commands:
         if isinstance(cmd, MoveToCommand):
             last_pos = cmd.end
         elif isinstance(cmd, LineToCommand):
