@@ -29,17 +29,17 @@ def test_grow_simple_square():
 
 
 def test_grow_clockwise_square():
-    """Tests that a CW shape correctly inverts the offset direction."""
+    """Tests that offset direction is consistent for a CW shape."""
     # A clockwise square
     square_cw = Geometry.from_points([(0, 0), (0, 10), (10, 10), (10, 0)])
 
-    # A positive offset on a CW shape should shrink it
-    shrunk_square = grow_geometry(square_cw, 1.0)
-    assert shrunk_square.area() == pytest.approx(64.0)
-
-    # A negative offset on a CW shape should grow it
-    grown_square = grow_geometry(square_cw, -1.0)
+    # A positive offset on any shape should grow it
+    grown_square = grow_geometry(square_cw, 1.0)
     assert grown_square.area() == pytest.approx(144.0)
+
+    # A negative offset on any shape should shrink it
+    shrunk_square = grow_geometry(square_cw, -1.0)
+    assert shrunk_square.area() == pytest.approx(64.0)
 
 
 def test_grow_shape_with_hole():

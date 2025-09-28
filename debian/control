@@ -26,7 +26,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
   adwaita-icon-theme, python3-numpy, python3-scipy, python3-serial-asyncio,
   python3-opencv, python3-ezdxf, python3-pypdf, python3-yaml, python3-aiohttp,
   python3-websockets, python3-blinker, python3-platformdirs, python3-opengl,
-  desktop-file-utils, python3-svgelements
+  desktop-file-utils, python3-svgelements, python3-pyclipper
 Description: Desktop application for laser cutting and engraving
   Rayforge is a powerful, open-source, and cross-platform software for
   controlling your laser cutter and engraver.
