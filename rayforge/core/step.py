@@ -56,6 +56,7 @@ class Step(DocItem, ABC):
         self.travel_speed = 5000
         self.max_travel_speed = 10000
         self.air_assist = False
+        self.kerf_mm: float = 0.0
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""
@@ -79,7 +80,23 @@ class Step(DocItem, ABC):
             "travel_speed": self.travel_speed,
             "max_travel_speed": self.max_travel_speed,
             "air_assist": self.air_assist,
+            "kerf_mm": self.kerf_mm,
             "children": [child.to_dict() for child in self.children],
+        }
+
+    def get_settings(self) -> Dict[str, Any]:
+        """
+        Bundles all physical process parameters into a dictionary.
+        Only includes settings of the step itself, and not of producer,
+        transformer, etc.
+        """
+        return {
+            "power": self.power,
+            "cut_speed": self.cut_speed,
+            "travel_speed": self.travel_speed,
+            "air_assist": self.air_assist,
+            "pixels_per_mm": self.pixels_per_mm,
+            "kerf_mm": self.kerf_mm,
         }
 
     @property
@@ -95,6 +112,7 @@ class Step(DocItem, ABC):
     def set_visible(self, visible: bool):
         self.visible = visible
         self.visibility_changed.send(self)
+        self.updated.send(self)
 
     def set_power(self, power: int):
         self.power = power
@@ -110,6 +128,11 @@ class Step(DocItem, ABC):
 
     def set_air_assist(self, enabled: bool):
         self.air_assist = bool(enabled)
+        self.updated.send(self)
+
+    def set_kerf_mm(self, kerf: float):
+        """Sets the kerf (beam width) in millimeters for this process."""
+        self.kerf_mm = float(kerf)
         self.updated.send(self)
 
     def get_summary(self) -> str:

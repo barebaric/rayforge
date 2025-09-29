@@ -1,7 +1,6 @@
 import logging
-from typing import Optional, TYPE_CHECKING
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem
-from ...core.matrix import Matrix
+from typing import Optional, TYPE_CHECKING, Dict, Any
+from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -25,17 +24,23 @@ class FrameProducer(OpsProducer):
     not require a raster image.
     """
 
-    def __init__(self, offset: float = 1.0):
+    def __init__(
+        self,
+        path_offset_mm: float = 0.0,
+        cut_side: CutSide = CutSide.OUTSIDE,
+    ):
         """
         Initializes the FrameProducer.
 
         Args:
-            offset: The distance in millimeters to offset the frame from the
-                    content's bounding box. A positive value expands the frame
-                    outwards.
+            path_offset_mm: An absolute distance to offset the frame from the
+                            content's bounding box.
+            cut_side: The rule for determining the final cut side. A frame
+                      is typically an OUTSIDE cut.
         """
         super().__init__()
-        self.offset = offset
+        self.path_offset_mm = path_offset_mm
+        self.cut_side = cut_side
 
     def run(
         self,
@@ -44,37 +49,43 @@ class FrameProducer(OpsProducer):
         pixels_per_mm,  # Unused
         *,
         workpiece: "Optional[WorkPiece]" = None,
+        settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
     ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")
 
-        # 1. Get the workpiece's current final size in millimeters.
+        # 1. Calculate total offset
+        kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
+        kerf_compensation = kerf_mm / 2.0
+        total_offset = 0.0
+        if self.cut_side == CutSide.CENTERLINE:
+            total_offset = 0.0  # Centerline ignores path offset
+        elif self.cut_side == CutSide.OUTSIDE:
+            # For a frame, OUTSIDE means expanding the boundary
+            total_offset = self.path_offset_mm + kerf_compensation
+        elif self.cut_side == CutSide.INSIDE:
+            # For a frame, INSIDE means shrinking the boundary
+            total_offset = -self.path_offset_mm - kerf_compensation
+
+        # 2. Get the workpiece's final size in millimeters.
         final_w, final_h = workpiece.size
 
-        # 2. Define the frame around a 1x1 normalized box.
-        #    The offset is in final mm, so we need to "un-scale" it.
-        offset_x_norm = self.offset / final_w if final_w > 1e-9 else 0
-        offset_y_norm = self.offset / final_h if final_h > 1e-9 else 0
-
-        frame_x0 = -offset_x_norm
-        frame_y0 = -offset_y_norm
-        frame_x1 = 1 + offset_x_norm
-        frame_y1 = 1 + offset_y_norm
-
-        # 3. Create the normalized rectangular geometry.
+        # 3. Create a rectangular geometry at the workpiece's final size.
         geo = Geometry()
-        geo.move_to(frame_x0, frame_y0)
-        geo.line_to(frame_x1, frame_y0)
-        geo.line_to(frame_x1, frame_y1)
-        geo.line_to(frame_x0, frame_y1)
+        geo.move_to(0, 0)
+        geo.line_to(final_w, 0)
+        geo.line_to(final_w, final_h)
+        geo.line_to(0, final_h)
         geo.close_path()
-        frame_ops = Ops.from_geometry(geo)
 
-        # 4. Apply the workpiece's scale to the normalized frame.
-        sx, sy = workpiece.matrix.get_abs_scale()
-        scaling_matrix = Matrix.scale(sx, sy)
-        frame_ops.transform(scaling_matrix.to_4x4_numpy())
+        # 4. Apply the final offset in millimeter space.
+        if abs(total_offset) > 1e-6:
+            # The rectangle is CCW, so a positive offset expands it, and
+            # a negative offset shrinks it. This aligns with our calculation.
+            geo = geo.grow(total_offset)
+
+        frame_ops = Ops.from_geometry(geo)
 
         logger.info(
             f"Generated frame with final geometry. Rect: {frame_ops.rect()}"
@@ -85,11 +96,12 @@ class FrameProducer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
         final_ops.extend(frame_ops)
         final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
-        # 5. Return a NON-SCALABLE artifact. The ops inside are already
-        #    scaled to the correct final size.
+        # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
+        #    final size, ready for positioning.
         return PipelineArtifact(
             ops=final_ops,
             is_scalable=False,
@@ -98,12 +110,8 @@ class FrameProducer(OpsProducer):
             generation_size=workpiece.size,
         )
 
-    def can_scale(self) -> bool:
-        """
-        Returns True to indicate the *generation process* is vector-based
-        and can run without chunked rendering. The *output artifact* itself
-        is marked as non-scalable.
-        """
+    @property
+    def supports_kerf(self) -> bool:
         return True
 
     @property
@@ -118,5 +126,28 @@ class FrameProducer(OpsProducer):
         """Serializes the producer configuration."""
         return {
             "type": self.__class__.__name__,
-            "params": {"offset": self.offset},
+            "params": {
+                "path_offset_mm": self.path_offset_mm,
+                "cut_side": self.cut_side.name,
+            },
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "FrameProducer":
+        """Deserializes a dictionary into a FrameProducer instance."""
+        params = data.get("params", {})
+        cut_side_str = params.get(
+            "cut_side", params.get("kerf_mode", "OUTSIDE")
+        )
+        try:
+            cut_side = CutSide[cut_side_str]
+        except KeyError:
+            cut_side = CutSide.OUTSIDE
+
+        # For backward compatibility with old configs
+        path_offset_mm = params.get(
+            "path_offset_mm",
+            params.get("offset_mm", params.get("offset", 0.0)),
+        )
+
+        return cls(path_offset_mm=path_offset_mm, cut_side=cut_side)

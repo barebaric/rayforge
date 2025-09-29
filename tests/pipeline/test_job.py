@@ -7,9 +7,9 @@ from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
 from rayforge.core.import_source import ImportSource
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.generator import OpsGenerator
-from rayforge.shared.tasker.manager import CancelledError
+from rayforge.shared.tasker.task import CancelledError
 from rayforge.pipeline.job import generate_job_ops
-from rayforge.pipeline.steps import create_outline_step
+from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 from rayforge.image import SVG_RENDERER
 
@@ -68,7 +68,9 @@ async def test_generate_job_ops_assembles_correctly(
     layer = doc.active_layer
     assert layer.workflow is not None
     with patch("rayforge.pipeline.steps.config", MagicMock()):
-        step = create_outline_step()
+        # Create a contour step and configure it for "outline" behavior
+        step = create_contour_step()
+        step.opsproducer_dict["params"]["remove_inner_paths"] = True
 
     # The new way to specify passes is via a post-assembly transformer
     multi_pass_transformer = MultiPassTransformer(passes=2)
@@ -133,7 +135,8 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
     layer = doc.active_layer
     assert layer.workflow is not None
     with patch("rayforge.pipeline.steps.config", MagicMock()):
-        step = create_outline_step()
+        step = create_contour_step()
+        step.opsproducer_dict["params"]["remove_inner_paths"] = True
     layer.workflow.add_step(step)
 
     # Setup sources for the workpieces

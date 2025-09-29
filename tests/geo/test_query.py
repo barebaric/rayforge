@@ -61,6 +61,40 @@ def test_get_bounding_rect_ignores_travel():
     assert max_y == pytest.approx(10.0)
 
 
+def test_get_bounding_rect_includes_travel():
+    """
+    Tests that travel moves are included in the bounding box when requested.
+    """
+    ops_list = [
+        MoveToCommand((-50, -50, 0)),
+        LineToCommand((10, 10, 0)),
+        MoveToCommand((100, 100, 0)),  # Should be included
+    ]
+    min_x, min_y, max_x, max_y = get_bounding_rect(
+        ops_list, include_travel=True
+    )
+    # Path is (-50,-50) -> (10,10) -> (100,100).
+    # All points should be included.
+    assert min_x == pytest.approx(-50.0)
+    assert min_y == pytest.approx(-50.0)
+    assert max_x == pytest.approx(100.0)
+    assert max_y == pytest.approx(100.0)
+
+
+def test_get_bounding_rect_includes_scanline():
+    """Tests that ScanLinePowerCommand is included in the bounding box."""
+    ops_list = [
+        MoveToCommand((10, 20, 0)),
+        ScanLinePowerCommand(end=(100, -50, 0), power_values=bytearray()),
+    ]
+    min_x, min_y, max_x, max_y = get_bounding_rect(ops_list)
+    # The path is from (10,20) to (100, -50)
+    assert min_x == pytest.approx(10.0)
+    assert min_y == pytest.approx(-50.0)
+    assert max_x == pytest.approx(100.0)
+    assert max_y == pytest.approx(20.0)
+
+
 def test_get_total_distance_with_geo_commands(sample_geometry):
     # Geometry fixture (all moves are "drawing")
     dist_geo = get_total_distance(sample_geometry.commands)

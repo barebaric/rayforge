@@ -2,7 +2,7 @@ import cairo
 import numpy as np
 import math
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
@@ -23,6 +23,7 @@ def rasterize_horizontally(
     pixels_per_mm=(10, 10),
     raster_size_mm=0.1,
     y_offset_mm=0.0,
+    threshold=128,
 ):
     """
     Generate an engraving path for a Cairo surface, focusing on horizontal
@@ -35,6 +36,7 @@ def rasterize_horizontally(
                         millimeters.
         y_offset_mm: The absolute vertical offset of this surface chunk
                      from the top of the entire workpiece (in mm).
+        threshold: The brightness value (0-255) to consider black.
 
     Returns:
         A Ops object containing the optimized engraving path.
@@ -46,6 +48,8 @@ def rasterize_horizontally(
     # Convert surface to a NumPy array
     width = surface.get_width()
     height = surface.get_height()
+    if width == 0 or height == 0:
+        return Ops()
     data = np.frombuffer(surface.get_data(), dtype=np.uint8)
     data = data.reshape((height, width, 4))
 
@@ -59,7 +63,7 @@ def rasterize_horizontally(
     bw_image = 0.2989 * red + 0.5870 * green + 0.1140 * blue
 
     # Threshold to black and white
-    bw_image = (bw_image < 128).astype(np.uint8)
+    bw_image = (bw_image < threshold).astype(np.uint8)
 
     # Optionally handle transparency (e.g., treat fully transparent
     # pixels as white)
@@ -141,11 +145,129 @@ def rasterize_horizontally(
     return ops
 
 
+def rasterize_vertically(
+    surface,
+    ymax,
+    pixels_per_mm=(10, 10),
+    raster_size_mm=0.1,
+    x_offset_mm=0.0,
+    threshold=128,
+):
+    """
+    Generate an engraving path for a Cairo surface, focusing on vertical
+    movement.
+
+    Args:
+        surface: A Cairo surface containing a black and white image.
+        pixels_per_mm: Resolution of the image in pixels per millimeter.
+        raster_size_mm: Distance between vertical engraving lines in
+                        millimeters.
+        x_offset_mm: The absolute horizontal offset of this surface chunk
+                     from the left of the entire workpiece (in mm).
+        threshold: The brightness value (0-255) to consider black.
+
+    Returns:
+        A Ops object containing the optimized engraving path.
+    """
+    surface_format = surface.get_format()
+    if surface_format != cairo.FORMAT_ARGB32:
+        raise ValueError("Unsupported Cairo surface format")
+
+    # Convert surface to a NumPy array
+    width = surface.get_width()
+    height = surface.get_height()
+    if width == 0 or height == 0:
+        return Ops()
+    data = np.frombuffer(surface.get_data(), dtype=np.uint8)
+    data = data.reshape((height, width, 4))
+
+    # Extract BGRA channels
+    blue = data[:, :, 0]
+    green = data[:, :, 1]
+    red = data[:, :, 2]
+    alpha = data[:, :, 3]
+
+    # Convert to grayscale and threshold
+    bw_image = (
+        0.2989 * red + 0.5870 * green + 0.1140 * blue < threshold
+    ).astype(np.uint8)
+    bw_image[alpha == 0] = 0
+
+    # Find bounding box
+    occupied_rows = np.any(bw_image, axis=1)
+    occupied_cols = np.any(bw_image, axis=0)
+
+    if not np.any(occupied_rows) or not np.any(occupied_cols):
+        return Ops()
+
+    y_min, y_max = np.where(occupied_rows)[0][[0, -1]]
+    x_min, x_max = np.where(occupied_cols)[0][[0, -1]]
+
+    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
+    x_min_mm = x_min / pixels_per_mm_x
+
+    ops = Ops()
+
+    global_x_min_mm = x_offset_mm + x_min_mm
+    first_global_x_mm = (
+        math.ceil(global_x_min_mm / raster_size_mm) * raster_size_mm
+    )
+    x_start_mm = first_global_x_mm - x_offset_mm
+
+    x_pixel_center_offset_mm = 0.5 / pixels_per_mm_x
+    x_extent_mm = (x_max + 1) / pixels_per_mm_x
+
+    for x_mm in np.arange(x_start_mm, x_extent_mm, raster_size_mm):
+        x_px = x_mm * pixels_per_mm_x
+        x1 = int(round(x_px))
+        if x1 >= width:
+            continue
+
+        col = bw_image[y_min : y_max + 1, x1]
+
+        black_segments = np.where(np.diff(np.hstack(([0], col, [0]))))[
+            0
+        ].reshape(-1, 2)
+        for start, end in black_segments:
+            if col[start] == 1:
+                start_mm = (y_min + start + 0.5) / pixels_per_mm_y
+                end_mm = (y_min + end - 1 + 0.5) / pixels_per_mm_y
+
+                line_x_mm = x_mm + x_pixel_center_offset_mm
+
+                ops.move_to(line_x_mm, ymax - start_mm)
+                ops.line_to(line_x_mm, ymax - end_mm)
+
+    return ops
+
+
 class Rasterizer(OpsProducer):
     """
     Generates rastered movements (using only straight lines)
     across filled pixels in the surface.
     """
+
+    def __init__(self, cross_hatch: bool = False, threshold: int = 128):
+        super().__init__()
+        self.cross_hatch = cross_hatch
+        self.threshold = threshold
+
+    def to_dict(self):
+        return {
+            "type": self.__class__.__name__,
+            "params": {
+                "cross_hatch": self.cross_hatch,
+                "threshold": self.threshold,
+            },
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Rasterizer":
+        params = data.get("params", {})
+        return cls(
+            cross_hatch=params.get("cross_hatch", False),
+            threshold=params.get("threshold", 128),
+        )
 
     def run(
         self,
@@ -154,6 +276,7 @@ class Rasterizer(OpsProducer):
         pixels_per_mm,
         *,
         workpiece: "Optional[WorkPiece]" = None,
+        settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
     ) -> PipelineArtifact:
         if workpiece is None:
@@ -163,6 +286,7 @@ class Rasterizer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
 
         width = surface.get_width()
         height = surface.get_height()
@@ -176,8 +300,22 @@ class Rasterizer(OpsProducer):
             pixels_per_mm,
             laser.spot_size_mm[1],
             y_offset_mm=y_offset_mm,
+            threshold=self.threshold,
         )
         final_ops.extend(raster_ops)
+
+        if self.cross_hatch:
+            logger.info("Cross-hatch enabled, performing vertical pass.")
+            x_offset_mm = workpiece.bbox[0]
+            vertical_ops = rasterize_vertically(
+                surface,
+                ymax,
+                pixels_per_mm,
+                laser.spot_size_mm[0],
+                x_offset_mm=x_offset_mm,
+                threshold=self.threshold,
+            )
+            final_ops.extend(vertical_ops)
 
         final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
         return PipelineArtifact(

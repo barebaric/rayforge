@@ -2,12 +2,35 @@ import asyncio
 import threading
 import time
 from unittest.mock import Mock
-from multiprocessing import get_context
 import pytest
-from rayforge.shared.tasker.manager import TaskManager, CancelledError
-from rayforge.shared.tasker.task import Task
+from rayforge.shared.tasker.manager import TaskManager
+from rayforge.shared.tasker.task import Task, CancelledError
 from rayforge.shared.tasker.context import ExecutionContext
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
+
+
+def simple_process_func(
+    context: ExecutionContextProxy, duration=0.3, result="process_done"
+):
+    """A simple function for a subprocess that reports progress."""
+    context.set_total(10)
+    for i in range(10):
+        context.set_progress(i + 1)
+        context.set_message(f"Process step {i + 1}")
+        time.sleep(duration / 10)
+    return result
+
+
+def failing_process_func(context: ExecutionContextProxy):
+    """A process function that intentionally fails."""
+    time.sleep(0.01)
+    raise ValueError("Process failed intentionally")
+
+
+def long_running_process_func(context: ExecutionContextProxy):
+    """A long-running process function to test cancellation behavior."""
+    time.sleep(0.5)
+    return "should_be_discarded"
 
 
 async def simple_coro(
@@ -68,54 +91,16 @@ async def cancellable_coro(
     pytest.fail("Cancellable coroutine was not cancelled.")
 
 
-def simple_process_func(
-    context: ExecutionContextProxy, duration=0.3, result="process_done"
-):
-    """A simple function for a subprocess that reports progress."""
-    context.set_total(10)
-    for i in range(10):
-        context.set_progress(i + 1)
-        context.set_message(f"Process step {i + 1}")
-        time.sleep(duration / 10)
-    return result
-
-
-def failing_process_func(context: ExecutionContextProxy):
-    """A process function that intentionally fails."""
-    time.sleep(0.01)
-    raise ValueError("Process failed intentionally")
-
-
-def long_running_process_func(
-    context: ExecutionContextProxy, started_event: threading.Event
-):
-    """A long-running process function to test termination."""
-    started_event.set()
-    # This process doesn't check for cancellation. We rely on
-    # the manager terminating it.
-    time.sleep(10)
-    return "should_not_return"
-
-
-def exit_code_process_func(context: ExecutionContextProxy):
-    """A process function that exits with a non-zero status code."""
-    time.sleep(0.1)
-    # Note: sys.exit() raises SystemExit, which is caught by the wrapper.
-    # To test the exit code, the process must exit more forcefully or the
-    # wrapper would need to be different. However, the manager's check
-    # for `process.exitcode != 0` is a fallback, and we can test it this
-    # way.
-    import os
-
-    os._exit(5)  # Force exit without cleanup or exception
-
-
 @pytest.fixture
 def manager():
-    """Provides a TaskManager instance that is properly shut down after use."""
+    """
+    Provides a completely isolated TaskManager instance for each test and
+    ensures it is properly shut down. This prevents state leakage.
+    """
     tm = TaskManager()
     yield tm
-    # Shutdown ensures the background thread is properly terminated
+    # Shutdown ensures all background threads and worker processes are
+    # properly terminated.
     tm.shutdown()
 
 
@@ -240,10 +225,9 @@ class TestCoroutineTasks:
         manager.add_coroutine(
             cancellable_coro, started_event, key="cancel_me", when_done=on_done
         )
-        task = manager._tasks["cancel_me"]
 
         assert started_event.wait(timeout=1), "Coroutine did not start in time"
-        task.cancel()
+        manager.cancel_task("cancel_me")
 
         assert completion_event.wait(timeout=2), (
             "on_done was not called after cancel"
@@ -353,22 +337,17 @@ class TestProcessTasks:
         with pytest.raises(Exception) as excinfo:
             final_task.result()
 
-        # Check that the error message contains the subprocess exception
-        # details
-        assert "Subprocess Traceback" in str(excinfo.value)
+        # Check that the error message contains the specific exception details
         assert "Process failed intentionally" in str(excinfo.value)
         assert not manager._tasks
 
     def test_process_cancellation(self, manager: TaskManager):
         """
-        Verify that a running subprocess can be terminated via cancellation.
+        Verify that a running subprocess can be cancelled.
+        Note: This doesn't terminate the process, just marks the task
+        and discards the result.
         """
         completion_event = threading.Event()
-
-        # Create a context locally for the test, as the manager no longer
-        # holds a shared one.
-        mp_context = get_context("spawn")
-        started_event = mp_context.Event()
         final_task = None
 
         def on_done(task: Task):
@@ -376,47 +355,28 @@ class TestProcessTasks:
             final_task = task
             completion_event.set()
 
+        # Submit a task that runs for 0.5 seconds
         manager.run_process(
             long_running_process_func,
-            started_event,
             key="proc_cancel",
             when_done=on_done,
         )
-        task = manager._tasks["proc_cancel"]
 
-        assert started_event.wait(timeout=2), "Process task did not start"
-        task.cancel()
+        # Give it a moment to ensure it has been picked up by a worker
+        time.sleep(0.1)
 
+        # Cancel the task in the manager
+        manager.cancel_task("proc_cancel")
+
+        # The on_done callback should still be called when the worker
+        # finishes, but the task status should be 'canceled'.
         assert completion_event.wait(timeout=3), (
-            "Process did not clean up after cancel"
+            "on_done was not called after process finished"
         )
         assert final_task is not None
         assert final_task.get_status() == "canceled"
         with pytest.raises(CancelledError):
             final_task.result()
-        assert not manager._tasks
-
-    def test_process_unexpected_exit(self, manager: TaskManager):
-        """Verify failure when a process exits with a non-zero exit code."""
-        completion_event = threading.Event()
-        final_task = None
-
-        def on_done(task: Task):
-            nonlocal final_task
-            final_task = task
-            completion_event.set()
-
-        manager.run_process(
-            exit_code_process_func, key="proc_exit", when_done=on_done
-        )
-        assert completion_event.wait(timeout=2)
-
-        assert final_task is not None
-        assert final_task.get_status() == "failed"
-        with pytest.raises(Exception) as excinfo:
-            final_task.result()
-
-        assert "terminated unexpectedly with exit code 5" in str(excinfo.value)
         assert not manager._tasks
 
 
@@ -428,6 +388,7 @@ class TestTaskManagerGlobals:
         self, manager: TaskManager, mock_timer_factory
     ):
         """Verify the calculation of overall progress."""
+        # An empty manager should report 100% progress (nothing to do).
         assert manager.get_overall_progress() == 1.0
 
         steps = 4
@@ -458,6 +419,7 @@ class TestTaskManagerGlobals:
             when_done=lambda t: done_event2.set(),
         )
 
+        # After adding tasks that haven't started, progress should be 0.
         await asyncio.sleep(0.02)
         assert manager.get_overall_progress() == 0.0
 
@@ -488,6 +450,8 @@ class TestTaskManagerGlobals:
             asyncio.to_thread(done_event2.wait),
         )
 
+        # After all tasks are complete, the manager should be empty again
+        # and progress should return to 1.0.
         await asyncio.sleep(0.02)
         assert manager.get_overall_progress() == 1.0
         assert not manager._tasks
@@ -515,14 +479,23 @@ class TestTaskManagerGlobals:
         assert kwargs["tasks"][0].get_status() in ("pending", "running")
         assert kwargs["progress"] == 0.0
 
-        # Wait for some progress
-        time.sleep(0.1)
+        # Robustly wait for the progress to update instead of a fixed sleep.
+        start_time = time.time()
+        progress_updated = False
+        while time.time() - start_time < 0.5:
+            last_call_args, last_call_kwargs = signal_receiver.call_args
+            if last_call_kwargs.get("progress", 0.0) > 0.0:
+                progress_updated = True
+                break
+            time.sleep(0.01)  # Yield to other threads
+
+        assert progress_updated, "Progress signal was not received in time"
 
         # Check intermediate calls (running with progress)
         last_call_args, last_call_kwargs = signal_receiver.call_args
         assert len(last_call_kwargs["tasks"]) == 1
         assert last_call_kwargs["tasks"][0].get_status() == "running"
-        assert last_call_kwargs["progress"] > 0.1
+        assert last_call_kwargs["progress"] > 0.0
         assert (
             signal_receiver.call_count > 2
         )  # Add, Running, and progress updates

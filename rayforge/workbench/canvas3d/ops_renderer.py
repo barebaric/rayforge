@@ -28,14 +28,18 @@ class OpsRenderer(BaseRenderer):
         super().__init__()
         self.cut_vao: int = 0
         self.travel_vao: int = 0
-        self.cut_vertex_count: int = 0
-        self.travel_vertex_count: int = 0
+        self.zero_power_vao: int = 0
+        self.raster_vao: int = 0
+
         self.cut_vbo: int = 0
         self.travel_vbo: int = 0
-        # New VBO/VAO for variable power lines
-        self.raster_vao: int = 0
+        self.zero_power_vbo: int = 0
         self.raster_vbo: int = 0
         self.raster_colors_vbo: int = 0
+
+        self.cut_vertex_count: int = 0
+        self.travel_vertex_count: int = 0
+        self.zero_power_vertex_count: int = 0
         self.raster_vertex_count: int = 0
 
     def init_gl(self):
@@ -45,6 +49,7 @@ class OpsRenderer(BaseRenderer):
         # Create Buffers
         self.cut_vbo = self._create_vbo()
         self.travel_vbo = self._create_vbo()
+        self.zero_power_vbo = self._create_vbo()
         self.raster_vbo = self._create_vbo()
         self.raster_colors_vbo = self._create_vbo()
 
@@ -59,6 +64,13 @@ class OpsRenderer(BaseRenderer):
         self.travel_vao = self._create_vao()
         GL.glBindVertexArray(self.travel_vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.travel_vbo)
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glEnableVertexAttribArray(0)
+
+        # Configure VAO for Zero-Power Moves
+        self.zero_power_vao = self._create_vao()
+        GL.glBindVertexArray(self.zero_power_vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.zero_power_vbo)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
@@ -87,40 +99,33 @@ class OpsRenderer(BaseRenderer):
         (
             cut_verts,
             travel_verts,
+            zero_power_verts,
             raster_verts,
             raster_colors,
         ) = self.prepare_vertex_data(ops)
         self.update_from_vertex_data(
-            cut_verts, travel_verts, raster_verts, raster_colors
+            cut_verts,
+            travel_verts,
+            zero_power_verts,
+            raster_verts,
+            raster_colors,
         )
 
     def prepare_vertex_data(
         self, ops: Ops
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Processes an Ops object into numpy arrays of vertices. This method is
         thread-safe and can be run in the background.
         """
         cut_vertices: List[float] = []
         travel_vertices: List[float] = []
+        zero_power_vertices: List[float] = []
         raster_vertices: List[float] = []
         raster_colors: List[float] = []
         last_point: Tuple[float, float, float] = 0.0, 0.0, 0.0
 
-        # First pass: find global min and max power (for powers > 0)
-        global_min_power = float("inf")
-        global_max_power = 0
-        for command in getattr(ops, "commands", []):
-            if isinstance(command, ScanLinePowerCommand):
-                power_values = getattr(command, "power_values", [])
-                for p in power_values:
-                    if p > 0:
-                        global_min_power = min(global_min_power, p)
-                        global_max_power = max(global_max_power, p)
-        if global_min_power == float("inf"):
-            global_min_power = 0
-
-        # Second pass: build vertices
+        ops.preload_state()
         for command in getattr(ops, "commands", []):
             if not isinstance(command, Command) or command.is_marker_command():
                 continue
@@ -131,62 +136,30 @@ class OpsRenderer(BaseRenderer):
                     last_point = command.end or last_point
                     continue
 
-                if global_max_power <= 0:
-                    last_point = command.end
-                    continue
-
                 p_start = np.array(last_point, dtype=np.float32)
                 p_end = np.array(command.end, dtype=np.float32)
                 line_vec = p_end - p_start
                 num_values = len(power_values)
 
-                num_runs = 0
+                # Generate a line segment for each power value ("pixel")
+                for i, power in enumerate(power_values):
+                    t_start = i / num_values
+                    t_end = (i + 1) / num_values
+                    start_pt = p_start + line_vec * t_start
+                    end_pt = p_start + line_vec * t_end
 
-                if num_values > 0:
-                    run_start_idx = 0
-                    for i in range(1, num_values):
-                        if power_values[i] != power_values[run_start_idx]:
-                            power = power_values[run_start_idx]
-                            if power > 0:
-                                t_start = run_start_idx / num_values
-                                t_end = i / num_values
-                                start_pt = p_start + line_vec * t_start
-                                end_pt = p_start + line_vec * t_end
-                                raster_vertices.extend(start_pt)
-                                raster_vertices.extend(end_pt)
-                                p_norm = (
-                                    (power - global_min_power)
-                                    / (global_max_power - global_min_power)
-                                    if global_max_power > global_min_power
-                                    else 0.0
-                                )
-                                color = (
-                                    1.0 - p_norm,
-                                    1.0 - p_norm,
-                                    1.0 - p_norm,
-                                    1.0,
-                                )
-                                raster_colors.extend(color)
-                                raster_colors.extend(color)
-                                num_runs += 1
-                            run_start_idx = i
-                    # Process the final run
-                    power = power_values[run_start_idx]
                     if power > 0:
-                        t_start = run_start_idx / num_values
-                        start_pt = p_start + line_vec * t_start
                         raster_vertices.extend(start_pt)
-                        raster_vertices.extend(p_end)
-                        p_norm = (
-                            (power - global_min_power)
-                            / (global_max_power - global_min_power)
-                            if global_max_power > global_min_power
-                            else 0.0
-                        )
-                        color = (1.0 - p_norm, 1.0 - p_norm, 1.0 - p_norm, 1.0)
+                        raster_vertices.extend(end_pt)
+                        # Normalize power (0-100) and invert for color.
+                        # High power = dark (0.0), low power = light (1.0).
+                        p_norm = 1.0 - (power / 100.0)
+                        color = (p_norm, p_norm, p_norm, 1.0)
                         raster_colors.extend(color)
                         raster_colors.extend(color)
-                        num_runs += 1
+                    else:  # power == 0
+                        zero_power_vertices.extend(start_pt)
+                        zero_power_vertices.extend(end_pt)
 
                 last_point = command.end
                 continue
@@ -194,32 +167,38 @@ class OpsRenderer(BaseRenderer):
             if command.end is None:
                 continue
 
-            # Convert to GL coordinates (Z-up, so direct mapping)
-            end_point = (
-                float(command.end[0]),
-                float(command.end[1]),
-                float(command.end[2]),
-            )
+            end_point = tuple(map(float, command.end))
             start_point = last_point
+            is_zero_power = (
+                command.state is not None and command.state.power == 0
+            )
 
             if isinstance(command, MoveToCommand):
                 if not np.allclose(start_point, end_point):
                     travel_vertices.extend(start_point)
                     travel_vertices.extend(end_point)
             elif isinstance(command, LineToCommand):
-                cut_vertices.extend(start_point)
-                cut_vertices.extend(end_point)
+                if is_zero_power:
+                    zero_power_vertices.extend(start_point)
+                    zero_power_vertices.extend(end_point)
+                elif not is_zero_power:
+                    cut_vertices.extend(start_point)
+                    cut_vertices.extend(end_point)
             elif isinstance(command, ArcToCommand):
                 arc_verts = self._tessellate_arc(
                     start_point, end_point, command
                 )
-                cut_vertices.extend(arc_verts)
+                if is_zero_power:
+                    zero_power_vertices.extend(arc_verts)
+                elif not is_zero_power:
+                    cut_vertices.extend(arc_verts)
 
             last_point = command.end
 
         return (
             np.array(cut_vertices, dtype=np.float32),
             np.array(travel_vertices, dtype=np.float32),
+            np.array(zero_power_vertices, dtype=np.float32),
             np.array(raster_vertices, dtype=np.float32),
             np.array(raster_colors, dtype=np.float32),
         )
@@ -228,6 +207,7 @@ class OpsRenderer(BaseRenderer):
         self,
         cut_vertices: np.ndarray,
         travel_vertices: np.ndarray,
+        zero_power_vertices: np.ndarray,
         raster_vertices: np.ndarray,
         raster_colors: np.ndarray,
     ):
@@ -236,18 +216,29 @@ class OpsRenderer(BaseRenderer):
         self._load_buffer_data(self.cut_vbo, cut_vertices)
         self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
+        self.zero_power_vertex_count = zero_power_vertices.size // 3
+        self._load_buffer_data(self.zero_power_vbo, zero_power_vertices)
         self.raster_vertex_count = raster_vertices.size // 3
         self._load_buffer_data(self.raster_vbo, raster_vertices)
         self._load_buffer_data(self.raster_colors_vbo, raster_colors)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
+    def render(
+        self,
+        shader: Shader,
+        mvp_matrix: np.ndarray,
+        cut_color: List[float],
+        travel_color: List[float],
+        zero_power_color: List[float],
+    ) -> None:
         """
-        Renders the toolpaths. The VAO state is pre-configured, so this
-        method only needs to bind the appropriate VAO and draw.
+        Renders the toolpaths.
 
         Args:
             shader: The shader program to use for rendering lines.
             mvp_matrix: The combined Model-View-Projection matrix.
+            cut_color: The RGBA color for cut moves.
+            travel_color: The RGBA color for travel moves.
+            zero_power_color: The RGBA color for zero-power moves.
         """
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
@@ -259,21 +250,25 @@ class OpsRenderer(BaseRenderer):
             GL.glBindVertexArray(self.raster_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.raster_vertex_count)
 
-        # Draw cuts moves (which use a uniform color)
+        # All subsequent draws use a uniform color
         shader.set_float("uUseVertexColor", 0.0)
+
+        # Draw cuts moves
         self._draw_buffer(
-            self.cut_vao,
-            self.cut_vertex_count,
+            self.cut_vao, self.cut_vertex_count, shader, cut_color
+        )
+
+        # Draw zero-power moves
+        self._draw_buffer(
+            self.zero_power_vao,
+            self.zero_power_vertex_count,
             shader,
-            [1.0, 0.0, 1.0, 1.0],
+            zero_power_color,
         )
 
         # Draw travel moves
         self._draw_buffer(
-            self.travel_vao,
-            self.travel_vertex_count,
-            shader,
-            [1.0, 0.4, 0.0, 0.7],
+            self.travel_vao, self.travel_vertex_count, shader, travel_color
         )
 
         GL.glBindVertexArray(0)

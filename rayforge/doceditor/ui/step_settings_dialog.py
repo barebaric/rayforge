@@ -6,6 +6,8 @@ from ...undo import HistoryManager, ChangePropertyCommand
 from ...core.doc import Doc
 from ...core.step import Step
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...shared.util.adwfix import get_spinrow_float
+from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from .step_settings import WIDGET_REGISTRY
 
@@ -68,9 +70,12 @@ class StepSettingsDialog(Adw.Window):
 
         # 1. Producer Settings
         producer_dict = self.step.opsproducer_dict
+        producer = None
         if producer_dict:
             producer_name = producer_dict.get("type")
             if producer_name:
+                # Instantiate producer to check its properties later
+                producer = OpsProducer.from_dict(producer_dict)
                 WidgetClass = WIDGET_REGISTRY.get(producer_name)
                 if WidgetClass:
                     widget = WidgetClass(
@@ -159,6 +164,29 @@ class StepSettingsDialog(Adw.Window):
         air_assist_row.connect("notify::active", self.on_air_assist_changed)
         general_group.add(air_assist_row)
 
+        # Kerf Setting (conditionally visible)
+        kerf_adj = Gtk.Adjustment(
+            lower=0.0, upper=2.0, step_increment=0.01, page_increment=0.1
+        )
+        self.kerf_row = Adw.SpinRow(
+            title=_("Beam Width (Kerf)"),
+            subtitle=_(
+                "The effective width of the laser cut in machine units"
+            ),
+            adjustment=kerf_adj,
+            digits=3,
+        )
+        kerf_adj.set_value(self.step.kerf_mm)
+        self.kerf_row.connect(
+            "changed", lambda r: self._debounce(self._on_kerf_changed, r)
+        )
+        general_group.add(self.kerf_row)
+
+        # Set kerf row visibility based on producer capability
+        self.kerf_row.set_visible(
+            producer.supports_kerf if producer else False
+        )
+
         # 3. Path Post-Processing Transformers
         if self.step.opstransformers_dicts:
             for t_dict in self.step.opstransformers_dicts:
@@ -238,6 +266,19 @@ class StepSettingsDialog(Adw.Window):
         self._debounced_callback = None
         self._debounced_args = ()
         return GLib.SOURCE_REMOVE
+
+    def _on_kerf_changed(self, spin_row):
+        new_value = get_spinrow_float(spin_row)
+        if abs(new_value - self.step.kerf_mm) > 1e-6:
+            command = ChangePropertyCommand(
+                target=self.step,
+                property_name="kerf_mm",
+                new_value=new_value,
+                setter_method_name="set_kerf_mm",
+                name=_("Change Kerf"),
+            )
+            self.history_manager.execute(command)
+            self.changed.send(self)
 
     def on_power_changed(self, scale):
         max_power = (

@@ -141,7 +141,8 @@ class TabHandleElement(CanvasElement):
             self.canvas._last_mouse_x, self.canvas._last_mouse_y
         )
 
-        # Transform to parent's local, natural millimeter space
+        # Transform mouse coordinates to the parent's local,
+        # normalized space (0-1).
         try:
             inv_parent_world = parent_view.get_world_transform().invert()
             local_x_norm, local_y_norm = inv_parent_world.transform_point(
@@ -150,29 +151,22 @@ class TabHandleElement(CanvasElement):
         except Exception:
             return world_dx, world_dy
 
-        natural_size = parent_view.data.get_natural_size()
-        if natural_size and None not in natural_size:
-            natural_w, natural_h = cast(Tuple[float, float], natural_size)
-        else:
-            natural_w, natural_h = parent_view.data.get_local_size()
-
-        if natural_w <= 1e-9 or natural_h <= 1e-9:
-            return world_dx, world_dy
-
-        local_x_mm = local_x_norm * natural_w
-        local_y_mm = local_y_norm * natural_h
-
-        # 1. Find the closest point on the geometry path.
-        closest = vectors.find_closest_point(local_x_mm, local_y_mm)
+        # 1. Find the closest point on the normalized geometry path.
+        #    The `vectors` object operates in a normalized 0-1 space as per
+        #    the WorkPiece model's design.
+        closest = vectors.find_closest_point(local_x_norm, local_y_norm)
         if not closest:
             return world_dx, world_dy
-        segment_index, t, local_pos_mm = closest
+        segment_index, t, local_pos_norm = closest
 
-        # 2. Get the tangent for orientation.
+        # 2. Get the tangent for orientation from the normalized geometry.
         tangent_result = vectors.get_point_and_tangent_at(segment_index, t)
         if not tangent_result:
             return world_dx, world_dy
-        _, local_tangent_mm = tangent_result
+
+        # The point is also returned, but we have a more accurate one
+        # from `find_closest_point`.
+        _, local_tangent_norm = tangent_result
 
         # 3. Update the temporary copy, NOT the document model's data.
         if self._dragged_tab_state:
@@ -181,14 +175,8 @@ class TabHandleElement(CanvasElement):
 
         # 4. Update the handle's internal geometry caches for fast visual
         # preview.
-        self._local_pos_norm = (
-            local_pos_mm[0] / natural_w,
-            local_pos_mm[1] / natural_h,
-        )
-        self._local_tangent_norm = (
-            local_tangent_mm[0] / natural_w,
-            local_tangent_mm[1] / natural_h,
-        )
+        self._local_pos_norm = local_pos_norm
+        self._local_tangent_norm = local_tangent_norm
 
         # 5. Updating the transform. This will trigger a redraw.
         # See the drag_handler_controls_transform constructor argument
@@ -223,24 +211,15 @@ class TabHandleElement(CanvasElement):
         )
         if not result:
             return
-        local_pos_mm, local_tangent_mm = result
 
-        natural_size = parent_view.data.get_natural_size()
-        if natural_size and None not in natural_size:
-            natural_w, natural_h = cast(Tuple[float, float], natural_size)
-        else:
-            natural_w, natural_h = parent_view.data.get_local_size()
+        # The parent WorkPiece's `vectors` object is normalized to a 1x1 box.
+        # Therefore, the point and tangent returned are already in the correct
+        # local, normalized coordinate system of the parent view. We can use
+        # them directly.
+        local_pos_norm, local_tangent_norm = result
 
-        if natural_w > 1e-9 and natural_h > 1e-9:
-            self._local_pos_norm = (
-                local_pos_mm[0] / natural_w,
-                local_pos_mm[1] / natural_h,
-            )
-            # Normalize the tangent vector relative to the parent's unit space.
-            self._local_tangent_norm = (
-                local_tangent_mm[0] / natural_w,
-                local_tangent_mm[1] / natural_h,
-            )
+        self._local_pos_norm = local_pos_norm
+        self._local_tangent_norm = local_tangent_norm
 
     def update_transform(self):
         """

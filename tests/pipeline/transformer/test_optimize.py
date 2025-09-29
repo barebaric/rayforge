@@ -380,3 +380,53 @@ def test_run_optimization_with_split_scanline():
     # The scan should proceed to the end of flipped(B), B's original start.
     assert scan_cmd_2.end == pytest.approx((100.0, 5.0, 0.0))
     assert scan_cmd_2.power_values == bytearray([50, 50])[::-1]
+
+
+def test_optimizer_does_not_split_overscanned_scanline():
+    """
+    Tests that the optimizer does not split a ScanLinePowerCommand that has
+    been padded with zero-power values by the OverscanTransformer.
+
+    The optimizer's splitting logic is designed to break up scanlines with
+    large empty areas to improve travel paths. However, an overscanned line
+    intentionally has zero-power lead-in/outs. The optimizer must treat
+    this entire overscanned line as a single, unbreakable segment.
+    """
+    # Arrange: Create an Ops object that simulates the output of an
+    # OverscanTransformer. This is a single scanline with zero-power padding.
+    ops = Ops()
+    ops.set_power(100)
+
+    # This represents a 10mm content line (15-5) with 5mm overscan on each side
+    start_pt = (0.0, 10.0, 0.0)
+    end_pt = (20.0, 10.0, 0.0)
+    # Padded power values: 2 bytes for lead-in, 3 for content, 2 for lead-out
+    power_values = bytearray([0, 0] + [50, 100, 150] + [0, 0])
+
+    ops.move_to(*start_pt)
+    ops.add(ScanLinePowerCommand(end=end_pt, power_values=power_values))
+
+    # Act: Run the optimizer
+    optimizer = Optimize()
+    optimizer.run(ops)
+
+    # Assert: The optimizer should NOT have split the scanline.
+    scan_cmds = [
+        c for c in ops.commands if isinstance(c, ScanLinePowerCommand)
+    ]
+    move_cmds = [c for c in ops.commands if isinstance(c, MoveToCommand)]
+
+    # 1. There should still be exactly one ScanLinePowerCommand
+    assert len(scan_cmds) == 1
+    final_scan_cmd = scan_cmds[0]
+
+    # 2. The move command preceding it should still start at the overscan point
+    assert len(move_cmds) == 1
+    assert move_cmds[0].end == pytest.approx(start_pt)
+
+    # 3. The scanline's geometry should be unchanged. If it were split, the
+    #    endpoint would be shortened to the end of the content area.
+    assert final_scan_cmd.end == pytest.approx(end_pt)
+
+    # 4. The power values should still contain the zero-power padding.
+    assert final_scan_cmd.power_values == power_values

@@ -6,11 +6,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-import time
-from multiprocessing import get_context
-from multiprocessing.context import SpawnProcess
-from multiprocessing.queues import Queue
-from queue import Empty
 from typing import (
     Any,
     Callable,
@@ -22,8 +17,8 @@ from typing import (
 from blinker import Signal
 from ..util.glib import idle_add
 from .context import ExecutionContext
-from .process import process_target_wrapper
-from .task import Task, CancelledError
+from .task import Task
+from .pool import WorkerPoolManager
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +33,9 @@ class TaskManager:
         self._progress_map: Dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
+        # Stores callbacks for tasks running in the pool
+        self._pooled_task_callbacks: Dict[Any, Callable[[Task], None]] = {}
+
         self._lock = threading.RLock()
         self.tasks_updated: Signal = Signal()
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -46,6 +44,18 @@ class TaskManager:
         )
         self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
+
+        # Initialize the worker pool
+        self._pool = WorkerPoolManager()
+        self._connect_pool_signals()
+
+    def _connect_pool_signals(self):
+        """Connects to signals emitted by the WorkerPoolManager."""
+        self._pool.task_completed.connect(self._on_pool_task_completed)
+        self._pool.task_failed.connect(self._on_pool_task_failed)
+        self._pool.task_progress_updated.connect(self._on_pool_task_progress)
+        self._pool.task_message_updated.connect(self._on_pool_task_message)
+        self._pool.task_event_received.connect(self._on_pool_task_event)
 
     def __len__(self) -> int:
         """Return the number of active tasks."""
@@ -73,7 +83,7 @@ class TaskManager:
     def add_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]] = None
     ) -> None:
-        """Add a task to the manager."""
+        """Add an asyncio-based task to the manager."""
         with self._lock:
             # If the manager was idle, this is a new batch of work.
             if not self._tasks:
@@ -85,7 +95,7 @@ class TaskManager:
                     f"TaskManager: Found existing task key '{task.key}'. "
                     f"Attempting cancellation."
                 )
-                old_task.cancel()
+                self.cancel_task(old_task.key)
             else:
                 logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
 
@@ -173,44 +183,74 @@ class TaskManager:
         **kwargs: Any,
     ) -> Task:
         """
-        Creates, configures, and schedules a task to run in a separate
-        process.
+        Creates, configures, and schedules a task to run in the worker pool.
         """
-        logger.debug(f"Creating task for subprocess {key}")
+        logger.debug(f"Creating task for worker pool {key}")
 
-        # Define an async placeholder that matches the required type signature.
-        async def _process_placeholder(*_args, **_kwargs):
+        # Define a no-op async placeholder. The Task object requires a
+        # coroutine, but we won't be running it via asyncio.
+        async def _noop_coro(*_args, **_kwargs):
             pass
 
-        task = Task(_process_placeholder, func, *args, key=key, **kwargs)
+        # We pass the *real* function and args to the Task object just for
+        # bookkeeping, even though the Task object itself won't execute them.
+        task = Task(_noop_coro, func, *args, key=key, **kwargs)
 
-        # Connect the event handler BEFORE scheduling the task. This is the
-        # key to ensuring stability. The handler itself is never pickled.
         if when_event:
             task.event_received.connect(when_event)
 
-        self.add_task(task, when_done)
+        with self._lock:
+            # If the manager was idle, this is a new batch of work.
+            if not self._tasks:
+                self._progress_map.clear()
 
-        # Schedule the creation and start of the process on the main GTK
-        # thread. This will execute after the current call stack unwinds.
-        self._main_thread_scheduler(
-            self._start_process_on_main_thread, task, when_done
-        )
+            old_task = self._tasks.get(task.key)
+            if old_task:
+                logger.debug(
+                    f"TaskManager: Found existing task key '{task.key}'. "
+                    f"Attempting cancellation."
+                )
+                self.cancel_task(old_task.key)
+
+            self._tasks[task.key] = task
+            self._progress_map[task.key] = 0.0
+            if when_done:
+                self._pooled_task_callbacks[task.key] = when_done
+
+            task.status_changed.connect(self._on_task_updated)
+            self._emit_tasks_updated_unsafe()
+
+        # Manually set status to running and notify
+        task._status = "running"
+        task._emit_status_changed()
+
+        # Submit the actual work to the pool
+        self._pool.submit(task.key, func, *args, **kwargs)
 
         return task
 
     def cancel_task(self, key: Any) -> None:
-        """Cancels a running task by its key."""
+        """
+        Cancels a running task by its key. This is the authoritative method
+        for initiating a cancellation.
+        """
         with self._lock:
             task = self._tasks.get(key)
             if task:
                 logger.debug(f"TaskManager: Cancelling task with key '{key}'.")
+                # Call the "dumb" cancel first to set the flag and interrupt
+                # asyncio tasks.
                 task.cancel()
+
+                # Now, perform the manager's state changes.
+                if task._status in ("pending", "running"):
+                    task._status = "canceled"
+                    task._emit_status_changed()
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
     ) -> None:
-        """Run the task and clean up when done."""
+        """Run an asyncio task and clean up when done."""
         context = ExecutionContext(
             update_callback=task.update,
             check_cancelled=task.is_cancelled,
@@ -230,228 +270,106 @@ class TaskManager:
             if when_done:
                 self._main_thread_scheduler(when_done, task)
 
-    def _start_process_on_main_thread(
-        self, task: Task, when_done: Optional[Callable[[Task], None]]
-    ) -> None:
-        """
-        Creates and starts the subprocess on the main thread to avoid
-        deadlocks.
-        Then, it launches a simple thread to monitor the process.
-        """
-        # Get a fresh context on the main thread.
-        mp_context = get_context("spawn")
-        queue: Queue[tuple[str, Any]] = mp_context.Queue()
+    # === Worker Pool Signal Handlers (runs on listener thread) ===
 
-        # Unpack the real function and args from the task object
-        user_func, user_args, user_kwargs = (
-            task.args[0],
-            task.args[1:],
-            task.kwargs,
+    def _on_pool_task_completed(self, sender, key, result):
+        self._main_thread_scheduler(
+            self._finalize_pooled_task, key, "completed", result=result
         )
 
-        log_level = logging.getLogger().getEffectiveLevel()
-        process_args = (queue, log_level, user_func, user_args, user_kwargs)
+    def _on_pool_task_failed(self, sender, key, error):
+        self._main_thread_scheduler(
+            self._finalize_pooled_task, key, "failed", error=error
+        )
 
-        try:
-            if task.is_cancelled():
-                logger.info("Task cancelled before process start.")
-                return
+    def _on_pool_task_progress(self, sender, key, progress):
+        self._main_thread_scheduler(
+            self._update_pooled_task, key, progress=progress
+        )
 
-            process = mp_context.Process(
-                target=process_target_wrapper, args=process_args, daemon=True
-            )
+    def _on_pool_task_message(self, sender, key, message):
+        self._main_thread_scheduler(
+            self._update_pooled_task, key, message=message
+        )
 
-            process.start()
+    def _on_pool_task_event(self, sender, key, event_name, data):
+        # Schedule the event dispatch on the main thread
+        self._main_thread_scheduler(
+            self._dispatch_pooled_task_event, key, event_name, data
+        )
+
+    # === Main Thread Update Methods for Pooled Tasks ===
+
+    def _update_pooled_task(
+        self,
+        key: Any,
+        progress: Optional[float] = None,
+        message: Optional[str] = None,
+    ):
+        """Updates a Task object from the main thread."""
+        with self._lock:
+            task = self._tasks.get(key)
+        if task:
+            task.update(progress, message)
+
+    def _dispatch_pooled_task_event(
+        self, key: Any, event_name: str, data: dict
+    ):
+        """Dispatches a task event from the main thread."""
+        with self._lock:
+            task = self._tasks.get(key)
+        if task:
             logger.debug(
-                f"Task {task.key}: Started subprocess with PID {process.pid}"
+                f"TaskManager: Dispatching event '{event_name}' for task "
+                f"'{task.key}'."
             )
+            task.event_received.send(task, event_name=event_name, data=data)
 
-            # Now that the process is started, launch the monitor thread.
-            monitor_thread = threading.Thread(
-                target=self._monitor_subprocess_lifecycle,
-                args=(task, when_done, process, queue),
-                daemon=True,
-            )
-            monitor_thread.start()
-
-        except Exception as e:
-            # Handle failures during the startup phase
-            logger.error(
-                f"Task {task.key}: Failed to start process on main thread",
-                exc_info=True,
-            )
-            task._status = "failed"
-            task._task_exception = e
-            task.status_changed.send(task)
-            self._cleanup_task(task)
-            if when_done:
-                self._main_thread_scheduler(when_done, task)
-
-    def _monitor_subprocess_lifecycle(
+    def _finalize_pooled_task(
         self,
-        task: Task,
-        when_done: Optional[Callable[[Task], None]],
-        process: SpawnProcess,
-        queue: Queue[tuple[str, Any]],
-    ) -> None:
-        """
-        Synchronously monitors a subprocess lifecycle in a dedicated thread.
-        """
-        context = ExecutionContext(
-            update_callback=task.update,
-            check_cancelled=task.is_cancelled,
-        )
-        context.task = task
-        state: Dict[str, Any] = {"result": None, "error": None}
+        key: Any,
+        status: str,
+        result: Any = None,
+        error: Optional[str] = None,
+    ):
+        """Finalizes a pooled task from the main thread."""
+        with self._lock:
+            task = self._tasks.get(key)
+            when_done = self._pooled_task_callbacks.pop(key, None)
 
-        try:
-            # Synchronous monitoring loop
-            while process.is_alive():
-                self._drain_process_queue(queue, context, state)
-                if state.get("error"):
-                    break  # Error reported by child
-                if task.is_cancelled():
-                    raise CancelledError("Task cancelled by parent.")
-                time.sleep(0.1)
+        if not task:
+            logger.debug(
+                f"Received result for unknown or already cleaned up task "
+                f"'{key}'. Ignoring."
+            )
+            return
 
-            self._drain_process_queue(queue, context, state)  # Final drain
-            self._check_process_result(process, state, task.key)
-
-            # If we reach here, the process exited cleanly with a result.
-            task._status = "completed"
-            task._progress = 1.0
-            task._task_result = state.get("result")
-
-        except CancelledError as e:
-            logger.warning(f"Task {task.key}: Process task was cancelled: {e}")
+        # Check if the task was cancelled while it was running
+        if task.is_cancelled():
+            logger.debug(
+                f"Pooled task {key} finished but was cancelled. "
+                "Discarding result."
+            )
             task._status = "canceled"
-            task._task_exception = e
-        except Exception as e:
-            logger.error(
-                f"Task {task.key}: Process monitor thread failed.",
-                exc_info=True,
-            )
-            task._status = "failed"
-            task._task_exception = e
-        finally:
-            # This unified cleanup logic is crucial to prevent race
-            # conditions with the internal multiprocessing.ResourceTracker.
-            # We take full responsibility for cleaning up the resources
-            # in all cases.
-            if process.is_alive():
-                process.terminate()
+        else:
+            # Manually update the Task object's internal state
+            task._status = status
+            if status == "completed":
+                task._progress = 1.0
+                task._task_result = result
+            elif status == "failed":
+                # We got a string traceback, wrap it in an Exception
+                logger.error(f"Task {key} failed in worker pool:\n{error}")
+                task._task_exception = Exception(error)
 
-            # Always join to reap the OS process.
-            process.join(timeout=1.0)
+        # Emit one final, authoritative signal for all outcomes.
+        task._emit_status_changed()
 
-            try:
-                # Clean up the queue and its feeder thread.
-                queue.close()
-                queue.join_thread()
-            except (OSError, BrokenPipeError, EOFError):
-                # These are expected if the process died unexpectedly.
-                pass
-
-            # Release the resources associated with the process object.
-            process.close()
-
-            # Perform the rest of the task state cleanup.
-            context.flush()
-
-            # Manually trigger final status update
-            task.status_changed.send(task)
-            self._cleanup_task(task)
-            if when_done:
-                self._main_thread_scheduler(when_done, task)
-
-    def _handle_process_queue_message(
-        self,
-        msg: tuple[str, Any],
-        context: ExecutionContext,
-        state: Dict[str, Any],
-    ) -> None:
-        """
-        Process a single message from the subprocess queue.
-
-        Args:
-            msg: The (type, value) tuple from the queue.
-            context: The ExecutionContext for progress reporting.
-            state: A mutable dictionary to store 'result' and 'error'.
-        """
-        msg_type, value = msg
-        if msg_type == "progress":
-            context._report_normalized_progress(value)
-        elif msg_type == "message":
-            context.set_message(value)
-        elif msg_type == "event":
-            if context.task:
-                event_name, data = value
-                logger.debug(
-                    f"TaskManager: Received event '{event_name}' for task "
-                    f"'{context.task.key}'. Dispatching via scheduler."
-                )
-                # Fire the event signal on the Task object.
-                # This needs to be done on the main thread.
-                self._main_thread_scheduler(
-                    context.task.event_received.send,
-                    context.task,
-                    event_name=event_name,
-                    data=data,
-                )
-        elif msg_type == "done":
-            state["result"] = value
-            if context.task:
-                logger.debug(f"Task {context.task.key}: Received 'done'.")
-        elif msg_type == "error":
-            state["error"] = value
-            if context.task:
-                logger.error(
-                    f"Task {context.task.key}: 'error' from subprocess:"
-                    f"\n{value}"
-                )
-
-    def _drain_process_queue(
-        self,
-        queue: Queue[tuple[str, Any]],
-        context: ExecutionContext,
-        state: Dict[str, Any],
-    ) -> None:
-        """Drain all pending messages from the subprocess queue."""
-        try:
-            while True:
-                msg = queue.get_nowait()
-                self._handle_process_queue_message(msg, context, state)
-        except Empty:
-            pass
-
-    def _check_process_result(
-        self, process: SpawnProcess, state: Dict[str, Any], task_key: Any
-    ) -> None:
-        """
-        Check for errors after a subprocess has finished.
-
-        Args:
-            process: The completed multiprocessing.Process object.
-            state: A dictionary containing the final 'result' and 'error'.
-            task_key: The key of the task for logging/error messages.
-
-        Raises:
-            Exception: If the subprocess reported an error or exited with a
-                       non-zero status code.
-        """
-        if state["error"]:
-            msg = (
-                f"Subprocess for task '{task_key}' failed.\n"
-                f"--- Subprocess Traceback ---\n{state['error']}"
-            )
-            raise Exception(msg)
-
-        if process.exitcode != 0:
-            msg = (
-                f"Subprocess for task '{task_key}' terminated "
-                f"unexpectedly with exit code {process.exitcode}."
-            )
-            raise Exception(msg)
+        # This block must run for all outcomes: completed, failed,
+        # and cancelled to ensure cleanup and user notification.
+        self._cleanup_task(task)
+        if when_done:
+            when_done(task)
 
     def _cleanup_task(self, task: Task) -> None:
         """
@@ -465,14 +383,16 @@ class TaskManager:
                     f"(status: {task.get_status()})."
                 )
                 del self._tasks[task.key]
+                # Ensure callback is removed if it exists
+                self._pooled_task_callbacks.pop(task.key, None)
+
                 # DO NOT delete from _progress_map. The final progress
                 # value (usually 1.0) must be kept for accurate
                 # overall progress calculation until the next batch starts.
-                # The map is cleared in add_task() when a new batch begins.
+                # The map is cleared when a new batch begins.
             else:
                 # This task finished, but it's no longer the active one
                 # for this key in the dictionary (it was replaced).
-                # Don't remove the newer task.
                 logger.debug(
                     f"TaskManager: Skipping cleanup for finished task "
                     f"'{task.key}' (status: {task.get_status()}) as it was "
@@ -504,27 +424,79 @@ class TaskManager:
 
     def get_overall_progress_unsafe(self) -> float:
         """Calculate overall progress. Assumes lock is held."""
-        if not self._progress_map:
+        if not self._tasks:
+            # If there are no active tasks, progress is 100%
             return 1.0
+        if not self._progress_map:
+            # This can happen briefly if tasks are added but the map isn't
+            # populated yet.
+            return 0.0
         return sum(self._progress_map.values()) / len(self._progress_map)
 
     def shutdown(self) -> None:
         """
-        Cancel all tasks and stop the event loop.
+        Cancel all tasks, shut down the worker pool, and stop the event loop.
         This method is thread-safe.
         """
-        with self._lock:
-            tasks_to_cancel = list(self._tasks.values())
+        try:
+            with self._lock:
+                tasks_to_cancel = list(self._tasks.values())
 
-        logger.debug(f"Shutting down. Cancelling {len(tasks_to_cancel)} tasks")
-        for task in tasks_to_cancel:
-            task.cancel()
+            logger.debug(
+                f"Shutting down. Cancelling {len(tasks_to_cancel)} tasks"
+            )
+            for task in tasks_to_cancel:
+                self.cancel_task(task.key)
 
-        # Wait a moment for cancellations to propagate before stopping the loop
-        # This is not strictly necessary but can help with cleaner shutdown.
-        if tasks_to_cancel:
-            time.sleep(0.2)  # Give threads time to see cancellation
+            # Shut down the worker pool. This will wait for workers to exit.
+            self._pool.shutdown()
 
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join()
-        logger.debug("TaskManager shutdown complete.")
+            # Stop the asyncio loop
+            if self._loop.is_running():
+                self._loop.call_soon_threadsafe(self._loop.stop)
+            self._thread.join(timeout=1.0)
+            logger.debug("TaskManager shutdown complete.")
+        except KeyboardInterrupt:
+            logger.debug(
+                "TaskManager shutdown interrupted by user. "
+                "Suppressing traceback."
+            )
+            pass
+
+
+class TaskManagerProxy:
+    """
+    A lazy-initializing proxy for the TaskManager singleton.
+
+    This object can be safely created at the module level. The real
+    TaskManager instance (with its threads and processes) is only created
+    when one of its methods is accessed for the first time. This avoids
+    the multiprocessing `RuntimeError` on systems that use 'spawn'.
+    """
+
+    def __init__(self):
+        self._instance: Optional[TaskManager] = None
+        self._lock = threading.Lock()
+
+    def _get_instance(self) -> TaskManager:
+        """
+        Lazily creates the TaskManager instance in a thread-safe manner.
+        """
+        if self._instance is None:
+            with self._lock:
+                # Double-check lock to prevent race conditions
+                if self._instance is None:
+                    logger.debug(
+                        "First use of TaskManager detected. "
+                        "Initializing the real instance."
+                    )
+                    self._instance = TaskManager()
+        return self._instance
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Delegates attribute access to the real TaskManager instance,
+        creating it on first access.
+        """
+        # Forward the call to the real instance.
+        return getattr(self._get_instance(), name)

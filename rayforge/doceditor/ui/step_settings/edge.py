@@ -1,19 +1,19 @@
 from typing import Dict, Any, TYPE_CHECKING, cast
 from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
+from ....pipeline.producer.base import OpsProducer, CutSide
+from ....pipeline.producer.edge import EdgeTracer
+from ....undo import DictItemCommand
 from ....shared.util.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
-from ....pipeline.producer.base import OpsProducer, CutSide
-from ....pipeline.producer.frame import FrameProducer
-from ....undo import DictItemCommand
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....undo import HistoryManager
 
 
-class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    """UI for configuring the FrameProducer."""
+class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
+    """UI for configuring the EdgeTracer."""
 
     def __init__(
         self,
@@ -23,7 +23,7 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         history_manager: "HistoryManager",
         **kwargs,
     ):
-        producer = cast(FrameProducer, OpsProducer.from_dict(target_dict))
+        producer = cast(EdgeTracer, OpsProducer.from_dict(target_dict))
 
         super().__init__(
             target_dict=target_dict,
@@ -32,6 +32,14 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             history_manager=history_manager,
             **kwargs,
         )
+
+        # Remove inner paths toggle
+        switch_row = Adw.SwitchRow(
+            title=_("Remove Inner Paths"),
+            subtitle=_("If enabled, only trace the outer outline of shapes."),
+        )
+        switch_row.set_active(producer.remove_inner_paths)
+        self.add(switch_row)
 
         # Cut Side
         cut_side_choices = [
@@ -52,7 +60,10 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.offset_row = Adw.SpinRow(
             title=_("Path Offset (mm)"),
-            subtitle=_("Absolute distance from content boundary."),
+            subtitle=_(
+                "Absolute distance from original path. Direction is "
+                "controlled by Cut Side."
+            ),
             adjustment=offset_adj,
             digits=2,
         )
@@ -60,6 +71,12 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(self.offset_row)
 
         # Connect signals
+        switch_row.connect(
+            "notify::active",
+            lambda w, _: self._on_param_changed(
+                "remove_inner_paths", w.get_active()
+            ),
+        )
         self.offset_row.connect(
             "changed",
             lambda r: self._debounce(
@@ -82,8 +99,6 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_param_changed(self, key: str, new_value: Any):
         params_dict = self.target_dict.setdefault("params", {})
-
-        # Use isclose for float comparison
         if isinstance(new_value, float):
             if abs(new_value - params_dict.get(key, 0.0)) < 1e-6:
                 return
@@ -94,7 +109,7 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             target_dict=params_dict,
             key=key,
             new_value=new_value,
-            name=_("Change Frame Setting"),
+            name=_("Change Edge Tracer Setting"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)

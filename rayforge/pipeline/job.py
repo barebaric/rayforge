@@ -8,7 +8,7 @@ import numpy as np
 from typing import Optional, List, Dict
 from ..machine.models.machine import Machine
 from ..shared.tasker.context import ExecutionContext
-from ..shared.tasker.manager import CancelledError
+from ..shared.tasker.task import CancelledError
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.ops import (

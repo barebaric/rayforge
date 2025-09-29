@@ -47,13 +47,18 @@ class Canvas3D(Gtk.GLArea):
         self.sphere_renderer: Optional[SphereRenderer] = None
         self._ops_preparation_task: Optional[Task] = None
         self._ops_vtx_cache: Optional[
-            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         ] = None
-        self._show_travel_moves: bool = False
+        self._show_travel_moves = False
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
         self._model_matrix = np.identity(4, dtype=np.float32)
+
+        # Ops render colors
+        self._cut_color = [1.0, 0.0, 1.0, 1.0]  # Magenta
+        self._travel_color = [1.0, 0.4, 0.0, 0.7]  # Orange, transparent
+        self._zero_power_color = [0.0, 0.2, 0.9, 0.5]  # Blue, transparent
 
         if self.y_down:
             # This matrix transforms from a Y-up coordinate system (used by
@@ -304,6 +309,19 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
 
+        # Get accent color for zero-power moves to match the 2D canvas
+        found, accent_rgba = style_context.lookup_color("accent_color")
+        if found:
+            self._zero_power_color = [
+                accent_rgba.red,
+                accent_rgba.green,
+                accent_rgba.blue,
+                0.5,  # 50% transparent
+            ]
+        else:
+            # Fallback for zero-power moves
+            self._zero_power_color = [0.0, 0.2, 0.9, 0.5]
+
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self.camera or not self._gl_initialized:
@@ -340,7 +358,13 @@ class Canvas3D(Gtk.GLArea):
                     self._model_matrix,  # Pass the model matrix for positions
                 )
             if self.ops_renderer and self.main_shader:
-                self.ops_renderer.render(self.main_shader, mvp_matrix_scene_gl)
+                self.ops_renderer.render(
+                    self.main_shader,
+                    mvp_matrix_scene_gl,
+                    cut_color=self._cut_color,
+                    travel_color=self._travel_color,
+                    zero_power_color=self._zero_power_color,
+                )
 
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
@@ -551,43 +575,34 @@ class Canvas3D(Gtk.GLArea):
         if self._show_travel_moves == visible:
             return
         self._show_travel_moves = visible
-
-        if not self.ops_renderer:
-            return
-
-        if self._ops_vtx_cache:
-            (
-                cut_verts,
-                travel_verts,
-                raster_verts,
-                raster_colors,
-            ) = self._ops_vtx_cache
-            travel_verts_to_render = (
-                travel_verts if visible else np.array([], dtype=np.float32)
-            )
-            self.ops_renderer.update_from_vertex_data(
-                cut_verts,
-                travel_verts_to_render,
-                raster_verts,
-                raster_colors,
-            )
-            self.queue_render()
+        self._update_renderer_from_cache()
 
     def _on_ops_prepared(self, task: Task):
         """
         Callback for when the background ops preparation task is finished.
         """
-        if task.get_status() != "completed" or not self.ops_renderer:
+        if task.get_status() != "completed":
+            self._ops_vtx_cache = None
+            if self.ops_renderer:
+                self.ops_renderer.clear()
+            self.queue_render()
             return
 
         # Cache the full vertex data from the background task
         self._ops_vtx_cache = task.result()
-        if not self._ops_vtx_cache:
+        self._update_renderer_from_cache()
+
+    def _update_renderer_from_cache(self):
+        """Helper to update the renderer based on current visibility flags."""
+        if not self.ops_renderer or not self._ops_vtx_cache:
+            if self.ops_renderer:
+                self.ops_renderer.clear()
             return
 
         (
             cut_verts,
             travel_verts,
+            zero_power_verts,
             raster_verts,
             raster_colors,
         ) = self._ops_vtx_cache
@@ -599,10 +614,19 @@ class Canvas3D(Gtk.GLArea):
             if self._show_travel_moves
             else np.array([], dtype=np.float32)
         )
+        zero_power_verts_to_render = (
+            zero_power_verts
+            if self._show_travel_moves
+            else np.array([], dtype=np.float32)
+        )
 
         # This part runs on the main thread and is fast (just GPU uploads)
         self.ops_renderer.update_from_vertex_data(
-            cut_verts, travel_verts_to_render, raster_verts, raster_colors
+            cut_verts,
+            travel_verts_to_render,
+            zero_power_verts_to_render,
+            raster_verts,
+            raster_colors,
         )
         self.queue_render()
 

@@ -1,8 +1,7 @@
 import math
 import logging
-from typing import List, Tuple, Optional, TYPE_CHECKING, TypeVar
-import numpy as np
-from .analysis import get_subpath_area
+from typing import Tuple, Optional, TYPE_CHECKING, TypeVar
+import pyclipper
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -36,7 +35,8 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
     This function grows (positive offset) or shrinks (negative offset) the
     area enclosed by closed paths. Arcs are linearized into polylines for the
     offsetting process. Open paths are currently ignored and not included
-    in the output.
+    in the output. This implementation uses the pyclipper library to handle
+    complex cases, including self-intersections.
 
     Args:
         geometry: The input Geometry object.
@@ -53,8 +53,13 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
     logger.debug(f"Running grow_geometry with offset: {offset}")
 
+    # Pyclipper works with integers, so we need to scale our coordinates.
+    CLIPPER_SCALE = 1e7
+    pco = pyclipper.PyclipperOffset()
+
+    paths_to_offset = []
     for i, data in enumerate(contour_data):
-        logger.debug(f"Processing contour #{i}")
+        logger.debug(f"Processing contour #{i} for pyclipper")
         if not data["is_closed"]:
             logger.debug("Contour is not closed, skipping.")
             continue
@@ -74,103 +79,34 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
             logger.debug("Contour has < 3 vertices, skipping.")
             continue
 
-        contour_geo = data["geo"]
-        original_signed_area = get_subpath_area(contour_geo.commands, 0)
-        logger.debug(f"Original signed area: {original_signed_area}")
+        scaled_vertices = [
+            (int(v[0] * CLIPPER_SCALE), int(v[1] * CLIPPER_SCALE))
+            for v in vertices
+        ]
+        paths_to_offset.append(scaled_vertices)
 
-        new_vertices: List[Tuple[float, float]] = []
-        for j in range(len(vertices)):
-            p_prev = vertices[(j - 1 + len(vertices)) % len(vertices)]
-            p_curr = vertices[j]
-            p_next = vertices[(j + 1) % len(vertices)]
+    pco.AddPaths(
+        paths_to_offset, pyclipper.JT_MITER, pyclipper.ET_CLOSEDPOLYGON
+    )
+    solution = pco.Execute(offset * CLIPPER_SCALE)
 
-            v_in = (p_curr[0] - p_prev[0], p_curr[1] - p_prev[1])
-            v_out = (p_next[0] - p_curr[0], p_next[1] - p_curr[1])
+    logger.debug(f"Pyclipper generated {len(solution)} offset contours.")
 
-            mag_in = math.hypot(*v_in)
-            mag_out = math.hypot(*v_out)
-
-            if mag_in < 1e-9 or mag_out < 1e-9:
-                continue
-
-            v_in_norm = (v_in[0] / mag_in, v_in[1] / mag_in)
-            v_out_norm = (v_out[0] / mag_out, v_out[1] / mag_out)
-
-            # Normal vector points 90 degrees left of the segment's direction
-            n_in = (v_in_norm[1], -v_in_norm[0])
-            n_out = (v_out_norm[1], -v_out_norm[0])
-
-            # A point on each offset line
-            p1_offset = (
-                p_curr[0] + offset * n_in[0],
-                p_curr[1] + offset * n_in[1],
-            )
-            p2_offset = (
-                p_curr[0] + offset * n_out[0],
-                p_curr[1] + offset * n_out[1],
-            )
-
-            a1, b1 = v_in_norm[1], -v_in_norm[0]
-            c1 = a1 * p1_offset[0] + b1 * p1_offset[1]
-
-            a2, b2 = v_out_norm[1], -v_out_norm[0]
-            c2 = a2 * p2_offset[0] + b2 * p2_offset[1]
-
-            intersection = _solve_2x2_system(a1, b1, c1, a2, b2, c2)
-
-            if intersection:
-                new_vertices.append(intersection)
-            else:
-                new_vertices.append(
-                    (
-                        p_curr[0] + offset * n_out[0],
-                        p_curr[1] + offset * n_out[1],
-                    )
-                )
-
-        logger.debug(
-            f"Generated {len(new_vertices)} new vertices: {new_vertices}"
-        )
-
-        # When shrinking, a large offset can cause the polygon to invert.
-        # This is detected by checking if new vertices "cross over" the
-        # centroid.
-        if offset < 0 and len(new_vertices) == len(vertices):
-            centroid = np.mean(vertices, axis=0)
-            v_old = np.array(vertices[0])
-            v_new = np.array(new_vertices[0])
-            vec_old = v_old - centroid
-            vec_new = v_new - centroid
-            if np.dot(vec_old, vec_new) < 0:
-                # Shrinking caused polygon inversion. Discarding contour.
-                continue
-
-        if len(new_vertices) < 3:
-            # Not enough new vertices to form a polygon, skipping.
+    for new_contour_scaled in solution:
+        if len(new_contour_scaled) < 3:
             continue
+
+        new_vertices = [
+            (p[0] / CLIPPER_SCALE, p[1] / CLIPPER_SCALE)
+            for p in new_contour_scaled
+        ]
 
         new_contour_geo = type(geometry).from_points(
             [(v[0], v[1], 0.0) for v in new_vertices], close=True
         )
 
-        if new_contour_geo.is_empty():
-            # Generated contour geometry is empty, skipping.
-            continue
-
-        new_signed_area = get_subpath_area(new_contour_geo.commands, 0)
-
-        if abs(new_signed_area) < 1e-9:
-            # New area is degenerate, discarding.
-            continue
-
-        original_sign = math.copysign(1, original_signed_area)
-        new_sign = math.copysign(1, new_signed_area)
-
-        if new_sign != original_sign:
-            # Winding order flipped. Discarding contour.
-            continue
-
-        new_geo.commands.extend(new_contour_geo.commands)
+        if not new_contour_geo.is_empty():
+            new_geo.commands.extend(new_contour_geo.commands)
 
     logger.debug("Grow_geometry finished")
     return new_geo

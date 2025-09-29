@@ -7,6 +7,7 @@ from .primitives import (
 
 def get_bounding_rect(
     commands: List[Any],
+    include_travel: bool = False,
 ) -> Tuple[float, float, float, float]:
     """
     Returns a rectangle (x1, y1, x2, y2) that encloses the
@@ -23,9 +24,14 @@ def get_bounding_rect(
             and hasattr(cmd, "end")
             and cmd.end
         ):
+            if include_travel:
+                if last_point is not None:
+                    occupied_points.append(last_point)
+                occupied_points.append(cmd.end)
             last_point = cmd.end
         elif (
-            cmd_type_name in ("LineToCommand", "ArcToCommand")
+            cmd_type_name
+            in ("LineToCommand", "ArcToCommand", "ScanLinePowerCommand")
             and hasattr(cmd, "end")
             and cmd.end
         ):

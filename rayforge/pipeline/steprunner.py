@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Iterator, Optional
+from typing import Any, List, Tuple, Iterator, Optional, Dict
 from ..shared.tasker.proxy import ExecutionContextProxy
 
 
@@ -60,9 +60,10 @@ def run_step_in_subprocess(
     # Helper functions
     def _trace_and_modify_surface(
         surface: Optional[Any],
-        scaler: Optional[Tuple[float, float]],
+        render_pixels_per_mm: Optional[Tuple[float, float]],
         *,
         y_offset_mm: float = 0.0,
+        step_settings: Dict[str, Any],
     ) -> PipelineArtifact:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
@@ -76,11 +77,11 @@ def run_step_in_subprocess(
         Args:
             surface: The cairo.ImageSurface to process, or None for direct
                 vector paths.
-            scaler: A tuple (pixels_per_mm_x, pixels_per_mm_y) to scale the
-                output to millimeters, or None to get output in pixel
-                coordinates.
+            render_pixels_per_mm: The actual pixels per mm used for rendering,
+                or None for direct vector paths.
             y_offset_mm: The vertical offset in mm for the current chunk, used
                 by raster operations.
+            step_settings: The dictionary of settings from the Step.
 
         Returns:
             A PipelineArtifact object containing the generated operations
@@ -94,8 +95,9 @@ def run_step_in_subprocess(
         return opsproducer.run(
             laser,
             surface,
-            scaler,
+            render_pixels_per_mm,
             workpiece=workpiece,
+            settings=step_settings,
             y_offset_mm=y_offset_mm,
         )
 
@@ -134,7 +136,11 @@ def run_step_in_subprocess(
                 "Workpiece has vectors and producer does not require a full "
                 "render. Using direct vector processing."
             )
-            artifact = _trace_and_modify_surface(surface=None, scaler=None)
+            artifact = _trace_and_modify_surface(
+                surface=None,
+                render_pixels_per_mm=None,
+                step_settings=settings,
+            )
             yield artifact, 1.0
             return
 
@@ -165,7 +171,9 @@ def run_step_in_subprocess(
 
         # The producer (e.g., EdgeTracer) will trace the bitmap and return
         # an artifact with pixel coordinates.
-        artifact = _trace_and_modify_surface(surface, None)
+        artifact = _trace_and_modify_surface(
+            surface, None, step_settings=settings
+        )
 
         yield artifact, 1.0
         surface.flush()
@@ -203,7 +211,9 @@ def run_step_in_subprocess(
                 return
 
             full_artifact = _trace_and_modify_surface(
-                surface, (px_per_mm_x, px_per_mm_y)
+                surface,
+                (px_per_mm_x, px_per_mm_y),
+                step_settings=settings,
             )
             yield full_artifact, 1.0
             surface.flush()
@@ -235,6 +245,7 @@ def run_step_in_subprocess(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
                 y_offset_mm=y_offset_from_top_mm,
+                step_settings=settings,
             )
 
             # The ops are generated at the origin, so translate them to the
@@ -292,10 +303,12 @@ def run_step_in_subprocess(
 
         # Send intermediate chunks for raster operations
         if not is_vector:
+            ops_for_chunk_render = initial_ops.copy()
+            ops_for_chunk_render.extend(chunk_artifact.ops)
             proxy.send_event(
                 "ops_chunk",
                 {
-                    "chunk": chunk_artifact.ops,
+                    "chunk": ops_for_chunk_render,
                     "generation_id": generation_id,
                 },
             )

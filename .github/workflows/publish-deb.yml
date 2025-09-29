@@ -44,6 +44,8 @@ jobs:
           python3-numpy
           pybuild-plugin-pyproject
           python3-poetry-core
+          python3-pyclipper
+          cython3
           pkg-config
           rustc
 

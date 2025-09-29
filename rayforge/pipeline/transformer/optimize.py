@@ -8,16 +8,13 @@ from ...core.ops import (
     Ops,
     State,
     MovingCommand,
-    Command,
+    MoveToCommand,
     ScanLinePowerCommand,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
+    Command,
 )
 from ...core.ops.flip import flip_segment
 from ...core.ops.group import (
     group_by_state_continuity,
-    group_by_path_continuity,
 )
 from .base import OpsTransformer, ExecutionPhase
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
@@ -31,13 +28,97 @@ def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 
+def _split_scanline(
+    move_cmd: MovingCommand, scan_cmd: ScanLinePowerCommand
+) -> List[List[MovingCommand]]:
+    """
+    Splits a single ScanLinePowerCommand into multiple segments if it
+    contains areas of zero power (blank space). An overscanned line (with
+    zero-power padding at the ends) is treated as a single segment.
+    """
+    if not scan_cmd.power_values or not np.any(scan_cmd.power_values):
+        return []
+
+    # Find contiguous "on" segments.
+    is_on = np.array(scan_cmd.power_values) > 0
+    padded = np.concatenate(([False], is_on, [False]))
+    diffs = np.diff(padded.astype(int))
+    starts = np.where(diffs == 1)[0]
+
+    # If there's only one "on" segment, it's either a fully "on" line or an
+    # overscanned line. In either case, we treat it as a single,
+    # non-splittable segment.
+    if len(starts) <= 1:
+        # Note: len(starts) == 0 is covered by the np.any() check above,
+        # but this condition is safer.
+        return [[move_cmd, scan_cmd]]
+
+    # If we reach here, there are multiple segments that need to be created.
+    ends = np.where(diffs == -1)[0]
+
+    p_start = np.array(move_cmd.end)
+    p_end = np.array(scan_cmd.end)
+    line_vec = p_end - p_start
+    num_steps = len(scan_cmd.power_values)
+
+    segments = []
+    for start_idx, end_idx in zip(starts, ends):
+        t_start = start_idx / num_steps
+        t_end = end_idx / num_steps
+
+        seg_start_pt = p_start + t_start * line_vec
+        seg_end_pt = p_start + t_end * line_vec
+        power_slice = scan_cmd.power_values[start_idx:end_idx]
+
+        new_move = MoveToCommand(tuple(seg_start_pt))
+        new_scan = ScanLinePowerCommand(
+            tuple(seg_end_pt), power_values=power_slice
+        )
+
+        if scan_cmd.state:
+            new_move.state = scan_cmd.state
+            new_scan.state = scan_cmd.state
+
+        segments.append([new_move, new_scan])
+    return segments
+
+
+def _group_paths_power_agnostic(
+    commands: List[MovingCommand],
+) -> List[List[MovingCommand]]:
+    """
+    Groups commands into continuous path segments. This is used to
+    handle zero-power LineTo commands created by transformers like Overscan.
+    It defines a segment as a MoveTo followed by any number of non-travel
+    moves, ignoring their power state for grouping purposes.
+    """
+    segments: List[List[MovingCommand]] = []
+    if not commands:
+        return []
+    i = 0
+    while i < len(commands):
+        start_cmd = commands[i]
+        if not start_cmd.is_travel_command():
+            i += 1
+            continue
+        current_segment = [start_cmd]
+        i += 1
+        # Consume all subsequent drawing commands (LineTo, ArcTo) regardless
+        # of power.
+        while i < len(commands) and not commands[i].is_travel_command():
+            current_segment.append(commands[i])
+            i += 1
+        segments.append(current_segment)
+    return segments
+
+
 def group_mixed_continuity(
     commands: List[MovingCommand],
 ) -> List[List[MovingCommand]]:
     """
     Splits a command list into continuous path segments. It correctly pairs
-    a MoveTo command with a subsequent ScanLinePowerCommand to form a single
-    optimizable raster segment. Vector paths are grouped as before.
+    a MoveTo command with a subsequent ScanLinePowerCommand, splitting it if
+    necessary, to form optimizable raster segments.
     """
     segments: List[List[MovingCommand]] = []
     if not commands:
@@ -56,15 +137,17 @@ def group_mixed_continuity(
         if (i + 1) < len(commands) and isinstance(
             commands[i + 1], ScanLinePowerCommand
         ):
-            # This is a raster segment: [MoveTo, ScanLinePowerCommand]
-            current_segment = [start_cmd, commands[i + 1]]
-            segments.append(current_segment)
+            move = start_cmd
+            scan = cast(ScanLinePowerCommand, commands[i + 1])
+            sub_segments = _split_scanline(move, scan)
+            if sub_segments:
+                segments.extend(sub_segments)
             i += 2  # Consume both commands
         else:
-            # This is a standard vector segment. Consume all cutting commands.
+            # Fallback to power-agnostic grouping for vector paths.
             current_segment = [start_cmd]
             i += 1
-            while i < len(commands) and commands[i].is_cutting_command():
+            while i < len(commands) and not commands[i].is_travel_command():
                 # Defensively handle mixed vector/raster types
                 if isinstance(commands[i], ScanLinePowerCommand):
                     break
@@ -118,41 +201,50 @@ def kdtree_order_segments(
         # visited segment. A small constant is a good heuristic.
         # Scipy's cKDTree handles k > number of points gracefully.
         k = 10
-
-        distances, indices = kdtree.query(current_pos, k=k)
-
-        # Handle case where k=1 or query returns a single value
-        if not hasattr(indices, "__iter__"):
-            indices = [indices]
-
         found_next = False
-        for point_idx in indices:
-            segment_idx = point_idx // 2
-            if not visited_mask[segment_idx]:
-                # This is our next segment.
-                next_seg = segments[segment_idx]
-                is_end_point = point_idx % 2 == 1
 
-                # If the connection is to the segment's end, flip it.
-                if is_end_point:
-                    next_seg = flip_segment(next_seg)
+        # Retry loop for finding the next segment with dynamic k
+        while True:
+            num_points_in_tree = kdtree.n
+            query_k = min(k, num_points_in_tree)
 
-                ordered_segments.append(next_seg)
-                visited_mask[segment_idx] = True
-                current_pos = np.array(next_seg[-1].end[:2])
-                found_next = True
-                break
+            distances, indices = kdtree.query(current_pos, k=query_k)
 
-        if not found_next:
-            # This case should not be reached if k is chosen correctly.
-            # If it is, it indicates a problem with finding a nearest neighbor.
-            logger.error("Path optimizer could not find a next segment.")
-            # Add remaining segments to avoid losing paths, though they won't
-            # be ordered
-            for i in range(n):
-                if not visited_mask[i]:
-                    ordered_segments.append(segments[i])
-            break
+            if not hasattr(indices, "__iter__"):
+                indices = [indices]
+
+            for point_idx in indices:
+                segment_idx = point_idx // 2
+                if not visited_mask[segment_idx]:
+                    # This is our next segment.
+                    next_seg = segments[segment_idx]
+                    is_end_point = point_idx % 2 == 1
+
+                    if is_end_point:
+                        next_seg = flip_segment(next_seg)
+
+                    ordered_segments.append(next_seg)
+                    visited_mask[segment_idx] = True
+                    current_pos = np.array(next_seg[-1].end[:2])
+                    found_next = True
+                    break  # break `for point_idx` loop
+
+            if found_next:
+                break  # break `while True` retry loop
+
+            # If not found, check if we can expand the search
+            if k >= num_points_in_tree:
+                # Can't expand search, this is the error condition
+                logger.error("Path optimizer could not find a next segment.")
+                # Add remaining segments to avoid losing paths, though they
+                # won't be ordered
+                for i in range(n):
+                    if not visited_mask[i]:
+                        ordered_segments.append(segments[i])
+                return ordered_segments  # Exit function
+
+            # Expand search and retry
+            k *= 2
 
         context.set_progress(len(ordered_segments))
 
@@ -279,24 +371,146 @@ def two_opt(
     return ordered
 
 
+def _prepare_optimization_jobs(
+    long_segments: List[List[Command]],
+    two_opt_segment_threshold: int,
+    two_opt_command_limit: int,
+) -> List[Dict[str, Any]]:
+    """
+    Categorizes long_segments into jobs for optimization based on their
+    complexity.
+
+    This function implements the bucketing logic:
+    1. Segments are identified as passthrough (e.g., markers or single-path
+       segments), too large for 2-opt, or candidates for 2-opt.
+    2. 2-opt candidates are sorted by their number of sub-segments.
+    3. The smallest candidates are placed into a "bucket" for 2-opt refinement
+       until the bucket's total command count is reached.
+    4. Candidates that don't fit in the bucket are downgraded to k-d tree only.
+
+    Returns a list of job dictionaries, each representing one long_segment.
+    """
+    jobs = []
+    two_opt_candidates = []
+
+    for i, long_segment in enumerate(long_segments):
+        # Handle passthrough segments like markers
+        if not long_segment or long_segment[0].is_marker_command():
+            jobs.append(
+                {
+                    "type": "passthrough",
+                    "original_index": i,
+                    "workload": 1,
+                    "original_segment": long_segment,
+                }
+            )
+            continue
+
+        # Split the long segment into its reorderable sub-segments
+        contains_scanline = any(
+            isinstance(c, ScanLinePowerCommand) for c in long_segment
+        )
+        if contains_scanline:
+            sub_segments = group_mixed_continuity(
+                cast(List[MovingCommand], long_segment)
+            )
+        else:
+            sub_segments = _group_paths_power_agnostic(
+                cast(List[MovingCommand], long_segment)
+            )
+
+        num_sub_segments = len(sub_segments)
+
+        # If there is nothing to reorder (0 or 1 path), treat it as a
+        # passthrough job to avoid unnecessary processing overhead.
+        if num_sub_segments <= 1:
+            jobs.append(
+                {
+                    "type": "passthrough",
+                    "original_index": i,
+                    "workload": 1,
+                    "original_segment": long_segment,
+                }
+            )
+            continue
+
+        # Categorize: large segments go directly to kdtree_only jobs
+        if num_sub_segments > two_opt_segment_threshold:
+            jobs.append(
+                {
+                    "type": "kdtree_only",
+                    "original_index": i,
+                    "workload": num_sub_segments,
+                    "sub_segments": sub_segments,
+                }
+            )
+        else:
+            # Otherwise, it's a candidate for 2-opt
+            command_count = sum(len(s) for s in sub_segments)
+            two_opt_candidates.append(
+                {
+                    "original_index": i,
+                    "workload": num_sub_segments,
+                    "sub_segments": sub_segments,
+                    "command_count": command_count,
+                }
+            )
+
+    # Sort candidates by size (smallest first) to prioritize them for 2-opt
+    two_opt_candidates.sort(key=lambda c: c["workload"])
+
+    # Fill the 2-opt bucket based on the command limit
+    bucketed_command_count = 0
+    for candidate in two_opt_candidates:
+        if (
+            bucketed_command_count + candidate["command_count"]
+            <= two_opt_command_limit
+        ):
+            jobs.append(
+                {
+                    "type": "two_opt",
+                    "original_index": candidate["original_index"],
+                    "workload": candidate["workload"],
+                    "sub_segments": candidate["sub_segments"],
+                }
+            )
+            bucketed_command_count += candidate["command_count"]
+        else:
+            # Candidate did not fit, downgrade to kdtree_only
+            jobs.append(
+                {
+                    "type": "kdtree_only",
+                    "original_index": candidate["original_index"],
+                    "workload": candidate["workload"],
+                    "sub_segments": candidate["sub_segments"],
+                }
+            )
+
+    return jobs
+
+
 class Optimize(OpsTransformer):
     """
     Optimizes toolpaths to minimize travel distance using a hybrid approach.
 
-    For all paths, it first performs a fast nearest-neighbor search accelerated
-    by a k-d tree to establish a good initial order. For paths with fewer
-    segments than a set threshold, it then applies the 2-opt algorithm as a
-    final refinement step to achieve a higher quality result.
+    It categorizes path segments and applies optimization strategies
+    accordingly:
+    1. A fast k-d tree nearest-neighbor search is applied to all segments for
+       a good initial ordering.
+    2. For segments with fewer paths than a threshold, a more intensive 2-opt
+       refinement is considered.
+    3. A "bucket" of the smallest of these candidate segments is created, up
+       to a total command limit, to receive 2-opt refinement. This focuses
+       the most expensive optimization where it is most effective and keeps
+       the total runtime predictable.
 
     The process is:
     1. Preprocess the command list to attach state (power, speed, etc.) to
        each moving command.
-    2. Group commands into continuous, reorderable path segments.
-    3. For each group of segments:
-       a. Generate a good initial path using the k-d tree nearest-neighbor
-          algorithm.
-       b. If the path is short enough, refine it with 2-opt.
-    4. Re-assemble the final command list with state commands re-inserted.
+    2. Group commands into continuous, non-reorderable `long_segments`.
+    3. Categorize and bucket these segments into optimization jobs.
+    4. Execute optimization on each job according to its type.
+    5. Re-assemble the final command list with state commands re-inserted.
     """
 
     @property
@@ -321,8 +535,9 @@ class Optimize(OpsTransformer):
         if context is None:
             context = ExecutionContext()
 
-        # Threshold for applying the slower, higher-quality 2-opt refinement.
-        TWO_OPT_THRESHOLD = 1000
+        # Thresholds for the smart optimization strategy
+        TWO_OPT_SEGMENT_THRESHOLD = 1000
+        TWO_OPT_COMMAND_LIMIT = 10000
 
         # Step 1: Preprocessing
         context.set_message(_("Preprocessing for optimization..."))
@@ -330,48 +545,8 @@ class Optimize(OpsTransformer):
         if context.is_cancelled():
             return
 
-        # Expand ScanLinePowerCommands into smaller, optimizable segments.
-        # This makes raster optimization possible by breaking up full-width
-        # scans.
-        RASTER_MIN_POWER = 0  # power level (0-255) to be considered "off"
-
-        expanded_commands: List[Command] = []
-        last_end_pos = (0.0, 0.0, 0.0)
-
-        for cmd in ops.commands:
-            if isinstance(cmd, ScanLinePowerCommand):
-                start_point_for_scan = last_end_pos
-                sub_commands = cmd.split_by_power(
-                    start_point_for_scan, RASTER_MIN_POWER
-                )
-
-                if sub_commands:
-                    # The sub_commands contain new MoveTo commands. This
-                    # makes the MoveTo that preceded the original ScanLine
-                    # redundant. Remove it.
-                    if (
-                        expanded_commands
-                        and expanded_commands[-1].is_travel_command()
-                        and expanded_commands[-1].end == start_point_for_scan
-                    ):
-                        expanded_commands.pop()
-
-                if cmd.state:
-                    for sub_cmd in sub_commands:
-                        sub_cmd.state = cmd.state
-                expanded_commands.extend(sub_commands)
-            else:
-                expanded_commands.append(cmd)
-
-            if isinstance(cmd, MovingCommand) and cmd.end is not None:
-                last_end_pos = cmd.end
-
-        # The rest of the optimization process uses this expanded command list
-        commands = [c for c in expanded_commands if not c.is_state_command()]
-        logger.debug(
-            f"Original command count {len(ops.commands)},"
-            f" expanded for optimization to {len(commands)}"
-        )
+        commands = [c for c in ops.commands if not c.is_state_command()]
+        logger.debug(f"Optimizing {len(commands)} moving commands.")
 
         # Step 2: Splitting into non-reorderable long segments
         long_segments = group_by_state_continuity(commands)
@@ -389,44 +564,23 @@ class Optimize(OpsTransformer):
             base_progress=0.0, progress_range=optimize_weight
         )
 
-        # Pre-calculate the number of sub-segments in each long segment to
-        # create a weighted progress bar that reflects the actual workload.
-        is_raster_section = False
-        segment_workloads = []
-        for long_segment in long_segments:
-            workload = 0
-            if long_segment and not long_segment[0].is_marker_command():
-                # This mirrors the logic in the main loop to determine segment
-                # type
-                marker = next(
-                    (c for c in long_segment if c.is_marker_command()), None
-                )
-                if isinstance(marker, OpsSectionStartCommand):
-                    is_raster_section = (
-                        marker.section_type == SectionType.RASTER_FILL
-                    )
-                # Now, calculate the number of sub-segments
-                if is_raster_section:
-                    sub_segments = group_mixed_continuity(
-                        cast(List[MovingCommand], long_segment)
-                    )
-                else:
-                    sub_segments = group_by_path_continuity(long_segment)
-                workload = len(sub_segments)
-            segment_workloads.append(max(1, workload))  # Min 1 unit of work
+        # Step 3: Categorize and bucket segments into optimization jobs
+        context.set_message(_("Analyzing and bucketing path segments..."))
+        jobs = _prepare_optimization_jobs(
+            long_segments, TWO_OPT_SEGMENT_THRESHOLD, TWO_OPT_COMMAND_LIMIT
+        )
 
-        total_workload = sum(segment_workloads)
+        # Pre-calculate total workload for a smooth progress bar
+        total_workload = sum(job.get("workload", 1) for job in jobs)
         cumulative_workload = 0.0
+        processed_results: Dict[int, Any] = {}
 
-        result = []
-        is_raster_section = False
-        for i, long_segment in enumerate(long_segments):
+        # Step 4: Execute optimization jobs
+        for i, job in enumerate(jobs):
             if context.is_cancelled():
                 return
 
-            # If the segment is a marker, just pass it through without
-            # optimizing
-            current_workload = segment_workloads[i]
+            current_workload = job.get("workload", 1)
             progress_range = (
                 current_workload / total_workload if total_workload > 0 else 0
             )
@@ -435,93 +589,67 @@ class Optimize(OpsTransformer):
                 if total_workload > 0
                 else 0
             )
-
-            # If the segment is a marker, just pass it through without
-            # optimizing
-            if long_segment and long_segment[0].is_marker_command():
-                marker = long_segment[0]
-                if isinstance(marker, OpsSectionStartCommand):
-                    if marker.section_type == SectionType.RASTER_FILL:
-                        is_raster_section = True
-                elif isinstance(marker, OpsSectionEndCommand):
-                    if marker.section_type == SectionType.RASTER_FILL:
-                        is_raster_section = False
-                result.append(long_segment)
-                cumulative_workload += current_workload
-                optimize_ctx.set_progress(
-                    cumulative_workload / total_workload
-                    if total_workload > 0
-                    else 1.0
-                )
-                continue
-
-            context.set_message(
-                _("Optimizing segment {i}/{total}...").format(
-                    i=i + 1, total=len(long_segments)
-                )
-            )
-
             segment_ctx = optimize_ctx.sub_context(
                 base_progress=base_progress, progress_range=progress_range
             )
-
-            # Step 3: Split long segments into reorderable sub-segments
-            if is_raster_section:
-                segments = group_mixed_continuity(
-                    cast(List[MovingCommand], long_segment)
+            context.set_message(
+                _("Optimizing segment {i}/{total}...").format(
+                    i=i + 1, total=len(jobs)
                 )
-            else:
-                segments = group_by_path_continuity(long_segment)
+            )
 
-            if not segments:
-                cumulative_workload += current_workload
-                continue
+            job_type = job["type"]
+            if job_type == "passthrough":
+                # For markers or non-reorderable segments, just pass through.
+                processed_results[job["original_index"]] = job[
+                    "original_segment"
+                ]
 
-            # Step 4: Hybrid Optimization
-            # Use k-d tree for a fast, high-quality initial sort.
-            kdtree_weight = 0.7
-            two_opt_weight = 0.3
-            apply_2_opt = len(segments) < TWO_OPT_THRESHOLD
+            elif job_type in ("kdtree_only", "two_opt"):
+                sub_segments = job["sub_segments"]
 
-            kdtree_ctx = segment_ctx
-            if apply_2_opt:
+                # All optimizable jobs start with k-d tree
+                kdtree_weight = 0.7 if job_type == "two_opt" else 1.0
                 kdtree_ctx = segment_ctx.sub_context(
                     base_progress=0.0, progress_range=kdtree_weight
                 )
-
-            segment_ctx.set_message(_("Finding nearest paths..."))
-            ordered_segments = kdtree_order_segments(kdtree_ctx, segments)
-
-            # For smaller jobs, apply 2-opt for refinement.
-            if apply_2_opt:
-                logger.info(
-                    f"Path is small ({len(segments)} segments), "
-                    "applying 2-opt refinement."
+                segment_ctx.set_message(_("Finding nearest paths..."))
+                ordered_segments = kdtree_order_segments(
+                    kdtree_ctx, sub_segments
                 )
-                two_opt_ctx = segment_ctx.sub_context(
-                    base_progress=kdtree_weight,
-                    progress_range=two_opt_weight,
-                )
-                segment_ctx.set_message(_("Applying 2-opt refinement..."))
-                segments = two_opt(two_opt_ctx, ordered_segments, 10)
-            else:
-                logger.info(
-                    f"Path is large ({len(segments)} segments), "
-                    "skipping 2-opt refinement."
-                )
-                segments = ordered_segments
 
-            result.append(segments)
+                final_segments = ordered_segments
+                if job_type == "two_opt":
+                    logger.info(
+                        f"Segment {job['original_index']} is small "
+                        f"({len(sub_segments)} sub-segments), "
+                        "applying 2-opt refinement."
+                    )
+                    two_opt_ctx = segment_ctx.sub_context(
+                        base_progress=kdtree_weight, progress_range=0.3
+                    )
+                    segment_ctx.set_message(_("Applying 2-opt refinement..."))
+                    final_segments = two_opt(two_opt_ctx, ordered_segments, 10)
+
+                processed_results[job["original_index"]] = final_segments
+
             cumulative_workload += current_workload
 
         # Ensure the optimization part reports full completion.
         optimize_ctx.set_progress(1.0)
 
-        # Step 5: Re-assemble the Ops object.
+        # Step 5: Re-assemble the Ops object from processed results.
         context.set_message(_("Reassembling optimized paths..."))
         reassemble_ctx = context.sub_context(
             base_progress=optimize_weight, progress_range=reassemble_weight
         )
+
+        # Reconstruct the result in the original order of long_segments
+        result = [
+            processed_results[i]
+            for i in range(len(long_segments))
+            if i in processed_results
+        ]
 
         flat_result_segments = []
         for item in result:
@@ -529,6 +657,7 @@ class Optimize(OpsTransformer):
                 flat_result_segments.extend(item)
             else:
                 flat_result_segments.append(item)
+
         reassemble_ctx.set_total(len(flat_result_segments))
         ops.commands = []
         prev_state = State()

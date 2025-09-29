@@ -49,6 +49,7 @@ class WorkSurface(Canvas):
     ):
         logger.debug("WorkSurface.__init__ called")
         super().__init__(**kwargs)
+        self.grid_size = 1.0  # Set snap grid to 1mm in world coordinates
         self.editor = editor
         self.doc = self.editor.doc
         self.machine = None  # will be assigned by set_machine() below
@@ -144,6 +145,11 @@ class WorkSurface(Canvas):
         # --- View State Management ---
         # This property holds the canonical global state for tab visibility.
         self._tabs_globally_visible: bool = True
+
+    @property
+    def show_travel_moves(self) -> bool:
+        """Returns True if travel moves should be rendered."""
+        return self._show_travel_moves
 
     def get_global_tab_visibility(self) -> bool:
         """

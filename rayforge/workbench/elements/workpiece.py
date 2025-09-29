@@ -7,7 +7,7 @@ from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
 from ..canvas import CanvasElement
-from ...pipeline.encoder.cairoencoder import CairoEncoder
+from ...pipeline.encoder.cairoencoder import CairoEncoder, Color
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -308,6 +308,39 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures[step.uid] = future
         future.add_done_callback(self._on_ops_drawing_recorded)
 
+    def _encode_ops_to_context(
+        self,
+        ops: Ops,
+        ctx: cairo.Context,
+        scale: Tuple[float, float],
+        drawable_height: float,
+    ):
+        """
+        Helper method to centralize encoding Ops to a Cairo context with
+        consistent colors and visibility settings.
+        """
+        if not self.canvas:
+            return
+
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
+
+        encoder = CairoEncoder()
+        encoder.encode(
+            ops,
+            ctx,
+            scale,
+            cut_color=self._get_cut_color(),
+            engrave_gradient=self._get_engrave_gradient(),
+            travel_color=self._get_travel_color(),
+            zero_power_color=self._get_zero_power_color(),
+            show_cut_moves=True,
+            show_engrave_moves=True,
+            show_travel_moves=show_travel,
+            show_zero_power_moves=show_travel,  # As per request
+            drawable_height=drawable_height,
+        )
+
     def _record_ops_drawing_async(
         self, step: Step, generation_id: int
     ) -> Optional[Tuple[str, cairo.RecordingSurface, int]]:
@@ -324,10 +357,12 @@ class WorkPieceView(CanvasElement):
             return None
 
         world_w, world_h = self.data.size
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
 
         # Calculate the union of the workpiece bounds and the ops bounds to
         # ensure the recording surface is large enough.
-        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(include_travel=show_travel)
         union_x1 = min(0.0, ops_x1)
         union_y1 = min(0.0, ops_y1)
         union_x2 = max(world_w, ops_x2)
@@ -348,29 +383,22 @@ class WorkPieceView(CanvasElement):
             union_w + 2 * REC_MARGIN_MM,
             union_h + 2 * REC_MARGIN_MM,
         )
+        # The pycairo type stubs are incorrect for RecordingSurface; they don't
+        # specify that a tuple is a valid type for `extents`. We ignore the
+        # type checker here as the code is functionally correct.
         surface = cairo.RecordingSurface(
             cairo.CONTENT_COLOR_ALPHA,
-            extents,
+            extents,  # type: ignore
         )
         ctx = cairo.Context(surface)
 
         # We are drawing 1:1 in mm space, so scale is 1.0.
         encoder_ppms = (1.0, 1.0)
 
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface._show_travel_moves
-        encoder = CairoEncoder()
-
         # Pass the workpiece height to the encoder. Ops coordinates are
         # relative to the workpiece's Y-up coordinate system, so the flip
         # must be relative to the workpiece height.
-        encoder.encode(
-            ops,
-            ctx,
-            encoder_ppms,
-            show_travel_moves=show_travel,
-            drawable_height=world_h,  # In mm for RecordingSurface
-        )
+        self._encode_ops_to_context(ops, ctx, encoder_ppms, world_h)
 
         return step.uid, surface, generation_id
 
@@ -447,17 +475,20 @@ class WorkPieceView(CanvasElement):
 
         recording = self._ops_recordings.get(step_uid)
         world_w, world_h = self.data.size
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
 
         # Determine the millimeter dimensions and offset of the content.
         if recording:
-            try:
-                # FAST PATH: use extents from the recording surface.
-                rec_x, rec_y, rec_w, rec_h = recording.get_extents()
+            # FAST PATH: use extents from the recording surface.
+            extents = recording.get_extents()
+            if extents:
+                rec_x, rec_y, rec_w, rec_h = extents
                 content_x_mm = rec_x + REC_MARGIN_MM
                 content_y_mm = rec_y + REC_MARGIN_MM
                 content_w_mm = rec_w - 2 * REC_MARGIN_MM
                 content_h_mm = rec_h - 2 * REC_MARGIN_MM
-            except Exception:
+            else:
                 logger.warning(f"Could not get extents for '{step_uid}'")
                 return None
         else:
@@ -465,7 +496,9 @@ class WorkPieceView(CanvasElement):
             ops = self.ops_generator.get_ops(step, self.data)
             if not ops:
                 return None
-            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect()
+            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(
+                include_travel=show_travel
+            )
             union_x1 = min(0.0, ops_x1)
             union_y1 = min(0.0, ops_y1)
             union_x2 = max(world_w, ops_x2)
@@ -476,7 +509,6 @@ class WorkPieceView(CanvasElement):
             content_h_mm = union_y2 - union_y1
 
         bbox_mm = (content_x_mm, content_y_mm, content_w_mm, content_h_mm)
-        work_surface = cast("WorkSurface", self.canvas)
         view_ppm_x, view_ppm_y = work_surface.get_view_scale()
         content_width_px = round(content_w_mm * view_ppm_x)
         content_height_px = round(content_h_mm * view_ppm_y)
@@ -533,17 +565,9 @@ class WorkPieceView(CanvasElement):
                 -content_x_mm * encoder_ppm_x, -content_y_mm * encoder_ppm_y
             )
 
-            show_travel = work_surface._show_travel_moves
-            encoder = CairoEncoder()
             # Y-flip height must be workpiece height in pixels.
             drawable_h_px = world_h * encoder_ppm_y
-            encoder.encode(
-                ops,
-                ctx,
-                ppms,
-                show_travel_moves=show_travel,
-                drawable_height=drawable_h_px,
-            )
+            self._encode_ops_to_context(ops, ctx, ppms, drawable_h_px)
 
         return step_uid, surface, generation_id, bbox_mm
 
@@ -573,18 +597,8 @@ class WorkPieceView(CanvasElement):
 
         _surface, ctx, ppms, content_h_px = prepared
 
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface._show_travel_moves
-
         # Encode just the chunk onto the existing surface
-        encoder = CairoEncoder()
-        encoder.encode(
-            chunk,
-            ctx,
-            ppms,
-            show_travel_moves=show_travel,
-            drawable_height=content_h_px,
-        )
+        self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
 
         # Trigger a redraw to show the progress
         if self.canvas:
@@ -593,12 +607,12 @@ class WorkPieceView(CanvasElement):
     def _prepare_ops_surface_and_context(
         self, step: Step
     ) -> Optional[
-        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float], int]
+        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float], float]
     ]:
         """
         Used by chunk rendering. Ensures an ops surface exists for a step,
         creating it if necessary. Returns the surface, a transformed context,
-        scale, and content height.
+        scale, and drawable height in pixels.
         """
         if not self.canvas:
             return None
@@ -685,6 +699,38 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
+
+    def _get_cut_color(self) -> Tuple[float, float, float]:
+        """Gets the color for cut moves."""
+        return 1.0, 0.0, 1.0  # Magenta
+
+    def _get_engrave_gradient(self) -> Tuple[Color, Color]:
+        """Gets the gradient for engrave moves (white to black)."""
+        return (1.0, 1.0, 1.0), (0.0, 0.0, 0.0)
+
+    def _get_travel_color(self) -> Tuple[float, float, float, float]:
+        """
+        Gets the color for travel moves from the theme if possible, with a
+        fallback.
+        """
+        return 1.0, 0.4, 0.0, 0.7  # Transparent Orange
+
+    def _get_zero_power_color(self) -> Tuple[float, float, float, float]:
+        """
+        Gets the color for zero-power moves from the theme's accent color
+        with 50% transparency. Falls back to a default if not found.
+        """
+        fallback_color = (0.0, 0.2, 0.9, 0.5)
+        if not self.canvas:
+            return fallback_color
+
+        style_context = self.canvas.get_style_context()
+        found, color = style_context.lookup_color("accent_color")
+
+        if found and color:
+            return color.red, color.green, color.blue, 0.5
+        else:
+            return fallback_color
 
     def _start_update(self) -> bool:
         """
