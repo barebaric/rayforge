@@ -494,6 +494,20 @@ class MainWindow(Adw.ApplicationWindow):
         if doc.active_layer and doc.active_layer.workflow:
             self.workflowview.set_workflow(doc.active_layer.workflow)
 
+        # If the 3D view is active, any document change should trigger a
+        # re-aggregation of the toolpaths.
+        if (
+            canvas3d_initialized
+            and hasattr(self, "canvas3d")
+            and self.view_stack.get_visible_child_name() == "3d"
+        ):
+            task_key = "aggregate-3d-ops"
+            task_mgr.run_thread(
+                self._aggregate_ops_for_3d_view,
+                when_done=self._on_3d_ops_aggregated,
+                key=task_key,
+            )
+
         # Sync the selectability of stock items based on active layer
         self._sync_element_selectability()
 
@@ -568,6 +582,8 @@ class MainWindow(Adw.ApplicationWindow):
 
                 # Accumulate ops from all steps for this workpiece
                 for step in layer.workflow.steps:
+                    if not step.visible:
+                        continue
                     workpiece_ops = generator.get_ops(step, workpiece)
                     if workpiece_ops:
                         # Transform from local to world coordinates
