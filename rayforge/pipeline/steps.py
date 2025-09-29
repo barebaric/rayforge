@@ -39,7 +39,7 @@ def create_contour_step(
     ]
     if optimize:
         step.opstransformers_dicts.append(
-            Optimize(enabled=True).to_dict(),
+            Optimize().to_dict(),
         )
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
@@ -65,7 +65,7 @@ def create_raster_step(name: Optional[str] = None) -> Step:
     ]
     step.opstransformers_dicts = [
         OverscanTransformer().to_dict(),
-        Optimize(enabled=True).to_dict(),
+        Optimize().to_dict(),
     ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
@@ -90,7 +90,7 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
     ]
     step.opstransformers_dicts = [
         OverscanTransformer().to_dict(),
-        Optimize(enabled=False).to_dict(),
+        Optimize().to_dict(),
     ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
@@ -116,7 +116,7 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     step.opstransformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
-        Optimize(enabled=True).to_dict(),
+        Optimize().to_dict(),
     ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
@@ -140,7 +140,7 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     step.modifiers_dicts = []
     step.opstransformers_dicts = [
         TabOpsTransformer().to_dict(),
-        Optimize(enabled=True).to_dict(),
+        Optimize().to_dict(),
     ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
