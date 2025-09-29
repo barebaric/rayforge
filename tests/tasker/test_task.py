@@ -268,16 +268,15 @@ class TestTaskExecution:
         # Signal 1: The task starts running.
         assert signal_tracker.received[0]["status"] == "running"
 
-        # Signal 2: The flush() call sends the pending message. The status
-        # has already been set to 'canceled' in the except block.
+        # Signal 2: The flush() call sends the pending message from the coro's
+        # except block. The status is now 'canceled'.
         assert signal_tracker.received[1]["status"] == "canceled"
         assert (
             signal_tracker.received[1]["message"]
             == "Cancellation caught in coro"
         )
 
-        # Signal 3: The final signal confirms the 'canceled' state. The message
-        # from the previous signal persists.
+        # Signal 3: The final signal confirms the 'canceled' state.
         assert signal_tracker.received[2]["status"] == "canceled"
         assert (
             signal_tracker.received[2]["message"]
@@ -295,6 +294,7 @@ class TestTaskExecution:
 
         task.cancel()
 
+        # The "dumb" cancel method only sets a flag. Status remains pending.
         assert task.is_cancelled()
         assert task.get_status() == "pending"
 
@@ -304,6 +304,7 @@ class TestTaskExecution:
         mock_coro.assert_not_called()
         assert task.get_status() == "canceled"
 
+        # We expect 1 signal: the final 'canceled' state from the run() method.
         assert len(signal_tracker.received) == 1
         assert signal_tracker.received[0]["status"] == "canceled"
 
@@ -314,12 +315,14 @@ class TestTaskCancellationMethod:
     def test_cancel_before_run(self):
         """Test calling cancel() on a pending task."""
         task = Task(successful_coro)
+        # Create a mock internal task to check it's not called
         mock_internal_task = Mock()
         task._task = mock_internal_task
 
         task.cancel()
 
         assert task.is_cancelled()
+        assert task.get_status() == "pending"  # Status is unchanged
         # Should not try to cancel a non-existent or non-running task
         mock_internal_task.cancel.assert_not_called()
 

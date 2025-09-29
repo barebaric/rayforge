@@ -7,7 +7,7 @@ from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
 from rayforge.core.import_source import ImportSource
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.generator import OpsGenerator
-from rayforge.shared.tasker.manager import CancelledError
+from rayforge.shared.tasker.task import CancelledError
 from rayforge.pipeline.job import generate_job_ops
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer

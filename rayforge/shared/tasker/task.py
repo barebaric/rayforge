@@ -163,10 +163,13 @@ class Task:
         Request cancellation of the task.
         Sets a flag to prevent starting if not already started,
         and attempts to cancel the underlying asyncio.Task if it exists.
+        This method does NOT change the task's status itself.
         """
         logger.debug(f"Task {self.key}: Cancel method called.")
         self._cancel_requested = True  # Set flag regardless of current state
 
+        # For asyncio tasks, also propagate the cancellation to the
+        # underlying coroutine.
         task_to_cancel = self._task
         if task_to_cancel and not task_to_cancel.done():
             logger.info(
