@@ -60,10 +60,23 @@ def check_pixel_hit(
             # Default to a hit, as the user is inside the bounding box.
             return True
 
-    # Scale CONTENT coordinates to surface pixel coordinates. This is the
-    # center point for our hit check.
+    # Scale CONTENT coordinates to surface pixel coordinates.
     center_surface_x = int(content_x * (surface_w / element_width))
     center_surface_y = int(content_y * (surface_h / element_height))
+
+    # Clamp the calculated pixel coordinates to be safely within the
+    # surface bounds [0, dim-1]. This guards against floating-point
+    # inaccuracies where a coordinate might be calculated to be exactly
+    # the surface dimension (e.g., surface_w), which is an invalid index.
+    if center_surface_x < 0:
+        center_surface_x = 0
+    elif center_surface_x >= surface_w:
+        center_surface_x = surface_w - 1
+
+    if center_surface_y < 0:
+        center_surface_y = 0
+    elif center_surface_y >= surface_h:
+        center_surface_y = surface_h - 1
 
     # --- Standard (non-fuzzy) hit check ---
     if hit_distance <= 0:
