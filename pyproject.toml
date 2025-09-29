@@ -1,6 +1,6 @@
 [project]
 name = "rayforge"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 authors = [
   { name="Samuel Abels", email="knipknap@gmail.com" },
 ]
