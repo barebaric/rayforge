@@ -371,8 +371,8 @@ class DepthEngraver(OpsProducer):
             },
         }
 
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "DepthEngraver":
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DepthEngraver":
         """
         Deserializes a dictionary into a DepthEngraver instance.
         """
@@ -400,4 +400,4 @@ class DepthEngraver(OpsProducer):
         except KeyError:
             init_args["depth_mode"] = DepthMode.POWER_MODULATION
 
-        return DepthEngraver(**init_args)
+        return cls(**init_args)

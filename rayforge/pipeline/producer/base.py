@@ -181,8 +181,8 @@ class OpsProducer(ABC):
             "params": {},  # Default for stateless producers
         }
 
-    @staticmethod
-    def from_dict(data: dict) -> "OpsProducer":
+    @classmethod
+    def from_dict(cls, data: dict) -> "OpsProducer":
         """
         Deserializes a producer from a dictionary.
 
