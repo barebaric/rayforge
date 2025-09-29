@@ -98,16 +98,8 @@ class DepthEngraver(OpsProducer):
         gray_image[alpha == 0] = 255
 
         if self.depth_mode == DepthMode.POWER_MODULATION:
-            step_power = settings.get("power", 0) if settings else 0
-            # Calculate the step's master power as a fraction (0.0 to 1.0)
-            master_power_fraction = (
-                step_power / laser.max_power if laser.max_power > 0 else 0
-            )
             mode_ops = self._run_power_modulation(
-                gray_image.astype(np.uint8),
-                pixels_per_mm,
-                y_offset_mm,
-                master_power_fraction,
+                gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
             )
         else:
             if not np.isclose(self.scan_angle, 0):
@@ -132,7 +124,6 @@ class DepthEngraver(OpsProducer):
         gray_image: np.ndarray,
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
-        master_power_fraction: float,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = gray_image.shape
@@ -178,16 +169,12 @@ class DepthEngraver(OpsProducer):
         min_mod = self.min_power / 100.0
         max_mod = self.max_power / 100.0
 
-        # Calculate the final power fractions relative to machine max
-        # by scaling the modulation factors by the step's master power
-        # setting.
-        final_min_frac = min_mod * master_power_fraction
-        final_max_frac = max_mod * master_power_fraction
-        final_range = final_max_frac - final_min_frac
-
-        # Interpolate grayscale value into the final power fraction range
+        # Interpolate grayscale value into the modulation range. The resulting
+        # power fractions are relative to the step's master power setting,
+        # which is applied by a preceding SetPowerCommand.
+        power_range = max_mod - min_mod
         power_fractions = (
-            final_min_frac + (1.0 - resampled_gray / 255.0) * final_range
+            min_mod + (1.0 - resampled_gray / 255.0) * power_range
         )
 
         # Convert power fractions (0.0-1.0) to bytes (0-255) for the command

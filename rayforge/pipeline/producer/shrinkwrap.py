@@ -67,6 +67,7 @@ class ShrinkWrapProducer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
 
         # 1. Calculate total offset
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])

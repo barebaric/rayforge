@@ -286,6 +286,7 @@ class Rasterizer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
 
         width = surface.get_width()
         height = surface.get_height()

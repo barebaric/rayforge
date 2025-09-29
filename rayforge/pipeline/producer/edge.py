@@ -57,6 +57,7 @@ class EdgeTracer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
 
         # 1. Calculate total offset from producer and step settings
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -70,12 +71,11 @@ class EdgeTracer(OpsProducer):
             total_offset = -self.path_offset_mm - kerf_compensation
 
         # 2. Get base contours and determine the correct scaling matrix
-        is_vector_source = (
+        if (
             workpiece
             and workpiece.vectors
             and not workpiece.vectors.is_empty()
-        )
-        if is_vector_source:
+        ):
             base_contours = workpiece.vectors.split_into_contours()
             sx, sy = workpiece.matrix.get_abs_scale()
             scaling_matrix = Matrix.scale(sx, sy)

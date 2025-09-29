@@ -224,17 +224,15 @@ def test_power_modulation_with_gray_and_master_power(
     power_vals = scan_cmd.power_values
 
     # Expected values calculation:
-    # final_byte = (min + gray_factor * (max-min)) * master_power * 255
-    # Black (gray_factor=1.0):
-    # (0.1 + 1.0 * 0.8) * 0.5 * 255 = 0.9 * 0.5 * 255 = 114.75 -> 114
-    # Gray (gray_factor~0.5):
-    # (0.1 + (1-128/255)*0.8) * 0.5 * 255 = (0.1+0.398)*0.5*255 = 63.5 -> 63
-    # White (gray_factor=0.0):
-    # (0.1 + 0.0 * 0.8) * 0.5 * 255 = 0.1 * 0.5 * 255 = 12.75 -> 12 or 13
+    # The producer generates values in its configured min/max power range.
+    # final_byte = (min_frac + gray_factor * (max_frac-min_frac)) * 255
+    # Black (gray_factor=1.0): (0.1 + 1.0 * 0.8) * 255 = 0.9 * 255 = 229.5
+    # Gray (gray_factor~0.5): (0.1 + (1-128/255)*0.8) * 255 = 0.498 * 255 = 127
+    # White (gray_factor=0.0): (0.1 + 0.0 * 0.8) * 255 = 0.1 * 255 = 25.5
     assert len(power_vals) == 3
-    assert power_vals[0] == pytest.approx(114, 1)
-    assert power_vals[1] == pytest.approx(63, 1)
-    assert power_vals[2] == pytest.approx(13, 1)
+    assert power_vals[0] == pytest.approx(229, 1)
+    assert power_vals[1] == pytest.approx(127, 1)
+    assert power_vals[2] == pytest.approx(25, 1)
 
 
 def test_multi_pass_logic_line_widths(laser: Laser, mock_workpiece: WorkPiece):

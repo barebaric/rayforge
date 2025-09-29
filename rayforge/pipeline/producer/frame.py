@@ -96,6 +96,7 @@ class FrameProducer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
+        final_ops.set_power((settings or {}).get("power", 0))
         final_ops.extend(frame_ops)
         final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
