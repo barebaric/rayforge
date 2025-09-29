@@ -72,9 +72,6 @@ class CairoEncoder(OpsEncoder):
             ymax = self._setup_cairo_context(ctx, scale, drawable_height)
             logger.debug(f"CairoEncoder started. ymax={ymax}, scale={scale}")
             prev_point_2d = (0.0, ymax)
-            logger.debug(
-                f"Initial prev_point_2d (cairo space): {prev_point_2d}"
-            )
             # The renderer must track the current power state itself.
             current_power = 0.0
             # Track if the pen has been moved for the first time.
@@ -84,7 +81,6 @@ class CairoEncoder(OpsEncoder):
                 # Handle state change commands first
                 if isinstance(cmd, SetPowerCommand):
                     current_power = cmd.power
-                    logger.debug(f"STATE CHANGE: SetPower({cmd.power})")
                     continue
 
                 if cmd.is_marker_command() or cmd.end is None:
@@ -147,10 +143,6 @@ class CairoEncoder(OpsEncoder):
 
         x, y, _ = cmd.end
         adjusted_y = ymax - y
-        logger.debug(
-            f"  Processing {cmd.__class__.__name__}: user ({x},{y}) -> "
-            f"cairo ({x},{adjusted_y}). Prev cairo pt: {prev_point_2d}"
-        )
         new_is_first_move = False
 
         match cmd:
@@ -250,15 +242,10 @@ class CairoEncoder(OpsEncoder):
         """Handles a MoveTo command, optionally drawing the travel path."""
         # Only draw a travel line if it's not the very first move from origin.
         if show_travel_moves and not is_first_move:
-            logger.debug(
-                f"    -> Drawing travel line from {prev_point_2d} "
-                f"to {adjusted_end}"
-            )
             self._set_source_color(ctx, travel_color)
             ctx.move_to(*prev_point_2d)
             ctx.line_to(*adjusted_end)
             ctx.stroke()
-            logger.debug("    -> stroke() called for travel line.")
         return adjusted_end
 
     def _handle_line_to(
@@ -280,14 +267,10 @@ class CairoEncoder(OpsEncoder):
 
         if should_draw:
             color = zero_power_color if is_zero_power else cut_color
-            logger.debug(
-                f"    -> Drawing line from {prev_point_2d} to {adjusted_end}"
-            )
             self._set_source_color(ctx, color)
             ctx.move_to(*prev_point_2d)
             ctx.line_to(*adjusted_end)
             ctx.stroke()
-            logger.debug("    -> stroke() called for line.")
 
         return adjusted_end
 
