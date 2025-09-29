@@ -31,7 +31,10 @@ class CairoEncoder(OpsEncoder):
         scale: Tuple[float, float],
         # Colors
         cut_color: Color = (1.0, 0.0, 1.0),
-        engrave_color: Color = (0.0, 0.0, 0.0),
+        engrave_gradient: Tuple[Color, Color] = (
+            (1.0, 1.0, 1.0),
+            (0.0, 0.0, 0.0),
+        ),
         travel_color: Color = (1.0, 0.4, 0.0, 0.7),
         zero_power_color: Color = (0.0, 0.2, 0.9, 0.5),
         # Visibility Toggles
@@ -50,7 +53,8 @@ class CairoEncoder(OpsEncoder):
             ctx: The Cairo context to draw on.
             scale: The (x, y) scaling factors.
             cut_color: RGB color for cutting moves.
-            engrave_color: RGB color for scanline power-modulated moves.
+            engrave_gradient: A tuple of two colors for the start (min power)
+              and end (max power) of the engraving gradient.
             travel_color: RGB color for travel moves.
             zero_power_color: RGB or RGBA color for zero power moves.
             show_cut_moves: Whether to draw cut/arc moves.
@@ -93,7 +97,7 @@ class CairoEncoder(OpsEncoder):
                     prev_point_2d,
                     current_power,
                     cut_color,
-                    engrave_color,
+                    engrave_gradient,
                     travel_color,
                     zero_power_color,
                     show_cut_moves,
@@ -121,7 +125,7 @@ class CairoEncoder(OpsEncoder):
         current_power: float,
         # Colors
         cut_color: Color,
-        engrave_color: Color,
+        engrave_gradient: Tuple[Color, Color],
         travel_color: Color,
         zero_power_color: Color,
         # Visibility
@@ -178,7 +182,7 @@ class CairoEncoder(OpsEncoder):
                     cmd,
                     ymax,
                     prev_point_2d,
-                    engrave_color,
+                    engrave_gradient,
                     zero_power_color,
                     show_engrave_moves,
                     show_zero_power_moves,
@@ -293,7 +297,7 @@ class CairoEncoder(OpsEncoder):
         cmd: ScanLinePowerCommand,
         ymax: float,
         prev_point_2d: Tuple[float, float],
-        engrave_color: Color,
+        engrave_gradient: Tuple[Color, Color],
         zero_power_color: Color,
         show_engrave_moves: bool,
         show_zero_power_moves: bool,
@@ -345,7 +349,7 @@ class CairoEncoder(OpsEncoder):
                     is_zero_chunk,
                     zero_power_color,
                     show_zero_power_moves,
-                    engrave_color,
+                    engrave_gradient,
                     show_engrave_moves,
                 )
                 # Start a new chunk
@@ -364,7 +368,7 @@ class CairoEncoder(OpsEncoder):
             is_zero_chunk,
             zero_power_color,
             show_zero_power_moves,
-            engrave_color,
+            engrave_gradient,
             show_engrave_moves,
         )
 
@@ -382,7 +386,7 @@ class CairoEncoder(OpsEncoder):
         is_zero_chunk: bool,
         zero_power_color: Color,
         show_zero_power_moves: bool,
-        engrave_color: Color,
+        engrave_gradient: Tuple[Color, Color],
         show_engrave_moves: bool,
     ):
         """Draws a single segment (chunk) of a scanline."""
@@ -418,12 +422,15 @@ class CairoEncoder(OpsEncoder):
             num_chunk_steps = len(power_slice)
             last_power = -1
 
-            base_r, base_g, base_b = (
-                engrave_color[0],
-                engrave_color[1],
-                engrave_color[2],
-            )
-            base_a = engrave_color[3] if len(engrave_color) == 4 else 1.0
+            # Unpack gradient colors
+            start_color, end_color = engrave_gradient
+            s_r, s_g, s_b = start_color[0], start_color[1], start_color[2]
+            e_r, e_g, e_b = end_color[0], end_color[1], end_color[2]
+            s_a = start_color[3] if len(start_color) == 4 else 1.0
+            e_a = end_color[3] if len(end_color) == 4 else 1.0
+
+            def _lerp(start, end, t):
+                return start + t * (end - start)
 
             for i, power in enumerate(power_slice):
                 if power == last_power:
@@ -434,10 +441,10 @@ class CairoEncoder(OpsEncoder):
                     offset_old = (i / num_chunk_steps) - 1e-9
                     grad.add_color_stop_rgba(
                         offset_old,
-                        base_r * p_norm_old,
-                        base_g * p_norm_old,
-                        base_b * p_norm_old,
-                        base_a,
+                        _lerp(s_r, e_r, p_norm_old),
+                        _lerp(s_g, e_g, p_norm_old),
+                        _lerp(s_b, e_b, p_norm_old),
+                        _lerp(s_a, e_a, p_norm_old),
                     )
 
                 p_norm_new = power / 255.0
@@ -446,10 +453,10 @@ class CairoEncoder(OpsEncoder):
                 )
                 grad.add_color_stop_rgba(
                     offset_new,
-                    base_r * p_norm_new,
-                    base_g * p_norm_new,
-                    base_b * p_norm_new,
-                    base_a,
+                    _lerp(s_r, e_r, p_norm_new),
+                    _lerp(s_g, e_g, p_norm_new),
+                    _lerp(s_b, e_b, p_norm_new),
+                    _lerp(s_a, e_a, p_norm_new),
                 )
                 last_power = power
 
@@ -457,10 +464,10 @@ class CairoEncoder(OpsEncoder):
                 p_norm_final = last_power / 255.0
                 grad.add_color_stop_rgba(
                     1.0,
-                    base_r * p_norm_final,
-                    base_g * p_norm_final,
-                    base_b * p_norm_final,
-                    base_a,
+                    _lerp(s_r, e_r, p_norm_final),
+                    _lerp(s_g, e_g, p_norm_final),
+                    _lerp(s_b, e_b, p_norm_final),
+                    _lerp(s_a, e_a, p_norm_final),
                 )
 
             ctx.move_to(*chunk_start_pt)

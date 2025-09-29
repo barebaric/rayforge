@@ -7,7 +7,7 @@ from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
 from ..canvas import CanvasElement
-from ...pipeline.encoder.cairoencoder import CairoEncoder
+from ...pipeline.encoder.cairoencoder import CairoEncoder, Color
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -331,7 +331,7 @@ class WorkPieceView(CanvasElement):
             ctx,
             scale,
             cut_color=self._get_cut_color(),
-            engrave_color=self._get_engrave_color(),
+            engrave_gradient=self._get_engrave_gradient(),
             travel_color=self._get_travel_color(),
             zero_power_color=self._get_zero_power_color(),
             show_cut_moves=True,
@@ -704,9 +704,9 @@ class WorkPieceView(CanvasElement):
         """Gets the color for cut moves."""
         return 1.0, 0.0, 1.0  # Magenta
 
-    def _get_engrave_color(self) -> Tuple[float, float, float]:
-        """Gets the color for engrave moves."""
-        return 0.0, 0.0, 0.0  # Black
+    def _get_engrave_gradient(self) -> Tuple[Color, Color]:
+        """Gets the gradient for engrave moves (white to black)."""
+        return (1.0, 1.0, 1.0), (0.0, 0.0, 0.0)
 
     def _get_travel_color(self) -> Tuple[float, float, float, float]:
         """

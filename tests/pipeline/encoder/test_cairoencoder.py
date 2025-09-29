@@ -11,10 +11,10 @@ from rayforge.core.ops import (
 from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
 
 # --- Test Constants for Matrix-based Testing ---
-# Simplified color palette for matrix readability
 CUT_COLOR_RGB = (1, 0, 0)  # Red
 TRAVEL_COLOR_RGB = (0, 1, 0)  # Green
 ZERO_POWER_COLOR_RGB = (0, 0, 1)  # Blue
+ENGRAVE_GRADIENT = (1, 1, 1), CUT_COLOR_RGB
 
 # RGBA versions for pixel checking
 RED = (255, 0, 0, 255)
@@ -389,7 +389,7 @@ class TestCairoEncoder:
             ctx,
             scale=(1.0, 1.0),
             zero_power_color=ZERO_POWER_COLOR_RGB,
-            engrave_color=CUT_COLOR_RGB,
+            engrave_gradient=ENGRAVE_GRADIENT,
             show_engrave_moves=True,
             show_zero_power_moves=True,
             drawable_height=H,
@@ -429,7 +429,7 @@ class TestCairoEncoder:
         encode_kwargs = {
             "scale": (1.0, 1.0),
             "cut_color": CUT_COLOR_RGB,
-            "engrave_color": CUT_COLOR_RGB,
+            "engrave_gradient": ENGRAVE_GRADIENT,
             "zero_power_color": ZERO_POWER_COLOR_RGB,
             "drawable_height": H,
             show_flag: should_draw,
