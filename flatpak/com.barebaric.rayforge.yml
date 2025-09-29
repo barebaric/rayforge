@@ -26,6 +26,9 @@ modules:
   - name: rayforge
     buildsystem: simple
     build-commands:
+      - install -Dm644 data/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
+      - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 data/${FLATPAK_ID}.metainfo.xml /app/share/appdata/${FLATPAK_ID}.metainfo.xml
       - pip3 install --prefix=/app --no-deps --no-build-isolation .
     sources:
       - type: git 
