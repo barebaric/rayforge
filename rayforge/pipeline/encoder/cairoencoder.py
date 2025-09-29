@@ -8,6 +8,7 @@ from ...core.ops import (
     LineToCommand,
     ArcToCommand,
     ScanLinePowerCommand,
+    SetPowerCommand,
     Command,
 )
 from .base import OpsEncoder
@@ -33,6 +34,7 @@ class CairoEncoder(OpsEncoder):
         zero_power_color: Color = (0.0, 0.2, 0.9),
         show_travel_moves: bool = False,
         drawable_height: Optional[float] = None,
+        use_antialias: bool = True,
     ) -> None:
         """
         Main orchestration method to draw Ops onto a Cairo context.
@@ -46,37 +48,45 @@ class CairoEncoder(OpsEncoder):
             zero_power_color: RGB or RGBA color for zero power moves.
             show_travel_moves: Whether to draw travel moves.
             drawable_height: Optional explicit height of the drawable area.
+            use_antialias: Whether to enable anti-aliasing.
         """
-        scale_x, scale_y = scale
-        if scale_y == 0:
+        if scale[1] == 0:
             return
-        show_zero_power_moves = show_travel_moves
 
         ctx.save()
         try:
-            ymax = self._setup_cairo_context(ctx, scale, drawable_height)
+            ymax = self._setup_cairo_context(
+                ctx, scale, drawable_height, use_antialias
+            )
+            # The logical pen starts at the physical origin (0,0), which is
+            # (0, ymax) in the inverted Cairo coordinate space.
             prev_point_2d = (0.0, ymax)
+            # The renderer must track the current power state itself.
+            current_power = 0.0
+            # Track if the pen has been moved for the first time.
+            is_first_move = True
 
-            for segment in ops.segments():
-                for cmd in segment:
-                    if cmd.is_marker_command() or cmd.end is None:
-                        continue
+            for cmd in ops.commands:
+                # Handle state change commands first
+                if isinstance(cmd, SetPowerCommand):
+                    current_power = cmd.power
+                    continue
 
-                    prev_point_2d = self._process_command(
-                        ctx,
-                        cmd,
-                        ymax,
-                        prev_point_2d,
-                        cut_color,
-                        travel_color,
-                        zero_power_color,
-                        show_travel_moves,
-                        show_zero_power_moves,
-                    )
+                if cmd.is_marker_command() or cmd.end is None:
+                    continue
 
-                # Draw the accumulated path for the segment (LineTo, etc.)
-                self._set_source_color(ctx, cut_color)
-                ctx.stroke()
+                prev_point_2d, is_first_move = self._process_command(
+                    ctx,
+                    cmd,
+                    ymax,
+                    prev_point_2d,
+                    current_power,
+                    cut_color,
+                    travel_color,
+                    zero_power_color,
+                    show_travel_moves,
+                    is_first_move,
+                )
         finally:
             ctx.restore()
 
@@ -93,80 +103,82 @@ class CairoEncoder(OpsEncoder):
         cmd: Command,
         ymax: float,
         prev_point_2d: Tuple[float, float],
+        current_power: float,
         cut_color: Color,
         travel_color: Color,
         zero_power_color: Color,
         show_travel_moves: bool,
-        show_zero_power_moves: bool,
-    ) -> Tuple[float, float]:
+        is_first_move: bool,
+    ) -> Tuple[Tuple[float, float], bool]:
         """
         Dispatches a command to the appropriate handler.
-        Returns the new logical pen position.
+        Returns the new logical pen position and the updated is_first_move
+        flag.
         """
         # Guard clause to satisfy the type checker and ensure safety.
         # The calling loop in `encode` should already prevent this.
         if cmd.end is None:
-            return prev_point_2d
+            return prev_point_2d, is_first_move
 
         x, y, _ = cmd.end
         adjusted_y = ymax - y
+        new_is_first_move = False
 
         match cmd:
             case MoveToCommand():
-                return self._handle_move_to(
+                new_pos = self._handle_move_to(
                     ctx,
-                    cmd,
                     (x, adjusted_y),
                     prev_point_2d,
                     show_travel_moves,
                     travel_color,
+                    is_first_move,
                 )
+                return new_pos, new_is_first_move
             case LineToCommand():
-                is_zero_power = cmd.state is not None and cmd.state.power == 0
-                if is_zero_power:
-                    # Stroke any preceding path with the standard cut color
-                    self._set_source_color(ctx, cut_color)
-                    ctx.stroke()
-
-                    if show_zero_power_moves:
-                        self._set_source_color(ctx, zero_power_color)
-                        ctx.move_to(*prev_point_2d)
-                        ctx.line_to(x, adjusted_y)
-                        ctx.stroke()
-
-                    ctx.move_to(x, adjusted_y)
-                    return x, adjusted_y
-                else:
-                    ctx.line_to(x, adjusted_y)
-                    return x, adjusted_y
+                new_pos = self._handle_line_to(
+                    ctx,
+                    current_power,
+                    (x, adjusted_y),
+                    prev_point_2d,
+                    cut_color,
+                    zero_power_color,
+                    show_travel_moves,
+                )
+                return new_pos, new_is_first_move
             case ScanLinePowerCommand():
-                return self._handle_scanline(
+                new_pos = self._handle_scanline(
                     ctx,
                     cmd,
                     ymax,
                     prev_point_2d,
                     cut_color,
                     zero_power_color,
-                    show_zero_power_moves,
+                    show_travel_moves,
                 )
+                return new_pos, new_is_first_move
             case ArcToCommand():
-                return self._handle_arc_to(
+                new_pos = self._handle_arc_to(
                     ctx,
                     cmd,
+                    current_power,
                     (x, adjusted_y),
+                    prev_point_2d,
                     cut_color,
                     zero_power_color,
-                    show_zero_power_moves,
+                    show_travel_moves,
                 )
+                return new_pos, new_is_first_move
             case _:
                 # Ignore unsupported operations, return previous point
-                return prev_point_2d
+                return prev_point_2d, is_first_move
 
     def _setup_cairo_context(
         self,
         ctx: cairo.Context,
         scale: Tuple[float, float],
         drawable_height: Optional[float],
+        use_antialias: bool,
     ) -> float:
         """
         Calculates Y-axis inversion offset and configures the Cairo context.
@@ -192,28 +204,51 @@ class CairoEncoder(OpsEncoder):
         # Apply coordinate scaling and line width
         ctx.scale(scale_x, scale_y)
         ctx.set_hairline(True)
-        ctx.move_to(0, ymax)
+        if not use_antialias:
+            ctx.set_antialias(cairo.ANTIALIAS_NONE)
         return ymax
 
     def _handle_move_to(
         self,
         ctx: cairo.Context,
-        cmd: MoveToCommand,
         adjusted_end: Tuple[float, float],
         prev_point_2d: Tuple[float, float],
         show_travel_moves: bool,
         travel_color: Color,
+        is_first_move: bool,
     ) -> Tuple[float, float]:
         """Handles a MoveTo command, optionally drawing the travel path."""
-        x, adjusted_y = adjusted_end
-        if show_travel_moves:
+        # Only draw a travel line if it's not the very first move from origin.
+        if show_travel_moves and not is_first_move:
             self._set_source_color(ctx, travel_color)
             ctx.move_to(*prev_point_2d)
-            ctx.line_to(x, adjusted_y)
+            ctx.line_to(*adjusted_end)
+            ctx.stroke()
+        # A MoveTo just updates the logical pen position.
+        return adjusted_end
+
+    def _handle_line_to(
+        self,
+        ctx: cairo.Context,
+        current_power: float,
+        adjusted_end: Tuple[float, float],
+        prev_point_2d: Tuple[float, float],
+        cut_color: Color,
+        zero_power_color: Color,
+        show_zero_power_moves: bool,
+    ) -> Tuple[float, float]:
+        """Handles a LineTo command by drawing it immediately."""
+        is_zero_power = math.isclose(current_power, 0.0)
+        color = zero_power_color if is_zero_power else cut_color
+        should_draw = show_zero_power_moves if is_zero_power else True
+
+        if should_draw:
+            self._set_source_color(ctx, color)
+            ctx.move_to(*prev_point_2d)
+            ctx.line_to(*adjusted_end)
             ctx.stroke()
 
-        ctx.move_to(x, adjusted_y)
-        return x, adjusted_y
+        return adjusted_end
 
     def _handle_scanline(
         self,
@@ -229,35 +264,30 @@ class CairoEncoder(OpsEncoder):
         Handles a ScanLinePowerCommand by splitting it into chunks of
         zero-power and non-zero-power segments and drawing them accordingly.
         """
-        if not cmd.power_values:
-            return prev_point_2d
+        end_x, end_y, _ = cmd.end
+        adjusted_end = (end_x, ymax - end_y)
 
-        # A scanline is a distinct operation; stroke any preceding path first.
-        self._set_source_color(ctx, cut_color)
-        ctx.stroke()
+        if not cmd.power_values:
+            return adjusted_end
 
         start_x, start_y = prev_point_2d
-        end_x, end_y, _ = cmd.end
-        cairo_end_y = ymax - end_y
 
         # Optimization: Handle case where entire scanline is at zero power
         if all(p == 0 for p in cmd.power_values):
             if show_zero_power_moves:
                 self._set_source_color(ctx, zero_power_color)
                 ctx.move_to(start_x, start_y)
-                ctx.line_to(end_x, cairo_end_y)
+                ctx.line_to(*adjusted_end)
                 ctx.stroke()
-            ctx.move_to(end_x, cairo_end_y)
-            return end_x, cairo_end_y
+            return adjusted_end
 
         # Deconstruct scanline into zero and non-zero power chunks
         p_start_vec = (start_x, start_y)
-        line_vec = (end_x - start_x, cairo_end_y - start_y)
+        line_vec = (adjusted_end[0] - start_x, adjusted_end[1] - start_y)
         num_steps = len(cmd.power_values)
 
         if num_steps == 0:
-            ctx.move_to(end_x, cairo_end_y)
-            return end_x, cairo_end_y
+            return adjusted_end
 
         chunk_start_idx = 0
         is_zero_chunk = cmd.power_values[0] == 0
@@ -296,8 +326,7 @@ class CairoEncoder(OpsEncoder):
             show_zero_power_moves,
         )
 
-        ctx.move_to(end_x, cairo_end_y)
-        return end_x, cairo_end_y
+        return adjusted_end
 
     def _draw_scanline_chunk(
         self,
@@ -331,7 +360,6 @@ class CairoEncoder(OpsEncoder):
 
         if is_zero_chunk:
             if show_zero_power_moves:
-                ctx.new_path()
                 ctx.move_to(*chunk_start_pt)
                 ctx.line_to(*chunk_end_pt)
                 self._set_source_color(ctx, zero_power_color)
@@ -368,7 +396,6 @@ class CairoEncoder(OpsEncoder):
                 p_final = 1.0 - (last_power / 100.0)
                 grad.add_color_stop_rgba(1.0, p_final, p_final, p_final, 1.0)
 
-            ctx.new_path()
             ctx.move_to(*chunk_start_pt)
             ctx.line_to(*chunk_end_pt)
             ctx.set_source(grad)
@@ -378,7 +405,9 @@ class CairoEncoder(OpsEncoder):
         self,
         ctx: cairo.Context,
         cmd: ArcToCommand,
+        current_power: float,
         adjusted_end: Tuple[float, float],
+        prev_point_2d: Tuple[float, float],
         cut_color: Color,
         zero_power_color: Color,
         show_zero_power_moves: bool,
@@ -386,17 +415,12 @@ class CairoEncoder(OpsEncoder):
         """
         Handles an ArcTo command by calculating geometry and drawing the arc.
         """
-        start_x, start_y = ctx.get_current_point()
+        start_x, start_y = prev_point_2d
         x, adjusted_y = adjusted_end
-        is_zero_power = cmd.state is not None and cmd.state.power == 0
-
-        # Stroke any preceding line segments before drawing the arc
-        self._set_source_color(ctx, cut_color)
-        ctx.stroke()
+        is_zero_power = math.isclose(current_power, 0.0)
 
         if is_zero_power and not show_zero_power_moves:
-            ctx.move_to(x, adjusted_y)
-            return x, adjusted_y
+            return adjusted_end
 
         arc_color = zero_power_color if is_zero_power else cut_color
         self._set_source_color(ctx, arc_color)
@@ -412,11 +436,11 @@ class CairoEncoder(OpsEncoder):
 
         # To draw a CCW arc (clockwise=False) on a Y-flipped canvas,
         # we must use Cairo's CW function (arc_negative), and vice-versa.
+        ctx.move_to(start_x, start_y)
         if cmd.clockwise:
             ctx.arc(center_x, center_y, radius, angle1, angle2)
         else:
             ctx.arc_negative(center_x, center_y, radius, angle1, angle2)
-
         ctx.stroke()
-        ctx.move_to(x, adjusted_y)
-        return x, adjusted_y
+
+        return adjusted_end
