@@ -71,6 +71,7 @@ jobs:
             mingw-w64-x86_64-python-cairo
             mingw-w64-x86_64-python-cffi
             mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-python-maturin
             mingw-w64-x86_64-python-numpy
             mingw-w64-x86_64-python-opencv
             mingw-w64-x86_64-python-pip
