@@ -377,12 +377,14 @@ def _prepare_optimization_jobs(
     two_opt_command_limit: int,
 ) -> List[Dict[str, Any]]:
     """
-    Categorizes long_segments into jobs for optimization.
+    Categorizes long_segments into jobs for optimization based on their
+    complexity.
 
     This function implements the bucketing logic:
-    1. Segments are identified as markers, too large for 2-opt, or candidates.
-    2. 2-opt candidates are sorted by size (number of sub-segments).
-    3. The smallest candidates are placed in a "bucket" for 2-opt refinement
+    1. Segments are identified as passthrough (e.g., markers or single-path
+       segments), too large for 2-opt, or candidates for 2-opt.
+    2. 2-opt candidates are sorted by their number of sub-segments.
+    3. The smallest candidates are placed into a "bucket" for 2-opt refinement
        until the bucket's total command count is reached.
     4. Candidates that don't fit in the bucket are downgraded to k-d tree only.
 
@@ -396,7 +398,7 @@ def _prepare_optimization_jobs(
         if not long_segment or long_segment[0].is_marker_command():
             jobs.append(
                 {
-                    "type": "marker",
+                    "type": "passthrough",
                     "original_index": i,
                     "workload": 1,
                     "original_segment": long_segment,
@@ -418,7 +420,18 @@ def _prepare_optimization_jobs(
             )
 
         num_sub_segments = len(sub_segments)
-        if num_sub_segments == 0:
+
+        # If there is nothing to reorder (0 or 1 path), treat it as a
+        # passthrough job to avoid unnecessary processing overhead.
+        if num_sub_segments <= 1:
+            jobs.append(
+                {
+                    "type": "passthrough",
+                    "original_index": i,
+                    "workload": 1,
+                    "original_segment": long_segment,
+                }
+            )
             continue
 
         # Categorize: large segments go directly to kdtree_only jobs
@@ -586,7 +599,8 @@ class Optimize(OpsTransformer):
             )
 
             job_type = job["type"]
-            if job_type == "marker":
+            if job_type == "passthrough":
+                # For markers or non-reorderable segments, just pass through.
                 processed_results[job["original_index"]] = job[
                     "original_segment"
                 ]
