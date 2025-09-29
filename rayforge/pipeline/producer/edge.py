@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
 from ...image.tracing import trace_surface
@@ -12,6 +13,8 @@ from ...core.geo import contours, Geometry
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+
+logger = logging.getLogger(__name__)
 
 
 class EdgeTracer(OpsProducer):
@@ -57,7 +60,6 @@ class EdgeTracer(OpsProducer):
         final_ops.add(
             OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
         )
-        final_ops.set_power((settings or {}).get("power", 0))
 
         # 1. Calculate total offset from producer and step settings
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -71,15 +73,18 @@ class EdgeTracer(OpsProducer):
             total_offset = -self.path_offset_mm - kerf_compensation
 
         # 2. Get base contours and determine the correct scaling matrix
-        if (
+        base_contours = []
+        is_vector_source = (
             workpiece
             and workpiece.vectors
             and not workpiece.vectors.is_empty()
-        ):
+        )
+        if is_vector_source:
+            assert workpiece.vectors
             base_contours = workpiece.vectors.split_into_contours()
             sx, sy = workpiece.matrix.get_abs_scale()
             scaling_matrix = Matrix.scale(sx, sy)
-        else:  # Fall back to raster tracing
+        elif surface:  # Fall back to raster tracing if a surface is provided
             base_contours = trace_surface(surface)
             width_mm, height_mm = workpiece.size
             px_width, px_height = surface.get_width(), surface.get_height()
@@ -89,6 +94,9 @@ class EdgeTracer(OpsProducer):
                 scaling_matrix = Matrix.scale(scale_x, scale_y)
             else:
                 scaling_matrix = Matrix.identity()
+        else:
+            # No vectors and no surface, so there is nothing to trace.
+            scaling_matrix = Matrix.identity()
 
         # 3. Scale all contours to their final millimeter size *first*.
         mm_space_contours = []
@@ -99,27 +107,49 @@ class EdgeTracer(OpsProducer):
         # 4. Now, process the mm-space contours: normalize, filter, and offset.
         final_geometry = Geometry()
         if mm_space_contours:
-            normalized_contours = contours.normalize_winding_orders(
-                mm_space_contours
-            )
-
-            if self.remove_inner_paths:
-                target_contours = contours.filter_to_external_contours(
-                    normalized_contours
-                )
+            target_contours = []
+            if is_vector_source:
+                # For direct vector sources, trust the input and don't
+                # perform polygon cleaning, which would discard open paths.
+                target_contours = mm_space_contours
             else:
-                target_contours = normalized_contours
+                # For raster-traced sources, clean up the contours.
+                normalized_contours = contours.normalize_winding_orders(
+                    mm_space_contours
+                )
+                if self.remove_inner_paths:
+                    target_contours = contours.filter_to_external_contours(
+                        normalized_contours
+                    )
+                else:
+                    target_contours = normalized_contours
 
             # Combine all contours into a single geometry object before
-            # offsetting. This allows the offsetting algorithm to correctly
-            # handle holes.
+            # offsetting.
             composite_geo = Geometry()
             for geo in target_contours:
                 composite_geo.commands.extend(geo.commands)
 
             if abs(total_offset) > 1e-6:
-                final_geometry = composite_geo.grow(total_offset)
+                # Attempt to apply the offset (grow/shrink).
+                grown_geometry = composite_geo.grow(total_offset)
+
+                # Check if the grow operation failed (returned empty geometry).
+                # This can happen with complex or malformed input shapes.
+                if grown_geometry.is_empty() and not composite_geo.is_empty():
+                    logger.warning(
+                        f"EdgeTracer for '{workpiece.name}' failed to apply "
+                        f"an offset of {total_offset:.3f} mm. This can be "
+                        "caused by micro-gaps or self-intersections in the "
+                        "source geometry. Falling back to the un-offset path."
+                    )
+                    # Fall back to the original, un-offset geometry.
+                    final_geometry = composite_geo
+                else:
+                    # The grow operation was successful or input was empty.
+                    final_geometry = grown_geometry
             else:
+                # No offset was requested, so use the composite geometry.
                 final_geometry = composite_geo
 
         # 5. Convert to Ops. No further scaling is needed.
