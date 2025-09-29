@@ -373,6 +373,7 @@ class WorkPieceView(CanvasElement):
             encoder_ppms,
             show_travel_moves=show_travel,
             drawable_height=world_h,  # In mm for RecordingSurface
+            zero_power_color=self._get_zero_power_color(),
         )
 
         return step.uid, surface, generation_id
@@ -549,6 +550,7 @@ class WorkPieceView(CanvasElement):
                 ppms,
                 show_travel_moves=show_travel,
                 drawable_height=drawable_h_px,
+                zero_power_color=self._get_zero_power_color(),
             )
 
         return step_uid, surface, generation_id, bbox_mm
@@ -590,6 +592,7 @@ class WorkPieceView(CanvasElement):
             ppms,
             show_travel_moves=show_travel,
             drawable_height=content_h_px,
+            zero_power_color=self._get_zero_power_color(),
         )
 
         # Trigger a redraw to show the progress
@@ -691,6 +694,23 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
+
+    def _get_zero_power_color(self) -> Tuple[float, float, float, float]:
+        """
+        Gets the color for zero-power moves from the theme's accent color
+        with 50% transparency. Falls back to a default if not found.
+        """
+        fallback_color = (0.0, 0.2, 0.9, 0.5)
+        if not self.canvas:
+            return fallback_color
+
+        style_context = self.canvas.get_style_context()
+        found, color = style_context.lookup_color("accent_color")
+
+        if found and color:
+            return color.red, color.green, color.blue, 0.5
+        else:
+            return fallback_color
 
     def _start_update(self) -> bool:
         """

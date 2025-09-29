@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 import cairo
 import logging
 from ...core.ops import (
@@ -14,6 +14,7 @@ from .base import OpsEncoder
 
 
 logger = logging.getLogger(__name__)
+Color = Union[Tuple[float, float, float], Tuple[float, float, float, float]]
 
 
 class CairoEncoder(OpsEncoder):
@@ -27,9 +28,9 @@ class CairoEncoder(OpsEncoder):
         ops: Ops,
         ctx: cairo.Context,
         scale: Tuple[float, float],
-        cut_color: Tuple[float, float, float] = (1, 0, 1),
-        travel_color: Tuple[float, float, float] = (1.0, 0.4, 0.0),
-        zero_power_color: Tuple[float, float, float] = (1.0, 0.2, 0.5),
+        cut_color: Color = (1, 0, 1),
+        travel_color: Color = (1.0, 0.4, 0.0),
+        zero_power_color: Color = (0.0, 0.2, 0.9),
         show_travel_moves: bool = False,
         drawable_height: Optional[float] = None,
     ) -> None:
@@ -42,7 +43,7 @@ class CairoEncoder(OpsEncoder):
             scale: The (x, y) scaling factors.
             cut_color: RGB color for cutting moves.
             travel_color: RGB color for travel moves.
-            zero_power_color: RGB color for cutting moves with zero power.
+            zero_power_color: RGB or RGBA color for zero power moves.
             show_travel_moves: Whether to draw travel moves.
             drawable_height: Optional explicit height of the drawable area.
         """
@@ -74,10 +75,17 @@ class CairoEncoder(OpsEncoder):
                     )
 
                 # Draw the accumulated path for the segment (LineTo, etc.)
-                ctx.set_source_rgb(*cut_color)
+                self._set_source_color(ctx, cut_color)
                 ctx.stroke()
         finally:
             ctx.restore()
+
+    def _set_source_color(self, ctx: cairo.Context, color: Color):
+        """Sets the source color, handling both RGB and RGBA tuples."""
+        if len(color) == 4:
+            ctx.set_source_rgba(*color)
+        else:
+            ctx.set_source_rgb(*color)
 
     def _process_command(
         self,
@@ -85,9 +93,9 @@ class CairoEncoder(OpsEncoder):
         cmd: Command,
         ymax: float,
         prev_point_2d: Tuple[float, float],
-        cut_color: Tuple[float, float, float],
-        travel_color: Tuple[float, float, float],
-        zero_power_color: Tuple[float, float, float],
+        cut_color: Color,
+        travel_color: Color,
+        zero_power_color: Color,
         show_travel_moves: bool,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
@@ -95,6 +103,11 @@ class CairoEncoder(OpsEncoder):
         Dispatches a command to the appropriate handler.
         Returns the new logical pen position.
         """
+        # Guard clause to satisfy the type checker and ensure safety.
+        # The calling loop in `encode` should already prevent this.
+        if cmd.end is None:
+            return prev_point_2d
+
         x, y, _ = cmd.end
         adjusted_y = ymax - y
 
@@ -112,11 +125,11 @@ class CairoEncoder(OpsEncoder):
                 is_zero_power = cmd.state is not None and cmd.state.power == 0
                 if is_zero_power:
                     # Stroke any preceding path with the standard cut color
-                    ctx.set_source_rgb(*cut_color)
+                    self._set_source_color(ctx, cut_color)
                     ctx.stroke()
 
                     if show_zero_power_moves:
-                        ctx.set_source_rgb(*zero_power_color)
+                        self._set_source_color(ctx, zero_power_color)
                         ctx.move_to(*prev_point_2d)
                         ctx.line_to(x, adjusted_y)
                         ctx.stroke()
@@ -189,12 +202,12 @@ class CairoEncoder(OpsEncoder):
         adjusted_end: Tuple[float, float],
         prev_point_2d: Tuple[float, float],
         show_travel_moves: bool,
-        travel_color: Tuple[float, float, float],
+        travel_color: Color,
     ) -> Tuple[float, float]:
         """Handles a MoveTo command, optionally drawing the travel path."""
         x, adjusted_y = adjusted_end
         if show_travel_moves:
-            ctx.set_source_rgb(*travel_color)
+            self._set_source_color(ctx, travel_color)
             ctx.move_to(*prev_point_2d)
             ctx.line_to(x, adjusted_y)
             ctx.stroke()
@@ -208,8 +221,8 @@ class CairoEncoder(OpsEncoder):
         cmd: ScanLinePowerCommand,
         ymax: float,
         prev_point_2d: Tuple[float, float],
-        cut_color: Tuple[float, float, float],
-        zero_power_color: Tuple[float, float, float],
+        cut_color: Color,
+        zero_power_color: Color,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
         """
@@ -220,7 +233,7 @@ class CairoEncoder(OpsEncoder):
             return prev_point_2d
 
         # A scanline is a distinct operation; stroke any preceding path first.
-        ctx.set_source_rgb(*cut_color)
+        self._set_source_color(ctx, cut_color)
         ctx.stroke()
 
         start_x, start_y = prev_point_2d
@@ -230,7 +243,7 @@ class CairoEncoder(OpsEncoder):
         # Optimization: Handle case where entire scanline is at zero power
         if all(p == 0 for p in cmd.power_values):
             if show_zero_power_moves:
-                ctx.set_source_rgb(*zero_power_color)
+                self._set_source_color(ctx, zero_power_color)
                 ctx.move_to(start_x, start_y)
                 ctx.line_to(end_x, cairo_end_y)
                 ctx.stroke()
@@ -294,9 +307,9 @@ class CairoEncoder(OpsEncoder):
         total_steps: int,
         start_idx: int,
         end_idx: int,
-        power_slice: bytes,
+        power_slice: Union[bytes, bytearray],
         is_zero_chunk: bool,
-        zero_power_color: Tuple[float, float, float],
+        zero_power_color: Color,
         show_zero_power_moves: bool,
     ):
         """Draws a single segment (chunk) of a scanline."""
@@ -321,7 +334,7 @@ class CairoEncoder(OpsEncoder):
                 ctx.new_path()
                 ctx.move_to(*chunk_start_pt)
                 ctx.line_to(*chunk_end_pt)
-                ctx.set_source_rgb(*zero_power_color)
+                self._set_source_color(ctx, zero_power_color)
                 ctx.stroke()
         else:  # is non-zero chunk
             grad = cairo.LinearGradient(
@@ -366,8 +379,8 @@ class CairoEncoder(OpsEncoder):
         ctx: cairo.Context,
         cmd: ArcToCommand,
         adjusted_end: Tuple[float, float],
-        cut_color: Tuple[float, float, float],
-        zero_power_color: Tuple[float, float, float],
+        cut_color: Color,
+        zero_power_color: Color,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
         """
@@ -378,7 +391,7 @@ class CairoEncoder(OpsEncoder):
         is_zero_power = cmd.state is not None and cmd.state.power == 0
 
         # Stroke any preceding line segments before drawing the arc
-        ctx.set_source_rgb(*cut_color)
+        self._set_source_color(ctx, cut_color)
         ctx.stroke()
 
         if is_zero_power and not show_zero_power_moves:
@@ -386,7 +399,7 @@ class CairoEncoder(OpsEncoder):
             return x, adjusted_y
 
         arc_color = zero_power_color if is_zero_power else cut_color
-        ctx.set_source_rgb(*arc_color)
+        self._set_source_color(ctx, arc_color)
 
         # Calculate arc geometry in the Y-down Cairo coordinate system
         i, j = cmd.center_offset

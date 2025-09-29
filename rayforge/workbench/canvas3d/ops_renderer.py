@@ -150,8 +150,9 @@ class OpsRenderer(BaseRenderer):
                     if power > 0:
                         raster_vertices.extend(start_pt)
                         raster_vertices.extend(end_pt)
-                        # Normalize power (0-100) to color (0.0-1.0)
-                        p_norm = power / 100.0
+                        # Normalize power (0-100) and invert for color.
+                        # High power = dark (0.0), low power = light (1.0).
+                        p_norm = 1.0 - (power / 100.0)
                         color = (p_norm, p_norm, p_norm, 1.0)
                         raster_colors.extend(color)
                         raster_colors.extend(color)
@@ -220,14 +221,23 @@ class OpsRenderer(BaseRenderer):
         self._load_buffer_data(self.raster_vbo, raster_vertices)
         self._load_buffer_data(self.raster_colors_vbo, raster_colors)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
+    def render(
+        self,
+        shader: Shader,
+        mvp_matrix: np.ndarray,
+        cut_color: List[float],
+        travel_color: List[float],
+        zero_power_color: List[float],
+    ) -> None:
         """
-        Renders the toolpaths. The VAO state is pre-configured, so this
-        method only needs to bind the appropriate VAO and draw.
+        Renders the toolpaths.
 
         Args:
             shader: The shader program to use for rendering lines.
             mvp_matrix: The combined Model-View-Projection matrix.
+            cut_color: The RGBA color for cut moves.
+            travel_color: The RGBA color for travel moves.
+            zero_power_color: The RGBA color for zero-power moves.
         """
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
@@ -239,13 +249,12 @@ class OpsRenderer(BaseRenderer):
             GL.glBindVertexArray(self.raster_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.raster_vertex_count)
 
-        # Draw cuts moves (which use a uniform color)
+        # All subsequent draws use a uniform color
         shader.set_float("uUseVertexColor", 0.0)
+
+        # Draw cuts moves
         self._draw_buffer(
-            self.cut_vao,
-            self.cut_vertex_count,
-            shader,
-            [1.0, 0.0, 1.0, 1.0],
+            self.cut_vao, self.cut_vertex_count, shader, cut_color
         )
 
         # Draw zero-power moves
@@ -253,20 +262,12 @@ class OpsRenderer(BaseRenderer):
             self.zero_power_vao,
             self.zero_power_vertex_count,
             shader,
-            [
-                1.0,
-                0.2,
-                0.5,
-                0.8,
-            ],  # Intermediate color, slightly transparent
+            zero_power_color,
         )
 
         # Draw travel moves
         self._draw_buffer(
-            self.travel_vao,
-            self.travel_vertex_count,
-            shader,
-            [1.0, 0.4, 0.0, 0.7],
+            self.travel_vao, self.travel_vertex_count, shader, travel_color
         )
 
         GL.glBindVertexArray(0)
