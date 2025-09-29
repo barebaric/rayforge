@@ -2,7 +2,7 @@ aiohttp==3.12.14
 blinker==1.9.0
 ezdxf==1.3.5
 numpy==2.2.3
-opencv_python==4.11.0.86
+opencv_python==4.12.0.88
 platformdirs==4.3.6
 pypotrace==0.3
 pycairo==1.27.0
