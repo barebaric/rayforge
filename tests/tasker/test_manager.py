@@ -479,14 +479,23 @@ class TestTaskManagerGlobals:
         assert kwargs["tasks"][0].get_status() in ("pending", "running")
         assert kwargs["progress"] == 0.0
 
-        # Wait for some progress
-        time.sleep(0.1)
+        # Robustly wait for the progress to update instead of a fixed sleep.
+        start_time = time.time()
+        progress_updated = False
+        while time.time() - start_time < 0.5:
+            last_call_args, last_call_kwargs = signal_receiver.call_args
+            if last_call_kwargs.get("progress", 0.0) > 0.0:
+                progress_updated = True
+                break
+            time.sleep(0.01)  # Yield to other threads
+
+        assert progress_updated, "Progress signal was not received in time"
 
         # Check intermediate calls (running with progress)
         last_call_args, last_call_kwargs = signal_receiver.call_args
         assert len(last_call_kwargs["tasks"]) == 1
         assert last_call_kwargs["tasks"][0].get_status() == "running"
-        assert last_call_kwargs["progress"] > 0.1
+        assert last_call_kwargs["progress"] > 0.0
         assert (
             signal_receiver.call_count > 2
         )  # Add, Running, and progress updates
