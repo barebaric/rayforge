@@ -308,6 +308,39 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures[step.uid] = future
         future.add_done_callback(self._on_ops_drawing_recorded)
 
+    def _encode_ops_to_context(
+        self,
+        ops: Ops,
+        ctx: cairo.Context,
+        scale: Tuple[float, float],
+        drawable_height: float,
+    ):
+        """
+        Helper method to centralize encoding Ops to a Cairo context with
+        consistent colors and visibility settings.
+        """
+        if not self.canvas:
+            return
+
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
+
+        encoder = CairoEncoder()
+        encoder.encode(
+            ops,
+            ctx,
+            scale,
+            cut_color=self._get_cut_color(),
+            engrave_color=self._get_engrave_color(),
+            travel_color=self._get_travel_color(),
+            zero_power_color=self._get_zero_power_color(),
+            show_cut_moves=True,
+            show_engrave_moves=True,
+            show_travel_moves=show_travel,
+            show_zero_power_moves=show_travel,  # As per request
+            drawable_height=drawable_height,
+        )
+
     def _record_ops_drawing_async(
         self, step: Step, generation_id: int
     ) -> Optional[Tuple[str, cairo.RecordingSurface, int]]:
@@ -362,19 +395,10 @@ class WorkPieceView(CanvasElement):
         # We are drawing 1:1 in mm space, so scale is 1.0.
         encoder_ppms = (1.0, 1.0)
 
-        encoder = CairoEncoder()
-
         # Pass the workpiece height to the encoder. Ops coordinates are
         # relative to the workpiece's Y-up coordinate system, so the flip
         # must be relative to the workpiece height.
-        encoder.encode(
-            ops,
-            ctx,
-            encoder_ppms,
-            show_travel_moves=show_travel,
-            drawable_height=world_h,  # In mm for RecordingSurface
-            zero_power_color=self._get_zero_power_color(),
-        )
+        self._encode_ops_to_context(ops, ctx, encoder_ppms, world_h)
 
         return step.uid, surface, generation_id
 
@@ -541,17 +565,9 @@ class WorkPieceView(CanvasElement):
                 -content_x_mm * encoder_ppm_x, -content_y_mm * encoder_ppm_y
             )
 
-            encoder = CairoEncoder()
             # Y-flip height must be workpiece height in pixels.
             drawable_h_px = world_h * encoder_ppm_y
-            encoder.encode(
-                ops,
-                ctx,
-                ppms,
-                show_travel_moves=show_travel,
-                drawable_height=drawable_h_px,
-                zero_power_color=self._get_zero_power_color(),
-            )
+            self._encode_ops_to_context(ops, ctx, ppms, drawable_h_px)
 
         return step_uid, surface, generation_id, bbox_mm
 
@@ -581,19 +597,8 @@ class WorkPieceView(CanvasElement):
 
         _surface, ctx, ppms, content_h_px = prepared
 
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface.show_travel_moves
-
         # Encode just the chunk onto the existing surface
-        encoder = CairoEncoder()
-        encoder.encode(
-            chunk,
-            ctx,
-            ppms,
-            show_travel_moves=show_travel,
-            drawable_height=content_h_px,
-            zero_power_color=self._get_zero_power_color(),
-        )
+        self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
 
         # Trigger a redraw to show the progress
         if self.canvas:
@@ -602,12 +607,12 @@ class WorkPieceView(CanvasElement):
     def _prepare_ops_surface_and_context(
         self, step: Step
     ) -> Optional[
-        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float], int]
+        Tuple[cairo.ImageSurface, cairo.Context, Tuple[float, float], float]
     ]:
         """
         Used by chunk rendering. Ensures an ops surface exists for a step,
         creating it if necessary. Returns the surface, a transformed context,
-        scale, and content height.
+        scale, and drawable height in pixels.
         """
         if not self.canvas:
             return None
@@ -694,6 +699,21 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
+
+    def _get_cut_color(self) -> Tuple[float, float, float]:
+        """Gets the color for cut moves."""
+        return 1.0, 0.0, 1.0  # Magenta
+
+    def _get_engrave_color(self) -> Tuple[float, float, float]:
+        """Gets the color for engrave moves."""
+        return 0.0, 0.0, 0.0  # Black
+
+    def _get_travel_color(self) -> Tuple[float, float, float, float]:
+        """
+        Gets the color for travel moves from the theme if possible, with a
+        fallback.
+        """
+        return 1.0, 0.4, 0.0, 0.7  # Transparent Orange
 
     def _get_zero_power_color(self) -> Tuple[float, float, float, float]:
         """

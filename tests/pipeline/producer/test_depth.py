@@ -1,16 +1,19 @@
 import pytest
 import cairo
+import numpy as np
 from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     SectionType,
     LineToCommand,
     ScanLinePowerCommand,
+    MoveToCommand,
 )
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
-from rayforge.machine.models.machine import Laser
+from rayforge.machine.models.laser import Laser
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.matrix import Matrix
 
 
 @pytest.fixture
@@ -22,7 +25,9 @@ def producer() -> DepthEngraver:
 @pytest.fixture
 def laser() -> Laser:
     """Returns a default laser model."""
-    return Laser()
+    laser_instance = Laser()
+    laser_instance.max_power = 1000
+    return laser_instance
 
 
 @pytest.fixture
@@ -40,7 +45,7 @@ def mock_workpiece() -> WorkPiece:
     """Returns a mock workpiece with a default size."""
     wp = WorkPiece(name="mock_wp")
     wp.uid = "wp_123"
-    wp.set_size(10.0, 10.0)  # 10mm x 10mm
+    wp.matrix.scale(10.0, 10.0)  # 10mm x 10mm
     return wp
 
 
@@ -137,13 +142,16 @@ def test_run_wraps_ops_in_section_markers(
     correctly wrapped in start and end section commands.
     """
     # Arrange
-    producer.min_power = (
-        0  # Set min_power to 0 to trigger the "skip white line" optimization
-    )
+    producer.min_power = 0  # Skip white lines
+    settings = {"power": 1000}
 
     # Act
     artifact = producer.run(
-        laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
+        laser,
+        white_surface,
+        (1.0, 1.0),
+        workpiece=mock_workpiece,
+        settings=settings,
     )
 
     # Assert
@@ -172,86 +180,123 @@ def test_run_with_empty_surface_returns_empty_ops(
     assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
 
 
-def test_power_modulation_logic(laser: Laser, mock_workpiece: WorkPiece):
-    """Tests the power modulation logic with solid color blocks."""
-    # Arrange: Create a 10px wide surface with solid blocks.
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 1)
+def test_power_modulation_with_gray_and_master_power(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """
+    Tests that modulation correctly scales with the step's master power
+    and handles intermediate gray values.
+    """
+    # Arrange: 3px surface: Black, 50% Gray (128), White
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 1)
     ctx = cairo.Context(surface)
     ctx.set_source_rgb(0, 0, 0)  # Black
     ctx.rectangle(0, 0, 1, 1)
     ctx.fill()
-    ctx.set_source_rgb(1, 1, 1)  # White
-    ctx.rectangle(9, 0, 1, 1)
+    ctx.set_source_rgb(128 / 255, 128 / 255, 128 / 255)  # 50% Gray
+    ctx.rectangle(1, 0, 1, 1)
     ctx.fill()
-    mock_workpiece.set_size(1.0, 0.1)  # 1mm wide, 0.1mm tall
+    ctx.set_source_rgb(1, 1, 1)  # White
+    ctx.rectangle(2, 0, 1, 1)
+    ctx.fill()
 
-    producer = DepthEngraver(
-        depth_mode=DepthMode.POWER_MODULATION,
-        min_power=10,
-        max_power=90,
-        line_interval=0.1,  # Corresponds to 1 pixel row
-        overscan=0,
-    )
+    mock_workpiece.matrix = Matrix()  # Reset matrix from fixture default
+    mock_workpiece.matrix.scale(0.3, 0.1)  # 0.3mm wide, 0.1mm tall
+
+    producer = DepthEngraver(min_power=10, max_power=90, line_interval=0.1)
+
+    # Simulate step setting of 50% power (500 out of 1000)
+    settings = {"power": 500}
 
     # Act
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser,
+        surface,
+        (10, 10),
+        workpiece=mock_workpiece,
+        settings=settings,
+    )
 
     # Assert
-    scan_cmds = [
+    scan_cmd = next(
         c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) == 1
-    power_vals = scan_cmds[0].power_values
-    # Solid Black (start) should be exactly max_power
-    assert power_vals[0] == 90
-    # Solid White (end) should be exactly min_power
-    assert power_vals[-1] == 10
+    )
+    power_vals = scan_cmd.power_values
+
+    # Expected values calculation:
+    # final_byte = (min + gray_factor * (max-min)) * master_power * 255
+    # Black (gray_factor=1.0):
+    # (0.1 + 1.0 * 0.8) * 0.5 * 255 = 0.9 * 0.5 * 255 = 114.75 -> 114
+    # Gray (gray_factor~0.5):
+    # (0.1 + (1-128/255)*0.8) * 0.5 * 255 = (0.1+0.398)*0.5*255 = 63.5 -> 63
+    # White (gray_factor=0.0):
+    # (0.1 + 0.0 * 0.8) * 0.5 * 255 = 0.1 * 0.5 * 255 = 12.75 -> 12 or 13
+    assert len(power_vals) == 3
+    assert power_vals[0] == pytest.approx(114, 1)
+    assert power_vals[1] == pytest.approx(63, 1)
+    assert power_vals[2] == pytest.approx(13, 1)
 
 
-def test_multi_pass_logic(laser: Laser, mock_workpiece: WorkPiece):
-    """Tests the multi-pass logic with stepped gray values."""
-    # Arrange: 3 bars: black, gray (127), white
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 10)
+def test_multi_pass_logic_line_widths(laser: Laser, mock_workpiece: WorkPiece):
+    """
+    Tests that multi-pass creates lines of the correct width for each pass
+    based on the depth map.
+    """
+    # Arrange: 2 bars: black, gray (127.5), on a 10px high surface
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 10)
     ctx = cairo.Context(surface)
     ctx.set_source_rgb(0, 0, 0)  # Black -> pass_map value 4
     ctx.rectangle(0, 0, 1, 10)
     ctx.fill()
-    ctx.set_source_rgb(0.5, 0.5, 0.5)  # Gray (127.5) -> pass_map value 2
+    ctx.set_source_rgb(
+        127 / 255, 127 / 255, 127 / 255
+    )  # Gray -> pass_map value 3
     ctx.rectangle(1, 0, 1, 10)
     ctx.fill()
-    ctx.set_source_rgb(1, 1, 1)  # White -> pass_map value 0
-    ctx.rectangle(2, 0, 1, 10)
-    ctx.fill()
-    mock_workpiece.set_size(0.3, 1.0)  # 0.3mm wide, 1mm tall
+
+    mock_workpiece.matrix = Matrix()  # Reset matrix from fixture default
+    mock_workpiece.matrix.scale(0.2, 1.0)  # 0.2mm wide, 1mm tall
+    px_per_mm = 10
 
     producer = DepthEngraver(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=4,
         z_step_down=0.1,
-        overscan=0,
         line_interval=0.1,  # One line per pixel row
     )
 
     # Act
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (px_per_mm, px_per_mm), workpiece=mock_workpiece
+    )
 
-    # Assert: Group commands by their Z-coordinate
+    # Assert: Group commands by their Z-coordinate and check line widths
     lines_by_z = {}
-    for cmd in artifact.ops.commands:
-        if isinstance(cmd, LineToCommand):
-            z = round(cmd.end[2], 2)
-            lines_by_z.setdefault(z, 0)
-            lines_by_z[z] += 1
+    all_commands = artifact.ops.commands
+    for i, cmd in enumerate(all_commands):
+        if isinstance(cmd, LineToCommand) and i > 0:
+            prev_cmd = all_commands[i - 1]
+            if isinstance(prev_cmd, MoveToCommand):
+                z = round(cmd.end[2], 2)
+                lines_by_z.setdefault(z, []).append((prev_cmd.end, cmd.end))
 
-    # The rasterizer combines adjacent active pixels into single lines.
-    # Pass 1 (z=0.0): black(4) and gray(2) are active and adjacent.
-    # A single line per row is created. 10 lines total.
-    # Pass 2 (z=-0.1): black(4) and gray(2) are still active. 10 lines.
-    # Pass 3 (z=-0.2): Only black(4) is active. 10 lines.
-    # Pass 4 (z=-0.3): Only black(4) is active. 10 lines.
-    assert lines_by_z.get(0.0, 0) == 10
-    assert lines_by_z.get(-0.1, 0) == 10
-    assert lines_by_z.get(-0.2, 0) == 10
-    assert lines_by_z.get(-0.3, 0) == 10
+    # Pass 1, 2, 3 (z=0.0, -0.1, -0.2): Black and Gray are active. Line should
+    # span 2 pixels. Expected width: 0.1mm
+    wide_width = 0.1
+    for z in [0.0, -0.1, -0.2]:
+        assert len(lines_by_z[z]) == 10
+        for start, end in lines_by_z[z]:
+            width = abs(end[0] - start[0])
+            assert np.isclose(width, wide_width)
+
+    # Pass 4 (z=-0.3): Only Black is active. Line should span 1 pixel.
+    # Expected width: 0.0mm
+    narrow_width = 0.0
+    z = -0.3
+    assert len(lines_by_z[z]) == 10
+    for start, end in lines_by_z[z]:
+        width = abs(end[0] - start[0])
+        assert np.isclose(width, narrow_width)
+
     # Check that there are no deeper passes
     assert -0.4 not in lines_by_z

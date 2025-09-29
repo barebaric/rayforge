@@ -15,6 +15,7 @@ from .transformer import (
     Optimize,
     Smooth,
     TabOpsTransformer,
+    OverscanTransformer,
 )
 
 
@@ -63,6 +64,7 @@ def create_raster_step(name: Optional[str] = None) -> Step:
         ToGrayscale().to_dict(),
     ]
     step.opstransformers_dicts = [
+        OverscanTransformer().to_dict(),
         Optimize(enabled=True).to_dict(),
     ]
     step.post_step_transformers_dicts = [
@@ -86,7 +88,10 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
-    step.opstransformers_dicts = [Optimize(enabled=False).to_dict()]
+    step.opstransformers_dicts = [
+        OverscanTransformer().to_dict(),
+        Optimize(enabled=False).to_dict(),
+    ]
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
     ]

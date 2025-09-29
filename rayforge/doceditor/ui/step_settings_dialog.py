@@ -183,7 +183,9 @@ class StepSettingsDialog(Adw.Window):
         general_group.add(self.kerf_row)
 
         # Set kerf row visibility based on producer capability
-        self.kerf_row.set_visible(producer and producer.supports_kerf)
+        self.kerf_row.set_visible(
+            producer.supports_kerf if producer else False
+        )
 
         # 3. Path Post-Processing Transformers
         if self.step.opstransformers_dicts:

@@ -14,6 +14,7 @@ from ...core.ops import (
 )
 
 if TYPE_CHECKING:
+    from ...machine.models.laser import Laser
     from ...core.workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
@@ -34,30 +35,26 @@ class DepthEngraver(OpsProducer):
         scan_angle: float = 0.0,
         line_interval: float = 0.1,
         bidirectional: bool = True,
-        overscan: float = 2.0,
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
         speed: float = 3000.0,
         min_power: float = 0.0,
         max_power: float = 100.0,
-        power: float = 100.0,
         num_depth_levels: int = 5,
         z_step_down: float = 0.0,
     ):
         self.scan_angle = scan_angle
         self.line_interval = line_interval
         self.bidirectional = bidirectional
-        self.overscan = overscan
         self.depth_mode = depth_mode
         self.speed = speed
         self.min_power = min_power
         self.max_power = max_power
-        self.power = power
         self.num_depth_levels = num_depth_levels
         self.z_step_down = z_step_down
 
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface,
         pixels_per_mm,
         *,
@@ -101,8 +98,16 @@ class DepthEngraver(OpsProducer):
         gray_image[alpha == 0] = 255
 
         if self.depth_mode == DepthMode.POWER_MODULATION:
+            step_power = settings.get("power", 0) if settings else 0
+            # Calculate the step's master power as a fraction (0.0 to 1.0)
+            master_power_fraction = (
+                step_power / laser.max_power if laser.max_power > 0 else 0
+            )
             mode_ops = self._run_power_modulation(
-                gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
+                gray_image.astype(np.uint8),
+                pixels_per_mm,
+                y_offset_mm,
+                master_power_fraction,
             )
         else:
             if not np.isclose(self.scan_angle, 0):
@@ -127,71 +132,114 @@ class DepthEngraver(OpsProducer):
         gray_image: np.ndarray,
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
+        master_power_fraction: float,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = gray_image.shape
         px_per_mm_x, px_per_mm_y = pixels_per_mm
         height_mm = height_px / px_per_mm_y
 
-        # Convert grayscale to power values (0-255)
-        power_image = ((1.0 - gray_image / 255.0) * self.max_power).astype(
-            np.uint8
-        )
-        power_image = np.clip(power_image, self.min_power, self.max_power)
-
-        is_reversed = False
-
-        occupied_rows = np.any(power_image > 0, axis=1)
+        occupied_rows = np.any(gray_image < 255, axis=1)
         if not np.any(occupied_rows):
             return ops
 
-        y_min, y_max = np.where(occupied_rows)[0][[0, -1]]
+        y_min_px, y_max_px = np.where(occupied_rows)[0][[0, -1]]
 
-        y_min_mm = y_min / px_per_mm_y
+        y_min_mm = y_min_px / px_per_mm_y
+        y_max_mm = (y_max_px + 1) / px_per_mm_y
+
         global_y_min_mm = y_offset_mm + y_min_mm
         num_intervals = math.ceil(global_y_min_mm / self.line_interval)
-        first_global_y_mm = num_intervals * self.line_interval
-        y_start_mm = first_global_y_mm - y_offset_mm
+        first_scan_y_mm_global = num_intervals * self.line_interval
+        first_scan_y_mm_local = first_scan_y_mm_global - y_offset_mm
+
+        scan_y_coords_mm = np.arange(
+            first_scan_y_mm_local, y_max_mm, self.line_interval
+        )
+        if len(scan_y_coords_mm) == 0:
+            return ops
+
+        scan_y_coords_px = scan_y_coords_mm * px_per_mm_y
+        scan_y_coords_px = np.clip(scan_y_coords_px, 0, height_px - 1)
+
+        y0 = np.floor(scan_y_coords_px).astype(int)
+        y1 = np.ceil(scan_y_coords_px).astype(int)
+        y_frac = scan_y_coords_px - y0
+
+        row0_values = gray_image[y0, :]
+        row1_values = gray_image[y1, :]
+
+        resampled_gray = (
+            row0_values * (1 - y_frac[:, np.newaxis])
+            + row1_values * y_frac[:, np.newaxis]
+        )
+
+        # Convert min/max from (0-100) to (0.0-1.0) modulation factors
+        min_mod = self.min_power / 100.0
+        max_mod = self.max_power / 100.0
+
+        # Calculate the final power fractions relative to machine max
+        # by scaling the modulation factors by the step's master power
+        # setting.
+        final_min_frac = min_mod * master_power_fraction
+        final_max_frac = max_mod * master_power_fraction
+        final_range = final_max_frac - final_min_frac
+
+        # Interpolate grayscale value into the final power fraction range
+        power_fractions = (
+            final_min_frac + (1.0 - resampled_gray / 255.0) * final_range
+        )
+
+        # Convert power fractions (0.0-1.0) to bytes (0-255) for the command
+        power_image = (power_fractions * 255).astype(np.uint8)
+
+        is_reversed = False
         y_pixel_center_offset_mm = 0.5 / px_per_mm_y
-        y_extent_mm = (y_max + 1) / px_per_mm_y
 
-        y_step_mm = self.line_interval
-        for y_mm in np.arange(y_start_mm, y_extent_mm, y_step_mm):
-            y_px = int(round(y_mm * px_per_mm_y))
-            if y_px >= height_px:
-                continue
+        for i, y_mm in enumerate(scan_y_coords_mm):
+            row_power_values = power_image[i, :]
 
-            row_power_values = power_image[y_px, :]
-            if not np.any(row_power_values > 0):
-                is_reversed = not is_reversed if self.bidirectional else False
-                continue
+            if np.any(row_power_values > 0):
+                # Find contiguous segments of "on" pixels and create a separate
+                # ScanLine for each, avoiding long scanlines over empty space.
+                is_on = row_power_values > 0
+                padded = np.concatenate(([False], is_on, [False]))
+                diffs = np.diff(padded.astype(int))
+                starts = np.where(diffs == 1)[0]
+                ends = np.where(diffs == -1)[0]
 
-            line_y_mm = y_mm + y_pixel_center_offset_mm
-            final_y_mm = float(height_mm - line_y_mm)
+                line_segments = list(zip(starts, ends))
+                if self.bidirectional and is_reversed:
+                    line_segments.reverse()
 
-            # Define the geometry for the FULL scan line
-            start_full_mm_x = (0 + 0.5) / px_per_mm_x
-            end_full_mm_x = (width_px - 1 + 0.5) / px_per_mm_x
+                line_y_mm = y_mm + y_pixel_center_offset_mm
+                final_y_mm = float(height_mm - line_y_mm)
 
-            start_pt = (start_full_mm_x, final_y_mm, 0.0)
-            end_pt = (end_full_mm_x, final_y_mm, 0.0)
+                for start_idx, end_idx in line_segments:
+                    power_slice = row_power_values[start_idx:end_idx]
 
-            if self.bidirectional and is_reversed:
-                start_pt, end_pt = end_pt, start_pt
-                final_power_values = row_power_values[::-1]
-            else:
-                final_power_values = row_power_values
+                    start_x = start_idx / px_per_mm_x
+                    end_x = end_idx / px_per_mm_x
 
-            # A scanline is a discrete operation; always move to the start.
-            ops.move_to(*start_pt)
-            ops.add(
-                ScanLinePowerCommand(
-                    end_pt,
-                    bytearray(final_power_values.astype(np.uint8)),
-                )
-            )
+                    start_pt = (start_x, final_y_mm, 0.0)
+                    end_pt = (end_x, final_y_mm, 0.0)
 
-            is_reversed = not is_reversed
+                    if self.bidirectional and is_reversed:
+                        ops.move_to(*end_pt)
+                        ops.add(
+                            ScanLinePowerCommand(
+                                start_pt, bytearray(power_slice[::-1])
+                            )
+                        )
+                    else:
+                        ops.move_to(*start_pt)
+                        ops.add(
+                            ScanLinePowerCommand(
+                                end_pt, bytearray(power_slice)
+                            )
+                        )
+                if self.bidirectional:
+                    is_reversed = not is_reversed
 
         if not np.isclose(self.scan_angle, 0.0):
             center_x = (width_px / px_per_mm_x) / 2
@@ -277,44 +325,30 @@ class DepthEngraver(OpsProducer):
 
             row = mask[y_px, x_min : x_max + 1]
 
-            if not np.any(row):
-                is_reversed = not is_reversed if self.bidirectional else False
-                continue
-
-            diff = np.diff(np.hstack(([0], row, [0])))
-            starts = np.where(diff == 1)[0]
-            ends = np.where(diff == -1)[0]
-
-            if self.bidirectional and is_reversed:
-                starts, ends = starts[::-1], ends[::-1]
-
-            # The Y coordinate for the line, adjusted to be in the
-            # center of the pixel row it represents.
-            line_y_mm = y_mm + y_pixel_center_offset_mm
-            final_y_mm = float(height_mm - line_y_mm)
-
-            for start_px, end_px in zip(starts, ends):
-                content_start_mm_x = (x_min + start_px + 0.5) / px_per_mm_x
-                content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
+            if np.any(row):
+                diff = np.diff(np.hstack(([0], row, [0])))
+                starts = np.where(diff == 1)[0]
+                ends = np.where(diff == -1)[0]
 
                 if self.bidirectional and is_reversed:
-                    # Move to the right side (with overscan) and draw left
-                    ops.move_to(
-                        content_end_mm_x + self.overscan, final_y_mm, z
-                    )
-                    ops.line_to(
-                        content_start_mm_x - self.overscan, final_y_mm, z
-                    )
-                else:
-                    # Move to the left side (with overscan) and draw right
-                    ops.move_to(
-                        content_start_mm_x - self.overscan, final_y_mm, z
-                    )
-                    ops.line_to(
-                        content_end_mm_x + self.overscan, final_y_mm, z
-                    )
+                    starts, ends = starts[::-1], ends[::-1]
 
-            is_reversed = not is_reversed
+                line_y_mm = y_mm + y_pixel_center_offset_mm
+                final_y_mm = float(height_mm - line_y_mm)
+
+                for start_px, end_px in zip(starts, ends):
+                    content_start_mm_x = (x_min + start_px + 0.5) / px_per_mm_x
+                    content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
+
+                    if self.bidirectional and is_reversed:
+                        ops.move_to(content_end_mm_x, final_y_mm, z)
+                        ops.line_to(content_start_mm_x, final_y_mm, z)
+                    else:
+                        ops.move_to(content_start_mm_x, final_y_mm, z)
+                        ops.line_to(content_end_mm_x, final_y_mm, z)
+
+                if self.bidirectional:
+                    is_reversed = not is_reversed
         return ops
 
     def is_vector_producer(self) -> bool:
@@ -328,26 +362,42 @@ class DepthEngraver(OpsProducer):
                 "scan_angle": self.scan_angle,
                 "line_interval": self.line_interval,
                 "bidirectional": self.bidirectional,
-                "overscan": self.overscan,
                 "depth_mode": self.depth_mode.name,
                 "speed": self.speed,
                 "min_power": self.min_power,
                 "max_power": self.max_power,
-                "power": self.power,
                 "num_depth_levels": self.num_depth_levels,
                 "z_step_down": self.z_step_down,
             },
         }
 
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DepthEngraver":
-        """Deserializes a dictionary into a DepthEngraver instance."""
-        params = data.get("params", {}).copy()
-        # Handle enum conversion during deserialization
-        depth_mode_str = params.get("depth_mode", "POWER_MODULATION")
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "DepthEngraver":
+        """
+        Deserializes a dictionary into a DepthEngraver instance.
+        """
+        params_in = data.get("params", {})
+
+        # Create a new dictionary with defaults, then update with loaded data
+        init_args = {
+            "scan_angle": 0.0,
+            "line_interval": 0.1,
+            "bidirectional": True,
+            "speed": 3000.0,
+            "min_power": 0.0,
+            "max_power": 100.0,
+            "num_depth_levels": 5,
+            "z_step_down": 0.0,
+        }
+        init_args.update(params_in)
+
+        # Handle the enum conversion
+        depth_mode_str = init_args.get(
+            "depth_mode", DepthMode.POWER_MODULATION.name
+        )
         try:
-            depth_mode = DepthMode[depth_mode_str]
+            init_args["depth_mode"] = DepthMode[depth_mode_str]
         except KeyError:
-            depth_mode = DepthMode.POWER_MODULATION
-        params["depth_mode"] = depth_mode
-        return cls(**params)
+            init_args["depth_mode"] = DepthMode.POWER_MODULATION
+
+        return DepthEngraver(**init_args)

@@ -125,6 +125,7 @@ class OpsRenderer(BaseRenderer):
         raster_colors: List[float] = []
         last_point: Tuple[float, float, float] = 0.0, 0.0, 0.0
 
+        ops.preload_state()
         for command in getattr(ops, "commands", []):
             if not isinstance(command, Command) or command.is_marker_command():
                 continue

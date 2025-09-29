@@ -8,16 +8,12 @@ from ...core.ops import (
     Ops,
     State,
     MovingCommand,
-    Command,
+    MoveToCommand,
     ScanLinePowerCommand,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
 )
 from ...core.ops.flip import flip_segment
 from ...core.ops.group import (
     group_by_state_continuity,
-    group_by_path_continuity,
 )
 from .base import OpsTransformer, ExecutionPhase
 from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
@@ -31,13 +27,97 @@ def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 
+def _split_scanline(
+    move_cmd: MovingCommand, scan_cmd: ScanLinePowerCommand
+) -> List[List[MovingCommand]]:
+    """
+    Splits a single ScanLinePowerCommand into multiple segments if it
+    contains areas of zero power (blank space). An overscanned line (with
+    zero-power padding at the ends) is treated as a single segment.
+    """
+    if not scan_cmd.power_values or not np.any(scan_cmd.power_values):
+        return []
+
+    # Find contiguous "on" segments.
+    is_on = np.array(scan_cmd.power_values) > 0
+    padded = np.concatenate(([False], is_on, [False]))
+    diffs = np.diff(padded.astype(int))
+    starts = np.where(diffs == 1)[0]
+
+    # If there's only one "on" segment, it's either a fully "on" line or an
+    # overscanned line. In either case, we treat it as a single,
+    # non-splittable segment.
+    if len(starts) <= 1:
+        # Note: len(starts) == 0 is covered by the np.any() check above,
+        # but this condition is safer.
+        return [[move_cmd, scan_cmd]]
+
+    # If we reach here, there are multiple segments that need to be created.
+    ends = np.where(diffs == -1)[0]
+
+    p_start = np.array(move_cmd.end)
+    p_end = np.array(scan_cmd.end)
+    line_vec = p_end - p_start
+    num_steps = len(scan_cmd.power_values)
+
+    segments = []
+    for start_idx, end_idx in zip(starts, ends):
+        t_start = start_idx / num_steps
+        t_end = end_idx / num_steps
+
+        seg_start_pt = p_start + t_start * line_vec
+        seg_end_pt = p_start + t_end * line_vec
+        power_slice = scan_cmd.power_values[start_idx:end_idx]
+
+        new_move = MoveToCommand(tuple(seg_start_pt))
+        new_scan = ScanLinePowerCommand(
+            tuple(seg_end_pt), power_values=power_slice
+        )
+
+        if scan_cmd.state:
+            new_move.state = scan_cmd.state
+            new_scan.state = scan_cmd.state
+
+        segments.append([new_move, new_scan])
+    return segments
+
+
+def _group_paths_power_agnostic(
+    commands: List[MovingCommand],
+) -> List[List[MovingCommand]]:
+    """
+    Groups commands into continuous path segments. This is used to
+    handle zero-power LineTo commands created by transformers like Overscan.
+    It defines a segment as a MoveTo followed by any number of non-travel
+    moves, ignoring their power state for grouping purposes.
+    """
+    segments: List[List[MovingCommand]] = []
+    if not commands:
+        return []
+    i = 0
+    while i < len(commands):
+        start_cmd = commands[i]
+        if not start_cmd.is_travel_command():
+            i += 1
+            continue
+        current_segment = [start_cmd]
+        i += 1
+        # Consume all subsequent drawing commands (LineTo, ArcTo) regardless
+        # of power.
+        while i < len(commands) and not commands[i].is_travel_command():
+            current_segment.append(commands[i])
+            i += 1
+        segments.append(current_segment)
+    return segments
+
+
 def group_mixed_continuity(
     commands: List[MovingCommand],
 ) -> List[List[MovingCommand]]:
     """
     Splits a command list into continuous path segments. It correctly pairs
-    a MoveTo command with a subsequent ScanLinePowerCommand to form a single
-    optimizable raster segment. Vector paths are grouped as before.
+    a MoveTo command with a subsequent ScanLinePowerCommand, splitting it if
+    necessary, to form optimizable raster segments.
     """
     segments: List[List[MovingCommand]] = []
     if not commands:
@@ -56,15 +136,17 @@ def group_mixed_continuity(
         if (i + 1) < len(commands) and isinstance(
             commands[i + 1], ScanLinePowerCommand
         ):
-            # This is a raster segment: [MoveTo, ScanLinePowerCommand]
-            current_segment = [start_cmd, commands[i + 1]]
-            segments.append(current_segment)
+            move = start_cmd
+            scan = cast(ScanLinePowerCommand, commands[i + 1])
+            sub_segments = _split_scanline(move, scan)
+            if sub_segments:
+                segments.extend(sub_segments)
             i += 2  # Consume both commands
         else:
-            # This is a standard vector segment. Consume all cutting commands.
+            # Fallback to power-agnostic grouping for vector paths.
             current_segment = [start_cmd]
             i += 1
-            while i < len(commands) and commands[i].is_cutting_command():
+            while i < len(commands) and not commands[i].is_travel_command():
                 # Defensively handle mixed vector/raster types
                 if isinstance(commands[i], ScanLinePowerCommand):
                     break
@@ -330,48 +412,8 @@ class Optimize(OpsTransformer):
         if context.is_cancelled():
             return
 
-        # Expand ScanLinePowerCommands into smaller, optimizable segments.
-        # This makes raster optimization possible by breaking up full-width
-        # scans.
-        RASTER_MIN_POWER = 0  # power level (0-255) to be considered "off"
-
-        expanded_commands: List[Command] = []
-        last_end_pos = (0.0, 0.0, 0.0)
-
-        for cmd in ops.commands:
-            if isinstance(cmd, ScanLinePowerCommand):
-                start_point_for_scan = last_end_pos
-                sub_commands = cmd.split_by_power(
-                    start_point_for_scan, RASTER_MIN_POWER
-                )
-
-                if sub_commands:
-                    # The sub_commands contain new MoveTo commands. This
-                    # makes the MoveTo that preceded the original ScanLine
-                    # redundant. Remove it.
-                    if (
-                        expanded_commands
-                        and expanded_commands[-1].is_travel_command()
-                        and expanded_commands[-1].end == start_point_for_scan
-                    ):
-                        expanded_commands.pop()
-
-                if cmd.state:
-                    for sub_cmd in sub_commands:
-                        sub_cmd.state = cmd.state
-                expanded_commands.extend(sub_commands)
-            else:
-                expanded_commands.append(cmd)
-
-            if isinstance(cmd, MovingCommand) and cmd.end is not None:
-                last_end_pos = cmd.end
-
-        # The rest of the optimization process uses this expanded command list
-        commands = [c for c in expanded_commands if not c.is_state_command()]
-        logger.debug(
-            f"Original command count {len(ops.commands)},"
-            f" expanded for optimization to {len(commands)}"
-        )
+        commands = [c for c in ops.commands if not c.is_state_command()]
+        logger.debug(f"Optimizing {len(commands)} moving commands.")
 
         # Step 2: Splitting into non-reorderable long segments
         long_segments = group_by_state_continuity(commands)
@@ -391,27 +433,22 @@ class Optimize(OpsTransformer):
 
         # Pre-calculate the number of sub-segments in each long segment to
         # create a weighted progress bar that reflects the actual workload.
-        is_raster_section = False
         segment_workloads = []
         for long_segment in long_segments:
             workload = 0
             if long_segment and not long_segment[0].is_marker_command():
-                # This mirrors the logic in the main loop to determine segment
-                # type
-                marker = next(
-                    (c for c in long_segment if c.is_marker_command()), None
+                # Detect if raster logic is needed for this segment.
+                contains_scanline = any(
+                    isinstance(c, ScanLinePowerCommand) for c in long_segment
                 )
-                if isinstance(marker, OpsSectionStartCommand):
-                    is_raster_section = (
-                        marker.section_type == SectionType.RASTER_FILL
-                    )
-                # Now, calculate the number of sub-segments
-                if is_raster_section:
+                if contains_scanline:
                     sub_segments = group_mixed_continuity(
                         cast(List[MovingCommand], long_segment)
                     )
                 else:
-                    sub_segments = group_by_path_continuity(long_segment)
+                    sub_segments = _group_paths_power_agnostic(
+                        cast(List[MovingCommand], long_segment)
+                    )
                 workload = len(sub_segments)
             segment_workloads.append(max(1, workload))  # Min 1 unit of work
 
@@ -419,7 +456,6 @@ class Optimize(OpsTransformer):
         cumulative_workload = 0.0
 
         result = []
-        is_raster_section = False
         for i, long_segment in enumerate(long_segments):
             if context.is_cancelled():
                 return
@@ -439,13 +475,6 @@ class Optimize(OpsTransformer):
             # If the segment is a marker, just pass it through without
             # optimizing
             if long_segment and long_segment[0].is_marker_command():
-                marker = long_segment[0]
-                if isinstance(marker, OpsSectionStartCommand):
-                    if marker.section_type == SectionType.RASTER_FILL:
-                        is_raster_section = True
-                elif isinstance(marker, OpsSectionEndCommand):
-                    if marker.section_type == SectionType.RASTER_FILL:
-                        is_raster_section = False
                 result.append(long_segment)
                 cumulative_workload += current_workload
                 optimize_ctx.set_progress(
@@ -466,12 +495,17 @@ class Optimize(OpsTransformer):
             )
 
             # Step 3: Split long segments into reorderable sub-segments
-            if is_raster_section:
+            contains_scanline = any(
+                isinstance(c, ScanLinePowerCommand) for c in long_segment
+            )
+            if contains_scanline:
                 segments = group_mixed_continuity(
                     cast(List[MovingCommand], long_segment)
                 )
             else:
-                segments = group_by_path_continuity(long_segment)
+                segments = _group_paths_power_agnostic(
+                    cast(List[MovingCommand], long_segment)
+                )
 
             if not segments:
                 cumulative_workload += current_workload

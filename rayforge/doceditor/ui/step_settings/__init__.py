@@ -5,9 +5,10 @@ from .edge import EdgeTracerSettingsWidget
 from .frame import FrameProducerSettingsWidget
 from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
+from .overscan import OverscanSettingsWidget
+from .rasterizer import RasterizerSettingsWidget
 from .shrinkwrap import ShrinkWrapProducerSettingsWidget
 from .smooth import SmoothSettingsWidget
-from .rasterizer import RasterizerSettingsWidget
 
 
 # This registry maps the class names of pipeline components (str)
@@ -18,20 +19,22 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "FrameProducer": FrameProducerSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
+    "OverscanTransformer": OverscanSettingsWidget,
+    "Rasterizer": RasterizerSettingsWidget,
     "ShrinkWrapProducer": ShrinkWrapProducerSettingsWidget,
     "Smooth": SmoothSettingsWidget,
-    "Rasterizer": RasterizerSettingsWidget
 }
 
 __all__ = [
-    "StepComponentSettingsWidget",
     "WIDGET_REGISTRY",
     "DepthEngraverSettingsWidget",
     "EdgeTracerSettingsWidget",
     "FrameProducerSettingsWidget",
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
+    "OverscanSettingsWidget",
+    "RasterizerSettingsWidget",
     "ShrinkWrapProducerSettingsWidget",
     "SmoothSettingsWidget",
-    "RasterizerSettingsWidget"
+    "StepComponentSettingsWidget",
 ]

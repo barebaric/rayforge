@@ -29,12 +29,18 @@ class CairoEncoder(OpsEncoder):
         ops: Ops,
         ctx: cairo.Context,
         scale: Tuple[float, float],
-        cut_color: Color = (1, 0, 1),
-        travel_color: Color = (1.0, 0.4, 0.0),
-        zero_power_color: Color = (0.0, 0.2, 0.9),
-        show_travel_moves: bool = False,
+        # Colors
+        cut_color: Color = (1.0, 0.0, 1.0),
+        engrave_color: Color = (0.0, 0.0, 0.0),
+        travel_color: Color = (1.0, 0.4, 0.0, 0.7),
+        zero_power_color: Color = (0.0, 0.2, 0.9, 0.5),
+        # Visibility Toggles
+        show_cut_moves: bool = True,
+        show_engrave_moves: bool = True,
+        show_travel_moves: bool = True,
+        show_zero_power_moves: bool = True,
+        # Other Options
         drawable_height: Optional[float] = None,
-        use_antialias: bool = True,
     ) -> None:
         """
         Main orchestration method to draw Ops onto a Cairo context.
@@ -44,23 +50,27 @@ class CairoEncoder(OpsEncoder):
             ctx: The Cairo context to draw on.
             scale: The (x, y) scaling factors.
             cut_color: RGB color for cutting moves.
+            engrave_color: RGB color for scanline power-modulated moves.
             travel_color: RGB color for travel moves.
             zero_power_color: RGB or RGBA color for zero power moves.
+            show_cut_moves: Whether to draw cut/arc moves.
+            show_engrave_moves: Whether to draw engrave/scanline moves.
             show_travel_moves: Whether to draw travel moves.
+            show_zero_power_moves: Whether to draw zero-power cut/engrave
+              moves.
             drawable_height: Optional explicit height of the drawable area.
-            use_antialias: Whether to enable anti-aliasing.
         """
         if scale[1] == 0:
             return
 
         ctx.save()
         try:
-            ymax = self._setup_cairo_context(
-                ctx, scale, drawable_height, use_antialias
-            )
-            # The logical pen starts at the physical origin (0,0), which is
-            # (0, ymax) in the inverted Cairo coordinate space.
+            ymax = self._setup_cairo_context(ctx, scale, drawable_height)
+            logger.debug(f"CairoEncoder started. ymax={ymax}, scale={scale}")
             prev_point_2d = (0.0, ymax)
+            logger.debug(
+                f"Initial prev_point_2d (cairo space): {prev_point_2d}"
+            )
             # The renderer must track the current power state itself.
             current_power = 0.0
             # Track if the pen has been moved for the first time.
@@ -70,6 +80,7 @@ class CairoEncoder(OpsEncoder):
                 # Handle state change commands first
                 if isinstance(cmd, SetPowerCommand):
                     current_power = cmd.power
+                    logger.debug(f"STATE CHANGE: SetPower({cmd.power})")
                     continue
 
                 if cmd.is_marker_command() or cmd.end is None:
@@ -82,9 +93,13 @@ class CairoEncoder(OpsEncoder):
                     prev_point_2d,
                     current_power,
                     cut_color,
+                    engrave_color,
                     travel_color,
                     zero_power_color,
+                    show_cut_moves,
+                    show_engrave_moves,
                     show_travel_moves,
+                    show_zero_power_moves,
                     is_first_move,
                 )
         finally:
@@ -104,10 +119,16 @@ class CairoEncoder(OpsEncoder):
         ymax: float,
         prev_point_2d: Tuple[float, float],
         current_power: float,
+        # Colors
         cut_color: Color,
+        engrave_color: Color,
         travel_color: Color,
         zero_power_color: Color,
+        # Visibility
+        show_cut_moves: bool,
+        show_engrave_moves: bool,
         show_travel_moves: bool,
+        show_zero_power_moves: bool,
         is_first_move: bool,
     ) -> Tuple[Tuple[float, float], bool]:
         """
@@ -122,6 +143,10 @@ class CairoEncoder(OpsEncoder):
 
         x, y, _ = cmd.end
         adjusted_y = ymax - y
+        logger.debug(
+            f"  Processing {cmd.__class__.__name__}: user ({x},{y}) -> "
+            f"cairo ({x},{adjusted_y}). Prev cairo pt: {prev_point_2d}"
+        )
         new_is_first_move = False
 
         match cmd:
@@ -143,7 +168,8 @@ class CairoEncoder(OpsEncoder):
                     prev_point_2d,
                     cut_color,
                     zero_power_color,
-                    show_travel_moves,
+                    show_cut_moves,
+                    show_zero_power_moves,
                 )
                 return new_pos, new_is_first_move
             case ScanLinePowerCommand():
@@ -152,9 +178,10 @@ class CairoEncoder(OpsEncoder):
                     cmd,
                     ymax,
                     prev_point_2d,
-                    cut_color,
+                    engrave_color,
                     zero_power_color,
-                    show_travel_moves,
+                    show_engrave_moves,
+                    show_zero_power_moves,
                 )
                 return new_pos, new_is_first_move
             case ArcToCommand():
@@ -166,7 +193,8 @@ class CairoEncoder(OpsEncoder):
                     prev_point_2d,
                     cut_color,
                     zero_power_color,
-                    show_travel_moves,
+                    show_cut_moves,
+                    show_zero_power_moves,
                 )
                 return new_pos, new_is_first_move
             case _:
@@ -178,7 +206,6 @@ class CairoEncoder(OpsEncoder):
         ctx: cairo.Context,
         scale: Tuple[float, float],
         drawable_height: Optional[float],
-        use_antialias: bool,
     ) -> float:
         """
         Calculates Y-axis inversion offset and configures the Cairo context.
@@ -204,8 +231,7 @@ class CairoEncoder(OpsEncoder):
         # Apply coordinate scaling and line width
         ctx.scale(scale_x, scale_y)
         ctx.set_hairline(True)
-        if not use_antialias:
-            ctx.set_antialias(cairo.ANTIALIAS_NONE)
+        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
         return ymax
 
     def _handle_move_to(
@@ -220,11 +246,15 @@ class CairoEncoder(OpsEncoder):
         """Handles a MoveTo command, optionally drawing the travel path."""
         # Only draw a travel line if it's not the very first move from origin.
         if show_travel_moves and not is_first_move:
+            logger.debug(
+                f"    -> Drawing travel line from {prev_point_2d} "
+                f"to {adjusted_end}"
+            )
             self._set_source_color(ctx, travel_color)
             ctx.move_to(*prev_point_2d)
             ctx.line_to(*adjusted_end)
             ctx.stroke()
-        # A MoveTo just updates the logical pen position.
+            logger.debug("    -> stroke() called for travel line.")
         return adjusted_end
 
     def _handle_line_to(
@@ -235,18 +265,25 @@ class CairoEncoder(OpsEncoder):
         prev_point_2d: Tuple[float, float],
         cut_color: Color,
         zero_power_color: Color,
+        show_cut_moves: bool,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
         """Handles a LineTo command by drawing it immediately."""
         is_zero_power = math.isclose(current_power, 0.0)
-        color = zero_power_color if is_zero_power else cut_color
-        should_draw = show_zero_power_moves if is_zero_power else True
+        should_draw = (
+            show_zero_power_moves if is_zero_power else show_cut_moves
+        )
 
         if should_draw:
+            color = zero_power_color if is_zero_power else cut_color
+            logger.debug(
+                f"    -> Drawing line from {prev_point_2d} to {adjusted_end}"
+            )
             self._set_source_color(ctx, color)
             ctx.move_to(*prev_point_2d)
             ctx.line_to(*adjusted_end)
             ctx.stroke()
+            logger.debug("    -> stroke() called for line.")
 
         return adjusted_end
 
@@ -256,8 +293,9 @@ class CairoEncoder(OpsEncoder):
         cmd: ScanLinePowerCommand,
         ymax: float,
         prev_point_2d: Tuple[float, float],
-        cut_color: Color,
+        engrave_color: Color,
         zero_power_color: Color,
+        show_engrave_moves: bool,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
         """
@@ -307,6 +345,8 @@ class CairoEncoder(OpsEncoder):
                     is_zero_chunk,
                     zero_power_color,
                     show_zero_power_moves,
+                    engrave_color,
+                    show_engrave_moves,
                 )
                 # Start a new chunk
                 chunk_start_idx = i
@@ -324,6 +364,8 @@ class CairoEncoder(OpsEncoder):
             is_zero_chunk,
             zero_power_color,
             show_zero_power_moves,
+            engrave_color,
+            show_engrave_moves,
         )
 
         return adjusted_end
@@ -340,6 +382,8 @@ class CairoEncoder(OpsEncoder):
         is_zero_chunk: bool,
         zero_power_color: Color,
         show_zero_power_moves: bool,
+        engrave_color: Color,
+        show_engrave_moves: bool,
     ):
         """Draws a single segment (chunk) of a scanline."""
         if start_idx >= end_idx:
@@ -364,7 +408,7 @@ class CairoEncoder(OpsEncoder):
                 ctx.line_to(*chunk_end_pt)
                 self._set_source_color(ctx, zero_power_color)
                 ctx.stroke()
-        else:  # is non-zero chunk
+        elif show_engrave_moves:  # is non-zero chunk and should be shown
             grad = cairo.LinearGradient(
                 chunk_start_pt[0],
                 chunk_start_pt[1],
@@ -374,27 +418,50 @@ class CairoEncoder(OpsEncoder):
             num_chunk_steps = len(power_slice)
             last_power = -1
 
+            base_r, base_g, base_b = (
+                engrave_color[0],
+                engrave_color[1],
+                engrave_color[2],
+            )
+            base_a = engrave_color[3] if len(engrave_color) == 4 else 1.0
+
             for i, power in enumerate(power_slice):
                 if power == last_power:
                     continue
 
                 if i > 0 and num_chunk_steps > 1:
-                    p_old = 1.0 - (last_power / 100.0)
+                    p_norm_old = last_power / 255.0
                     offset_old = (i / num_chunk_steps) - 1e-9
                     grad.add_color_stop_rgba(
-                        offset_old, p_old, p_old, p_old, 1.0
+                        offset_old,
+                        base_r * p_norm_old,
+                        base_g * p_norm_old,
+                        base_b * p_norm_old,
+                        base_a,
                     )
 
-                p_new = 1.0 - (power / 100.0)
+                p_norm_new = power / 255.0
                 offset_new = (
                     i / num_chunk_steps if num_chunk_steps > 0 else 0.0
                 )
-                grad.add_color_stop_rgba(offset_new, p_new, p_new, p_new, 1.0)
+                grad.add_color_stop_rgba(
+                    offset_new,
+                    base_r * p_norm_new,
+                    base_g * p_norm_new,
+                    base_b * p_norm_new,
+                    base_a,
+                )
                 last_power = power
 
             if last_power != -1:
-                p_final = 1.0 - (last_power / 100.0)
-                grad.add_color_stop_rgba(1.0, p_final, p_final, p_final, 1.0)
+                p_norm_final = last_power / 255.0
+                grad.add_color_stop_rgba(
+                    1.0,
+                    base_r * p_norm_final,
+                    base_g * p_norm_final,
+                    base_b * p_norm_final,
+                    base_a,
+                )
 
             ctx.move_to(*chunk_start_pt)
             ctx.line_to(*chunk_end_pt)
@@ -410,6 +477,7 @@ class CairoEncoder(OpsEncoder):
         prev_point_2d: Tuple[float, float],
         cut_color: Color,
         zero_power_color: Color,
+        show_cut_moves: bool,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
         """
@@ -419,7 +487,10 @@ class CairoEncoder(OpsEncoder):
         x, adjusted_y = adjusted_end
         is_zero_power = math.isclose(current_power, 0.0)
 
-        if is_zero_power and not show_zero_power_moves:
+        should_draw = (
+            show_zero_power_moves if is_zero_power else show_cut_moves
+        )
+        if not should_draw:
             return adjusted_end
 
         arc_color = zero_power_color if is_zero_power else cut_color

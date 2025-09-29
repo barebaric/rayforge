@@ -303,10 +303,12 @@ def run_step_in_subprocess(
 
         # Send intermediate chunks for raster operations
         if not is_vector:
+            ops_for_chunk_render = initial_ops.copy()
+            ops_for_chunk_render.extend(chunk_artifact.ops)
             proxy.send_event(
                 "ops_chunk",
                 {
-                    "chunk": chunk_artifact.ops,
+                    "chunk": ops_for_chunk_render,
                     "generation_id": generation_id,
                 },
             )
