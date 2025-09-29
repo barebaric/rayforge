@@ -12,25 +12,26 @@ Rayforge is a modern, cross-platform G-code sender and control software for GRBL
 
 ## Key Features
 
-| Feature                      | Description                                                                                          |
-| :--------------------------- | :--------------------------------------------------------------------------------------------------- |
-| **Modern UI**                | Polished and modern UI built with Gtk4 and Libadwaita. Supports system, light, and dark themes.      |
-| **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.                       |
-| **Versatile Operations**     | Supports Contour, External Outline, and Raster Engraving with detailed settings.                     |
-| **2.5D Cutting**             | Perform multi-pass cuts with a configurable step-down between each pass for thick materials.         |
-| **3D G-code Preview**        | Visualize G-code toolpaths in 3D to verify the job before sending it to the machine.                 |
-| **Multi-Machine Profiles**   | Configure and instantly switch between multiple machine profiles.                                    |
-| **GRBL Firmware Settings**   | Read and write firmware parameters (`$$`) directly from the UI.                                      |
-| **Comprehensive 2D Canvas**  | Full suite of tools: alignment, transformation, measurement, zoom, pan, and more.                    |
-| **Advanced Path Generation** | Intelligent path interpolation based on spot size, with travel time optimization and path smoothing. |
-| **Holding Tabs**             | Add tabs to contour cuts to hold pieces in place. Supports manual and automatic placement.           |
-| **G-code Macros & Hooks**    | Run custom G-code snippets before/after jobs. Supports variable substitution.                        |
-| **Broad File Support**       | Import from SVG, DXF, PDF, PNG, BMP, and even Ruida files (`.rd`).                                   |
-| **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                       |
-| **Cross-Platform**           | Native builds for Linux and Windows.                                                                 |
-| **Extensible**               | Open development model makes it easy to [add support for new devices](docs/driver.md).               |
-| **Multi-Language**           | Available in English, Portuguese, Spanish, and German.                                               |
-| **G-code Dialects**          | Supports GRBL, Smoothieware, and other GRBL-compatible firmwares.                                    |
+| Feature                      | Description                                                                                        |
+| :--------------------------- | :------------------------------------------------------------------------------------------------- |
+| **Modern UI**                | Polished and modern UI built with Gtk4 and Libadwaita. Supports system, light, and dark themes.    |
+| **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.                     |
+| **Versatile Operations**     | Supports Contour, Raster Engraving (with cross-hatch fill), Shrink Wrap, and Depth Engraving.      |
+| **Overscan & Kerf Comp.**    | Improve engraving quality with overscan and ensure dimensional accuracy with kerf compensation.    |
+| **2.5D Cutting**             | Perform multi-pass cuts with a configurable step-down between each pass for thick materials.       |
+| **3D G-code Preview**        | Visualize G-code toolpaths in 3D to verify the job before sending it to the machine.               |
+| **Multi-Machine Profiles**   | Configure and instantly switch between multiple machine profiles.                                  |
+| **GRBL Firmware Settings**   | Read and write firmware parameters (`$$`) directly from the UI.                                    |
+| **Comprehensive 2D Canvas**  | Full suite of tools: alignment, transformation, measurement, zoom, pan, and more.                  |
+| **Advanced Path Generation** | High-quality image tracing, travel time optimization, path smoothing, and spot size interpolation. |
+| **Holding Tabs**             | Add tabs to contour cuts to hold pieces in place. Supports manual and automatic placement.         |
+| **G-code Macros & Hooks**    | Run custom G-code snippets before/after jobs. Supports variable substitution.                      |
+| **Broad File Support**       | Import from SVG, DXF, PDF, JPEG, PNG, BMP, and even Ruida files (`.rd`).                           |
+| **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                     |
+| **Cross-Platform**           | Native builds for Linux and Windows.                                                               |
+| **Extensible**               | Open development model makes it easy to [add support for new devices](docs/driver.md).             |
+| **Multi-Language**           | Available in English, Portuguese, Spanish, and German.                                             |
+| **G-code Dialects**          | Supports GRBL, Smoothieware, and other GRBL-compatible firmwares.                                  |
 
 ## Device Support
 
