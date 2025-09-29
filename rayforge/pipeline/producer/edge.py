@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class EdgeTracer(OpsProducer):
     """
-    Uses the Potrace engine to trace paths in a shape. Can optionally trace
+    Uses the tracer to find all paths in a shape. Can optionally trace
     only the outermost paths, ignoring any holes.
     """
 

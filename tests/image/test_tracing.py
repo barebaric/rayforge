@@ -146,15 +146,16 @@ def test_trace_surface_edge_touching_shape():
     assert isinstance(geometries[0], Geometry)
 
 
-def test_trace_surface_potrace_failure_fallback_to_hull(monkeypatch):
+def test_trace_surface_vtracer_failure_fallback_to_hull(monkeypatch):
     """
     Tests that the correct fallback function (get_enclosing_hull) is called
-    if potrace fails on a non-empty image.
+    if vtracer fails on a non-empty image.
     """
-    # Mock potrace to simulate failure
-    mock_bitmap_class = MagicMock()
-    mock_bitmap_class.return_value.trace.return_value = None
-    monkeypatch.setattr("potrace.Bitmap", mock_bitmap_class)
+    # Mock vtracer to simulate failure
+    mock_vtracer = MagicMock(
+        side_effect=Exception("Simulated vtracer failure")
+    )
+    monkeypatch.setattr("vtracer.convert_raw_image_to_svg", mock_vtracer)
 
     # Mock the hull function to verify it gets called
     mock_get_hull = MagicMock(return_value="mocked_geometry")

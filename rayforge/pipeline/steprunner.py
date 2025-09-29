@@ -71,7 +71,7 @@ def run_step_in_subprocess(
 
         This is a central part of the pipeline. It first runs all configured
         modifiers (e.g., ToGrayscale) on the input surface if it exists. Then,
-        it calls the main OpsProducer (e.g., Potrace, Rasterizer) to generate
+        it calls the main OpsProducer (e.g., Rasterizer) to generate
         the machine operations.
 
         Args:

@@ -23,8 +23,6 @@ echo "Detected upstream version: ${UPSTREAM_VERSION}"
 
 # --- 2. Vendor Dependencies: Pre-download wheels ---
 echo "--- Vendoring pre-built wheels ---"
-# IMPORTANT: Wheels are downloaded to a 'vendor/' directory, NOT 'debian/'.
-# This treats them as part of the upstream source, which is the correct approach.
 TMP_SRC_DIR="${BUILD_DIR}/rayforge-${UPSTREAM_VERSION}"
 mkdir -p "${TMP_SRC_DIR}/vendor/sdist"
 
@@ -89,12 +87,10 @@ rsync -a \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
 TARBALL_NAME="rayforge_${UPSTREAM_VERSION}.orig.tar.gz"
-# The tarball now correctly contains ONLY the upstream code + the vendored wheels.
 tar -czf "$BUILD_DIR/$TARBALL_NAME" -C "$BUILD_DIR" "rayforge-${UPSTREAM_VERSION}"
 echo "Created: $BUILD_DIR/$TARBALL_NAME"
 
 # --- 4. Build the Package ---
-# Now we add the debian directory and build.
 cd "$BUILD_DIR"
 cp -r "$ORIG_DIR/debian" "$TMP_SRC_DIR/"
 cd "$TMP_SRC_DIR"
@@ -103,31 +99,28 @@ MAINTAINER_INFO=$(grep '^Maintainer:' debian/control | head -n 1 | sed 's/Mainta
 export DEBEMAIL=$(echo "$MAINTAINER_INFO" | sed -E 's/.*<(.*)>.*/\1/')
 export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
-# The `dch` commands are safe to run in the current environment
+# Set the version string based on whether --source is passed (for PPA) or not (for local testing)
 if [[ "${1:-}" == "--source" ]]; then
-    TARGET_DISTRIBUTION="noble"
-    dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DISTRIBUTION}1" --distribution "$TARGET_DISTRIBUTION" "New PPA release ${UPSTREAM_VERSION}."
-    
-    # Use env -i to get a clean environment, and pass in ONLY the variables we need.
-    env -i \
-        HOME="$HOME" \
-        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
-        DEBEMAIL="$DEBEMAIL" \
-        DEBFULLNAME="$DEBFULLNAME" \
-        dpkg-buildpackage -S -us -uc
+    # Use the TARGET_DISTRIBUTION from the environment, defaulting to 'noble' if not set
+    TARGET_DIST="${TARGET_DISTRIBUTION:-noble}"
+    dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DIST}1" --distribution "$TARGET_DIST" "New PPA release for ${TARGET_DIST}."
 else
     dch --newversion "${UPSTREAM_VERSION}-1~local1" "New local build ${UPSTREAM_VERSION}."
-
-    # Use env -i to get a clean environment, and pass in ONLY the variables we need.
-    env -i \
-        HOME="$HOME" \
-        PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
-        DEBEMAIL="$DEBEMAIL" \
-        DEBFULLNAME="$DEBFULLNAME" \
-        dpkg-buildpackage -b -us -uc
 fi
+
+# Build BOTH source and binary packages at the same time.
+# The default command (with no -S or -b) does this.
+# The artifacts will be created in the parent directory ($BUILD_DIR)
+env -i \
+    HOME="$HOME" \
+    PATH="/usr/sbin:/usr/bin:/sbin:/bin" \
+    DEBEMAIL="$DEBEMAIL" \
+    DEBFULLNAME="$DEBFULLNAME" \
+    dpkg-buildpackage -us -uc
 
 # --- 5. Copy Artifacts ---
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
 find "$BUILD_DIR" -maxdepth 1 -name 'rayforge*' -type f -exec cp -v {} "$ORIG_DIR/dist/" \;
+
+echo "Build complete. Artifacts are in the dist/ directory."

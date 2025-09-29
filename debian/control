@@ -2,27 +2,27 @@ Source: rayforge
 Section: graphics
 Priority: optional
 Maintainer: Samuel Abels <knipknap@gmail.com>
-Build-Depends: debhelper-compat (= 13),
+Build-Depends: cargo,
+               cython3,
+               debhelper-compat (= 13),
+               dh-python,
                python3-all,
-               python3-setuptools,
-               python3-wheel,
+               python3-dev,
+               python3-maturin,
+               python3-numpy,
                python3-pip,
                pybuild-plugin-pyproject,
-               dh-python,
-               python3-dev,
-               libpotrace-dev,
-               libagg-dev,
-               python3-numpy,
                python3-poetry-core,
-               cython3,
-               pkg-config
+               python3-setuptools,
+               python3-wheel,
+               rustc,
 Standards-Version: 4.6.2
 Homepage: https://github.com/barebaric/rayforge
 
 Package: rayforge
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
-  python3-gi, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libvips42t64, libpotrace0,
+  python3-gi, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libvips42t64,
   adwaita-icon-theme, python3-numpy, python3-scipy, python3-serial-asyncio,
   python3-opencv, python3-ezdxf, python3-pypdf, python3-yaml, python3-aiohttp,
   python3-websockets, python3-blinker, python3-platformdirs, python3-opengl,

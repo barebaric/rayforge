@@ -3,7 +3,7 @@ name: Publish .deb to PPA
 on:
   push:
     branches:
-      - main
+      - "*"
     tags:
       - "*"
 
@@ -13,76 +13,84 @@ jobs:
     uses: ./.github/workflows/lint-test.yml
 
   publish-to-ppa:
-    name: Build, Test, and Publish to PPA
+    name: Build and Publish to PPA for ${{ matrix.distro.name }}
     needs: [lint-test]
-    runs-on: ubuntu-latest
+    # Define a build matrix for different Ubuntu versions
+    strategy:
+      matrix:
+        distro:
+          - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
+    runs-on: ${{ matrix.distro.runner }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: >
           sudo apt-get update && sudo apt-get install -y
+          build-essential
+          cargo
+          cython3
           devscripts
           debhelper
-          dput
-          build-essential
-          python3-all
           dh-python
-          jq
+          dput
           equivs
-          libpotrace-dev
-          libagg-dev
-          pybuild-plugin-pyproject
+          jq
+          python3-all
+          python3-maturin
           python3-numpy
+          pybuild-plugin-pyproject
           python3-poetry-core
           python3-pyclipper
           cython3
           pkg-config
+          rustc
 
       - name: Import GPG key
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
         run: |
-          # Import the key from secrets
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
-
-          # We add 'head -n 1' to ensure we only get the first fingerprint,
-          # preventing errors from sub-keys.
           KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -n 1 | awk -F: '{print $10}')
-
-          # Verify that we got a fingerprint
           if [ -z "$KEY_FINGERPRINT" ]; then
             echo "::error::Could not extract GPG key fingerprint."
             exit 1
           fi
-
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
-      - name: Build BINARY package for testing
-        id: build_binary
+      - name: Build All Packages (Source and Binary)
+        id: build_packages
+        env:
+          TARGET_DISTRIBUTION: ${{ matrix.distro.codename }}
         run: |
-          # Run the build script WITHOUT --source to produce a .deb file
           chmod +x ./scripts/build-deb.sh
-          ./scripts/build-deb.sh
-          # Find the name of the generated .deb file and make it available to other steps
-          DEB_FILE=$(find dist -name "*.deb" -type f | head -n 1)
-          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+          ./scripts/build-deb.sh --source
+          DEB_FILE_PATH=$(find dist -name "*.deb" -type f | head -n 1)
+          if [ -z "$DEB_FILE_PATH" ]; then
+            echo "::error::Build failed, no .deb file found in dist/ directory."
+            exit 1
+          fi
+
+          # Extract just the filename from the path
+          DEB_FILENAME=$(basename "$DEB_FILE_PATH")
+
+          # Output both the full path (for testing) and the filename (for the artifact)
+          echo "deb_file_path=$DEB_FILE_PATH" >> $GITHUB_OUTPUT
+          echo "deb_filename=$DEB_FILENAME" >> $GITHUB_OUTPUT
 
       - name: Install runtime dependencies for testing
         run: |
-          # This command reads debian/control and installs all packages
-          # listed in the 'Depends' field automatically.
           sudo mk-build-deps --install --tool="apt-get -y" debian/control
 
       - name: Test package installation
         run: |
-          # Add './' to make the path unambiguous for apt.
-          sudo apt-get install -y ./${{ steps.build_binary.outputs.deb_file }}
+          # Use the full path for the installation
+          sudo apt-get install -y ./${{ steps.build_packages.outputs.deb_file_path }}
 
       - name: Run smoke test
         run: |
@@ -92,27 +100,21 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
 
-      - name: Clean build artifacts before final build
-        run: rm -rf dist/*
-
-      - name: Build SOURCE package for PPA upload
-        run: ./scripts/build-deb.sh --source
-
       - name: Sign source package
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          # Create a temporary file for the GPG passphrase.
           echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
-
-          # Sign the package using the -p flag, which is compatible with older debsign versions.
           debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" dist/*.changes
-
-          # Securely remove the temporary passphrase file.
           rm /tmp/passphrase.txt
 
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_packages.outputs.deb_filename }}
+          path: ${{ steps.build_packages.outputs.deb_file_path }}
+
       - name: Upload to PPA
-        # This step will only run when the trigger is a tag push
         if: startsWith(github.ref, 'refs/tags/')
         run: dput ppa:knipknap/rayforge dist/*.changes

@@ -27,8 +27,8 @@ override_dh_auto_install:
 	export PIP_FIND_LINKS=file://$(CURDIR)/vendor/sdist; \
 	dh_auto_install; \
 	\
-	# STEP 2: Manually install pypotrace into the same staging directory.
-	echo "--- Manually installing vendored pypotrace dependency ---"; \
+	# STEP 2: Manually install dependencies into the same staging directory.
+	echo "--- Manually installing vendored dependencies ---"; \
 	HOME=$(CURDIR)/debian/.pip-cache pip3 install \
 		--no-build-isolation \
 		--no-dependencies \
@@ -36,7 +36,7 @@ override_dh_auto_install:
 		--find-links=file://$(CURDIR)/vendor/sdist \
 		--target=$(CURDIR)/debian/rayforge/usr/lib/python3/dist-packages \
 		--upgrade \
-		pypotrace pyvips
+		vtracer pyvips
 
 override_dh_auto_test:
 	echo "Skipping tests during Debian build; they are run in the dedicated CI test job."

@@ -3,9 +3,9 @@ name: Build Windows Executable using Pixi
 on:
   push:
     branches:
-      - '**'
+      - "**"
     tags:
-      - '*'
+      - "*"
 
 jobs:
   build:
@@ -36,7 +36,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version_clean=$VERSION_CLEAN" >> $GITHUB_OUTPUT
 
-      - name: Set up MSYS2 and C Toolchain
+      - name: Set up MSYS2 and Native Dependencies
         id: msys2
         uses: msys2/setup-msys2@v2
         with:
@@ -46,62 +46,15 @@ jobs:
             git
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-potrace
             mingw-w64-x86_64-libvips
+            mingw-w64-x86_64-gobject-introspection
 
-      - name: Set up environment
-        shell: msys2 {0}
+      - name: Configure Environment
+        shell: bash
         run: |
-          MSYS2_PATH=$(echo "${{ steps.msys2.outputs.msys2-location }}" | sed 's|^\([A-Z]\):[/\\]|/d/|g; s|\\|/|g')
-          echo "MSYS2_PATH=$MSYS2_PATH" >> $GITHUB_ENV
-          echo "$MSYS2_PATH/mingw64/bin" >> $GITHUB_PATH
-          echo "$MSYS2_PATH/usr/bin" >> $GITHUB_PATH
-          echo "MSYS2_PATH=$MSYS2_PATH" > $GITHUB_WORKSPACE/.msys2_env
-
-      - name: Build and Install AGG
-        shell: msys2 {0}
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          cd $GITHUB_WORKSPACE
-
-          echo "Cloning AGG from ghaerr/agg-2.6..."
-          git clone --depth 1 https://github.com/ghaerr/agg-2.6.git
-          cd agg-2.6/agg-src
-          
-          echo "Compiling AGG source files manually..."
-          cd src
-          g++ -c -O2 -I../include *.cpp
-          
-          echo "Creating static library libagg.a..."
-          ar rcs libagg.a *.o
-
-          echo "Installing library and headers manually..."
-          cp libagg.a ${MSYS2_PATH}/mingw64/lib/
-          cd ..
-          cp -r include ${MSYS2_PATH}/mingw64/include/agg2
-
-          echo "Creating libagg.pc file for pkg-config..."
-          echo "prefix=${MSYS2_PATH}/mingw64" > libagg.pc
-          echo "exec_prefix=\${prefix}" >> libagg.pc
-          echo "libdir=\${exec_prefix}/lib" >> libagg.pc
-          echo "includedir=\${prefix}/include" >> libagg.pc
-          echo "" >> libagg.pc
-          echo "Name: libagg" >> libagg.pc
-          echo "Description: Anti-Grain Geometry" >> libagg.pc
-          echo "Version: 2.6.0" >> libagg.pc
-          echo "Libs: -L\${libdir} -lagg" >> libagg.pc
-          echo "Cflags: -I\${includedir}/agg2" >> libagg.pc
-
-          echo "Installing libagg.pc..."
-          cp libagg.pc ${MSYS2_PATH}/mingw64/lib/pkgconfig/
-
-          echo "Verifying AGG installation..."
-          ls -l ${MSYS2_PATH}/mingw64/lib/libagg.a
-          ls -l ${MSYS2_PATH}/mingw64/include/agg2/agg_basics.h
-          ls -l ${MSYS2_PATH}/mingw64/lib/pkgconfig/libagg.pc
-
-          cd $GITHUB_WORKSPACE
-          rm -rf agg-2.6
+          MSYS2_LOCATION="${{ steps.msys2.outputs.msys2-location }}"
+          echo "$MSYS2_LOCATION/mingw64/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG_PATH=$MSYS2_LOCATION/mingw64/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Set up Pixi
         uses: prefix-dev/setup-pixi@v0.9.0
@@ -109,19 +62,17 @@ jobs:
           cache: true
 
       - name: Install Dependencies with Pixi
-        shell: msys2 {0}
         env:
-          PKG_CONFIG_PATH: ${{ steps.msys2.outputs.msys2-location }}/mingw64/lib/pkgconfig
+          INCLUDE: ${{ steps.msys2.outputs.msys2-location }}\mingw64\include;${{ env.INCLUDE }}
+          LIB: ${{ steps.msys2.outputs.msys2-location }}\mingw64\lib;${{ env.LIB }}
         run: pixi install -e windows-build
 
       - name: Compile Translations
-        shell: msys2 {0}
         run: pixi run -e windows-build compile-translations
 
       - name: Build Executable
-        shell: msys2 {0}
         env:
-          MSYS2_PREFIX: ${{ runner.temp }}/msys64/mingw64
+          MSYS2_PREFIX: ${{ steps.msys2.outputs.msys2-location }}/mingw64
         run: pixi run -e windows-build build-exe ${{ steps.set-version.outputs.version_clean }}
 
       - name: Upload Artifact

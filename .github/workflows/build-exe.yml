@@ -2,9 +2,9 @@ name: Build Windows Executable
 on:
   push:
     branches:
-      - '**'
+      - "**"
     tags:
-      - '*'
+      - "*"
 
 jobs:
   build:
@@ -64,7 +64,6 @@ jobs:
             mingw-w64-x86_64-openslide
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-poppler
-            mingw-w64-x86_64-potrace
             mingw-w64-x86_64-pyinstaller
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-aiohttp
@@ -72,6 +71,7 @@ jobs:
             mingw-w64-x86_64-python-cairo
             mingw-w64-x86_64-python-cffi
             mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-python-maturin
             mingw-w64-x86_64-python-numpy
             mingw-w64-x86_64-python-opencv
             mingw-w64-x86_64-python-pip
@@ -86,6 +86,7 @@ jobs:
             mingw-w64-x86_64-python-svgelements
             mingw-w64-x86_64-python-websockets
             mingw-w64-x86_64-python-yaml
+            mingw-w64-x86_64-rust
             mingw-w64-x86_64-toolchain
             unzip
             wget
@@ -140,62 +141,17 @@ jobs:
           $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
           $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll | grep "DLL Name"
 
-      - name: Build and Install AGG
-        shell: msys2 {0}
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          cd $GITHUB_WORKSPACE
-
-          echo "Cloning AGG from ghaerr/agg-2.6..."
-          git clone --depth 1 https://github.com/ghaerr/agg-2.6.git
-          cd agg-2.6/agg-src
-          
-          echo "Compiling AGG source files manually..."
-          cd src
-          g++ -c -O2 -I../include *.cpp
-          
-          echo "Creating static library libagg.a..."
-          ar rcs libagg.a *.o
-
-          echo "Installing library and headers manually..."
-          cp libagg.a ${MSYS2_PATH}/mingw64/lib/
-          cd ..
-          cp -r include ${MSYS2_PATH}/mingw64/include/agg2
-
-          echo "Creating libagg.pc file for pkg-config..."
-          echo "prefix=${MSYS2_PATH}/mingw64" > libagg.pc
-          echo "exec_prefix=\${prefix}" >> libagg.pc
-          echo "libdir=\${exec_prefix}/lib" >> libagg.pc
-          echo "includedir=\${prefix}/include" >> libagg.pc
-          echo "" >> libagg.pc
-          echo "Name: libagg" >> libagg.pc
-          echo "Description: Anti-Grain Geometry" >> libagg.pc
-          echo "Version: 2.6.0" >> libagg.pc
-          echo "Libs: -L\${libdir} -lagg" >> libagg.pc
-          echo "Cflags: -I\${includedir}/agg2" >> libagg.pc
-
-          echo "Installing libagg.pc..."
-          cp libagg.pc ${MSYS2_PATH}/mingw64/lib/pkgconfig/
-
-          echo "Verifying AGG installation..."
-          ls -l ${MSYS2_PATH}/mingw64/lib/libagg.a
-          ls -l ${MSYS2_PATH}/mingw64/include/agg2/agg_basics.h
-          ls -l ${MSYS2_PATH}/mingw64/lib/pkgconfig/libagg.pc
-
-          cd $GITHUB_WORKSPACE
-          rm -rf agg-2.6
-
       - name: Install Python dependencies
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          
+
           python -m pip install --upgrade pip --break-system-packages
-          python -m pip install --no-cache-dir --no-build-isolation pypotrace==0.3 --break-system-packages
+          python -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
           python -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 --break-system-packages
           python -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
           python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
-          
+
           # Verify PyCairo is correct from the base MSYS2 install
           python -c "import cairo; print('PyCairo version:', cairo.version)"
 
@@ -245,7 +201,6 @@ jobs:
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libEGL.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libGLESv2.dll;." \
             --add-binary "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\libvips-42.dll;." \
-            --collect-submodules potrace \
             --hidden-import gi._gi_cairo \
             rayforge/app.py
 
