@@ -348,32 +348,44 @@ class OpsGenerator:
             for step in wp_layer.workflow:
                 key = (step.uid, wp.uid)
                 artifact = self._ops_cache.get(key)
-                if not artifact:
-                    continue
 
-                if artifact.is_scalable:
-                    # This is a cheap notification. It's safe to send
-                    # immediately, even during a paused drag operation,
-                    # so the UI can update live.
-                    generation_id = self._generation_id_map.get(key, 0)
-                    self.ops_generation_finished.send(
-                        step, workpiece=wp, generation_id=generation_id
+                # Determine if the current state is valid. An artifact is
+                # valid if it exists AND (it's scalable OR (it's not
+                # scalable AND its generation size matches the current
+                # workpiece size)).
+                is_valid = False
+                if artifact:
+                    is_valid = (
+                        artifact.is_scalable
+                        or artifact.generation_size == wp.size
                     )
+
+                if is_valid:
+                    # If valid and scalable, we can send a cheap notification
+                    # for live UI updates (e.g., when moving vector ops).
+                    # Non-scalable ops don't need this for pure translation.
+                    if artifact and artifact.is_scalable:
+                        generation_id = self._generation_id_map.get(key, 0)
+                        self.ops_generation_finished.send(
+                            step, workpiece=wp, generation_id=generation_id
+                        )
                 else:
-                    # This is an expensive regeneration. It MUST be
-                    # guarded by the pause check. On resume,
-                    # reconcile_all will handle the regeneration.
+                    # The artifact is invalid (or missing). We must regenerate.
                     if self.is_paused:
+                        # Defer the regeneration until resume(), which will
+                        # call reconcile_all().
                         continue
 
-                    old_size = artifact.generation_size
-                    new_size = wp.size
-                    if old_size != new_size:
-                        logger.info(
-                            "Size for non-scalable op '{wp.name}' changed. "
-                            f"Old: {old_size}, New: {new_size}. Regenerating."
-                        )
-                        self._trigger_ops_generation(step, wp)
+                    old_size_str = (
+                        f"Old size: {artifact.generation_size}"
+                        if artifact
+                        else "Artifact missing"
+                    )
+                    logger.info(
+                        f"Ops for '{wp.name}' are invalid due to transform. "
+                        f"({old_size_str}, New size: {wp.size}). Regenerating."
+                    )
+                    self._trigger_ops_generation(step, wp)
 
     def _cleanup_key(self, key: Tuple[str, str]):
         """Removes a cache entry and cancels any associated task."""
@@ -381,8 +393,9 @@ class OpsGenerator:
         logger.debug(f"OpsGenerator: Cleaning up key {key}.")
         self._ops_cache.pop(key, None)
         self._generation_id_map.pop(key, None)
-        self._active_tasks.pop(key, None)
-        self._task_manager.cancel_task(key)
+        if key in self._active_tasks:
+            self._task_manager.cancel_task(key)
+            self._active_tasks.pop(key, None)
 
     def reconcile_all(self):
         """
@@ -461,6 +474,8 @@ class OpsGenerator:
             f"{self.__class__.__name__}._trigger_ops_generation called"
         )
         if any(s <= 0 for s in workpiece.size):
+            # Clear cache for invalid size to prevent stale ops from showing.
+            self._cleanup_key((step.uid, workpiece.uid))
             return
 
         key = step.uid, workpiece.uid
@@ -576,12 +591,14 @@ class OpsGenerator:
         was_busy = self.is_busy
         self._active_tasks.pop(key, None)
 
+        # This first check is a fast path to discard callbacks for tasks
+        # that were superseded before they even started finishing.
         if (
             key not in self._generation_id_map
             or self._generation_id_map[key] != task_generation_id
         ):
             logger.debug(
-                f"Ignoring stale ops result for {key} "
+                f"Ignoring stale ops callback for {key} "
                 f"(gen {task_generation_id})."
             )
             return
@@ -592,9 +609,10 @@ class OpsGenerator:
             return
 
         if task.get_status() == "completed":
+            # This method will now handle cache update and signal sending
             self._handle_completed_task(task, key, step, workpiece)
         else:
-            # Check source_file before using it in the log message
+            # Handle failed or cancelled tasks
             wp_name = (
                 workpiece.source_file.name
                 if workpiece.source_file
@@ -606,10 +624,10 @@ class OpsGenerator:
                 f"Status: {task.get_status()}."
             )
             self._ops_cache[key] = None
-
-        self.ops_generation_finished.send(
-            step, workpiece=workpiece, generation_id=task_generation_id
-        )
+            # Still notify the view so it can stop showing a "loading" state
+            self.ops_generation_finished.send(
+                step, workpiece=workpiece, generation_id=task_generation_id
+            )
 
         is_busy_now = self.is_busy
         if was_busy and not is_busy_now:
@@ -622,17 +640,52 @@ class OpsGenerator:
         step: Step,
         workpiece: WorkPiece,
     ):
-        """Processes the result of a successfully completed task."""
+        """
+        Processes the result of a successfully completed task, validates it,
+        updates the cache, and sends the final notification.
+        """
         logger.debug(
             f"{self.__class__.__name__}._handle_completed_task called"
         )
         try:
-            result_dict = task.result()
+            result = task.result()
+            if not isinstance(result, tuple) or len(result) != 2:
+                logger.error(
+                    f"Task for {key} returned unexpected format: "
+                    f"{type(result)}"
+                )
+                self._ops_cache[key] = None
+                return
+
+            result_dict, result_gen_id = result
+
+            # Ensure that the result we just received from the subprocess
+            # is for the MOST RECENT request we made.
+            # If another request was made while this one was in-flight,
+            # this check will fail, and we will discard this stale result.
+            if self._generation_id_map.get(key) != result_gen_id:
+                logger.warning(
+                    f"Ignoring stale subprocess result for {key}. "
+                    f"Expected gen {self._generation_id_map.get(key)}, "
+                    f"got {result_gen_id}."
+                )
+                # DO NOT update cache or send signal for this stale result.
+                # The signal for the newer task will arrive later.
+                return
+
+            # --- Validation passed, now update state and notify ---
             if result_dict:
                 artifact = PipelineArtifact.from_dict(result_dict)
                 self._ops_cache[key] = artifact
             else:
                 self._ops_cache[key] = None
+
+            # Now that the cache is guaranteed to be up-to-date with a valid
+            # result, we can safely notify the view to re-render.
+            self.ops_generation_finished.send(
+                step, workpiece=workpiece, generation_id=result_gen_id
+            )
+
         except Exception as e:
             # Check source_file before using it in the log message
             wp_name = (
@@ -673,11 +726,25 @@ class OpsGenerator:
         if artifact is None:
             logger.debug(f"get_ops for {key}: No artifact found in cache.")
             return None
-        else:
+
+        # Check for stale non-scalable artifacts.
+        # If the artifact is not scalable, its generation size must match the
+        # workpiece's current size. If not, it's stale and should not be used.
+        if (
+            not artifact.is_scalable
+            and artifact.generation_size != workpiece.size
+        ):
             logger.debug(
-                f"get_ops for {key}: Found artifact. "
-                f"Scalable: {artifact.is_scalable}."
+                f"get_ops for {key}: Found stale artifact. "
+                f"Cache size: {artifact.generation_size}, "
+                f"WP size: {workpiece.size}. Returning None."
             )
+            return None
+
+        logger.debug(
+            f"get_ops for {key}: Found artifact. "
+            f"Scalable: {artifact.is_scalable}."
+        )
 
         ops = deepcopy(artifact.ops)
 

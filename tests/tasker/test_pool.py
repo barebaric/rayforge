@@ -55,12 +55,12 @@ class TestWorkerPoolManager:
         result_holder = {}
         error_holder = {}
 
-        def on_complete(sender, key, result):
+        def on_complete(sender, key, task_id, result):
             if key == "task1":
                 result_holder["result"] = result
                 completion_event.set()
 
-        def on_fail(sender, key, error):
+        def on_fail(sender, key, task_id, error):
             if key == "task1":
                 error_holder["error"] = error
                 completion_event.set()
@@ -68,7 +68,7 @@ class TestWorkerPoolManager:
         pool.task_completed.connect(on_complete)
         pool.task_failed.connect(on_fail)
 
-        pool.submit("task1", simple_add_func, 10, 5)
+        pool.submit("task1", 123, simple_add_func, 10, 5)
 
         assert completion_event.wait(timeout=2), (
             "Task did not complete in time"
@@ -82,12 +82,12 @@ class TestWorkerPoolManager:
         result_holder = {}
         error_holder = {}
 
-        def on_complete(sender, key, result):
+        def on_complete(sender, key, task_id, result):
             if key == "fail_task":
                 result_holder["result"] = result
                 fail_event.set()
 
-        def on_fail(sender, key, error):
+        def on_fail(sender, key, task_id, error):
             if key == "fail_task":
                 error_holder["error"] = error
                 fail_event.set()
@@ -95,7 +95,7 @@ class TestWorkerPoolManager:
         pool.task_completed.connect(on_complete)
         pool.task_failed.connect(on_fail)
 
-        pool.submit("fail_task", failing_func)
+        pool.submit("fail_task", 456, failing_func)
 
         assert fail_event.wait(timeout=2), "Failing task was not reported"
         assert "result" not in result_holder
@@ -111,15 +111,15 @@ class TestWorkerPoolManager:
         progress_updates = []
         messages = []
 
-        def on_progress(sender, key, progress):
+        def on_progress(sender, key, task_id, progress):
             if key == "progress_task":
                 progress_updates.append(progress)
 
-        def on_message(sender, key, message):
+        def on_message(sender, key, task_id, message):
             if key == "progress_task":
                 messages.append(message)
 
-        def on_complete(sender, key, result):
+        def on_complete(sender, key, task_id, result):
             if key == "progress_task":
                 completion_event.set()
 
@@ -127,7 +127,7 @@ class TestWorkerPoolManager:
         pool.task_message_updated.connect(on_message)
         pool.task_completed.connect(on_complete)
 
-        pool.submit("progress_task", simple_add_func, 1, 2)
+        pool.submit("progress_task", 789, simple_add_func, 1, 2)
 
         assert completion_event.wait(timeout=2)
         assert progress_updates == [0.5, 1.0]
@@ -138,14 +138,14 @@ class TestWorkerPoolManager:
         event_received_event = threading.Event()
         received_event_data = {}
 
-        def on_event(sender, key, event_name, data):
+        def on_event(sender, key, task_id, event_name, data):
             if key == "event_task":
                 received_event_data["name"] = event_name
                 received_event_data["data"] = data
                 event_received_event.set()
 
         pool.task_event_received.connect(on_event)
-        pool.submit("event_task", event_sending_func)
+        pool.submit("event_task", 101, event_sending_func)
 
         assert event_received_event.wait(timeout=2)
         assert received_event_data["name"] == "custom_event"
@@ -159,7 +159,7 @@ class TestWorkerPoolManager:
         }
         results = {}
 
-        def on_complete(sender, key, result):
+        def on_complete(sender, key, task_id, result):
             results[key] = result
             if key in completion_events:
                 completion_events[key].set()
@@ -167,7 +167,7 @@ class TestWorkerPoolManager:
         pool.task_completed.connect(on_complete)
 
         for i in range(num_tasks):
-            pool.submit(f"task_{i}", simple_add_func, i, i)
+            pool.submit(f"task_{i}", 1000 + i, simple_add_func, i, i)
 
         all_completed = all(
             evt.wait(timeout=5) for evt in completion_events.values()

@@ -317,8 +317,9 @@ def run_step_in_subprocess(
     execute_ctx.set_progress(1.0)
 
     if final_artifact is None:
-        # If no artifact was produced (e.g., empty image), return None
-        return None
+        # If no artifact was produced (e.g., empty image), return a tuple
+        # with None to match the success return type.
+        return None, generation_id
 
     # --- Transform phase ---
     enabled_transformers = [t for t in opstransformers if t.enabled]
@@ -378,4 +379,4 @@ def run_step_in_subprocess(
     # is crucial for the generator's cache invalidation logic.
     final_artifact.generation_size = generation_size
 
-    return final_artifact.to_dict()
+    return final_artifact.to_dict(), generation_id

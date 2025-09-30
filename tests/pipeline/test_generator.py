@@ -141,12 +141,14 @@ class TestOpsGenerator:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        expected_result = expected_artifact.to_dict()
+        expected_result_dict = expected_artifact.to_dict()
+        # The generation ID of the task is 1 (the first one)
+        expected_result_tuple = (expected_result_dict, 1)
 
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task_to_complete.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = expected_result
+        mock_finished_task.result.return_value = expected_result_tuple
 
         task_to_complete.when_done(mock_finished_task)
 
@@ -215,11 +217,12 @@ class TestOpsGenerator:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=real_workpiece.size,
         )
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = artifact.to_dict()
+        mock_finished_task.result.return_value = (artifact.to_dict(), 1)
         initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
@@ -250,11 +253,12 @@ class TestOpsGenerator:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=real_workpiece.size,
         )
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = artifact.to_dict()
+        mock_finished_task.result.return_value = (artifact.to_dict(), 1)
         initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()
@@ -290,7 +294,10 @@ class TestOpsGenerator:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = initial_artifact.to_dict()
+        mock_finished_task.result.return_value = (
+            initial_artifact.to_dict(),
+            1,
+        )
         initial_task.when_done(mock_finished_task)
 
         mock_task_mgr.run_process.reset_mock()

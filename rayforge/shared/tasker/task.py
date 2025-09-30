@@ -26,6 +26,7 @@ class Task:
         self.args = args
         self.kwargs = kwargs
         self.key: Any = key if key is not None else id(self)
+        self.id = id(self)
         self._task: Optional[asyncio.Task[Any]] = None
         self._task_result: Any = None
         self._task_exception: Optional[BaseException] = None

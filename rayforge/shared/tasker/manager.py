@@ -225,7 +225,7 @@ class TaskManager:
         task._emit_status_changed()
 
         # Submit the actual work to the pool
-        self._pool.submit(task.key, func, *args, **kwargs)
+        self._pool.submit(task.key, task.id, func, *args, **kwargs)
 
         return task
 
@@ -272,30 +272,34 @@ class TaskManager:
 
     # === Worker Pool Signal Handlers (runs on listener thread) ===
 
-    def _on_pool_task_completed(self, sender, key, result):
+    def _on_pool_task_completed(self, sender, key, task_id, result):
         self._main_thread_scheduler(
-            self._finalize_pooled_task, key, "completed", result=result
+            self._finalize_pooled_task,
+            key,
+            task_id,
+            "completed",
+            result=result,
         )
 
-    def _on_pool_task_failed(self, sender, key, error):
+    def _on_pool_task_failed(self, sender, key, task_id, error):
         self._main_thread_scheduler(
-            self._finalize_pooled_task, key, "failed", error=error
+            self._finalize_pooled_task, key, task_id, "failed", error=error
         )
 
-    def _on_pool_task_progress(self, sender, key, progress):
+    def _on_pool_task_progress(self, sender, key, task_id, progress):
         self._main_thread_scheduler(
-            self._update_pooled_task, key, progress=progress
+            self._update_pooled_task, key, task_id, progress=progress
         )
 
-    def _on_pool_task_message(self, sender, key, message):
+    def _on_pool_task_message(self, sender, key, task_id, message):
         self._main_thread_scheduler(
-            self._update_pooled_task, key, message=message
+            self._update_pooled_task, key, task_id, message=message
         )
 
-    def _on_pool_task_event(self, sender, key, event_name, data):
+    def _on_pool_task_event(self, sender, key, task_id, event_name, data):
         # Schedule the event dispatch on the main thread
         self._main_thread_scheduler(
-            self._dispatch_pooled_task_event, key, event_name, data
+            self._dispatch_pooled_task_event, key, task_id, event_name, data
         )
 
     # === Main Thread Update Methods for Pooled Tasks ===
@@ -303,22 +307,23 @@ class TaskManager:
     def _update_pooled_task(
         self,
         key: Any,
+        task_id: int,
         progress: Optional[float] = None,
         message: Optional[str] = None,
     ):
         """Updates a Task object from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
-        if task:
+        if task and task.id == task_id:
             task.update(progress, message)
 
     def _dispatch_pooled_task_event(
-        self, key: Any, event_name: str, data: dict
+        self, key: Any, task_id: int, event_name: str, data: dict
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
-        if task:
+        if task and task.id == task_id:
             logger.debug(
                 f"TaskManager: Dispatching event '{event_name}' for task "
                 f"'{task.key}'."
@@ -328,6 +333,7 @@ class TaskManager:
     def _finalize_pooled_task(
         self,
         key: Any,
+        task_id: int,
         status: str,
         result: Any = None,
         error: Optional[str] = None,
@@ -337,11 +343,17 @@ class TaskManager:
             task = self._tasks.get(key)
             when_done = self._pooled_task_callbacks.pop(key, None)
 
-        if not task:
+        # This is the core fix: If the task currently registered for this key
+        # is not the one that produced the result, ignore the result.
+        if not task or task.id != task_id:
             logger.debug(
-                f"Received result for unknown or already cleaned up task "
+                f"Received result for stale/unknown task instance for key "
                 f"'{key}'. Ignoring."
             )
+            # If we're ignoring the result, we also shouldn't call the
+            # when_done callback that was associated with the *new* task.
+            if task and when_done:
+                self._pooled_task_callbacks[key] = when_done
             return
 
         # Check if the task was cancelled while it was running
