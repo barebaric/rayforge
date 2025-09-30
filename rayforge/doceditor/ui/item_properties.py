@@ -1,17 +1,16 @@
 import logging
 from gi.repository import Gtk, Adw, Gio
 from typing import Optional, Tuple, List, cast, TYPE_CHECKING
-from pathlib import Path
 from dataclasses import replace
 from copy import deepcopy
-from ...core.stock import StockItem
-from ...core.group import Group
-from ...shared.ui.expander import Expander
 from ...config import config
-from ...core.workpiece import WorkPiece
+from ...core.group import Group
 from ...core.item import DocItem
-from ...shared.util.adwfix import get_spinrow_float
+from ...core.stock import StockItem
+from ...core.workpiece import WorkPiece
 from ...icons import get_icon
+from ...shared.ui.expander import Expander
+from ...shared.util.adwfix import get_spinrow_float
 from ...undo import ChangePropertyCommand
 
 if TYPE_CHECKING:
@@ -220,14 +219,7 @@ class DocItemPropertiesWidget(Expander):
         if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
             return
         workpiece = self.items[0]
-        if not (
-            workpiece.layer
-            and workpiece.layer.workflow
-            and workpiece.layer.workflow.has_steps()
-        ):
-            return
-        step = workpiece.layer.workflow.steps[0]
-        self.editor.tab.clear_tabs(workpiece, step)
+        self.editor.tab.clear_tabs(workpiece)
 
     def _on_tabs_enabled_toggled(self, switch, GParamSpec):
         if self._in_update or not self.items:
@@ -615,9 +607,9 @@ class DocItemPropertiesWidget(Expander):
             return
 
         workpiece = cast(WorkPiece, self.items[0])
-        file_path = Path(workpiece.source_file)
+        file_path = workpiece.source_file
 
-        if file_path.is_file():
+        if file_path and file_path.is_file():
             try:
                 gio_file = Gio.File.new_for_path(str(file_path.resolve()))
                 launcher = Gtk.FileLauncher.new(gio_file)
@@ -838,6 +830,151 @@ class DocItemPropertiesWidget(Expander):
 
         self._update_ui_from_items()
 
+    def _update_title(self, item: DocItem):
+        if len(self.items) > 1:
+            self.set_title(_("Multiple Items"))
+        elif isinstance(item, StockItem):
+            self.set_title(_("Stock Properties"))
+        elif isinstance(item, WorkPiece):
+            self.set_title(_("Workpiece Properties"))
+        elif isinstance(item, Group):
+            self.set_title(_("Group Properties"))
+        else:
+            self.set_title(_("Item Properties"))
+
+    def _update_main_properties(self, item: DocItem):
+        bounds = config.machine.dimensions if config.machine else default_dim
+        y_axis_down = config.machine.y_axis_down if config.machine else False
+
+        size_world = item.size
+        pos_world = item.pos
+        angle_local = item.angle
+        shear_local = item.shear
+
+        if y_axis_down:
+            self.y_row.set_subtitle(_("Zero is at the top"))
+            machine_height = bounds[1]
+            pos_machine_x = pos_world[0]
+            pos_machine_y = machine_height - pos_world[1] - size_world[1]
+        else:
+            self.y_row.set_subtitle(_("Zero is at the bottom"))
+            pos_machine_x, pos_machine_y = pos_world
+
+        self.width_row.set_value(size_world[0])
+        self.height_row.set_value(size_world[1])
+        self.x_row.set_value(pos_machine_x)
+        self.y_row.set_value(pos_machine_y)
+        self.angle_row.set_value(-angle_local)
+        self.shear_row.set_value(shear_local)
+
+    def _update_row_visibility_and_details(self, item: DocItem):
+        is_single_workpiece = len(self.items) == 1 and isinstance(
+            item, WorkPiece
+        )
+        is_single_stockitem = len(self.items) == 1 and isinstance(
+            item, StockItem
+        )
+        is_single_item_with_size = is_single_workpiece or is_single_stockitem
+
+        self.source_file_row.set_visible(is_single_workpiece)
+        self.fixed_ratio_switch.set_sensitive(is_single_item_with_size)
+        self.reset_width_button.set_sensitive(is_single_item_with_size)
+        self.reset_height_button.set_sensitive(is_single_item_with_size)
+        self.reset_aspect_button.set_sensitive(is_single_item_with_size)
+        self.shear_row.set_visible(not isinstance(item, Group))
+
+        if is_single_item_with_size:
+            assert isinstance(item, (WorkPiece, StockItem))
+            bounds = (
+                config.machine.dimensions if config.machine else default_dim
+            )
+            natural_width, natural_height = item.get_default_size(*bounds)
+            self.width_row.set_subtitle(
+                _("Natural: {val:.2f}").format(val=natural_width)
+            )
+            self.height_row.set_subtitle(
+                _("Natural: {val:.2f}").format(val=natural_height)
+            )
+        else:
+            self.width_row.set_subtitle("")
+            self.height_row.set_subtitle("")
+
+        if is_single_workpiece:
+            self._update_workpiece_specific_rows(cast(WorkPiece, item))
+        else:
+            self.tabs_row.set_visible(False)
+            self.tab_width_row.set_visible(False)
+            self.vector_count_row.set_visible(False)
+
+    def _update_workpiece_specific_rows(self, workpiece: WorkPiece):
+        is_debug_and_has_vectors = (
+            logging.getLogger().getEffectiveLevel() == logging.DEBUG
+            and workpiece.vectors is not None
+        )
+        self.vector_count_row.set_visible(is_debug_and_has_vectors)
+        if is_debug_and_has_vectors:
+            vectors = len(workpiece.vectors) if workpiece.vectors else 0
+            self.vector_count_row.set_subtitle(f"{vectors} commands")
+
+        self._update_source_file_row(workpiece)
+        self._update_tabs_rows(workpiece)
+
+    def _update_source_file_row(self, workpiece: WorkPiece):
+        file_path = workpiece.source_file
+        if file_path:
+            if file_path.is_file():
+                self.source_file_row.set_subtitle(file_path.name)
+                self.open_source_button.set_sensitive(True)
+            else:
+                self.source_file_row.set_subtitle(
+                    _("{name} (not found)").format(name=file_path.name)
+                )
+                self.open_source_button.set_sensitive(False)
+        else:
+            self.source_file_row.set_subtitle(_("(No source file)"))
+            self.open_source_button.set_sensitive(False)
+
+    def _update_tabs_rows(self, workpiece: WorkPiece):
+        can_have_tabs = workpiece.vectors is not None
+        self.tabs_row.set_visible(can_have_tabs)
+        self.tab_width_row.set_visible(
+            can_have_tabs and workpiece.tabs_enabled
+        )
+
+        if not can_have_tabs:
+            return
+
+        self.tabs_row.set_active(workpiece.tabs_enabled)
+        self.clear_tabs_button.set_sensitive(bool(workpiece.tabs))
+        self.tabs_row.set_subtitle(
+            _("{num_tabs} tabs").format(num_tabs=len(workpiece.tabs))
+        )
+
+        if workpiece.tabs_enabled:
+            self._update_tab_width_row_for_enabled_tabs(workpiece)
+        else:
+            self.tab_width_row.set_value(1.0)
+            self.tab_width_row.set_subtitle(_("Length along the path"))
+            self.tab_width_row.set_sensitive(False)
+            self.reset_tab_width_button.set_sensitive(False)
+
+    def _update_tab_width_row_for_enabled_tabs(self, workpiece: WorkPiece):
+        if workpiece.tabs:
+            first_tab_width = workpiece.tabs[0].width
+            self.tab_width_row.set_value(first_tab_width)
+            if not all(t.width == first_tab_width for t in workpiece.tabs):
+                self.tab_width_row.set_subtitle(_("Mixed values"))
+            else:
+                self.tab_width_row.set_subtitle(_("Length along the path"))
+            self.tab_width_row.set_sensitive(True)
+            self.reset_tab_width_button.set_sensitive(True)
+        else:  # Tabs enabled, but no tabs present
+            self.tab_width_row.set_value(1.0)
+            self.tab_width_row.set_subtitle(_("Length along the path"))
+            # Cannot change width if no tabs to modify
+            self.tab_width_row.set_sensitive(False)
+            self.reset_tab_width_button.set_sensitive(False)
+
     def _update_ui_from_items(self):
         logger.debug(f"Updating UI for items: {self.items}")
         if not self.items:
@@ -849,176 +986,8 @@ class DocItemPropertiesWidget(Expander):
 
         self._in_update = True
         try:
-            # Determine selection type and update title
-            if len(self.items) > 1:
-                self.set_title(_("Multiple Items"))
-            elif isinstance(item, StockItem):
-                self.set_title(_("Stock Properties"))
-            elif isinstance(item, WorkPiece):
-                self.set_title(_("Workpiece Properties"))
-            elif isinstance(item, Group):
-                self.set_title(_("Group Properties"))
-            else:
-                self.set_title(_("Item Properties"))
-
-            bounds = (
-                config.machine.dimensions if config.machine else default_dim
-            )
-            y_axis_down = (
-                config.machine.y_axis_down if config.machine else False
-            )
-            size_world = item.size
-            pos_world = item.pos
-            angle_local = item.angle
-            shear_local = item.shear
-
-            if y_axis_down:
-                self.y_row.set_subtitle(_("Zero is at the top"))
-                machine_height = bounds[1]
-                pos_machine_x = pos_world[0]
-                pos_machine_y = machine_height - pos_world[1] - size_world[1]
-            else:
-                self.y_row.set_subtitle(_("Zero is at the bottom"))
-                pos_machine_x, pos_machine_y = pos_world
-
-            self.width_row.set_value(size_world[0])
-            self.height_row.set_value(size_world[1])
-            self.x_row.set_value(pos_machine_x)
-            self.y_row.set_value(pos_machine_y)
-            self.angle_row.set_value(-angle_local)
-            self.shear_row.set_value(shear_local)
-
-            is_single_workpiece = len(self.items) == 1 and isinstance(
-                item, WorkPiece
-            )
-            is_single_stockitem = len(self.items) == 1 and isinstance(
-                item, StockItem
-            )
-            is_single_item_with_size = (
-                is_single_workpiece or is_single_stockitem
-            )
-
-            # Show/hide controls based on selection type
-            self.source_file_row.set_visible(is_single_workpiece)
-            self.fixed_ratio_switch.set_sensitive(is_single_item_with_size)
-            self.reset_width_button.set_sensitive(is_single_item_with_size)
-            self.reset_height_button.set_sensitive(is_single_item_with_size)
-            self.reset_aspect_button.set_sensitive(is_single_item_with_size)
-
-            is_group = isinstance(item, Group)
-            self.shear_row.set_visible(not is_group)
-
-            if is_single_item_with_size:
-                # This works for both WorkPiece and StockItem
-                assert isinstance(item, (WorkPiece, StockItem))
-                natural_width, natural_height = item.get_default_size(*bounds)
-                self.width_row.set_subtitle(
-                    _("Natural: {val:.2f}").format(val=natural_width)
-                )
-                self.height_row.set_subtitle(
-                    _("Natural: {val:.2f}").format(val=natural_height)
-                )
-            else:
-                self.width_row.set_subtitle("")
-                self.height_row.set_subtitle("")
-
-            if is_single_workpiece:
-                workpiece = cast(WorkPiece, item)
-
-                # Show vector command count (depending on the log level)
-                is_debug_and_has_vectors = (
-                    logging.getLogger().getEffectiveLevel() == logging.DEBUG
-                    and workpiece.vectors is not None
-                )
-                self.vector_count_row.set_visible(is_debug_and_has_vectors)
-                if is_debug_and_has_vectors:
-                    vectors = (
-                        len(workpiece.vectors) if workpiece.vectors else 0
-                    )
-                    self.vector_count_row.set_subtitle(f"{vectors} commands")
-
-                try:
-                    file_path = Path(workpiece.source_file)
-                    if file_path.is_file():
-                        self.source_file_row.set_subtitle(file_path.name)
-                        self.open_source_button.set_sensitive(True)
-                    else:
-                        self.source_file_row.set_subtitle(
-                            _("{name} (not found)").format(name=file_path.name)
-                        )
-                        self.open_source_button.set_sensitive(False)
-
-                    # Show tab switch if the workpiece has vector data
-                    can_have_tabs = workpiece.vectors is not None
-                    self.tabs_row.set_visible(can_have_tabs)
-                    # NEW: Visibility for tab_width_row
-                    self.tab_width_row.set_visible(
-                        can_have_tabs and workpiece.tabs_enabled
-                    )
-
-                    if can_have_tabs:
-                        self.tabs_row.set_active(workpiece.tabs_enabled)
-                        self.clear_tabs_button.set_sensitive(
-                            bool(workpiece.tabs)
-                        )
-                        self.tabs_row.set_subtitle(
-                            _("{num_tabs} tabs").format(
-                                num_tabs=len(workpiece.tabs)
-                            )
-                        )
-
-                        if workpiece.tabs_enabled:
-                            if workpiece.tabs:
-                                first_tab_width = workpiece.tabs[0].width
-                                self.tab_width_row.set_value(first_tab_width)
-                                if not all(
-                                    t.width == first_tab_width
-                                    for t in workpiece.tabs
-                                ):
-                                    self.tab_width_row.set_subtitle(
-                                        _("Mixed values")
-                                    )
-                                else:
-                                    self.tab_width_row.set_subtitle(
-                                        _("Length along the path")
-                                    )
-                                self.tab_width_row.set_sensitive(True)
-                                self.reset_tab_width_button.set_sensitive(True)
-                            else:  # Tabs enabled, but no tabs present
-                                self.tab_width_row.set_value(
-                                    1.0
-                                )  # Default value for display
-                                self.tab_width_row.set_subtitle(
-                                    _("Length along the path")
-                                )
-                                self.tab_width_row.set_sensitive(
-                                    False
-                                )  # Cannot change width if no tabs to modify
-                                self.reset_tab_width_button.set_sensitive(
-                                    False
-                                )
-                        else:  # tabs_enabled is False
-                            self.tab_width_row.set_value(
-                                1.0
-                            )  # Reset to default for UI display
-                            self.tab_width_row.set_subtitle(
-                                _("Length along the path")
-                            )
-                            self.tab_width_row.set_sensitive(False)
-                            self.reset_tab_width_button.set_sensitive(False)
-
-                except (TypeError, ValueError):
-                    self.open_source_button.set_sensitive(False)
-                    self.tabs_row.set_visible(False)
-                    self.tab_width_row.set_visible(
-                        False
-                    )  # Ensure hidden on error
-            else:
-                self.tabs_row.set_visible(False)
-                self.tab_width_row.set_visible(
-                    False
-                )  # Ensure hidden for non-workpieces
-                self.vector_count_row.set_visible(False)
-
+            self._update_title(item)
+            self._update_main_properties(item)
+            self._update_row_visibility_and_details(item)
         finally:
             self._in_update = False
