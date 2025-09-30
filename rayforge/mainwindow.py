@@ -1,5 +1,6 @@
 import logging
 import math
+import numpy as np
 from pathlib import Path
 from typing import List, Optional, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
@@ -555,7 +556,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _aggregate_ops_for_3d_view(self) -> Ops:
         """
         Gathers all generated Ops from the document, transforms them into
-        world coordinates, and merges them into a single Ops object for 3D
+        machine coordinates, and merges them into a single Ops object for 3D
         rendering. This is a heavy function and should be run in a background
         thread.
         """
@@ -563,22 +564,44 @@ class MainWindow(Adw.ApplicationWindow):
         doc = self.doc_editor.doc
         generator = self.doc_editor.ops_generator
 
+        machine = config.machine
+        if not machine:
+            logger.warning(
+                "Cannot aggregate 3D ops without an active machine."
+            )
+            return full_ops
+
+        machine_width, machine_height = machine.dimensions
+        clip_rect = 0, 0, machine_width, machine_height
+
         for layer in doc.layers:
             if not layer.workflow:
                 continue
 
             # Process workpieces in the layer
             for workpiece in layer.all_workpieces:
-                # Get the final transform from workpiece-local to world space
+                # Get the final transform from workpiece-local to world
                 world_transform = workpiece.get_world_transform()
                 tx, ty, angle, sx, sy, skew = world_transform.decompose()
 
-                # Re-compose the matrix without the scale component, as the ops
-                # are already scaled to the workpiece's final size.
-                # Note: sy's sign is preserved to handle reflections correctly.
+                # Re-compose the matrix without the scale component, as the
+                # ops are already scaled to the workpiece's final size.
+                # Note: sy's sign is preserved to handle reflections.
                 transform_without_scale = Matrix.compose(
                     tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
                 )
+                workpiece_transform = transform_without_scale.to_4x4_numpy()
+
+                # Combine workpiece world transform with machine coordinate
+                # transform.
+                final_transform = workpiece_transform
+                if machine.y_axis_down:
+                    y_down_mat = np.identity(4)
+                    y_down_mat[1, 1] = -1.0
+                    y_down_mat[1, 3] = machine_height
+                    # The machine coordinate transform is applied AFTER the
+                    # workpiece's world transform.
+                    final_transform = y_down_mat @ workpiece_transform
 
                 # Accumulate ops from all steps for this workpiece
                 for step in layer.workflow.steps:
@@ -586,12 +609,12 @@ class MainWindow(Adw.ApplicationWindow):
                         continue
                     workpiece_ops = generator.get_ops(step, workpiece)
                     if workpiece_ops:
-                        # Transform from local to world coordinates
-                        workpiece_ops.transform(
-                            transform_without_scale.to_4x4_numpy()
-                        )
+                        # Transform from local to machine coordinates
+                        workpiece_ops.transform(final_transform)
                         full_ops.extend(workpiece_ops)
-        return full_ops
+
+        # Clip the final aggregated ops to the machine boundaries
+        return full_ops.clip(clip_rect)
 
     def _on_3d_ops_aggregated(self, task: Task):
         """
