@@ -26,11 +26,11 @@ modules:
   - name: rayforge
     buildsystem: simple
     build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation .
+    post-install:
       - install -Dm644 data/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
       - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
-      - install -Dm644 data/${FLATPAK_ID}.metainfo.xml /app/share/appdata/${FLATPAK_ID}.metainfo.xml
-      - pip3 install --prefix=/app --no-deps --no-build-isolation .
     sources:
       - type: git 
         url: https://github.com/barebaric/rayforge.git
-        tag: "0.22"
+        branch: main
