@@ -42,7 +42,7 @@ class AddTabsPopover(Gtk.Popover):
 
         self.tab_width_row = Adw.SpinRow(
             title=_("Tab Width (mm)"),
-            adjustment=Gtk.Adjustment.new(3.0, 0.1, 100, 0.1, 1, 0),
+            adjustment=Gtk.Adjustment.new(2.0, 0.1, 100, 0.1, 1, 0),
             digits=2,
         )
         rows_container.append(self.tab_width_row)
@@ -57,7 +57,7 @@ class AddTabsPopover(Gtk.Popover):
             self.tab_width_row.set_value(first_workpiece.tabs[0].width)
         else:
             self.tab_count_row.set_value(4)
-            self.tab_width_row.set_value(3.0)
+            self.tab_width_row.set_value(2.0)
         self._in_update = False
 
         # Connect signals for live updates

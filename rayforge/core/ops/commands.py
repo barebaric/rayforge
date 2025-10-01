@@ -155,7 +155,12 @@ class ArcToCommand(MovingCommand):
     ) -> List[Command]:
         """Approximates the arc with a series of LineToCommands."""
         segments = geo_linearize.linearize_arc(self, start_point)
-        return [LineToCommand(end) for start, end in segments]
+        new_cmds = []
+        for _, end in segments:
+            line_cmd = LineToCommand(end)
+            line_cmd.state = self.state
+            new_cmds.append(line_cmd)
+        return new_cmds
 
     def reverse_geometry(
         self,

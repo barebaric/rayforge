@@ -226,7 +226,13 @@ class WorkPiece(DocItem):
         wp.uid = state["uid"]
         wp.matrix = Matrix.from_list(state["matrix"])
 
-        wp.tabs = [Tab(**t_data) for t_data in state.get("tabs", [])]
+        loaded_tabs = []
+        for t_data in state.get("tabs", []):
+            t_data_copy = t_data.copy()
+            # Ignore 'length' for backward compatibility with older files.
+            t_data_copy.pop("length", None)
+            loaded_tabs.append(Tab(**t_data_copy))
+        wp.tabs = loaded_tabs
         wp.tabs_enabled = state.get("tabs_enabled", True)
         wp.import_source_uid = state.get("import_source_uid")
 
@@ -369,7 +375,7 @@ class WorkPiece(DocItem):
 
         # 1. Get the normal vector in the geometry's local space.
         local_normal = self.vectors.get_outward_normal_at(
-            tab.segment_index, tab.t
+            tab.segment_index, tab.pos
         )
         if local_normal is None:
             return None

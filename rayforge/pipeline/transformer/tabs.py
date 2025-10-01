@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 class TabOpsTransformer(OpsTransformer):
     """
-    Creates gaps in toolpaths by generating geometric regions for each tab
-    and using the Ops object's internal subtraction method. This is robust
-    against prior ops transformations like offsetting or smoothing.
+    Creates gaps in toolpaths by finding the closest point on the path for
+    each tab and creating a precise cut. This is robust against prior ops
+    transformations and avoids clipping unrelated paths that may be nearby.
     """
 
     def __init__(self, enabled: bool = True):
@@ -44,23 +44,23 @@ class TabOpsTransformer(OpsTransformer):
     def description(self) -> str:
         return _("Creates holding tabs by adding gaps to cut paths")
 
-    def _generate_tab_polygons(
+    def _generate_tab_clip_data(
         self, workpiece: WorkPiece
-    ) -> List[List[Tuple[float, float]]]:
+    ) -> List[Tuple[float, float, float]]:
         """
-        Generates rectangular clipping polygons for each tab in the workpiece's
-        local coordinate space, which matches the coordinate space of the
-        incoming Ops object during the generation phase.
+        Generates clip data (center point and width) for each tab in the
+        workpiece's local coordinate space. This matches the coordinate space
+        of the incoming Ops object during the generation phase.
         """
         if not workpiece.vectors:
             return []
 
-        local_polygons = []
+        clip_data = []
 
         # The Ops object at this stage is in local coordinates, so we
-        # generate polygons in the same space. No world transform is needed.
+        # generate clip points in the same space. No world transform needed.
         logger.debug(
-            "TabOps: Generating polygons in LOCAL space for workpiece "
+            "TabOps: Generating clip data in LOCAL space for workpiece "
             f"'{workpiece.name}'"
         )
 
@@ -93,15 +93,12 @@ class TabOpsTransformer(OpsTransformer):
                 f"(type: {cmd.__class__.__name__}) starting from {p_start_3d}"
             )
 
-            center_x, center_y, angle_rad = 0.0, 0.0, 0.0
+            center_x, center_y = 0.0, 0.0
 
             if isinstance(cmd, GeoLineToCommand):
                 p_start, p_end = p_start_3d[:2], cmd.end[:2]
-                center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.t
-                center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.t
-                angle_rad = math.atan2(
-                    p_end[1] - p_start[1], p_end[0] - p_start[0]
-                )
+                center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
+                center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
             elif isinstance(cmd, GeoArcToCommand):
                 center = (
@@ -126,35 +123,17 @@ class TabOpsTransformer(OpsTransformer):
                     if angle_range < 0:
                         angle_range += 2 * math.pi
 
-                tab_angle = start_angle + angle_range * tab.t
+                tab_angle = start_angle + angle_range * tab.pos
                 center_x = center[0] + radius * math.cos(tab_angle)
                 center_y = center[1] + radius * math.sin(tab_angle)
-                angle_rad = tab_angle + (
-                    math.pi / 2.0 if not cmd.clockwise else -math.pi / 2.0
-                )
 
             logger.debug(
                 f"Local space tab center: ({center_x:.2f}, {center_y:.2f}), "
-                f"angle: {math.degrees(angle_rad):.1f} deg"
+                f"width: {tab.width:.2f}mm"
             )
+            clip_data.append((center_x, center_y, tab.width))
 
-            w, d = tab.width / 2.0, tab.length / 2.0
-            cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-            points = [(-w, -d), (w, -d), (w, d), (-w, d)]
-
-            rotated_translated_points = [
-                (
-                    center_x + p[0] * cos_a - p[1] * sin_a,
-                    center_y + p[0] * sin_a + p[1] * cos_a,
-                )
-                for p in points
-            ]
-            local_polygons.append(rotated_translated_points)
-            logger.debug(
-                f"Local polygon vertices: {rotated_translated_points}"
-            )
-
-        return local_polygons
+        return clip_data
 
     def run(
         self,
@@ -179,15 +158,13 @@ class TabOpsTransformer(OpsTransformer):
             f"with {len(workpiece.tabs)} tabs."
         )
 
-        tab_polygons = self._generate_tab_polygons(workpiece)
-        if not tab_polygons:
-            logger.debug(
-                "No tab polygons were generated. Skipping subtraction."
-            )
+        tab_clip_data = self._generate_tab_clip_data(workpiece)
+        if not tab_clip_data:
+            logger.debug("No tab clip data was generated. Skipping clipping.")
             return
 
         logger.debug(
-            f"Generated {len(tab_polygons)} tab polygons for subtraction."
+            f"Generated {len(tab_clip_data)} tab clip points for clipping."
         )
 
         new_commands: List[Command] = []
@@ -205,10 +182,13 @@ class TabOpsTransformer(OpsTransformer):
                 temp_ops = Ops()
                 temp_ops.commands = section_buffer
                 num_before = len(temp_ops.commands)
-                temp_ops.subtract_regions(tab_polygons)
+
+                for x, y, width in tab_clip_data:
+                    temp_ops.clip_at(x, y, width)
+
                 num_after = len(temp_ops.commands)
                 logger.debug(
-                    "Tab subtraction changed command count from "
+                    "Tab clipping changed command count from "
                     f"{num_before} to {num_after}."
                 )
                 new_commands.extend(temp_ops.commands)

@@ -214,7 +214,7 @@ class ActionManager:
 
             self.editor.tab.add_cardinal_tabs(
                 workpiece=workpiece,
-                width=3.0,
+                width=2.0,
             )
 
         # 2. Ensure the UI state is visible.

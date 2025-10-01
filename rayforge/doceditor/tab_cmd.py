@@ -143,7 +143,7 @@ class TabCmd:
                         Tab(
                             width=width,
                             segment_index=segment_index,
-                            t=min(1.0, max(0.0, t)),
+                            pos=min(1.0, max(0.0, t)),
                         )
                     )
                     break
@@ -185,7 +185,7 @@ class TabCmd:
                     Tab(
                         width=width,
                         segment_index=segment_index,
-                        t=min(1.0, max(0.0, t)),
+                        pos=min(1.0, max(0.0, t)),
                     )
                 )
 
@@ -195,7 +195,7 @@ class TabCmd:
         for tab in tabs:
             # Round `t` to avoid floating point inaccuracies causing missed
             # duplicates
-            key = (tab.segment_index, round(tab.t * 1e5))
+            key = (tab.segment_index, round(tab.pos * 1e5))
             if key not in seen:
                 unique_tabs.append(tab)
                 seen.add(key)
@@ -272,13 +272,13 @@ class TabCmd:
         self,
         workpiece: WorkPiece,
         segment_index: int,
-        t: float,
-        width: float = 3.0,
+        pos: float,
+        width: float = 2.0,
         length: float = 1.0,
     ):
         """Adds a single new tab to a workpiece. Undoable."""
         new_tab = Tab(
-            width=width, length=length, segment_index=segment_index, t=t
+            width=width, segment_index=segment_index, pos=pos
         )
 
         # Create a new list with the added tab

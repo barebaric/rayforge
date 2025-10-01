@@ -527,3 +527,156 @@ def test_translate_with_scanline():
     # Check if both start_point (from move_to) and end are translated
     assert move_cmd.end == pytest.approx((15, 10, 45))
     assert translated_cmd.end == pytest.approx((45, 40, 75))
+
+
+def test_clip_at_no_hit():
+    """Tests that clip_at does nothing if no point is found."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    original_commands = ops.commands[:]
+    # Point is far away from the path
+    assert ops.clip_at(100, 100, 1.0) is False
+    assert ops.commands == original_commands
+
+
+def test_clip_at_on_line_segment():
+    """Tests creating a gap in a simple line segment."""
+    ops = Ops()
+    ops.move_to(0, 50, 10)
+    ops.line_to(100, 50, 20)  # Z should be interpolated
+
+    # Clip near the midpoint
+    assert ops.clip_at(50, 50, 10.0) is True
+
+    # Expected:
+    # Move(0,50,10), Line(45,50,14.5), Move(55,50,15.5), Line(100,50,20)
+    assert len(ops.commands) == 4
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert isinstance(ops.commands[2], MoveToCommand)
+    assert isinstance(ops.commands[3], LineToCommand)
+
+    # Check the points
+    assert ops.commands[1].end == pytest.approx((45.0, 50.0, 14.5))
+    assert ops.commands[2].end == pytest.approx((55.0, 50.0, 15.5))
+    assert ops.commands[3].end == pytest.approx((100.0, 50.0, 20.0))
+
+
+def test_clip_at_on_arc_segment():
+    """Tests creating a gap in an arc segment."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    # 90 deg CCW arc, radius 10, center (0,0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
+
+    # Clip near the 45-degree point on the arc
+    point_on_arc_x = 10 * math.cos(math.radians(45))
+    point_on_arc_y = 10 * math.sin(math.radians(45))
+    assert ops.clip_at(point_on_arc_x, point_on_arc_y, 2.0) is True
+
+    # The arc gets linearized by subtract_regions, so we expect a series
+    # of LineTo commands with a gap in the middle.
+    assert len(ops.commands) > 3
+    # Verify there is a MoveTo command somewhere in the middle,
+    # indicating a gap
+    assert any(isinstance(cmd, MoveToCommand) for cmd in ops.commands[1:]), (
+        "No MoveToCommand found, indicating no gap was created."
+    )
+
+
+def test_clip_at_start_of_subpath():
+    """Tests clipping at the very beginning of a subpath."""
+    ops = Ops()
+    ops.move_to(0, 50)
+    ops.line_to(100, 50)
+
+    # Clip at x=1, width=2. Should clip from 0 to 2.
+    assert ops.clip_at(1, 50, 2.0) is True
+
+    # Expected: Move(0,50), Move(2,50), Line(100,50)
+    assert len(ops.commands) == 3
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == pytest.approx((0, 50, 0))
+    assert isinstance(ops.commands[1], MoveToCommand)
+    assert ops.commands[1].end == pytest.approx((2.0, 50.0, 0.0))
+    assert ops.commands[2].end == pytest.approx((100.0, 50.0, 0.0))
+
+
+def test_clip_at_end_of_subpath():
+    """Tests clipping at the very end of a subpath."""
+    ops = Ops()
+    ops.move_to(0, 50)
+    ops.line_to(100, 50)
+
+    # Clip at x=99, width=2. Should clip from 98 to 100.
+    assert ops.clip_at(99, 50, 2.0) is True
+
+    # Expected: Move(0,50), Line(98,50), Move(100,50)
+    assert len(ops.commands) == 3
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == pytest.approx((0, 50, 0))
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == pytest.approx((98.0, 50.0, 0.0))
+    assert isinstance(ops.commands[2], MoveToCommand)
+    assert ops.commands[2].end == pytest.approx((100.0, 50.0, 0.0))
+
+
+def test_clip_at_spans_multiple_segments():
+    """
+    Tests that a clip correctly creates a gap across the boundary of two
+    connected LineTo commands.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(50, 0)  # Segment 1 (index 1)
+    ops.line_to(100, 50)  # Segment 2 (index 2)
+    ops.line_to(100, 100)  # Segment 3 (index 3)
+
+    # Clip at (50, 0) with a width of 20.
+    # This should remove from x=40 on the first line to some point on the
+    # second line.
+    assert ops.clip_at(50, 0, 20.0) is True
+
+    # Original: M, L, L, L -> 4 commands
+    # Expected: M, L(shortened), M(to skip gap), L(shortened), L -> 5+ commands
+    assert len(ops.commands) > 4
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert isinstance(ops.commands[2], MoveToCommand)
+
+    # The first line segment should end before 50
+    assert ops.commands[1].end[0] < 50
+    # The new path should start after 50
+    assert ops.commands[2].end[0] > 50
+
+    # Ensure the entire original path after the clip is still present
+    assert ops.commands[-1].end == pytest.approx((100, 100, 0))
+
+
+def test_clip_at_ignores_state_commands():
+    """
+    Tests that clip_at correctly handles state commands, ensuring they are
+    not part of the geometric subpath.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(50, 0)  # Subpath 1
+    ops.set_power(100)
+    ops.move_to(60, 0)
+    ops.line_to(100, 0)  # Subpath 2
+
+    # Clip the second line segment
+    assert ops.clip_at(80, 0, 10.0) is True
+
+    # Path 1 should be unchanged. Path 2 should be clipped.
+    assert len(ops.commands) == 7
+    # Path 1
+    assert ops.commands[0].end == (0, 0, 0)
+    assert ops.commands[1].end == (50, 0, 0)
+    assert isinstance(ops.commands[2], SetPowerCommand)
+    # Path 2 (clipped)
+    assert ops.commands[3].end == (60, 0, 0)
+    assert ops.commands[4].end == pytest.approx((75, 0, 0))
+    assert ops.commands[5].end == pytest.approx((85, 0, 0))
+    assert ops.commands[6].end == pytest.approx((100, 0, 0))

@@ -169,14 +169,14 @@ def get_point_and_tangent_at(
     from .geometry import LineToCommand, ArcToCommand, MovingCommand
 
     cmd = commands[segment_index]
-    if not isinstance(cmd, (LineToCommand, ArcToCommand)) or not cmd.end:
+    if not isinstance(cmd, MovingCommand) or cmd.end is None:
         return None
 
     # Find the start point of this segment
     start_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     for i in range(segment_index - 1, -1, -1):
         prev_cmd = commands[i]
-        if isinstance(prev_cmd, MovingCommand) and prev_cmd.end:
+        if prev_cmd.end:
             start_pos_3d = prev_cmd.end
             break
 

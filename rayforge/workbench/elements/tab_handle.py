@@ -157,10 +157,10 @@ class TabHandleElement(CanvasElement):
         closest = vectors.find_closest_point(local_x_norm, local_y_norm)
         if not closest:
             return world_dx, world_dy
-        segment_index, t, local_pos_norm = closest
+        segment_index, pos, local_pos_norm = closest
 
         # 2. Get the tangent for orientation from the normalized geometry.
-        tangent_result = vectors.get_point_and_tangent_at(segment_index, t)
+        tangent_result = vectors.get_point_and_tangent_at(segment_index, pos)
         if not tangent_result:
             return world_dx, world_dy
 
@@ -171,7 +171,7 @@ class TabHandleElement(CanvasElement):
         # 3. Update the temporary copy, NOT the document model's data.
         if self._dragged_tab_state:
             self._dragged_tab_state.segment_index = segment_index
-            self._dragged_tab_state.t = t
+            self._dragged_tab_state.pos = pos
 
         # 4. Update the handle's internal geometry caches for fast visual
         # preview.
@@ -207,7 +207,7 @@ class TabHandleElement(CanvasElement):
             return
 
         result = parent_view.data.vectors.get_point_and_tangent_at(
-            tab.segment_index, tab.t
+            tab.segment_index, tab.pos
         )
         if not result:
             return

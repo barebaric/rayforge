@@ -511,6 +511,200 @@ class Ops:
         matrix = translate_back @ rotation_matrix @ translate_to_origin
         return self.transform(matrix)
 
+    def linearize_all(self) -> None:
+        """
+        Replaces all complex commands (e.g., Arcs) with simple LineToCommands.
+        """
+        new_commands: List[Command] = []
+        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        # Find initial position, in case path doesn't start with MoveTo
+        for cmd in self.commands:
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+                break
+
+        for cmd in self.commands:
+            if isinstance(cmd, MovingCommand):
+                # The linearize method on the command itself will do the work.
+                linearized_cmds = cmd.linearize(last_point)
+                new_commands.extend(linearized_cmds)
+                # Update last_point to the end of the last generated segment
+                if linearized_cmds and linearized_cmds[-1].end is not None:
+                    last_point = linearized_cmds[-1].end
+                # If linearization is empty, original endpoint is the fallback
+                elif cmd.end is not None:
+                    last_point = cmd.end
+            else:
+                # Non-moving commands (state, markers) are passed through.
+                new_commands.append(cmd)
+        self.commands = new_commands
+
+    def clip_at(self, x: float, y: float, width: float) -> bool:
+        """
+        Finds the closest point on a continuous path to (x, y) and creates a
+        gap of the given width centered at that point, measured along the
+        path's length.
+
+        This method works by linearizing the target subpath into a polyline,
+        calculating the clip region parametrically along the polyline's length,
+        and then reconstructing the polyline with the gap. Arcs within the
+        affected subpath will be converted to line segments.
+
+        Args:
+            x: The x-coordinate of the point to clip near.
+            y: The y-coordinate of the point to clip near.
+            width: The desired width of the gap in world units (e.g., mm).
+
+        Returns:
+            True if a clip was successfully performed, False otherwise.
+        """
+        if width <= 1e-6:
+            return False
+
+        # 1. Find the closest segment on the entire path
+        closest = query.find_closest_point_on_path(self.commands, x, y)
+        if not closest:
+            return False
+
+        segment_index, _, point_on_path = closest
+        dist_sq = (x - point_on_path[0]) ** 2 + (y - point_on_path[1]) ** 2
+        if dist_sq > (width * 2) ** 2:  # Generous tolerance for clicking
+            return False
+
+        # 2. Identify the continuous subpath containing the hit segment
+        start_idx = 0
+        for i in range(segment_index, -1, -1):
+            if isinstance(self.commands[i], MoveToCommand):
+                start_idx = i
+                break
+
+        end_idx = len(self.commands)
+        for i in range(start_idx + 1, len(self.commands)):
+            if isinstance(self.commands[i], MoveToCommand):
+                end_idx = i
+                break
+
+        subpath_cmds = self.commands[start_idx:end_idx]
+        if not subpath_cmds or not isinstance(subpath_cmds[0], MovingCommand):
+            return False
+
+        # 3. Create a temporary, linearized version of the subpath
+        temp_ops = Ops()
+        temp_ops.commands = deepcopy(subpath_cmds)
+        temp_ops.preload_state()
+        temp_ops.linearize_all()
+        linear_cmds = temp_ops.commands
+
+        if len(linear_cmds) < 2:
+            return False
+
+        # 4. Find closest point on the *linearized* path and calculate distance
+        linear_closest = query.find_closest_point_on_path(linear_cmds, x, y)
+        if not linear_closest:
+            return False
+
+        linear_segment_idx, linear_t, _ = linear_closest
+
+        hit_dist = 0.0
+        last_pos = linear_cmds[0].end
+        assert last_pos is not None  # Should be MoveTo.end
+
+        for i in range(1, linear_segment_idx):
+            cmd = linear_cmds[i]
+            if isinstance(cmd, LineToCommand):
+                hit_dist += math.dist(last_pos[:2], cmd.end[:2])
+                last_pos = cmd.end
+
+        hit_segment_cmd = linear_cmds[linear_segment_idx]
+        if isinstance(hit_segment_cmd, LineToCommand) and hit_segment_cmd.end:
+            dist = math.dist(last_pos[:2], hit_segment_cmd.end[:2])
+            hit_dist += linear_t * dist
+
+        # 5. Define gap start and end distances
+        gap_start_dist = max(0.0, hit_dist - width / 2.0)
+        gap_end_dist = hit_dist + width / 2.0
+
+        # 6. Rebuild the subpath
+        def _clip_1d(d1, d2, g1, g2):
+            kept = []
+            if d1 < g1:
+                kept.append((d1, min(d2, g1)))
+            if d2 > g2:
+                kept.append((max(d1, g2), d2))
+            return kept
+
+        new_subpath_cmds: List[Command] = [deepcopy(linear_cmds[0])]
+        accum_dist = 0.0
+        last_pos = linear_cmds[0].end
+        assert last_pos is not None  # Should be MoveTo.end
+
+        for cmd in linear_cmds[1:]:
+            if isinstance(cmd, LineToCommand):
+                p1, p2 = last_pos, cmd.end
+                seg_len = math.dist(p1[:2], p2[:2])
+
+                if seg_len < 1e-9:
+                    last_pos = p2
+                    continue
+
+                seg_start_dist = accum_dist
+                seg_end_dist = accum_dist + seg_len
+
+                kept = _clip_1d(
+                    seg_start_dist, seg_end_dist, gap_start_dist, gap_end_dist
+                )
+
+                p1_np, p2_np = np.array(p1), np.array(p2)
+                vec = p2_np - p1_np
+
+                for start_d, end_d in kept:
+                    t_start = (start_d - seg_start_dist) / seg_len
+                    t_end = (end_d - seg_start_dist) / seg_len
+                    start_pt = tuple(p1_np + t_start * vec)
+                    end_pt = tuple(p1_np + t_end * vec)
+
+                    last_kept_pos: Optional[Tuple[float, ...]] = None
+                    for rev_cmd in reversed(new_subpath_cmds):
+                        if isinstance(rev_cmd, MovingCommand):
+                            last_kept_pos = rev_cmd.end
+                            break
+                    assert last_kept_pos is not None
+
+                    if math.dist(last_kept_pos, start_pt) > 1e-6:
+                        new_subpath_cmds.append(MoveToCommand(start_pt))
+
+                    new_line = LineToCommand(end_pt)
+                    new_line.state = cmd.state
+                    new_subpath_cmds.append(new_line)
+
+                last_pos = p2
+                accum_dist += seg_len
+            else:  # Handle state/marker commands
+                if not (gap_start_dist < accum_dist < gap_end_dist):
+                    new_subpath_cmds.append(deepcopy(cmd))
+
+        # Post-process to preserve original endpoint if it was clipped
+        original_endpoint = subpath_cmds[-1].end
+        new_endpoint = None
+        if new_subpath_cmds and isinstance(
+            new_subpath_cmds[-1], MovingCommand
+        ):
+            new_endpoint = new_subpath_cmds[-1].end
+
+        if original_endpoint and (
+            new_endpoint is None
+            or math.dist(original_endpoint, new_endpoint) > 1e-6
+        ):
+            new_subpath_cmds.append(MoveToCommand(original_endpoint))
+
+        # 7. Replace original subpath
+        self.commands = (
+            self.commands[:start_idx]
+            + new_subpath_cmds
+            + self.commands[end_idx:]
+        )
+        return True
+
     def _add_clipped_segment_to_ops(
         self,
         segment: Optional[

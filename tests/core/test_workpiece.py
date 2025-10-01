@@ -126,8 +126,8 @@ class TestWorkPiece:
         """Tests that tabs are correctly serialized and deserialized."""
         wp = workpiece_instance
         wp.tabs = [
-            Tab(width=3.0, segment_index=1, t=0.5, uid="tab1"),
-            Tab(width=3.0, segment_index=5, t=0.25, uid="tab2"),
+            Tab(width=3.0, segment_index=1, pos=0.5, uid="tab1"),
+            Tab(width=3.0, segment_index=5, pos=0.25, uid="tab2"),
         ]
         wp.tabs_enabled = False
 
@@ -145,7 +145,7 @@ class TestWorkPiece:
         assert len(new_wp.tabs) == 2
         assert new_wp.tabs[0].uid == "tab1"
         assert new_wp.tabs[1].width == 3.0
-        assert new_wp.tabs[1].t == 0.25
+        assert new_wp.tabs[1].pos == 0.25
 
     def test_setters_and_signals(self, workpiece_instance):
         wp = workpiece_instance
@@ -382,13 +382,13 @@ class TestWorkPiece:
 
         # Case 1: No vectors
         wp.vectors = None
-        tab = Tab(width=1, segment_index=1, t=0.5)
+        tab = Tab(width=1, segment_index=1, pos=0.5)
         assert wp.get_tab_direction(tab) is None
         wp.vectors = geo
 
         # Case 2: No transform
         wp.matrix = Matrix.identity()
-        tab = Tab(width=1, segment_index=1, t=0.5)  # Midpoint of bottom edge
+        tab = Tab(width=1, segment_index=1, pos=0.5)  # Midpoint of bottom edge
         direction = wp.get_tab_direction(tab)
         assert direction is not None
         assert direction == pytest.approx((0, -1))
@@ -438,7 +438,7 @@ class TestWorkPiece:
         wp.set_size(20, 10)
         wp.angle = 0  # ensure no rotation
 
-        tab = Tab(width=1, segment_index=1, t=0.5)
+        tab = Tab(width=1, segment_index=1, pos=0.5)
         direction = wp.get_tab_direction(tab)
         assert direction is not None
 

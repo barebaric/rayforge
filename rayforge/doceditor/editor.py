@@ -88,10 +88,10 @@ class DocEditor:
         workpiece: "WorkPiece" = context["workpiece"]
         location: Dict[str, Any] = context["location"]
         segment_index = location["segment_index"]
-        t = location["t"]
+        pos = location["pos"]
 
         self.tab.add_single_tab(
-            workpiece=workpiece, segment_index=segment_index, t=t
+            workpiece=workpiece, segment_index=segment_index, pos=pos
         )
 
     def remove_tab_from_context(self, context: Dict[str, Any]):
