@@ -19,6 +19,7 @@ from .core.ops import Ops
 from .core.stock import StockItem
 from .core.stocklayer import StockLayer
 from .pipeline.steps import STEP_FACTORIES, create_contour_step
+from .pipeline.encoder.gcode import GcodeEncoder
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
@@ -39,6 +40,7 @@ from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
+from .shared.gcodeedit.previewer import GcodePreviewer
 
 
 logger = logging.getLogger(__name__)
@@ -243,7 +245,31 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.view_stack.set_margin_start(12)
         self.view_stack.set_hexpand(True)
-        self.paned.set_start_child(self.view_stack)
+        self.view_stack.connect(
+            "notify::visible-child-name", self._on_view_stack_changed
+        )
+
+        # Create the G-code previewer and its revealer
+        self.gcode_previewer = GcodePreviewer()
+        self.gcode_previewer.set_size_request(400, -1)
+        self.gcode_revealer = Gtk.Revealer(
+            child=self.gcode_previewer, reveal_child=False
+        )
+        self.gcode_revealer.set_transition_type(
+            Gtk.RevealerTransitionType.SLIDE_RIGHT
+        )
+
+        # Create a new paned for the left side of the window
+        left_content_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        left_content_pane.set_start_child(self.gcode_revealer)
+        left_content_pane.set_end_child(self.view_stack)
+        left_content_pane.set_resize_end_child(True)
+        left_content_pane.set_shrink_end_child(False)
+        # Set the initial position to match the previewer's requested width
+        left_content_pane.set_position(400)
+
+        # The new left-side paned is the start child of the main paned
+        self.paned.set_start_child(left_content_pane)
 
         self.view_stack.add_named(self.surface, "2d")
 
@@ -339,6 +365,34 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def _on_view_stack_changed(self, stack: Gtk.Stack, param):
+        """Shows/hides the G-code previewer when the view changes."""
+        is_3d_active = stack.get_visible_child_name() == "3d"
+        self.gcode_revealer.set_reveal_child(is_3d_active)
+        if not is_3d_active:
+            self.gcode_previewer.clear()
+
+    def _update_gcode_preview(self, ops: Optional[Ops]):
+        """Generates G-code from Ops and updates the preview panel."""
+        if ops is None or not config.machine:
+            self.gcode_previewer.clear()
+            return
+
+        machine = config.machine
+        doc = self.doc_editor.doc
+
+        try:
+            encoder = GcodeEncoder.for_machine(machine)
+            gcode_string = encoder.encode(ops, machine, doc)
+            self.gcode_previewer.set_gcode(gcode_string)
+        except Exception:
+            logger.error(
+                "Failed to generate G-code for preview", exc_info=True
+            )
+            toast = Adw.Toast.new(_("Failed to generate G-code preview."))
+            self.toast_overlay.add_toast(toast)
+            self.gcode_previewer.clear()
 
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
@@ -629,6 +683,7 @@ class MainWindow(Adw.ApplicationWindow):
         if canvas3d_initialized and hasattr(self, "canvas3d"):
             logger.debug("Background aggregation finished. Updating 3D view.")
             self.canvas3d.set_ops(aggregated_ops)
+            self._update_gcode_preview(aggregated_ops)
 
     def _on_document_settled(self, sender):
         """

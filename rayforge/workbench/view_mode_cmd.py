@@ -47,9 +47,7 @@ class ViewModeCmd:
                     "Attempted to open 3D view, but it is not available."
                 )
                 toast = Adw.Toast.new(
-                    _(
-                        "3D view is not available due to missing dependencies."
-                    )
+                    _("3D view is not available due to missing dependencies.")
                 )
                 win.toast_overlay.add_toast(toast)
                 return
@@ -88,6 +86,9 @@ class ViewModeCmd:
                     )
                     if win.canvas3d:
                         win.canvas3d.set_ops(ops)
+
+                    GLib.idle_add(win._update_gcode_preview, ops)
+
                     logger.debug("Preview ready")
                     context.set_message("Path preview loaded.")
                     context.set_progress(1.0)
