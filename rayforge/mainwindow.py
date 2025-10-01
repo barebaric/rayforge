@@ -125,6 +125,7 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title(_("Rayforge"))
         self._current_machine: Optional[Machine] = None  # For signal handling
+        self._last_gcode_previewer_width = 350
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -249,27 +250,31 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::visible-child-name", self._on_view_stack_changed
         )
 
-        # Create the G-code previewer and its revealer
+        # Create the G-code previewer
         self.gcode_previewer = GcodePreviewer()
-        self.gcode_previewer.set_size_request(400, -1)
-        self.gcode_revealer = Gtk.Revealer(
-            child=self.gcode_previewer, reveal_child=False
-        )
-        self.gcode_revealer.set_transition_type(
-            Gtk.RevealerTransitionType.SLIDE_RIGHT
+        self.gcode_previewer.set_size_request(
+            self._last_gcode_previewer_width, -1
         )
 
         # Create a new paned for the left side of the window
-        left_content_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        left_content_pane.set_start_child(self.gcode_revealer)
-        left_content_pane.set_end_child(self.view_stack)
-        left_content_pane.set_resize_end_child(True)
-        left_content_pane.set_shrink_end_child(False)
-        # Set the initial position to match the previewer's requested width
-        left_content_pane.set_position(400)
+        self.left_content_pane = Gtk.Paned(
+            orientation=Gtk.Orientation.HORIZONTAL
+        )
+        # Put the previewer directly into the paned, NO REVEALER
+        self.left_content_pane.set_start_child(self.gcode_previewer)
+        self.left_content_pane.set_end_child(self.view_stack)
+        self.left_content_pane.set_resize_end_child(True)
+        self.left_content_pane.set_shrink_end_child(False)
+
+        # Connect to the position signal to remember the user's chosen width
+        self.left_content_pane.connect(
+            "notify::position", self._on_left_pane_position_changed
+        )
+        # Set the initial position to 0 to start "hidden"
+        self.left_content_pane.set_position(0)
 
         # The new left-side paned is the start child of the main paned
-        self.paned.set_start_child(left_content_pane)
+        self.paned.set_start_child(self.left_content_pane)
 
         self.view_stack.add_named(self.surface, "2d")
 
@@ -366,11 +371,29 @@ class MainWindow(Adw.ApplicationWindow):
         # Set initial state
         self.on_config_changed(None)
 
+    def _on_left_pane_position_changed(self, paned, param):
+        """
+        Stores the user-defined width of the G-code previewer pane so it can
+        be restored later.
+        """
+        position = paned.get_position()
+        # Only store the position if the pane is open. This prevents
+        # storing '0' when it gets hidden automatically.
+        if position > 1:
+            self._last_gcode_previewer_width = position
+
     def _on_view_stack_changed(self, stack: Gtk.Stack, param):
-        """Shows/hides the G-code previewer when the view changes."""
+        """Shows/hides the G-code previewer by moving the paned separator."""
         is_3d_active = stack.get_visible_child_name() == "3d"
-        self.gcode_revealer.set_reveal_child(is_3d_active)
-        if not is_3d_active:
+
+        if is_3d_active:
+            # Animate the pane open to its last known width
+            self.left_content_pane.set_position(
+                self._last_gcode_previewer_width
+            )
+        else:
+            # Animate the pane closed
+            self.left_content_pane.set_position(0)
             self.gcode_previewer.clear()
 
     def _update_gcode_preview(self, ops: Optional[Ops]):
