@@ -75,6 +75,7 @@ class PngImporter(Importer):
         if geometries:
             logger.info(f"Successfully traced {len(geometries)} vector paths.")
             for geo in geometries:
+                geo.close_gaps()
                 combined_geo.commands.extend(geo.commands)
         else:
             logger.warning(

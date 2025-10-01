@@ -87,6 +87,7 @@ class PdfImporter(Importer):
 
         if trace_result:
             final_geo_mm, final_size_mm = trace_result
+            final_geo_mm.close_gaps()
             self._populate_workpiece_with_vectors(
                 wp, final_geo_mm, final_size_mm
             )

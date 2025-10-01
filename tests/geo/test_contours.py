@@ -1,11 +1,12 @@
 import pytest
-from rayforge.core.geo import Geometry
+from rayforge.core.geo import Geometry, MoveToCommand, LineToCommand
 from rayforge.core.geo.analysis import get_subpath_area
 from rayforge.core.geo.contours import (
     split_into_contours,
     filter_to_external_contours,
     reverse_contour,
     normalize_winding_orders,
+    close_geometry_gaps,
 )
 
 
@@ -200,3 +201,45 @@ def test_filter_external_shape_inside_another_hole():
     assert c1_outer_boundary in result
     assert c3_island in result
     assert c2_hole_boundary not in result
+
+
+def test_close_geometry_gaps_functional():
+    """Tests the core logic of the close_geometry_gaps function."""
+    # 1. Test intra-contour gap closing (almost closed path)
+    geo_intra = Geometry()
+    geo_intra.move_to(0, 0)
+    geo_intra.line_to(10, 0)
+    geo_intra.line_to(10, 10)
+    geo_intra.line_to(0.000001, 10)  # Ends near (0, 10)
+    geo_intra.line_to(0.000002, 0.000003)  # Ends near start point (0, 0)
+    original_intra_commands = geo_intra.copy().commands
+
+    result_intra = close_geometry_gaps(geo_intra, tolerance=1e-5)
+    assert result_intra is not geo_intra
+    assert result_intra.commands is not geo_intra.commands
+    assert (
+        geo_intra.commands[-1].end == original_intra_commands[-1].end
+    )  # Original is unchanged
+    assert result_intra.commands[0].end == (0, 0, 0)
+    # The final point should be snapped to the start point
+    assert result_intra.commands[-1].end == (0, 0, 0)
+
+    # 2. Test inter-contour gap closing (stitching paths)
+    geo_inter = Geometry()
+    geo_inter.move_to(0, 0)
+    geo_inter.line_to(10, 10)
+    geo_inter.move_to(10.000001, 10.000002)  # A small jump
+    geo_inter.line_to(20, 20)
+    original_inter_commands = geo_inter.copy().commands
+
+    result_inter = close_geometry_gaps(geo_inter, tolerance=1e-5)
+    assert result_inter is not geo_inter
+    assert result_inter.commands is not geo_inter.commands
+    # Assert original is unchanged by comparing its command to the saved copy
+    assert isinstance(geo_inter.commands[2], MoveToCommand)
+    assert geo_inter.commands[2].end == original_inter_commands[2].end
+
+    # The MoveTo should be replaced with a LineTo in the result
+    assert isinstance(result_inter.commands[2], LineToCommand)
+    # The new LineTo should connect to the exact previous end point
+    assert result_inter.commands[2].end == (10, 10, 0)

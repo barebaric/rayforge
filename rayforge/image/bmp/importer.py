@@ -110,6 +110,7 @@ class BmpImporter(Importer):
         combined_geo = Geometry()
         if geometries:
             for geo in geometries:
+                geo.close_gaps()
                 combined_geo.commands.extend(geo.commands)
 
         # Normalize the pixel-based geometry to a 1x1 unit square.

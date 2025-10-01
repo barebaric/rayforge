@@ -32,6 +32,7 @@ class RuidaImporter(Importer):
         # Ruida files are always vector, so vector_config is ignored.
         job = self._get_job()
         geometry = self._get_geometry(job)
+        geometry.close_gaps()
 
         if not geometry or geometry.is_empty():
             return None

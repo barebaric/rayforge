@@ -175,6 +175,29 @@ class Geometry:
             )
         )
 
+    def close_gaps(self: T_Geometry, tolerance: float = 1e-6) -> T_Geometry:
+        """
+        Closes small gaps between endpoints in the geometry to form clean,
+        connected paths. This method operates in-place.
+
+        This is a convenience wrapper around the `close_geometry_gaps`
+        function in the `contours` module.
+
+        Args:
+            tolerance: The maximum distance between two points to be
+                       considered "the same".
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        from . import contours  # Local import to prevent circular dependency
+
+        # The function returns a new object; we update self with its data.
+        new_geo = contours.close_geometry_gaps(self, tolerance)
+        self.commands = new_geo.commands
+        self._winding_cache.clear()  # Winding order might have changed
+        return self
+
     def rect(self) -> Tuple[float, float, float, float]:
         return get_bounding_rect(self.commands)
 

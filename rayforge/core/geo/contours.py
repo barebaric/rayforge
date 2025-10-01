@@ -1,10 +1,102 @@
 from __future__ import annotations
+import math
 from typing import List, TYPE_CHECKING
 from .analysis import get_subpath_area
 from .primitives import is_point_in_polygon
 
 if TYPE_CHECKING:
-    from .geometry import Geometry
+    from .geometry import Geometry, Command
+
+
+def close_geometry_gaps(
+    geometry: Geometry, tolerance: float = 1e-6
+) -> Geometry:
+    """
+    Closes small gaps in a Geometry object to form clean, connected paths.
+
+    This function creates a new Geometry object with the modifications. The
+    process is two-fold:
+    1.  It iterates through each subpath (contour) and checks if the
+        start and end points are within the given tolerance. If so, it
+        snaps the end point to the start point, creating a perfectly
+        closed shape.
+    2.  It then checks for gaps between separate subpaths. If a `MoveTo`
+        command starts very close to where the previous path ended, it
+        replaces the `MoveTo` with a `LineTo`, effectively stitching the
+        two paths together.
+
+    Args:
+        geometry: The input Geometry object.
+        tolerance: The maximum distance between two points to be
+                    considered "the same".
+
+    Returns:
+        A new, modified Geometry object.
+    """
+    from .geometry import MoveToCommand, MovingCommand, LineToCommand
+
+    if len(geometry.commands) < 2:
+        return geometry.copy()
+
+    # Work on a copy to avoid modifying the original
+    new_geo = geometry.copy()
+
+    # Pass 1: Close gaps within each contour (intra-contour)
+    contour_blocks: List[List[Command]] = []
+    if new_geo.commands:
+        current_block: List[Command] = []
+        for cmd in new_geo.commands:
+            if isinstance(cmd, MoveToCommand):
+                if current_block:
+                    contour_blocks.append(current_block)
+                current_block = [cmd]
+            else:
+                if not current_block:  # Path starts with drawing cmd
+                    current_block.append(MoveToCommand((0.0, 0.0, 0.0)))
+                current_block.append(cmd)
+        if current_block:
+            contour_blocks.append(current_block)
+
+    for block in contour_blocks:
+        if len(block) < 2:
+            continue
+        start_cmd = block[0]
+        end_cmd = block[-1]
+        if (
+            isinstance(start_cmd, MoveToCommand)
+            and isinstance(end_cmd, MovingCommand)
+            and start_cmd.end
+            and end_cmd.end
+        ):
+            if math.dist(start_cmd.end, end_cmd.end) < tolerance:
+                # Snap the end point to the start point. This modifies the
+                # command object within the new_geo.commands list.
+                end_cmd.end = start_cmd.end
+
+    # Pass 2: Connect adjacent contours (inter-contour) using the modified list
+    final_commands: List[Command] = []
+    last_end_point: tuple[float, float, float] | None = None
+    for cmd in new_geo.commands:
+        if isinstance(cmd, MoveToCommand) and cmd.end:
+            if (
+                last_end_point is not None
+                and math.dist(cmd.end, last_end_point) < tolerance
+            ):
+                # This MoveTo is a small jump; replace with a LineTo
+                # to the exact previous endpoint to close the gap.
+                final_commands.append(LineToCommand(last_end_point))
+                # The logical position remains last_end_point
+            else:
+                final_commands.append(cmd)
+                last_end_point = cmd.end
+        elif isinstance(cmd, MovingCommand) and cmd.end:
+            final_commands.append(cmd)
+            last_end_point = cmd.end
+        else:
+            final_commands.append(cmd)  # Non-moving command
+
+    new_geo.commands = final_commands
+    return new_geo
 
 
 def reverse_contour(contour: Geometry) -> Geometry:

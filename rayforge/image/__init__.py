@@ -2,7 +2,7 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Type, Union
 from ..core.vectorization_config import TraceConfig
 from .base_importer import Importer, ImportPayload
 from .base_renderer import Renderer
@@ -77,7 +77,7 @@ def import_file(
         mime_type, _ = mimetypes.guess_type(source)
 
     # 1. Determine importer class
-    importer_class = None
+    importer_class: Optional[Type[Importer]] = None
     if mime_type:
         importer_class = importer_by_mime_type.get(mime_type)
 

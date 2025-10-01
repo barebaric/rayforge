@@ -159,6 +159,7 @@ class DxfImporter(Importer):
                 # Normalize the component geometry to its own origin and
                 # 1x1 size
                 normalized_geo = component_geo.copy()
+                normalized_geo.close_gaps()
                 translation_matrix = Matrix.translation(-min_x, -min_y)
                 normalized_geo.transform(translation_matrix.to_4x4_numpy())
 
