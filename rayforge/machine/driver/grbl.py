@@ -309,6 +309,11 @@ class GrblNetworkDriver(Driver):
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
         await self._execute_command(cmd)
 
+    async def select_tool(self, tool_number: int) -> None:
+        """Sends a tool change command for the given tool number."""
+        cmd = f"T{tool_number}"
+        await self._execute_command(cmd)
+
     async def clear_alarm(self) -> None:
         await self._execute_command("$X")
 

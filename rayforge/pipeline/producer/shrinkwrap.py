@@ -14,6 +14,7 @@ from ...core.ops import (
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
 
 BORDER_SIZE = 2
 
@@ -50,7 +51,7 @@ class ShrinkWrapProducer(OpsProducer):
 
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface: cairo.ImageSurface,
         pixels_per_mm,
         *,
@@ -64,10 +65,6 @@ class ShrinkWrapProducer(OpsProducer):
             )
 
         final_ops = Ops()
-        final_ops.add(
-            OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
-        )
-        final_ops.set_power((settings or {}).get("power", 0))
 
         # 1. Calculate total offset
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -108,9 +105,15 @@ class ShrinkWrapProducer(OpsProducer):
                 hull_geometry = hull_geometry.grow(total_offset)
 
             # 5. Convert to Ops
+            final_ops.set_laser(laser.uid)
+            final_ops.add(
+                OpsSectionStartCommand(
+                    SectionType.VECTOR_OUTLINE, workpiece.uid
+                )
+            )
+            final_ops.set_power((settings or {}).get("power", 0))
             final_ops.extend(Ops.from_geometry(hull_geometry))
-
-        final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.

@@ -1,6 +1,14 @@
 import pytest
 import math
+import io
+import numpy as np
+from contextlib import redirect_stdout
 from typing import cast
+
+# Import real geo types to fix the test
+from rayforge.core import geo
+from rayforge.core.geo.geometry import Geometry
+
 from rayforge.core.ops import (
     Ops,
     MoveToCommand,
@@ -17,6 +25,13 @@ from rayforge.core.ops import (
     OpsSectionEndCommand,
     SectionType,
     ScanLinePowerCommand,
+    JobStartCommand,
+    JobEndCommand,
+    LayerStartCommand,
+    LayerEndCommand,
+    WorkpieceStartCommand,
+    WorkpieceEndCommand,
+    SetLaserCommand,
 )
 
 
@@ -100,6 +115,33 @@ def test_ops_extend_with_none(sample_ops):
     # robust code should handle it.
     sample_ops.extend(None)  # type: ignore
     assert len(sample_ops) == original_len
+
+
+def test_copy():
+    ops_original = Ops()
+    ops_original.move_to(10, 10)
+    ops_original.line_to(20, 20)
+    ops_original.last_move_to = (10, 10, 0)
+
+    ops_copy = ops_original.copy()
+
+    # Check for deepcopy: objects should not be the same instance
+    assert ops_original is not ops_copy
+    assert ops_original.commands is not ops_copy.commands
+    assert ops_original.commands[0] is not ops_copy.commands[0]
+    assert ops_original.last_move_to == ops_copy.last_move_to
+
+    # Modify the copy and check that original is unchanged
+    ops_copy.translate(5, 5)
+    ops_copy.add(SetPowerCommand(100))
+
+    assert len(ops_original.commands) == 2
+    assert ops_original.commands[0].end == (10, 10, 0)
+    assert ops_original.commands[1].end == (20, 20, 0)
+
+    assert len(ops_copy.commands) == 3
+    assert ops_copy.commands[0].end == (15, 15, 0)
+    assert ops_copy.commands[1].end == (25, 25, 0)
 
 
 def test_preload_state(sample_ops):
@@ -207,6 +249,14 @@ def test_set_travel_speed(sample_ops):
     last_cmd = sample_ops.commands[-1]
     assert isinstance(last_cmd, SetTravelSpeedCommand)
     assert last_cmd.speed == 2000.0
+
+
+def test_set_laser():
+    ops = Ops()
+    ops.set_laser("laser-abc")
+    last_cmd = ops.commands[-1]
+    assert isinstance(last_cmd, SetLaserCommand)
+    assert last_cmd.laser_uid == "laser-abc"
 
 
 def test_enable_disable_air_assist(empty_ops):
@@ -350,6 +400,84 @@ def test_rotate_preserves_z():
     assert y == pytest.approx(10)
 
 
+def test_transform_uniform():
+    """Tests applying a uniform transformation (rotation + translation)."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)  # 90 deg arc
+
+    # Rotate 90 degrees around origin and translate by (100, 0)
+    angle_rad = math.radians(90)
+    cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+    matrix = np.array(
+        [
+            [cos_a, -sin_a, 0, 100],
+            [sin_a, cos_a, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    ops.transform(matrix)
+
+    move_cmd = ops.commands[0]
+    arc_cmd = ops.commands[1]
+
+    # Original (10,0) -> Rotated (0,10) -> Translated (100, 10)
+    assert move_cmd.end == pytest.approx((100, 10, 0))
+    # Original (0,10) -> Rotated (-10,0) -> Translated (90, 0)
+    assert arc_cmd.end == pytest.approx((90, 0, 0))
+
+    # Arc should NOT be linearized
+    assert isinstance(arc_cmd, ArcToCommand)
+
+    # Original offset (-10, 0) should be rotated to (0, -10)
+    assert arc_cmd.center_offset[0] == pytest.approx(0)
+    assert arc_cmd.center_offset[1] == pytest.approx(-10)
+
+
+def test_transform_non_uniform():
+    """Tests that a non-uniform scale linearizes arcs."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)  # 90 deg arc
+
+    # Scale X by 2, Y by 3
+    matrix = np.diag([2.0, 3.0, 1.0, 1.0])
+    ops.transform(matrix)
+
+    # Original move_to (10,0) -> (20, 0)
+    assert ops.commands[0].end == pytest.approx((20, 0, 0))
+
+    # Arc must be linearized into LineToCommands
+    assert all(isinstance(c, LineToCommand) for c in ops.commands[1:])
+    assert len(ops.commands) > 2
+
+    # Final point should be original arc end (0,10) scaled -> (0, 30)
+    assert ops.commands[-1].end == pytest.approx((0, 30, 0))
+
+
+def test_linearize_all():
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.line_to(20, 0)
+    ops.arc_to(10, 10, i=-10, j=0, clockwise=False)  # Semicircle
+    ops.set_power(100)  # Should be preserved
+
+    ops.linearize_all()
+
+    assert len(ops.commands) > 4  # Move, Line, SetPower, plus linearized arc
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert isinstance(ops.commands[1], LineToCommand)
+    # All geometric commands after the first two should be LineTo
+    moving_cmds_after = [
+        c for c in ops.commands[2:] if isinstance(c, MovingCommand)
+    ]
+    assert all(isinstance(c, LineToCommand) for c in moving_cmds_after)
+    # Check that state command is still there
+    assert any(isinstance(c, SetPowerCommand) for c in ops.commands)
+
+
 @pytest.fixture
 def clip_rect():
     return (0.0, 0.0, 100.0, 100.0)
@@ -488,24 +616,91 @@ def test_subtract_regions():
     assert ops.commands[3].end == pytest.approx((100.0, 50.0, 5.0))
 
 
-def test_serialization_with_section_markers():
+def test_subtract_regions_with_scanline():
     ops = Ops()
-    ops.move_to(0, 0)
-    ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-abc"))
-    ops.line_to(10, 0)
+    ops.move_to(0, 50, 0)
+    ops.add(
+        ScanLinePowerCommand(
+            end=(100, 50, 0), power_values=bytearray([100] * 100)
+        )
+    )
+    # Region to cut out of the middle
+    region = [(40.0, 40.0), (60.0, 40.0), (60.0, 60.0), (40.0, 60.0)]
+    ops.subtract_regions([region])
+
+    # Expected: M(0,50), S(->40,50), M(60,50), S(->100,50)
+    assert len(ops.commands) == 4
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == pytest.approx((0, 50, 0))
+
+    scan1 = cast(ScanLinePowerCommand, ops.commands[1])
+    assert isinstance(scan1, ScanLinePowerCommand)
+    assert scan1.end == pytest.approx((40, 50, 0))
+    assert len(scan1.power_values) == 40
+
+    assert isinstance(ops.commands[2], MoveToCommand)
+    assert ops.commands[2].end == pytest.approx((60, 50, 0))
+
+    scan2 = cast(ScanLinePowerCommand, ops.commands[3])
+    assert isinstance(scan2, ScanLinePowerCommand)
+    assert scan2.end == pytest.approx((100, 50, 0))
+    assert len(scan2.power_values) == 40
+
+
+def test_from_geometry():
+    # Use the actual Geometry class instead of mocks to ensure correct types
+    geo_obj = Geometry()
+    geo_obj.add(geo.MoveToCommand((10, 10, 0)))
+    geo_obj.add(geo.LineToCommand((20, 20, 0)))
+    geo_obj.add(geo.ArcToCommand((30, 10, 0), (-10, 0), False))
+    # last_move_to is updated automatically by geo.add()
+
+    ops = Ops.from_geometry(geo_obj)
+
+    assert len(ops.commands) == 3
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (10, 10, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == (20, 20, 0)
+    assert isinstance(ops.commands[2], ArcToCommand)
+    assert ops.commands[2].end == (30, 10, 0)
+    assert ops.commands[2].center_offset == (-10, 0)
+    assert ops.commands[2].clockwise is False
+    assert ops.last_move_to == geo_obj.last_move_to
+
+
+def test_serialization_deserialization_all_types():
+    """Tests that all command types can be serialized and deserialized."""
+    ops = Ops()
+    ops.add(JobStartCommand())
+    ops.add(LayerStartCommand("layer-1"))
+    ops.add(WorkpieceStartCommand("wp-1"))
+    ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-1"))
+    ops.add(SetTravelSpeedCommand(5000))
+    ops.add(SetCutSpeedCommand(1000))
+    ops.add(SetPowerCommand(200))
+    ops.add(EnableAirAssistCommand())
+    ops.add(SetLaserCommand("laser-2"))
+    ops.add(MoveToCommand((1, 1, 1)))
+    ops.add(LineToCommand((2, 2, 2)))
+    ops.add(ArcToCommand((3, 1, 2), (1, 1), False))
+    ops.add(ScanLinePowerCommand((12, 2, 2), bytearray([50, 150])))
     ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+    ops.add(WorkpieceEndCommand("wp-1"))
+    ops.add(LayerEndCommand("layer-1"))
+    ops.add(JobEndCommand())
+    ops.last_move_to = (1, 1, 1)
 
     data = ops.to_dict()
     new_ops = Ops.from_dict(data)
 
-    assert len(new_ops.commands) == 4
-    start_cmd = cast(OpsSectionStartCommand, new_ops.commands[1])
-    end_cmd = cast(OpsSectionEndCommand, new_ops.commands[3])
-    assert isinstance(start_cmd, OpsSectionStartCommand)
-    assert isinstance(end_cmd, OpsSectionEndCommand)
-    assert start_cmd.section_type == SectionType.RASTER_FILL
-    assert start_cmd.workpiece_uid == "wp-abc"
-    assert end_cmd.section_type == SectionType.RASTER_FILL
+    assert len(ops.commands) == len(new_ops.commands)
+    assert new_ops.last_move_to == (1, 1, 1)
+
+    for old_cmd, new_cmd in zip(ops.commands, new_ops.commands):
+        # Check type and dict representation to ensure all fields are preserved
+        assert type(old_cmd) is type(new_cmd)
+        assert old_cmd.to_dict() == new_cmd.to_dict()
 
 
 def test_translate_with_scanline():
@@ -680,3 +875,13 @@ def test_clip_at_ignores_state_commands():
     assert ops.commands[4].end == pytest.approx((75, 0, 0))
     assert ops.commands[5].end == pytest.approx((85, 0, 0))
     assert ops.commands[6].end == pytest.approx((100, 0, 0))
+
+
+def test_dump(sample_ops):
+    """Ensures dump() runs without error and produces output."""
+    f = io.StringIO()
+    with redirect_stdout(f):
+        sample_ops.dump()
+    output = f.getvalue()
+    assert "MoveToCommand" in output
+    assert "LineToCommand" in output

@@ -91,6 +91,28 @@ class StepSettingsDialog(Adw.Window):
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
         page.add(general_group)
 
+        # Laser Head Selector
+        if config.machine and config.machine.heads:
+            laser_names = [head.name for head in config.machine.heads]
+            string_list = Gtk.StringList.new(laser_names)
+            laser_row = Adw.ComboRow(title=_("Laser Head"), model=string_list)
+
+            # Set initial selection
+            initial_index = 0
+            if step.selected_laser_uid:
+                try:
+                    initial_index = next(
+                        i
+                        for i, head in enumerate(config.machine.heads)
+                        if head.uid == step.selected_laser_uid
+                    )
+                except StopIteration:
+                    pass  # Fallback to index 0
+            laser_row.set_selected(initial_index)
+
+            laser_row.connect("notify::selected", self.on_laser_selected)
+            general_group.add(laser_row)
+
         # Power Slider
         power_row = Adw.ActionRow(title=_("Power (%)"))
         power_adjustment = Gtk.Adjustment(
@@ -102,9 +124,14 @@ class StepSettingsDialog(Adw.Window):
             digits=0,
             draw_value=True,
         )
-        max_power = (
-            step.laser_dict.get("max_power", 1000) if step.laser_dict else 1000
-        )
+        max_power = 1000  # Default fallback
+        if config.machine:
+            try:
+                selected_laser = step.get_selected_laser(config.machine)
+                max_power = selected_laser.max_power
+            except (ValueError, IndexError):
+                # Handles case where machine has no heads
+                pass
         power_percent = (step.power / max_power * 100) if max_power > 0 else 0
         power_adjustment.set_value(power_percent)
         power_scale.set_size_request(300, -1)
@@ -223,6 +250,46 @@ class StepSettingsDialog(Adw.Window):
 
         self.changed = Signal()
 
+    def on_laser_selected(self, combo_row, pspec):
+        """Handles changes in the laser head selection."""
+        if not config.machine or not config.machine.heads:
+            return
+
+        selected_index = combo_row.get_selected()
+        selected_laser = config.machine.heads[selected_index]
+        new_uid = selected_laser.uid
+
+        if self.step.selected_laser_uid == new_uid:
+            return
+
+        # Use a transaction to group laser and kerf changes into one
+        # undoable action.
+        with self.history_manager.transaction(_("Change Laser")) as t:
+            # Command for the laser UID
+            t.execute(
+                ChangePropertyCommand(
+                    target=self.step,
+                    property_name="selected_laser_uid",
+                    new_value=new_uid,
+                    setter_method_name="set_selected_laser_uid",
+                )
+            )
+
+            # Command for the kerf, using the new laser's spot size
+            new_kerf = selected_laser.spot_size_mm[0]
+            t.execute(
+                ChangePropertyCommand(
+                    target=self.step,
+                    property_name="kerf_mm",
+                    new_value=new_kerf,
+                    setter_method_name="set_kerf_mm",
+                )
+            )
+            # Update the UI to reflect the new model state
+            self.kerf_row.set_value(new_kerf)
+
+        self.changed.send(self)
+
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events, closing the dialog on Escape or Ctrl+W."""
         has_ctrl = state & Gdk.ModifierType.CONTROL_MASK
@@ -281,11 +348,14 @@ class StepSettingsDialog(Adw.Window):
             self.changed.send(self)
 
     def on_power_changed(self, scale):
-        max_power = (
-            self.step.laser_dict.get("max_power", 1000)
-            if self.step.laser_dict
-            else 1000
-        )
+        max_power = 1000  # Default fallback
+        if config.machine:
+            try:
+                selected_laser = self.step.get_selected_laser(config.machine)
+                max_power = selected_laser.max_power
+            except (ValueError, IndexError):
+                # Handles case where machine has no heads
+                pass
         new_value = max_power / 100 * scale.get_value()
         command = ChangePropertyCommand(
             target=self.step,

@@ -47,7 +47,7 @@ class Machine:
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
-        self.dialect_name: str = "GRBL"
+        self.dialect_name: str = "grbl"
         self.gcode_precision: int = 3
         self.hookscripts: Dict[ScriptTrigger, Script] = {}
         self.macros: Dict[str, Script] = {}
@@ -230,6 +230,10 @@ class Machine:
             True if connected, False otherwise.
         """
         return self.connection_status == TransportStatus.CONNECTED
+
+    async def select_tool(self, index: int):
+        """Sends a command to the driver to select a tool."""
+        await self.driver.select_tool(index)
 
     def set_name(self, name: str):
         self.name = str(name)
@@ -495,7 +499,7 @@ class Machine:
             "clear_alarm_on_connect", ma.clear_alarm_on_connect
         )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
-        ma.dialect_name = ma_data.get("dialect", "GRBL")
+        ma.dialect_name = ma_data.get("dialect", "grbl")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
 

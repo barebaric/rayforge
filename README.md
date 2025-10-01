@@ -27,6 +27,7 @@ Rayforge is a modern, cross-platform G-code sender and control software for GRBL
 | **Holding Tabs**             | Add tabs to contour cuts to hold pieces in place. Supports manual and automatic placement.         |
 | **G-code Macros & Hooks**    | Run custom G-code snippets before/after jobs. Supports variable substitution.                      |
 | **Broad File Support**       | Import from SVG, DXF, PDF, JPEG, PNG, BMP, and even Ruida files (`.rd`).                           |
+| **Multi-Laser Operations**   | Choose different lasers for each operation in a job                                                |
 | **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                     |
 | **Cross-Platform**           | Native builds for Linux and Windows.                                                               |
 | **Extensible**               | Open development model makes it easy to [add support for new devices](docs/driver.md).             |

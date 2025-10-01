@@ -68,51 +68,51 @@ class DepthEngraver(OpsProducer):
             raise ValueError("Unsupported Cairo surface format")
 
         final_ops = Ops()
+        # Always start with the section marker
         final_ops.add(
             OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
         )
 
         width_px = surface.get_width()
         height_px = surface.get_height()
-        if width_px == 0 or height_px == 0:
-            final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
-            return PipelineArtifact(
-                ops=final_ops,
-                is_scalable=False,
-                source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        if width_px > 0 and height_px > 0:
+            stride = surface.get_stride()
+            buf = surface.get_data()
+            data_with_padding = np.ndarray(
+                shape=(height_px, stride // 4, 4), dtype=np.uint8, buffer=buf
             )
+            data = data_with_padding[:, :width_px, :]
 
-        stride = surface.get_stride()
-        buf = surface.get_data()
-        data_with_padding = np.ndarray(
-            shape=(height_px, stride // 4, 4), dtype=np.uint8, buffer=buf
-        )
-        data = data_with_padding[:, :width_px, :]
-
-        alpha = data[:, :, 3]
-        gray_image = (
-            0.2989 * data[:, :, 2]
-            + 0.5870 * data[:, :, 1]
-            + 0.1140 * data[:, :, 0]
-        )
-        gray_image[alpha == 0] = 255
-
-        if self.depth_mode == DepthMode.POWER_MODULATION:
-            mode_ops = self._run_power_modulation(
-                gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
+            alpha = data[:, :, 3]
+            gray_image = (
+                0.2989 * data[:, :, 2]
+                + 0.5870 * data[:, :, 1]
+                + 0.1140 * data[:, :, 0]
             )
-        else:
-            if not np.isclose(self.scan_angle, 0):
-                logger.warning(
-                    "Angled scanning is not supported for Multi-Pass "
-                    "depth engraving. Defaulting to horizontal (0 degrees)."
+            gray_image[alpha == 0] = 255
+
+            if self.depth_mode == DepthMode.POWER_MODULATION:
+                mode_ops = self._run_power_modulation(
+                    gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
                 )
-            mode_ops = self._run_multi_pass(
-                gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
-            )
+            else:
+                if not np.isclose(self.scan_angle, 0):
+                    logger.warning(
+                        "Angled scanning is not supported for Multi-Pass "
+                        "depth engraving. Defaulting to horizontal "
+                        "(0 degrees)."
+                    )
+                mode_ops = self._run_multi_pass(
+                    gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
+                )
 
-        final_ops.extend(mode_ops)
+            if not mode_ops.is_empty():
+                final_ops.set_laser(laser.uid)
+                final_ops.extend(mode_ops)
+
+        # Always close with the section end marker
         final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+
         return PipelineArtifact(
             ops=final_ops,
             is_scalable=False,

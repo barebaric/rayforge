@@ -13,6 +13,7 @@ from ...core.geo import contours, Geometry
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class EdgeTracer(OpsProducer):
 
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface,
         pixels_per_mm,
         *,
@@ -57,9 +58,6 @@ class EdgeTracer(OpsProducer):
             raise ValueError("EdgeTracer requires a workpiece context.")
 
         final_ops = Ops()
-        final_ops.add(
-            OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
-        )
 
         # 1. Calculate total offset from producer and step settings
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -153,8 +151,15 @@ class EdgeTracer(OpsProducer):
                 final_geometry = composite_geo
 
         # 5. Convert to Ops. No further scaling is needed.
-        final_ops.extend(Ops.from_geometry(final_geometry))
-        final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+        if not final_geometry.is_empty():
+            final_ops.set_laser(laser.uid)
+            final_ops.add(
+                OpsSectionStartCommand(
+                    SectionType.VECTOR_OUTLINE, workpiece.uid
+                )
+            )
+            final_ops.extend(Ops.from_geometry(final_geometry))
+            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.

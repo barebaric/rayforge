@@ -11,6 +11,7 @@ from ...core.geo import Geometry
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class FrameProducer(OpsProducer):
 
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface,  # Unused
         pixels_per_mm,  # Unused
         *,
@@ -54,6 +55,8 @@ class FrameProducer(OpsProducer):
     ) -> PipelineArtifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")
+
+        final_ops = Ops()
 
         # 1. Calculate total offset
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -85,20 +88,22 @@ class FrameProducer(OpsProducer):
             # a negative offset shrinks it. This aligns with our calculation.
             geo = geo.grow(total_offset)
 
-        frame_ops = Ops.from_geometry(geo)
-
-        logger.info(
-            f"Generated frame with final geometry. Rect: {frame_ops.rect()}"
-        )
-
-        # Build the final Ops object
-        final_ops = Ops()
-        final_ops.add(
-            OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, workpiece.uid)
-        )
-        final_ops.set_power((settings or {}).get("power", 0))
-        final_ops.extend(frame_ops)
-        final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+        if not geo.is_empty():
+            frame_ops = Ops.from_geometry(geo)
+            logger.info(
+                f"Generated frame with final geometry. "
+                f"Rect: {frame_ops.rect()}"
+            )
+            # Build the final Ops object
+            final_ops.set_laser(laser.uid)
+            final_ops.add(
+                OpsSectionStartCommand(
+                    SectionType.VECTOR_OUTLINE, workpiece.uid
+                )
+            )
+            final_ops.set_power((settings or {}).get("power", 0))
+            final_ops.extend(frame_ops)
+            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
         # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
         #    final size, ready for positioning.

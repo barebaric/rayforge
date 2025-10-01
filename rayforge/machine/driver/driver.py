@@ -191,6 +191,13 @@ class Driver(ABC):
         pass
 
     @abstractmethod
+    async def select_tool(self, tool_number: int) -> None:
+        """
+        Sends a command to select a new tool/laser head by its number.
+        """
+        pass
+
+    @abstractmethod
     async def read_settings(self) -> None:
         """
         Reads the configuration settings from the device.

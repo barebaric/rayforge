@@ -24,6 +24,20 @@ class MachineCmd:
         driver = machine.driver
         task_mgr.add_coroutine(lambda ctx: driver.home(), key="home-machine")
 
+    def select_tool(self, machine: "Machine", head_index: int):
+        """Adds a 'select_head' task to the task manager."""
+        if not (0 <= head_index < len(machine.heads)):
+            logger.error(f"Invalid head index {head_index} for tool selection")
+            return
+
+        head = machine.heads[head_index]
+        tool_number = head.tool_number
+
+        driver = machine.driver
+        task_mgr.add_coroutine(
+            lambda ctx: driver.select_tool(tool_number), key="select-head"
+        )
+
     def frame_job(self, machine: "Machine"):
         """
         Generates ops for the current document and runs a framing job on the

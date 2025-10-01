@@ -7,6 +7,7 @@ from ...core.ops import Ops
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
 
 
 class CutSide(Enum):
@@ -126,7 +127,7 @@ class OpsProducer(ABC):
     @abstractmethod
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface,
         pixels_per_mm,
         *,
@@ -155,7 +156,7 @@ class OpsProducer(ABC):
     def requires_full_render(self) -> bool:
         """
         Returns True if a producer requires the entire workpiece to be
-        rendered into a single surface, even if its output is scalable.
+        rendered into a single surface, even though its output is scalable.
         This is essential for algorithms that need a global view of the image,
         like hulling, and forces the pipeline to provide a raster input.
         """

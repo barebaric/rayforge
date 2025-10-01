@@ -53,7 +53,9 @@ def checkerboard_surface():
 
 
 def test_rasterize_horizontally_white(white_surface):
-    """Tests horizontal rasterization on a white surface should produce no ops."""
+    """
+    Tests horizontal rasterization on a white surface should produce no ops.
+    """
     ops = rasterize_horizontally(
         white_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
     )
@@ -61,7 +63,9 @@ def test_rasterize_horizontally_white(white_surface):
 
 
 def test_rasterize_vertically_white(white_surface):
-    """Tests vertical rasterization on a white surface should produce no ops."""
+    """
+    Tests vertical rasterization on a white surface should produce no ops.
+    """
     ops = rasterize_vertically(
         white_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
     )
@@ -99,7 +103,9 @@ def test_rasterizer_serialization():
 
 
 def test_rasterizer_run_requires_workpiece(white_surface):
-    """Tests that the run method raises an error if no workpiece is provided."""
+    """
+    Tests that the run method raises an error if no workpiece is provided.
+    """
     laser = MagicMock()
     rasterizer = Rasterizer()
     with pytest.raises(ValueError, match="requires a workpiece context"):
@@ -115,9 +121,9 @@ def test_run_with_empty_surface_returns_empty_ops():
     artifact = rasterizer.run(
         laser, empty_surface, (10, 10), workpiece=mock_workpiece
     )
-    assert len(artifact.ops.commands) == 3  # Start, SetPower, End
+    assert len(artifact.ops.commands) == 2  # Start, End
     assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
-    assert isinstance(artifact.ops.commands[2], OpsSectionEndCommand)
+    assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
 
 
 def test_rasterizer_run_wraps_ops_in_section_markers(white_surface):
@@ -131,8 +137,8 @@ def test_rasterizer_run_wraps_ops_in_section_markers(white_surface):
     artifact = rasterizer.run(
         laser, white_surface, (10, 10), workpiece=mock_workpiece
     )
-    assert len(artifact.ops.commands) == 3  # Start, SetPower, End
-    start_cmd, end_cmd = artifact.ops.commands[0], artifact.ops.commands[2]
+    assert len(artifact.ops.commands) == 2  # Start, End
+    start_cmd, end_cmd = artifact.ops.commands[0], artifact.ops.commands[1]
     assert isinstance(start_cmd, OpsSectionStartCommand)
     assert start_cmd.section_type == SectionType.RASTER_FILL
     assert start_cmd.workpiece_uid == "wp_123"

@@ -16,6 +16,7 @@ from typing import Dict, Optional, Tuple, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
 from contextlib import contextmanager
+from .. import config
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.step import Step
@@ -505,7 +506,19 @@ class OpsGenerator:
             self._on_generation_complete(task, s_uid, w_uid, generation_id)
 
         settings = step.get_settings()
-        if not all([step.opsproducer_dict, step.laser_dict]):
+
+        if not config.config.machine:
+            logger.error("Cannot generate ops: No machine is configured.")
+            return
+
+        try:
+            selected_laser = step.get_selected_laser(config.config.machine)
+            laser_dict_for_subprocess = selected_laser.to_dict()
+        except ValueError as e:
+            logger.error(f"Cannot select laser for step '{step.name}': {e}")
+            return
+
+        if not all([step.opsproducer_dict, laser_dict_for_subprocess]):
             logger.error(
                 f"Step '{step.name}' is not fully configured. Skipping."
             )
@@ -530,7 +543,7 @@ class OpsGenerator:
             step.opsproducer_dict,
             step.modifiers_dicts,
             step.opstransformers_dicts,
-            step.laser_dict,
+            laser_dict_for_subprocess,
             settings,
             generation_id,
             generation_size,

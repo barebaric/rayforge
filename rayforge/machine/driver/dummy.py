@@ -42,6 +42,9 @@ class NoDeviceDriver(Driver):
     async def move_to(self, pos_x, pos_y) -> None:
         pass
 
+    async def select_tool(self, tool_number: int) -> None:
+        pass
+
     async def read_settings(self) -> None:
         pass
 

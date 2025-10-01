@@ -682,6 +682,9 @@ class Optimize(OpsTransformer):
                 if cmd.state.travel_speed != prev_state.travel_speed:
                     ops.set_travel_speed(cmd.state.travel_speed)
                     prev_state.travel_speed = cmd.state.travel_speed
+                if cmd.state.active_laser_uid != prev_state.active_laser_uid:
+                    ops.set_laser(cmd.state.active_laser_uid)
+                    prev_state.active_laser_uid = cmd.state.active_laser_uid
 
                 if not cmd.is_state_command():
                     ops.add(cmd)

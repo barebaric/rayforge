@@ -26,6 +26,7 @@ from .commands import (
     SetTravelSpeedCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
+    SetLaserCommand,
     JobStartCommand,
     JobEndCommand,
     LayerStartCommand,
@@ -96,6 +97,8 @@ class Ops:
                 new_ops.add(EnableAirAssistCommand())
             elif cmd_type == "DisableAirAssistCommand":
                 new_ops.add(DisableAirAssistCommand())
+            elif cmd_type == "SetLaserCommand":
+                new_ops.add(SetLaserCommand(laser_uid=cmd_data["laser_uid"]))
             elif cmd_type == "JobStartCommand":
                 new_ops.add(JobStartCommand())
             elif cmd_type == "JobEndCommand":
@@ -319,6 +322,14 @@ class Ops:
         This is a state declaration.
         """
         self.commands.append(DisableAirAssistCommand())
+
+    def set_laser(self, laser_uid: str) -> None:
+        """
+        Sets the intended active laser for subsequent commands.
+        This is a state declaration.
+        """
+        cmd = SetLaserCommand(laser_uid)
+        self.commands.append(cmd)
 
     def rect(
         self, include_travel: bool = False

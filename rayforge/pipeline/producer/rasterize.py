@@ -13,6 +13,7 @@ from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +272,7 @@ class Rasterizer(OpsProducer):
 
     def run(
         self,
-        laser,
+        laser: "Laser",
         surface,
         pixels_per_mm,
         *,
@@ -283,41 +284,48 @@ class Rasterizer(OpsProducer):
             raise ValueError("Rasterizer requires a workpiece context.")
 
         final_ops = Ops()
+        # Always add section markers
         final_ops.add(
             OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
         )
-        final_ops.set_power((settings or {}).get("power", 0))
 
         width = surface.get_width()
         height = surface.get_height()
         logger.debug(f"Rasterizer received surface: {width}x{height} pixels")
         logger.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
 
-        ymax = surface.get_height() / pixels_per_mm[1]
-        raster_ops = rasterize_horizontally(
-            surface,
-            ymax,  # y max for axis inversion
-            pixels_per_mm,
-            laser.spot_size_mm[1],
-            y_offset_mm=y_offset_mm,
-            threshold=self.threshold,
-        )
-        final_ops.extend(raster_ops)
-
-        if self.cross_hatch:
-            logger.info("Cross-hatch enabled, performing vertical pass.")
-            x_offset_mm = workpiece.bbox[0]
-            vertical_ops = rasterize_vertically(
+        raster_ops = Ops()
+        if width > 0 and height > 0:
+            ymax = height / pixels_per_mm[1]
+            raster_ops = rasterize_horizontally(
                 surface,
-                ymax,
+                ymax,  # y max for axis inversion
                 pixels_per_mm,
-                laser.spot_size_mm[0],
-                x_offset_mm=x_offset_mm,
+                laser.spot_size_mm[1],
+                y_offset_mm=y_offset_mm,
                 threshold=self.threshold,
             )
-            final_ops.extend(vertical_ops)
+
+            if self.cross_hatch:
+                logger.info("Cross-hatch enabled, performing vertical pass.")
+                x_offset_mm = workpiece.bbox[0]
+                vertical_ops = rasterize_vertically(
+                    surface,
+                    ymax,
+                    pixels_per_mm,
+                    laser.spot_size_mm[0],
+                    x_offset_mm=x_offset_mm,
+                    threshold=self.threshold,
+                )
+                raster_ops.extend(vertical_ops)
+
+        if not raster_ops.is_empty():
+            final_ops.set_laser(laser.uid)
+            final_ops.set_power((settings or {}).get("power", 0))
+            final_ops.extend(raster_ops)
 
         final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+
         return PipelineArtifact(
             ops=final_ops,
             is_scalable=False,

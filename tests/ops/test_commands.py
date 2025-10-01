@@ -19,6 +19,7 @@ from rayforge.core.ops.commands import (
     LayerEndCommand,
     WorkpieceStartCommand,
     WorkpieceEndCommand,
+    SetLaserCommand,
 )
 
 
@@ -105,6 +106,17 @@ def test_disable_air_assist_command():
     assert cmd.is_state_command()
     data = cmd.to_dict()
     assert data["type"] == "DisableAirAssistCommand"
+
+
+def test_set_laser_command():
+    cmd = SetLaserCommand(laser_uid="laser-123")
+    state = State(active_laser_uid=None)
+    cmd.apply_to_state(state)
+    assert state.active_laser_uid == "laser-123"
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetLaserCommand"
+    assert data["laser_uid"] == "laser-123"
 
 
 # --- Marker Command Tests ---

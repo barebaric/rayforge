@@ -166,6 +166,11 @@ class SmoothieDriver(Driver):
         cmd = f"G90 G0 X{float(pos_x)} Y{float(pos_y)}"
         await self._send_and_wait(cmd.encode())
 
+    async def select_tool(self, tool_number: int) -> None:
+        """Sends a tool change command for the given tool number."""
+        cmd = f"T{tool_number}"
+        await self._send_and_wait(cmd.encode())
+
     async def clear_alarm(self) -> None:
         await self._send_and_wait(b"M999")
 

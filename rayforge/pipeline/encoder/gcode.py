@@ -9,6 +9,7 @@ from ...core.ops import (
     SetTravelSpeedCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
+    SetLaserCommand,
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
@@ -56,6 +57,7 @@ class GcodeEncoder(OpsEncoder):
         )
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
+        self.active_laser_uid: Optional[str] = None
         self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
 
@@ -125,6 +127,8 @@ class GcodeEncoder(OpsEncoder):
                 self._set_air_assist(gcode, True)
             case DisableAirAssistCommand():
                 self._set_air_assist(gcode, False)
+            case SetLaserCommand():
+                self._handle_set_laser(gcode, cmd.laser_uid, context)
             case MoveToCommand():
                 self._handle_move_to(gcode, *cmd.end)
                 self.current_pos = cmd.end
@@ -193,6 +197,31 @@ class GcodeEncoder(OpsEncoder):
         if self.dialect.set_speed and speed != self.emitted_speed:
             gcode.append(self.dialect.set_speed.format(speed=speed))
             self.emitted_speed = speed
+
+    def _handle_set_laser(
+        self, gcode: List[str], laser_uid: str, context: GcodeContext
+    ):
+        """Handles a SetLaserCommand by emitting a tool change command."""
+        if self.active_laser_uid == laser_uid:
+            return
+
+        laser_head = next(
+            (head for head in context.machine.heads if head.uid == laser_uid),
+            None,
+        )
+
+        if laser_head is None:
+            logger.warning(
+                f"Could not find laser with UID '{laser_uid}' on the "
+                "current machine. Tool change command will not be emitted."
+            )
+            return
+
+        cmd_str = self.dialect.tool_change.format(
+            tool_number=laser_head.tool_number
+        )
+        gcode.append(cmd_str)
+        self.active_laser_uid = laser_uid
 
     def _update_power(
         self, gcode: List[str], power: float, machine: "Machine"

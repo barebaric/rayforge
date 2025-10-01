@@ -14,6 +14,7 @@ class State:
     air_assist: bool = False
     cut_speed: Optional[int] = None
     travel_speed: Optional[int] = None
+    active_laser_uid: Optional[str] = None
 
     def allow_rapid_change(self, target_state: State) -> bool:
         """
@@ -250,6 +251,23 @@ class DisableAirAssistCommand(Command):
 
     def apply_to_state(self, state: "State") -> None:
         state.air_assist = False
+
+
+class SetLaserCommand(Command):
+    def __init__(self, laser_uid: str) -> None:
+        super().__init__()
+        self.laser_uid = laser_uid
+
+    def is_state_command(self) -> bool:
+        return True
+
+    def apply_to_state(self, state: "State") -> None:
+        state.active_laser_uid = self.laser_uid
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["laser_uid"] = self.laser_uid
+        return d
 
 
 @dataclass(frozen=True, repr=False)

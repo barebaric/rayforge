@@ -174,7 +174,7 @@ def test_run_with_empty_surface_returns_empty_ops(
     artifact = producer.run(
         laser, empty_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
-    # Should only contain the start/end markers
+    # Should only contain the start/SetLaser/end markers
     assert len(artifact.ops.commands) == 2
     assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
     assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)

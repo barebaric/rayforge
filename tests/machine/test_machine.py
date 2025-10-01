@@ -203,6 +203,7 @@ class TestMachine:
         cancel_spy = mocker.spy(machine.driver, "cancel")
         set_hold_spy = mocker.spy(machine.driver, "set_hold")
         clear_alarm_spy = mocker.spy(machine.driver, "clear_alarm")
+        select_tool_spy = mocker.spy(machine.driver, "select_tool")
 
         # Home
         machine_cmd.home_machine(machine)
@@ -229,6 +230,17 @@ class TestMachine:
         machine_cmd.clear_alarm(machine)
         await wait_for_tasks_to_finish()
         clear_alarm_spy.assert_called_once()
+
+        # Select Tool
+        # Add a second laser to make index 1 valid
+        laser2 = Laser()
+        laser2.tool_number = 5  # Give it a distinct tool number
+        machine.add_head(laser2)
+        assert len(machine.heads) == 2
+
+        machine_cmd.select_tool(machine, 1)
+        await wait_for_tasks_to_finish()
+        select_tool_spy.assert_called_once_with(5)
 
     @pytest.mark.asyncio
     async def test_shutdown_cleans_up_driver(self, machine: Machine, mocker):

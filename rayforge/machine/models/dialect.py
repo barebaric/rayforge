@@ -44,6 +44,7 @@ class GcodeDialect:
     # Command Templates
     laser_on: str
     laser_off: str
+    tool_change: str
     set_speed: str
     travel_move: str
     linear_move: str
@@ -70,7 +71,7 @@ class GcodeDialect:
         Formats the feed rate (F-word) for a command. Returns an empty
         string if the speed is None, preventing invalid G-code.
         """
-        return f" F{speed}" if speed is not None else ""
+        return f" F{int(speed)}" if speed is not None else ""
 
     def __post_init__(self):
         """Automatically register the dialect instance after it's created."""
@@ -83,6 +84,7 @@ GRBL_DIALECT = GcodeDialect(
     description=_("Standard GRBL for most diode lasers and hobby CNCs."),
     laser_on="M4 S{power}",
     laser_off="M5",
+    tool_change="T{tool_number}",
     set_speed="",
     travel_move="G0 X{x} Y{y} Z{z}{f_command}",
     linear_move="G1 X{x} Y{y} Z{z}{f_command}",
@@ -90,10 +92,7 @@ GRBL_DIALECT = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=[
-        "G21 ;Set units to mm",
-        "G90 ;Absolute positioning"
-    ],
+    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
     default_postscript=[
         "M5 ;Ensure laser is off",
         "G0 X0 Y0 ;Return to origin",
@@ -104,11 +103,11 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     name="grbl_noz",
     label=_("GRBL (no Z axis)"),
     description=_(
-        "Standard GRBL, but removes Z axis commands "
-        "for more efficient G-code."
+        "Standard GRBL, but removes Z axis commands for more efficient G-code."
     ),
     laser_on="M4 S{power}",
     laser_off="M5",
+    tool_change="T{tool_number}",
     set_speed="",
     travel_move="G0 X{x} Y{y}{f_command}",
     linear_move="G1 X{x} Y{y}{f_command}",
@@ -116,9 +115,7 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=[
-        "G21 ;Set units to mm",
-        "G90 ;Absolute positioning"],
+    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
     default_postscript=[
         "M5 ;Ensure laser is off",
         "G0 X0 Y0 ;Return to origin",
@@ -131,6 +128,7 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     description=_("G-code dialect for Smoothieware-based controllers."),
     laser_on="M3 S{power}",
     laser_off="M5",
+    tool_change="T{tool_number}",
     set_speed="",
     travel_move="G0 X{x} Y{y} Z{z}{f_command}",
     linear_move="G1 X{x} Y{y} Z{z}{f_command}",
@@ -153,6 +151,7 @@ MARLIN_DIALECT = GcodeDialect(
     ),
     laser_on="M4 S{power}",
     laser_off="M5",
+    tool_change="T{tool_number}",
     set_speed="",
     travel_move="G0 X{x} Y{y} Z{z}{f_command}",
     linear_move="G1 X{x} Y{y} Z{z}{f_command}",
