@@ -389,10 +389,6 @@ class WorkSurface(Canvas):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""
-        # Disable workpiece interaction in preview mode
-        if self._preview_mode:
-            return
-
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
             if self.right_click_context:
@@ -1089,7 +1085,7 @@ class WorkSurface(Canvas):
     def set_preview_mode(self, enabled: bool, preview_overlay=None):
         """
         Enables or disables preview mode. When enabled:
-        - Workpiece selection and transformation are disabled
+        - Workpiece selection and transformation remain enabled
         - Zoom and pan gestures remain active
         - Grid and axis render normally
         - Preview overlay is shown on top
@@ -1100,9 +1096,6 @@ class WorkSurface(Canvas):
         self._preview_mode = enabled
 
         if enabled:
-            # Unselect all elements when entering preview mode
-            self.unselect_all()
-
             # Add preview overlay if provided
             if preview_overlay:
                 self._preview_overlay = preview_overlay

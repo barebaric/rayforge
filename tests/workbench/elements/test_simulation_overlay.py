@@ -2,7 +2,7 @@
 
 import pytest
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand, SetPowerCommand, SetCutSpeedCommand
-from rayforge.workbench.elements.preview_overlay import (
+from rayforge.workbench.elements.simulation_overlay import (
     PreviewOverlay,
     OpsTimeline,
     speed_to_heatmap_color,

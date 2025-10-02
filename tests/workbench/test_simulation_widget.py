@@ -3,7 +3,7 @@
 import pytest
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.core.ops.commands import SetPowerCommand, SetCutSpeedCommand
-from rayforge.workbench.preview_widget import OpsTimeline, PreviewRenderer
+from rayforge.workbench.simulation_widget import OpsTimeline, PreviewRenderer
 
 
 def test_ops_timeline_empty():
