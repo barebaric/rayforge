@@ -3,7 +3,7 @@
 import pytest
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand, SetPowerCommand, SetCutSpeedCommand
 from rayforge.workbench.elements.simulation_overlay import (
-    PreviewOverlay,
+    SimulationOverlay,
     OpsTimeline,
     speed_to_heatmap_color,
 )
@@ -53,7 +53,7 @@ def test_ops_timeline_speed_range():
 
 def test_preview_overlay_initialization():
     """Test preview overlay initialization."""
-    overlay = PreviewOverlay((100.0, 100.0))
+    overlay = SimulationOverlay((100.0, 100.0))
 
     assert overlay.width == 100.0
     assert overlay.height == 100.0
@@ -63,7 +63,7 @@ def test_preview_overlay_initialization():
 
 def test_preview_overlay_set_ops():
     """Test setting operations on overlay."""
-    overlay = PreviewOverlay((100.0, 100.0))
+    overlay = SimulationOverlay((100.0, 100.0))
 
     ops = Ops()
     ops.add(SetPowerCommand(50))
@@ -78,7 +78,7 @@ def test_preview_overlay_set_ops():
 
 def test_preview_overlay_set_step():
     """Test setting current playback step."""
-    overlay = PreviewOverlay((100.0, 100.0))
+    overlay = SimulationOverlay((100.0, 100.0))
 
     ops = Ops()
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
@@ -93,7 +93,7 @@ def test_preview_overlay_set_step():
 
 def test_preview_overlay_empty_ops():
     """Test overlay with no operations."""
-    overlay = PreviewOverlay((100.0, 100.0))
+    overlay = SimulationOverlay((100.0, 100.0))
     overlay.set_ops(None)
 
     assert overlay.get_step_count() == 0

@@ -31,7 +31,7 @@ from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
-from .workbench.elements.simulation_overlay import PreviewOverlay
+from .workbench.elements.simulation_overlay import SimulationOverlay
 from .workbench.simulation_controls import PreviewControls
 from .doceditor.ui.layer_list import LayerListView
 from .machine.transport import TransportStatus
@@ -248,7 +248,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.document_settled.connect(self._on_document_settled)
 
         # Preview mode uses the 2D canvas with overlay
-        self.preview_overlay = None
+        self.simulation_overlay = None
         self.preview_controls = None
         self.preview_controls_step_changed_handler_id = None
 
@@ -409,7 +409,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
         else:
             # Animate the pane closed, but not if simulation is active
-            if self.preview_overlay is None:
+            if self.simulation_overlay is None:
                 self.left_content_pane.set_position(0)
                 self.gcode_previewer.clear()
 
@@ -567,19 +567,19 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             work_area_size = (100.0, 100.0)
 
-        # Create preview overlay
-        self.preview_overlay = PreviewOverlay(work_area_size)
+        # Create simulation overlay
+        self.simulation_overlay = SimulationOverlay(work_area_size)
 
         # Aggregate operations from all layers
         full_ops = self._aggregate_ops_for_3d_view()
-        self.preview_overlay.set_ops(full_ops)
+        self.simulation_overlay.set_ops(full_ops)
         self._update_gcode_preview(full_ops)
 
         # Enable preview mode on the canvas
-        self.surface.set_preview_mode(True, self.preview_overlay)
+        self.surface.set_preview_mode(True, self.simulation_overlay)
 
         # Create and show preview controls
-        self.preview_controls = PreviewControls(self.preview_overlay)
+        self.preview_controls = PreviewControls(self.simulation_overlay)
         self.surface_overlay.add_overlay(self.preview_controls)
         self.preview_controls_step_changed_handler_id = \
             self.preview_controls.connect("step-changed",
@@ -602,7 +602,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.surface_overlay.remove_overlay(self.preview_controls)
             self.preview_controls = None
 
-        self.preview_overlay = None
+        self.simulation_overlay = None
         self.left_content_pane.set_position(0)
         self.gcode_previewer.clear_highlight()
 

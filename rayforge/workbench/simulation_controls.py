@@ -14,7 +14,7 @@ class PreviewControls(Gtk.Box):
 
     def __init__(
         self,
-        preview_overlay,
+        simulation_overlay,
         target_duration_sec: float = 5.0,
         **kwargs,
     ):
@@ -23,7 +23,7 @@ class PreviewControls(Gtk.Box):
             spacing=6,
             **kwargs,
         )
-        self.preview_overlay = preview_overlay
+        self.simulation_overlay = simulation_overlay
         self.playing = False
         self.playback_timeout_id = None
         self.loop_enabled = False
@@ -111,7 +111,7 @@ class PreviewControls(Gtk.Box):
 
     def _update_slider_range(self):
         """Updates the slider range based on the number of steps."""
-        step_count = self.preview_overlay.get_step_count()
+        step_count = self.simulation_overlay.get_step_count()
         if step_count > 0:
             self.slider.set_range(0, step_count - 1)
             self.slider.set_value(0)
@@ -124,12 +124,12 @@ class PreviewControls(Gtk.Box):
     def _update_progress_label(self):
         """Updates the progress label."""
         current = int(self.slider.get_value())
-        total = self.preview_overlay.get_step_count()
+        total = self.simulation_overlay.get_step_count()
         self.progress_label.set_markup(f"<b>Step: {current + 1} / {total}</b>")
 
     def _update_speed_power_label(self):
         """Updates the speed and power label based on the current step."""
-        state = self.preview_overlay.get_current_state()
+        state = self.simulation_overlay.get_current_state()
         if state:
             speed = state.cut_speed if state.cut_speed is not None else 0.0
             power = state.power if state.power is not None else 0.0
@@ -147,14 +147,14 @@ class PreviewControls(Gtk.Box):
     def _on_slider_changed(self, slider):
         """Handles slider value changes."""
         step = int(slider.get_value())
-        self.preview_overlay.set_step(step)
+        self.simulation_overlay.set_step(step)
         self._update_progress_label()
         self._update_speed_power_label()
         self.emit("step-changed", step)
 
         # Trigger redraw of the canvas
-        if self.preview_overlay.canvas:
-            self.preview_overlay.canvas.queue_draw()
+        if self.simulation_overlay.canvas:
+            self.simulation_overlay.canvas.queue_draw()
 
     def _on_play_pause_clicked(self, button):
         """Handles play/pause button clicks."""
@@ -174,7 +174,7 @@ class PreviewControls(Gtk.Box):
         """Handles step forward button clicks."""
         self._pause_playback()
         current = int(self.slider.get_value())
-        max_step = self.preview_overlay.get_step_count() - 1
+        max_step = self.simulation_overlay.get_step_count() - 1
         new_value = min(max_step, current + 1)
         self.slider.set_value(new_value)
 
@@ -185,7 +185,7 @@ class PreviewControls(Gtk.Box):
 
         # Calculate step increment to complete in target duration
         fps = 24
-        step_count = self.preview_overlay.get_step_count()
+        step_count = self.simulation_overlay.get_step_count()
         if step_count > 0:
             target_frames = self.target_duration_sec * fps
             self.step_increment = step_count / target_frames
@@ -210,7 +210,7 @@ class PreviewControls(Gtk.Box):
     def _advance_step(self):
         """Advances to the next step during playback."""
         current = self.slider.get_value()  # Use float value
-        max_step = self.preview_overlay.get_step_count() - 1
+        max_step = self.simulation_overlay.get_step_count() - 1
 
         # Advance by step increment (can be fractional)
         next_value = current + self.step_increment

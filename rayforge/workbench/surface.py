@@ -1082,13 +1082,13 @@ class WorkSurface(Canvas):
         """Returns True if preview mode is active."""
         return self._preview_mode
 
-    def set_preview_mode(self, enabled: bool, preview_overlay=None):
+    def set_preview_mode(self, enabled: bool, simulation_overlay=None):
         """
         Enables or disables preview mode. When enabled:
         - Workpiece selection and transformation remain enabled
         - Zoom and pan gestures remain active
         - Grid and axis render normally
-        - Preview overlay is shown on top
+        - Simulation overlay is shown on top
         """
         if self._preview_mode == enabled:
             return
@@ -1096,12 +1096,12 @@ class WorkSurface(Canvas):
         self._preview_mode = enabled
 
         if enabled:
-            # Add preview overlay if provided
-            if preview_overlay:
-                self._preview_overlay = preview_overlay
+            # Add simulation overlay if provided
+            if simulation_overlay:
+                self._preview_overlay = simulation_overlay
                 self.root.add(self._preview_overlay)
         else:
-            # Remove preview overlay when exiting
+            # Remove simulation overlay when exiting
             if self._preview_overlay:
                 self._preview_overlay.remove()
                 self._preview_overlay = None

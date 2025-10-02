@@ -106,9 +106,9 @@ class OpsTimeline:
         return self.steps[: step_index + 1]
 
 
-class PreviewOverlay(CanvasElement):
+class SimulationOverlay(CanvasElement):
     """
-    Canvas element that renders the operations preview with heatmap colors
+    Canvas element that renders the operations simulation with heatmap colors
     and power-based transparency.
     """
 
