@@ -68,9 +68,9 @@ class WorkSurface(Canvas):
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
 
-        # Preview mode state
-        self._preview_mode = False
-        self._preview_overlay: Optional[CanvasElement] = None
+        # Simulation mode state
+        self._simulation_mode = False
+        self._simulation_overlay: Optional[CanvasElement] = None
 
         # The root element is now static and sized in world units (mm).
         self.root.set_size(self.width_mm, self.height_mm)
@@ -1078,32 +1078,32 @@ class WorkSurface(Canvas):
 
         self._finalize_selection_state()
 
-    def is_preview_mode(self) -> bool:
-        """Returns True if preview mode is active."""
-        return self._preview_mode
+    def is_simulation_mode(self) -> bool:
+        """Returns True if simulation mode is active."""
+        return self._simulation_mode
 
-    def set_preview_mode(self, enabled: bool, simulation_overlay=None):
+    def set_simulation_mode(self, enabled: bool, simulation_overlay=None):
         """
-        Enables or disables preview mode. When enabled:
+        Enables or disables simulation mode. When enabled:
         - Workpiece selection and transformation remain enabled
         - Zoom and pan gestures remain active
         - Grid and axis render normally
         - Simulation overlay is shown on top
         """
-        if self._preview_mode == enabled:
+        if self._simulation_mode == enabled:
             return
 
-        self._preview_mode = enabled
+        self._simulation_mode = enabled
 
         if enabled:
             # Add simulation overlay if provided
             if simulation_overlay:
-                self._preview_overlay = simulation_overlay
-                self.root.add(self._preview_overlay)
+                self._simulation_overlay = simulation_overlay
+                self.root.add(self._simulation_overlay)
         else:
             # Remove simulation overlay when exiting
-            if self._preview_overlay:
-                self._preview_overlay.remove()
-                self._preview_overlay = None
+            if self._simulation_overlay:
+                self._simulation_overlay.remove()
+                self._simulation_overlay = None
 
         self.queue_draw()

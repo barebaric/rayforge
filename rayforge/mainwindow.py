@@ -575,8 +575,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.simulation_overlay.set_ops(full_ops)
         self._update_gcode_preview(full_ops)
 
-        # Enable preview mode on the canvas
-        self.surface.set_preview_mode(True, self.simulation_overlay)
+        # Enable simulation mode on the canvas
+        self.surface.set_simulation_mode(True, self.simulation_overlay)
 
         # Create and show preview controls
         self.preview_controls = PreviewControls(self.simulation_overlay)
@@ -590,8 +590,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.preview_controls._start_playback()
 
     def _exit_simulate_mode(self):
-        """Exits preview mode by disabling it on the canvas."""
-        self.surface.set_preview_mode(False)
+        """Exits simulation mode by disabling it on the canvas."""
+        self.surface.set_simulation_mode(False)
 
         # Remove preview controls
         if self.preview_controls:
