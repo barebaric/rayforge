@@ -30,7 +30,7 @@ def test_ops_timeline_creation():
 
     timeline = OpsTimeline(ops)
 
-    assert timeline.get_step_count() == 2
+    assert timeline.get_step_count() == 4
     min_speed, max_speed = timeline.speed_range
     assert min_speed == 1000.0
     assert max_speed == 1000.0
@@ -73,7 +73,7 @@ def test_preview_overlay_set_ops():
 
     overlay.set_ops(ops)
 
-    assert overlay.get_step_count() == 2
+    assert overlay.get_step_count() == 4
 
 
 def test_preview_overlay_set_step():

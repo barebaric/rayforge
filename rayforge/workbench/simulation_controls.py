@@ -1,6 +1,6 @@
 """Preview playback controls overlay."""
 
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GObject
 
 
 class PreviewControls(Gtk.Box):
@@ -8,6 +8,9 @@ class PreviewControls(Gtk.Box):
     Control panel for preview playback with play/pause, slider, and
     progress display. Designed to overlay on top of the canvas.
     """
+    __gsignals__ = {
+        'step-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))
+    }
 
     def __init__(
         self,
@@ -147,6 +150,7 @@ class PreviewControls(Gtk.Box):
         self.preview_overlay.set_step(step)
         self._update_progress_label()
         self._update_speed_power_label()
+        self.emit("step-changed", step)
 
         # Trigger redraw of the canvas
         if self.preview_overlay.canvas:

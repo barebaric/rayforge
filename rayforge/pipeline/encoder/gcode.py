@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List, Tuple, Dict
 from ...core.ops import (
     Ops,
     Command,
@@ -70,7 +70,8 @@ class GcodeEncoder(OpsEncoder):
         dialect = get_dialect(machine.dialect_name)
         return cls(dialect)
 
-    def encode(self, ops: Ops, machine: "Machine", doc: "Doc") -> str:
+    def encode(self, ops: Ops, machine: "Machine", doc: "Doc") -> \
+            Tuple[str, Dict[int, int]]:
         """Main encoding workflow"""
         # Set the coordinate format based on the machine's precision setting
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
@@ -80,10 +81,14 @@ class GcodeEncoder(OpsEncoder):
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
         )
         gcode: List[str] = []
-        for cmd in ops:
+        op_to_line_map: Dict[int, int] = {}
+
+        for i, cmd in enumerate(ops):
+            op_to_line_map[i] = len(gcode)
             self._handle_command(gcode, cmd, context)
+
         self._finalize(gcode)
-        return "\n".join(gcode)
+        return "\n".join(gcode), op_to_line_map
 
     def _emit_scripts(
         self, gcode: List[str], context: GcodeContext, trigger: ScriptTrigger

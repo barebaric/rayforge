@@ -247,6 +247,11 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
 
+        # Preview mode uses the 2D canvas with overlay
+        self.preview_overlay = None
+        self.preview_controls = None
+        self.preview_controls_step_changed_handler_id = None
+
         # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
         self.view_stack.set_transition_type(
@@ -299,10 +304,6 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Create a stack to switch between 2D and 3D views
             self.view_stack.add_named(self.canvas3d, "3d")
-
-        # Preview mode uses the 2D canvas with overlay
-        self.preview_overlay = None
-        self.preview_controls = None
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -407,9 +408,10 @@ class MainWindow(Adw.ApplicationWindow):
                 self._last_gcode_previewer_width
             )
         else:
-            # Animate the pane closed
-            self.left_content_pane.set_position(0)
-            self.gcode_previewer.clear()
+            # Animate the pane closed, but not if simulation is active
+            if self.preview_overlay is None:
+                self.left_content_pane.set_position(0)
+                self.gcode_previewer.clear()
 
         self._update_actions_and_ui()
 
@@ -424,8 +426,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         try:
             encoder = GcodeEncoder.for_machine(machine)
-            gcode_string = encoder.encode(ops, machine, doc)
+            gcode_string, op_to_line_map = encoder.encode(ops, machine, doc)
             self.gcode_previewer.set_gcode(gcode_string)
+            self.gcode_previewer.set_op_to_line_map(op_to_line_map)
         except Exception:
             logger.error(
                 "Failed to generate G-code for preview", exc_info=True
@@ -473,7 +476,6 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         """Toggles the execution preview simulation overlay."""
         enabled = value.get_boolean()
-
         if enabled:
             self._enter_simulate_mode()
         else:
@@ -571,6 +573,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Aggregate operations from all layers
         full_ops = self._aggregate_ops_for_3d_view()
         self.preview_overlay.set_ops(full_ops)
+        self._update_gcode_preview(full_ops)
 
         # Enable preview mode on the canvas
         self.surface.set_preview_mode(True, self.preview_overlay)
@@ -578,6 +581,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Create and show preview controls
         self.preview_controls = PreviewControls(self.preview_overlay)
         self.surface_overlay.add_overlay(self.preview_controls)
+        self.preview_controls_step_changed_handler_id = \
+            self.preview_controls.connect("step-changed",
+            self._on_simulation_step_changed)
+        self.left_content_pane.set_position(self._last_gcode_previewer_width)
 
         # Auto-start playback
         self.preview_controls._start_playback()
@@ -588,10 +595,19 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Remove preview controls
         if self.preview_controls:
+            if self.preview_controls_step_changed_handler_id:
+                self.preview_controls.disconnect(
+                    self.preview_controls_step_changed_handler_id)
+                self.preview_controls_step_changed_handler_id = None
             self.surface_overlay.remove_overlay(self.preview_controls)
             self.preview_controls = None
 
         self.preview_overlay = None
+        self.left_content_pane.set_position(0)
+        self.gcode_previewer.clear_highlight()
+
+    def _on_simulation_step_changed(self, sender, step):
+        self.gcode_previewer.highlight_op(step)
 
     def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
@@ -800,7 +816,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_selection_changed(
         self,
-        sender,
         elements: List[CanvasElement],
         active_element: Optional[CanvasElement],
     ):
@@ -1304,3 +1319,40 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
+
+
+css = """
+.mainpaned > separator {
+    border: none;
+    box-shadow: none;
+}
+
+.statusbar {
+    border-radius: 5px;
+    padding-top: 6px;
+}
+
+.statusbar:hover {
+    background-color: alpha(@theme_fg_color, 0.1);
+}
+
+.in-header-menubar {
+    margin-left: 6px;
+    box-shadow: none;
+}
+
+.in-header-menubar item {
+    padding: 6px 12px 6px 12px;
+}
+
+.menu separator {
+    border-top: 1px solid @borders;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.warning-label {
+    color: @warning_color;
+    font-weight: bold;
+}
+"""

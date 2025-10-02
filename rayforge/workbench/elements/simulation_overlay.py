@@ -68,6 +68,11 @@ class OpsTimeline:
         speeds = []
 
         for cmd in self.ops.commands:
+            # Store command with state and starting position
+            self.steps.append(
+                (cmd, State(**current_state.__dict__), current_pos)
+            )
+
             # Update state if this is a state command
             if isinstance(cmd, SetPowerCommand):
                 current_state.power = cmd.power
@@ -76,12 +81,8 @@ class OpsTimeline:
             elif hasattr(cmd, "apply_to_state"):
                 cmd.apply_to_state(current_state)
 
-            # For moving commands, add them to the timeline
+            # For moving commands, update current_pos
             if hasattr(cmd, "end") and cmd.end is not None:
-                # Store command with state and starting position
-                self.steps.append(
-                    (cmd, State(**current_state.__dict__), current_pos)
-                )
                 current_pos = cmd.end
 
                 # Track speeds for range calculation
@@ -225,9 +226,11 @@ class PreviewOverlay(CanvasElement):
 
             # Draw the operation
             if hasattr(cmd, "end") and cmd.end is not None:
-                ctx.move_to(start_pos[0], start_pos[1])
-                ctx.line_to(cmd.end[0], cmd.end[1])
-                ctx.stroke()
+                if not hasattr(cmd, "is_travel_command") or \
+                        not cmd.is_travel_command():
+                    ctx.move_to(start_pos[0], start_pos[1])
+                    ctx.line_to(cmd.end[0], cmd.end[1])
+                    ctx.stroke()
 
         # Draw laser head position indicator
         current_pos = self.get_current_position()
