@@ -120,6 +120,10 @@ class ActionManager:
         self._add_action("spread-v", self.on_spread_v)
         self._add_action("layout-pixel-perfect", self.on_layout_pixel_perfect)
 
+        # Transform Actions
+        self._add_action("flip-horizontal", self.on_flip_horizontal)
+        self._add_action("flip-vertical", self.on_flip_vertical)
+
         # Machine Control Actions
         self._add_action("home", self.win.on_home_clicked)
         self._add_action("frame", self.win.on_frame_clicked)
@@ -299,6 +303,8 @@ class ActionManager:
         app.set_accels_for_action("win.spread-h", ["<Primary><Shift>h"])
         app.set_accels_for_action("win.spread-v", ["<Primary><Shift>v"])
         app.set_accels_for_action("win.layout-pixel-perfect", ["<Alt>a"])
+        app.set_accels_for_action("win.flip-horizontal", ["<Shift>h"])
+        app.set_accels_for_action("win.flip-vertical", ["<Shift>v"])
 
         # Machine & Help
         app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
@@ -403,6 +409,16 @@ class ActionManager:
     def on_layout_pixel_perfect(self, action, param):
         items = list(self.win.surface.get_selected_items())
         self.editor.layout.layout_pixel_perfect(items)
+
+    def on_flip_horizontal(self, action, param):
+        """Handler for the 'flip-horizontal' action."""
+        items = list(self.win.surface.get_selected_items())
+        self.editor.transform.flip_horizontal(items)
+
+    def on_flip_vertical(self, action, param):
+        """Handler for the 'flip-vertical' action."""
+        items = list(self.win.surface.get_selected_items())
+        self.editor.transform.flip_vertical(items)
 
     def _add_action(
         self,

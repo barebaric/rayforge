@@ -118,6 +118,11 @@ class MainMenu(Gio.Menu):
         distribute_submenu.append(_("Spread Vertically"), "win.spread-v")
         arrange_menu.append_submenu(_("Distribute"), distribute_submenu)
 
+        flip_submenu = Gio.Menu()
+        flip_submenu.append(_("Flip Horizontal"), "win.flip-horizontal")
+        flip_submenu.append(_("Flip Vertical"), "win.flip-vertical")
+        arrange_menu.append_submenu(_("Flip"), flip_submenu)
+
         layout_group = Gio.Menu()
         layout_group.append(_("Auto Layout"), "win.layout-pixel-perfect")
         arrange_menu.append_section(None, layout_group)
