@@ -2,7 +2,6 @@ import logging
 from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.stocklayer import StockLayer
-from ...core.material_test_layer import MaterialTestLayer
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...undo.models.property_cmd import ChangePropertyCommand
@@ -220,24 +219,6 @@ class LayerView(Gtk.Box):
             self.name_entry.set_editable(False)
             self.subtitle_label.set_text(_("Stock Material"))
             self.subtitle_label.set_tooltip_text(_("Stock Material"))
-            self.visibility_button.set_visible(True)
-        elif isinstance(self.layer, MaterialTestLayer):
-            self.icon_container.append(get_icon("view-grid-symbolic"))
-            self.name_entry.set_editable(True)
-            if not self.name_entry.has_focus():
-                self.name_entry.set_text(self.layer.name)
-
-            # Get workpiece count string
-            count = len(self.layer.all_workpieces)
-            if count == 1:
-                subtitle_text = _("Material Test - {count} grid").format(
-                    count=count)
-            else:
-                subtitle_text = _("Material Test - {count} grids").format(
-                    count=count)
-
-            self.subtitle_label.set_text(subtitle_text)
-            self.subtitle_label.set_tooltip_text(subtitle_text)
             self.visibility_button.set_visible(True)
         else:
             self.icon_container.append(get_icon("layer-symbolic"))

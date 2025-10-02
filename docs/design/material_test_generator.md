@@ -8,16 +8,7 @@ The Material Test Generator creates parametric test grids for laser material tes
 
 ### Core Components
 
-#### 1. MaterialTestLayer (Layer Type)
-- **Purpose**: Specialized layer type for material test workpieces
-- **Behavior**:
-  - Extends `Layer` (has workflow like normal layers)
-  - Restricts children to material test workpieces only
-  - Displays with `view-grid-symbolic` icon in layer list
-  - Shows custom subtitle: "Material Test - N grids"
-  - Type discriminator: `"materialtestlayer"`
-
-#### 2. MaterialTestGridProducer (OpsProducer)
+#### 1. MaterialTestGridProducer (OpsProducer)
 - **Purpose**: Generates test grid operations directly from parameters
 - **Key Feature**: Does not require pixel data or rendering
 - **Parameters**:
@@ -33,7 +24,7 @@ The Material Test Generator creates parametric test grids for laser material tes
 - **Coordinate System**: Millimeter space
 - **Scalability**: Mathematically scalable
 
-#### 3. MaterialTestRenderer (Renderer)
+#### 2. MaterialTestRenderer (Renderer)
 - **Purpose**: Renders visual preview for canvas display
 - **Input**: JSON-encoded parameters from ImportSource data
 - **Output**: Cairo ImageSurface with:
@@ -41,7 +32,7 @@ The Material Test Generator creates parametric test grids for laser material tes
   - Speed and power labels (if enabled)
   - Axis labels
 
-#### 4. ImportSource Integration
+#### 3. ImportSource Integration
 - **Source File**: Path("[material-test]") (virtual path)
 - **Data**: JSON-encoded producer parameters
 - **Metadata**: `{"type": "material_test"}`
@@ -54,7 +45,7 @@ User Parameters → MaterialTestGridProducer → Ops (with speed/power commands)
                 ↓
           ImportSource (JSON params) → MaterialTestRenderer → Canvas Preview
                 ↓
-          WorkPiece (references source) → MaterialTestLayer → Document
+          WorkPiece (references source) → Layer (regular) → Document
 ```
 
 ## UI Components
@@ -72,11 +63,11 @@ User Parameters → MaterialTestGridProducer → Ops (with speed/power commands)
   - Labels toggle
   - Real-time updates with undo/redo support
 
-## File Import Protection
+## Layer Integration
 
-- **Restriction**: Cannot import files into MaterialTestLayer
-- **Check**: `isinstance(active_layer, MaterialTestLayer)`
-- **User Feedback**: Toast message directing user to select different layer
+- **Layer Type**: Material test workpieces live in regular `Layer` objects
+- **Mixing Operations**: Material test steps can be mixed with other steps in the workflow
+- **Flexibility**: Users can combine material tests with cuts, engraves, and other operations
 
 ## Test Pattern Generation
 
@@ -133,16 +124,19 @@ Presets default to "(None)" - only apply when explicitly selected.
 }
 ```
 
-### Layer Dictionary
+### WorkPiece with Material Test Source
 ```
 {
-  "type": "materialtestlayer",
+  "type": "workpiece",
   "uid": string,
   "name": string,
-  "workflow": {...},
-  "children": [...]
+  "import_source_uid": string,  // References ImportSource with type="material_test"
+  "matrix": [...],
+  "size": [width, height]
 }
 ```
+
+**Note**: Material test workpieces are identified by their ImportSource metadata `{"type": "material_test"}`, not by layer type.
 
 ## Integration Points
 
@@ -156,9 +150,9 @@ Presets default to "(None)" - only apply when explicitly selected.
 - Renderer: Automatic via ImportSource renderer property
 
 ### Document Integration
-- MaterialTestLayer imported in `rayforge/core/doc.py`
-- Layer deserialization handles `"materialtestlayer"` type
-- Single material test layer allowed per document (like StockLayer)
+- Material test workpieces live in regular `Layer` objects
+- No special layer type required
+- Backward compatibility: Legacy `"materialtestlayer"` types are converted to regular `Layer` on load
 
 ## Design Decisions
 
@@ -167,10 +161,11 @@ Presets default to "(None)" - only apply when explicitly selected.
 - ✅ Standard: No new core data model types
 - ✅ Serialization: Leverages existing patterns
 
-### Why Separate Layer Type?
-- ✅ Clear intent: Dedicated layer for material testing
-- ✅ Protection: Prevents accidental mixing with regular workpieces
-- ✅ UI distinction: Different icon and behavior
+### Why NOT a Separate Layer Type?
+- ✅ Better discoverability: Material tests found in normal workflow
+- ✅ Flexibility: Can mix material tests with other operations (cut outline, then test grid)
+- ✅ Simpler architecture: One less core object type to maintain
+- ✅ Reduced complexity: No special cases in layer management UI
 
 
 

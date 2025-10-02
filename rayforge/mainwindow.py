@@ -21,7 +21,6 @@ from .core.matrix import Matrix
 from .core.ops import Ops
 from .core.stock import StockItem
 from .core.stocklayer import StockLayer
-from .core.material_test_layer import MaterialTestLayer
 from .core.import_source import ImportSource
 from .pipeline.steps import (
     STEP_FACTORIES,
@@ -33,7 +32,6 @@ from .pipeline.encoder.gcode import GcodeEncoder
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
-from .doceditor.ui.step_settings_dialog import StepSettingsDialog
 from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
 from .workbench.elements.preview_overlay import PreviewOverlay
@@ -1401,19 +1399,12 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present(self)
 
     def on_show_material_test(self, action, param):
-        """Creates a material test layer with default settings."""
-
-    # Calculate sensible default speed range (10% - 50% of max speed)
-    # Values are used by the material test step factory implicitly.
-
-        # 1. Create the step with default parameters
+        """Creates a material test grid and adds it to the active layer."""
         step = create_material_test_step()
+        active_layer = self.doc_editor.doc.active_layer
+        active_layer.workflow.add_step(step)
 
-        # 2. Create the MaterialTestLayer and add step
-        layer = MaterialTestLayer(_("Material Test"))
-        layer.workflow.add_step(step)
-
-        # 3. Create ImportSource with encoded parameters
+        # Create material-test type ImportSource with encoded parameters
         producer_params = step.opsproducer_dict["params"]
         import_source = ImportSource(
             source_file=Path("[material-test]"),
@@ -1422,11 +1413,11 @@ class MainWindow(Adw.ApplicationWindow):
             metadata={"type": "material_test"},
         )
 
-        # 4. Create workpiece
+        # Create new workpiece
         workpiece = WorkPiece(name=_("Material Test Grid"))
         workpiece.import_source_uid = import_source.uid
 
-        # 5. Calculate and set natural size
+        # Calculate and set natural size
         cols, rows = producer_params["grid_dimensions"]
         shape_size = producer_params["shape_size"]
         spacing = producer_params["spacing"]
@@ -1434,12 +1425,9 @@ class MainWindow(Adw.ApplicationWindow):
         height = rows * (shape_size + spacing) - spacing
         workpiece.set_size(width, height)
 
-        # 6. Add to document
+        # Add to document and postion in center of workspace
         self.doc_editor.doc.add_import_source(import_source)
-        self.doc_editor.doc.add_layer(layer)
-        layer.add_child(workpiece)
-
-        # 7. Center on workspace
+        active_layer.add_child(workpiece)
         if config.machine:
             ws_width, ws_height = config.machine.dimensions
             workpiece.pos = (
@@ -1451,15 +1439,6 @@ class MainWindow(Adw.ApplicationWindow):
             f"Created material test: {cols}x{rows} grid, "
             f"{width:.1f}x{height:.1f} mm"
         )
-
-        # 8. Activate the new layer
-        self.doc_editor.doc.active_layer = layer
-
-        # 9. Open the step settings dialog for the material test step
-        dialog = StepSettingsDialog(
-            self.doc_editor.doc, step, transient_for=self
-        )
-        dialog.present()
 
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")

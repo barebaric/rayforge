@@ -102,17 +102,4 @@ def start_interactive_import(win: "MainWindow", editor: "DocEditor"):
     Initiates the full interactive file import process, starting with a
     file chooser dialog.
     """
-    # Check if the active layer is a material test layer
-    from ...core.material_test_layer import MaterialTestLayer
-    active_layer = editor.doc.active_layer
-    if active_layer and isinstance(active_layer, MaterialTestLayer):
-        from gi.repository import Adw
-        toast = Adw.Toast.new(
-            _("Cannot import files into a Material Test layer. "
-              "Please select a different layer.")
-        )
-        toast.set_timeout(4)
-        win.toast_overlay.add_toast(toast)
-        return
-
     file_dialogs.show_import_dialog(win, _on_file_selected, (win, editor))
