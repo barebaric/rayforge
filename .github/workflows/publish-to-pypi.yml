@@ -1,12 +1,17 @@
 name: Build and Publish Wheel
+
 on:
   push:
+    branches:
+      - "*"
     tags:
-      - '*'
+      - "*"
+  pull_request:
+    branches:
+      - "*"
 
 jobs:
   lint-test:
-    if: github.repository == 'barebaric/rayforge'
     uses: ./.github/workflows/lint-test.yml
 
   build-publish-wheel:
@@ -33,6 +38,7 @@ jobs:
           pixi run wheel
 
       - name: Publish package distributions to PyPI
+        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist

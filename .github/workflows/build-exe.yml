@@ -1,10 +1,14 @@
 name: Build Windows Executable
+
 on:
   push:
     branches:
       - "**"
     tags:
       - "*"
+  pull_request:
+    branches:
+      - "**"
 
 jobs:
   build:
@@ -233,7 +237,7 @@ jobs:
     name: Create GitHub Release
     needs: [build, test-exe]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
