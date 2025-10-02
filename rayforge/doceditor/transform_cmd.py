@@ -80,3 +80,71 @@ class TransformCmd:
                     old_value=old_matrix,
                 )
                 t.execute(cmd)
+
+    def flip_horizontal(self, items: List[DocItem]):
+        """
+        Flips a list of DocItems horizontally (mirrors along the Y-axis),
+        creating a single undoable transaction for the operation.
+
+        Args:
+            items: The list of DocItems to flip horizontally.
+        """
+        history_manager = self._editor.history_manager
+        if not items:
+            return
+
+        with history_manager.transaction(_("Flip Horizontal")) as t:
+            for item in items:
+                old_matrix = item.matrix.copy()
+                # Get the world center of the item before transformation
+                # This ensures we always flip around the same point
+                world_center = item.get_world_transform().transform_point(
+                    (0.5, 0.5)
+                )
+
+                # Create a flip matrix (scale by -1 on X-axis) around world
+                # center
+                flip_matrix = Matrix.flip_horizontal(center=world_center)
+                new_matrix = flip_matrix @ old_matrix
+
+                cmd = ChangePropertyCommand(
+                    target=item,
+                    property_name="matrix",
+                    new_value=new_matrix,
+                    old_value=old_matrix,
+                )
+                t.execute(cmd)
+
+    def flip_vertical(self, items: List[DocItem]):
+        """
+        Flips a list of DocItems vertically (mirrors along the X-axis),
+        creating a single undoable transaction for the operation.
+
+        Args:
+            items: The list of DocItems to flip vertically.
+        """
+        history_manager = self._editor.history_manager
+        if not items:
+            return
+
+        with history_manager.transaction(_("Flip Vertical")) as t:
+            for item in items:
+                old_matrix = item.matrix.copy()
+                # Get the world center of the item before transformation
+                # This ensures we always flip around the same point
+                world_center = item.get_world_transform().transform_point(
+                    (0.5, 0.5)
+                )
+
+                # Create a flip matrix (scale by -1 on Y-axis) around world
+                # center
+                flip_matrix = Matrix.flip_vertical(center=world_center)
+                new_matrix = flip_matrix @ old_matrix
+
+                cmd = ChangePropertyCommand(
+                    target=item,
+                    property_name="matrix",
+                    new_value=new_matrix,
+                    old_value=old_matrix,
+                )
+                t.execute(cmd)

@@ -445,6 +445,32 @@ class Matrix:
         s = Matrix.shear(sh_x, sh_y, center)
         return self @ s
 
+    @staticmethod
+    def flip_horizontal(
+        center: Optional[Tuple[float, float]] = None
+    ) -> "Matrix":
+        """
+        Creates a horizontal flip (mirror along the Y-axis) matrix.
+
+        Args:
+            center: Optional (x, y) point to flip around. If None,
+                    flips around the origin (0, 0).
+        """
+        return Matrix.scale(-1.0, 1.0, center=center)
+
+    @staticmethod
+    def flip_vertical(
+        center: Optional[Tuple[float, float]] = None
+    ) -> "Matrix":
+        """
+        Creates a vertical flip (mirror along the X-axis) matrix.
+
+        Args:
+            center: Optional (x, y) point to flip around. If None,
+                    flips around the origin (0, 0).
+        """
+        return Matrix.scale(1.0, -1.0, center=center)
+
     def invert(self) -> "Matrix":
         """
         Computes the inverse of the matrix.
