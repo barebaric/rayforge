@@ -816,6 +816,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_selection_changed(
         self,
+        sender,
         elements: List[CanvasElement],
         active_element: Optional[CanvasElement],
     ):

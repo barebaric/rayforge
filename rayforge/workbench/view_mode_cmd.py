@@ -67,7 +67,7 @@ class ViewModeCmd:
             # to the 3D view.
             sim_action = win.action_manager.get_action("simulate_mode")
             if sim_action and sim_action.get_state().get_boolean():
-                sim_action.set_state(GLib.Variant.new_boolean(False))
+                sim_action.change_state(GLib.Variant.new_boolean(False))
 
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")

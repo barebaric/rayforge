@@ -250,7 +250,7 @@ class FileCmd:
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message(_("Encoding G-code..."))
                 encoder = GcodeEncoder.for_machine(machine)
-                gcode = encoder.encode(ops, machine, self._editor.doc)
+                gcode, _op_to_line_map = encoder.encode(ops, machine, self._editor.doc)
 
                 # 3. Write to file (sync, potentially slow, run in thread)
                 context.set_message(_(f"Saving to {file_path}..."))
