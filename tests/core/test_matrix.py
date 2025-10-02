@@ -746,3 +746,143 @@ class TestMatrix:
         m2 = Matrix.from_list(m1_list)
         assert isinstance(m2, Matrix)
         assert m1 == m2
+
+    def test_flip_horizontal(self):
+        """Tests the flip_horizontal static method."""
+        # Test flip around origin
+        flip_h = Matrix.flip_horizontal()
+        expected = Matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        assert flip_h == expected
+
+        # Test flip around a specific center point
+        flip_h_center = Matrix.flip_horizontal(center=(5, 10))
+        # This should be: translate(-5, -10) @ scale(-1, 1) @ translate(5, 10)
+        expected_center = (
+            Matrix([[1, 0, 5], [0, 1, 10], [0, 0, 1]])
+            @ Matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
+            @ Matrix([[1, 0, -5], [0, 1, -10], [0, 0, 1]])
+        )
+        assert flip_h_center == expected_center
+
+        # Test that flipping a point works correctly
+        test_point = (3, 4)
+        flipped_point = flip_h_center.transform_point(test_point)
+        # Flipping around x=5: 3 -> 5 - (3 - 5) = 7
+        # y-coordinate should remain the same
+        assert flipped_point[0] == pytest.approx(7.0)
+        assert flipped_point[1] == pytest.approx(4.0)
+
+    def test_flip_vertical(self):
+        """Tests the flip_vertical static method."""
+        # Test flip around origin
+        flip_v = Matrix.flip_vertical()
+        expected = Matrix([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        assert flip_v == expected
+
+        # Test flip around a specific center point
+        flip_v_center = Matrix.flip_vertical(center=(5, 10))
+        # This should be: translate(-5, -10) @ scale(1, -1) @ translate(5, 10)
+        expected_center = (
+            Matrix([[1, 0, 5], [0, 1, 10], [0, 0, 1]])
+            @ Matrix([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+            @ Matrix([[1, 0, -5], [0, 1, -10], [0, 0, 1]])
+        )
+        assert flip_v_center == expected_center
+
+        # Test that flipping a point works correctly
+        test_point = (3, 4)
+        flipped_point = flip_v_center.transform_point(test_point)
+        # x-coordinate should remain the same
+        # Flipping around y=10: 4 -> 10 - (4 - 10) = 16
+        assert flipped_point[0] == pytest.approx(3.0)
+        assert flipped_point[1] == pytest.approx(16.0)
+
+    def test_flip_combination(self):
+        """Tests that combining flips results in expected transformations."""
+        # Flip both horizontally and vertically around origin
+        flip_h = Matrix.flip_horizontal()
+        flip_v = Matrix.flip_vertical()
+        flip_both = flip_h @ flip_v
+
+        # This should be equivalent to a 180-degree rotation
+        expected = Matrix([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        assert flip_both == expected
+
+        # Test with center point
+        center = (5, 10)
+        flip_h_center = Matrix.flip_horizontal(center=center)
+        flip_v_center = Matrix.flip_vertical(center=center)
+        flip_both_center = flip_h_center @ flip_v_center
+
+        # A point at the center should remain unchanged
+        center_after_flip = flip_both_center.transform_point(center)
+        assert center_after_flip[0] == pytest.approx(center[0])
+        assert center_after_flip[1] == pytest.approx(center[1])
+
+        # A point offset from center should be mirrored
+        test_point = (7, 12)  # 2 units right and 2 units up from center
+        flipped_point = flip_both_center.transform_point(test_point)
+        # Should be 2 units left and 2 units down from center
+        assert flipped_point[0] == pytest.approx(3.0)
+        assert flipped_point[1] == pytest.approx(8.0)
+
+    def test_flip_back_and_forth(self):
+        """Tests that flipping back and forth returns to original position."""
+        # Create a test matrix with translation, rotation, and scale
+        original = (
+            Matrix.translation(10, 20)
+            @ Matrix.rotation(45)
+            @ Matrix.scale(2, 3)
+        )
+
+        # Test horizontal flip back and forth
+        center = (50, 60)
+        flip_h = Matrix.flip_horizontal(center=center)
+        flipped_once = flip_h @ original
+        flipped_twice = flip_h @ flipped_once
+
+        # Flipping twice should return to the original matrix
+        assert flipped_twice == original
+
+        # Test vertical flip back and forth
+        flip_v = Matrix.flip_vertical(center=center)
+        flipped_once_v = flip_v @ original
+        flipped_twice_v = flip_v @ flipped_once_v
+
+        # Flipping twice should return to the original matrix
+        assert flipped_twice_v == original
+
+        # Test that a point returns to original position after flipping twice
+        test_point = (30, 40)
+
+        # Horizontal flip test
+        after_first_flip = flip_h.transform_point(test_point)
+        after_second_flip = flip_h.transform_point(after_first_flip)
+        assert after_second_flip[0] == pytest.approx(test_point[0])
+        assert after_second_flip[1] == pytest.approx(test_point[1])
+
+        # Vertical flip test
+        after_first_flip_v = flip_v.transform_point(test_point)
+        after_second_flip_v = flip_v.transform_point(after_first_flip_v)
+        assert after_second_flip_v[0] == pytest.approx(test_point[0])
+        assert after_second_flip_v[1] == pytest.approx(test_point[1])
+
+        # Test with a complex transformation
+        complex_matrix = (
+            Matrix.translation(100, 200)
+            @ Matrix.rotation(30)
+            @ Matrix.scale(1.5, 0.8)
+        )
+
+        # Apply horizontal flip
+        with_flip_h = flip_h @ complex_matrix
+        # Apply vertical flip
+        with_flip_v = flip_v @ complex_matrix
+
+        # Apply both flips to return to original
+        back_to_original_h = flip_h @ with_flip_h
+        back_to_original_v = flip_v @ with_flip_v
+
+        # Should return to original
+        assert back_to_original_h == complex_matrix
+        assert back_to_original_v == complex_matrix

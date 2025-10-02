@@ -143,6 +143,16 @@ class MainToolbar(Gtk.Box):
                 "win.spread-v",
             ),
             (
+                _("Flip Horizontal"),
+                "flip-horizontal-symbolic",
+                "win.flip-horizontal",
+            ),
+            (
+                _("Flip Vertical"),
+                "flip-vertical-symbolic",
+                "win.flip-vertical",
+            ),
+            (
                 _("Auto Layout (pack workpieces)"),
                 "auto-layout-symbolic",
                 "win.layout-pixel-perfect",
