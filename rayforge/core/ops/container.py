@@ -167,6 +167,33 @@ class Ops:
         new_ops.last_move_to = geometry.last_move_to
         return new_ops
 
+    def to_geometry(self) -> "Geometry":
+        """
+        Creates a Geometry path from this Ops object, including only the
+        geometric commands.
+        """
+        from ..geo.geometry import Geometry
+
+        new_geo = Geometry()
+        for op in self.commands:
+            if isinstance(op, MoveToCommand):
+                if op.end:
+                    new_geo.move_to(*op.end)
+            elif isinstance(op, LineToCommand):
+                if op.end:
+                    new_geo.line_to(*op.end)
+            elif isinstance(op, ArcToCommand):
+                if op.end:
+                    new_geo.arc_to(
+                        op.end[0],
+                        op.end[1],
+                        op.center_offset[0],
+                        op.center_offset[1],
+                        op.clockwise,
+                        op.end[2],
+                    )
+        return new_geo
+
     def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)
 

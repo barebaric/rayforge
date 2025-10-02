@@ -4,8 +4,9 @@ from .base import OpsProducer, PipelineArtifact, CutSide
 from .depth import DepthEngraver
 from .edge import EdgeTracer
 from .frame import FrameProducer
-from .rasterize import Rasterizer
+from .material_test_grid import MaterialTestGridProducer, MaterialTestGridType
 from .shrinkwrap import ShrinkWrapProducer
+from .rasterize import Rasterizer
 
 producer_by_name = dict(
     [
@@ -22,7 +23,9 @@ __all__ = [
     "DepthEngraver",
     "EdgeTracer",
     "FrameProducer",
-    "Rasterizer",
+    "MaterialTestGridProducer",
+    "MaterialTestGridType",
     "ShrinkWrapProducer",
+    "Rasterizer",
     "producer_by_name",
 ]

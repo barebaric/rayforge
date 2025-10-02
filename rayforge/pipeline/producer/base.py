@@ -170,6 +170,22 @@ class OpsProducer(ABC):
         """
         return False
 
+    @property
+    def supports_cut_speed(self) -> bool:
+        """
+        Returns True if this producer's logic supports a fixed cut speed.
+        Producers that have variable speed logic may not.
+        """
+        return True
+
+    @property
+    def supports_power(self) -> bool:
+        """
+        Returns True if this producer's logic supports a fixed power setting.
+        Producers that have variable power logic may not.
+        """
+        return True
+
     def to_dict(self) -> dict:
         """
         Serializes the producer configuration to a dictionary.

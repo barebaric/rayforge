@@ -53,25 +53,48 @@ class MainMenu(Gio.Menu):
         visibility_group.append(_("Show Workpieces"), "win.show_workpieces")
         visibility_group.append(_("Show Tabs"), "win.show_tabs")
         visibility_group.append(
-            _("Show Camera Image"), "win.toggle_camera_view"
+            _("Show Camera Image"), "win.toggle_camera_view",
         )
         visibility_group.append(
-            _("Show Travel Moves"), "win.toggle_travel_view"
+            _("Show Travel Moves"), "win.toggle_travel_view",
         )
         view_menu.append_section(None, visibility_group)
 
-        view_3d_group = Gio.Menu()
-        view_3d_group.append(_("3D View"), "win.show_3d_view")
-        view_menu.append_section(None, view_3d_group)
-
-        view_3d_commands = Gio.Menu()
-        view_3d_commands.append(_("Top View"), "win.view_top")
-        view_3d_commands.append(_("Front View"), "win.view_front")
-        view_3d_commands.append(_("Isometric View"), "win.view_iso")
-        view_3d_commands.append(
-            _("Toggle Perspective"), "win.view_toggle_perspective"
+        view_mode_group = Gio.Menu()
+        # Edit workpieces in 2D workspace (F5)
+        view_mode_group.append(_("2D View"), "win.view_mode::2d")
+        # Preview toolpath in 3D (F6)
+        view_mode_group.append(_("3D View"), "win.view_mode::3d")
+        # Simulate operation execution with speed/power visualization (F7)
+        view_mode_group.append(
+            _("Execution Preview"), "win.view_mode::preview"
         )
-        view_menu.append_section(None, view_3d_commands)
+        view_menu.append_section(None, view_mode_group)
+
+        # 3D Viewpoint options (enabled only when in 3D mode)
+        view_3d_viewpoints = Gio.Menu()
+        # View from above (Z-axis) - Key: 1
+        view_3d_viewpoints.append(_("Top View"), "win.view_3d_viewpoint::top")
+        # View from front (Y-axis) - Key: 2
+        view_3d_viewpoints.append(
+            _("Front View"), "win.view_3d_viewpoint::front"
+        )
+        # View from isometric angle - Key: 3
+        view_3d_viewpoints.append(
+            _("Isometric View"), "win.view_3d_viewpoint::iso"
+        )
+        view_menu.append_section(None, view_3d_viewpoints)
+
+        # Perspective toggle (separate section, enabled only in 3D mode)
+        view_3d_options = Gio.Menu()
+        # Switch between perspective and orthographic projection - Key: p
+        view_3d_options.append(
+            _(
+                "Toggle Perspective"
+            ),
+            "win.view_toggle_perspective",
+        )
+        view_menu.append_section(None, view_3d_options)
         self.append_submenu(_("_View"), view_menu)
 
         # Object Menu
@@ -122,6 +145,13 @@ class MainMenu(Gio.Menu):
         layout_group.append(_("Auto Layout"), "win.layout-pixel-perfect")
         arrange_menu.append_section(None, layout_group)
         self.append_submenu(_("Arrange"), arrange_menu)
+
+        # Tools Menu
+        tools_menu = Gio.Menu()
+        tools_group = Gio.Menu()
+        tools_group.append(_("Create Material Test Grid"), "win.material_test")
+        tools_menu.append_section(None, tools_group)
+        self.append_submenu(_("_Tools"), tools_menu)
 
         # Machine Menu
         machine_menu = Gio.Menu()

@@ -1,3 +1,4 @@
+import json
 import logging
 import math
 import numpy as np
@@ -7,10 +8,12 @@ from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
 from .shared.tasker.task import Task
+from .shared.tasker.context import ExecutionContext
 from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
+from .core.doc import WorkPiece
 from .core.group import Group
 from .core.item import DocItem
 from .core.layer import Layer
@@ -18,13 +21,23 @@ from .core.matrix import Matrix
 from .core.ops import Ops
 from .core.stock import StockItem
 from .core.stocklayer import StockLayer
-from .pipeline.steps import STEP_FACTORIES, create_contour_step
+from .core.material_test_layer import MaterialTestLayer
+from .core.import_source import ImportSource
+from .pipeline.steps import (
+    STEP_FACTORIES,
+    create_contour_step,
+    create_material_test_step,
+)
+from .pipeline.job import generate_job_ops
 from .pipeline.encoder.gcode import GcodeEncoder
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
+from .doceditor.ui.step_settings_dialog import StepSettingsDialog
 from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
+from .workbench.elements.preview_overlay import PreviewOverlay
+from .workbench.preview_controls import PreviewControls
 from .doceditor.ui.layer_list import LayerListView
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
@@ -39,6 +52,7 @@ from .actions import ActionManager
 from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .image.material_test_grid_renderer import MaterialTestRenderer
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
 
@@ -46,7 +60,8 @@ from .shared.gcodeedit.previewer import GcodePreviewer
 logger = logging.getLogger(__name__)
 
 
-css = """
+css = (
+    """
 .mainpaned > separator {
     border: none;
     box-shadow: none;
@@ -81,6 +96,7 @@ css = """
     font-weight: bold;
 }
 """
+)
 
 
 def _get_monitor_geometry() -> Optional[Gdk.Rectangle]:
@@ -276,7 +292,10 @@ class MainWindow(Adw.ApplicationWindow):
         # The new left-side paned is the start child of the main paned
         self.paned.set_start_child(self.left_content_pane)
 
-        self.view_stack.add_named(self.surface, "2d")
+        # Wrap surface in an overlay to allow preview controls
+        self.surface_overlay = Gtk.Overlay()
+        self.surface_overlay.set_child(self.surface)
+        self.view_stack.add_named(self.surface_overlay, "2d")
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
@@ -288,6 +307,10 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Create a stack to switch between 2D and 3D views
             self.view_stack.add_named(self.canvas3d, "3d")
+
+        # Preview mode uses the 2D canvas with overlay
+        self.preview_overlay = None
+        self.preview_controls = None
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -417,11 +440,196 @@ class MainWindow(Adw.ApplicationWindow):
             self.toast_overlay.add_toast(toast)
             self.gcode_previewer.clear()
 
-    def on_show_3d_view(
+    def on_view_mode_changed(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
-        """Delegates the view switching logic to the command module."""
-        self.view_cmd.toggle_3d_view(self, action, value)
+        """Handles view mode changes (2d, 3d, preview)."""
+        if value is None:
+            return
+
+        mode = value.get_string()
+        current_mode = action.get_state().get_string()
+
+        # Don't process if already in this mode
+        if mode == current_mode:
+            return
+
+        # Exit current mode first
+        if current_mode == "preview":
+            self._exit_preview_mode()
+
+        # Switch to new mode
+        if mode == "2d":
+            self.view_stack.set_visible_child_name("2d")
+            self.surface.grab_focus()
+            action.set_state(value)
+        elif mode == "3d":
+            self._enter_3d_mode(action, value)
+        elif mode == "preview":
+            self.view_stack.set_visible_child_name("2d")
+            self._enter_preview_mode()
+            action.set_state(value)
+
+    def _enter_3d_mode(self, action, value):
+        """Enters 3D view mode with async ops loading."""
+
+        if not canvas3d_initialized:
+            logger.warning("3D view not available.")
+            toast = Adw.Toast.new(_("3D view is not available."))
+            self.toast_overlay.add_toast(toast)
+            return
+
+        if not config.machine:
+            logger.warning("Cannot show 3D view without an active machine.")
+            toast = Adw.Toast.new(_("Select a machine to open the 3D view."))
+            self.toast_overlay.add_toast(toast)
+            return
+
+        action.set_state(value)
+        self.view_stack.set_visible_child_name("3d")
+
+        if self.canvas3d and self.canvas3d.ops_renderer:
+            self.canvas3d.ops_renderer.clear()
+            self.canvas3d.queue_render()
+
+        async def load_ops_coro(context: ExecutionContext):
+            current_machine = config.machine
+            if not current_machine:
+                return
+
+            try:
+                logger.debug("Creating 3D preview")
+                context.set_message(
+                    "Generating path preview..."
+                )
+                ops = await generate_job_ops(
+                    self.doc_editor.doc,
+                    current_machine,
+                    self.doc_editor.ops_generator,
+                    context,
+                )
+                if self.canvas3d:
+                    self.canvas3d.set_ops(ops)
+                logger.debug("Preview ready")
+                context.set_message(
+                    "Path preview loaded."
+                )
+                context.set_progress(1.0)
+            except Exception:
+                logger.error(
+                    "Failed to generate ops for 3D view", exc_info=True
+                )
+                toast = Adw.Toast.new(_("Failed to generate path preview."))
+                self.toast_overlay.add_toast(toast)
+                self.view_stack.set_visible_child_name("2d")
+                action.set_state(GLib.Variant.new_string("2d"))
+                raise
+
+        task_mgr.add_coroutine(load_ops_coro, key="load-3d-preview")
+
+    def _enter_preview_mode(self):
+        """Enters preview mode by creating overlay and enabling it on the
+        canvas."""
+        # Get work area size
+        if config.machine:
+            work_area_size = config.machine.dimensions
+        else:
+            work_area_size = (100.0, 100.0)
+
+        # Create preview overlay
+        self.preview_overlay = PreviewOverlay(work_area_size)
+
+        # Aggregate operations from all layers
+        full_ops = self._aggregate_ops_for_3d_view()
+        self.preview_overlay.set_ops(full_ops)
+
+        # Enable preview mode on the canvas
+        self.surface.set_preview_mode(True, self.preview_overlay)
+
+        # Create and show preview controls
+        self.preview_controls = PreviewControls(self.preview_overlay)
+        self.surface_overlay.add_overlay(self.preview_controls)
+
+        # Auto-start playback
+        self.preview_controls._start_playback()
+
+    def _exit_preview_mode(self):
+        """Exits preview mode by disabling it on the canvas."""
+        self.surface.set_preview_mode(False)
+
+        # Remove preview controls
+        if self.preview_controls:
+            self.surface_overlay.remove_overlay(self.preview_controls)
+            self.preview_controls = None
+
+        self.preview_overlay = None
+
+    def _refresh_execution_preview_if_active(self):
+        """Regenerates execution preview if currently in preview mode."""
+        # Check if we're in preview mode
+        action = self.action_manager.get_action("view_mode")
+        if not action:
+            return
+
+        current_mode = action.get_state().get_string()
+        if current_mode != "preview":
+            return
+
+        # Regenerate the preview with updated ops
+        if self.preview_overlay and self.preview_controls:
+            full_ops = self._aggregate_ops_for_3d_view()
+            self.preview_overlay.set_ops(full_ops)
+
+            # Update controls with new timeline
+            was_playing = self.preview_controls.playing
+            self.preview_controls.reset()
+
+            # Update speed range label with new range
+            speed_min, speed_max = self.preview_overlay.get_speed_range()
+            # Find the speed label widget (last child in the container)
+            container = self.preview_controls.get_first_child()
+            if container:
+                speed_label = container.get_last_child()
+                if speed_label:
+                    speed_label.set_markup(
+                        (
+                            f"<small>Speed range: {speed_min:.0f} - "
+                            f"{speed_max:.0f} mm/min</small>"
+                        )
+                    )
+
+            # Restart playback if it was playing
+            if was_playing:
+                self.preview_controls._start_playback()
+
+            # Redraw canvas
+            self.surface.queue_draw()
+
+    def _calculate_ops_bounds(self, ops):
+        """Calculates the bounding box of operations."""
+        min_x = min_y = float('inf')
+        max_x = max_y = float('-inf')
+
+        current_pos = (0.0, 0.0, 0.0)
+        for cmd in ops.commands:
+            # Only process commands with endpoints (moving commands)
+            if hasattr(cmd, 'end') and cmd.end is not None:
+                min_x = min(min_x, cmd.end[0], current_pos[0])
+                min_y = min(min_y, cmd.end[1], current_pos[1])
+                max_x = max(max_x, cmd.end[0], current_pos[0])
+                max_y = max(max_y, cmd.end[1], current_pos[1])
+                current_pos = cmd.end
+
+        # Handle empty or no-movement case
+        if min_x == float('inf'):
+            return (0.0, 0.0, 100.0, 100.0)
+
+        # Add some padding
+        padding = 5.0
+        return (
+            min_x - padding, min_y - padding,
+            max_x + padding, max_y + padding
+        )
 
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -451,23 +659,32 @@ class MainWindow(Adw.ApplicationWindow):
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
-    def on_view_top(self, action, param):
-        """Action handler to set the 3D view to top-down."""
-        self.view_cmd.set_view_top(self.canvas3d)
-
-    def on_view_front(self, action, param):
-        """Action handler to set the 3D view to front."""
-        self.view_cmd.set_view_front(self.canvas3d)
-
-    def on_view_iso(self, action, param):
-        """Action handler to set the 3D view to isometric."""
-        self.view_cmd.set_view_iso(self.canvas3d)
-
-    def on_view_perspective_state_change(
-        self, action: Gio.SimpleAction, value: GLib.Variant
+    def on_3d_viewpoint_changed(
+        self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
-        """Handles state changes for the perspective view action."""
-        self.view_cmd.toggle_perspective(self.canvas3d, action, value)
+        """Handles 3D viewpoint changes (top/front/iso)."""
+        if value is None:
+            return
+
+        viewpoint = value.get_string()
+
+        if viewpoint == "top":
+            self.view_cmd.set_view_top(self.canvas3d)
+        elif viewpoint == "front":
+            self.view_cmd.set_view_front(self.canvas3d)
+        elif viewpoint == "iso":
+            self.view_cmd.set_view_iso(self.canvas3d)
+
+        action.set_state(value)
+
+    def on_view_toggle_perspective(self, action, param):
+        """Toggles between perspective and orthographic projection in 3D
+        view."""
+        if self.canvas3d and self.canvas3d.camera:
+            # Toggle the current state
+            is_pers = self.canvas3d.camera.is_perspective
+            self.canvas3d.camera.is_perspective = not is_pers
+            self.canvas3d.queue_render()
 
     def _initialize_document(self):
         """
@@ -591,6 +808,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update button sensitivity and other state
         self._update_actions_and_ui()
+
+        # Regenerate execution preview if currently active
+        self._refresh_execution_preview_if_active()
 
     def _sync_element_selectability(self):
         """
@@ -777,10 +997,8 @@ class MainWindow(Adw.ApplicationWindow):
             # Always switch back to 2D view on machine change for simplicity.
             if self.view_stack.get_visible_child_name() == "3d":
                 self.view_stack.set_visible_child_name("2d")
-                action = self.action_manager.get_action("show_3d_view")
-                state = action.get_state()
-                if state and state.get_boolean():
-                    action.set_state(GLib.Variant.new_boolean(False))
+                action = self.action_manager.get_action("view_mode")
+                action.set_state(GLib.Variant.new_string("2d"))
 
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
@@ -974,11 +1192,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
-        can_show_3d = canvas3d_initialized and not task_mgr.has_tasks()
-        am.get_action("show_3d_view").set_enabled(can_show_3d)
-        am.get_action("view_top").set_enabled(is_3d_view_active)
-        am.get_action("view_front").set_enabled(is_3d_view_active)
-        am.get_action("view_iso").set_enabled(is_3d_view_active)
+        # Note: view_mode action handles 3D availability checks internally
+        # Enable 3D-specific controls only when in 3D mode
+        am.get_action("view_3d_viewpoint").set_enabled(is_3d_view_active)
         am.get_action("view_toggle_perspective").set_enabled(is_3d_view_active)
 
         # Update sensitivity for Arrangement actions
@@ -1183,6 +1399,67 @@ class MainWindow(Adw.ApplicationWindow):
             return
         dialog = MachineSettingsDialog(machine=config.machine)
         dialog.present(self)
+
+    def on_show_material_test(self, action, param):
+        """Creates a material test layer with default settings."""
+
+    # Calculate sensible default speed range (10% - 50% of max speed)
+    # Values are used by the material test step factory implicitly.
+
+        # 1. Create the step with default parameters
+        step = create_material_test_step()
+
+        # 2. Create the MaterialTestLayer and add step
+        layer = MaterialTestLayer(_("Material Test"))
+        layer.workflow.add_step(step)
+
+        # 3. Create ImportSource with encoded parameters
+        producer_params = step.opsproducer_dict["params"]
+        import_source = ImportSource(
+            source_file=Path("[material-test]"),
+            original_data=json.dumps(producer_params).encode("utf-8"),
+            renderer=MaterialTestRenderer(),
+            metadata={"type": "material_test"},
+        )
+
+        # 4. Create workpiece
+        workpiece = WorkPiece(name=_("Material Test Grid"))
+        workpiece.import_source_uid = import_source.uid
+
+        # 5. Calculate and set natural size
+        cols, rows = producer_params["grid_dimensions"]
+        shape_size = producer_params["shape_size"]
+        spacing = producer_params["spacing"]
+        width = cols * (shape_size + spacing) - spacing
+        height = rows * (shape_size + spacing) - spacing
+        workpiece.set_size(width, height)
+
+        # 6. Add to document
+        self.doc_editor.doc.add_import_source(import_source)
+        self.doc_editor.doc.add_layer(layer)
+        layer.add_child(workpiece)
+
+        # 7. Center on workspace
+        if config.machine:
+            ws_width, ws_height = config.machine.dimensions
+            workpiece.pos = (
+                ws_width / 2 - width / 2,
+                ws_height / 2 - height / 2,
+            )
+
+        logger.info(
+            f"Created material test: {cols}x{rows} grid, "
+            f"{width:.1f}x{height:.1f} mm"
+        )
+
+        # 8. Activate the new layer
+        self.doc_editor.doc.active_layer = layer
+
+        # 9. Open the step settings dialog for the material test step
+        dialog = StepSettingsDialog(
+            self.doc_editor.doc, step, transient_for=self
+        )
+        dialog.present()
 
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")

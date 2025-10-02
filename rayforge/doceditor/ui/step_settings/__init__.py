@@ -3,6 +3,7 @@ from .base import StepComponentSettingsWidget
 from .depth_engraver import DepthEngraverSettingsWidget
 from .edge import EdgeTracerSettingsWidget
 from .frame import FrameProducerSettingsWidget
+from .material_test_grid import MaterialTestGridSettingsWidget
 from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
 from .overscan import OverscanSettingsWidget
@@ -17,6 +18,7 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "DepthEngraver": DepthEngraverSettingsWidget,
     "EdgeTracer": EdgeTracerSettingsWidget,
     "FrameProducer": FrameProducerSettingsWidget,
+    "MaterialTestGridProducer": MaterialTestGridSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
     "OverscanTransformer": OverscanSettingsWidget,
@@ -30,6 +32,7 @@ __all__ = [
     "DepthEngraverSettingsWidget",
     "EdgeTracerSettingsWidget",
     "FrameProducerSettingsWidget",
+    "MaterialTestGridSettingsWidget",
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
     "OverscanSettingsWidget",

@@ -37,11 +37,11 @@ class ActionManager:
         self._add_action("preferences", self.win.show_preferences)
         self._add_action("machine_settings", self.win.show_machine_settings)
 
-        # View Actions
-        self._add_stateful_action(
-            "show_3d_view",
-            self.win.on_show_3d_view,
-            GLib.Variant.new_boolean(False),
+        # View Mode Actions (radio group: 2d, 3d, preview)
+        self._add_radio_action(
+            "view_mode",
+            self.win.on_view_mode_changed,
+            GLib.Variant.new_string("2d"),
         )
         self._add_stateful_action(
             "show_workpieces",
@@ -60,13 +60,15 @@ class ActionManager:
         )
 
         # 3D View Control Actions
-        self._add_action("view_top", self.win.on_view_top)
-        self._add_action("view_front", self.win.on_view_front)
-        self._add_action("view_iso", self.win.on_view_iso)
-        self._add_stateful_action(
+        # 3D viewpoint radio action (top/front/iso)
+        self._add_radio_action(
+            "view_3d_viewpoint",
+            self.win.on_3d_viewpoint_changed,
+            GLib.Variant.new_string("iso"),
+        )
+        self._add_action(
             "view_toggle_perspective",
-            self.win.on_view_perspective_state_change,
-            GLib.Variant.new_boolean(True),
+            self.win.on_view_toggle_perspective,
         )
 
         # Edit & Clipboard Actions
@@ -119,6 +121,9 @@ class ActionManager:
         self._add_action("spread-h", self.on_spread_h)
         self._add_action("spread-v", self.on_spread_v)
         self._add_action("layout-pixel-perfect", self.on_layout_pixel_perfect)
+
+        # Tools Actions
+        self._add_action("material_test", self.win.on_show_material_test)
 
         # Machine Control Actions
         self._add_action("home", self.win.on_home_clicked)
@@ -273,10 +278,14 @@ class ActionManager:
         app.set_accels_for_action(
             "win.toggle_travel_view", ["<Primary><Shift>t"]
         )
-        app.set_accels_for_action("win.show_3d_view", ["F12"])
-        app.set_accels_for_action("win.view_top", ["1"])
-        app.set_accels_for_action("win.view_front", ["2"])
-        app.set_accels_for_action("win.view_iso", ["7"])
+        # View mode hotkeys: F5=2D, F6=3D, F7=Preview
+        app.set_accels_for_action("win.view_mode::2d", ["F5"])
+        app.set_accels_for_action("win.view_mode::3d", ["F6"])
+        app.set_accels_for_action("win.view_mode::preview", ["F7"])
+        # 3D viewpoint hotkeys: 1=Top, 2=Front, 3=Isometric
+        app.set_accels_for_action("win.view_3d_viewpoint::top", ["1"])
+        app.set_accels_for_action("win.view_3d_viewpoint::front", ["2"])
+        app.set_accels_for_action("win.view_3d_viewpoint::iso", ["3"])
         app.set_accels_for_action("win.view_toggle_perspective", ["p"])
 
         # Object
@@ -424,6 +433,17 @@ class ActionManager:
         # For stateful actions, we ONLY connect to 'change-state'. The default
         # 'activate' handler for boolean actions will correctly call this for
         # us.
+        action.connect("change-state", callback)
+        self.win.add_action(action)
+        self.actions[name] = action
+
+    def _add_radio_action(
+        self, name: str, callback: Callable, initial_state: GLib.Variant
+    ):
+        """Helper for a radio action with string parameter."""
+        # Radio actions need a parameter type matching their state type
+        param_type = GLib.VariantType.new(initial_state.get_type_string())
+        action = Gio.SimpleAction.new_stateful(name, param_type, initial_state)
         action.connect("change-state", callback)
         self.win.add_action(action)
         self.actions[name] = action

@@ -1,3 +1,5 @@
+import gi; gi.require_version("Adw", "1")  # noqa: E702
+
 from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Adw
 
@@ -14,6 +16,10 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
     Subclasses are responsible for building their own UI rows and connecting
     signals to update the provided component model's dictionary representation.
     """
+
+    # Class property: override to False to hide general settings
+    # (power, speed, air assist)
+    show_general_settings = True
 
     def __init__(
         self,

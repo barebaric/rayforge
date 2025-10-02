@@ -7,6 +7,7 @@ from .producer import (
     DepthEngraver,
     EdgeTracer,
     FrameProducer,
+    MaterialTestGridProducer,
     Rasterizer,
     ShrinkWrapProducer,
 )
@@ -144,6 +145,27 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
+    return step
+
+
+def create_material_test_step(name: Optional[str] = None) -> Step:
+    """ Factory to create a Material Test step. """
+    assert config.config.machine
+    step = Step(
+        typelabel=_("Material Test Grid"),
+        name=name,
+    )
+    step.opsproducer_dict = MaterialTestGridProducer().to_dict()
+    # Material test doesn't use image modifiers
+    step.modifiers_dicts = []
+    # No transformers - ops are already optimally ordered
+    step.opstransformers_dicts = []
+    # No post-step transformers - we don't want path optimization
+    step.post_step_transformers_dicts = []
+    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.max_cut_speed = config.config.machine.max_cut_speed
+    step.max_travel_speed = config.config.machine.max_travel_speed
+
     return step
 
 

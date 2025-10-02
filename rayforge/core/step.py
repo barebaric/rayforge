@@ -137,6 +137,15 @@ class Step(DocItem, ABC):
             return cast(Workflow, self.parent)
         return None
 
+    @property
+    def show_general_settings(self) -> bool:
+        """
+        Returns whether general settings (power, speed, air assist) should be
+        shown in the settings dialog. Override in subclasses to hide these
+        settings when they don't apply.
+        """
+        return True
+
     def get_selected_laser(self, machine: "Machine") -> "Laser":
         """
         Resolves and returns the selected Laser instance for this step.

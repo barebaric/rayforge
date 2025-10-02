@@ -68,6 +68,10 @@ class WorkSurface(Canvas):
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
 
+        # Preview mode state
+        self._preview_mode = False
+        self._preview_overlay: Optional[CanvasElement] = None
+
         # The root element is now static and sized in world units (mm).
         self.root.set_size(self.width_mm, self.height_mm)
         self.root.clip = False
@@ -385,6 +389,10 @@ class WorkSurface(Canvas):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""
+        # Disable workpiece interaction in preview mode
+        if self._preview_mode:
+            return
+
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
             if self.right_click_context:
@@ -1073,3 +1081,36 @@ class WorkSurface(Canvas):
                 elem.selected = True
 
         self._finalize_selection_state()
+
+    def is_preview_mode(self) -> bool:
+        """Returns True if preview mode is active."""
+        return self._preview_mode
+
+    def set_preview_mode(self, enabled: bool, preview_overlay=None):
+        """
+        Enables or disables preview mode. When enabled:
+        - Workpiece selection and transformation are disabled
+        - Zoom and pan gestures remain active
+        - Grid and axis render normally
+        - Preview overlay is shown on top
+        """
+        if self._preview_mode == enabled:
+            return
+
+        self._preview_mode = enabled
+
+        if enabled:
+            # Unselect all elements when entering preview mode
+            self.unselect_all()
+
+            # Add preview overlay if provided
+            if preview_overlay:
+                self._preview_overlay = preview_overlay
+                self.root.add(self._preview_overlay)
+        else:
+            # Remove preview overlay when exiting
+            if self._preview_overlay:
+                self._preview_overlay.remove()
+                self._preview_overlay = None
+
+        self.queue_draw()
