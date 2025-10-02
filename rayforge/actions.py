@@ -444,6 +444,9 @@ class ActionManager:
         # Radio actions need a parameter type matching their state type
         param_type = GLib.VariantType.new(initial_state.get_type_string())
         action = Gio.SimpleAction.new_stateful(name, param_type, initial_state)
+        # Connect activate to trigger the state change with the parameter
+        action.connect("activate", lambda a, param: a.change_state(param)
+                       if param else None)
         action.connect("change-state", callback)
         self.win.add_action(action)
         self.actions[name] = action

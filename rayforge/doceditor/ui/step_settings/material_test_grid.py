@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 # Preset selector constants
-PRESET_NONE = "Select a preset..."
+PRESET_NONE = "Select"
 
 # Preset configurations
 PRESETS = {
@@ -81,17 +81,18 @@ class MaterialTestGridSettingsWidget(
 
     def _build_preset_selector(self):
         """Builds the preset dropdown."""
-        preset_combo = Gtk.ComboBoxText()
-        preset_combo.append_text(PRESET_NONE)  # Default option
+        # Use StringList for Adw.ComboRow
+        string_list = Gtk.StringList()
+        string_list.append(PRESET_NONE)  # Default option
         for preset_name in PRESETS:
-            preset_combo.append_text(preset_name)
-        preset_combo.set_active(0)  # Start with PRESET_NONE selected
+            string_list.append(preset_name)
 
-        preset_row = Adw.ActionRow(
+        preset_row = Adw.ComboRow(
             title=_("Preset"),
             subtitle=_("Load common test configurations"),
+            model=string_list,
         )
-        preset_row.add_suffix(preset_combo)
+        preset_row.set_selected(0)  # Start with PRESET_NONE selected
 
         # Create a separate group for presets
         preset_group = Adw.PreferencesGroup(
@@ -100,8 +101,8 @@ class MaterialTestGridSettingsWidget(
         preset_group.add(preset_row)
         self.add(preset_group)
 
-        preset_combo.connect("changed", self._on_preset_changed)
-        self.preset_combo = preset_combo
+        preset_row.connect("notify::selected", self._on_preset_changed)
+        self.preset_row = preset_row
 
     def _build_test_type_selector(self, producer: MaterialTestGridProducer):
         """Builds the test type dropdown (Cut/Engrave)."""
@@ -315,9 +316,14 @@ class MaterialTestGridSettingsWidget(
         switch.connect("state-set", self._on_labels_toggled)
 
     # Signal handlers
-    def _on_preset_changed(self, combo: Gtk.ComboBoxText):
+    def _on_preset_changed(self, row: Adw.ComboRow, _pspec):
         """Loads preset values."""
-        preset_name = combo.get_active_text()
+        selected_idx = row.get_selected()
+        if selected_idx == Gtk.INVALID_LIST_POSITION:
+            return
+
+        model = row.get_model()
+        preset_name = model.get_string(selected_idx)
 
         # Ignore PRESET_NONE selection - it's just a placeholder
         if not preset_name or preset_name == PRESET_NONE:
