@@ -3,13 +3,13 @@ from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer, CutSide
 from ....pipeline.producer.edge import EdgeTracer
-from ....undo import DictItemCommand
 from ....shared.util.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
@@ -20,6 +20,7 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
+        editor: "DocEditor",
         history_manager: "HistoryManager",
         **kwargs,
     ):
@@ -29,9 +30,11 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             target_dict=target_dict,
             page=page,
             step=step,
+            editor=editor,
             history_manager=history_manager,
             **kwargs,
         )
+        self.editor = editor
 
         # Remove inner paths toggle
         switch_row = Adw.SwitchRow(
@@ -99,20 +102,13 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_param_changed(self, key: str, new_value: Any):
         params_dict = self.target_dict.setdefault("params", {})
-        if isinstance(new_value, float):
-            if abs(new_value - params_dict.get(key, 0.0)) < 1e-6:
-                return
-        elif new_value == params_dict.get(key):
-            return
-
-        command = DictItemCommand(
+        self.editor.step.set_step_param(
             target_dict=params_dict,
             key=key,
             new_value=new_value,
             name=_("Change Edge Tracer Setting"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)
 
     def _on_cut_side_changed(self, row, _):
         selected_idx = row.get_selected()

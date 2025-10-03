@@ -1,15 +1,16 @@
 import logging
 from gi.repository import Gtk
 from blinker import Signal
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
-from ...core.doc import Doc
-from ...undo.models.list_cmd import ReorderListCommand
 from ...core.layer import Layer
 from ...shared.ui.draglist import DragListBox
 from .layer_view import LayerView
 from ...shared.ui.expander import Expander
 from ...icons import get_icon
+
+if TYPE_CHECKING:
+    from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +22,10 @@ class LayerListView(Expander):
 
     layer_activated = Signal()
 
-    def __init__(self, doc: Doc, **kwargs):
+    def __init__(self, editor: "DocEditor", **kwargs):
         super().__init__(**kwargs)
-        self.doc = doc
+        self.editor = editor
+        self.doc = editor.doc
 
         self.set_title(_("Workpiece Layers"))
         self.set_expanded(True)
@@ -110,7 +112,7 @@ class LayerListView(Expander):
 
             list_box_row = Gtk.ListBoxRow()
             list_box_row.data = layer  # type: ignore
-            layer_view = LayerView(self.doc, layer)
+            layer_view = LayerView(self.doc, layer, self.editor)
 
             is_deletable = can_delete_regular_layer
             layer_view.set_deletable(is_deletable)
@@ -133,55 +135,20 @@ class LayerListView(Expander):
             # which all LayerView widgets (including this one) are listening
             # to. They will then update their own styles automatically.
             if self.doc.active_layer is not layer:
-                self.doc.active_layer = layer
+                self.editor.layer.set_active_layer(layer)
 
             # Send a signal for other parts of the UI (e.g., MainWindow)
             self.layer_activated.send(self, layer=layer)
 
     def on_button_add_clicked(self, button):
         """Handles creation of a new layer with an undoable command."""
-        # Find a unique default name for the new layer
-        base_name = _("Layer")
-        existing_names = {layer.name for layer in self.doc.layers}
-        highest_num = 0
-        for name in existing_names:
-            if name.startswith(base_name):
-                try:
-                    num_part = name[len(base_name) :].strip()
-                    if num_part.isdigit():
-                        highest_num = max(highest_num, int(num_part))
-                except ValueError:
-                    continue  # Ignore names that don't parse correctly
-
-        new_name = f"{base_name} {highest_num + 1}"
-
-        new_layer = Layer(name=new_name)
-
-        new_list = self.doc.layers + [new_layer]
-        command = ReorderListCommand(
-            target_obj=self.doc,
-            list_property_name="layers",
-            new_list=new_list,
-            setter_method_name="set_layers",
-            name=_("Add layer '{name}'").format(name=new_layer.name),
-        )
-        self.doc.history_manager.execute(command)
-        self.doc.active_layer = new_layer
-        self.doc.update_stock_visibility()
+        self.editor.layer.add_layer_and_set_active()
 
     def on_delete_layer_clicked(self, layer_view):
         """Handles deletion of a layer with an undoable command."""
         layer_to_delete = layer_view.layer
-        new_list = [g for g in self.doc.layers if g is not layer_to_delete]
-        command = ReorderListCommand(
-            target_obj=self.doc,
-            list_property_name="layers",
-            new_list=new_list,
-            setter_method_name="set_layers",
-            name=_("Remove layer '{name}'").format(name=layer_to_delete.name),
-        )
         try:
-            self.doc.history_manager.execute(command)
+            self.editor.layer.delete_layer(layer_to_delete)
         except ValueError as e:
             logger.warning(
                 "Layer deletion prevented by model validation: %s", e
@@ -193,11 +160,4 @@ class LayerListView(Expander):
     def on_layers_reordered(self, sender):
         """Handles reordering of Layers with an undoable command."""
         new_order = [row.data for row in self.draglist]  # type: ignore
-        command = ReorderListCommand(
-            target_obj=self.doc,
-            list_property_name="layers",
-            new_list=new_order,
-            setter_method_name="set_layers",
-            name=_("Reorder layers"),
-        )
-        self.doc.history_manager.execute(command)
+        self.editor.layer.reorder_layers(new_order)

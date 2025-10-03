@@ -4,12 +4,12 @@ from gi.repository import Gtk, Gdk, Pango, Adw
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.layer import Layer
-from ...undo.models.property_cmd import ChangePropertyCommand
 from ...shared.util.gtk import apply_css
 from ...icons import get_icon
 
 if TYPE_CHECKING:
     from ...core.stock import StockItem
+    from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class LayerView(Gtk.Box):
 
     delete_clicked = Signal()
 
-    def __init__(self, doc: Doc, layer: Layer):
+    def __init__(self, doc: Doc, layer: Layer, editor: "DocEditor"):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
         # Apply CSS globally, but only once.
@@ -64,6 +64,7 @@ class LayerView(Gtk.Box):
 
         self.doc = doc
         self.layer = layer
+        self.editor = editor
 
         # Initialize stock items list to prevent crashes
         self._stock_items: List[Optional["StockItem"]] = [None]
@@ -214,14 +215,7 @@ class LayerView(Gtk.Box):
             self.name_entry.set_text(self.layer.name)
             return
 
-        command = ChangePropertyCommand(
-            target=self.layer,
-            property_name="name",
-            new_value=new_name,
-            setter_method_name="set_name",
-            name=_("Rename layer"),
-        )
-        self.doc.history_manager.execute(command)
+        self.editor.layer.rename_layer(self.layer, new_name)
 
     def on_button_view_click(self, button):
         """Creates an undoable command to toggle the layer's visibility."""
@@ -229,14 +223,7 @@ class LayerView(Gtk.Box):
         if new_visibility == self.layer.visible:
             return
 
-        command = ChangePropertyCommand(
-            target=self.layer,
-            property_name="visible",
-            new_value=new_visibility,
-            setter_method_name="set_visible",
-            name=_("Toggle layer visibility"),
-        )
-        self.doc.history_manager.execute(command)
+        self.editor.layer.set_layer_visibility(self.layer, new_visibility)
 
     def update_style(self):
         """
@@ -349,17 +336,7 @@ class LayerView(Gtk.Box):
         # Update the layer
         new_uid = selected_stock.uid if selected_stock else None
         if new_uid != self.layer.stock_item_uid:
-            command = ChangePropertyCommand(
-                target=self.layer,
-                property_name="stock_item_uid",
-                new_value=new_uid,
-                setter_method_name="set_stock_item_uid",
-                name=_("Assign stock material"),
-            )
-            self.doc.history_manager.execute(command)
-            # Update stock visibility when stock assignment changes
-            if self.layer.active:
-                self.doc.update_stock_visibility()
+            self.editor.layer.set_layer_stock_item(self.layer, new_uid)
 
         # Update button label
         if selected_stock:

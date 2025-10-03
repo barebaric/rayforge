@@ -8,7 +8,6 @@ from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..machine.models.machine import Machine
-from ..undo import ChangePropertyCommand
 from ..core.stock import StockItem
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
@@ -413,14 +412,7 @@ class WorkSurface(Canvas):
             # If the workpiece's layer is not the document's active layer,
             # create an undoable command to change it.
             if active_layer and active_layer != self.doc.active_layer:
-                cmd = ChangePropertyCommand(
-                    target=self.doc,
-                    property_name="active_layer",
-                    new_value=active_layer,
-                    name=_("Select Layer"),
-                )
-                # Using execute() adds it to the undo stack.
-                self.doc.history_manager.execute(cmd)
+                self.editor.layer.set_active_layer(active_layer)
 
     def set_machine(self, machine: Optional[Machine]):
         """

@@ -3,7 +3,8 @@ import logging
 from typing import TYPE_CHECKING, Optional, List
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
-from ..undo import Command
+from ..undo import Command, ChangePropertyCommand
+from ..undo.models.list_cmd import ReorderListCommand
 
 if TYPE_CHECKING:
     from ..workbench.surface import WorkSurface
@@ -46,6 +47,71 @@ class MoveWorkpiecesLayerCommand(Command):
     def undo(self):
         """Undoes the command, moving workpieces back to the old layer."""
         self._move(self.new_layer, self.old_layer)
+
+
+class AddLayerAndSetActiveCommand(Command):
+    """
+    An undoable command to add a new layer and set it as the active layer.
+    """
+
+    def __init__(
+        self,
+        editor: "DocEditor",
+        new_layer: Optional[Layer] = None,
+        name: str = "Add layer",
+    ):
+        super().__init__(name=name)
+        self._editor = editor
+        self.new_layer = new_layer or self._create_default_layer()
+        self._old_active_layer: Optional[Layer] = None
+
+    def _create_default_layer(self) -> Layer:
+        """Creates a new layer with a default, unique name."""
+        # Find a unique default name for the new layer
+        base_name = _("Layer")
+        existing_names = {layer.name for layer in self._editor.doc.layers}
+        highest_num = 0
+        for name in existing_names:
+            if name.startswith(base_name):
+                try:
+                    num_part = name[len(base_name) :].strip()
+                    if num_part.isdigit():
+                        highest_num = max(highest_num, int(num_part))
+                except ValueError:
+                    continue  # Ignore names that don't parse correctly
+
+        new_name = f"{base_name} {highest_num + 1}"
+        return Layer(name=new_name)
+
+    def execute(self):
+        """Adds the layer and makes it active."""
+        self._old_active_layer = self._editor.doc.active_layer
+        new_list = self._editor.doc.layers + [self.new_layer]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+        )
+        cmd.execute()
+        self._editor.doc.active_layer = self.new_layer
+        self._editor.doc.update_stock_visibility()
+
+    def undo(self):
+        """Removes the layer and restores the previous active layer."""
+        new_list = [
+            g for g in self._editor.doc.layers if g is not self.new_layer
+        ]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+        )
+        cmd.execute()
+        if self._old_active_layer in self._editor.doc.layers:
+            self._editor.doc.active_layer = self._old_active_layer
+        self._editor.doc.update_stock_visibility()
 
 
 class LayerCmd:
@@ -114,3 +180,89 @@ class LayerCmd:
                 f"Layer '{current_layer.name}' not found in document's "
                 "workpiece layer list."
             )
+
+    def add_layer_and_set_active(self, new_layer: Optional[Layer] = None):
+        """Adds a new layer to the document and sets it as the active layer."""
+        cmd = AddLayerAndSetActiveCommand(self._editor, new_layer)
+        self._editor.history_manager.execute(cmd)
+
+    def rename_layer(self, layer: Layer, new_name: str):
+        """Renames a layer with an undoable command."""
+        if new_name == layer.name:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="name",
+            new_value=new_name,
+            setter_method_name="set_name",
+            name=_("Rename layer"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_layer_visibility(self, layer: Layer, visible: bool):
+        """Sets the visibility of a layer with an undoable command."""
+        if visible == layer.visible:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="visible",
+            new_value=visible,
+            setter_method_name="set_visible",
+            name=_("Toggle layer visibility"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_layer_stock_item(
+        self, layer: Layer, stock_item_uid: Optional[str]
+    ):
+        """Assigns a stock item to a layer with an undoable command."""
+        if stock_item_uid == layer.stock_item_uid:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="stock_item_uid",
+            new_value=stock_item_uid,
+            setter_method_name="set_stock_item_uid",
+            name=_("Assign stock material"),
+        )
+        self._editor.history_manager.execute(cmd)
+        # Update stock visibility when stock assignment changes
+        if layer.active:
+            self._editor.doc.update_stock_visibility()
+
+    def set_active_layer(self, layer: Layer):
+        """Sets the active layer."""
+        if self._editor.doc.active_layer is layer:
+            return
+        old_layer = self._editor.doc.active_layer
+        cmd = ChangePropertyCommand(
+            target=self._editor.doc,
+            property_name="active_layer",
+            new_value=layer,
+            old_value=old_layer,
+            name=_("Set active layer"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def delete_layer(self, layer: Layer):
+        """Deletes a layer with an undoable command."""
+        new_list = [g for g in self._editor.doc.layers if g is not layer]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+            name=_("Remove layer '{name}'").format(name=layer.name),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def reorder_layers(self, new_order: List[Layer]):
+        """Reorders layers with an undoable command."""
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_order,
+            setter_method_name="set_layers",
+            name=_("Reorder layers"),
+        )
+        self._editor.history_manager.execute(cmd)

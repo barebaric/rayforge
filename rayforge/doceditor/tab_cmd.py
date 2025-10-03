@@ -3,6 +3,7 @@ import logging
 import math
 from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
+from dataclasses import replace
 
 from ..core.tab import Tab
 from ..core.geo import (
@@ -314,5 +315,44 @@ class TabCmd:
             workpiece=workpiece,
             new_tabs=[],
             name=_("Clear Tabs"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_workpiece_tabs_enabled(self, workpiece: WorkPiece, enabled: bool):
+        """Enables or disables tabs for a workpiece."""
+        if workpiece.tabs_enabled == enabled:
+            return
+
+        old_value = workpiece.tabs_enabled
+        workpiece.tabs_enabled = enabled
+
+        # This is a simple property change, so we can use a generic command
+        from ..undo import ChangePropertyCommand
+        cmd = ChangePropertyCommand(
+            target=workpiece,
+            property_name="tabs_enabled",
+            new_value=enabled,
+            old_value=old_value,
+            name=_("Toggle Tabs"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_workpiece_tab_width(self, workpiece: WorkPiece, width: float):
+        """Sets the width of all tabs on a workpiece."""
+        if not workpiece.tabs:
+            return
+
+        old_tabs = deepcopy(workpiece.tabs)
+        # Check if any change is actually needed to avoid empty undo commands
+        if all(tab.width == width for tab in old_tabs):
+            return
+
+        new_tabs = [replace(tab, width=width) for tab in old_tabs]
+
+        cmd = SetWorkpieceTabsCommand(
+            editor=self._editor,
+            workpiece=workpiece,
+            new_tabs=new_tabs,
+            name=_("Change Tab Width"),
         )
         self._editor.history_manager.execute(cmd)

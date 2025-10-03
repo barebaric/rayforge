@@ -3,13 +3,13 @@ from gi.repository import Gtk, Adw, GObject
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer
 from ....pipeline.producer.depth import DepthEngraver, DepthMode
-from ....undo import DictItemCommand
 from ....shared.util.adwfix import get_spinrow_int, get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
@@ -20,6 +20,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
+        editor: "DocEditor",
         history_manager: "HistoryManager",
         **kwargs,
     ):
@@ -29,9 +30,11 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             target_dict=target_dict,
             page=page,
             step=step,
+            editor=editor,
             history_manager=history_manager,
             **kwargs,
         )
+        self.editor = editor
 
         # Mode selection dropdown
         mode_choices = [m.name.replace("_", " ").title() for m in DepthMode]
@@ -187,14 +190,10 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_param_changed(self, key: str, value: Any):
         target_dict = self.target_dict.setdefault("params", {})
-        if value == target_dict.get(key):
-            return
-
-        command = DictItemCommand(
+        self.editor.step.set_step_param(
             target_dict=target_dict,
             key=key,
             new_value=value,
             name=_("Change Depth Engraving setting"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)

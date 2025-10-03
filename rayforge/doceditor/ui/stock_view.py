@@ -3,7 +3,6 @@ from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.stock import StockItem
-from ...undo.models.property_cmd import ChangePropertyCommand
 from ...shared.util.gtk import apply_css
 from ...shared.ui.formatter import format_value
 from ...config import config
@@ -176,21 +175,14 @@ class StockItemView(Gtk.Box):
             self.name_entry.set_text(self.stock_item.name)
             return
 
-        command = ChangePropertyCommand(
-            target=self.stock_item,
-            property_name="name",
-            new_value=new_name,
-            setter_method_name="set_name",
-            name=_("Rename stock item"),
-        )
-        self.doc.history_manager.execute(command)
+        self.editor.stock.rename_stock_item(self.stock_item, new_name)
 
     def on_properties_clicked(self, button):
         """Opens the properties dialog for the stock item."""
         # Get the root window
         root = self.get_root()
         if root and isinstance(root, Gtk.Window):
-            dialog = StockPropertiesDialog(root, self.stock_item, self.doc)
+            dialog = StockPropertiesDialog(root, self.stock_item, self.editor)
             dialog.present()
 
     def on_button_view_click(self, button):

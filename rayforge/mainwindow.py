@@ -333,7 +333,7 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.append(self.stock_list_view)
 
         # Add the Layer list view
-        self.layer_list_view = LayerListView(self.doc_editor.doc)
+        self.layer_list_view = LayerListView(self.doc_editor)
         self.layer_list_view.set_margin_top(20)
         self.layer_list_view.set_margin_end(12)
         right_pane_box.append(self.layer_list_view)

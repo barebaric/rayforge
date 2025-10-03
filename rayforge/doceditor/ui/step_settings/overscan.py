@@ -2,13 +2,13 @@ from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import OverscanTransformer
-from ....undo import DictItemCommand
 from ....shared.util.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
@@ -19,6 +19,7 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
+        editor: "DocEditor",
         history_manager: "HistoryManager",
         **kwargs,
     ):
@@ -29,9 +30,11 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             target_dict=target_dict,
             page=page,
             step=step,
+            editor=editor,
             history_manager=history_manager,
             **kwargs,
         )
+        self.editor = editor
 
         # Main toggle switch
         switch_row = Adw.SwitchRow(title=_("Enable Overscan"))
@@ -66,28 +69,20 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()
-        if new_value == self.target_dict.get("enabled"):
-            return
-
-        command = DictItemCommand(
+        self.editor.step.set_step_param(
             target_dict=self.target_dict,
             key="enabled",
             new_value=new_value,
             name=_("Toggle Overscan"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)
 
     def _on_distance_changed(self, spin_row):
         new_value = get_spinrow_float(spin_row)
-        if abs(new_value - self.target_dict.get("distance_mm", 0.0)) < 1e-6:
-            return
-
-        command = DictItemCommand(
+        self.editor.step.set_step_param(
             target_dict=self.target_dict,
             key="distance_mm",
             new_value=new_value,
             name=_("Change Overscan Distance"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)

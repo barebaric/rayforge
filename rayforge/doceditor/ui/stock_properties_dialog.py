@@ -1,10 +1,12 @@
 import logging
 from gi.repository import Gtk, Adw, GLib
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from ...core.stock import StockItem
-from ...undo import ChangePropertyCommand
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+
+if TYPE_CHECKING:
+    from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +16,13 @@ class StockPropertiesDialog(Adw.Window):
     A non-modal window for editing stock item properties.
     """
 
-    def __init__(self, parent: Gtk.Window, stock_item: StockItem, doc):
+    def __init__(
+        self, parent: Gtk.Window, stock_item: StockItem, editor: "DocEditor"
+    ):
         super().__init__(transient_for=parent)
         self.stock_item = stock_item
-        self.doc = doc
+        self.editor = editor
+        self.doc = editor.doc
 
         # Used to delay updates from continuous-change widgets
         self._debounce_timer = 0
@@ -136,14 +141,7 @@ class StockPropertiesDialog(Adw.Window):
     def _apply_name_change(self, new_name):
         """Apply the name change."""
         if new_name and new_name != self.stock_item.name:
-            command = ChangePropertyCommand(
-                target=self.stock_item,
-                property_name="name",
-                new_value=new_name,
-                setter_method_name="set_name",
-                name=_("Rename stock item"),
-            )
-            self.doc.history_manager.execute(command)
+            self.editor.stock.rename_stock_item(self.stock_item, new_name)
 
     def on_stock_item_updated(self, sender, **kwargs):
         """Update the UI when the stock item changes."""
@@ -156,11 +154,6 @@ class StockPropertiesDialog(Adw.Window):
     def _apply_thickness_change(self, new_thickness):
         """Apply the thickness change."""
         if new_thickness != self.stock_item.thickness:
-            command = ChangePropertyCommand(
-                target=self.stock_item,
-                property_name="thickness",
-                new_value=new_thickness,
-                setter_method_name="set_thickness",
-                name=_("Change stock thickness"),
+            self.editor.stock.set_stock_thickness(
+                self.stock_item, new_thickness
             )
-            self.doc.history_manager.execute(command)

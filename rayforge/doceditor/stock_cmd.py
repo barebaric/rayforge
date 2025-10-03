@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING
 from ..core.stock import StockItem
 from ..core.geo import Geometry
+from ..undo import ChangePropertyCommand
 from ..undo.models.list_cmd import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
@@ -118,3 +119,45 @@ class StockCmd:
             name=_("Reorder Stock Items"),
         )
         doc.history_manager.execute(command)
+
+    def rename_stock_item(self, stock_item: StockItem, new_name: str):
+        """
+        Renames a StockItem with an undoable command.
+
+        Args:
+            stock_item: The StockItem to rename.
+            new_name: The new name for the StockItem.
+        """
+        from ..undo.models.property_cmd import ChangePropertyCommand
+
+        if new_name == stock_item.name:
+            return
+
+        command = ChangePropertyCommand(
+            target=stock_item,
+            property_name="name",
+            new_value=new_name,
+            setter_method_name="set_name",
+            name=_("Rename stock item"),
+        )
+        self._editor.doc.history_manager.execute(command)
+
+    def set_stock_thickness(self, stock_item: StockItem, new_thickness: float):
+        """
+        Sets the thickness of a StockItem with an undoable command.
+
+        Args:
+            stock_item: The StockItem to modify.
+            new_thickness: The new thickness for the StockItem.
+        """
+        if new_thickness == stock_item.thickness:
+            return
+
+        command = ChangePropertyCommand(
+            target=stock_item,
+            property_name="thickness",
+            new_value=new_thickness,
+            setter_method_name="set_thickness",
+            name=_("Change stock thickness"),
+        )
+        self._editor.doc.history_manager.execute(command)
