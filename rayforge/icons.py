@@ -55,5 +55,4 @@ def get_icon(icon_name: str) -> Gtk.Image:
 
 def clear_icon_cache():
     """Clear the icon cache. Useful for testing or theme changes."""
-    global _icon_cache
     _icon_cache.clear()
