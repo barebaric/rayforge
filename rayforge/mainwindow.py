@@ -22,17 +22,17 @@ from .core.stocklayer import StockLayer
 from .core.import_source import ImportSource
 from .core.workpiece import WorkPiece
 from .image.material_test_grid_renderer import MaterialTestRenderer
-from .pipeline.steps import (STEP_FACTORIES,
+from .pipeline.steps import (
+    STEP_FACTORIES,
     create_contour_step,
-    create_material_test_step)
+    create_material_test_step,
+)
 from .pipeline.encoder.gcode import GcodeEncoder
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
-from .workbench.elements.simulation_overlay import SimulationOverlay
-from .workbench.simulation_controls import PreviewControls
 from .doceditor.ui.layer_list import LayerListView
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
@@ -46,6 +46,7 @@ from .toolbar import MainToolbar
 from .actions import ActionManager
 from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
+from .workbench.simulator_cmd import SimulatorCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
@@ -150,6 +151,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor)
+        self.simulator_cmd = SimulatorCmd(self)
 
         # Add a global click handler to manage focus correctly.
         root_click_gesture = Gtk.GestureClick.new()
@@ -246,11 +248,6 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_editor_notification
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
-
-        # Preview mode uses the 2D canvas with overlay
-        self.simulation_overlay = None
-        self.preview_controls = None
-        self.preview_controls_step_changed_handler_id = None
 
         # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
@@ -409,7 +406,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
         else:
             # Animate the pane closed, but not if simulation is active
-            if self.simulation_overlay is None:
+            if self.simulator_cmd.simulation_overlay is None:
                 self.left_content_pane.set_position(0)
                 self.gcode_previewer.clear()
 
@@ -469,17 +466,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_show_travel_moves(is_visible)
         if canvas3d_initialized and hasattr(self, "canvas3d"):
             self.canvas3d.set_show_travel_moves(is_visible)
-        action.set_state(value)
-
-    def on_simulate_mode_state_change(
-        self, action: Gio.SimpleAction, value: GLib.Variant
-    ):
-        """Toggles the execution preview simulation overlay."""
-        enabled = value.get_boolean()
-        if enabled:
-            self._enter_simulate_mode()
-        else:
-            self._exit_simulate_mode()
         action.set_state(value)
 
     def on_view_top(self, action, param):
@@ -548,66 +534,6 @@ class MainWindow(Adw.ApplicationWindow):
         Global click handler to unfocus widgets when clicking on "dead space".
         """
         self.surface.grab_focus()
-
-    def _enter_simulate_mode(self):
-        """Enters preview mode by creating overlay and enabling it on the
-        canvas."""
-        # If the 3D view is active, switch back to the 2D view because
-        # simulation is only supported on the 2D canvas.
-        if self.view_stack.get_visible_child_name() == "3d":
-            self.view_stack.set_visible_child_name("2d")
-            action = self.action_manager.get_action("show_3d_view")
-            state = action.get_state()
-            if state and state.get_boolean():
-                action.set_state(GLib.Variant.new_boolean(False))
-
-        # Get work area size
-        if config.machine:
-            work_area_size = config.machine.dimensions
-        else:
-            work_area_size = (100.0, 100.0)
-
-        # Create simulation overlay
-        self.simulation_overlay = SimulationOverlay(work_area_size)
-
-        # Aggregate operations from all layers
-        full_ops = self._aggregate_ops_for_3d_view()
-        self.simulation_overlay.set_ops(full_ops)
-        self._update_gcode_preview(full_ops)
-
-        # Enable simulation mode on the canvas
-        self.surface.set_simulation_mode(True, self.simulation_overlay)
-
-        # Create and show preview controls
-        self.preview_controls = PreviewControls(self.simulation_overlay)
-        self.surface_overlay.add_overlay(self.preview_controls)
-        self.preview_controls_step_changed_handler_id = \
-            self.preview_controls.connect("step-changed",
-            self._on_simulation_step_changed)
-        self.left_content_pane.set_position(self._last_gcode_previewer_width)
-
-        # Auto-start playback
-        self.preview_controls._start_playback()
-
-    def _exit_simulate_mode(self):
-        """Exits simulation mode by disabling it on the canvas."""
-        self.surface.set_simulation_mode(False)
-
-        # Remove preview controls
-        if self.preview_controls:
-            if self.preview_controls_step_changed_handler_id:
-                self.preview_controls.disconnect(
-                    self.preview_controls_step_changed_handler_id)
-                self.preview_controls_step_changed_handler_id = None
-            self.surface_overlay.remove_overlay(self.preview_controls)
-            self.preview_controls = None
-
-        self.simulation_overlay = None
-        self.left_content_pane.set_position(0)
-        self.gcode_previewer.clear_highlight()
-
-    def _on_simulation_step_changed(self, sender, step):
-        self.gcode_previewer.highlight_op(step)
 
     def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
@@ -1279,9 +1205,14 @@ class MainWindow(Adw.ApplicationWindow):
         """Creates a material test grid and adds it to the active layer."""
         step = create_material_test_step()
         active_layer = self.doc_editor.doc.active_layer
-        active_layer.workflow.add_step(step)
+        workflow = active_layer.workflow
+        if workflow is None:
+            return
+        workflow.add_step(step)
 
         # Create material-test type ImportSource with encoded parameters
+        if step.opsproducer_dict is None:
+            return
         producer_params = step.opsproducer_dict["params"]
         import_source = ImportSource(
             source_file=Path("[material-test]"),
@@ -1320,40 +1251,3 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
-
-
-css = """
-.mainpaned > separator {
-    border: none;
-    box-shadow: none;
-}
-
-.statusbar {
-    border-radius: 5px;
-    padding-top: 6px;
-}
-
-.statusbar:hover {
-    background-color: alpha(@theme_fg_color, 0.1);
-}
-
-.in-header-menubar {
-    margin-left: 6px;
-    box-shadow: none;
-}
-
-.in-header-menubar item {
-    padding: 6px 12px 6px 12px;
-}
-
-.menu separator {
-    border-top: 1px solid @borders;
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-.warning-label {
-    color: @warning_color;
-    font-weight: bold;
-}
-"""

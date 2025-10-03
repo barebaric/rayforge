@@ -64,7 +64,7 @@ class ActionManager:
 
         self._add_stateful_action(
             "simulate_mode",
-            self.win.on_simulate_mode_state_change,
+            self.win.simulator_cmd.toggle_mode,
             GLib.Variant.new_boolean(False),
         )
 
