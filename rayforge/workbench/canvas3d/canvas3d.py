@@ -15,6 +15,8 @@ from .shaders import (
     TEXT_FRAGMENT_SHADER,
     TEXT_VERTEX_SHADER,
 )
+from ...shared.util.colors import ColorSet
+from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
 
 
@@ -55,10 +57,13 @@ class Canvas3D(Gtk.GLArea):
         self._gl_initialized = False
         self._model_matrix = np.identity(4, dtype=np.float32)
 
-        # Ops render colors
-        self._cut_color = [1.0, 0.0, 1.0, 1.0]  # Magenta
-        self._travel_color = [1.0, 0.4, 0.0, 0.7]  # Orange, transparent
-        self._zero_power_color = [0.0, 0.2, 0.9, 0.5]  # Blue, transparent
+        self._color_spec: ColorSpecDict = {
+            "cut": ("#ff00ff22", "#ff00ff"),
+            "engrave": ("#00000009", "#000000"),
+            "travel": ("#FF6600", 0.7),
+            "zero_power": ("@accent_color", 0.5),
+        }
+        self._color_set: Optional[ColorSet] = None
 
         if self.y_down:
             # This matrix transforms from a Y-up coordinate system (used by
@@ -268,15 +273,16 @@ class Canvas3D(Gtk.GLArea):
             logger.error(f"OpenGL Initialization Error: {e}", exc_info=True)
             self._gl_initialized = False
 
-    def _update_theme_colors(self):
+    def _update_theme_and_colors(self):
         """
-        Reads the current theme colors from the widget's style context
-        and applies them to the renderer.
+        Resolves the ColorSet and updates other theme-dependent elements.
         """
         if not self.axis_renderer:
             return
 
         style_context = self.get_style_context()
+        resolver = GtkColorResolver(style_context)
+        self._color_set = resolver.resolve(self._color_spec)
 
         # Get background color and set it for OpenGL. Prioritize the specific
         # 'view_bg_color', but fall back to the generic 'theme_bg_color'.
@@ -309,25 +315,14 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
 
-        # Get accent color for zero-power moves to match the 2D canvas
-        found, accent_rgba = style_context.lookup_color("accent_color")
-        if found:
-            self._zero_power_color = [
-                accent_rgba.red,
-                accent_rgba.green,
-                accent_rgba.blue,
-                0.5,  # 50% transparent
-            ]
-        else:
-            # Fallback for zero-power moves
-            self._zero_power_color = [0.0, 0.2, 0.9, 0.5]
-
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self.camera or not self._gl_initialized:
             return False
 
-        self._update_theme_colors()
+        self._update_theme_and_colors()
+        if not self._color_set:
+            return False  # Cannot render without resolved colors
 
         try:
             GL.glViewport(0, 0, self.camera.width, self.camera.height)
@@ -361,9 +356,7 @@ class Canvas3D(Gtk.GLArea):
                 self.ops_renderer.render(
                     self.main_shader,
                     mvp_matrix_scene_gl,
-                    cut_color=self._cut_color,
-                    travel_color=self._travel_color,
-                    zero_power_color=self._zero_power_color,
+                    colors=self._color_set,
                 )
 
         except Exception as e:
@@ -600,33 +593,40 @@ class Canvas3D(Gtk.GLArea):
             return
 
         (
-            cut_verts,
+            powered_verts,
+            powered_colors,
             travel_verts,
             zero_power_verts,
-            raster_verts,
-            raster_colors,
+            zero_power_colors,
         ) = self._ops_vtx_cache
 
-        # Determine which travel vertices to show based on the current toggle
-        # state
-        travel_verts_to_render = (
-            travel_verts
-            if self._show_travel_moves
-            else np.array([], dtype=np.float32)
-        )
-        zero_power_verts_to_render = (
-            zero_power_verts
-            if self._show_travel_moves
-            else np.array([], dtype=np.float32)
-        )
+        # Combine travel and zero-power moves based on the toggle state
+        if self._show_travel_moves:
+            # Zero-power moves use vertex colors, so we need to upload them
+            # along with the travel vertices. This requires a bit more work.
+            # The simplest solution is to render them as part of the powered
+            # VAO, which is not ideal. A better solution is to add a second
+            # colored VAO for travel/zero-power moves, but that is a larger
+            # refactor.
+            # For now, let's append zero-power vertices to the powered ones.
+            # This is a temporary workaround.
+            powered_verts_final = np.concatenate(
+                (powered_verts, zero_power_verts)
+            )
+            powered_colors_final = np.concatenate(
+                (powered_colors, zero_power_colors)
+            )
+            travel_verts_final = travel_verts
+        else:
+            powered_verts_final = powered_verts
+            powered_colors_final = powered_colors
+            travel_verts_final = np.array([], dtype=np.float32)
 
         # This part runs on the main thread and is fast (just GPU uploads)
         self.ops_renderer.update_from_vertex_data(
-            cut_verts,
-            travel_verts_to_render,
-            zero_power_verts_to_render,
-            raster_verts,
-            raster_colors,
+            powered_verts_final,
+            powered_colors_final,
+            travel_verts_final,
         )
         self.queue_render()
 
@@ -638,6 +638,17 @@ class Canvas3D(Gtk.GLArea):
         if not self.ops_renderer:
             return
 
+        # Resolve colors now if they haven't been. This can happen if
+        # set_ops is called before the first render.
+        if not self._color_set:
+            self._update_theme_and_colors()
+
+        if not self._color_set:
+            logger.warning("Cannot set ops, color set could not be resolved.")
+            self.ops_renderer.clear()
+            self.queue_render()
+            return
+
         logger.debug("Received new ops. Scheduling background preparation.")
 
         # This key ensures that if a new set_ops is called while an old one is
@@ -647,6 +658,7 @@ class Canvas3D(Gtk.GLArea):
         self._ops_preparation_task = task_mgr.run_thread(
             self.ops_renderer.prepare_vertex_data,
             ops,
+            self._color_set,
             key=task_key,
             when_done=self._on_ops_prepared,
         )

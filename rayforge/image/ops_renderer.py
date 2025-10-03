@@ -1,4 +1,5 @@
 import cairo
+import numpy as np
 from typing import Optional, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
@@ -6,6 +7,7 @@ if TYPE_CHECKING:
 
 from ..core.ops import Ops
 from ..pipeline.encoder.cairoencoder import CairoEncoder
+from ..shared.util.colors import ColorSet
 from .base_renderer import Renderer
 
 # Cairo has a hard limit on surface dimensions, often 32767.
@@ -88,11 +90,25 @@ class OpsRenderer(Renderer):
         render_ops = Ops.from_geometry(workpiece.vectors)
 
         encoder = CairoEncoder()
+
+        # Create a simple ColorSet with black cut color
+        cut_lut = np.zeros((256, 4))
+        cut_lut[:, 3] = 1.0  # Full alpha
+
+        colors = ColorSet(
+            {
+                "cut": cut_lut,
+                "engrave": cut_lut,  # Use same for engrave
+                "travel": (0, 0, 0, 0.0),  # transparent
+                "zero_power": (0, 0, 0, 1.0),  # black
+            }
+        )
+
         encoder.encode(
             ops=render_ops,
             ctx=ctx,
             scale=(scale_x, scale_y),
-            cut_color=(0, 0, 0),
+            colors=colors,
         )
 
         return surface
