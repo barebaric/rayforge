@@ -124,7 +124,7 @@ def test_preserves_state_for_constant_power_lines(
     # Arrange: A sequence with two raster lines. The second line has a
     # SetPower command between its MoveTo and LineTo.
     ops = Ops()
-    ops.add(SetPowerCommand(800))
+    ops.add(SetPowerCommand(0.8))
     ops.add(EnableAirAssistCommand())
     ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp_123"))
     # Line 1: Standard
@@ -132,7 +132,7 @@ def test_preserves_state_for_constant_power_lines(
     ops.line_to(20, 20, 0)
     # Line 2: With intermediate state change
     ops.move_to(30, 20, 0)
-    ops.add(SetPowerCommand(400))
+    ops.add(SetPowerCommand(0.4))
     ops.line_to(40, 20, 0)
     ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
 
@@ -143,7 +143,7 @@ def test_preserves_state_for_constant_power_lines(
     cmds = ops.commands
 
     # --- Verification for Line 1 ---
-    # Expected sequence: Move, SP(0), Line, SP(800), Line, SP(0), Line
+    # Expected sequence: Move, SP(0), Line, SP(0.8), Line, SP(0), Line
     line_1_cmds = cmds[3:10]
     assert isinstance(line_1_cmds[0], MoveToCommand)
     assert line_1_cmds[0].end == pytest.approx((5.0, 20.0, 0.0))
@@ -155,7 +155,7 @@ def test_preserves_state_for_constant_power_lines(
     assert line_1_cmds[2].end == pytest.approx((10.0, 20.0, 0.0))
     assert (
         isinstance(line_1_cmds[3], SetPowerCommand)
-        and line_1_cmds[3].power == 800
+        and line_1_cmds[3].power == 0.8
     )
     assert isinstance(line_1_cmds[4], LineToCommand)
     assert line_1_cmds[4].end == pytest.approx((20.0, 20.0, 0.0))
@@ -167,9 +167,9 @@ def test_preserves_state_for_constant_power_lines(
     assert line_1_cmds[6].end == pytest.approx((25.0, 20.0, 0.0))
 
     # --- Verification for Line 2 ---
-    # The intermediate SetPower(400) must be preserved inside the
+    # The intermediate SetPower(0.4) must be preserved inside the
     # overscan wrap.
-    # Expected sequence: Move, SP(0), Line, SP(400), Line, SP(0), Line
+    # Expected sequence: Move, SP(0), Line, SP(0.4), Line, SP(0), Line
     line_2_cmds = cmds[10:17]
     assert isinstance(line_2_cmds[0], MoveToCommand)
     assert line_2_cmds[0].end == pytest.approx((25.0, 20.0, 0.0))
@@ -185,7 +185,7 @@ def test_preserves_state_for_constant_power_lines(
     # index 3, and the original LineTo is at index 4.
     assert (
         isinstance(line_2_cmds[3], SetPowerCommand)
-        and line_2_cmds[3].power == 400
+        and line_2_cmds[3].power == 0.4
     )
     assert isinstance(line_2_cmds[4], LineToCommand)
     assert line_2_cmds[4].end == pytest.approx((40.0, 20.0, 0.0))
@@ -200,7 +200,7 @@ def test_preserves_state_for_constant_power_lines(
     # Total commands:
     # 2 (header) + 1 (start) + 7 (line 1) + 7 (line 2) + 1 (end) = 18
     assert len(cmds) == 18
-    assert isinstance(cmds[0], SetPowerCommand) and cmds[0].power == 800
+    assert isinstance(cmds[0], SetPowerCommand) and cmds[0].power == 0.8
     assert isinstance(cmds[1], EnableAirAssistCommand)
     assert isinstance(cmds[2], OpsSectionStartCommand)
     assert isinstance(cmds[17], OpsSectionEndCommand)
@@ -249,7 +249,7 @@ def test_preserves_state_for_scanline_commands(
     # Arrange: A master power setting followed by a raster section with a
     # single ScanLine. This simulates a DepthEngraver output.
     ops = Ops()
-    ops.add(SetPowerCommand(500))  # Master power setting
+    ops.add(SetPowerCommand(0.5))  # Master power setting
     ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp_123"))
     ops.move_to(10, 20, 0)
     ops.add(
@@ -268,7 +268,7 @@ def test_preserves_state_for_scanline_commands(
     # Assert: Manually verify the exact command sequence and their properties
     # without using preload_state, which could mask bugs.
     # Expected output structure:
-    # [0] SetPower(500) - Preserved from before the section
+    # [0] SetPower(0.5) - Preserved from before the section
     # [1] OpsSectionStart - Preserved
     # [2] MoveTo(5, 20, 0) - New overscan start point
     # [3] ScanLinePowerCommand - Modified with new geometry and padded power
@@ -280,7 +280,7 @@ def test_preserves_state_for_scanline_commands(
     # 1. Check preserved master power command
     master_power_cmd = cmds[0]
     assert isinstance(master_power_cmd, SetPowerCommand)
-    assert master_power_cmd.power == 500
+    assert master_power_cmd.power == 0.5
 
     # 2. Check preserved section start
     assert isinstance(cmds[1], OpsSectionStartCommand)

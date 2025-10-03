@@ -151,9 +151,8 @@ class OpsRenderer(BaseRenderer):
                     if power > 0:
                         raster_vertices.extend(start_pt)
                         raster_vertices.extend(end_pt)
-                        # Normalize power (0-100) and invert for color.
                         # High power = dark (0.0), low power = light (1.0).
-                        p_norm = 1.0 - (power / 100.0)
+                        p_norm = 1.0 - (power / 255.0)
                         color = (p_norm, p_norm, p_norm, 1.0)
                         raster_colors.extend(color)
                         raster_colors.extend(color)

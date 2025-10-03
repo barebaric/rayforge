@@ -174,7 +174,7 @@ class Step(DocItem, ABC):
         self.visibility_changed.send(self)
         self.updated.send(self)
 
-    def set_power(self, power: int):
+    def set_power(self, power: float):
         self.power = power
         self.updated.send(self)
 

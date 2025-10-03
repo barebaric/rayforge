@@ -143,10 +143,12 @@ def test_basic_ops_generation(
     assert artifact is not None
     assert artifact.ops is not None
     assert artifact.is_scalable is True
-    assert artifact.source_coordinate_system == CoordinateSystem.MILLIMETER_SPACE
+    assert (
+        artifact.source_coordinate_system == CoordinateSystem.MILLIMETER_SPACE
+    )
 
 
-def test_grid_dimensions_calculation():
+def test_grid_dimensions_calculation(laser: Laser):
     """Test that grid dimensions are calculated correctly."""
     producer = MaterialTestGridProducer(
         grid_dimensions=(3, 3),
@@ -156,7 +158,7 @@ def test_grid_dimensions_calculation():
     )
 
     artifact = producer.run(
-        laser=None,
+        laser=laser,
         surface=None,
         pixels_per_mm=None,
         workpiece=None,
@@ -172,7 +174,7 @@ def test_grid_dimensions_calculation():
     assert artifact.generation_size == (expected_width, expected_height)
 
 
-def test_risk_sorted_execution_order():
+def test_risk_sorted_execution_order(laser: Laser):
     """
     Verify that test elements are executed in risk-sorted order:
     highest speed first, then lowest power.
@@ -185,7 +187,7 @@ def test_risk_sorted_execution_order():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     # Extract speed and power commands
@@ -221,7 +223,7 @@ def test_risk_sorted_execution_order():
     assert all(s == 300.0 for s in speeds[0:3])
 
 
-def test_ops_contains_rectangles():
+def test_ops_contains_rectangles(laser: Laser):
     """Test that generated ops contain rectangle drawing commands."""
     producer = MaterialTestGridProducer(
         grid_dimensions=(2, 2),
@@ -231,7 +233,7 @@ def test_ops_contains_rectangles():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     # Count move and line commands (rectangles should have these)
@@ -248,8 +250,8 @@ def test_ops_contains_rectangles():
     assert line_count >= 16, "Should have at least 4 lines per rectangle"
 
 
-def test_power_and_speed_ranges():
-    """Test that generated power and speed values are within specified ranges."""
+def test_power_and_speed_ranges(laser: Laser):
+    """Test that power and speed values are within specified ranges."""
     min_speed, max_speed = 200.0, 800.0
     min_power_percent, max_power_percent = 20.0, 80.0
 
@@ -261,7 +263,7 @@ def test_power_and_speed_ranges():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     speeds = [
@@ -275,23 +277,23 @@ def test_power_and_speed_ranges():
         if isinstance(cmd, SetPowerCommand)
     ]
 
-    # Power values should be scaled to machine range (default max_power=1000)
-    min_power = (min_power_percent / 100.0) * 1000
-    max_power = (max_power_percent / 100.0) * 1000
+    # Power values are now normalized to 0.0-1.0 range
+    min_power = min_power_percent / 100.0
+    max_power = max_power_percent / 100.0
 
     # All speeds should be within range
     assert all(min_speed <= s <= max_speed for s in speeds)
-    # All powers should be within range (with small tolerance for floating point)
-    assert all(min_power - 0.1 <= p <= max_power + 0.1 for p in powers)
+    # All powers should be within range (with tolerance for floating point)
+    assert all(min_power - 0.001 <= p <= max_power + 0.001 for p in powers)
 
     # Should include both min and max values
     assert min_speed in speeds
     assert max_speed in speeds
-    assert any(abs(p - min_power) < 0.1 for p in powers)
-    assert any(abs(p - max_power) < 0.1 for p in powers)
+    assert any(abs(p - min_power) < 0.001 for p in powers)
+    assert any(abs(p - max_power) < 0.001 for p in powers)
 
 
-def test_single_column_grid():
+def test_single_column_grid(laser: Laser):
     """Test edge case: single column (only speed varies on Y-axis)."""
     producer = MaterialTestGridProducer(
         speed_range=(100.0, 500.0),
@@ -301,7 +303,7 @@ def test_single_column_grid():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     speeds = [
@@ -317,12 +319,12 @@ def test_single_column_grid():
 
     # Speeds should vary (across 5 rows)
     assert len(set(speeds)) == 5
-    # All powers should be the same (scaled to machine range: 50% of 1000 = 500)
-    expected_power = (50.0 / 100.0) * 1000
-    assert all(abs(p - expected_power) < 0.1 for p in powers)
+    # All powers should be the same (normalized to 0.0-1.0 range: 50% = 0.5)
+    expected_power = 50.0 / 100.0
+    assert all(abs(p - expected_power) < 0.001 for p in powers)
 
 
-def test_single_row_grid():
+def test_single_row_grid(laser: Laser):
     """Test edge case: single row (only power varies on X-axis)."""
     producer = MaterialTestGridProducer(
         speed_range=(100.0, 100.0),  # Same min and max
@@ -332,7 +334,7 @@ def test_single_row_grid():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     speeds = [
@@ -352,15 +354,19 @@ def test_single_row_grid():
     assert len(set(powers)) == 5
 
 
-def test_workpiece_uid_in_section_commands(mock_workpiece: WorkPiece):
-    """Test that workpiece UID is included in section commands when provided."""
+def test_workpiece_uid_in_section_commands(
+    mock_workpiece: WorkPiece, laser: Laser
+):
+    """
+    Test that workpiece UID is included in section commands when provided.
+    """
     producer = MaterialTestGridProducer(
         grid_dimensions=(2, 2),
         include_labels=False,
     )
 
     artifact = producer.run(
-        laser=None,
+        laser=laser,
         surface=None,
         pixels_per_mm=None,
         workpiece=mock_workpiece,
@@ -379,7 +385,7 @@ def test_workpiece_uid_in_section_commands(mock_workpiece: WorkPiece):
     assert section_starts[0].workpiece_uid == mock_workpiece.uid
 
 
-def test_minimum_grid_size():
+def test_minimum_grid_size(laser: Laser):
     """Test the minimum allowed grid size (2x2)."""
     producer = MaterialTestGridProducer(
         grid_dimensions=(2, 2),
@@ -389,7 +395,7 @@ def test_minimum_grid_size():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     # Should have 4 test cells
@@ -401,7 +407,7 @@ def test_minimum_grid_size():
     assert len(speeds) == 4
 
 
-def test_large_grid():
+def test_large_grid(laser: Laser):
     """Test that large grids (e.g., 10x10) work correctly."""
     producer = MaterialTestGridProducer(
         grid_dimensions=(10, 10),
@@ -411,7 +417,7 @@ def test_large_grid():
     )
 
     artifact = producer.run(
-        laser=None, surface=None, pixels_per_mm=None, workpiece=None
+        laser=laser, surface=None, pixels_per_mm=None, workpiece=None
     )
 
     # Should have 100 test cells

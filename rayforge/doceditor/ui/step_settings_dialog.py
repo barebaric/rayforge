@@ -125,17 +125,7 @@ class StepSettingsDialog(Adw.Window):
             digits=0,
             draw_value=True,
         )
-        max_power = 1000  # Default fallback
-        if config.machine:
-            try:
-                selected_laser = step.get_selected_laser(config.machine)
-                max_power = selected_laser.max_power
-            except (ValueError, IndexError):
-                # Handles case where machine has no heads
-                pass
-        power_percent = (
-            (step.power / max_power * 100) if max_power > 0 else 0
-        )
+        power_percent = step.power * 100.0
         power_adjustment.set_value(power_percent)
         power_scale.set_size_request(300, -1)
         power_scale.connect(
@@ -367,15 +357,7 @@ class StepSettingsDialog(Adw.Window):
             self.changed.send(self)
 
     def on_power_changed(self, scale):
-        max_power = 1000  # Default fallback
-        if config.machine:
-            try:
-                selected_laser = self.step.get_selected_laser(config.machine)
-                max_power = selected_laser.max_power
-            except (ValueError, IndexError):
-                # Handles case where machine has no heads
-                pass
-        new_value = max_power / 100 * scale.get_value()
+        new_value = scale.get_value() / 100.0
         command = ChangePropertyCommand(
             target=self.step,
             property_name="power",

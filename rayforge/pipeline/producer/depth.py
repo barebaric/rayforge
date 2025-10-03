@@ -38,7 +38,7 @@ class DepthEngraver(OpsProducer):
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
         speed: float = 3000.0,
         min_power: float = 0.0,
-        max_power: float = 100.0,
+        max_power: float = 1.0,
         num_depth_levels: int = 5,
         z_step_down: float = 0.0,
     ):
@@ -165,16 +165,12 @@ class DepthEngraver(OpsProducer):
             + row1_values * y_frac[:, np.newaxis]
         )
 
-        # Convert min/max from (0-100) to (0.0-1.0) modulation factors
-        min_mod = self.min_power / 100.0
-        max_mod = self.max_power / 100.0
-
         # Interpolate grayscale value into the modulation range. The resulting
         # power fractions are relative to the step's master power setting,
         # which is applied by a preceding SetPowerCommand.
-        power_range = max_mod - min_mod
+        power_range = self.max_power - self.min_power
         power_fractions = (
-            min_mod + (1.0 - resampled_gray / 255.0) * power_range
+            self.min_power + (1.0 - resampled_gray / 255.0) * power_range
         )
 
         # Convert power fractions (0.0-1.0) to bytes (0-255) for the command

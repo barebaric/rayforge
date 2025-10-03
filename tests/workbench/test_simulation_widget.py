@@ -1,6 +1,5 @@
 """Tests for the preview widget and timeline."""
 
-import pytest
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.core.ops.commands import SetPowerCommand, SetCutSpeedCommand
 from rayforge.workbench.simulation_widget import OpsTimeline, PreviewRenderer
@@ -16,7 +15,7 @@ def test_ops_timeline_empty():
 def test_ops_timeline_basic():
     """Test timeline with basic operations."""
     ops = Ops()
-    ops.add(SetPowerCommand(50))
+    ops.add(SetPowerCommand(0.5))
     ops.add(SetCutSpeedCommand(1000))
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 0.0, 0.0)))
@@ -32,7 +31,7 @@ def test_ops_timeline_basic():
     assert len(steps) == 1
     cmd, state, start_pos = steps[0]
     assert isinstance(cmd, MoveToCommand)
-    assert state.power == 50
+    assert state.power == 0.5
     assert state.cut_speed == 1000
     assert start_pos == (0.0, 0.0, 0.0)
 
@@ -40,9 +39,9 @@ def test_ops_timeline_basic():
 def test_ops_timeline_power_changes():
     """Test that power changes are tracked correctly."""
     ops = Ops()
-    ops.add(SetPowerCommand(20))
+    ops.add(SetPowerCommand(0.2))
     ops.add(LineToCommand((5.0, 0.0, 0.0)))
-    ops.add(SetPowerCommand(80))
+    ops.add(SetPowerCommand(0.8))
     ops.add(LineToCommand((10.0, 0.0, 0.0)))
 
     timeline = OpsTimeline(ops)
@@ -51,12 +50,12 @@ def test_ops_timeline_power_changes():
     # First line should have power=20
     steps = timeline.get_steps_up_to(0)
     _, state1, _ = steps[0]
-    assert state1.power == 20
+    assert state1.power == 0.2
 
     # Second line should have power=80
     steps = timeline.get_steps_up_to(1)
     _, state2, _ = steps[1]
-    assert state2.power == 80
+    assert state2.power == 0.8
 
 
 def test_ops_timeline_position_tracking():

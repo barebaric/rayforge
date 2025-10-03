@@ -97,7 +97,7 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
     """Full end-to-end test using a real subprocess for ops generation."""
     # --- 1. ARRANGE ---
     step = steps.create_contour_step(name="Vectorize", optimize=False)
-    step.set_power(500)
+    step.set_power(0.5)
     step.set_cut_speed(3000)
 
     # Safely access the workflow from the active layer

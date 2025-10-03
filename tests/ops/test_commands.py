@@ -56,14 +56,14 @@ def test_command_repr():
 
 
 def test_set_power_command():
-    cmd = SetPowerCommand(power=150)
+    cmd = SetPowerCommand(power=0.6)
     state = State(power=0)
     cmd.apply_to_state(state)
-    assert state.power == 150
+    assert state.power == 0.6
     assert cmd.is_state_command()
     data = cmd.to_dict()
     assert data["type"] == "SetPowerCommand"
-    assert data["power"] == 150
+    assert data["power"] == 0.6
 
 
 def test_set_cut_speed_command():
@@ -272,15 +272,15 @@ def test_scan_line_power_command_linearize():
     # Expected: Set(100), LineTo(pixel 0 end), Set(200), LineTo(final end)
     assert len(linearized) == 4
 
-    # Segment 1 (power 100)
+    # Segment 1 (power 100/255 normalized)
     assert isinstance(linearized[0], SetPowerCommand)
-    assert linearized[0].power == 100
+    assert linearized[0].power == pytest.approx(100.0/255.0)
     assert isinstance(linearized[1], LineToCommand)
     assert linearized[1].end == pytest.approx((1.0, 0.0, 5.0))
 
-    # Segment 2 (power 200)
+    # Segment 2 (power 200/255 normalized)
     assert isinstance(linearized[2], SetPowerCommand)
-    assert linearized[2].power == 200
+    assert linearized[2].power == pytest.approx(200.0/255.0)
     # This line covers the last two pixels and goes to the final end point
     assert isinstance(linearized[3], LineToCommand)
     assert linearized[3].end == pytest.approx((3.0, 0.0, 5.0))
@@ -297,7 +297,7 @@ def test_scan_line_power_command_linearize_constant_power():
     # Should be one SetPower and one LineTo the final destination
     assert len(linearized) == 2
     assert isinstance(linearized[0], SetPowerCommand)
-    assert linearized[0].power == 150
+    assert linearized[0].power == pytest.approx(150.0/255.0)
     assert isinstance(linearized[1], LineToCommand)
     assert linearized[1].end == (5, 10, 0)
 

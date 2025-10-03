@@ -151,11 +151,8 @@ class MaterialTestGridProducer(OpsProducer):
         test_elements.sort(key=lambda e: (-e["speed"], e["power"]))
 
         for element in test_elements:
-            # Scale percentage (0-100) to machine power range (0-max_power)
-            # Default to 1000 if laser is None (for testing/compatibility)
-            max_power = laser.max_power if laser else 1000
-            machine_power = (element["power"] / 100.0) * max_power
-            ops.add(SetPowerCommand(machine_power))
+            power_normalized = element["power"] / 100.0
+            ops.add(SetPowerCommand(power_normalized))
             ops.add(SetCutSpeedCommand(element["speed"]))
             # Use coordinates as-is (r=0 at y=0)
             if self.test_type == MaterialTestGridType.ENGRAVE:
@@ -416,8 +413,8 @@ class MaterialTestGridProducer(OpsProducer):
         temp_cr.text_path(text)
         path_data = temp_cr.copy_path()
 
-        ops.add(SetPowerCommand(power))
-        ops.add(SetCutSpeedCommand(speed))
+        ops.add(SetPowerCommand(power / 100.0))
+        ops.add(SetCutSpeedCommand(int(speed)))
 
         # Scale factor to match show_text rendering size
         # Empirically determined to match the rendered text size
@@ -432,7 +429,7 @@ class MaterialTestGridProducer(OpsProducer):
         first_point = None
         current_point = None
 
-        for path_type, points in path_data:
+        for path_type, points in path_data:  # type: ignore
             if path_type == cairo.PATH_MOVE_TO:
                 px, py = points[0], points[1]
                 # Scale the path coordinates

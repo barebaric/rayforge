@@ -313,8 +313,12 @@ class Ops:
         Sets the intended laser power for subsequent cutting commands.
         This is a state declaration, not an immediate command to turn on
         the laser.
+
+        Args:
+            power: The normalized power level, from 0.0 (off) to
+                   1.0 (full power).
         """
-        cmd = SetPowerCommand(int(power))
+        cmd = SetPowerCommand(power)
         self.commands.append(cmd)
 
     def set_cut_speed(self, speed: float) -> None:

@@ -307,6 +307,12 @@ class Machine:
         head.changed.connect(self._on_head_changed)
         self.changed.send(self)
 
+    def get_head_by_uid(self, uid: str) -> Optional[Laser]:
+        for head in self.heads:
+            if head.uid == uid:
+                return head
+        return None
+
     def remove_head(self, head: Laser):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
