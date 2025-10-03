@@ -129,6 +129,7 @@ class WorkSurface(Canvas):
         self.duplicate_requested = Signal()
         self.aspect_ratio_changed = Signal()
         self.context_changed = Signal()
+        self.transform_initiated = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -287,6 +288,7 @@ class WorkSurface(Canvas):
             f"Transform begin for {len(elements)} element(s). "
             f"Drag target: {drag_target}"
         )
+        self.transform_initiated.send(self)
         self._transform_start_states.clear()
 
         # 1. Collect all unique elements and their group ancestors
@@ -933,6 +935,7 @@ class WorkSurface(Canvas):
             if not selected_items:
                 return True  # Consume event but do nothing
 
+            self.transform_initiated.send(self)
             self.editor.transform.nudge_items(selected_items, move_x, move_y)
             return True
 
@@ -1082,7 +1085,9 @@ class WorkSurface(Canvas):
         """Returns True if simulation mode is active."""
         return self._simulation_mode
 
-    def set_simulation_mode(self, enabled: bool, simulation_overlay=None):
+    def set_simulation_mode(
+        self, enabled: bool, simulation_overlay: Optional[CanvasElement] = None
+    ):
         """
         Enables or disables simulation mode. When enabled:
         - Workpiece selection and transformation remain enabled

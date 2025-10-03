@@ -368,6 +368,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.copy_requested.connect(self.on_copy_requested)
         self.surface.paste_requested.connect(self.on_paste_requested)
         self.surface.duplicate_requested.connect(self.on_duplicate_requested)
+        self.surface.transform_initiated.connect(
+            self._on_surface_transform_initiated
+        )
 
         # Create and add the status monitor widget.
         self.status_monitor = TaskBar(task_mgr)
@@ -395,21 +398,18 @@ class MainWindow(Adw.ApplicationWindow):
         if position > 1:
             self._last_gcode_previewer_width = position
 
+    def _on_surface_transform_initiated(self, sender):
+        """
+        Called when the user starts a transform on the canvas. If simulation
+        is active, this will turn it off.
+        """
+        sim_action = self.action_manager.get_action("simulate_mode")
+        state = sim_action.get_state() if sim_action else None
+        if state and state.get_boolean():
+            sim_action.change_state(GLib.Variant.new_boolean(False))
+
     def _on_view_stack_changed(self, stack: Gtk.Stack, param):
-        """Shows/hides the G-code previewer by moving the paned separator."""
-        is_3d_active = stack.get_visible_child_name() == "3d"
-
-        if is_3d_active:
-            # Animate the pane open to its last known width
-            self.left_content_pane.set_position(
-                self._last_gcode_previewer_width
-            )
-        else:
-            # Animate the pane closed, but not if simulation is active
-            if self.simulator_cmd.simulation_overlay is None:
-                self.left_content_pane.set_position(0)
-                self.gcode_previewer.clear()
-
+        """Handles logic when switching between 2D and 3D views."""
         self._update_actions_and_ui()
 
     def _update_gcode_preview(self, ops: Optional[Ops]):
@@ -467,6 +467,35 @@ class MainWindow(Adw.ApplicationWindow):
         if canvas3d_initialized and hasattr(self, "canvas3d"):
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
+
+    def on_toggle_gcode_preview_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        """Handles the state change for the G-code preview visibility."""
+        is_visible = value.get_boolean()
+        action.set_state(value)
+
+        if is_visible:
+            self.left_content_pane.set_position(
+                self._last_gcode_previewer_width
+            )
+            # Trigger a background task to generate fresh G-code for the view
+            task_key = "aggregate-gcode-preview-ops"
+            task_mgr.run_thread(
+                self._aggregate_ops_for_3d_view,
+                when_done=self._on_gcode_preview_ops_aggregated,
+                key=task_key,
+            )
+        else:
+            self.left_content_pane.set_position(0)
+
+    def _on_gcode_preview_ops_aggregated(self, task: Task):
+        """Callback to update the G-code preview after ops are generated."""
+        if task.get_status() != "completed":
+            logger.warning("G-code preview aggregation failed.")
+            return
+        ops = task.result()
+        self._update_gcode_preview(ops)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -589,20 +618,6 @@ class MainWindow(Adw.ApplicationWindow):
         if doc.active_layer and doc.active_layer.workflow:
             self.workflowview.set_workflow(doc.active_layer.workflow)
 
-        # If the 3D view is active, any document change should trigger a
-        # re-aggregation of the toolpaths.
-        if (
-            canvas3d_initialized
-            and hasattr(self, "canvas3d")
-            and self.view_stack.get_visible_child_name() == "3d"
-        ):
-            task_key = "aggregate-3d-ops"
-            task_mgr.run_thread(
-                self._aggregate_ops_for_3d_view,
-                when_done=self._on_3d_ops_aggregated,
-                key=task_key,
-            )
-
         # Sync the selectability of stock items based on active layer
         self._sync_element_selectability()
 
@@ -710,35 +725,53 @@ class MainWindow(Adw.ApplicationWindow):
         # Clip the final aggregated ops to the machine boundaries
         return full_ops.clip(clip_rect)
 
-    def _on_3d_ops_aggregated(self, task: Task):
+    def _on_post_settle_ops_aggregated(self, task: Task):
         """
         Callback executed on the main thread after the background aggregation
-        of 3D toolpaths is complete.
+        of toolpaths is complete. It updates both the 3D view and the running
+        simulation.
         """
         if task.get_status() != "completed":
-            logger.warning("3D toolpath aggregation failed or was cancelled.")
+            logger.warning("Toolpath aggregation failed or was cancelled.")
             return
 
         aggregated_ops = task.result()
+
+        # Update the 3D view and simulation (they check their own state)
         if canvas3d_initialized and hasattr(self, "canvas3d"):
-            logger.debug("Background aggregation finished. Updating 3D view.")
             self.canvas3d.set_ops(aggregated_ops)
-            self._update_gcode_preview(aggregated_ops)
+        self.simulator_cmd.reload_simulation(aggregated_ops)
+
+        # Always update the G-code preview's content.
+        self._update_gcode_preview(aggregated_ops)
 
     def _on_document_settled(self, sender):
         """
         Called when all background processing is complete. Kicks off a
-        background task to aggregate the final toolpaths for the 3D view.
+        background task to aggregate the final toolpaths for the 3D view
+        and/or simulation.
         """
-        if canvas3d_initialized and hasattr(self, "canvas3d"):
-            # This key ensures that if another document change happens quickly,
-            # the previous (now stale) aggregation task will be cancelled.
-            task_key = "aggregate-3d-ops"
-            task_mgr.run_thread(
-                self._aggregate_ops_for_3d_view,
-                when_done=self._on_3d_ops_aggregated,
-                key=task_key,
-            )
+        is_3d_active = (
+            canvas3d_initialized
+            and hasattr(self, "canvas3d")
+            and self.view_stack.get_visible_child_name() == "3d"
+        )
+        is_sim_active = self.simulator_cmd.simulation_overlay is not None
+        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
+        gcode_state = gcode_action.get_state() if gcode_action else None
+        is_gcode_visible = gcode_state.get_boolean() if gcode_state else False
+
+        if not is_3d_active and not is_sim_active and not is_gcode_visible:
+            return  # Nothing to update
+
+        # This key ensures that if another document change happens quickly,
+        # the previous (now stale) aggregation task will be cancelled.
+        task_key = "aggregate-post-settle-ops"
+        task_mgr.run_thread(
+            self._aggregate_ops_for_3d_view,
+            when_done=self._on_post_settle_ops_aggregated,
+            key=task_key,
+        )
 
     def _on_selection_changed(
         self,

@@ -61,6 +61,11 @@ class ActionManager:
             self.win.on_toggle_travel_view_state_change,
             GLib.Variant.new_boolean(False),
         )
+        self._add_stateful_action(
+            "toggle_gcode_preview",
+            self.win.on_toggle_gcode_preview_state_change,
+            GLib.Variant.new_boolean(False),
+        )
 
         self._add_stateful_action(
             "simulate_mode",
@@ -285,6 +290,9 @@ class ActionManager:
         app.set_accels_for_action("win.toggle_camera_view", ["<Alt>c"])
         app.set_accels_for_action(
             "win.toggle_travel_view", ["<Primary><Shift>t"]
+        )
+        app.set_accels_for_action(
+            "win.toggle_gcode_preview", ["<Primary><Shift>g"]
         )
         app.set_accels_for_action("win.show_3d_view", ["F12"])
         app.set_accels_for_action("win.simulate_mode", ["<Primary><Shift>s"])

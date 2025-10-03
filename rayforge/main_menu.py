@@ -58,13 +58,14 @@ class MainMenu(Gio.Menu):
         visibility_group.append(
             _("Show Travel Moves"), "win.toggle_travel_view"
         )
+        visibility_group.append(
+            _("Show G-code Preview"), "win.toggle_gcode_preview"
+        )
         view_menu.append_section(None, visibility_group)
 
         # Simulation toggle
         simulation_group = Gio.Menu()
-        simulation_group.append(
-            _("Simulate Execution"), "win.simulate_mode"
-        )
+        simulation_group.append(_("Simulate Execution"), "win.simulate_mode")
         view_menu.append_section(None, simulation_group)
 
         view_3d_group = Gio.Menu()

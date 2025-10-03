@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from gi.repository import GLib
 
 from ..config import config
+from ..core.ops import Ops
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
 
@@ -32,6 +33,27 @@ class SimulatorCmd:
         else:
             self._exit_mode()
         action.set_state(value)
+
+    def reload_simulation(self, new_ops: Ops):
+        """
+        Reloads the simulation with a new set of operations. This is called
+        when the document changes while in simulation mode.
+        """
+        if not self.simulation_overlay or not self.preview_controls:
+            return
+
+        logger.debug("Reloading simulation with new operations.")
+
+        was_playing = self.preview_controls.playing
+
+        # Update the overlay and G-code preview
+        self.simulation_overlay.set_ops(new_ops)
+        self._win._update_gcode_preview(new_ops)
+
+        # Reset the controls and restart playback if it was active
+        self.preview_controls.reset()
+        if was_playing:
+            self.preview_controls._start_playback()
 
     def _enter_mode(self):
         """Enters preview mode by creating overlay and enabling it on the
@@ -69,7 +91,11 @@ class SimulatorCmd:
         self._preview_controls_handler_id = self.preview_controls.connect(
             "step-changed", self._on_simulation_step_changed
         )
-        win.left_content_pane.set_position(win._last_gcode_previewer_width)
+        # Ensure G-code preview is visible, but don't hide it on exit
+        gcode_action = win.action_manager.get_action("toggle_gcode_preview")
+        state = gcode_action.get_state()
+        if not (state and state.get_boolean()):
+            gcode_action.change_state(GLib.Variant.new_boolean(True))
 
         # Auto-start playback
         self.preview_controls._start_playback()
@@ -90,7 +116,6 @@ class SimulatorCmd:
             self.preview_controls = None
 
         self.simulation_overlay = None
-        win.left_content_pane.set_position(0)
         win.gcode_previewer.clear_highlight()
 
     def _on_simulation_step_changed(self, sender, step):
