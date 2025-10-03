@@ -7,7 +7,9 @@ from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
 from ..canvas import CanvasElement
-from ...pipeline.encoder.cairoencoder import CairoEncoder, Color
+from ...pipeline.encoder.cairoencoder import CairoEncoder
+from ...shared.util.colors import ColorSet
+from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -64,6 +66,15 @@ class WorkPieceView(CanvasElement):
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
         self._tabs_visible_override: bool = False
+
+        self._color_spec: ColorSpecDict = {
+            "cut": ("#ffeeff", "#ff00ff"),
+            "engrave": ("#FFFFFF", "#000000"),
+            "travel": ("#FF6600", 0.7),
+            "zero_power": ("@accent_color", 0.5),
+        }
+        self._color_set: Optional[ColorSet] = None
+        self._last_style_context_hash = -1
 
         # The element's geometry is a 1x1 unit square.
         # The transform matrix handles all scaling and positioning.
@@ -239,6 +250,29 @@ class WorkPieceView(CanvasElement):
         if self.canvas:
             self.canvas.queue_draw()
 
+    def _resolve_colors_if_needed(self):
+        """
+        Creates or updates the ColorSet if the theme has changed. This
+        should be called before any rendering operation.
+        """
+        if not self.canvas:
+            return
+
+        # A simple hash check to see if the style context has changed.
+        # This is not perfect but good enough to detect theme switches.
+        style_context = self.canvas.get_style_context()
+        current_hash = hash(style_context)
+        if (
+            self._color_set is None
+            or current_hash != self._last_style_context_hash
+        ):
+            logger.debug(
+                "Resolving colors for WorkPieceView due to theme change."
+            )
+            resolver = GtkColorResolver(style_context)
+            self._color_set = resolver.resolve(self._color_spec)
+            self._last_style_context_hash = current_hash
+
     def _on_model_content_changed(self, workpiece: WorkPiece):
         """Handler for when the workpiece model's content changes."""
         logger.debug(
@@ -319,7 +353,7 @@ class WorkPieceView(CanvasElement):
         Helper method to centralize encoding Ops to a Cairo context with
         consistent colors and visibility settings.
         """
-        if not self.canvas:
+        if not self.canvas or not self._color_set:
             return
 
         work_surface = cast("WorkSurface", self.canvas)
@@ -330,10 +364,7 @@ class WorkPieceView(CanvasElement):
             ops,
             ctx,
             scale,
-            cut_color=self._get_cut_color(),
-            engrave_gradient=self._get_engrave_gradient(),
-            travel_color=self._get_travel_color(),
-            zero_power_color=self._get_zero_power_color(),
+            colors=self._color_set,
             show_cut_moves=True,
             show_engrave_moves=True,
             show_travel_moves=show_travel,
@@ -356,6 +387,7 @@ class WorkPieceView(CanvasElement):
         if not ops or not self.canvas:
             return None
 
+        self._resolve_colors_if_needed()
         world_w, world_h = self.data.size
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
@@ -473,6 +505,7 @@ class WorkPieceView(CanvasElement):
         if not self.canvas:
             return None
 
+        self._resolve_colors_if_needed()
         recording = self._ops_recordings.get(step_uid)
         world_w, world_h = self.data.size
         work_surface = cast("WorkSurface", self.canvas)
@@ -617,6 +650,7 @@ class WorkPieceView(CanvasElement):
         if not self.canvas:
             return None
 
+        self._resolve_colors_if_needed()
         step_uid = step.uid
         surface_tuple = self._ops_surfaces.get(step_uid)
         world_w, world_h = self.data.size
@@ -700,38 +734,6 @@ class WorkPieceView(CanvasElement):
         if self.canvas:
             self.canvas.queue_draw()
 
-    def _get_cut_color(self) -> Tuple[float, float, float]:
-        """Gets the color for cut moves."""
-        return 1.0, 0.0, 1.0  # Magenta
-
-    def _get_engrave_gradient(self) -> Tuple[Color, Color]:
-        """Gets the gradient for engrave moves (white to black)."""
-        return (1.0, 1.0, 1.0), (0.0, 0.0, 0.0)
-
-    def _get_travel_color(self) -> Tuple[float, float, float, float]:
-        """
-        Gets the color for travel moves from the theme if possible, with a
-        fallback.
-        """
-        return 1.0, 0.4, 0.0, 0.7  # Transparent Orange
-
-    def _get_zero_power_color(self) -> Tuple[float, float, float, float]:
-        """
-        Gets the color for zero-power moves from the theme's accent color
-        with 50% transparency. Falls back to a default if not found.
-        """
-        fallback_color = (0.0, 0.2, 0.9, 0.5)
-        if not self.canvas:
-            return fallback_color
-
-        style_context = self.canvas.get_style_context()
-        found, color = style_context.lookup_color("accent_color")
-
-        if found and color:
-            return color.red, color.green, color.blue, 0.5
-        else:
-            return fallback_color
-
     def _start_update(self) -> bool:
         """
         Extends the base class's update starter to also trigger a re-render
@@ -769,7 +771,16 @@ class WorkPieceView(CanvasElement):
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)
 
-        # Draw Ops Surfaces
+        # Draw Ops Surfaces (hide during simulation mode)
+        worksurface = cast("WorkSurface", self.canvas) if self.canvas else None
+        if (
+            not worksurface
+            or worksurface.is_simulation_mode()
+        ):
+            return
+
+        # Draw each ops surface that is visible.
+        self._resolve_colors_if_needed()
         for step_uid, surface_tuple in self._ops_surfaces.items():
             if (
                 not self._ops_visibility.get(step_uid, True)

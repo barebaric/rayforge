@@ -1,5 +1,6 @@
 import math
 from typing import Tuple, Optional, Union
+import numpy as np
 import cairo
 import logging
 from ...core.ops import (
@@ -11,10 +12,10 @@ from ...core.ops import (
     SetPowerCommand,
 )
 from .base import OpsEncoder
+from ...shared.util.colors import ColorSet
 
 
 logger = logging.getLogger(__name__)
-Color = Union[Tuple[float, float, float], Tuple[float, float, float, float]]
 
 
 class CairoEncoder(OpsEncoder):
@@ -28,14 +29,7 @@ class CairoEncoder(OpsEncoder):
         ops: Ops,
         ctx: cairo.Context,
         scale: Tuple[float, float],
-        # Colors
-        cut_color: Color = (1.0, 0.0, 1.0),
-        engrave_gradient: Tuple[Color, Color] = (
-            (1.0, 1.0, 1.0),
-            (0.0, 0.0, 0.0),
-        ),
-        travel_color: Color = (1.0, 0.4, 0.0, 0.7),
-        zero_power_color: Color = (0.0, 0.2, 0.9, 0.5),
+        colors: ColorSet,
         # Visibility Toggles
         show_cut_moves: bool = True,
         show_engrave_moves: bool = True,
@@ -51,11 +45,7 @@ class CairoEncoder(OpsEncoder):
             ops: The operations to encode.
             ctx: The Cairo context to draw on.
             scale: The (x, y) scaling factors.
-            cut_color: RGB color for cutting moves.
-            engrave_gradient: A tuple of two colors for the start (min power)
-              and end (max power) of the engraving gradient.
-            travel_color: RGB color for travel moves.
-            zero_power_color: RGB or RGBA color for zero power moves.
+            colors: A resolved ColorSet with ready-to-use color data.
             show_cut_moves: Whether to draw cut/arc moves.
             show_engrave_moves: Whether to draw engrave/scanline moves.
             show_travel_moves: Whether to draw travel moves.
@@ -65,6 +55,11 @@ class CairoEncoder(OpsEncoder):
         """
         if scale[1] == 0:
             return
+
+        cut_lut = colors.get_lut("cut")
+        engrave_lut = colors.get_lut("engrave")
+        travel_rgba = colors.get_rgba("travel")
+        zero_power_rgba = colors.get_rgba("zero_power")
 
         ctx.save()
         try:
@@ -78,7 +73,7 @@ class CairoEncoder(OpsEncoder):
             # --- Performance Optimization State ---
             # Tracks the color of the path currently being built.
             # None means no path is active or the color is not set.
-            current_path_color: Optional[Color] = None
+            current_path_color: Optional[Tuple] = None
             # Flag to avoid stroking an empty path.
             path_has_content = False
 
@@ -110,7 +105,7 @@ class CairoEncoder(OpsEncoder):
                         # Optionally draw the travel move. This is drawn
                         # immediately as a single segment and is not batched.
                         if show_travel_moves and not is_first_move:
-                            self._set_source_color(ctx, travel_color)
+                            ctx.set_source_rgba(*travel_rgba)
                             ctx.move_to(*prev_point_2d)
                             ctx.line_to(*adjusted_end)
                             ctx.stroke()
@@ -134,15 +129,18 @@ class CairoEncoder(OpsEncoder):
                             prev_point_2d = adjusted_end
                             continue
 
+                        power_idx = min(255, int(current_power * 255.0))
                         required_color = (
-                            zero_power_color if is_zero_power else cut_color
+                            tuple(cut_lut[power_idx])
+                            if not is_zero_power
+                            else zero_power_rgba
                         )
 
                         # If color changes, flush the old path and start a
                         # new one.
                         if required_color != current_path_color:
                             flush_path()
-                            self._set_source_color(ctx, required_color)
+                            ctx.set_source_rgba(*required_color)
                             current_path_color = required_color
                             # Start new subpath at the previous point.
                             ctx.move_to(*prev_point_2d)
@@ -188,8 +186,8 @@ class CairoEncoder(OpsEncoder):
                             cmd,
                             ymax,
                             prev_point_2d,
-                            engrave_gradient,
-                            zero_power_color,
+                            engrave_lut,
+                            zero_power_rgba,
                             show_engrave_moves,
                             show_zero_power_moves,
                         )
@@ -204,13 +202,6 @@ class CairoEncoder(OpsEncoder):
 
         finally:
             ctx.restore()
-
-    def _set_source_color(self, ctx: cairo.Context, color: Color):
-        """Sets the source color, handling both RGB and RGBA tuples."""
-        if len(color) == 4:
-            ctx.set_source_rgba(*color)
-        else:
-            ctx.set_source_rgb(*color)
 
     def _setup_cairo_context(
         self,
@@ -251,8 +242,8 @@ class CairoEncoder(OpsEncoder):
         cmd: ScanLinePowerCommand,
         ymax: float,
         prev_point_2d: Tuple[float, float],
-        engrave_gradient: Tuple[Color, Color],
-        zero_power_color: Color,
+        engrave_lut: np.ndarray,
+        zero_power_rgba: Tuple[float, ...],
         show_engrave_moves: bool,
         show_zero_power_moves: bool,
     ) -> Tuple[float, float]:
@@ -274,7 +265,7 @@ class CairoEncoder(OpsEncoder):
         # Optimization: Handle case where entire scanline is at zero power
         if all(p == 0 for p in cmd.power_values):
             if show_zero_power_moves:
-                self._set_source_color(ctx, zero_power_color)
+                ctx.set_source_rgba(*zero_power_rgba)
                 ctx.move_to(start_x, start_y)
                 ctx.line_to(*adjusted_end)
                 ctx.stroke()
@@ -304,9 +295,9 @@ class CairoEncoder(OpsEncoder):
                     i,
                     cmd.power_values[chunk_start_idx:i],
                     is_zero_chunk,
-                    zero_power_color,
+                    engrave_lut,
+                    zero_power_rgba,
                     show_zero_power_moves,
-                    engrave_gradient,
                     show_engrave_moves,
                 )
                 # Start a new chunk
@@ -323,9 +314,9 @@ class CairoEncoder(OpsEncoder):
             num_steps,
             cmd.power_values[chunk_start_idx:num_steps],
             is_zero_chunk,
-            zero_power_color,
+            engrave_lut,
+            zero_power_rgba,
             show_zero_power_moves,
-            engrave_gradient,
             show_engrave_moves,
         )
 
@@ -341,9 +332,9 @@ class CairoEncoder(OpsEncoder):
         end_idx: int,
         power_slice: Union[bytes, bytearray],
         is_zero_chunk: bool,
-        zero_power_color: Color,
+        engrave_lut: np.ndarray,
+        zero_power_rgba: Tuple[float, ...],
         show_zero_power_moves: bool,
-        engrave_gradient: Tuple[Color, Color],
         show_engrave_moves: bool,
     ):
         """Draws a single segment (chunk) of a scanline."""
@@ -367,7 +358,7 @@ class CairoEncoder(OpsEncoder):
             if show_zero_power_moves:
                 ctx.move_to(*chunk_start_pt)
                 ctx.line_to(*chunk_end_pt)
-                self._set_source_color(ctx, zero_power_color)
+                ctx.set_source_rgba(*zero_power_rgba)
                 ctx.stroke()
         elif show_engrave_moves:  # is non-zero chunk and should be shown
             grad = cairo.LinearGradient(
@@ -379,53 +370,28 @@ class CairoEncoder(OpsEncoder):
             num_chunk_steps = len(power_slice)
             last_power = -1
 
-            # Unpack gradient colors
-            start_color, end_color = engrave_gradient
-            s_r, s_g, s_b = start_color[0], start_color[1], start_color[2]
-            e_r, e_g, e_b = end_color[0], end_color[1], end_color[2]
-            s_a = start_color[3] if len(start_color) == 4 else 1.0
-            e_a = end_color[3] if len(end_color) == 4 else 1.0
-
-            def _lerp(start, end, t):
-                return start + t * (end - start)
-
             for i, power in enumerate(power_slice):
                 if power == last_power:
                     continue
 
                 if i > 0 and num_chunk_steps > 1:
-                    p_norm_old = last_power / 255.0
+                    power_idx_old = min(255, last_power)
+                    color_old = engrave_lut[power_idx_old]
                     offset_old = (i / num_chunk_steps) - 1e-9
-                    grad.add_color_stop_rgba(
-                        offset_old,
-                        _lerp(s_r, e_r, p_norm_old),
-                        _lerp(s_g, e_g, p_norm_old),
-                        _lerp(s_b, e_b, p_norm_old),
-                        _lerp(s_a, e_a, p_norm_old),
-                    )
+                    grad.add_color_stop_rgba(offset_old, *color_old)
 
-                p_norm_new = power / 255.0
+                power_idx_new = min(255, power)
+                color_new = engrave_lut[power_idx_new]
                 offset_new = (
                     i / num_chunk_steps if num_chunk_steps > 0 else 0.0
                 )
-                grad.add_color_stop_rgba(
-                    offset_new,
-                    _lerp(s_r, e_r, p_norm_new),
-                    _lerp(s_g, e_g, p_norm_new),
-                    _lerp(s_b, e_b, p_norm_new),
-                    _lerp(s_a, e_a, p_norm_new),
-                )
+                grad.add_color_stop_rgba(offset_new, *color_new)
                 last_power = power
 
             if last_power != -1:
-                p_norm_final = last_power / 255.0
-                grad.add_color_stop_rgba(
-                    1.0,
-                    _lerp(s_r, e_r, p_norm_final),
-                    _lerp(s_g, e_g, p_norm_final),
-                    _lerp(s_b, e_b, p_norm_final),
-                    _lerp(s_a, e_a, p_norm_final),
-                )
+                power_idx_final = min(255, last_power)
+                color_final = engrave_lut[power_idx_final]
+                grad.add_color_stop_rgba(1.0, *color_final)
 
             ctx.move_to(*chunk_start_pt)
             ctx.line_to(*chunk_end_pt)

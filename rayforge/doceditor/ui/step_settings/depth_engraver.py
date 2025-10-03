@@ -43,7 +43,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # --- Power Modulation Settings ---
         self.min_power_adj = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=1, value=producer.min_power
+            lower=0, upper=100, step_increment=1, value=producer.min_power*100
         )
         self.min_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -62,7 +62,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(self.min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=1, value=producer.max_power
+            lower=0, upper=100, step_increment=1, value=producer.max_power*100
         )
         self.max_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -149,7 +149,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(self._on_param_changed, "min_power", new_min_value)
+        self._debounce(self._on_param_changed, "min_power", new_min_value/100)
 
     def _on_max_power_scale_changed(self, scale: Gtk.Scale):
         new_max_value = self.max_power_adj.get_value()
@@ -170,7 +170,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(self._on_param_changed, "max_power", new_max_value)
+        self._debounce(self._on_param_changed, "max_power", new_max_value/100)
 
     def _on_mode_changed(self, row, _):
         selected_idx = row.get_selected()
@@ -186,9 +186,6 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self._on_param_changed("depth_mode", selected_mode.name)
 
     def _on_param_changed(self, key: str, value: Any):
-        if key in ("min_power", "max_power"):
-            value = int(round(value))
-
         target_dict = self.target_dict.setdefault("params", {})
         if value == target_dict.get(key):
             return

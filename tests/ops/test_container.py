@@ -231,10 +231,10 @@ def test_bezier_to_no_start_point():
 
 
 def test_set_power(sample_ops):
-    sample_ops.set_power(800)
+    sample_ops.set_power(0.8)
     last_cmd = sample_ops.commands[-1]
     assert isinstance(last_cmd, SetPowerCommand)
-    assert last_cmd.power == 800.0
+    assert last_cmd.power == 0.8
 
 
 def test_set_cut_speed(sample_ops):
@@ -342,14 +342,14 @@ def test_segments(sample_ops):
 
 def test_preload_state_application():
     ops = Ops()
-    ops.set_power(300)
+    ops.set_power(0.3)
     ops.line_to(5, 5)
     ops.set_cut_speed(200)
     ops.preload_state()
 
     line_cmd = ops.commands[1]
     assert line_cmd.state is not None
-    assert line_cmd.state.power == 300
+    assert line_cmd.state.power == 0.3
 
     state_commands = [cmd for cmd in ops.commands if cmd.is_state_command()]
     assert len(state_commands) == 2

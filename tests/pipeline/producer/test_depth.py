@@ -57,7 +57,7 @@ def test_initialization_defaults(producer: DepthEngraver):
     assert producer.bidirectional is True
     assert producer.speed == 3000.0
     assert producer.min_power == 0.0
-    assert producer.max_power == 100.0
+    assert producer.max_power == 1.0
     assert producer.num_depth_levels == 5
 
 
@@ -203,7 +203,7 @@ def test_power_modulation_with_gray_and_master_power(
     mock_workpiece.matrix = Matrix()  # Reset matrix from fixture default
     mock_workpiece.matrix.scale(0.3, 0.1)  # 0.3mm wide, 0.1mm tall
 
-    producer = DepthEngraver(min_power=10, max_power=90, line_interval=0.1)
+    producer = DepthEngraver(min_power=0.1, max_power=0.9, line_interval=0.1)
 
     # Simulate step setting of 50% power (500 out of 1000)
     settings = {"power": 500}

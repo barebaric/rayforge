@@ -184,24 +184,11 @@ class GcodeHighlighter:
 
             offset = word_start_idx + word_len
 
-    def _on_buffer_changed(
-        self,
-        buffer: Gtk.TextBuffer,
-        cursor_pos: Gtk.TextIter,
-        n_chars_deleted: int,
-        n_chars_inserted: int,
-    ):
+    def _on_buffer_changed(self, buffer: Gtk.TextBuffer):
         """
         Called when the buffer content changes. To keep things simple and
-        performant enough, we just re-highlight the affected line(s).
+        performant enough, we just re-highlight the entire buffer.
         """
-        start_iter = cursor_pos.copy()
-        start_iter.set_line_offset(0)
-
-        # Determine the end of the modified region
-        end_iter = buffer.get_iter_at_offset(
-            cursor_pos.get_offset() + n_chars_inserted
-        )
-        end_iter.forward_to_line_end()
-
+        start_iter = buffer.get_start_iter()
+        end_iter = buffer.get_end_iter()
         self.highlight(start_iter, end_iter)

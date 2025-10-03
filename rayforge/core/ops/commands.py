@@ -10,7 +10,7 @@ from ..geo import linearize as geo_linearize
 
 @dataclass
 class State:
-    power: int = 0
+    power: float = 0.0  # Normalized power from 0.0 to 1.0
     air_assist: bool = False
     cut_speed: Optional[int] = None
     travel_speed: Optional[int] = None
@@ -187,9 +187,16 @@ class ArcToCommand(MovingCommand):
 
 
 class SetPowerCommand(Command):
-    def __init__(self, power: int) -> None:
+    def __init__(self, power: float) -> None:
+        """
+        Initializes a command to set the laser power.
+
+        Args:
+            power: The normalized power level, from 0.0 (off) to
+                   1.0 (full power).
+        """
         super().__init__()
-        self.power: int = power
+        self.power: float = max(0.0, min(1.0, float(power)))
 
     def is_state_command(self) -> bool:
         return True
@@ -378,6 +385,10 @@ class ScanLinePowerCommand(MovingCommand):
     A specialized command for raster engraving that encodes a line segment
     with continuously varying power levels. This is more efficient than a long
     sequence of SetPower and LineTo commands.
+
+    The power is internally stored as a bytearray of values from 0-255,
+    where 0 is off and 255 is full power. The length of the array must
+    match the number of pixels in the line.
     """
 
     def __init__(
@@ -387,6 +398,13 @@ class ScanLinePowerCommand(MovingCommand):
     ) -> None:
         super().__init__(end)
         self.power_values = power_values
+
+    @property
+    def normalized_power_values(self) -> np.ndarray:
+        """
+        Public API to get power values as a normalized float array (0.0-1.0).
+        """
+        return np.frombuffer(self.power_values, dtype=np.uint8) / 255.0
 
     def is_cutting_command(self) -> bool:
         return True
@@ -415,7 +433,7 @@ class ScanLinePowerCommand(MovingCommand):
 
         # Start the first segment
         segment_start_power = self.power_values[0]
-        commands.append(SetPowerCommand(int(segment_start_power)))
+        commands.append(SetPowerCommand(segment_start_power / 255.0))
 
         for i in range(1, num_steps):
             current_power = self.power_values[i]
@@ -428,7 +446,7 @@ class ScanLinePowerCommand(MovingCommand):
 
                 # Start the new segment
                 segment_start_power = current_power
-                commands.append(SetPowerCommand(int(segment_start_power)))
+                commands.append(SetPowerCommand(segment_start_power / 255.0))
 
         # Add the final LineTo command for the last segment, which always
         # goes to the very end of the scan line.

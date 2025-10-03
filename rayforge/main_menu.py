@@ -58,7 +58,15 @@ class MainMenu(Gio.Menu):
         visibility_group.append(
             _("Show Travel Moves"), "win.toggle_travel_view"
         )
+        visibility_group.append(
+            _("Show G-code Preview"), "win.toggle_gcode_preview"
+        )
         view_menu.append_section(None, visibility_group)
+
+        # Simulation toggle
+        simulation_group = Gio.Menu()
+        simulation_group.append(_("Simulate Execution"), "win.simulate_mode")
+        view_menu.append_section(None, simulation_group)
 
         view_3d_group = Gio.Menu()
         view_3d_group.append(_("3D View"), "win.show_3d_view")
@@ -127,6 +135,13 @@ class MainMenu(Gio.Menu):
         layout_group.append(_("Auto Layout"), "win.layout-pixel-perfect")
         arrange_menu.append_section(None, layout_group)
         self.append_submenu(_("Arrange"), arrange_menu)
+
+        # Tools Menu
+        tools_menu = Gio.Menu()
+        tools_group = Gio.Menu()
+        tools_group.append(_("Create Material Test Grid"), "win.material_test")
+        tools_menu.append_section(None, tools_group)
+        self.append_submenu(_("_Tools"), tools_menu)
 
         # Machine Menu
         machine_menu = Gio.Menu()

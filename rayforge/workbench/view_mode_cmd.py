@@ -41,6 +41,8 @@ class ViewModeCmd:
         if is_3d == request_3d:
             return
 
+        gcode_action = win.action_manager.get_action("toggle_gcode_preview")
+
         if request_3d:
             if not canvas3d_initialized:
                 logger.warning(
@@ -63,7 +65,15 @@ class ViewModeCmd:
                 win.toast_overlay.add_toast(toast)
                 return
 
+            # If simulation mode is active, turn it off before switching
+            # to the 3D view.
+            sim_action = win.action_manager.get_action("simulate_mode")
+            sim_state = sim_action.get_state() if sim_action else None
+            if sim_state and sim_state.get_boolean():
+                sim_action.change_state(GLib.Variant.new_boolean(False))
+
             action.set_state(GLib.Variant.new_boolean(True))
+            gcode_action.change_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
 
             if win.canvas3d and win.canvas3d.ops_renderer:
@@ -102,11 +112,13 @@ class ViewModeCmd:
                     win.toast_overlay.add_toast(toast)
                     win.view_stack.set_visible_child_name("2d")
                     action.set_state(GLib.Variant.new_boolean(False))
+                    gcode_action.change_state(GLib.Variant.new_boolean(False))
                     raise
 
             task_mgr.add_coroutine(load_ops_coro, key="load-3d-preview")
         else:
             action.set_state(GLib.Variant.new_boolean(False))
+            gcode_action.change_state(GLib.Variant.new_boolean(False))
             win.view_stack.set_visible_child_name("2d")
             win.surface.grab_focus()
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 from gi.repository import Gtk
 from .editor import GcodeEditor
 
@@ -20,6 +20,7 @@ class GcodePreviewer(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
         self.editor = GcodeEditor()
+        self.op_to_line_map: Dict[int, int] = {}
 
         # Configure the internal editor for previewing
         self.editor.text_view.set_editable(False)
@@ -41,3 +42,16 @@ class GcodePreviewer(Gtk.Box):
     def clear(self):
         """Clears the content of the previewer."""
         self.editor.set_text("")
+        self.op_to_line_map = {}
+        self.clear_highlight()
+
+    def set_op_to_line_map(self, op_to_line_map: Dict[int, int]):
+        self.op_to_line_map = op_to_line_map
+
+    def highlight_op(self, op_index: int):
+        if op_index in self.op_to_line_map:
+            line_number = self.op_to_line_map[op_index]
+            self.editor.highlight_line(line_number)
+
+    def clear_highlight(self):
+        self.editor.clear_highlight()

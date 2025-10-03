@@ -42,12 +42,17 @@ class GcodeEditor(Gtk.Box):
 
         buffer = self.text_view.get_buffer()
         self.search_tag = buffer.create_tag("search")
+        self.highlight_tag = buffer.create_tag("highlight")
+        self.current_highlight_line = -1
+
         style_context = self.get_style_context()
         found, color = style_context.lookup_color("theme_selected_bg_color")
         if found:
             self.search_tag.set_property("background", color.to_string())
+            self.highlight_tag.set_property("background", color.to_string())
         else:
             self.search_tag.set_property("background", "#4A90D9")
+            self.highlight_tag.set_property("background", "#fce94f")
 
         self.append(self.search_bar)
         self.append(self.scrolled_window)
@@ -113,6 +118,25 @@ class GcodeEditor(Gtk.Box):
             buffer.get_start_iter(), buffer.get_end_iter()
         )
         self.search_bar.set_search_mode(False)
+
+    def highlight_line(self, line_number: int):
+        buffer = self.text_view.get_buffer()
+        if self.current_highlight_line != -1:
+            _, start = buffer.get_iter_at_line(self.current_highlight_line)
+            _, end = buffer.get_iter_at_line(self.current_highlight_line + 1)
+            buffer.remove_tag(self.highlight_tag, start, end)
+
+        if line_number != -1:
+            _, start = buffer.get_iter_at_line(line_number)
+            _, end = buffer.get_iter_at_line(line_number + 1)
+            buffer.apply_tag(self.highlight_tag, start, end)
+            # Scroll to the highlighted line
+            self.text_view.scroll_to_iter(start, 0.0, True, 0.5, 0.5)
+
+        self.current_highlight_line = line_number
+
+    def clear_highlight(self):
+        self.highlight_line(-1)
 
     @property
     def text(self) -> str:

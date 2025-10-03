@@ -17,7 +17,6 @@ gettext = "*"
 gobject-introspection = "*"
 gtk4 = "*"
 libheif = "*"
-opencv = "*"
 openslide = "*"
 poppler = "*"
 python = ">=3.11"
@@ -28,12 +27,11 @@ svgelements = ">=1.9.6,<2"
 pkg-config = "*"
 
 [pypi-dependencies]
-#rayforge = { editable = true, path = "." }
+rayforge = { editable = true, path = "." }
 aiohttp = "==3.12.14"
 blinker = "==1.9.0"
 build = "*"
 ezdxf = "==1.3.5"
-opencv-python = "*"
 platformdirs = "==4.3.6"
 pyclipper = "==1.3.0.post6"
 PyGObject = "==3.50.0"
@@ -91,8 +89,12 @@ workdir = "."
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "rayforge"
 
+[tasks.test]
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
+cmd = "pytest -v"
+
 [tasks]
-test = "pytest -v"
+
 lint = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"

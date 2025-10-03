@@ -262,7 +262,7 @@ class GrblNetworkDriver(Driver):
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine, doc)
+        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
 
         try:
             await self._upload(gcode, "rayforge.gcode")

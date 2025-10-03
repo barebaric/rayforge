@@ -282,7 +282,7 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         self._job_running = True
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine, doc)
+        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
 
         for line in gcode.splitlines():
             if self._is_cancelled:

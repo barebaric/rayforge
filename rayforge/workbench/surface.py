@@ -68,6 +68,10 @@ class WorkSurface(Canvas):
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
 
+        # Simulation mode state
+        self._simulation_mode = False
+        self._simulation_overlay: Optional[CanvasElement] = None
+
         # The root element is now static and sized in world units (mm).
         self.root.set_size(self.width_mm, self.height_mm)
         self.root.clip = False
@@ -125,6 +129,7 @@ class WorkSurface(Canvas):
         self.duplicate_requested = Signal()
         self.aspect_ratio_changed = Signal()
         self.context_changed = Signal()
+        self.transform_initiated = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -283,6 +288,7 @@ class WorkSurface(Canvas):
             f"Transform begin for {len(elements)} element(s). "
             f"Drag target: {drag_target}"
         )
+        self.transform_initiated.send(self)
         self._transform_start_states.clear()
 
         # 1. Collect all unique elements and their group ancestors
@@ -929,6 +935,7 @@ class WorkSurface(Canvas):
             if not selected_items:
                 return True  # Consume event but do nothing
 
+            self.transform_initiated.send(self)
             self.editor.transform.nudge_items(selected_items, move_x, move_y)
             return True
 
@@ -1073,3 +1080,35 @@ class WorkSurface(Canvas):
                 elem.selected = True
 
         self._finalize_selection_state()
+
+    def is_simulation_mode(self) -> bool:
+        """Returns True if simulation mode is active."""
+        return self._simulation_mode
+
+    def set_simulation_mode(
+        self, enabled: bool, simulation_overlay: Optional[CanvasElement] = None
+    ):
+        """
+        Enables or disables simulation mode. When enabled:
+        - Workpiece selection and transformation remain enabled
+        - Zoom and pan gestures remain active
+        - Grid and axis render normally
+        - Simulation overlay is shown on top
+        """
+        if self._simulation_mode == enabled:
+            return
+
+        self._simulation_mode = enabled
+
+        if enabled:
+            # Add simulation overlay if provided
+            if simulation_overlay:
+                self._simulation_overlay = simulation_overlay
+                self.root.add(self._simulation_overlay)
+        else:
+            # Remove simulation overlay when exiting
+            if self._simulation_overlay:
+                self._simulation_overlay.remove()
+                self._simulation_overlay = None
+
+        self.queue_draw()

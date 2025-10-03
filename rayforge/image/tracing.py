@@ -11,6 +11,7 @@ from .hull import get_enclosing_hull, get_hulls_from_image
 from .denoise import denoise_boolean_image
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 BORDER_SIZE = 2
 # A safety limit to prevent processing pathologically complex images.
@@ -559,9 +560,9 @@ def trace_surface(
         logger.error("Failed to parse SVG from vtracer, falling back.")
         return _fallback_to_enclosing_hull(
             cleaned_boolean_image,
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
             surface.get_height(),
         )
 
-    return _svg_string_to_geometries(
-        svg_str, 1.0, 1.0, surface.get_height()
-    )
+    return _svg_string_to_geometries(svg_str, 1.0, 1.0, surface.get_height())

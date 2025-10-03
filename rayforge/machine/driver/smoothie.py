@@ -138,7 +138,7 @@ class SmoothieDriver(Driver):
 
     async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
         encoder = GcodeEncoder.for_machine(machine)
-        gcode = encoder.encode(ops, machine, doc)
+        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
 
         try:
             for line in gcode.splitlines():

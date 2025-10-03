@@ -37,6 +37,9 @@ class ActionManager:
         self._add_action("preferences", self.win.show_preferences)
         self._add_action("machine_settings", self.win.show_machine_settings)
 
+        # Tools Actions
+        self._add_action("material_test", self.win.on_show_material_test)
+
         # View Actions
         self._add_stateful_action(
             "show_3d_view",
@@ -56,6 +59,17 @@ class ActionManager:
         self._add_stateful_action(
             "toggle_travel_view",
             self.win.on_toggle_travel_view_state_change,
+            GLib.Variant.new_boolean(False),
+        )
+        self._add_stateful_action(
+            "toggle_gcode_preview",
+            self.win.on_toggle_gcode_preview_state_change,
+            GLib.Variant.new_boolean(False),
+        )
+
+        self._add_stateful_action(
+            "simulate_mode",
+            self.win.simulator_cmd.toggle_mode,
             GLib.Variant.new_boolean(False),
         )
 
@@ -277,7 +291,11 @@ class ActionManager:
         app.set_accels_for_action(
             "win.toggle_travel_view", ["<Primary><Shift>t"]
         )
+        app.set_accels_for_action(
+            "win.toggle_gcode_preview", ["<Primary><Shift>g"]
+        )
         app.set_accels_for_action("win.show_3d_view", ["F12"])
+        app.set_accels_for_action("win.simulate_mode", ["<Primary><Shift>s"])
         app.set_accels_for_action("win.view_top", ["1"])
         app.set_accels_for_action("win.view_front", ["2"])
         app.set_accels_for_action("win.view_iso", ["7"])

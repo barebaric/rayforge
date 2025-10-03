@@ -103,6 +103,26 @@ class MainToolbar(Gtk.Box):
             view_3d_button.set_tooltip_text(_("Show 3D Preview"))
         self.append(view_3d_button)
 
+        # Add a button to toggle execution simulation
+        self.simulate_button = Gtk.ToggleButton()
+        self.simulate_button.set_child(
+            get_icon("media-playback-start-symbolic")
+        )
+        self.simulate_button.set_active(False)
+        self.simulate_button.set_tooltip_text(_("Toggle execution simulation"))
+        self.simulate_button.set_action_name("win.simulate_mode")
+        self.append(self.simulate_button)
+
+        # Add a button for the G-code Preview
+        self.gcode_preview_button = Gtk.ToggleButton()
+        self.gcode_preview_button.set_child(
+            get_icon("document-properties-symbolic")
+        )
+        self.gcode_preview_button.set_active(False)
+        self.gcode_preview_button.set_tooltip_text(_("Toggle G-code Preview"))
+        self.gcode_preview_button.set_action_name("win.toggle_gcode_preview")
+        self.append(self.gcode_preview_button)
+
         # Add a button to toggle tab visibility.
         self.show_tabs_button = Gtk.ToggleButton()
         self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))

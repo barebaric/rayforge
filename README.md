@@ -186,10 +186,11 @@ This command reads `pixi.toml` and installs all conda and pip dependencies into 
 pixi run rayforge
 ```
 
-### 3. Run Tests
+### 3. Run Tests and Lint
 
 ```bash
 pixi run test
+pixi run lint
 ```
 
 ### 4. Activate the Development Shell

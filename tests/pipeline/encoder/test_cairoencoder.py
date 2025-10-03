@@ -9,6 +9,7 @@ from rayforge.core.ops import (
     ScanLinePowerCommand,
 )
 from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
+from rayforge.shared.util.colors import ColorSet
 
 # --- Test Constants for Matrix-based Testing ---
 CUT_COLOR_RGB = (1, 0, 0)  # Red
@@ -47,6 +48,34 @@ TEST_PALETTE = list(CHAR_MAP.keys())
 def encoder() -> CairoEncoder:
     """Provides a default CairoEncoder instance."""
     return CairoEncoder()
+
+
+@pytest.fixture
+def colors() -> ColorSet:
+    """Provides a test ColorSet with standard colors."""
+    # Create LUTs for cut and engrave
+    cut_lut = np.zeros((256, 4))
+    cut_lut[:, 0] = 1.0  # Red
+    cut_lut[:, 3] = 1.0  # Full alpha
+
+    engrave_lut = np.zeros((256, 4))
+    # Create gradient from white to red
+    for i in range(256):
+        t = i / 255.0
+        engrave_lut[i] = [1.0, 1.0 - t, 1.0 - t, 1.0]
+
+    # RGBA colors
+    travel_rgba = (*TRAVEL_COLOR_RGB, 1.0)
+    zero_power_rgba = (*ZERO_POWER_COLOR_RGB, 1.0)
+
+    return ColorSet(
+        {
+            "cut": cut_lut,
+            "engrave": engrave_lut,
+            "travel": travel_rgba,
+            "zero_power": zero_power_rgba,
+        }
+    )
 
 
 def get_pixel_data(surface: cairo.ImageSurface) -> np.ndarray:
@@ -208,12 +237,12 @@ def assert_matrix_equals_tolerant(
 
 # --- Test Suite ---
 class TestCairoEncoder:
-    def test_encode_empty_ops(self, encoder: CairoEncoder):
+    def test_encode_empty_ops(self, encoder: CairoEncoder, colors: ColorSet):
         """Encoding an empty Ops object should result in a black canvas."""
         W, H = 5, 5
         surface, ctx = create_surface(W, H)
         ops = Ops()
-        encoder.encode(ops, ctx, scale=(1.0, 1.0))
+        encoder.encode(ops, ctx, scale=(1.0, 1.0), colors=colors)
 
         expected_matrix = """
         kkkkk
@@ -224,7 +253,9 @@ class TestCairoEncoder:
         """
         assert_matrix_equals_tolerant(surface, expected_matrix)
 
-    def test_encode_simple_line_with_y_inversion(self, encoder: CairoEncoder):
+    def test_encode_simple_line_with_y_inversion(
+        self, encoder: CairoEncoder, colors: ColorSet
+    ):
         """A diagonal line should be drawn correctly, inverting the Y-axis."""
         W, H = 10, 10
         surface, ctx = create_surface(W, H)
@@ -237,7 +268,7 @@ class TestCairoEncoder:
             ops,
             ctx,
             scale=(1.0, 1.0),
-            cut_color=CUT_COLOR_RGB,
+            colors=colors,
             show_cut_moves=True,
             drawable_height=H,
         )
@@ -256,7 +287,9 @@ class TestCairoEncoder:
         """
         assert_matrix_equals_tolerant(surface, expected_matrix)
 
-    def test_show_and_hide_travel_moves(self, encoder: CairoEncoder):
+    def test_show_and_hide_travel_moves(
+        self, encoder: CairoEncoder, colors: ColorSet
+    ):
         """
         Tests that `show_travel_moves` correctly draws or hides travel
         lines.
@@ -272,7 +305,7 @@ class TestCairoEncoder:
             ops,
             ctx_show,
             scale=(1.0, 1.0),
-            travel_color=TRAVEL_COLOR_RGB,
+            colors=colors,
             show_travel_moves=True,
             drawable_height=H,
         )
@@ -297,14 +330,16 @@ class TestCairoEncoder:
             ops,
             ctx_hide,
             scale=(1.0, 1.0),
-            travel_color=TRAVEL_COLOR_RGB,
+            colors=colors,
             show_travel_moves=False,
             drawable_height=H,
         )
         expected_matrix_hide = "k" * W + ("\n" + "k" * W) * (H - 1)
         assert_matrix_equals_tolerant(surface_hide, expected_matrix_hide)
 
-    def test_state_tracking_for_zero_power_lines(self, encoder: CairoEncoder):
+    def test_state_tracking_for_zero_power_lines(
+        self, encoder: CairoEncoder, colors: ColorSet
+    ):
         """
         Tests that SetPower(0) correctly changes the color for the next
         line.
@@ -322,8 +357,7 @@ class TestCairoEncoder:
             ops,
             ctx,
             scale=(1.0, 1.0),
-            cut_color=CUT_COLOR_RGB,
-            zero_power_color=ZERO_POWER_COLOR_RGB,
+            colors=colors,
             show_cut_moves=True,
             show_zero_power_moves=True,
             drawable_height=H,
@@ -338,7 +372,9 @@ class TestCairoEncoder:
         """
         assert_matrix_equals_tolerant(surface, expected_matrix)
 
-    def test_arc_to_draws_an_arc(self, encoder: CairoEncoder):
+    def test_arc_to_draws_an_arc(
+        self, encoder: CairoEncoder, colors: ColorSet
+    ):
         """Tests that ArcToCommand is rendered correctly."""
         W, H = 10, 10
         surface, ctx = create_surface(W, H)
@@ -353,7 +389,7 @@ class TestCairoEncoder:
             ops,
             ctx,
             scale=(1.0, 1.0),
-            cut_color=CUT_COLOR_RGB,
+            colors=colors,
             show_cut_moves=True,
             drawable_height=H,
         )
@@ -372,7 +408,9 @@ class TestCairoEncoder:
         """
         assert_matrix_equals_tolerant(surface, expected_matrix)
 
-    def test_scanline_with_mixed_power(self, encoder: CairoEncoder):
+    def test_scanline_with_mixed_power(
+        self, encoder: CairoEncoder, colors: ColorSet
+    ):
         """Tests a ScanLinePowerCommand with on/off segments."""
         W, H = 12, 5
         surface, ctx = create_surface(W, H)
@@ -388,8 +426,7 @@ class TestCairoEncoder:
             ops,
             ctx,
             scale=(1.0, 1.0),
-            zero_power_color=ZERO_POWER_COLOR_RGB,
-            engrave_gradient=ENGRAVE_GRADIENT,
+            colors=colors,
             show_engrave_moves=True,
             show_zero_power_moves=True,
             drawable_height=H,
@@ -416,7 +453,7 @@ class TestCairoEncoder:
         ],
     )
     def test_visibility_toggles(
-        self, encoder, move_type, show_flag, should_draw
+        self, encoder, colors, move_type, show_flag, should_draw
     ):
         """
         Tests that each visibility flag correctly shows or hides its
@@ -428,9 +465,7 @@ class TestCairoEncoder:
 
         encode_kwargs = {
             "scale": (1.0, 1.0),
-            "cut_color": CUT_COLOR_RGB,
-            "engrave_gradient": ENGRAVE_GRADIENT,
-            "zero_power_color": ZERO_POWER_COLOR_RGB,
+            "colors": colors,
             "drawable_height": H,
             show_flag: should_draw,
         }

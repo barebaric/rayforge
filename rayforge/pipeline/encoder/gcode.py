@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List, Tuple, Dict
 from ...core.ops import (
     Ops,
     Command,
@@ -70,23 +70,40 @@ class GcodeEncoder(OpsEncoder):
         dialect = get_dialect(machine.dialect_name)
         return cls(dialect)
 
-    def encode(self, ops: Ops, machine: "Machine", doc: "Doc") -> str:
+    def _get_current_laser_head(self, context: GcodeContext):
+        if not self.active_laser_uid:
+            raise ValueError("No active laser head is set")
+        current_laser = context.machine.get_head_by_uid(self.active_laser_uid)
+        if not current_laser:
+            raise ValueError(
+                f"Laser head with UID {self.active_laser_uid} not found"
+            )
+        return current_laser
+
+    def encode(
+        self, ops: Ops, machine: "Machine", doc: "Doc"
+    ) -> Tuple[str, Dict[int, int]]:
         """Main encoding workflow"""
         # Set the coordinate format based on the machine's precision setting
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
         self.current_pos = (0.0, 0.0, 0.0)
+        self.active_laser_uid = None
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
         )
         gcode: List[str] = []
-        for cmd in ops:
+        op_to_line_map: Dict[int, int] = {}
+
+        for i, cmd in enumerate(ops):
+            op_to_line_map[i] = len(gcode)
             self._handle_command(gcode, cmd, context)
+
         self._finalize(gcode)
-        return "\n".join(gcode)
+        return "\n".join(gcode), op_to_line_map
 
     def _emit_scripts(
-        self, gcode: List[str], context: GcodeContext, trigger: ScriptTrigger
+        self, context: GcodeContext, gcode: List[str], trigger: ScriptTrigger
     ):
         """
         Finds the script for a trigger and uses the TemplateFormatter to
@@ -110,30 +127,32 @@ class GcodeEncoder(OpsEncoder):
         self, gcode: List[str], cmd: Command, context: GcodeContext
     ) -> None:
         """Dispatch command to appropriate handler"""
-        machine = context.machine
-        doc = context.doc
         match cmd:
             case SetPowerCommand():
-                self._update_power(gcode, cmd.power, machine)
+                self._update_power(context, gcode, cmd.power)
             case SetCutSpeedCommand():
                 # We limit to max travel speed, not max cut speed, to
                 # allow framing operations to go faster. Cut limits should
                 # should be kept by ensuring an Ops object is created
                 # with limits in mind.
-                self.cut_speed = min(cmd.speed, machine.max_travel_speed)
+                self.cut_speed = min(
+                    cmd.speed, context.machine.max_travel_speed
+                )
             case SetTravelSpeedCommand():
-                self.travel_speed = min(cmd.speed, machine.max_travel_speed)
+                self.travel_speed = min(
+                    cmd.speed, context.machine.max_travel_speed
+                )
             case EnableAirAssistCommand():
-                self._set_air_assist(gcode, True)
+                self._set_air_assist(context, gcode, True)
             case DisableAirAssistCommand():
-                self._set_air_assist(gcode, False)
+                self._set_air_assist(context, gcode, False)
             case SetLaserCommand():
-                self._handle_set_laser(gcode, cmd.laser_uid, context)
+                self._handle_set_laser(context, gcode, cmd.laser_uid)
             case MoveToCommand():
-                self._handle_move_to(gcode, *cmd.end)
+                self._handle_move_to(context, gcode, *cmd.end)
                 self.current_pos = cmd.end
             case LineToCommand():
-                self._handle_line_to(gcode, *cmd.end)
+                self._handle_line_to(context, gcode, *cmd.end)
                 self.current_pos = cmd.end
             case ScanLinePowerCommand():
                 # Deconstruct into simpler commands that the encoder already
@@ -145,23 +164,23 @@ class GcodeEncoder(OpsEncoder):
                 self.current_pos = cmd.end
             case ArcToCommand():
                 self._handle_arc_to(
-                    gcode, cmd.end, cmd.center_offset, cmd.clockwise
+                    context, gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
-                self._emit_scripts(gcode, context, ScriptTrigger.JOB_START)
+                self._emit_scripts(context, gcode, ScriptTrigger.JOB_START)
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
                 # first M5 and updates the internal state.
-                self._laser_off(gcode)
+                self._laser_off(context, gcode)
                 if self.air_assist:
-                    self._set_air_assist(gcode, False)
+                    self._set_air_assist(context, gcode, False)
 
                 # Then, run the user script or the full default postscript.
-                self._emit_scripts(gcode, context, ScriptTrigger.JOB_END)
+                self._emit_scripts(context, gcode, ScriptTrigger.JOB_END)
             case LayerStartCommand(layer_uid=uid):
-                descendant = doc.find_descendant_by_uid(uid)
+                descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
                     context.layer = descendant
                 elif descendant is not None:
@@ -169,12 +188,12 @@ class GcodeEncoder(OpsEncoder):
                         f"Expected Layer for UID {uid}, but "
                         f" found {type(descendant)}"
                     )
-                self._emit_scripts(gcode, context, ScriptTrigger.LAYER_START)
+                self._emit_scripts(context, gcode, ScriptTrigger.LAYER_START)
             case LayerEndCommand():
-                self._emit_scripts(gcode, context, ScriptTrigger.LAYER_END)
+                self._emit_scripts(context, gcode, ScriptTrigger.LAYER_END)
                 context.layer = None
             case WorkpieceStartCommand(workpiece_uid=uid):
-                descendant = doc.find_descendant_by_uid(uid)
+                descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, WorkPiece):
                     context.workpiece = descendant
                 elif descendant is not None:
@@ -183,10 +202,10 @@ class GcodeEncoder(OpsEncoder):
                         f" but found {type(descendant)}"
                     )
                 self._emit_scripts(
-                    gcode, context, ScriptTrigger.WORKPIECE_START
+                    context, gcode, ScriptTrigger.WORKPIECE_START
                 )
             case WorkpieceEndCommand():
-                self._emit_scripts(gcode, context, ScriptTrigger.WORKPIECE_END)
+                self._emit_scripts(context, gcode, ScriptTrigger.WORKPIECE_END)
                 context.workpiece = None
 
     def _emit_modal_speed(self, gcode: List[str], speed: float) -> None:
@@ -199,7 +218,7 @@ class GcodeEncoder(OpsEncoder):
             self.emitted_speed = speed
 
     def _handle_set_laser(
-        self, gcode: List[str], laser_uid: str, context: GcodeContext
+        self, context: GcodeContext, gcode: List[str], laser_uid: str
     ):
         """Handles a SetLaserCommand by emitting a tool change command."""
         if self.active_laser_uid == laser_uid:
@@ -224,29 +243,31 @@ class GcodeEncoder(OpsEncoder):
         self.active_laser_uid = laser_uid
 
     def _update_power(
-        self, gcode: List[str], power: float, machine: "Machine"
+        self, context: GcodeContext, gcode: List[str], power: float
     ) -> None:
         """
         Updates the target power. If power is set to 0 while the laser is
         active, it will be turned off. This method does NOT turn the laser on,
         but it WILL update the power level if the laser is already on.
         """
-        new_power = min(power, machine.heads[0].max_power)
-
         # Avoid emitting redundant power commands
-        if self.power is not None and math.isclose(new_power, self.power):
+        if self.power is not None and math.isclose(power, self.power):
             return
-
-        self.power = new_power
+        self.power = power
 
         if self.laser_active:
             if self.power > 0:
-                power_val = self.dialect.format_laser_power(self.power)
+                # Find the currently active laser head to get its max power
+                current_laser = self._get_current_laser_head(context)
+                power_abs = power * current_laser.max_power
+                power_val = self.dialect.format_laser_power(power_abs)
                 gcode.append(self.dialect.laser_on.format(power=power_val))
             else:  # power <= 0
-                self._laser_off(gcode)
+                self._laser_off(context, gcode)
 
-    def _set_air_assist(self, gcode: List[str], state: bool) -> None:
+    def _set_air_assist(
+        self, context: GcodeContext, gcode: List[str], state: bool
+    ) -> None:
         """Update air assist state with dialect commands"""
         if self.air_assist == state:
             return
@@ -260,10 +281,15 @@ class GcodeEncoder(OpsEncoder):
             gcode.append(cmd)
 
     def _handle_move_to(
-        self, gcode: List[str], x: float, y: float, z: float
+        self,
+        context: GcodeContext,
+        gcode: List[str],
+        x: float,
+        y: float,
+        z: float,
     ) -> None:
         """Rapid movement with laser safety"""
-        self._laser_off(gcode)
+        self._laser_off(context, gcode)
         self._emit_modal_speed(gcode, self.travel_speed or 0)
         f_command = self.dialect.format_feedrate(self.travel_speed)
         gcode.append(
@@ -276,10 +302,15 @@ class GcodeEncoder(OpsEncoder):
         )
 
     def _handle_line_to(
-        self, gcode: List[str], x: float, y: float, z: float
+        self,
+        context: GcodeContext,
+        gcode: List[str],
+        x: float,
+        y: float,
+        z: float,
     ) -> None:
         """Cutting movement with laser activation"""
-        self._laser_on(gcode)
+        self._laser_on(context, gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
         f_command = self.dialect.format_feedrate(self.cut_speed)
         gcode.append(
@@ -293,13 +324,14 @@ class GcodeEncoder(OpsEncoder):
 
     def _handle_arc_to(
         self,
+        context: GcodeContext,
         gcode: List[str],
         end: Tuple[float, float, float],
         center: Tuple[float, float],
         cw: bool,
     ) -> None:
         """Cutting arc with laser activation"""
-        self._laser_on(gcode)
+        self._laser_on(context, gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
         x, y, z = end
         i, j = center
@@ -316,14 +348,16 @@ class GcodeEncoder(OpsEncoder):
             )
         )
 
-    def _laser_on(self, gcode: List[str]) -> None:
+    def _laser_on(self, context: GcodeContext, gcode: List[str]) -> None:
         """Activate laser if not already on"""
         if not self.laser_active and self.power:
-            power_val = self.dialect.format_laser_power(self.power)
+            current_laser = self._get_current_laser_head(context)
+            power_abs = self.power * current_laser.max_power
+            power_val = self.dialect.format_laser_power(power_abs)
             gcode.append(self.dialect.laser_on.format(power=power_val))
             self.laser_active = True
 
-    def _laser_off(self, gcode: List[str]) -> None:
+    def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:
         """Deactivate laser if active"""
         if self.laser_active:
             gcode.append(self.dialect.laser_off)
