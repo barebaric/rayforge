@@ -145,7 +145,7 @@ class LayerElement(CanvasElement):
                 self.add(new_elem)
 
         if self.data.workflow is None:
-            return  # e.g. StockLayer, which has no workflow
+            return  # layers without workflow
 
         # Reconcile StepElements (Lifecycle Managers)
         current_step_elements = [

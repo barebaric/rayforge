@@ -15,7 +15,10 @@ class Config:
         self.theme: str = "system"
         # Default user preferences for units. Key is quantity, value is
         # unit name.
-        self.unit_preferences: Dict[str, str] = {"speed": "mm/min"}
+        self.unit_preferences: Dict[str, str] = {
+            "length": "mm",
+            "speed": "mm/min",
+        }
         self.changed = Signal()
 
     def set_machine(self, machine: Machine):
@@ -54,7 +57,7 @@ class Config:
         config.theme = data.get("theme", "system")
 
         # Load unit preferences, falling back to defaults for safety
-        default_prefs = {"speed": "mm/min"}
+        default_prefs = {"length": "mm", "speed": "mm/min"}
         loaded_prefs = data.get("unit_preferences", default_prefs)
         # Ensure all default keys are present
         default_prefs.update(loaded_prefs)

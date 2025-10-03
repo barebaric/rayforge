@@ -5,7 +5,6 @@ from ..core.item import DocItem
 from ..core.group import Group
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
-from ..core.stocklayer import StockLayer
 from ..undo import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
@@ -93,11 +92,9 @@ class EditCmd:
         if not self.can_paste():
             return []
 
-        doc = self._editor.doc
         history = self._editor.history_manager
         newly_pasted_items = []
 
-        active_layer_was_stock = isinstance(doc.active_layer, StockLayer)
         target_layer = self._editor.default_workpiece_layer
 
         with history.transaction(_("Paste item(s)")) as t:
@@ -140,14 +137,6 @@ class EditCmd:
         # Increment counter for the *next* paste
         self._paste_counter += 1
 
-        if active_layer_was_stock:
-            self._editor.notification_requested.send(
-                self,
-                message=_("Items pasted onto layer '{layer_name}'").format(
-                    layer_name=target_layer.name
-                ),
-            )
-
         return newly_pasted_items
 
     def duplicate_items(self, items: List[DocItem]) -> List[DocItem]:
@@ -161,11 +150,9 @@ class EditCmd:
         if not items:
             return []
 
-        doc = self._editor.doc
         history = self._editor.history_manager
         newly_duplicated_items = []
 
-        active_layer_was_stock = isinstance(doc.active_layer, StockLayer)
         target_layer = self._editor.default_workpiece_layer
 
         top_level_items = self._get_top_level_items(items)
@@ -199,14 +186,6 @@ class EditCmd:
                     name=_("Duplicate item"),
                 )
                 t.execute(command)
-
-        if active_layer_was_stock:
-            self._editor.notification_requested.send(
-                self,
-                message=_("Items duplicated onto layer '{layer_name}'").format(
-                    layer_name=target_layer.name
-                ),
-            )
 
         return newly_duplicated_items
 

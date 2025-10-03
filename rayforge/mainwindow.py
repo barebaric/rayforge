@@ -14,13 +14,10 @@ from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
-from .core.layer import Layer
 from .core.matrix import Matrix
-from .core.ops import Ops
-from .core.stock import StockItem
-from .core.stocklayer import StockLayer
-from .core.import_source import ImportSource
 from .core.workpiece import WorkPiece
+from .core.ops import Ops
+from .core.import_source import ImportSource
 from .image.material_test_grid_renderer import MaterialTestRenderer
 from .pipeline.steps import (
     STEP_FACTORIES,
@@ -34,6 +31,7 @@ from .doceditor.ui.workflow_view import WorkflowView
 from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
 from .doceditor.ui.layer_list import LayerListView
+from .doceditor.ui.stock_list import StockListView
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
@@ -329,8 +327,14 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.set_size_request(400, -1)
         right_pane_scrolled_window.set_child(right_pane_box)
 
+        # Add the Stock list view
+        self.stock_list_view = StockListView(self.doc_editor)
+        self.stock_list_view.set_margin_end(12)
+        right_pane_box.append(self.stock_list_view)
+
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor.doc)
+        self.layer_list_view.set_margin_top(20)
         self.layer_list_view.set_margin_end(12)
         right_pane_box.append(self.layer_list_view)
 
@@ -524,14 +528,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not doc.layers:
             return
 
-        # Find the first non-stock, "workpiece" layer to add the default
-        # step to.
-        first_workpiece_layer = None
-        for layer in doc.layers:
-            if not isinstance(layer, StockLayer):
-                first_workpiece_layer = layer
-                break  # Found the first one
-
+        first_workpiece_layer = doc.layers[0]
         if (
             first_workpiece_layer
             and first_workpiece_layer.workflow
@@ -627,15 +624,12 @@ class MainWindow(Adw.ApplicationWindow):
     def _sync_element_selectability(self):
         """
         Updates the 'selectable' property of StockElements on the canvas
-        based on which layer is currently active.
+        based on which layer is currently active and their visibility.
         """
         # Find all StockElement instances currently on the canvas
         for element in self.surface.find_by_type(StockElement):
-            stock_item = cast(StockItem, element.data)
-            # An item is selectable if its parent layer is the active one
-            layer = cast(Layer, stock_item.parent)
-            is_selectable = layer and layer.active
-            element.selectable = is_selectable
+            # Stock items are only selectable when they are visible
+            element.selectable = element.visible
 
     def _on_active_layer_changed(self, sender):
         """
@@ -1049,18 +1043,8 @@ class MainWindow(Adw.ApplicationWindow):
         show_tabs_action.set_enabled(has_any_tabs)
 
         # Layout - Update sensitivity for the pixel-perfect layout action
-        selected_top_level_items = self.surface.get_selected_top_level_items()
-
-        if len(selected_top_level_items) >= 2:
-            # Scenario: Multiple top-level items are selected.
-            can_layout = True
-        elif not selected_top_level_items:
-            # Scenario: Nothing selected. Action will lay out all workpieces.
-            can_layout = len(doc.get_top_level_items()) >= 2
-        else:  # One item selected
-            can_layout = False
-
-        am.get_action("layout-pixel-perfect").set_enabled(can_layout)
+        has_workpieces = len(doc.active_layer.get_descendants(WorkPiece)) > 0
+        am.get_action("layout-pixel-perfect").set_enabled(has_workpieces)
 
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""

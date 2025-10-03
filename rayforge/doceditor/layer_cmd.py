@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional, List
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from ..undo import Command
-from ..core.stocklayer import StockLayer
 
 if TYPE_CHECKING:
     from ..workbench.surface import WorkSurface
@@ -71,10 +70,7 @@ class LayerCmd:
             return
 
         doc = self._editor.doc
-        # A valid target for a WorkPiece is any layer that is NOT a StockLayer.
-        workpiece_layers = [
-            layer for layer in doc.layers if not isinstance(layer, StockLayer)
-        ]
+        workpiece_layers = list(doc.layers)
 
         if len(workpiece_layers) <= 1:
             # Not enough valid layers to move between.

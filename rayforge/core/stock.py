@@ -21,6 +21,8 @@ class StockItem(DocItem):
         self.geometry: Geometry = (
             geometry if geometry is not None else Geometry()
         )
+        self.thickness: Optional[float] = None
+        self.visible: bool = True
 
         # If geometry is provided, set the initial matrix to match its
         # size.
@@ -40,6 +42,8 @@ class StockItem(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "geometry": self.geometry.to_dict(),
+            "thickness": self.thickness,
+            "visible": self.visible,
         }
 
     @classmethod
@@ -53,8 +57,29 @@ class StockItem(DocItem):
         new_item = cls(name=data.get("name", "Stock"), geometry=geometry)
         new_item.uid = data["uid"]
         new_item.matrix = Matrix.from_list(data["matrix"])
+        new_item.thickness = data.get("thickness")
+        new_item.visible = data.get("visible", True)
 
         return new_item
+
+    def set_name(self, name: str):
+        """Setter method for use with undo commands."""
+        if self.name != name:
+            self.name = name
+            self.updated.send(self)
+
+    def set_thickness(self, value: Optional[float]):
+        """Setter method for use with undo commands."""
+        if self.thickness != value:
+            self.thickness = value
+            self.updated.send(self)
+
+    def set_visible(self, visible: bool):
+        """Sets the visibility of the stock item."""
+        if self.visible == visible:
+            return
+        self.visible = visible
+        self.updated.send(self)
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         """

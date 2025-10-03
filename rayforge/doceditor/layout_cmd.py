@@ -3,7 +3,6 @@ import logging
 from typing import TYPE_CHECKING, List
 from ..shared.util.glib import idle_add
 from ..core.item import DocItem
-from ..core.stocklayer import StockLayer
 from .layout import (
     BboxAlignLeftStrategy,
     BboxAlignCenterStrategy,
@@ -195,14 +194,11 @@ class LayoutCmd:
         # Determine the actual items to be laid out based on selection context.
         if not selected_items:
             # If nothing is selected, get all top-level content items from
-            # all workpiece layers in the document.
+            # the current active layer only.
             items_to_layout = []
-            # doc.layers includes the StockLayer, which we should skip.
-            for layer in self._editor.doc.layers:
-                # We are only interested in regular workpiece layers, not
-                # the stock.
-                if not isinstance(layer, StockLayer):
-                    items_to_layout.extend(layer.get_content_items())
+            active_layer = self._editor.doc.active_layer
+            if active_layer:
+                items_to_layout.extend(active_layer.get_content_items())
         else:
             # For any selection, only pack the top-level selected items.
             # E.g., if a group and its child are both selected, only pack the

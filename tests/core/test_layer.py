@@ -4,6 +4,8 @@ from blinker import Signal
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
+from rayforge.core.stock import StockItem
+from rayforge.core.layer import Layer
 
 
 @pytest.fixture
@@ -104,3 +106,91 @@ def test_workpiece_transform_change_bubbles_up_to_layer(
     transform_changed_handler.assert_called_once_with(
         layer, origin=mock_workpiece_with_signals
     )
+
+
+def test_layer_stock_item_uid_property():
+    """Tests that a Layer has a stock_item_uid property."""
+    layer = Layer("Test Layer")
+
+    # Default value should be None
+    assert layer.stock_item_uid is None
+
+    # Can set a value
+    layer.stock_item_uid = "test-stock-uid"
+    assert layer.stock_item_uid == "test-stock-uid"
+
+
+def test_layer_stock_item_property():
+    """Tests that a Layer can get and set stock items."""
+    doc = Doc()
+    layer = doc.active_layer
+    stock_item = StockItem(name="Test Stock")
+    doc.add_stock_item(stock_item)
+
+    # Initially no stock item assigned
+    assert layer.stock_item is None
+
+    # Assign stock item
+    layer.stock_item = stock_item
+    assert layer.stock_item is stock_item
+    assert layer.stock_item_uid == stock_item.uid
+
+    # Unassign stock item
+    layer.stock_item = None
+    assert layer.stock_item is None
+    assert layer.stock_item_uid is None
+
+
+def test_layer_stock_item_property_with_invalid_uid():
+    """Tests that layer.stock_item returns None for invalid UID."""
+    layer = Layer("Test Layer")
+
+    # Set invalid UID
+    layer.stock_item_uid = "non-existent-uid"
+
+    # Should return None
+    assert layer.stock_item is None
+
+
+def test_layer_to_dict_includes_stock_item_uid():
+    """Tests that to_dict includes the stock_item_uid property."""
+    layer = Layer("Test Layer")
+    layer.stock_item_uid = "test-stock-uid"
+
+    data = layer.to_dict()
+
+    assert "stock_item_uid" in data
+    assert data["stock_item_uid"] == "test-stock-uid"
+
+
+def test_layer_from_dict_handles_stock_item_uid():
+    """Tests that from_dict handles the stock_item_uid property."""
+    layer_dict = {
+        "uid": "test-layer-uid",
+        "type": "layer",
+        "name": "Test Layer",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "visible": True,
+        "stock_item_uid": "test-stock-uid",
+        "children": [],
+    }
+
+    layer = Layer.from_dict(layer_dict)
+
+    assert layer.stock_item_uid == "test-stock-uid"
+
+
+def test_layer_from_dict_handles_missing_stock_item_uid():
+    """Tests that from_dict handles missing stock_item_uid property."""
+    layer_dict = {
+        "uid": "test-layer-uid",
+        "type": "layer",
+        "name": "Test Layer",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "visible": True,
+        "children": [],
+    }
+
+    layer = Layer.from_dict(layer_dict)
+
+    assert layer.stock_item_uid is None

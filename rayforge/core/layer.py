@@ -5,13 +5,25 @@ workpieces within a document.
 
 from __future__ import annotations
 import logging
-from typing import List, Tuple, Optional, TypeVar, Iterable, Dict
+from typing import (
+    List,
+    Tuple,
+    Optional,
+    TypeVar,
+    Iterable,
+    Dict,
+    TYPE_CHECKING,
+    Any,
+)
 from blinker import Signal
 
 from ..core.step import Step
 from ..core.workflow import Workflow
 from .item import DocItem
 from .workpiece import WorkPiece
+
+if TYPE_CHECKING:
+    from .stock import StockItem
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +48,7 @@ class Layer(DocItem):
         """
         super().__init__(name=name)
         self.visible: bool = True
+        self.stock_item_uid: Optional[str] = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -53,8 +66,25 @@ class Layer(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "visible": self.visible,
+            "stock_item_uid": self.stock_item_uid,
             "children": [child.to_dict() for child in self.children],
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Layer":
+        """Deserializes a dictionary into a Layer instance."""
+        from .matrix import Matrix
+
+        layer = cls(name=data.get("name", "Layer"))
+        layer.uid = data["uid"]
+        layer.matrix = Matrix.from_list(data["matrix"])
+        layer.visible = data.get("visible", True)
+        layer.stock_item_uid = data.get("stock_item_uid")
+
+        # For now, we'll skip loading children as it requires complex
+        # deserialization logic that's not needed for current functionality
+
+        return layer
 
     @property
     def workpieces(self) -> List[WorkPiece]:
@@ -80,8 +110,7 @@ class Layer(DocItem):
         WorkPieces, Groups), excluding internal objects like Workflows.
         """
         return [
-            child for child in self.children
-            if not isinstance(child, Workflow)
+            child for child in self.children if not isinstance(child, Workflow)
         ]
 
     @property
@@ -91,7 +120,7 @@ class Layer(DocItem):
             if isinstance(child, Workflow):
                 return child
         # This state should be unreachable for a standard Layer, but subclasses
-        # like StockLayer may not have a workflow.
+        # of it may not have a workflow.
         return None
 
     def _on_workflow_post_transformer_changed(self, sender):
@@ -205,3 +234,29 @@ class Layer(DocItem):
                 if step.visible:
                     items.append((step, workpiece))
         return items
+
+    @property
+    def stock_item(self) -> Optional["StockItem"]:
+        """
+        Gets the stock item assigned to this layer.
+
+        Returns None for "Whole Surface" which represents the entire machine
+        surface.
+        """
+        if not self.stock_item_uid or not self.doc:
+            return None
+
+        return self.doc.get_stock_item_by_uid(self.stock_item_uid)
+
+    @stock_item.setter
+    def stock_item(self, stock_item: Optional["StockItem"]):
+        """Sets the stock item for this layer."""
+        if stock_item is None:
+            self.stock_item_uid = None
+        else:
+            self.stock_item_uid = stock_item.uid
+
+    def set_stock_item_uid(self, uid: Optional[str]):
+        """Setter method for use with undo commands."""
+        self.stock_item_uid = uid
+        self.updated.send(self)

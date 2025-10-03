@@ -1,11 +1,15 @@
 import logging
-from gi.repository import Gtk, Gdk, Pango
+from typing import List, Optional, TYPE_CHECKING
+from gi.repository import Gtk, Gdk, Pango, Adw
 from blinker import Signal
-from ...core.stocklayer import StockLayer
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...undo.models.property_cmd import ChangePropertyCommand
+from ...shared.util.gtk import apply_css
 from ...icons import get_icon
+
+if TYPE_CHECKING:
+    from ...core.stock import StockItem
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +58,18 @@ class LayerView(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
         # Apply CSS globally, but only once.
-        self.apply_css()
+        apply_css(css)
         self.set_margin_start(6)
         self.add_css_class("layerview")
 
         self.doc = doc
         self.layer = layer
+
+        # Initialize stock items list to prevent crashes
+        self._stock_items: List[Optional["StockItem"]] = [None]
+
+        # Store reference to scrolled window for size adjustments
+        self._stock_scrolled = None
 
         # A container to hold the icon, allowing it to be replaced.
         self.icon_container = Gtk.Box()
@@ -95,6 +105,25 @@ class LayerView(Gtk.Box):
         self.subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
         content_box.append(self.subtitle_label)
 
+        # Stock item menu button with popover
+        self.stock_button = Gtk.MenuButton()
+        self.stock_button.set_valign(Gtk.Align.CENTER)
+        self.stock_button.set_tooltip_text(_("Assign stock material"))
+        self.append(self.stock_button)
+
+        # Create popover for stock selection
+        self.stock_popover = Gtk.Popover()
+        self.stock_popover.set_size_request(200, -1)
+        self.stock_button.set_popover(self.stock_popover)
+
+        # Create list box for stock items
+        self.stock_list = Gtk.ListBox()
+        self.stock_list.set_selection_mode(Gtk.SelectionMode.NONE)
+
+        # Put list box directly in popover (no scrolled window)
+        # This lets the popover size naturally to its content
+        self.stock_popover.set_child(self.stock_list)
+
         # Suffix icons
         suffix_box = Gtk.Box(spacing=6)
         suffix_box.set_valign(Gtk.Align.CENTER)
@@ -118,6 +147,8 @@ class LayerView(Gtk.Box):
         self.layer.descendant_removed.connect(self.on_layer_changed)
         self.layer.descendant_updated.connect(self.on_layer_changed)
         self.doc.active_layer_changed.connect(self.on_layer_changed)
+        self.doc.updated.connect(self.on_doc_changed)
+        self.doc.descendant_updated.connect(self.on_doc_descendant_updated)
 
         # Perform initial UI sync
         self.on_layer_changed(self.layer)
@@ -129,6 +160,8 @@ class LayerView(Gtk.Box):
         self.layer.descendant_removed.disconnect(self.on_layer_changed)
         self.layer.descendant_updated.disconnect(self.on_layer_changed)
         self.doc.active_layer_changed.disconnect(self.on_layer_changed)
+        self.doc.updated.disconnect(self.on_doc_changed)
+        self.doc.descendant_updated.disconnect(self.on_doc_descendant_updated)
 
     def on_name_escape_pressed(self, controller, keyval, keycode, state):
         """Handler for the 'key-pressed' signal to catch Escape."""
@@ -156,6 +189,18 @@ class LayerView(Gtk.Box):
         """
         self.update_ui()
         self.update_style()
+
+    def on_doc_changed(self, sender, **kwargs):
+        """
+        Updates the UI when the document model changes, including stock items.
+        """
+        self.update_ui()
+
+    def on_doc_descendant_updated(self, sender, **kwargs):
+        """
+        Updates the UI when a document descendant (stock items) is updated.
+        """
+        self.update_ui()
 
     def on_delete_clicked(self, button):
         """Emits a signal when the delete button is clicked."""
@@ -213,41 +258,36 @@ class LayerView(Gtk.Box):
         if old_icon := self.icon_container.get_first_child():
             self.icon_container.remove(old_icon)
 
-        if isinstance(self.layer, StockLayer):
-            self.icon_container.append(get_icon("stock-symbolic"))
+        self.icon_container.append(get_icon("layer-symbolic"))
+        self.name_entry.set_editable(True)
+        if not self.name_entry.has_focus():
             self.name_entry.set_text(self.layer.name)
-            self.name_entry.set_editable(False)
-            self.subtitle_label.set_text(_("Stock Material"))
-            self.subtitle_label.set_tooltip_text(_("Stock Material"))
-            self.visibility_button.set_visible(True)
+
+        # Get step names from the layer's workflow
+        workflow = self.layer.workflow
+        step_names = [s.name for s in workflow] if workflow else []
+        steps_string = ", ".join(step_names)
+
+        # Get workpiece count string
+        count = len(self.layer.all_workpieces)
+        if count == 1:
+            workpiece_string = _("{count} workpiece").format(count=count)
         else:
-            self.icon_container.append(get_icon("layer-symbolic"))
-            self.name_entry.set_editable(True)
-            if not self.name_entry.has_focus():
-                self.name_entry.set_text(self.layer.name)
+            workpiece_string = _("{count} workpieces").format(count=count)
 
-            # Get step names from the layer's workflow
-            workflow = self.layer.workflow
-            step_names = [s.name for s in workflow] if workflow else []
-            steps_string = ", ".join(step_names)
+        # Combine them into the final subtitle
+        if steps_string:
+            # Example: "Outline, Rasterize 4 workpieces"
+            subtitle_text = f"{steps_string} {workpiece_string}"
+        else:
+            # Example: "4 workpieces"
+            subtitle_text = workpiece_string
 
-            # Get workpiece count string
-            count = len(self.layer.all_workpieces)
-            if count == 1:
-                workpiece_string = _("{count} workpiece").format(count=count)
-            else:
-                workpiece_string = _("{count} workpieces").format(count=count)
+        self.subtitle_label.set_label(subtitle_text)
+        self.subtitle_label.set_tooltip_text(subtitle_text)
 
-            # Combine them into the final subtitle
-            if steps_string:
-                # Example: "Outline, Rasterize 4 workpieces"
-                subtitle_text = f"{steps_string} {workpiece_string}"
-            else:
-                # Example: "4 workpieces"
-                subtitle_text = workpiece_string
-
-            self.subtitle_label.set_label(subtitle_text)
-            self.subtitle_label.set_tooltip_text(subtitle_text)
+        # Update stock dropdown
+        self.update_stock_dropdown()
 
         # Sync the visibility button's state and icon with the model.
         # Assume 'visible' property exists, default to True for robustness.
@@ -257,16 +297,75 @@ class LayerView(Gtk.Box):
         else:
             self.visibility_button.set_child(self.visibility_off_icon)
 
-    @staticmethod
-    def apply_css():
-        provider = Gtk.CssProvider()
-        provider.load_from_string(css)
-        display = Gdk.Display.get_default()
-        if not display:
-            logger.warning("No default Gdk display found. CSS may not apply.")
-            return
-        Gtk.StyleContext.add_provider_for_display(
-            display,
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    def update_stock_dropdown(self):
+        """Updates the stock dropdown with available stock items."""
+        # Clear existing rows
+        while row := self.stock_list.get_first_child():
+            self.stock_list.remove(row)
+
+        # Reset and update stock items list
+        self._stock_items = [None]
+
+        # Add "Whole Surface" option (None represents whole surface)
+        whole_surface_row = Adw.ActionRow(title=_("Whole Surface"))
+        whole_surface_row.set_activatable(True)
+        whole_surface_row.connect(
+            "activated", lambda r: self.on_stock_selected(0)
         )
+        self.stock_list.append(whole_surface_row)
+
+        # Add stock items
+        for i, stock_item in enumerate(self.doc.stock_items):
+            self._stock_items.append(stock_item)
+            row = Adw.ActionRow(title=stock_item.name)
+            row.set_activatable(True)
+            row.connect(
+                "activated", lambda r, idx=i + 1: self.on_stock_selected(idx)
+            )
+            self.stock_list.append(row)
+
+        # Update button label
+        selected_stock_name = _("Whole Surface")
+        if self.layer.stock_item_uid:
+            for i, stock_item in enumerate(self._stock_items):
+                if stock_item and stock_item.uid == self.layer.stock_item_uid:
+                    selected_stock_name = stock_item.name
+                    break
+
+        self.stock_button.set_label(selected_stock_name)
+
+        # Always show the stock button since "Whole Surface" is always
+        # available
+        self.stock_button.set_visible(True)
+
+    def on_stock_selected(self, index):
+        """Handles stock item selection from popover."""
+        # Get the selected stock item using the stored list to prevent crashes
+        if index < len(self._stock_items):
+            selected_stock = self._stock_items[index]
+        else:
+            selected_stock = None
+
+        # Update the layer
+        new_uid = selected_stock.uid if selected_stock else None
+        if new_uid != self.layer.stock_item_uid:
+            command = ChangePropertyCommand(
+                target=self.layer,
+                property_name="stock_item_uid",
+                new_value=new_uid,
+                setter_method_name="set_stock_item_uid",
+                name=_("Assign stock material"),
+            )
+            self.doc.history_manager.execute(command)
+            # Update stock visibility when stock assignment changes
+            if self.layer.active:
+                self.doc.update_stock_visibility()
+
+        # Update button label
+        if selected_stock:
+            self.stock_button.set_label(selected_stock.name)
+        else:
+            self.stock_button.set_label(_("Whole Surface"))
+
+        # Close popover
+        self.stock_popover.popdown()

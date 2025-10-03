@@ -171,6 +171,13 @@ class ActionManager:
         self.actions["tab-add"].set_enabled(bool(can_add_single_tab))
         self.actions["tab-remove"].set_enabled(bool(can_remove_single_tab))
 
+        # Update layout-pixel-perfect action state
+        current_layer = self.doc.active_layer
+        has_workpieces = (
+            current_layer and len(current_layer.get_descendants(WorkPiece)) > 0
+        )
+        self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
+
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""
         self.editor.stock.add_stock_item()

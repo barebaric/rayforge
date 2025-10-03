@@ -4,7 +4,7 @@ from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
-from rayforge.core.stocklayer import StockLayer
+from rayforge.core.stock import StockItem
 from rayforge.core.import_source import ImportSource
 from rayforge.core.vectorization_config import TraceConfig
 from rayforge.image.svg.renderer import SvgRenderer
@@ -17,17 +17,44 @@ def doc():
 
 
 def test_doc_initialization(doc):
-    """Verify a new Doc starts with a StockLayer and one regular Layer."""
-    assert len(doc.children) == 2
-    assert isinstance(doc.children[0], StockLayer)
-    assert isinstance(doc.children[1], Layer)
-    assert len(doc.layers) == 2  # .layers includes all Layer subclasses
+    """Verify a new Doc starts with one Layer."""
+    assert len(doc.children) == 1
+    assert isinstance(doc.children[0], Layer)
+    assert len(doc.layers) == 1
 
-    # Check that the first regular layer is active
-    assert not isinstance(doc.active_layer, StockLayer)
+    # Check that the first layer is active
     assert doc.active_layer.name == "Layer 1"
     assert doc.history_manager is not None
     assert doc.import_sources == {}
+    assert doc.stock_items == []
+
+
+def test_doc_stock_items_management(doc):
+    """Tests adding, removing, and getting stock items."""
+    stock1 = StockItem(name="Stock 1")
+    stock2 = StockItem(name="Stock 2")
+
+    # Test adding stock items
+    doc.add_stock_item(stock1)
+    assert len(doc.stock_items) == 1
+    assert stock1 in doc.stock_items
+    assert stock1.parent is doc
+
+    doc.add_stock_item(stock2)
+    assert len(doc.stock_items) == 2
+
+    # Test getting stock item by UID
+    found_stock = doc.get_stock_item_by_uid(stock1.uid)
+    assert found_stock is stock1
+
+    # Test getting non-existent stock item
+    assert doc.get_stock_item_by_uid("non-existent") is None
+
+    # Test removing stock item
+    doc.remove_stock_item(stock1)
+    assert len(doc.stock_items) == 1
+    assert stock1 not in doc.stock_items
+    assert stock1.parent is None
 
 
 def test_add_and_get_import_source(doc):
@@ -138,45 +165,6 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
     handler.assert_called_once_with(doc, origin=step)
 
 
-def test_doc_initial_state_has_stock_layer(doc):
-    """A new document should always have a stock layer by default."""
-    assert doc.stock_layer is not None
-    assert isinstance(doc.stock_layer, StockLayer)
-
-
-def test_doc_cannot_add_second_stocklayer(doc):
-    """Test that adding a second StockLayer to a Doc raises a ValueError."""
-    # A stock layer already exists from initialization
-    with pytest.raises(ValueError):
-        doc.add_child(StockLayer(name="Stock 2"))
-
-
-def test_doc_cannot_remove_stocklayer(doc, caplog):
-    """
-    Test that attempting to remove the StockLayer does nothing and logs
-    a warning.
-    """
-    stock_layer = doc.stock_layer
-    assert stock_layer is not None
-    assert stock_layer in doc.children
-
-    # Act
-    doc.remove_child(stock_layer)
-
-    # Assert
-    assert stock_layer in doc.children  # Still there
-    assert "The StockLayer cannot be removed." in caplog.text
-
-
-def test_doc_stock_layer_property(doc):
-    """
-    Test that the doc.stock_layer property correctly finds the stock layer.
-    """
-    stock_layer = doc.stock_layer
-    assert stock_layer is not None
-    assert stock_layer is doc.children[0]
-
-
 def test_doc_serialization_with_import_sources(doc):
     """Tests that the import_sources registry is serialized correctly."""
     # Source with vectorization config
@@ -216,3 +204,28 @@ def test_doc_serialization_with_import_sources(doc):
     assert source2_dict["source_file"] == "b.svg"
     assert source2_dict["renderer_name"] == "SvgRenderer"
     assert source2_dict["vector_config"] is None
+
+
+def test_doc_serialization_with_stock_items(doc):
+    """Tests that stock_items are serialized correctly."""
+    stock1 = StockItem(name="Stock 1")
+    stock1.thickness = 10.0
+    stock2 = StockItem(name="Stock 2")
+    stock2.thickness = 15.0
+
+    doc.add_stock_item(stock1)
+    doc.add_stock_item(stock2)
+
+    data_dict = doc.to_dict()
+
+    assert "stock_items" in data_dict
+    assert len(data_dict["stock_items"]) == 2
+
+    # Check structure of stock items
+    stock1_dict = data_dict["stock_items"][0]
+    assert stock1_dict["name"] == "Stock 1"
+    assert stock1_dict["thickness"] == 10.0
+
+    stock2_dict = data_dict["stock_items"][1]
+    assert stock2_dict["name"] == "Stock 2"
+    assert stock2_dict["thickness"] == 15.0

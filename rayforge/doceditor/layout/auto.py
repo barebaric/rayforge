@@ -110,13 +110,11 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # Stock-aware Logic
         stock_item: Optional[StockItem] = None
         doc = self.items[0].doc
-        if doc and doc.stock_layer and doc.stock_layer.children:
-            # Type check to ensure we have a StockItem and satisfy the linter.
-            child = doc.stock_layer.children[0]
-            if isinstance(child, StockItem):
-                stock_item = child
+        # Get the stock item from the active layer
+        if doc and doc.active_layer:
+            stock_item = doc.active_layer.stock_item
 
-        # Use stock as boundary if it exists, otherwise do unbounded layout.
+        # Use stock as boundary if it exists, otherwise use whole surface.
         if stock_item:
             logger.info("Stock item found, using it as layout boundary.")
             if context:
@@ -141,52 +139,49 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             )
 
         else:
-            # 1. Get initial selection bounding box for unbounded layout.
-            logger.info("No stock found, creating unbounded layout.")
-            selection_bbox = self._get_selection_world_bbox()
-            if not selection_bbox:
-                return {}
-            min_x_world, min_y_world, max_x_world, max_y_world = selection_bbox
-            initial_center = (
-                (min_x_world + max_x_world) / 2,
-                (min_y_world + max_y_world) / 2,
-            )
-
+            # Use whole surface (machine dimensions) as boundary
+            logger.info("Using whole surface as layout boundary.")
             if context:
-                context.set_message("Packing items...")
+                context.set_message("Using whole surface as boundary...")
 
-            # 2. Create packing canvas.
-            canvas = self._create_packing_canvas(total_area, prepared_items)
-            logger.info(
-                f"Packing canvas size {canvas.shape[1]}x{canvas.shape[0]} px."
-            )
+            # Get machine dimensions
+            from ...config import config
+
+            machine_w, machine_h = 200.0, 200.0  # Fallback
+            if config and config.machine:
+                machine_w, machine_h = config.machine.dimensions
+
+            canvas_origin_world = (0.0, 0.0)
+            canvas_w_mm, canvas_h_mm = machine_w, machine_h
+            canvas_w_px = round(canvas_w_mm * self.resolution)
+            canvas_h_px = round(canvas_h_mm * self.resolution)
+
+            # Create a full mask for the entire machine surface
+            allowed_area_mask = np.ones((canvas_h_px, canvas_w_px), dtype=bool)
+            # Initialize the canvas with all areas marked as valid
+            canvas = np.zeros((canvas_h_px, canvas_w_px), dtype=bool)
+            group_offset = canvas_origin_world
 
             placements, self.unplaced_items = self._pack_items(
                 prepared_items, canvas, context
             )
-            if not placements:
-                return {}
 
-            # 3. Calculate the bounding box and center of the new
-            # packed layout.
-            placed_bounds_px = [
-                self._get_placement_bounds(p) for p in placements
-            ]
-            final_min_x_px = min(b[0] for b in placed_bounds_px)
-            final_min_y_px = min(b[1] for b in placed_bounds_px)
-            final_max_x_px = max(b[2] for b in placed_bounds_px)
-            final_max_y_px = max(b[3] for b in placed_bounds_px)
+            # Apply transformations to place items
+            for placed_item in placements:
+                # Convert pixel coordinates to world coordinates
+                y_px, x_px = placed_item.position_px
+                x_world = group_offset[0] + (x_px / self.resolution)
+                y_world = group_offset[1] + (y_px / self.resolution)
+                placed_item.variant.item.pos = (x_world, y_world)
 
-            final_center_px = (
-                (final_min_x_px + final_max_x_px) / 2,
-                (final_min_y_px + final_max_y_px) / 2,
-            )
+            if context:
+                context.set_message(
+                    f"Arranged {len(placements)} items. "
+                    f"{len(self.unplaced_items)} could not be placed."
+                )
 
-            # 4. Calculate the world offset needed to align centers.
-            group_offset = (
-                initial_center[0] - (final_center_px[0] / self.resolution),
-                initial_center[1] - (final_center_px[1] / self.resolution),
-            )
+            # Return empty dict since we're applying positions directly
+            return {}
 
         if self.unplaced_items:
             item_names = ", ".join(item.name for item in self.unplaced_items)
@@ -687,7 +682,10 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             )
             if unrotated_w_mm <= 0 or unrotated_h_mm <= 0:
                 return None
-            source_surface = item.renderer.render_to_pixels(
+            renderer = item.renderer
+            if renderer is None:
+                return None
+            source_surface = renderer.render_to_pixels(
                 item,
                 width=int(unrotated_w_mm * self.resolution),
                 height=int(unrotated_h_mm * self.resolution),
@@ -718,7 +716,11 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     ctx.restore()
                     continue
 
-                wp_surf = wp.renderer.render_to_pixels(
+                wp_renderer = wp.renderer
+                if wp_renderer is None:
+                    ctx.restore()
+                    continue
+                wp_surf = wp_renderer.render_to_pixels(
                     wp,
                     width=int(wp_w * self.resolution),
                     height=int(wp_h * self.resolution),

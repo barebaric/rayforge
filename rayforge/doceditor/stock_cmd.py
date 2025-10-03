@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING
 from ..core.stock import StockItem
 from ..core.geo import Geometry
-from ..undo import ListItemCommand
+from ..undo.models.list_cmd import ListItemCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -19,22 +19,10 @@ class StockCmd:
 
     def add_stock_item(self):
         """
-        Sets or resets the StockItem to a default size based on the
-        machine dimensions. If a stock item already exists, it is replaced.
+        Adds a new StockItem with a default size based on machine dimensions.
         This is a single undoable operation.
         """
         doc = self._editor.doc
-        stock_layer = doc.stock_layer
-        if stock_layer is None:
-            logger.error(
-                "Cannot add StockItem: No StockLayer found in the document."
-            )
-            return
-
-        # Find any existing stock item. There should be at most one.
-        existing_stock_item = next(
-            (c for c in stock_layer.children if isinstance(c, StockItem)), None
-        )
 
         # Get machine dimensions, with a fallback
         machine = self._editor._config_manager.config.machine
@@ -55,38 +43,61 @@ class StockCmd:
         default_geometry.line_to(stock_w, stock_h)
         default_geometry.line_to(0, stock_h)
         default_geometry.close_path()
-        new_stock_item = StockItem(
-            geometry=default_geometry, name=_("New Stock")
-        )
+
+        # Generate auto-numbered name
+        stock_count = len(doc.stock_items) + 1
+        stock_name = _("Stock {count}").format(count=stock_count)
+        new_stock_item = StockItem(geometry=default_geometry, name=stock_name)
 
         # The StockItem constructor sets its matrix to scale to the geometry
         # size. Now, we set its world position, which updates the matrix's
         # translation part.
         new_stock_item.pos = (stock_x, stock_y)
 
-        with self._editor.history_manager.transaction(
-            _("Set Stock Item")
-        ) as t:
-            # If an old item exists, create and execute a command to remove it.
-            if existing_stock_item:
-                remove_cmd = ListItemCommand(
-                    owner_obj=stock_layer,
-                    item=existing_stock_item,
-                    undo_command="add_child",
-                    redo_command="remove_child",
-                    name=_("Remove old stock"),
-                )
-                t.execute(remove_cmd)
+        # Create and execute the command through the history manager
+        command = ListItemCommand(
+            owner_obj=doc,
+            item=new_stock_item,
+            undo_command="remove_stock_item",
+            redo_command="add_stock_item",
+            name=_("Add Stock Item"),
+        )
+        doc.history_manager.execute(command)
 
-            # Create and execute the command to add the new item.
-            add_cmd = ListItemCommand(
-                owner_obj=stock_layer,
-                item=new_stock_item,
-                undo_command="remove_child",
-                redo_command="add_child",
-                name=_("Add new stock"),
-            )
-            t.execute(add_cmd)
+    def delete_stock_item(self, stock_item: StockItem):
+        """
+        Deletes a StockItem with an undoable command.
 
-        # Automatically make the stock layer active
-        doc.active_layer = stock_layer
+        Args:
+            stock_item: The StockItem to delete
+        """
+        doc = self._editor.doc
+
+        command = ListItemCommand(
+            owner_obj=doc,
+            item=stock_item,
+            undo_command="add_stock_item",
+            redo_command="remove_stock_item",
+            name=_("Remove Stock Item"),
+        )
+        doc.history_manager.execute(command)
+
+    def toggle_stock_visibility(self, stock_item: StockItem):
+        """
+        Toggles the visibility of a StockItem with an undoable command.
+
+        Args:
+            stock_item: The StockItem to toggle visibility for
+        """
+        from ..undo.models.property_cmd import ChangePropertyCommand
+
+        new_visibility = not stock_item.visible
+
+        command = ChangePropertyCommand(
+            target=stock_item,
+            property_name="visible",
+            new_value=new_visibility,
+            setter_method_name="set_visible",
+            name=_("Toggle stock visibility"),
+        )
+        self._editor.doc.history_manager.execute(command)

@@ -33,6 +33,7 @@ class StockElement(CanvasElement):
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
         self._on_transform_changed(self.data)
+        self._on_visibility_changed()
 
     def remove(self):
         """Disconnects signals before removal."""
@@ -40,14 +41,25 @@ class StockElement(CanvasElement):
         self.data.transform_changed.disconnect(self._on_transform_changed)
         super().remove()
 
+    def set_visible(self, visible: bool = True):
+        self.selectable = visible
+        if not visible and self.selected:
+            self.selected = False
+        return super().set_visible(visible)
+
     def _on_model_content_changed(self, stock_item: StockItem):
         """Handler for when the stock item's geometry changes."""
         logger.debug(
             f"Model content changed for '{stock_item.name}', "
             "triggering update."
         )
+        self._on_visibility_changed()
         if self.canvas:
             self.canvas.queue_draw()
+
+    def _on_visibility_changed(self):
+        """Handler for when the stock item's visibility changes."""
+        self.set_visible(self.data.visible)
 
     def _on_transform_changed(self, stock_item: StockItem):
         """Handler for when the stock item's transform changes."""
@@ -57,7 +69,7 @@ class StockElement(CanvasElement):
 
     def draw(self, ctx: cairo.Context):
         """Draws the stock geometry directly to the main canvas context."""
-        if not self.data.geometry:
+        if not self.data.geometry or not self.visible:
             return
 
         ctx.save()

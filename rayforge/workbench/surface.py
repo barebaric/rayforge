@@ -9,8 +9,10 @@ from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..machine.models.machine import Machine
 from ..undo import ChangePropertyCommand
+from ..core.stock import StockItem
 from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
+from .elements.stock import StockElement
 from .elements.dot import DotElement
 from .elements.workpiece import WorkPieceView
 from .elements.group import GroupElement
@@ -646,6 +648,17 @@ class WorkSurface(Canvas):
         layer_elem = LayerElement(layer=layer, canvas=self)
         self.root.add(layer_elem)
 
+    def _create_and_add_stock_element(self, stock_item: StockItem):
+        """Creates a new StockElement and adds it to the canvas root."""
+        logger.debug(f"Adding new StockElement for '{stock_item.name}'")
+        stock_elem = StockElement(stock_item=stock_item, canvas=self)
+        stock_elem.selectable = stock_elem.visible
+        self.root.add(stock_elem)
+        child_count = len(self.root.children)
+        logger.debug(f"StockElement added, total children: {child_count}")
+        # Trigger a redraw to show the new stock element
+        self.queue_draw()
+
     def update_from_doc(self):
         """
         Synchronizes the canvas elements with the document model.
@@ -673,6 +686,22 @@ class WorkSurface(Canvas):
             if layer not in current_elements_on_canvas:
                 self._create_and_add_layer_element(layer)
 
+        # --- Step 1.5: Add and Remove StockElements ---
+        doc_stock_items_set = set(doc.stock_items)
+        current_stock_elements_on_canvas = {
+            elem.data: elem for elem in self.find_by_type(StockElement)
+        }
+
+        # Remove elements for stock items that are no longer in the doc
+        for stock_item, elem in current_stock_elements_on_canvas.items():
+            if stock_item not in doc_stock_items_set:
+                elem.remove()
+
+        # Add elements for new stock items that are not yet on the canvas
+        for stock_item in doc.stock_items:
+            if stock_item not in current_stock_elements_on_canvas:
+                self._create_and_add_stock_element(stock_item)
+
         # --- Step 2: Reorder LayerElements for Z-stacking ---
         # The first layer in the list is at the bottom (drawn first).
         # The last layer is at the top (drawn last).
@@ -680,17 +709,24 @@ class WorkSurface(Canvas):
 
         def sort_key(element: CanvasElement):
             """
-            Sort key for root's children. Camera at bottom, then dot,
-            then layers.
+            Sort key for root's children. Camera at bottom, then stock,
+            then dot, then layers.
             """
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
-                return layer_order_map.get(element.data, len(layer_order_map))
+                # Add a large offset to ensure all layers are above stock
+                layer_order = layer_order_map.get(
+                    element.data, len(layer_order_map)
+                )
+                return layer_order + 1000
+            if isinstance(element, StockElement):
+                # Stock elements are below all layers but above camera images
+                return 10
             if isinstance(element, CameraImageElement):
                 # Camera images are at the very bottom.
                 return -2
             # Other elements (like the laser dot) are above the camera but
-            # below layers.
+            # below stock and layers.
             return -1
 
         self.root.children.sort(key=sort_key)

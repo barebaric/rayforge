@@ -3,7 +3,6 @@ from gi.repository import Gtk
 from blinker import Signal
 from typing import cast
 
-from ...core.stocklayer import StockLayer
 from ...core.doc import Doc
 from ...undo.models.list_cmd import ReorderListCommand
 from ...core.layer import Layer
@@ -67,6 +66,7 @@ class LayerListView(Expander):
         self.doc.updated.connect(self.on_doc_changed)
         self.doc.descendant_added.connect(self.on_doc_changed)
         self.doc.descendant_removed.connect(self.on_doc_changed)
+        self.doc.active_layer_changed.connect(self.on_active_layer_changed)
         self.on_doc_changed(self.doc)
 
     def on_doc_changed(self, sender, **kwargs):
@@ -81,6 +81,20 @@ class LayerListView(Expander):
         )
         self.update_list()
 
+    def on_active_layer_changed(self, sender, **kwargs):
+        """
+        Updates only the styles when the active layer changes, avoiding
+        expensive list rebuilding.
+        """
+        # Just update styles instead of rebuilding the entire list
+        for row in self.draglist:
+            if isinstance(row, Gtk.ListBoxRow) and hasattr(row, "data"):
+                layer_view = row.get_child()
+                from .layer_view import LayerView
+
+                if isinstance(layer_view, LayerView):
+                    layer_view.update_style()
+
     def update_list(self):
         """
         Re-populates the draglist to match the state of the document's
@@ -88,10 +102,7 @@ class LayerListView(Expander):
         """
         self.draglist.remove_all()
         # You can only delete a regular layer if there is more than one.
-        can_delete_regular_layer = (
-            sum(1 for la in self.doc.layers if not isinstance(la, StockLayer))
-            > 1
-        )
+        can_delete_regular_layer = len(self.doc.layers) > 1
 
         for layer in self.doc.children:
             if not isinstance(layer, Layer):
@@ -101,9 +112,7 @@ class LayerListView(Expander):
             list_box_row.data = layer  # type: ignore
             layer_view = LayerView(self.doc, layer)
 
-            is_deletable = can_delete_regular_layer and not isinstance(
-                layer, StockLayer
-            )
+            is_deletable = can_delete_regular_layer
             layer_view.set_deletable(is_deletable)
 
             layer_view.delete_clicked.connect(self.on_delete_layer_clicked)
@@ -158,6 +167,7 @@ class LayerListView(Expander):
         )
         self.doc.history_manager.execute(command)
         self.doc.active_layer = new_layer
+        self.doc.update_stock_visibility()
 
     def on_delete_layer_clicked(self, layer_view):
         """Handles deletion of a layer with an undoable command."""

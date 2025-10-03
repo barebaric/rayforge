@@ -90,3 +90,54 @@ def test_stock_item_deserialization_with_no_geometry():
     stock = StockItem.from_dict(stock_dict)
     assert isinstance(stock.geometry, Geometry)
     assert stock.geometry.is_empty()
+
+
+def test_stock_item_thickness_property():
+    """Tests that a StockItem can have a thickness value."""
+    stock = StockItem(name="Thick Stock")
+    assert stock.thickness is None
+
+    stock.thickness = 10.5
+    assert stock.thickness == 10.5
+
+
+def test_stock_item_to_dict_includes_thickness():
+    """Tests that to_dict includes the thickness property."""
+    stock = StockItem(name="Stock with Thickness")
+    stock.thickness = 15.0
+
+    data = stock.to_dict()
+
+    assert "thickness" in data
+    assert data["thickness"] == 15.0
+
+
+def test_stock_item_from_dict_handles_thickness():
+    """Tests that from_dict handles the thickness property."""
+    stock_dict = {
+        "uid": "test-uid-thickness",
+        "type": "stockitem",
+        "name": "Stock with Thickness",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "geometry": None,
+        "thickness": 20.0,
+    }
+
+    stock = StockItem.from_dict(stock_dict)
+
+    assert stock.thickness == 20.0
+
+
+def test_stock_item_from_dict_handles_missing_thickness():
+    """Tests that from_dict handles missing thickness property."""
+    stock_dict = {
+        "uid": "test-uid-no-thickness",
+        "type": "stockitem",
+        "name": "Stock without Thickness",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "geometry": None,
+    }
+
+    stock = StockItem.from_dict(stock_dict)
+
+    assert stock.thickness is None

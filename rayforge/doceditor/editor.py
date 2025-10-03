@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
-from ..core.stocklayer import StockLayer
 from ..core.vectorization_config import TraceConfig
 from ..pipeline.generator import OpsGenerator
 from ..machine.cmd import MachineCmd
@@ -117,26 +116,8 @@ class DocEditor:
     def default_workpiece_layer(self) -> Layer:
         """
         Determines the most appropriate layer for adding new workpieces.
-        - If the active layer is a standard layer, returns it.
-        - If the active layer is a stock layer, returns the topmost standard
-          layer.
-        - If no standard layers exist, it creates one.
         """
-        active_layer = self.doc.active_layer
-        if not isinstance(active_layer, StockLayer):
-            return active_layer
-
-        # Active layer is stock, find the top-most standard layer
-        for child in reversed(self.doc.children):
-            if isinstance(child, Layer) and not isinstance(child, StockLayer):
-                return child
-
-        # No standard layer found, so create one.
-        # This is an edge case, but good to handle.
-        logger.warning("No standard layer found; creating a new one.")
-        new_layer = Layer(_("Layer 1"))
-        self.doc.add_layer(new_layer)
-        return new_layer
+        return self.doc.active_layer
 
     async def wait_until_settled(self, timeout: float = 10.0) -> None:
         """
