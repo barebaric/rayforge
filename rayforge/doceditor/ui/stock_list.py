@@ -132,5 +132,4 @@ class StockListView(Expander):
     def on_stock_reordered(self, sender):
         """Handles reordering of StockItems with an undoable command."""
         new_order = [row.data for row in self.draglist]  # type: ignore
-        # Update the document's stock_items list to match the new order
-        self.doc.stock_items = new_order
+        self.editor.stock.reorder_stock_items(new_order)

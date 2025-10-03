@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING
 from ..core.stock import StockItem
 from ..core.geo import Geometry
-from ..undo.models.list_cmd import ListItemCommand
+from ..undo.models.list_cmd import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -101,3 +101,20 @@ class StockCmd:
             name=_("Toggle stock visibility"),
         )
         self._editor.doc.history_manager.execute(command)
+
+    def reorder_stock_items(self, new_order: list[StockItem]):
+        """
+        Reorders stock items with an undoable command.
+
+        Args:
+            new_order: The new list of StockItems in the desired order
+        """
+        doc = self._editor.doc
+
+        command = ReorderListCommand(
+            target_obj=doc,
+            list_property_name="stock_items",
+            new_list=new_order,
+            name=_("Reorder Stock Items"),
+        )
+        doc.history_manager.execute(command)

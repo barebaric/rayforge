@@ -68,6 +68,7 @@ class Doc(DocItem):
 
         # Use set_children to correctly handle signal connection/disconnection
         self.set_children(new_children_list)
+        self.updated.send(self)
 
     def get_import_source_by_uid(self, uid: str) -> Optional[ImportSource]:
         """
