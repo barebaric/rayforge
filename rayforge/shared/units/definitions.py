@@ -94,3 +94,24 @@ register_unit(
 )
 
 set_base_unit("speed", "mm/min")
+
+# --- Define and Register Length Units ---
+# Application base unit for length is mm.
+
+register_unit(
+    Unit(name="mm", label=_("mm"), quantity="length", precision=1)
+)
+register_unit(
+    Unit(name="cm", label=_("cm"), quantity="length", precision=2)
+)
+register_unit(
+    Unit(name="m", label=_("m"), quantity="length", precision=3)
+)
+register_unit(
+    Unit(name="in", label=_("in"), quantity="length", precision=3)
+)
+register_unit(
+    Unit(name="ft", label=_("ft"), quantity="length", precision=3)
+)
+
+set_base_unit("length", "mm")

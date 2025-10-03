@@ -53,6 +53,34 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         self.add(units_group)
 
+        # Length Unit Selector
+        self.length_units = get_units_for_quantity("length")
+        length_unit_labels = [u.label for u in self.length_units]
+        self.length_unit_row = Adw.ComboRow(
+            title=_("Length"),
+            model=Gtk.StringList.new(length_unit_labels),
+        )
+        # Find and set the initial selection
+        try:
+            base_length_unit = get_base_unit_for_quantity("length")
+            current_unit_name = config.unit_preferences.get(
+                "length", base_length_unit.name if base_length_unit else None
+            )
+
+            if not current_unit_name:
+                raise ValueError("No length unit could be determined")
+
+            unit_names = [u.name for u in self.length_units]
+            selected_index = unit_names.index(current_unit_name)
+        except (ValueError, AttributeError):
+            selected_index = 0  # Default to the first unit
+        self.length_unit_row.set_selected(selected_index)
+
+        self.length_unit_row.connect(
+            "notify::selected", self.on_length_unit_changed
+        )
+        units_group.add(self.length_unit_row)
+
         # Speed Unit Selector
         self.speed_units = get_units_for_quantity("speed")
         speed_unit_labels = [u.label for u in self.speed_units]
@@ -86,6 +114,13 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         selected_index = combo_row.get_selected()
         theme_string = self.THEME_MAP[selected_index]
         config.set_theme(theme_string)
+
+    def on_length_unit_changed(self, combo_row, _):
+        """Called when the user selects a new length unit."""
+        selected_index = combo_row.get_selected()
+        if selected_index >= 0:
+            selected_unit = self.length_units[selected_index]
+            config.set_unit_preference("length", selected_unit.name)
 
     def on_speed_unit_changed(self, combo_row, _):
         """Called when the user selects a new speed unit."""

@@ -4,7 +4,7 @@ from gi.repository import Adw
 from blinker import Signal
 from ...config import config
 from ..units.definitions import Unit, get_unit
-from ..util.adwfix import get_spinrow_int
+from ..util.adwfix import get_spinrow_float
 from .formatter import format_value
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,9 @@ class UnitSpinRowHelper:
                 self._max_value_in_base, self.quantity
             )
             self.spin_row.set_subtitle(
-                self._original_subtitle_format.format(max_speed=formatted_max)
+                self._original_subtitle_format.format(
+                    max_speed=formatted_max
+                ) + f" ({self._unit.label})"
             )
         else:
             self.spin_row.set_subtitle(
@@ -127,13 +129,13 @@ class UnitSpinRowHelper:
         self.spin_row.set_value(display_value)
         self._is_updating = False
 
-    def get_value_in_base_units(self) -> int:
+    def get_value_in_base_units(self) -> float:
         """
         Gets the widget's current display value and converts it to base units.
         """
         if not self._unit:
-            return get_spinrow_int(self.spin_row)
+            return get_spinrow_float(self.spin_row)
 
-        display_value = self.spin_row.get_value()
+        display_value = get_spinrow_float(self.spin_row)
         base_value = self._unit.to_base(display_value)
-        return int(round(base_value))
+        return float(base_value)
