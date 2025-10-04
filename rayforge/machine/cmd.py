@@ -57,10 +57,18 @@ class MachineCmd:
                     self._editor.ops_generator,
                     context,
                 )
+                # Normalize frame_power (0-1000 scale) to 0.0-1.0 range
+                normalized_power = head.frame_power / head.max_power
                 frame = ops.get_frame(
-                    power=head.frame_power,
+                    power=normalized_power,
                     speed=machine.max_travel_speed,
                 )
+                # Prepend the laser selection command at the beginning
+                from ..core.ops import Ops
+                frame_with_laser = Ops()
+                frame_with_laser.set_laser(head.uid)
+                frame_with_laser += frame
+                frame = frame_with_laser
                 # The frame op is a single pass; repeat it for visibility.
                 frame *= 20
                 await machine.driver.run(frame, machine, self._editor.doc)
