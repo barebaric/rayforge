@@ -38,6 +38,7 @@ from .commands import (
     OpsSectionEndCommand,
     ScanLinePowerCommand,
 )
+from .timing import estimate_time as estimate_time_impl
 
 
 if TYPE_CHECKING:
@@ -421,6 +422,45 @@ class Ops:
             if isinstance(cmd, MovingCommand):
                 last = cmd.end
         return total
+
+    def estimate_time(
+        self,
+        default_cut_speed: float = 1000.0,
+        default_travel_speed: float = 3000.0,
+        acceleration: float = 1000.0,
+    ) -> float:
+        """
+        Estimates the execution time of the operations in seconds.
+
+        This method calculates the time required to execute all commands in the
+        Ops object, taking into account different speeds for cutting and travel
+        movements, as well as acceleration considerations.
+
+        Args:
+            default_cut_speed: Default cutting speed in mm/min if not specified
+                               by state commands.
+            default_travel_speed: Default travel speed in mm/min if not
+                                 specified by state commands.
+            acceleration: Machine acceleration in mm/s² for more accurate
+                         time estimation.
+
+        Returns:
+            The estimated execution time in seconds.
+        """
+        if not self.commands:
+            return 0.0
+
+        # Create a copy to avoid modifying the original Ops object
+        ops_copy = self.copy()
+        # Ensure state is preloaded for accurate time estimation
+        ops_copy.preload_state()
+
+        return estimate_time_impl(
+            ops_copy.commands,
+            default_cut_speed,
+            default_travel_speed,
+            acceleration,
+        )
 
     def segments(self) -> Generator[List[Command], None, None]:
         segment: List[Command] = []

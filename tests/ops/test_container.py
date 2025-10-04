@@ -4,8 +4,6 @@ import io
 import numpy as np
 from contextlib import redirect_stdout
 from typing import cast
-
-# Import real geo types to fix the test
 from rayforge.core import geo
 from rayforge.core.geo.geometry import Geometry
 
@@ -885,3 +883,165 @@ def test_dump(sample_ops):
     output = f.getvalue()
     assert "MoveToCommand" in output
     assert "LineToCommand" in output
+
+
+def test_estimate_time_empty(empty_ops):
+    """Test time estimation for empty Ops object."""
+    time_est = empty_ops.estimate_time()
+    assert time_est == 0.0
+
+
+def test_estimate_time_basic():
+    """Test basic time estimation with simple movements."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(100, 0)  # 100mm cut
+    ops.move_to(0, 100)  # 141.42mm travel
+    ops.line_to(100, 100)  # 100mm cut
+
+    # Default speeds: 1000 mm/min cut, 3000 mm/min travel
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # Expected: 100mm @ 1000mm/min + 141.42mm @ 3000mm/min + 100mm @ 1000mm/min
+    # = 6s + 2.828s + 6s = 14.828s
+    expected_time = 6.0 + 2.828 + 6.0
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_with_custom_speeds():
+    """Test time estimation with custom speeds."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(60, 0)  # 60mm cut
+    ops.move_to(0, 80)  # 100mm travel
+
+    # Custom speeds: 1200 mm/min cut, 2400 mm/min travel
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(
+        default_cut_speed=1200.0, default_travel_speed=2400.0, acceleration=0
+    )
+
+    # Expected: 60mm @ 1200mm/min + 100mm @ 2400mm/min
+    # = 3s + 2.5s = 5.5s
+    expected_time = 3.0 + 2.5
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_with_state_commands():
+    """Test time estimation respects state commands."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.set_cut_speed(2000)  # Faster cutting speed
+    ops.line_to(100, 0)  # 100mm cut at 2000mm/min
+    ops.set_travel_speed(6000)  # Faster travel speed
+    ops.move_to(0, 100)  # 141.42mm travel at 6000mm/min
+
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # Expected: 100mm @ 2000mm/min + 141.42mm @ 6000mm/min
+    # = 3s + 1.414s = 4.414s
+    expected_time = 3.0 + 1.414
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_with_acceleration():
+    """Test time estimation with acceleration consideration."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)  # Short movement
+
+    # With high acceleration, short moves take longer due to accel/decel
+    time_est_no_accel = ops.estimate_time(acceleration=0)
+    time_est_with_accel = ops.estimate_time(acceleration=1000)
+
+    # With acceleration, time should be longer for short moves
+    assert time_est_with_accel > time_est_no_accel
+
+
+def test_estimate_time_with_arc():
+    """Test time estimation with arc commands."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    # 90 degree arc with radius 10 (quarter circle)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
+
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # The actual distance is calculated as the straight line distance
+    # from (10,0) to (0,10) which is sqrt(10^2 + 10^2) = 14.142mm
+    # Plus the initial move_to(10, 0) which is 10mm travel
+    # Expected: 14.142mm cut @ 1000mm/min = 0.8485s
+    #         + 10mm travel  @ 3000mm/min = 0.2s
+    #         = 1.0485s total
+    expected_time = math.sqrt(10**2 + 10**2) / 1000 * 60 + 10.0 / 3000 * 60
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_ignores_state_commands():
+    """Test that state commands don't directly add to time."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.set_power(0.5)  # State command
+    ops.set_cut_speed(1000)  # State command
+    ops.enable_air_assist()  # State command
+    ops.line_to(60, 0)  # 60mm cut
+
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # Only the line movement should count: 60mm @ 1000mm/min = 3.6s
+    expected_time = 60.0 / 1000 * 60
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_with_scanline():
+    """Test time estimation with ScanLinePowerCommand."""
+    ops = Ops()
+    ops.move_to(0, 50)
+    ops.add(ScanLinePowerCommand((100, 50, 0), bytearray([100] * 100)))
+
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # The scanline command has 100 power values, which might be interpreted
+    # as 100 segments of 1mm each, so total distance is 100mm
+    # Plus the initial move_to(0, 50) which is 50mm travel
+    # Expected: 100mm cut   @ 1000mm/min = 6s
+    #         + 50mm travel @ 3000mm/min = 1s = 7s total
+    expected_time = 100.0 / 1000 * 60 + 50.0 / 3000 * 60
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_estimate_time_complex_path():
+    """Test time estimation with a complex path."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.set_cut_speed(1500)
+
+    # Square
+    ops.line_to(50, 0)  # 50mm
+    ops.line_to(50, 50)  # 50mm
+    ops.line_to(0, 50)  # 50mm
+    ops.line_to(0, 0)  # 50mm
+
+    # Move to new position
+    ops.set_travel_speed(3000)
+    ops.move_to(100, 0)  # 100mm travel
+
+    # Another square
+    ops.set_cut_speed(2000)
+    ops.line_to(150, 0)  # 50mm
+    ops.line_to(150, 50)  # 50mm
+
+    # Disable acceleration for simpler calculation
+    time_est = ops.estimate_time(acceleration=0)
+
+    # First square: 200mm @ 1500mm/min = 8s
+    # Travel: 100mm @ 3000mm/min = 2s
+    # Second square: 100mm @ 2000mm/min = 3s
+    # Total: 13s
+    expected_time = 8.0 + 2.0 + 3.0
+    assert time_est == pytest.approx(expected_time, rel=1e-3)
