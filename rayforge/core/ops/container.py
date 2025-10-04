@@ -38,7 +38,7 @@ from .commands import (
     OpsSectionEndCommand,
     ScanLinePowerCommand,
 )
-from .timing import estimate_time as estimate_time_impl
+from .timing import estimate_time
 
 
 if TYPE_CHECKING:
@@ -455,7 +455,7 @@ class Ops:
         # Ensure state is preloaded for accurate time estimation
         ops_copy.preload_state()
 
-        return estimate_time_impl(
+        return estimate_time(
             ops_copy.commands,
             default_cut_speed,
             default_travel_speed,

@@ -7,7 +7,7 @@ from typing import List, Optional, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 from . import __version__
 from .shared.tasker import task_mgr
-from .shared.tasker.task import Task
+from .shared.tasker.task import Task, CancelledError
 from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -246,6 +246,14 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_editor_notification
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
+
+        # Connect to OpsGenerator signals
+        self.doc_editor.ops_generator.ops_generation_finished.connect(
+            self._on_ops_generation_finished
+        )
+        self.doc_editor.ops_generator.processing_state_changed.connect(
+            self._on_ops_processing_state_changed
+        )
 
         # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
@@ -620,6 +628,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Sync the selectability of stock items based on active layer
         self._sync_element_selectability()
 
+        # Update estimated machining time when document changes
+        self._update_estimated_time()
+
         # Update button sensitivity and other state
         self._update_actions_and_ui()
 
@@ -741,6 +752,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Always update the G-code preview's content.
         self._update_gcode_preview(aggregated_ops)
 
+        # Update estimated machining time
+        logger.debug(
+            f"Updating estimated time from aggregated ops: "
+            f"{len(aggregated_ops.commands) if aggregated_ops else 0} commands"
+        )
+        self.status_monitor.update_estimated_time_from_ops(aggregated_ops)
+
     def _on_document_settled(self, sender):
         """
         Called when all background processing is complete. Kicks off a
@@ -768,6 +786,9 @@ class MainWindow(Adw.ApplicationWindow):
             when_done=self._on_post_settle_ops_aggregated,
             key=task_key,
         )
+
+        # Also update estimated time when document settles
+        self._update_estimated_time()
 
     def _on_selection_changed(
         self,
@@ -1270,3 +1291,103 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
+
+    def _update_estimated_time(self):
+        """
+        Updates the estimated machining time display by calculating it in a
+        background thread to avoid blocking the UI.
+        """
+        logger.debug("_update_estimated_time called")
+        # Show "Calculating..." while processing
+        self.status_monitor.estimated_time_label.set_text(_("Calculating..."))
+
+        task_key = "calculate-estimated-time"
+        task_mgr.run_thread(
+            self._calculate_estimated_time,
+            when_done=self._on_estimated_time_calculated,
+            key=task_key,
+        )
+
+    def _calculate_estimated_time(self) -> float:
+        """
+        Calculates the estimated machining time for all operations in the
+        document. This is run in a background thread.
+
+        Returns:
+            The estimated time in seconds.
+        """
+        logger.debug("_calculate_estimated_time called")
+        try:
+            aggregated_ops = self._aggregate_ops_for_3d_view()
+            logger.debug(
+                f"Aggregated ops: "
+                f"{len(aggregated_ops.commands) if aggregated_ops else 0} "
+                f"commands"
+            )
+            if not aggregated_ops or aggregated_ops.is_empty():
+                logger.debug("No ops to calculate time from")
+                return 0.0
+
+            machine = config.machine
+            if machine:
+                estimated_time = aggregated_ops.estimate_time(
+                    default_cut_speed=machine.max_cut_speed,
+                    default_travel_speed=machine.max_travel_speed,
+                    acceleration=machine.acceleration,
+                )
+            else:
+                # Fallback to defaults if no machine is configured
+                estimated_time = aggregated_ops.estimate_time()
+            logger.debug(f"Calculated time: {estimated_time} seconds")
+            return estimated_time
+        except Exception as e:
+            logger.error(
+                f"Failed to calculate estimated time: {e}", exc_info=True
+            )
+            return 0.0
+
+    def _on_estimated_time_calculated(self, task):
+        """
+        Callback executed on the main thread after the estimated time
+        calculation is complete.
+        """
+        logger.debug(
+            f"Estimated time calculation completed with status: "
+            f"{task.get_status()}"
+        )
+
+        if task.get_status() != "completed":
+            try:
+                task.result()
+            except CancelledError as e:
+                # This happens for example when the document changes
+                # rapidly and the previous task is cancelled.
+                logger.debug(f"Estimated time calculation was cancelled: {e}")
+            self.status_monitor.set_estimated_time(0.0)
+            return
+
+        try:
+            estimated_time = task.result()
+            self.status_monitor.set_estimated_time(estimated_time)
+        except Exception as e:
+            logger.warning(f"Failed to get estimated time result: {e}")
+            self.status_monitor.set_estimated_time(0.0)
+
+    def _on_ops_generation_finished(self, step, workpiece, generation_id):
+        """
+        Called when ops generation is finished for a step/workpiece pair.
+        Triggers an update of the estimated machining time.
+        """
+        logger.debug(
+            f"Ops generation finished for {step.name} on {workpiece.name}"
+        )
+        self._update_estimated_time()
+
+    def _on_ops_processing_state_changed(self, sender, is_processing):
+        """
+        Called when the OpsGenerator processing state changes.
+        Updates the estimated time when all processing is complete.
+        """
+        logger.debug(f"Ops processing state changed: {is_processing}")
+        if not is_processing:  # When all processing is done
+            self._update_estimated_time()
