@@ -57,8 +57,10 @@ class MachineCmd:
                     self._editor.ops_generator,
                     context,
                 )
+                # Normalize frame_power (0-1000 scale) to 0.0-1.0 range
+                normalized_power = head.frame_power / head.max_power
                 frame = ops.get_frame(
-                    power=head.frame_power,
+                    power=normalized_power,
                     speed=machine.max_travel_speed,
                 )
                 # The frame op is a single pass; repeat it for visibility.
