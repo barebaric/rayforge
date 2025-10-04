@@ -121,6 +121,7 @@ class TestMachine:
         assert isinstance(machine.driver, NoDeviceDriver)
         assert machine.name is not None
         assert machine.id is not None
+        assert machine.acceleration == 1000
 
     @pytest.mark.asyncio
     async def test_set_driver(self, machine: Machine, mocker):
@@ -248,3 +249,32 @@ class TestMachine:
         cleanup_spy = mocker.spy(machine.driver, "cleanup")
         await machine.shutdown()
         cleanup_spy.assert_called_once()
+
+    def test_acceleration_setter(self, machine: Machine, mocker):
+        """Test that the acceleration setter works correctly."""
+        # Test setting acceleration
+        machine.set_acceleration(2000)
+        assert machine.acceleration == 2000
+
+        # Test that setting acceleration triggers changed signal
+        changed_spy = mocker.spy(machine.changed, "send")
+        machine.set_acceleration(1500)
+        changed_spy.assert_called_once_with(machine)
+
+    def test_machine_serialization_with_acceleration(self, machine: Machine):
+        """Test that acceleration is properly serialized and deserialized."""
+        # Set a specific acceleration value
+        machine.set_acceleration(2500)
+
+        # Serialize to dict
+        machine_dict = machine.to_dict()
+
+        # Check that acceleration is in the serialized data
+        assert "acceleration" in machine_dict["machine"]["speeds"]
+        assert machine_dict["machine"]["speeds"]["acceleration"] == 2500
+
+        # Deserialize from dict
+        new_machine = Machine.from_dict(machine_dict)
+
+        # Check that acceleration is preserved
+        assert new_machine.acceleration == 2500

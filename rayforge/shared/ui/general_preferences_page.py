@@ -109,6 +109,37 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         units_group.add(self.speed_unit_row)
 
+        # Acceleration Unit Selector
+        self.acceleration_units = get_units_for_quantity("acceleration")
+        acceleration_unit_labels = [u.label for u in self.acceleration_units]
+        self.acceleration_unit_row = Adw.ComboRow(
+            title=_("Acceleration"),
+            model=Gtk.StringList.new(acceleration_unit_labels),
+        )
+        # Find and set the initial selection
+        try:
+            base_acceleration_unit = get_base_unit_for_quantity("acceleration")
+            current_unit_name = config.unit_preferences.get(
+                "acceleration",
+                base_acceleration_unit.name
+                if base_acceleration_unit
+                else None,
+            )
+
+            if not current_unit_name:
+                raise ValueError("No acceleration unit could be determined")
+
+            unit_names = [u.name for u in self.acceleration_units]
+            selected_index = unit_names.index(current_unit_name)
+        except (ValueError, AttributeError):
+            selected_index = 0  # Default to the first unit
+        self.acceleration_unit_row.set_selected(selected_index)
+
+        self.acceleration_unit_row.connect(
+            "notify::selected", self.on_acceleration_unit_changed
+        )
+        units_group.add(self.acceleration_unit_row)
+
     def on_theme_changed(self, combo_row, _):
         """Called when the user selects a new theme."""
         selected_index = combo_row.get_selected()
@@ -128,3 +159,10 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         if selected_index >= 0:
             selected_unit = self.speed_units[selected_index]
             config.set_unit_preference("speed", selected_unit.name)
+
+    def on_acceleration_unit_changed(self, combo_row, _):
+        """Called when the user selects a new acceleration unit."""
+        selected_index = combo_row.get_selected()
+        if selected_index >= 0:
+            selected_unit = self.acceleration_units[selected_index]
+            config.set_unit_preference("acceleration", selected_unit.name)

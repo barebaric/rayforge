@@ -170,6 +170,30 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
         machine_group.add(cut_speed_row)
 
+        # Acceleration
+        acceleration_adjustment = Gtk.Adjustment(
+            lower=1,
+            upper=10000,
+            step_increment=10,
+            page_increment=100,
+        )
+        acceleration_row = Adw.SpinRow(
+            title=_("Acceleration"),
+            subtitle=_(
+                "Machine acceleration. Used only for time estimations."
+            ),
+            adjustment=acceleration_adjustment,
+        )
+        self.acceleration_helper = UnitSpinRowHelper(
+            spin_row=acceleration_row,
+            quantity="acceleration",
+        )
+        self.acceleration_helper.set_value_in_base_units(
+            self.machine.acceleration
+        )
+        self.acceleration_helper.changed.connect(self.on_acceleration_changed)
+        machine_group.add(acceleration_row)
+
         # Dimensions
         dimensions_group = Adw.PreferencesGroup(title=_("Dimensions"))
         self.add(dimensions_group)
@@ -303,14 +327,21 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         if self._is_initializing:
             return
         value = helper.get_value_in_base_units()
-        self.machine.set_max_travel_speed(value)
+        self.machine.set_max_travel_speed(int(value))
 
     def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max cut speed when the value changes."""
         if self._is_initializing:
             return
         value = helper.get_value_in_base_units()
-        self.machine.set_max_cut_speed(value)
+        self.machine.set_max_cut_speed(int(value))
+
+    def on_acceleration_changed(self, helper: UnitSpinRowHelper):
+        """Update the acceleration when the value changes."""
+        if self._is_initializing:
+            return
+        value = helper.get_value_in_base_units()
+        self.machine.set_acceleration(int(value))
 
     def on_width_changed(self, spinrow):
         """Update the width when the value changes."""

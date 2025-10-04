@@ -115,3 +115,24 @@ register_unit(
 )
 
 set_base_unit("length", "mm")
+
+# --- Define and Register Acceleration Units ---
+# Application base unit for acceleration is mm/s².
+
+register_unit(
+    Unit(name="mm/s²", label=_("mm/s²"), quantity="acceleration", precision=0)
+)
+register_unit(
+    Unit(name="cm/s²", label=_("cm/s²"), quantity="acceleration", precision=1)
+)
+register_unit(
+    Unit(name="m/s²", label=_("m/s²"), quantity="acceleration", precision=2)
+)
+register_unit(
+    Unit(name="in/s²", label=_("in/s²"), quantity="acceleration", precision=2)
+)
+register_unit(
+    Unit(name="ft/s²", label=_("ft/s²"), quantity="acceleration", precision=3)
+)
+
+set_base_unit("acceleration", "mm/s²")

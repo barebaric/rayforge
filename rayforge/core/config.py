@@ -18,6 +18,7 @@ class Config:
         self.unit_preferences: Dict[str, str] = {
             "length": "mm",
             "speed": "mm/min",
+            "acceleration": "mm/s²",
         }
         self.changed = Signal()
 
@@ -57,7 +58,11 @@ class Config:
         config.theme = data.get("theme", "system")
 
         # Load unit preferences, falling back to defaults for safety
-        default_prefs = {"length": "mm", "speed": "mm/min"}
+        default_prefs = {
+            "length": "mm",
+            "speed": "mm/min",
+            "acceleration": "mm/s²",
+        }
         loaded_prefs = data.get("unit_preferences", default_prefs)
         # Ensure all default keys are present
         default_prefs.update(loaded_prefs)

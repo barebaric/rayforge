@@ -57,6 +57,7 @@ class Machine:
         self._cameras_ref_for_pyreverse: Camera
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
+        self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
         self.y_axis_down: bool = False
         self._settings_lock = asyncio.Lock()
@@ -294,6 +295,10 @@ class Machine:
         self.max_cut_speed = speed
         self.changed.send(self)
 
+    def set_acceleration(self, acceleration: int):
+        self.acceleration = acceleration
+        self.changed.send(self)
+
     def set_dimensions(self, width: int, height: int):
         self.dimensions = (width, height)
         self.changed.send(self)
@@ -487,6 +492,7 @@ class Machine:
                 "speeds": {
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
+                    "acceleration": self.acceleration,
                 },
                 "gcode": {
                     "gcode_precision": self.gcode_precision,
@@ -536,6 +542,7 @@ class Machine:
         ma.max_travel_speed = speeds.get(
             "max_travel_speed", ma.max_travel_speed
         )
+        ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", 3)
 

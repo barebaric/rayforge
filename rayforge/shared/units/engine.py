@@ -64,6 +64,7 @@ class ConversionEngine:
 
     _length_units = {"m", "in", "ft", "yd", "mi"}
     _time_units = {"s", "min", "hr"}
+    _time_squared_units = {"s²", "min²", "hr²"}
 
     def __init__(self):
         self.unitmap: Dict[Tuple[str, str], float] = {}
@@ -89,6 +90,16 @@ class ConversionEngine:
             if t1 in self._time_units and t2 in self._time_units:
                 self.unitmap[(t1, t2)] = factor
                 self.unitmap[(t2, t1)] = 1 / factor
+
+        # Build time squared conversions for acceleration
+        for (t1, t2), factor in self._base_conversions.items():
+            if t1 in self._time_units and t2 in self._time_units:
+                # Square the factor for time squared units
+                squared_factor = factor * factor
+                t1_squared = f"{t1}²"
+                t2_squared = f"{t2}²"
+                self.unitmap[(t1_squared, t2_squared)] = squared_factor
+                self.unitmap[(t2_squared, t1_squared)] = 1 / squared_factor
 
         # Add identity conversions
         all_units = set(k[0] for k in self.unitmap) | set(
@@ -138,7 +149,7 @@ class ConversionEngine:
         from_base, from_suffix = self._suffix_split(from_norm)
         to_base, to_suffix = self._suffix_split(to_norm)
 
-        # Handle time conversion for compound units like speed
+        # Handle time conversion for compound units like speed and acceleration
         time_factor = 1.0
         if from_suffix != to_suffix:
             if from_suffix and to_suffix:
