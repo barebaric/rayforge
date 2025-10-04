@@ -74,7 +74,7 @@ def test_group_by_command_type_move_and_arc():
 
 def test_group_by_command_type_state_commands():
     commands: List[Command] = [
-        SetPowerCommand(1000),
+        SetPowerCommand(1.0),
         MoveToCommand((0, 0, 0)),
         LineToCommand((1, 0, 0)),
         DisableAirAssistCommand(),
@@ -82,7 +82,7 @@ def test_group_by_command_type_state_commands():
     assert _pathcompare(
         group_by_command_type(commands),
         [
-            [SetPowerCommand(1000)],
+            [SetPowerCommand(1.0)],
             [MoveToCommand((0, 0, 0)), LineToCommand((1, 0, 0))],
             [DisableAirAssistCommand()],
         ],
@@ -93,7 +93,7 @@ def _create_commands_with_states(states_config: List[bool]) -> List[Command]:
     """Helper to create commands with specified air_assist states."""
     commands = []
     for i, air_on in enumerate(states_config):
-        state = State(power=100, air_assist=air_on)
+        state = State(power=1.0, air_assist=air_on)
         cmd = LineToCommand((float(i), float(i), 0.0))
         cmd.state = state
         commands.append(cmd)

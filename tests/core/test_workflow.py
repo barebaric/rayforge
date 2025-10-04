@@ -53,7 +53,7 @@ def test_step_change_fires_workflow_descendant_updated_signal(workflow):
     workflow.descendant_updated.connect(handler)
 
     # Act
-    step.set_power(500)
+    step.set_power(0.5)
 
     # Assert
     handler.assert_called_once_with(workflow, origin=step)

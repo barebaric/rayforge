@@ -47,12 +47,12 @@ def test_ops_timeline_power_changes():
     timeline = OpsTimeline(ops)
     assert timeline.get_step_count() == 2
 
-    # First line should have power=20
+    # First line should have power=0.2
     steps = timeline.get_steps_up_to(0)
     _, state1, _ = steps[0]
     assert state1.power == 0.2
 
-    # Second line should have power=80
+    # Second line should have power=0.8
     steps = timeline.get_steps_up_to(1)
     _, state2, _ = steps[1]
     assert state2.power == 0.8
@@ -122,7 +122,7 @@ def test_preview_renderer_render_with_steps():
     renderer.set_bounds(0.0, 0.0, 20.0, 20.0)
 
     # Create some test steps
-    state = State(power=50, cut_speed=1000)
+    state = State(power=0.5, cut_speed=1000)
     steps = [
         (MoveToCommand((0.0, 0.0, 0.0)), state, (0.0, 0.0, 0.0)),
         (LineToCommand((10.0, 0.0, 0.0)), state, (0.0, 0.0, 0.0)),
@@ -164,21 +164,18 @@ def test_ops_timeline_with_section_commands():
     from rayforge.core.ops import (
         OpsSectionStartCommand,
         OpsSectionEndCommand,
-        SectionType
+        SectionType,
     )
 
     ops = Ops()
     # Section commands need workpiece_uid
     start_cmd = OpsSectionStartCommand(
-        section_type=SectionType.VECTOR_OUTLINE,
-        workpiece_uid="test-uid"
+        section_type=SectionType.VECTOR_OUTLINE, workpiece_uid="test-uid"
     )
-    end_cmd = OpsSectionEndCommand(
-        section_type=SectionType.VECTOR_OUTLINE
-    )
+    end_cmd = OpsSectionEndCommand(section_type=SectionType.VECTOR_OUTLINE)
 
     ops.add(start_cmd)
-    ops.add(SetPowerCommand(50))
+    ops.add(SetPowerCommand(0.5))
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 0.0, 0.0)))
     ops.add(end_cmd)

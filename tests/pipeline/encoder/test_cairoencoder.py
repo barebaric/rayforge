@@ -260,7 +260,7 @@ class TestCairoEncoder:
         W, H = 10, 10
         surface, ctx = create_surface(W, H)
         ops = Ops()
-        ops.set_power(100)
+        ops.set_power(1.0)
         ops.move_to(1, 1)  # User space bottom-left
         ops.line_to(8, 8)  # User space top-right
 
@@ -347,7 +347,7 @@ class TestCairoEncoder:
         W, H = 10, 5
         surface, ctx = create_surface(W, H)
         ops = Ops()
-        ops.set_power(100)
+        ops.set_power(1.0)
         ops.move_to(1, 2)
         ops.line_to(5, 2)
         ops.set_power(0)
@@ -379,7 +379,7 @@ class TestCairoEncoder:
         W, H = 10, 10
         surface, ctx = create_surface(W, H)
         ops = Ops()
-        ops.set_power(100)
+        ops.set_power(1.0)
         ops.move_to(2, 8)
         ops.add(
             ArcToCommand(end=(8, 2, 0), center_offset=(0, -6), clockwise=True)
@@ -473,7 +473,7 @@ class TestCairoEncoder:
         expected_char = "k"
 
         if move_type == "cut":
-            ops.set_power(100)
+            ops.set_power(1.0)
             ops.move_to(1, 2)
             ops.line_to(8, 2)
             if should_draw:

@@ -194,9 +194,17 @@ class SetPowerCommand(Command):
         Args:
             power: The normalized power level, from 0.0 (off) to
                    1.0 (full power).
+
+        Raises:
+            ValueError: If power is outside the [0.0, 1.0] range.
         """
         super().__init__()
-        self.power: float = max(0.0, min(1.0, float(power)))
+        power = float(power)
+        if not (0.0 <= power <= 1.0):
+            raise ValueError(
+                f"Power must be between 0.0 and 1.0, but got {power}"
+            )
+        self.power: float = power
 
     def is_state_command(self) -> bool:
         return True

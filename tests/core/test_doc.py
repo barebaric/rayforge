@@ -124,7 +124,7 @@ def test_descendant_updated_bubbles_up_to_doc(doc):
     handler.reset_mock()  # Ignore the 'add' event
 
     # Act
-    step.set_power(500)
+    step.set_power(0.5)
 
     # Assert
     handler.assert_called_once_with(doc, origin=step)

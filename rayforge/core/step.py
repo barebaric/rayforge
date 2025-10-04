@@ -52,8 +52,8 @@ class Step(DocItem, ABC):
 
         # Default machine-dependent values. These will be overwritten by
         # the step factories in the pipeline module.
-        self.power = 1000
-        self.max_power = 1000
+        self.power = 1.0  # Normalized power 0.0-1.0
+        self.max_power = 1000  # G-code scaled value, for reference
         self.cut_speed = 500
         self.max_cut_speed = 10000
         self.travel_speed = 5000
@@ -101,15 +101,15 @@ class Step(DocItem, ABC):
         step.post_step_transformers_dicts = data[
             "post_step_transformers_dicts"
         ]
-        step.pixels_per_mm = data["pixels_per_mm"]
-        step.power = data["power"]
-        step.max_power = data["max_power"]
-        step.cut_speed = data["cut_speed"]
-        step.max_cut_speed = data["max_cut_speed"]
-        step.travel_speed = data["travel_speed"]
-        step.max_travel_speed = data["max_travel_speed"]
-        step.air_assist = data["air_assist"]
-        step.kerf_mm = data["kerf_mm"]
+        step.pixels_per_mm = data.get("pixels_per_mm", (50, 50))
+        step.power = data.get("power", 1.0)
+        step.max_power = data.get("max_power", 1000)
+        step.cut_speed = data.get("cut_speed", 500)
+        step.max_cut_speed = data.get("max_cut_speed", 10000)
+        step.travel_speed = data.get("travel_speed", 5000)
+        step.max_travel_speed = data.get("max_travel_speed", 10000)
+        step.air_assist = data.get("air_assist", False)
+        step.kerf_mm = data.get("kerf_mm", 0.0)
         return step
 
     def get_settings(self) -> Dict[str, Any]:
@@ -175,6 +175,8 @@ class Step(DocItem, ABC):
         self.updated.send(self)
 
     def set_power(self, power: float):
+        if not (0.0 <= power <= 1.0):
+            raise ValueError("Power must be between 0.0 and 1.0")
         self.power = power
         self.updated.send(self)
 
@@ -196,9 +198,7 @@ class Step(DocItem, ABC):
         self.updated.send(self)
 
     def get_summary(self) -> str:
-        power_percent = (
-            int(self.power / self.max_power * 100) if self.max_power else 0
-        )
+        power_percent = int(self.power * 100)
         speed = int(self.cut_speed)
         return f"{power_percent}% power, {speed} mm/min"
 

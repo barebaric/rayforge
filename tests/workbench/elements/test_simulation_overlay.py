@@ -1,7 +1,12 @@
 """Tests for the preview overlay canvas element."""
 
-import pytest
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand, SetPowerCommand, SetCutSpeedCommand
+from rayforge.core.ops import (
+    Ops,
+    MoveToCommand,
+    LineToCommand,
+    SetPowerCommand,
+    SetCutSpeedCommand,
+)
 from rayforge.workbench.elements.simulation_overlay import (
     SimulationOverlay,
     OpsTimeline,
@@ -23,7 +28,7 @@ def test_speed_to_heatmap_color_basic():
 def test_ops_timeline_creation():
     """Test timeline creation from operations."""
     ops = Ops()
-    ops.add(SetPowerCommand(50))
+    ops.add(SetPowerCommand(0.5))
     ops.add(SetCutSpeedCommand(1000))
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 0.0, 0.0)))
@@ -66,7 +71,7 @@ def test_preview_overlay_set_ops():
     overlay = SimulationOverlay((100.0, 100.0))
 
     ops = Ops()
-    ops.add(SetPowerCommand(50))
+    ops.add(SetPowerCommand(0.5))
     ops.add(SetCutSpeedCommand(1000))
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 0.0, 0.0)))

@@ -124,7 +124,7 @@ def test_run_optimization():
     # Create an inefficient path
     # It draws two separate squares, but jumps between them for each segment
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # Square 1 (at 0,0)
     ops.move_to(0, 0)
@@ -167,7 +167,7 @@ def test_run_with_air_assist_change():
     Verify that segments with different air assist states are not reordered.
     """
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # Part 1: Air Assist OFF - Inefficient path
     ops.move_to(0, 0)
@@ -218,7 +218,7 @@ def test_run_with_air_assist_change():
 def test_run_preserves_markers():
     """Verify that marker commands act as optimization boundaries."""
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # Inefficient path with a marker in the middle
     ops.move_to(0, 0)
@@ -273,7 +273,7 @@ def test_run_optimization_with_unsplit_scanline():
     without splitting it.
     """
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # Path 1: A simple vector line from (0,0) to (10,0)
     ops.move_to(0, 0, 0)
@@ -322,7 +322,7 @@ def test_run_optimization_with_split_scanline():
     the resulting segment. This version uses geometry that forces a reorder.
     """
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # Path A: A vector line that ends at x=108.
     ops.move_to(0, 5, 0)
@@ -395,7 +395,7 @@ def test_optimizer_does_not_split_overscanned_scanline():
     # Arrange: Create an Ops object that simulates the output of an
     # OverscanTransformer. This is a single scanline with zero-power padding.
     ops = Ops()
-    ops.set_power(100)
+    ops.set_power(1.0)
 
     # This represents a 10mm content line (15-5) with 5mm overscan on each side
     start_pt = (0.0, 10.0, 0.0)

@@ -43,7 +43,7 @@ def sample_ops():
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(10, 10)
-    ops.set_power(500)
+    ops.set_power(0.5)
     ops.enable_air_assist()
     return ops
 
@@ -131,7 +131,7 @@ def test_copy():
 
     # Modify the copy and check that original is unchanged
     ops_copy.translate(5, 5)
-    ops_copy.add(SetPowerCommand(100))
+    ops_copy.add(SetPowerCommand(1.0))
 
     assert len(ops_original.commands) == 2
     assert ops_original.commands[0].end == (10, 10, 0)
@@ -288,7 +288,7 @@ def test_rect_includes_travel():
 
 
 def test_get_frame(sample_ops):
-    frame = sample_ops.get_frame(power=1000, speed=500)
+    frame = sample_ops.get_frame(power=1.0, speed=500)
     assert sum(1 for c in frame if c.is_travel_command()) == 1  # move_to
     assert sum(1 for c in frame if c.is_cutting_command()) == 4  # line_to
 
@@ -460,7 +460,7 @@ def test_linearize_all():
     ops.move_to(10, 0)
     ops.line_to(20, 0)
     ops.arc_to(10, 10, i=-10, j=0, clockwise=False)  # Semicircle
-    ops.set_power(100)  # Should be preserved
+    ops.set_power(1.0)
 
     ops.linearize_all()
 
@@ -676,7 +676,7 @@ def test_serialization_deserialization_all_types():
     ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-1"))
     ops.add(SetTravelSpeedCommand(5000))
     ops.add(SetCutSpeedCommand(1000))
-    ops.add(SetPowerCommand(200))
+    ops.add(SetPowerCommand(0.8))
     ops.add(EnableAirAssistCommand())
     ops.add(SetLaserCommand("laser-2"))
     ops.add(MoveToCommand((1, 1, 1)))
@@ -855,7 +855,7 @@ def test_clip_at_ignores_state_commands():
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(50, 0)  # Subpath 1
-    ops.set_power(100)
+    ops.set_power(1.0)
     ops.move_to(60, 0)
     ops.line_to(100, 0)  # Subpath 2
 

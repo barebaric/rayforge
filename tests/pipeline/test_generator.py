@@ -194,7 +194,7 @@ class TestOpsGenerator:
         mock_task_mgr.run_process.reset_mock()
 
         # Act
-        step.set_power(500)
+        step.set_power(0.5)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
