@@ -63,7 +63,7 @@ class OpsTimeline:
             self.speed_range = (0.0, 1000.0)
             return
 
-        current_state = State()
+        current_state = State(power=0.0)
         current_pos = (0.0, 0.0, 0.0)
         speeds = []
 

@@ -8,8 +8,9 @@ class PreviewControls(Gtk.Box):
     Control panel for preview playback with play/pause, slider, and
     progress display. Designed to overlay on top of the canvas.
     """
+
     __gsignals__ = {
-        'step-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))
+        "step-changed": (GObject.SignalFlags.RUN_FIRST, None, (int,))
     }
 
     def __init__(
@@ -20,7 +21,7 @@ class PreviewControls(Gtk.Box):
     ):
         super().__init__(
             orientation=Gtk.Orientation.VERTICAL,
-            spacing=6,
+            spacing=0,
             **kwargs,
         )
         self.simulation_overlay = simulation_overlay
@@ -41,21 +42,7 @@ class PreviewControls(Gtk.Box):
         self.set_margin_end(20)
 
         # Create a styled container box
-        container = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=12,
-        )
-        container.add_css_class("card")
-        container.set_margin_top(12)
-        container.set_margin_bottom(12)
-        container.set_margin_start(12)
-        container.set_margin_end(12)
-        self.append(container)
-
-        # Progress label
-        self.progress_label = Gtk.Label()
-        self.progress_label.set_markup("<b>Step: 0 / 0</b>")
-        container.append(self.progress_label)
+        self.add_css_class("card")
 
         # Slider for scrubbing
         self.slider = Gtk.Scale.new_with_range(
@@ -66,9 +53,12 @@ class PreviewControls(Gtk.Box):
         )
         self.slider.set_draw_value(False)
         self.slider.set_hexpand(True)
-        self.slider.set_size_request(400, -1)
+        self.slider.set_size_request(600, -1)
+        self.slider.set_margin_top(6)
+        self.slider.set_margin_start(12)
+        self.slider.set_margin_end(12)
         self.slider.connect("value-changed", self._on_slider_changed)
-        container.append(self.slider)
+        self.append(self.slider)
 
         # Button box
         button_box = Gtk.Box(
@@ -76,11 +66,20 @@ class PreviewControls(Gtk.Box):
             spacing=6,
         )
         button_box.set_halign(Gtk.Align.CENTER)
-        container.append(button_box)
+        self.append(button_box)
+
+        # Go to Start button
+        self.go_to_start_button = Gtk.Button()
+        self.go_to_start_button.set_icon_name("media-skip-backward-symbolic")
+        self.go_to_start_button.set_tooltip_text("Go to Start")
+        self.go_to_start_button.connect(
+            "clicked", self._on_go_to_start_clicked
+        )
+        button_box.append(self.go_to_start_button)
 
         # Step Back button
         self.step_back_button = Gtk.Button()
-        self.step_back_button.set_icon_name("media-skip-backward-symbolic")
+        self.step_back_button.set_icon_name("media-seek-backward-symbolic")
         self.step_back_button.set_tooltip_text("Step Back")
         self.step_back_button.connect("clicked", self._on_step_back_clicked)
         button_box.append(self.step_back_button)
@@ -94,20 +93,29 @@ class PreviewControls(Gtk.Box):
 
         # Step Forward button
         self.step_forward_button = Gtk.Button()
-        self.step_forward_button.set_icon_name("media-skip-forward-symbolic")
+        self.step_forward_button.set_icon_name("media-seek-forward-symbolic")
         self.step_forward_button.set_tooltip_text("Step Forward")
         self.step_forward_button.connect(
             "clicked", self._on_step_forward_clicked
         )
         button_box.append(self.step_forward_button)
 
-        # Speed and Power label
-        self.speed_power_label = Gtk.Label()
-        container.append(self.speed_power_label)
+        # Go to End button
+        self.go_to_end_button = Gtk.Button()
+        self.go_to_end_button.set_icon_name("media-skip-forward-symbolic")
+        self.go_to_end_button.set_tooltip_text("Go to End")
+        self.go_to_end_button.connect("clicked", self._on_go_to_end_clicked)
+        button_box.append(self.go_to_end_button)
+
+        # Status label with step count, speed and power
+        self.status_label = Gtk.Label()
+        self.status_label.set_margin_top(6)
+        self.status_label.set_margin_bottom(6)
+        self.append(self.status_label)
 
         # Initialize slider range and labels
         self._update_slider_range()
-        self._update_speed_power_label()
+        self._update_status_label()
 
     def _update_slider_range(self):
         """Updates the slider range based on the number of steps."""
@@ -118,38 +126,52 @@ class PreviewControls(Gtk.Box):
         else:
             self.slider.set_range(0, 0)
             self.slider.set_value(0)
-        self._update_progress_label()
-        self._update_speed_power_label()
+        self._update_status_label()
 
-    def _update_progress_label(self):
-        """Updates the progress label."""
+    def _update_status_label(self):
+        """Updates the status label with step count, speed and power."""
         current = int(self.slider.get_value())
         total = self.simulation_overlay.get_step_count()
-        self.progress_label.set_markup(f"<b>Step: {current + 1} / {total}</b>")
-
-    def _update_speed_power_label(self):
-        """Updates the speed and power label based on the current step."""
         state = self.simulation_overlay.get_current_state()
+
+        # Check if current step is a travel command
+        is_travel = False
+        if self.simulation_overlay.timeline.steps and 0 <= current < len(
+            self.simulation_overlay.timeline.steps
+        ):
+            cmd, _, _ = self.simulation_overlay.timeline.steps[current]
+            is_travel = cmd.is_travel_command()
+
         if state:
             speed = state.cut_speed if state.cut_speed is not None else 0.0
             power = state.power if state.power is not None else 0.0
-            self.speed_power_label.set_markup(
+            # Convert normalized power (0.0-1.0) to percentage (0-100%)
+            power_percent = power * 100.0
+
+            # Show power as 0% for travel moves (laser is off)
+            if is_travel:
+                power_display = "0%"
+            else:
+                power_display = f"{power_percent:.0f}%"
+
+            self.status_label.set_markup(
                 (
-                    f"<small>Speed: {speed:.0f} mm/min  |  "
-                    f"Power: {power:.1f}%</small>"
+                    f"<small>Step: {current + 1}/{total}  |  "
+                    f"Speed: {speed:.0f} mm/min  |  "
+                    f"Power: {power_display}</small>"
                 )
             )
         else:
-            self.speed_power_label.set_markup(
-                "<small>Speed: - | Power: -</small>"
+            self.status_label.set_markup(
+                f"<small>Step: {current + 1}/{total}  |  "
+                f"Speed: -  |  Power: -</small>"
             )
 
     def _on_slider_changed(self, slider):
         """Handles slider value changes."""
         step = int(slider.get_value())
         self.simulation_overlay.set_step(step)
-        self._update_progress_label()
-        self._update_speed_power_label()
+        self._update_status_label()
         self.emit("step-changed", step)
 
         # Trigger redraw of the canvas
@@ -177,6 +199,17 @@ class PreviewControls(Gtk.Box):
         max_step = self.simulation_overlay.get_step_count() - 1
         new_value = min(max_step, current + 1)
         self.slider.set_value(new_value)
+
+    def _on_go_to_start_clicked(self, button):
+        """Handles go to start button clicks."""
+        self._pause_playback()
+        self.slider.set_value(0)
+
+    def _on_go_to_end_clicked(self, button):
+        """Handles go to end button clicks."""
+        self._pause_playback()
+        max_step = self.simulation_overlay.get_step_count() - 1
+        self.slider.set_value(max_step)
 
     def _start_playback(self):
         """Starts automatic playback."""
