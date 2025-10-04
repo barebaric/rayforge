@@ -1,0 +1,6 @@
+{
+    "editor.rulers": [
+        { "column": 80, "color": "#ff0000" }
+    ],
+    "editor.wordWrap": "off"
+}

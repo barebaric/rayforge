@@ -7,6 +7,7 @@ platforms = ["linux-64", "osx-64", "win-64"]
 [environments]
 default = { features = ["test"], solve-group = "default" }
 windows-build = { features = ["windows-build", "test"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
 
 [dependencies]
 adwaita-icon-theme = "*"
@@ -79,6 +80,19 @@ pytest-cov = "*"
 pygobject-stubs = "*"
 flake8 = "*"
 
+
+[feature.docs.dependencies]
+go = "*"
+nodejs = "*"
+
+[feature.docs.pypi-dependencies]
+mkdocs-material = ">=9.5"
+mkdocs-glightbox = "*"
+mike = ">=2.0"
+pillow = "*"
+cairosvg = "*"
+hugo = "*"
+
 [feature.windows-build.dependencies]
 pyinstaller = "*"
 
@@ -145,3 +159,18 @@ depends-on = ["compile-translations"]
 # Builds a source package, ready for upload to a PPA.
 cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
+
+# Tasks for developing and generating the website
+[tasks.site-serve]
+cmd = "pixi run -e docs _site-serve"
+
+[tasks.site-build]
+cmd = "pixi run -e docs _site-build"
+
+# Internal docs tasks (called by the wrapper tasks above)
+[feature.docs.tasks._site-serve]
+cmd = "mkdocs serve --livereload --watch-theme"
+
+[feature.docs.tasks._site-build]
+cmd = "mkdocs build --strict --clean"
+
