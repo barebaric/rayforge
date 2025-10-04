@@ -1,13 +1,31 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from gi.repository import Adw, Gtk
 from .base import StepComponentSettingsWidget
 from ....undo import DictItemCommand
 from ....shared.util.glib import DebounceMixin
 
+if TYPE_CHECKING:
+    from ....doceditor.editor import DocEditor
+
 
 class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        editor: "DocEditor",
+        title: str,
+        target_dict: Any,
+        page: Adw.PreferencesPage,
+        step: Any,
+        **kwargs,
+    ):
+        super().__init__(
+            editor,
+            title,
+            target_dict=target_dict,
+            page=page,
+            step=step,
+            **kwargs,
+        )
 
         params = self.target_dict.setdefault("params", {})
 

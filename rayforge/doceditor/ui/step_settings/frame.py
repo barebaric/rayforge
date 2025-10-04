@@ -9,7 +9,7 @@ from ....undo import DictItemCommand
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
@@ -17,19 +17,21 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def __init__(
         self,
+        editor: "DocEditor",
+        title: str,
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         producer = cast(FrameProducer, OpsProducer.from_dict(target_dict))
 
         super().__init__(
+            editor,
+            title,
             target_dict=target_dict,
             page=page,
             step=step,
-            history_manager=history_manager,
             **kwargs,
         )
 

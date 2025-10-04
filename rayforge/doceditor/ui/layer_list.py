@@ -41,7 +41,7 @@ class LayerListView(Expander):
         self.draglist.connect("row-activated", self.on_row_activated)
         content_box.append(self.draglist)
 
-        # An "Add" button, styled like in WorkflowView
+        # An "Add" button
         add_button = Gtk.Button()
         add_button.add_css_class("darkbutton")
         add_button.connect("clicked", self.on_button_add_clicked)

@@ -7,7 +7,7 @@ from ....shared.util.adwfix import get_spinrow_int, get_spinrow_float
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class MultiPassSettingsWidget(StepComponentSettingsWidget):
@@ -15,10 +15,11 @@ class MultiPassSettingsWidget(StepComponentSettingsWidget):
 
     def __init__(
         self,
+        editor: "DocEditor",
+        title: str,
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         # The transformer is stateless, so we can instantiate it for its
@@ -26,10 +27,12 @@ class MultiPassSettingsWidget(StepComponentSettingsWidget):
         transformer = MultiPassTransformer.from_dict(target_dict)
 
         super().__init__(
+            editor,
+            title,
+            description=transformer.description,
             target_dict=target_dict,
             page=page,
             step=step,
-            history_manager=history_manager,
             **kwargs,
         )
 

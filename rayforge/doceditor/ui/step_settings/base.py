@@ -1,11 +1,9 @@
-import gi; gi.require_version("Adw", "1")  # noqa: E702
-
 from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Adw
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 class StepComponentSettingsWidget(Adw.PreferencesGroup):
@@ -23,18 +21,18 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
 
     def __init__(
         self,
+        editor: "DocEditor",
         title: str,
-        # The specific dictionary from the Step model to modify
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         """
         Initializes the base widget.
 
         Args:
+            editor: The DocEditor instance.
             title: The title for the preferences group.
             target_dict: The dictionary from the Step model (e.g.,
                 step.opsproducer_dict or an item from
@@ -42,10 +40,10 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
             page: The parent Adw.PreferencesPage to which conditional groups
                   can be added or removed.
             step: The parent Step object, for context and signaling.
-            history_manager: The document's HistoryManager for undo/redo.
         """
         super().__init__(title=title, **kwargs)
+        self.editor = editor
         self.target_dict = target_dict
         self.page = page
         self.step = step
-        self.history_manager = history_manager
+        self.history_manager = editor.history_manager

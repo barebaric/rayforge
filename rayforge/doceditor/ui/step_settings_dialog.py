@@ -1,9 +1,8 @@
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...config import config
 from ...undo import HistoryManager, ChangePropertyCommand
-from ...core.doc import Doc
 from ...core.step import Step
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 from ...shared.util.adwfix import get_spinrow_float
@@ -11,13 +10,22 @@ from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from .step_settings import WIDGET_REGISTRY
 
+if TYPE_CHECKING:
+    from ..editor import DocEditor
+
 
 class StepSettingsDialog(Adw.Window):
-    def __init__(self, doc: Doc, step: Step, **kwargs):
+    def __init__(
+        self,
+        editor: "DocEditor",
+        step: Step,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.doc = doc
+        self.editor = editor
+        self.doc = editor.doc
         self.step = step
-        self.history_manager: HistoryManager = doc.history_manager
+        self.history_manager: HistoryManager = self.doc.history_manager
         self.set_title(_("{name} Settings").format(name=step.name))
 
         # Used to delay updates from continuous-change widgets like sliders
@@ -79,11 +87,11 @@ class StepSettingsDialog(Adw.Window):
                 WidgetClass = WIDGET_REGISTRY.get(producer_name)
                 if WidgetClass:
                     widget = WidgetClass(
-                        title=self.step.typelabel,
-                        target_dict=producer_dict,
-                        page=page,
-                        step=self.step,
-                        history_manager=self.history_manager,
+                        self.editor,
+                        self.step.typelabel,
+                        producer_dict,
+                        page,
+                        self.step,
                     )
                     page.add(widget)
 
@@ -94,9 +102,7 @@ class StepSettingsDialog(Adw.Window):
         if config.machine and config.machine.heads:
             laser_names = [head.name for head in config.machine.heads]
             string_list = Gtk.StringList.new(laser_names)
-            laser_row = Adw.ComboRow(
-                title=_("Laser Head"), model=string_list
-            )
+            laser_row = Adw.ComboRow(title=_("Laser Head"), model=string_list)
 
             # Set initial selection
             initial_index = 0
@@ -146,9 +152,7 @@ class StepSettingsDialog(Adw.Window):
         )
         cut_speed_row = Adw.SpinRow(
             title=_("Cut Speed"),
-            subtitle=_(
-                "Max: {max_speed}"
-            ),
+            subtitle=_("Max: {max_speed}"),
             adjustment=cut_speed_adjustment,
         )
         self.cut_speed_helper = UnitSpinRowHelper(
@@ -174,9 +178,7 @@ class StepSettingsDialog(Adw.Window):
         )
         travel_speed_row = Adw.SpinRow(
             title=_("Travel Speed"),
-            subtitle=_(
-                "Max: {max_speed}"
-            ),
+            subtitle=_("Max: {max_speed}"),
             adjustment=travel_speed_adjustment,
         )
         self.travel_speed_helper = UnitSpinRowHelper(
@@ -185,18 +187,14 @@ class StepSettingsDialog(Adw.Window):
             max_value_in_base=max_travel_speed,
         )
         self.travel_speed_helper.set_value_in_base_units(step.travel_speed)
-        self.travel_speed_helper.changed.connect(
-            self.on_travel_speed_changed
-        )
+        self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
         air_assist_row = Adw.SwitchRow()
         air_assist_row.set_title(_("Air Assist"))
         air_assist_row.set_active(step.air_assist)
-        air_assist_row.connect(
-            "notify::active", self.on_air_assist_changed
-        )
+        air_assist_row.connect("notify::active", self.on_air_assist_changed)
         general_group.add(air_assist_row)
 
         # Kerf Setting (conditionally visible)
@@ -232,11 +230,11 @@ class StepSettingsDialog(Adw.Window):
                     if WidgetClass:
                         transformer = OpsTransformer.from_dict(t_dict)
                         widget = WidgetClass(
-                            title=transformer.label,
-                            target_dict=t_dict,
-                            page=page,
-                            step=self.step,
-                            history_manager=self.history_manager,
+                            self.editor,
+                            transformer.label,
+                            t_dict,
+                            page,
+                            self.step,
                         )
                         page.add(widget)
 
@@ -249,11 +247,11 @@ class StepSettingsDialog(Adw.Window):
                     if WidgetClass:
                         transformer = OpsTransformer.from_dict(t_dict)
                         widget = WidgetClass(
-                            title=transformer.label,
-                            target_dict=t_dict,
-                            page=page,
-                            step=self.step,
-                            history_manager=self.history_manager,
+                            self.editor,
+                            transformer.label,
+                            t_dict,
+                            page,
+                            self.step,
                         )
                         page.add(widget)
 

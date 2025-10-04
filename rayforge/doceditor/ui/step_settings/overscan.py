@@ -7,7 +7,6 @@ from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
     from ....doceditor.editor import DocEditor
 
 
@@ -16,25 +15,24 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def __init__(
         self,
+        editor: "DocEditor",
+        title: str,
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        editor: "DocEditor",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         transformer = OverscanTransformer.from_dict(target_dict)
 
         super().__init__(
+            editor,
+            title,
             description=transformer.description,
             target_dict=target_dict,
             page=page,
             step=step,
-            editor=editor,
-            history_manager=history_manager,
             **kwargs,
         )
-        self.editor = editor
 
         # Main toggle switch
         switch_row = Adw.SwitchRow(title=_("Enable Overscan"))

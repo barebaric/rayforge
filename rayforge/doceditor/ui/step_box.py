@@ -1,6 +1,6 @@
+from typing import TYPE_CHECKING
 from gi.repository import Gtk, Adw
 from blinker import Signal
-from ...core.doc import Doc
 from ...core.step import Step
 from ...icons import get_icon
 from ...undo.models.property_cmd import ChangePropertyCommand
@@ -8,13 +8,22 @@ from ...shared.ui.formatter import format_value
 from ...config import config
 from .step_settings_dialog import StepSettingsDialog
 
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
+
 
 class StepBox(Adw.ActionRow):
-    def __init__(self, doc: Doc, step: Step, prefix=""):
+    def __init__(
+        self,
+        editor: "DocEditor",
+        step: Step,
+        prefix: str = "",
+    ):
         super().__init__()
         self.set_margin_start(0)
         self.set_margin_end(0)
-        self.doc = doc
+        self.editor = editor
+        self.doc = editor.doc
         self.step = step
         self.prefix = prefix
         self.delete_clicked = Signal()
@@ -82,7 +91,9 @@ class StepBox(Adw.ActionRow):
     def on_button_properties_clicked(self, button):
         parent_window = self.get_root()
         dialog = StepSettingsDialog(
-            self.doc, self.step, transient_for=parent_window
+            self.editor,
+            self.step,
+            transient_for=parent_window,
         )
         dialog.present()
 

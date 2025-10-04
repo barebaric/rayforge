@@ -342,7 +342,9 @@ class MainWindow(Adw.ApplicationWindow):
         initial_workflow = self.doc_editor.doc.active_layer.workflow
         assert initial_workflow, "Initial active layer must have a workflow"
         self.workflowview = WorkflowView(
-            initial_workflow, step_factories=STEP_FACTORIES
+            self.doc_editor,
+            initial_workflow,
+            step_factories=STEP_FACTORIES,
         )
         self.workflowview.set_margin_top(20)
         self.workflowview.set_margin_end(12)

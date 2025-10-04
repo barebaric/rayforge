@@ -8,7 +8,6 @@ from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
     from ....doceditor.editor import DocEditor
 
 
@@ -17,24 +16,23 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def __init__(
         self,
+        editor: "DocEditor",
+        title: str,
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        editor: "DocEditor",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         producer = cast(DepthEngraver, OpsProducer.from_dict(target_dict))
 
         super().__init__(
+            editor,
+            title,
             target_dict=target_dict,
             page=page,
             step=step,
-            editor=editor,
-            history_manager=history_manager,
             **kwargs,
         )
-        self.editor = editor
 
         # Mode selection dropdown
         mode_choices = [m.name.replace("_", " ").title() for m in DepthMode]
@@ -46,7 +44,10 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # --- Power Modulation Settings ---
         self.min_power_adj = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=1, value=producer.min_power*100
+            lower=0,
+            upper=100,
+            step_increment=1,
+            value=producer.min_power * 100,
         )
         self.min_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -65,7 +66,10 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(self.min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=1, value=producer.max_power*100
+            lower=0,
+            upper=100,
+            step_increment=1,
+            value=producer.max_power * 100,
         )
         self.max_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -152,7 +156,9 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(self._on_param_changed, "min_power", new_min_value/100)
+        self._debounce(
+            self._on_param_changed, "min_power", new_min_value / 100
+        )
 
     def _on_max_power_scale_changed(self, scale: Gtk.Scale):
         new_max_value = self.max_power_adj.get_value()
@@ -173,7 +179,9 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(self._on_param_changed, "max_power", new_max_value/100)
+        self._debounce(
+            self._on_param_changed, "max_power", new_max_value / 100
+        )
 
     def _on_mode_changed(self, row, _):
         selected_idx = row.get_selected()

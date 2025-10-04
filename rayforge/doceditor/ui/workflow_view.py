@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List, Callable, cast
+from typing import Optional, List, Callable, cast, TYPE_CHECKING
 from gi.repository import Gtk
 from ...icons import get_icon
 from ...core.workflow import Workflow
@@ -9,6 +9,8 @@ from ...shared.ui.expander import Expander
 from .step_box import StepBox
 from .step_selector import StepSelector
 
+if TYPE_CHECKING:
+    from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ class WorkflowView(Expander):
 
     def __init__(
         self,
+        editor: "DocEditor",
         workflow: Workflow,
         step_factories: List[Callable],
         **kwargs,
@@ -28,6 +31,7 @@ class WorkflowView(Expander):
         super().__init__(**kwargs)
         self.workflow: Optional[Workflow] = None  # Will be set by set_workflow
         self.step_factories = step_factories
+        self.editor = editor
         self.set_expanded(True)
 
         # A container for all content that will be revealed by the expander
@@ -144,7 +148,7 @@ class WorkflowView(Expander):
             row = Gtk.ListBoxRow()
             row.data = step  # type: ignore # Store model for reordering
             stepbox = StepBox(
-                self.workflow.doc,
+                self.editor,
                 step,
                 prefix=_("Step {seq}: ").format(seq=seq),
             )
