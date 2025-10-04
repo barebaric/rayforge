@@ -265,6 +265,24 @@ def test_enable_disable_air_assist(empty_ops):
     assert isinstance(empty_ops.commands[-1], DisableAirAssistCommand)
 
 
+def test_scan_to(empty_ops):
+    """Test the scan_to method with default and custom power values."""
+    # Test with default power values
+    empty_ops.scan_to(10, 20, 5)
+    assert isinstance(empty_ops.commands[-1], ScanLinePowerCommand)
+    scan_cmd = empty_ops.commands[-1]
+    assert scan_cmd.end == (10.0, 20.0, 5.0)
+    assert scan_cmd.power_values == bytearray([255])
+
+    # Test with custom power values
+    custom_power = bytearray([100, 150, 200, 150, 100])
+    empty_ops.scan_to(30, 40, 2, custom_power)
+    assert isinstance(empty_ops.commands[-1], ScanLinePowerCommand)
+    scan_cmd = empty_ops.commands[-1]
+    assert scan_cmd.end == (30.0, 40.0, 2.0)
+    assert scan_cmd.power_values == custom_power
+
+
 def test_rect_default_ignores_travel():
     """Tests that Ops.rect() ignores travel moves by default."""
     ops = Ops()

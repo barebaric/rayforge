@@ -363,6 +363,31 @@ class Ops:
         cmd = SetLaserCommand(laser_uid)
         self.commands.append(cmd)
 
+    def scan_to(
+        self,
+        x: float,
+        y: float,
+        z: float = 0.0,
+        power_values: Optional[bytearray] = None,
+    ) -> None:
+        """
+        Adds a scan line command with variable power values.
+
+        Args:
+            x: The X coordinate of the endpoint.
+            y: The Y coordinate of the endpoint.
+            z: The Z coordinate of the endpoint.
+            power_values: A bytearray of power values (0-255) for the scan
+              line. If None, a default array with a single value of 255 is
+              used.
+        """
+        if power_values is None:
+            power_values = bytearray([255])
+
+        end_point = (float(x), float(y), float(z))
+        cmd = ScanLinePowerCommand(end=end_point, power_values=power_values)
+        self.commands.append(cmd)
+
     def rect(
         self, include_travel: bool = False
     ) -> Tuple[float, float, float, float]:
