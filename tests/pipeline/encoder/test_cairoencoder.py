@@ -3,11 +3,7 @@ import cairo
 import numpy as np
 from typing import Tuple, Dict, cast
 
-from rayforge.core.ops import (
-    Ops,
-    ArcToCommand,
-    ScanLinePowerCommand,
-)
+from rayforge.core.ops import Ops
 from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
 from rayforge.shared.util.colors import ColorSet
 
@@ -381,9 +377,7 @@ class TestCairoEncoder:
         ops = Ops()
         ops.set_power(1.0)
         ops.move_to(2, 8)
-        ops.add(
-            ArcToCommand(end=(8, 2, 0), center_offset=(0, -6), clockwise=True)
-        )
+        ops.arc_to(8, 2, 0, -6, True)
 
         encoder.encode(
             ops,
@@ -416,12 +410,7 @@ class TestCairoEncoder:
         surface, ctx = create_surface(W, H)
         ops = Ops()
         ops.move_to(1, 2)
-        ops.add(
-            ScanLinePowerCommand(
-                end=(10, 2, 0),
-                power_values=bytearray([0, 255, 0]),
-            )
-        )
+        ops.scan_to(10, 2, 0, bytearray([0, 255, 0]))
         encoder.encode(
             ops,
             ctx,
@@ -486,11 +475,7 @@ class TestCairoEncoder:
                 expected_char = "b"
         elif move_type == "engrave":
             ops.move_to(1, 2)
-            ops.add(
-                ScanLinePowerCommand(
-                    end=(8, 2, 0), power_values=bytearray([255] * 7)
-                )
-            )
+            ops.scan_to(8, 2, 0, bytearray([255] * 7))
             if should_draw:
                 expected_char = "r"
 

@@ -765,7 +765,7 @@ class OpsGenerator:
             self._scale_ops_to_workpiece_size(ops, artifact, workpiece)
 
         logger.debug(
-            f"get_ops for {key}: Returning final ops with {len(ops.commands)} "
+            f"get_ops for {key}: Returning final ops with {len(ops)} "
             f"commands. Bbox: {ops.rect()}"
         )
         return ops

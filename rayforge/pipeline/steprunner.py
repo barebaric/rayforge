@@ -45,7 +45,7 @@ def run_step_in_subprocess(
     from .transformer import OpsTransformer, ExecutionPhase
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
-    from ..core.ops import Ops, DisableAirAssistCommand
+    from ..core.ops import Ops
 
     logger.debug("Imports completed")
 
@@ -295,9 +295,9 @@ def run_step_in_subprocess(
         if final_artifact is None:
             final_artifact = chunk_artifact
             # Prepend the initial state commands (power, speed, etc.)
-            final_artifact.ops.commands = (
-                initial_ops.commands + final_artifact.ops.commands
-            )
+            new_ops = initial_ops.copy()
+            new_ops.extend(final_artifact.ops)
+            final_artifact.ops = new_ops
         else:
             final_artifact.ops.extend(chunk_artifact.ops)
 
@@ -368,7 +368,7 @@ def run_step_in_subprocess(
                 processed_count += 1
 
     if settings["air_assist"]:
-        final_artifact.ops.add(DisableAirAssistCommand())
+        final_artifact.ops.disable_air_assist()
 
     proxy.set_message(
         _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)

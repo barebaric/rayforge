@@ -2,10 +2,6 @@
 
 from rayforge.core.ops import (
     Ops,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
 )
 from rayforge.workbench.elements.simulation_overlay import (
     SimulationOverlay,
@@ -28,14 +24,14 @@ def test_speed_to_heatmap_color_basic():
 def test_ops_timeline_creation():
     """Test timeline creation from operations."""
     ops = Ops()
-    ops.add(SetPowerCommand(0.5))
-    ops.add(SetCutSpeedCommand(1000))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.set_power(0.5)
+    ops.set_cut_speed(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
 
     timeline = OpsTimeline(ops)
 
-    assert timeline.get_step_count() == 4
+    assert timeline.get_step_count() == 2
     min_speed, max_speed = timeline.speed_range
     assert min_speed == 1000.0
     assert max_speed == 1000.0
@@ -44,10 +40,10 @@ def test_ops_timeline_creation():
 def test_ops_timeline_speed_range():
     """Test speed range calculation from multiple speeds."""
     ops = Ops()
-    ops.add(SetCutSpeedCommand(100))
-    ops.add(LineToCommand((5.0, 0.0, 0.0)))
-    ops.add(SetCutSpeedCommand(500))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.set_cut_speed(100)
+    ops.line_to(5.0, 0.0, 0.0)
+    ops.set_cut_speed(500)
+    ops.line_to(10.0, 0.0, 0.0)
 
     timeline = OpsTimeline(ops)
 
@@ -71,14 +67,14 @@ def test_preview_overlay_set_ops():
     overlay = SimulationOverlay((100.0, 100.0))
 
     ops = Ops()
-    ops.add(SetPowerCommand(0.5))
-    ops.add(SetCutSpeedCommand(1000))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.set_power(0.5)
+    ops.set_cut_speed(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
 
     overlay.set_ops(ops)
 
-    assert overlay.get_step_count() == 4
+    assert overlay.get_step_count() == 2
 
 
 def test_preview_overlay_set_step():
@@ -86,9 +82,9 @@ def test_preview_overlay_set_step():
     overlay = SimulationOverlay((100.0, 100.0))
 
     ops = Ops()
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
 
     overlay.set_ops(ops)
     overlay.set_step(1)

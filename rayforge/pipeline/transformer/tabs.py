@@ -181,17 +181,17 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 temp_ops = Ops()
                 temp_ops.commands = section_buffer
-                num_before = len(temp_ops.commands)
+                num_before = len(temp_ops)
 
                 for x, y, width in tab_clip_data:
                     temp_ops.clip_at(x, y, width)
 
-                num_after = len(temp_ops.commands)
+                num_after = len(temp_ops)
                 logger.debug(
                     "Tab clipping changed command count from "
                     f"{num_before} to {num_after}."
                 )
-                new_commands.extend(temp_ops.commands)
+                new_commands.extend(temp_ops)
             else:
                 # For any other section type, or commands outside a section,
                 # pass them through unmodified.
@@ -201,7 +201,7 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 new_commands.extend(section_buffer)
 
-        for cmd in ops.commands:
+        for cmd in ops:
             if isinstance(cmd, OpsSectionStartCommand):
                 _process_buffer()  # Process the previous section
                 section_buffer = []

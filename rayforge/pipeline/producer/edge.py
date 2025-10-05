@@ -3,12 +3,8 @@ from typing import Optional, TYPE_CHECKING, Dict, Any
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
 from ...image.tracing import trace_surface
 from ...core.matrix import Matrix
-from ...core.ops import (
-    Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
-)
+from ...core.ops import Ops, SectionType
+
 from ...core.geo import contours, Geometry
 
 if TYPE_CHECKING:
@@ -153,13 +149,11 @@ class EdgeTracer(OpsProducer):
         # 5. Convert to Ops. No further scaling is needed.
         if not final_geometry.is_empty():
             final_ops.set_laser(laser.uid)
-            final_ops.add(
-                OpsSectionStartCommand(
-                    SectionType.VECTOR_OUTLINE, workpiece.uid
-                )
+            final_ops.ops_section_start(
+                SectionType.VECTOR_OUTLINE, workpiece.uid
             )
             final_ops.extend(Ops.from_geometry(final_geometry))
-            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.

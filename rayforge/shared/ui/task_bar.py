@@ -124,7 +124,7 @@ class TaskBar(Gtk.Box):
             self.set_estimated_time(0.0)
             return
 
-        logger.debug(f"Ops has {len(ops.commands)} commands")
+        logger.debug(f"Ops has {len(ops)} commands")
 
         try:
             estimated_time = ops.estimate_time()

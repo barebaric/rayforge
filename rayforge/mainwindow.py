@@ -755,7 +755,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Update estimated machining time
         logger.debug(
             f"Updating estimated time from aggregated ops: "
-            f"{len(aggregated_ops.commands) if aggregated_ops else 0} commands"
+            f"{len(aggregated_ops) if aggregated_ops else 0} commands"
         )
         self.status_monitor.update_estimated_time_from_ops(aggregated_ops)
 
@@ -1321,7 +1321,7 @@ class MainWindow(Adw.ApplicationWindow):
             aggregated_ops = self._aggregate_ops_for_3d_view()
             logger.debug(
                 f"Aggregated ops: "
-                f"{len(aggregated_ops.commands) if aggregated_ops else 0} "
+                f"{len(aggregated_ops) if aggregated_ops else 0} "
                 f"commands"
             )
             if not aggregated_ops or aggregated_ops.is_empty():

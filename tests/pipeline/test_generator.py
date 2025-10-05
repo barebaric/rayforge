@@ -6,7 +6,7 @@ from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
@@ -131,7 +131,8 @@ class TestOpsGenerator:
 
         # Act
         expected_ops = Ops()
-        expected_ops.commands.append(LineToCommand((1, 1, 0)))
+        expected_ops.move_to(0, 0, 0)
+        expected_ops.line_to(1, 1, 0)
 
         # The result from the subprocess is a serialized PipelineArtifact
         expected_artifact = PipelineArtifact(
@@ -155,7 +156,8 @@ class TestOpsGenerator:
         # Assert
         cached_ops = generator.get_ops(step, real_workpiece)
         assert cached_ops is not None
-        assert len(cached_ops.commands) == 1
+        # MoveTo + LineTo
+        assert len(cached_ops) == 2
 
     def test_generation_cancellation_is_handled(
         self, doc, real_workpiece, mock_task_mgr

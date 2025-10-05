@@ -70,7 +70,8 @@ async def test_generate_job_ops_assembles_correctly(
     with patch("rayforge.pipeline.steps.config", MagicMock()):
         # Create a contour step and configure it for "outline" behavior
         step = create_contour_step()
-        step.opsproducer_dict["params"]["remove_inner_paths"] = True
+        if step.opsproducer_dict is not None:
+            step.opsproducer_dict["params"]["remove_inner_paths"] = True
 
     # The new way to specify passes is via a post-assembly transformer
     multi_pass_transformer = MultiPassTransformer(passes=2)
@@ -102,11 +103,12 @@ async def test_generate_job_ops_assembles_correctly(
     mock_ops_generator.get_ops.assert_called_once_with(step, real_workpiece)
     # The MultiPassTransformer with passes=2 should double the cutting
     # commands.
-    assert len([c for c in final_ops.commands if c.is_cutting_command()]) == 2
+    final_cmds = list(final_ops)
+    assert len([c for c in final_cmds if c.is_cutting_command()]) == 2
 
     # Verify the coordinates of the transformed and y-flipped points.
-    move_cmds = [c for c in final_ops.commands if isinstance(c, MoveToCommand)]
-    line_cmds = [c for c in final_ops.commands if isinstance(c, LineToCommand)]
+    move_cmds = [c for c in final_cmds if isinstance(c, MoveToCommand)]
+    line_cmds = [c for c in final_cmds if isinstance(c, LineToCommand)]
 
     # --- Trace the expected final coordinates ---
     # Point (0,0) from base_ops (in local mm, after scaling).
@@ -136,7 +138,8 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
     assert layer.workflow is not None
     with patch("rayforge.pipeline.steps.config", MagicMock()):
         step = create_contour_step()
-        step.opsproducer_dict["params"]["remove_inner_paths"] = True
+        if step.opsproducer_dict is not None:
+            step.opsproducer_dict["params"]["remove_inner_paths"] = True
     layer.workflow.add_step(step)
 
     # Setup sources for the workpieces

@@ -112,14 +112,9 @@ def test_get_total_distance_with_ops_commands():
     ops.move_to(0, 0)
     ops.line_to(3, 4)  # Cutting move, length 5
     ops.move_to(10, 10)  # Travel move from (3,4), length sqrt(7^2+6^2)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(20, 10, 0),
-            power_values=bytearray(),
-        )
-    )  # dist 10
+    ops.scan_to(20, 10, 0, power_values=bytearray())  # dist 10
 
-    dist = get_total_distance(ops.commands)
+    dist = get_total_distance(list(ops))
     expected = (
         math.hypot(0, 0)
         + 5.0

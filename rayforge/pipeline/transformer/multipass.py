@@ -1,6 +1,5 @@
 from __future__ import annotations
 import math
-from copy import deepcopy
 from typing import Optional, Dict, Any
 
 from .base import OpsTransformer, ExecutionPhase
@@ -98,18 +97,16 @@ class MultiPassTransformer(OpsTransformer):
             return
 
         # No-op if there are no commands to duplicate.
-        if not ops.commands:
+        if ops.is_empty():
             return
 
-        # Make a pristine copy of the original commands for the first pass.
-        # This is crucial because `ops.translate` modifies commands in-place.
-        original_ops = deepcopy(ops)
-        final_commands = list(ops.commands)  # Start with the first pass
+        # Make a pristine copy of the original commands for subsequent passes.
+        original_ops = ops.copy()
 
-        # Generate subsequent passes
+        # Generate and append subsequent passes
         for i in range(1, self.passes):
             # Create a fresh copy for this pass
-            pass_ops = deepcopy(original_ops)
+            pass_ops = original_ops.copy()
 
             # Apply Z step-down if configured
             if self._z_step_down != 0.0:
@@ -117,10 +114,7 @@ class MultiPassTransformer(OpsTransformer):
                 # Translate by a negative amount to move down the Z axis
                 pass_ops.translate(0, 0, -abs(z_offset))
 
-            final_commands.extend(pass_ops.commands)
-
-        # Replace the original commands with the full multi-pass sequence
-        ops.commands = final_commands
+            ops.extend(pass_ops)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

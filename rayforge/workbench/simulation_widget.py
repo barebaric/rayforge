@@ -10,7 +10,7 @@ from typing import Optional, List, Tuple
 import cairo
 from gi.repository import Gtk, GLib
 from ..core.ops import Ops
-from ..core.ops.commands import (
+from ..core.ops import (
     Command,
     LineToCommand,
     MoveToCommand,
@@ -92,7 +92,7 @@ class OpsTimeline:
         Also calculates the speed range across all operations.
         """
         self.steps = []
-        if not self.ops or not self.ops.commands:
+        if not self.ops or self.ops.is_empty():
             self.speed_range = (0.0, 1000.0)
             return
 
@@ -100,17 +100,17 @@ class OpsTimeline:
         current_pos = (0.0, 0.0, 0.0)
         speeds = []
 
-        for cmd in self.ops.commands:
+        for cmd in self.ops:
             # Update state if this is a state command
             if isinstance(cmd, SetPowerCommand):
                 current_state.power = cmd.power
             elif isinstance(cmd, SetCutSpeedCommand):
                 current_state.cut_speed = cmd.speed
-            elif hasattr(cmd, 'apply_to_state'):
+            elif hasattr(cmd, "apply_to_state"):
                 cmd.apply_to_state(current_state)
 
             # For moving commands, add them to the timeline
-            if hasattr(cmd, 'end') and cmd.end is not None:
+            if hasattr(cmd, "end") and cmd.end is not None:
                 # Store command with state and starting position
                 self.steps.append(
                     (cmd, State(**current_state.__dict__), current_pos)
@@ -137,7 +137,7 @@ class OpsTimeline:
         """Returns all steps up to and including the given index."""
         if index < 0:
             return []
-        return self.steps[:index + 1]
+        return self.steps[: index + 1]
 
 
 class PreviewRenderer:
@@ -306,9 +306,8 @@ class PreviewRenderer:
 
             # Calculate speed for this position (top = max, bottom = min)
             speed_fraction = 1.0 - (i / steps)
-            speed = (
-                self.speed_range[0] +
-                speed_fraction * (self.speed_range[1] - self.speed_range[0])
+            speed = self.speed_range[0] + speed_fraction * (
+                self.speed_range[1] - self.speed_range[0]
             )
 
             # Get color
@@ -410,7 +409,7 @@ class PreviewWidget(Gtk.Box):
     def set_ops(
         self,
         ops: Optional[Ops],
-        bounds: Optional[Tuple[float, float, float, float]] = None
+        bounds: Optional[Tuple[float, float, float, float]] = None,
     ):
         """
         Sets the operations to preview.

@@ -388,6 +388,89 @@ class Ops:
         cmd = ScanLinePowerCommand(end=end_point, power_values=power_values)
         self.commands.append(cmd)
 
+    def job_start(self) -> None:
+        """
+        Adds a job start marker command.
+        This is a logical marker for the generator.
+        """
+        self.commands.append(JobStartCommand())
+
+    def job_end(self) -> None:
+        """
+        Adds a job end marker command.
+        This is a logical marker for the generator.
+        """
+        self.commands.append(JobEndCommand())
+
+    def layer_start(self, layer_uid: str) -> None:
+        """
+        Adds a layer start marker command.
+        This is a logical marker for the generator.
+
+        Args:
+            layer_uid: Unique identifier for the layer.
+        """
+        self.commands.append(LayerStartCommand(layer_uid=layer_uid))
+
+    def layer_end(self, layer_uid: str) -> None:
+        """
+        Adds a layer end marker command.
+        This is a logical marker for the generator.
+
+        Args:
+            layer_uid: Unique identifier for the layer.
+        """
+        self.commands.append(LayerEndCommand(layer_uid=layer_uid))
+
+    def workpiece_start(self, workpiece_uid: str) -> None:
+        """
+        Adds a workpiece start marker command.
+        This is a logical marker for the generator.
+
+        Args:
+            workpiece_uid: Unique identifier for the workpiece.
+        """
+        self.commands.append(
+            WorkpieceStartCommand(workpiece_uid=workpiece_uid)
+        )
+
+    def workpiece_end(self, workpiece_uid: str) -> None:
+        """
+        Adds a workpiece end marker command.
+        This is a logical marker for the generator.
+
+        Args:
+            workpiece_uid: Unique identifier for the workpiece.
+        """
+        self.commands.append(WorkpieceEndCommand(workpiece_uid=workpiece_uid))
+
+    def ops_section_start(
+        self, section_type: SectionType, workpiece_uid: str
+    ) -> None:
+        """
+        Adds an ops section start marker command.
+        This marks the beginning of a semantically distinct block of Ops.
+
+        Args:
+            section_type: The semantic type of the section.
+            workpiece_uid: Unique identifier for the workpiece.
+        """
+        self.commands.append(
+            OpsSectionStartCommand(
+                section_type=section_type, workpiece_uid=workpiece_uid
+            )
+        )
+
+    def ops_section_end(self, section_type: SectionType) -> None:
+        """
+        Adds an ops section end marker command.
+        This marks the end of a semantically distinct block of Ops.
+
+        Args:
+            section_type: The semantic type of the section.
+        """
+        self.commands.append(OpsSectionEndCommand(section_type=section_type))
+
     def rect(
         self, include_travel: bool = False
     ) -> Tuple[float, float, float, float]:

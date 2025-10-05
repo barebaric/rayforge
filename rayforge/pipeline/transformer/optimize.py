@@ -545,7 +545,7 @@ class Optimize(OpsTransformer):
         if context.is_cancelled():
             return
 
-        commands = [c for c in ops.commands if not c.is_state_command()]
+        commands = [c for c in ops if not c.is_state_command()]
         logger.debug(f"Optimizing {len(commands)} moving commands.")
 
         # Step 2: Splitting into non-reorderable long segments
@@ -659,7 +659,7 @@ class Optimize(OpsTransformer):
                 flat_result_segments.append(item)
 
         reassemble_ctx.set_total(len(flat_result_segments))
-        ops.commands = []
+        ops.clear()
         prev_state = State()
         for i, segment in enumerate(flat_result_segments):
             if not segment:

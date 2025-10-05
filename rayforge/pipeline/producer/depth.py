@@ -7,10 +7,7 @@ from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...core.ops import (
     Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
     SectionType,
-    ScanLinePowerCommand,
 )
 
 if TYPE_CHECKING:
@@ -69,9 +66,7 @@ class DepthEngraver(OpsProducer):
 
         final_ops = Ops()
         # Always start with the section marker
-        final_ops.add(
-            OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
-        )
+        final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
 
         width_px = surface.get_width()
         height_px = surface.get_height()
@@ -111,7 +106,7 @@ class DepthEngraver(OpsProducer):
                 final_ops.extend(mode_ops)
 
         # Always close with the section end marker
-        final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+        final_ops.ops_section_end(SectionType.RASTER_FILL)
 
         return PipelineArtifact(
             ops=final_ops,
@@ -209,17 +204,19 @@ class DepthEngraver(OpsProducer):
 
                     if self.bidirectional and is_reversed:
                         ops.move_to(*end_pt)
-                        ops.add(
-                            ScanLinePowerCommand(
-                                start_pt, bytearray(power_slice[::-1])
-                            )
+                        ops.scan_to(
+                            start_pt[0],
+                            start_pt[1],
+                            start_pt[2],
+                            bytearray(power_slice[::-1]),
                         )
                     else:
                         ops.move_to(*start_pt)
-                        ops.add(
-                            ScanLinePowerCommand(
-                                end_pt, bytearray(power_slice)
-                            )
+                        ops.scan_to(
+                            end_pt[0],
+                            end_pt[1],
+                            end_pt[2],
+                            bytearray(power_slice),
                         )
                 if self.bidirectional:
                     is_reversed = not is_reversed

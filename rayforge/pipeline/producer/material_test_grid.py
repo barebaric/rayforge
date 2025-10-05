@@ -13,13 +13,7 @@ from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem
 from ...core.ops import (
     Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
     SectionType,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
 )
 import cairo
 
@@ -120,9 +114,7 @@ class MaterialTestGridProducer(OpsProducer):
         ops = Ops()
 
         if workpiece:
-            ops.add(OpsSectionStartCommand(
-                SectionType.VECTOR_OUTLINE, workpiece.uid
-            ))
+            ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
 
         # Calculate dimensions for Y-flip calculation
         cols, rows = self.grid_dimensions
@@ -152,8 +144,8 @@ class MaterialTestGridProducer(OpsProducer):
 
         for element in test_elements:
             power_normalized = element["power"] / 100.0
-            ops.add(SetPowerCommand(power_normalized))
-            ops.add(SetCutSpeedCommand(element["speed"]))
+            ops.set_power(power_normalized)
+            ops.set_cut_speed(element["speed"])
             # Use coordinates as-is (r=0 at y=0)
             if self.test_type == MaterialTestGridType.ENGRAVE:
                 self._draw_filled_box(
@@ -173,7 +165,7 @@ class MaterialTestGridProducer(OpsProducer):
                 )
 
         if workpiece:
-            ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+            ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         # Calculate total dimensions (reuse grid dimensions and margins
         # from above)
@@ -413,8 +405,8 @@ class MaterialTestGridProducer(OpsProducer):
         temp_cr.text_path(text)
         path_data = temp_cr.copy_path()
 
-        ops.add(SetPowerCommand(power / 100.0))
-        ops.add(SetCutSpeedCommand(int(speed)))
+        ops.set_power(power / 100.0)
+        ops.set_cut_speed(int(speed))
 
         # Scale factor to match show_text rendering size
         # Empirically determined to match the rendered text size
@@ -441,7 +433,7 @@ class MaterialTestGridProducer(OpsProducer):
                 rx = px * cos_r - py * sin_r
                 ry = px * sin_r + py * cos_r
                 final_point = (x + rx, y + ry, 0.0)
-                ops.add(MoveToCommand(final_point))
+                ops.move_to(*final_point)
                 first_point = final_point
                 current_point = final_point
             elif path_type == cairo.PATH_LINE_TO:
@@ -455,7 +447,7 @@ class MaterialTestGridProducer(OpsProducer):
                 rx = px * cos_r - py * sin_r
                 ry = px * sin_r + py * cos_r
                 final_point = (x + rx, y + ry, 0.0)
-                ops.add(LineToCommand(final_point))
+                ops.line_to(*final_point)
                 current_point = final_point
             elif path_type == cairo.PATH_CURVE_TO:
                 p1x, p1y, p2x, p2y, p3x, p3y = points
@@ -485,17 +477,17 @@ class MaterialTestGridProducer(OpsProducer):
             elif path_type == cairo.PATH_CLOSE_PATH:
                 # Close the path by drawing a line back to the first point
                 if first_point and current_point != first_point:
-                    ops.add(LineToCommand(first_point))
+                    ops.line_to(*first_point)
 
     def _draw_rectangle(
         self, ops: Ops, x: float, y: float, width: float, height: float
     ):
         """Draws a rectangle outline to the ops."""
-        ops.add(MoveToCommand((x, y, 0.0)))
-        ops.add(LineToCommand((x + width, y, 0.0)))
-        ops.add(LineToCommand((x + width, y + height, 0.0)))
-        ops.add(LineToCommand((x, y + height, 0.0)))
-        ops.add(LineToCommand((x, y, 0.0)))  # Close
+        ops.move_to(x, y, 0.0)
+        ops.line_to(x + width, y, 0.0)
+        ops.line_to(x + width, y + height, 0.0)
+        ops.line_to(x, y + height, 0.0)
+        ops.line_to(x, y, 0.0)  # Close
 
     def _draw_filled_box(
         self, ops: Ops, x: float, y: float, width: float, height: float,
@@ -523,12 +515,12 @@ class MaterialTestGridProducer(OpsProducer):
             # Alternate direction for efficiency (bidirectional raster)
             if i % 2 == 0:
                 # Left to right
-                ops.add(MoveToCommand((x, y_pos, 0.0)))
-                ops.add(LineToCommand((x + width, y_pos, 0.0)))
+                ops.move_to(x, y_pos, 0.0)
+                ops.line_to(x + width, y_pos, 0.0)
             else:
                 # Right to left
-                ops.add(MoveToCommand((x + width, y_pos, 0.0)))
-                ops.add(LineToCommand((x, y_pos, 0.0)))
+                ops.move_to(x + width, y_pos, 0.0)
+                ops.line_to(x, y_pos, 0.0)
 
     @property
     def requires_full_render(self) -> bool:

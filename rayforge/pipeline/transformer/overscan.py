@@ -93,7 +93,7 @@ class OverscanTransformer(OpsTransformer):
                 new_commands.extend(rewritten_line)
                 line_buffer = []
 
-        for cmd in ops.commands:
+        for cmd in ops:
             is_start = (
                 isinstance(cmd, OpsSectionStartCommand)
                 and cmd.section_type == SectionType.RASTER_FILL

@@ -155,8 +155,9 @@ def test_run_wraps_ops_in_section_markers(
     )
 
     # Assert
-    assert len(artifact.ops.commands) == 2
-    start_cmd, end_cmd = artifact.ops.commands
+    cmds = list(artifact.ops)
+    assert len(cmds) == 2
+    start_cmd, end_cmd = cmds
     assert isinstance(start_cmd, OpsSectionStartCommand)
     assert start_cmd.section_type == SectionType.RASTER_FILL
     assert start_cmd.workpiece_uid == "wp_123"
@@ -175,9 +176,10 @@ def test_run_with_empty_surface_returns_empty_ops(
         laser, empty_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
     # Should only contain the start/SetLaser/end markers
-    assert len(artifact.ops.commands) == 2
-    assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
-    assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
+    cmds = list(artifact.ops)
+    assert len(cmds) == 2
+    assert isinstance(cmds[0], OpsSectionStartCommand)
+    assert isinstance(cmds[1], OpsSectionEndCommand)
 
 
 def test_power_modulation_with_gray_and_master_power(
@@ -270,7 +272,7 @@ def test_multi_pass_logic_line_widths(laser: Laser, mock_workpiece: WorkPiece):
 
     # Assert: Group commands by their Z-coordinate and check line widths
     lines_by_z = {}
-    all_commands = artifact.ops.commands
+    all_commands = list(artifact.ops)
     for i, cmd in enumerate(all_commands):
         if isinstance(cmd, LineToCommand) and i > 0:
             prev_cmd = all_commands[i - 1]

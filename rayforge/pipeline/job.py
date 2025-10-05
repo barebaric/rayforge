@@ -13,12 +13,6 @@ from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.ops import (
     Ops,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
 )
 from ..pipeline.generator import OpsGenerator
 from ..core.step import Step
@@ -139,7 +133,7 @@ async def generate_job_ops(
         encoded or sent to a driver.
     """
     final_ops = Ops()
-    final_ops.add(JobStartCommand())
+    final_ops.job_start()
     machine_width, machine_height = machine.dimensions
     clip_rect = 0, 0, machine_width, machine_height
 
@@ -153,12 +147,12 @@ async def generate_job_ops(
             total_items += len(renderable_items)
 
     if not total_items:
-        final_ops.add(JobEndCommand())
+        final_ops.job_end()
         return final_ops
 
     processed_items = 0
     for layer, items in work_items_by_layer.items():
-        final_ops.add(LayerStartCommand(layer_uid=layer.uid))
+        final_ops.layer_start(layer_uid=layer.uid)
 
         # Re-group by step to apply post-step transformers correctly
         work_items_by_step_in_layer: Dict[Step, List[WorkPiece]] = {}
@@ -197,13 +191,9 @@ async def generate_job_ops(
 
                 # Wrap the workpiece ops with start/end markers
                 ops_with_markers = Ops()
-                ops_with_markers.add(
-                    WorkpieceStartCommand(workpiece_uid=workpiece.uid)
-                )
-                ops_with_markers.commands.extend(workpiece_ops.commands)
-                ops_with_markers.add(
-                    WorkpieceEndCommand(workpiece_uid=workpiece.uid)
-                )
+                ops_with_markers.workpiece_start(workpiece_uid=workpiece.uid)
+                ops_with_markers.extend(workpiece_ops)
+                ops_with_markers.workpiece_end(workpiece_uid=workpiece.uid)
 
                 clipped_ops = _transform_and_clip_workpiece_ops(
                     ops_with_markers, workpiece, machine, clip_rect
@@ -223,12 +213,12 @@ async def generate_job_ops(
                 transformer.run(step_combined_ops, context=context)
 
             final_ops += step_combined_ops
-        final_ops.add(LayerEndCommand(layer_uid=layer.uid))
+        final_ops.layer_end(layer_uid=layer.uid)
 
     if context:
         context.set_progress(1.0)
         context.set_message(_("Job assembly complete"))
         context.flush()
 
-    final_ops.add(JobEndCommand())
+    final_ops.job_end()
     return final_ops

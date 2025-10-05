@@ -1,7 +1,6 @@
 """Tests for the preview widget and timeline."""
 
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.core.ops.commands import SetPowerCommand, SetCutSpeedCommand
 from rayforge.workbench.simulation_widget import OpsTimeline, PreviewRenderer
 
 
@@ -15,11 +14,11 @@ def test_ops_timeline_empty():
 def test_ops_timeline_basic():
     """Test timeline with basic operations."""
     ops = Ops()
-    ops.add(SetPowerCommand(0.5))
-    ops.add(SetCutSpeedCommand(1000))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(0.5)
+    ops.set_cut_speed(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
 
     timeline = OpsTimeline(ops)
 
@@ -39,10 +38,10 @@ def test_ops_timeline_basic():
 def test_ops_timeline_power_changes():
     """Test that power changes are tracked correctly."""
     ops = Ops()
-    ops.add(SetPowerCommand(0.2))
-    ops.add(LineToCommand((5.0, 0.0, 0.0)))
-    ops.add(SetPowerCommand(0.8))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.set_power(0.2)
+    ops.line_to(5.0, 0.0, 0.0)
+    ops.set_power(0.8)
+    ops.line_to(10.0, 0.0, 0.0)
 
     timeline = OpsTimeline(ops)
     assert timeline.get_step_count() == 2
@@ -61,9 +60,9 @@ def test_ops_timeline_power_changes():
 def test_ops_timeline_position_tracking():
     """Test that start positions are tracked correctly."""
     ops = Ops()
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
 
     timeline = OpsTimeline(ops)
 
@@ -138,8 +137,8 @@ def test_preview_renderer_render_with_steps():
 def test_get_steps_up_to_negative():
     """Test get_steps_up_to with negative index."""
     ops = Ops()
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
 
     timeline = OpsTimeline(ops)
     steps = timeline.get_steps_up_to(-1)
@@ -149,8 +148,8 @@ def test_get_steps_up_to_negative():
 def test_get_steps_up_to_beyond_end():
     """Test get_steps_up_to with index beyond timeline."""
     ops = Ops()
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
 
     timeline = OpsTimeline(ops)
     steps = timeline.get_steps_up_to(100)
@@ -162,23 +161,17 @@ def test_get_steps_up_to_beyond_end():
 def test_ops_timeline_with_section_commands():
     """Test timeline ignores section commands."""
     from rayforge.core.ops import (
-        OpsSectionStartCommand,
-        OpsSectionEndCommand,
         SectionType,
     )
 
     ops = Ops()
-    # Section commands need workpiece_uid
-    start_cmd = OpsSectionStartCommand(
+    ops.ops_section_start(
         section_type=SectionType.VECTOR_OUTLINE, workpiece_uid="test-uid"
     )
-    end_cmd = OpsSectionEndCommand(section_type=SectionType.VECTOR_OUTLINE)
-
-    ops.add(start_cmd)
-    ops.add(SetPowerCommand(0.5))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
-    ops.add(end_cmd)
+    ops.set_power(0.5)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.ops_section_end(section_type=SectionType.VECTOR_OUTLINE)
 
     timeline = OpsTimeline(ops)
 

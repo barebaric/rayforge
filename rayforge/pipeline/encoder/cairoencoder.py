@@ -84,7 +84,7 @@ class CairoEncoder(OpsEncoder):
                     ctx.stroke()
                     path_has_content = False
 
-            for cmd in ops.commands:
+            for cmd in ops:
                 # Handle state change commands first
                 if isinstance(cmd, SetPowerCommand):
                     current_power = cmd.power

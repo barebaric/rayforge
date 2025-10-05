@@ -19,16 +19,8 @@ from rayforge.core.ops import (
     DisableAirAssistCommand,
     State,
     MovingCommand,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
     SectionType,
     ScanLinePowerCommand,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
     SetLaserCommand,
 )
 
@@ -131,7 +123,7 @@ def test_copy():
 
     # Modify the copy and check that original is unchanged
     ops_copy.translate(5, 5)
-    ops_copy.add(SetPowerCommand(1.0))
+    ops_copy.set_power(1.0)
 
     assert len(ops_original.commands) == 2
     assert ops_original.commands[0].end == (10, 10, 0)
@@ -543,12 +535,7 @@ def test_clip_scanlinepowercommand_start_outside():
     """Tests clipping a scanline that starts outside and ends inside."""
     ops = Ops()
     ops.move_to(0, 50, 10)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(100, 50, 10),
-            power_values=bytearray(range(100)),
-        )
-    )
+    ops.scan_to(100, 50, 10, bytearray(range(100)))
     clip_rect = (50, 0, 150, 100)
     clipped_ops = ops.clip(clip_rect)
 
@@ -575,12 +562,7 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     ops = Ops()
     # Line from (-50, 50, 0) to (150, 50, 200) -> total length 200
     ops.move_to(-50, 50, 0)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(150, 50, 200),
-            power_values=bytearray(range(200)),
-        )
-    )
+    ops.scan_to(150, 50, 200, bytearray(range(200)))
     clip_rect = (0, 0, 100, 100)
     clipped_ops = ops.clip(clip_rect)
 
@@ -610,12 +592,7 @@ def test_clip_scanlinepowercommand_fully_outside():
     """Tests that a fully outside scanline is removed."""
     ops = Ops()
     ops.move_to(200, 50, 10)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(300, 50, 10),
-            power_values=bytearray(range(100)),
-        )
-    )
+    ops.scan_to(300, 50, 10, bytearray(range(100)))
     clip_rect = (0, 0, 100, 100)
     clipped_ops = ops.clip(clip_rect)
     assert len(clipped_ops.commands) == 0
@@ -635,11 +612,7 @@ def test_subtract_regions():
 def test_subtract_regions_with_scanline():
     ops = Ops()
     ops.move_to(0, 50, 0)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(100, 50, 0), power_values=bytearray([100] * 100)
-        )
-    )
+    ops.scan_to(100, 50, 0, bytearray([100] * 100))
     # Region to cut out of the middle
     region = [(40.0, 40.0), (60.0, 40.0), (60.0, 60.0), (40.0, 60.0)]
     ops.subtract_regions([region])
@@ -688,23 +661,23 @@ def test_from_geometry():
 def test_serialization_deserialization_all_types():
     """Tests that all command types can be serialized and deserialized."""
     ops = Ops()
-    ops.add(JobStartCommand())
-    ops.add(LayerStartCommand("layer-1"))
-    ops.add(WorkpieceStartCommand("wp-1"))
-    ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp-1"))
-    ops.add(SetTravelSpeedCommand(5000))
-    ops.add(SetCutSpeedCommand(1000))
-    ops.add(SetPowerCommand(0.8))
-    ops.add(EnableAirAssistCommand())
-    ops.add(SetLaserCommand("laser-2"))
-    ops.add(MoveToCommand((1, 1, 1)))
-    ops.add(LineToCommand((2, 2, 2)))
-    ops.add(ArcToCommand((3, 1, 2), (1, 1), False))
-    ops.add(ScanLinePowerCommand((12, 2, 2), bytearray([50, 150])))
-    ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
-    ops.add(WorkpieceEndCommand("wp-1"))
-    ops.add(LayerEndCommand("layer-1"))
-    ops.add(JobEndCommand())
+    ops.job_start()
+    ops.layer_start("layer-1")
+    ops.workpiece_start("wp-1")
+    ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+    ops.set_travel_speed(5000)
+    ops.set_cut_speed(1000)
+    ops.set_power(0.8)
+    ops.enable_air_assist()
+    ops.set_laser("laser-2")
+    ops.move_to(1, 1, 1)
+    ops.line_to(2, 2, 2)
+    ops.arc_to(3, 1, 1, 1, clockwise=False)
+    ops.scan_to(12, 2, 2, bytearray([50, 150]))
+    ops.ops_section_end(SectionType.RASTER_FILL)
+    ops.workpiece_end("wp-1")
+    ops.layer_end("layer-1")
+    ops.job_end()
     ops.last_move_to = (1, 1, 1)
 
     data = ops.to_dict()
@@ -723,12 +696,7 @@ def test_translate_with_scanline():
     """Tests that translate() correctly transforms ScanLinePowerCommand."""
     ops = Ops()
     ops.move_to(10, 20, 30)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(40, 50, 60),
-            power_values=bytearray([1, 2, 3]),
-        )
-    )
+    ops.scan_to(40, 50, 60, bytearray([1, 2, 3]))
     ops.translate(5, -10, 15)
 
     move_cmd = cast(MoveToCommand, ops.commands[0])
@@ -1019,7 +987,7 @@ def test_estimate_time_with_scanline():
     """Test time estimation with ScanLinePowerCommand."""
     ops = Ops()
     ops.move_to(0, 50)
-    ops.add(ScanLinePowerCommand((100, 50, 0), bytearray([100] * 100)))
+    ops.scan_to(100, 50, 0, bytearray([100] * 100))
 
     # Disable acceleration for simpler calculation
     time_est = ops.estimate_time(acceleration=0)

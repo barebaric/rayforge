@@ -5,8 +5,6 @@ import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import (
     Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
     SectionType,
 )
 from .base import OpsProducer, PipelineArtifact, CoordinateSystem
@@ -285,9 +283,7 @@ class Rasterizer(OpsProducer):
 
         final_ops = Ops()
         # Always add section markers
-        final_ops.add(
-            OpsSectionStartCommand(SectionType.RASTER_FILL, workpiece.uid)
-        )
+        final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
 
         width = surface.get_width()
         height = surface.get_height()
@@ -324,7 +320,7 @@ class Rasterizer(OpsProducer):
             final_ops.set_power((settings or {}).get("power", 0))
             final_ops.extend(raster_ops)
 
-        final_ops.add(OpsSectionEndCommand(SectionType.RASTER_FILL))
+        final_ops.ops_section_end(SectionType.RASTER_FILL)
 
         return PipelineArtifact(
             ops=final_ops,

@@ -2,7 +2,7 @@
 
 import cairo
 from typing import Tuple, Optional
-from ...core.ops import Ops, State, SetPowerCommand, SetCutSpeedCommand
+from ...core.ops import Ops, State
 from ..canvas.element import CanvasElement
 
 
@@ -59,7 +59,7 @@ class OpsTimeline:
     def _rebuild_timeline(self):
         """Builds timeline and calculates speed range from ALL operations."""
         self.steps = []
-        if not self.ops or not self.ops.commands:
+        if not self.ops or self.ops.is_empty():
             self.speed_range = (0.0, 1000.0)
             return
 
@@ -67,22 +67,18 @@ class OpsTimeline:
         current_pos = (0.0, 0.0, 0.0)
         speeds = []
 
-        for cmd in self.ops.commands:
-            # Store command with state and starting position
-            self.steps.append(
-                (cmd, State(**current_state.__dict__), current_pos)
-            )
-
+        for cmd in self.ops:
             # Update state if this is a state command
-            if isinstance(cmd, SetPowerCommand):
-                current_state.power = cmd.power
-            elif isinstance(cmd, SetCutSpeedCommand):
-                current_state.cut_speed = cmd.speed
-            elif hasattr(cmd, "apply_to_state"):
+            if cmd.is_state_command():
                 cmd.apply_to_state(current_state)
+            # Only add movement commands to the timeline steps
+            elif not cmd.is_marker_command():
+                # Store command with state and starting position
+                self.steps.append(
+                    (cmd, State(**current_state.__dict__), current_pos)
+                )
 
-            # For moving commands, update current_pos
-            if hasattr(cmd, "end") and cmd.end is not None:
+                # Update current_pos
                 current_pos = cmd.end
 
                 # Track speeds for range calculation
@@ -226,8 +222,10 @@ class SimulationOverlay(CanvasElement):
 
             # Draw the operation
             if hasattr(cmd, "end") and cmd.end is not None:
-                if not hasattr(cmd, "is_travel_command") or \
-                        not cmd.is_travel_command():
+                if (
+                    not hasattr(cmd, "is_travel_command")
+                    or not cmd.is_travel_command()
+                ):
                     ctx.move_to(start_pos[0], start_pos[1])
                     ctx.line_to(cmd.end[0], cmd.end[1])
                     ctx.stroke()
