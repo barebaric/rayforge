@@ -22,6 +22,7 @@ from ..core.layer import Layer
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
 from ..core.ops import Ops, ScanLinePowerCommand
+from ..core.matrix import Matrix
 from .steprunner import run_step_in_subprocess
 from ..core.group import Group
 from .artifact.vector import VectorArtifact
@@ -740,45 +741,62 @@ class OpsGenerator:
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
-        Retrieves generated operations from the cache on-demand.
+        [Compatibility Method] Retrieves generated operations from the cache
+        on-demand by wrapping the new `get_scaled_ops` method.
+        """
+        logger.debug(f"{self.__class__.__name__}.get_ops called")
+        return self.get_scaled_ops(
+            step.uid, workpiece.uid, workpiece.get_world_transform()
+        )
 
-        This is the primary method for consumers (like the UI or the job
-        assembler) to get the result of the pipeline. It retrieves the
-        `ArtifactHandle` from the cache, reconstructs the full `Artifact`
-        object from shared memory, and returns a deep copy of its `Ops`. If
-        the ops are scalable, this method also scales them to the workpiece's
-        current physical size in millimeters.
+    def get_scaled_ops(
+        self, step_uid: str, workpiece_uid: str, world_transform: Matrix
+    ) -> Optional[Ops]:
+        """
+        Retrieves generated operations from the cache and scales them to the
+        final world size.
+
+        This is the primary method for consumers to get pipeline results. It
+        retrieves the `ArtifactHandle` from the cache, reconstructs the full
+        `Artifact` object from shared memory, and returns a deep copy of its
+        `Ops`. If the ops are scalable, this method also scales them to the
+        size defined by the provided `world_transform` matrix.
 
         Args:
-            step: The Step for which to retrieve operations.
-            workpiece: The WorkPiece for which to retrieve operations.
+            step_uid: The UID of the Step.
+            workpiece_uid: The UID of the WorkPiece.
+            world_transform: The final world transformation matrix for the
+                             workpiece.
 
         Returns:
             A deep copy of the scaled Ops object, or None if no
             operations are available in the cache.
         """
-        logger.debug(f"{self.__class__.__name__}.get_ops called")
-        key = step.uid, workpiece.uid
-        if any(s <= 0 for s in workpiece.size):
+        logger.debug(f"{self.__class__.__name__}.get_scaled_ops called")
+        key = step_uid, workpiece_uid
+        final_size = world_transform.get_abs_scale()
+        if any(s <= 0 for s in final_size):
             return None
 
         handle = self._ops_cache.get(key)
 
         if handle is None:
-            logger.debug(f"get_ops for {key}: No artifact found in cache.")
+            logger.debug(
+                f"get_scaled_ops for {key}: No artifact found in cache."
+            )
             return None
 
         # Check for stale non-scalable artifacts.
-        if not handle.is_scalable and handle.generation_size != workpiece.size:
+        if not handle.is_scalable and handle.generation_size != final_size:
             logger.debug(
-                f"get_ops for {key}: Found stale artifact. "
+                f"get_scaled_ops for {key}: Found stale artifact. "
                 f"Cache size: {handle.generation_size}, "
-                f"WP size: {workpiece.size}. Returning None."
+                f"WP size: {final_size}. Returning None."
             )
             return None
 
         logger.debug(
-            f"get_ops for {key}: Found artifact. "
+            f"get_scaled_ops for {key}: Found artifact. "
             f"Scalable: {handle.is_scalable}."
         )
 
@@ -786,17 +804,15 @@ class OpsGenerator:
         ops = deepcopy(artifact.ops)
 
         if isinstance(artifact, VectorArtifact) and artifact.is_scalable:
-            self._scale_ops_to_workpiece_size(ops, artifact, workpiece)
+            self._scale_ops_to_final_size(ops, artifact, final_size)
 
-        # --- VALIDATION LOGGING ---
         scanline_count = sum(
             1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
         )
         logger.debug(
-            f"OpsGenerator.get_ops: Returning final ops for key {key} with "
-            f"{scanline_count} ScanLinePowerCommands."
+            f"OpsGenerator.get_scaled_ops: Returning final ops for key {key} "
+            f"with {scanline_count} ScanLinePowerCommands."
         )
-        # --- END LOGGING ---
         return ops
 
     def get_artifact(
@@ -851,18 +867,18 @@ class OpsGenerator:
         )
         return deepcopy(artifact)
 
-    def _scale_ops_to_workpiece_size(
+    def _scale_ops_to_final_size(
         self,
         ops: Ops,
         artifact: VectorArtifact,
-        workpiece: "WorkPiece",
+        final_size_mm: Tuple[float, float],
     ):
         """
         Scales an Ops object from its source coordinate system to the
-        workpiece's current physical size in millimeters.
+        provided final physical size in millimeters.
         """
         logger.debug(
-            f"{self.__class__.__name__}._scale_ops_to_workpiece_size called"
+            f"{self.__class__.__name__}._scale_ops_to_final_size called"
         )
         if not artifact.source_dimensions:
             logger.warning(
@@ -871,11 +887,7 @@ class OpsGenerator:
             return
 
         source_width, source_height = artifact.source_dimensions
-        size = workpiece.size
-        if not size:
-            return
-
-        final_width_mm, final_height_mm = size
+        final_width_mm, final_height_mm = final_size_mm
 
         scale_x = 1.0
         if source_width > 1e-9:

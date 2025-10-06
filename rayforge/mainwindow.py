@@ -1,9 +1,8 @@
 import json
 import logging
-import math
-import numpy as np
 from pathlib import Path
 from typing import List, Optional, cast
+import asyncio
 
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 
@@ -16,7 +15,6 @@ from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
-from .core.matrix import Matrix
 from .core.workpiece import WorkPiece
 from .core.ops import Ops
 from .core.import_source import ImportSource
@@ -51,7 +49,7 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
 from .core.step import Step
-from .pipeline.artifact import VectorArtifact, HybridRasterArtifact
+from .pipeline.job import assemble_final_job_ops
 
 
 logger = logging.getLogger(__name__)
@@ -305,6 +303,7 @@ class MainWindow(Adw.ApplicationWindow):
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
                 self.doc_editor.doc,
+                self.doc_editor.ops_generator,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -472,65 +471,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _update_3d_view_content(self):
         """
-        Gathers all visible artifacts, transforms them to world space, and
-        updates the 3D canvas. This is the single source of truth for what
-        the 3D view should display.
+        Updates the 3D canvas by delegating to its internal update method.
+        This is now a fast, non-blocking operation.
         """
         if not self.canvas3d:
             return
-
-        generator = self.doc_editor.ops_generator
-        doc = self.doc_editor.doc
-
-        vector_ops_to_render = Ops()
-        raster_instances = []
-
-        # Iterate through all items that should be rendered.
-        for layer in doc.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                if not step.visible:
-                    continue
-                for workpiece in layer.all_workpieces:
-                    artifact = generator.get_artifact(step, workpiece)
-                    if not artifact:
-                        continue
-
-                    # The Ops from get_ops are already scaled to the
-                    # workpiece's final mm size, but are located at
-                    # the origin.
-                    workpiece_ops = generator.get_ops(step, workpiece)
-                    if not workpiece_ops:
-                        continue
-
-                    # We only need to apply the workpiece's final world
-                    # position and rotation, not its scale.
-                    world_transform = workpiece.get_world_transform()
-                    tx, ty, angle, sx, sy, skew = world_transform.decompose()
-
-                    transform_without_scale = Matrix.compose(
-                        tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
-                    )
-                    final_transform = transform_without_scale.to_4x4_numpy()
-
-                    if isinstance(artifact, VectorArtifact):
-                        workpiece_ops.transform(final_transform)
-                        vector_ops_to_render.extend(workpiece_ops)
-
-                    elif isinstance(artifact, HybridRasterArtifact):
-                        raster_instances.append((artifact, final_transform))
-
-                        # For hybrid artifacts, the Ops object contains the
-                        # full toolpath, including the ScanLinePowerCommands
-                        # that define the overscan moves. We pass the entire
-                        # object to the rendering pipeline. The OpsRenderer
-                        # will correctly extract the zero-power segments.
-                        workpiece_ops.transform(final_transform)
-                        vector_ops_to_render.extend(workpiece_ops)
-
-        # Pass the aggregated and transformed data to the canvas
-        self.canvas3d.set_scene_content(vector_ops_to_render, raster_instances)
+        self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(self, ops: Optional[Ops]):
         """Generates G-code from Ops and updates the preview panel."""
@@ -601,8 +547,20 @@ class MainWindow(Adw.ApplicationWindow):
             )
             # Trigger a background task to generate fresh G-code for the view
             task_key = "aggregate-gcode-preview-ops"
-            task_mgr.run_thread(
-                self._aggregate_ops_for_3d_view,
+
+            async def _aggregate_coro(context):
+                machine = config.machine
+                if not machine:
+                    return None
+                return await assemble_final_job_ops(
+                    self.doc_editor.doc,
+                    machine,
+                    self.doc_editor.ops_generator,
+                    context,
+                )
+
+            task_mgr.add_coroutine(
+                _aggregate_coro,
                 when_done=self._on_gcode_preview_ops_aggregated,
                 key=task_key,
             )
@@ -775,73 +733,6 @@ class MainWindow(Adw.ApplicationWindow):
         """Shows a toast when requested by the DocEditor."""
         self.toast_overlay.add_toast(Adw.Toast.new(message))
 
-    def _aggregate_ops_for_3d_view(self) -> Ops:
-        """
-        Gathers all generated Ops from the document, transforms them into
-        machine coordinates, and merges them into a single Ops object for 3D
-        rendering. This is a heavy function and should be run in a background
-        thread.
-        """
-        full_ops = Ops()
-        doc = self.doc_editor.doc
-        generator = self.doc_editor.ops_generator
-
-        machine = config.machine
-        if not machine:
-            logger.warning(
-                "Cannot aggregate 3D ops without an active machine."
-            )
-            return full_ops
-
-        machine_width, machine_height = machine.dimensions
-        clip_rect = 0, 0, machine_width, machine_height
-
-        for layer in doc.layers:
-            if not layer.workflow:
-                continue
-
-            # Process workpieces in the layer
-            for workpiece in layer.all_workpieces:
-                # Accumulate ops from all steps for this workpiece
-                for step in layer.workflow.steps:
-                    if not step.visible:
-                        continue
-
-                    workpiece_ops = generator.get_ops(step, workpiece)
-                    if not workpiece_ops:
-                        continue
-
-                    # The ops are correctly scaled in mm, but at the origin.
-                    # We need to apply the workpiece's world transform, but
-                    # WITHOUT its scale component, as that's already baked in.
-                    world_transform = workpiece.get_world_transform()
-                    tx, ty, angle, sx, sy, skew = world_transform.decompose()
-
-                    transform_without_scale = Matrix.compose(
-                        tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
-                    )
-                    workpiece_transform = (
-                        transform_without_scale.to_4x4_numpy()
-                    )
-
-                    # Combine workpiece world transform with machine coordinate
-                    # transform.
-                    final_transform = workpiece_transform
-                    if machine.y_axis_down:
-                        y_down_mat = np.identity(4)
-                        y_down_mat[1, 1] = -1.0
-                        y_down_mat[1, 3] = machine_height
-                        # The machine coordinate transform is applied AFTER the
-                        # workpiece's world transform.
-                        final_transform = y_down_mat @ workpiece_transform
-
-                    # Transform from local to machine coordinates
-                    workpiece_ops.transform(final_transform)
-                    full_ops.extend(workpiece_ops)
-
-        # Clip the final aggregated ops to the machine boundaries
-        return full_ops.clip(clip_rect)
-
     def _on_post_settle_ops_aggregated(self, task: Task):
         """
         Callback executed on the main thread after the background aggregation
@@ -884,8 +775,20 @@ class MainWindow(Adw.ApplicationWindow):
         # This key ensures that if another document change happens quickly,
         # the previous (now stale) aggregation task will be cancelled.
         task_key = "aggregate-post-settle-ops"
-        task_mgr.run_thread(
-            self._aggregate_ops_for_3d_view,
+
+        async def _aggregate_coro(context):
+            machine = config.machine
+            if not machine:
+                return None
+            return await assemble_final_job_ops(
+                self.doc_editor.doc,
+                machine,
+                self.doc_editor.ops_generator,
+                context,
+            )
+
+        task_mgr.add_coroutine(
+            _aggregate_coro,
             when_done=self._on_post_settle_ops_aggregated,
             key=task_key,
         )
@@ -965,6 +868,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             self.canvas3d = Canvas3D(
                 self.doc_editor.doc,
+                self.doc_editor.ops_generator,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -1421,7 +1325,20 @@ class MainWindow(Adw.ApplicationWindow):
         """
         logger.debug("_calculate_estimated_time called")
         try:
-            aggregated_ops = self._aggregate_ops_for_3d_view()
+
+            async def _get_ops():
+                machine = config.machine
+                if not machine:
+                    return Ops()
+                return await assemble_final_job_ops(
+                    self.doc_editor.doc,
+                    machine,
+                    self.doc_editor.ops_generator,
+                    None,  # No context needed for this thread
+                )
+
+            aggregated_ops = asyncio.run(_get_ops())
+
             logger.debug(
                 f"Aggregated ops: "
                 f"{len(aggregated_ops) if aggregated_ops else 0} "

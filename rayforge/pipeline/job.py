@@ -117,14 +117,15 @@ def _transform_and_clip_workpiece_ops(
     return clipped_ops
 
 
-async def generate_job_ops(
+async def assemble_final_job_ops(
     doc: Doc,
     machine: Machine,
     ops_generator: OpsGenerator,
     context: Optional[ExecutionContext] = None,
 ) -> Ops:
     """
-    Assembles all workpiece Ops into a single, final job for a machine.
+    Assembles all workpiece Ops into a single, final job for a machine. This
+    is an expensive operation intended only for final G-code generation.
 
     This function iterates through all visible step/workpiece pairs in a
     document, groups them by step, and generates the final machine operations.

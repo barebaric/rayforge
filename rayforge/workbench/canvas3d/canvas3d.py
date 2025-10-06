@@ -6,7 +6,7 @@ from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
-from .ops_renderer import Ops, OpsRenderer
+from .ops_renderer import OpsRenderer
 from .sphere_renderer import SphereRenderer
 from .axis_renderer_3d import AxisRenderer3D
 from .raster_renderer import RasterArtifactRenderer
@@ -18,15 +18,146 @@ from .shaders import (
     RASTER_FRAGMENT_SHADER,
     RASTER_VERTEX_SHADER,
 )
-from ...core.ops import ScanLinePowerCommand
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
-from ...pipeline.producer.base import HybridRasterArtifact
+from ...pipeline.scene_assembler import (
+    SceneDescription,
+    generate_scene_description,
+)
+from ...pipeline.generator import OpsGenerator
+from ...core.matrix import Matrix
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def prepare_scene_vertices_async(
+    scene_description: SceneDescription,
+    color_set: ColorSet,
+    scene_model_matrix: np.ndarray,
+    ops_generator_proxy: OpsGenerator,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    A background task that prepares all vertex data for an entire scene.
+
+    It iterates through a lightweight SceneDescription, loads the required
+    artifact data, generates vertices in local space, applies the final
+    world transformation, and aggregates the results into VBO-ready
+    numpy arrays.
+    """
+    all_powered_verts: List[np.ndarray] = []
+    all_powered_colors: List[np.ndarray] = []
+    all_travel_verts: List[np.ndarray] = []
+    all_zero_power_verts: List[np.ndarray] = []
+    all_zero_power_colors: List[np.ndarray] = []
+
+    # This temporary renderer instance is used only for its data-processing
+    # logic, not its GL resources.
+    renderer = OpsRenderer()
+
+    logger.debug("--- [CANVAS3D_TASK] Starting scene vertex preparation ---")
+
+    for i, item in enumerate(scene_description.render_items):
+        # 1. Use the generator's new decoupled API to get correctly scaled Ops.
+        #    The Ops will be scaled to mm, but located at the local origin.
+        ops_to_process = ops_generator_proxy.get_scaled_ops(
+            item.step_uid, item.workpiece_uid, Matrix(item.world_transform)
+        )
+
+        if not ops_to_process or ops_to_process.is_empty():
+            logger.debug("[CANVAS3D_TASK] Ops are empty. Skipping.")
+            continue
+
+        # 2. Generate local-space vertices from the correctly scaled Ops.
+        (
+            p_verts,
+            p_colors,
+            t_verts,
+            zp_verts,
+            zp_colors,
+        ) = renderer.prepare_vertex_data(ops_to_process, color_set)
+
+        # 3. The vertices are now correctly scaled but at the origin.
+        #    We must apply the placement (rotation, translation, flip, skew)
+        #    from the world matrix, but without re-applying the scale.
+        world_matrix_obj = Matrix(item.world_transform)
+        (tx, ty, angle_deg, _, sy, skew_deg) = world_matrix_obj.decompose()
+
+        # Recompose a matrix with scale forced to 1.0, preserving flips
+        # (sy sign).
+        placement_matrix_obj = Matrix.compose(
+            tx, ty, angle_deg, 1.0, math.copysign(1.0, sy), skew_deg
+        )
+        placement_matrix_4x4 = placement_matrix_obj.to_4x4_numpy()
+
+        # 4. Apply the final transformation (scene flip + item placement)
+        final_transform = scene_model_matrix @ placement_matrix_4x4
+
+        def _transform_vertices(verts: np.ndarray, transform: np.ndarray):
+            if verts.size == 0:
+                return verts
+            # Reshape to Nx3
+            points = verts.reshape(-1, 3)
+            # Convert to homogenous Nx4 (x, y, z, 1)
+            homogenous_points = np.hstack(
+                [points, np.ones((points.shape[0], 1), dtype=points.dtype)]
+            )
+            # Apply transform (T @ P^T)^T
+            transformed_points = (transform @ homogenous_points.T).T
+            # Drop w and flatten back to 1D array
+            return transformed_points[:, :3].astype(np.float32).flatten()
+
+        if p_verts.size > 0:
+            all_powered_verts.append(
+                _transform_vertices(p_verts, final_transform)
+            )
+            all_powered_colors.append(p_colors)
+        if t_verts.size > 0:
+            all_travel_verts.append(
+                _transform_vertices(t_verts, final_transform)
+            )
+        if zp_verts.size > 0:
+            all_zero_power_verts.append(
+                _transform_vertices(zp_verts, final_transform)
+            )
+            all_zero_power_colors.append(zp_colors)
+
+    # 5. Concatenate all results into single arrays
+    final_powered_verts = (
+        np.concatenate(all_powered_verts)
+        if all_powered_verts
+        else np.array([], dtype=np.float32)
+    )
+    final_powered_colors = (
+        np.concatenate(all_powered_colors)
+        if all_powered_colors
+        else np.array([], dtype=np.float32)
+    )
+    final_travel_verts = (
+        np.concatenate(all_travel_verts)
+        if all_travel_verts
+        else np.array([], dtype=np.float32)
+    )
+    final_zero_power_verts = (
+        np.concatenate(all_zero_power_verts)
+        if all_zero_power_verts
+        else np.array([], dtype=np.float32)
+    )
+    final_zero_power_colors = (
+        np.concatenate(all_zero_power_colors)
+        if all_zero_power_colors
+        else np.array([], dtype=np.float32)
+    )
+
+    return (
+        final_powered_verts,
+        final_powered_colors,
+        final_travel_verts,
+        final_zero_power_verts,
+        final_zero_power_colors,
+    )
 
 
 class Canvas3D(Gtk.GLArea):
@@ -35,6 +166,7 @@ class Canvas3D(Gtk.GLArea):
     def __init__(
         self,
         doc,
+        ops_generator: "OpsGenerator",
         width_mm: float,
         depth_mm: float,
         y_down: bool = False,
@@ -42,6 +174,7 @@ class Canvas3D(Gtk.GLArea):
     ):
         super().__init__(**kwargs)
         self.doc = doc
+        self.ops_generator = ops_generator
         self.width_mm = width_mm
         self.depth_mm = depth_mm
         self.y_down = y_down
@@ -54,8 +187,8 @@ class Canvas3D(Gtk.GLArea):
         self.sphere_renderer: Optional[SphereRenderer] = None
         self.raster_renderer: Optional[RasterArtifactRenderer] = None
         self.raster_shader: Optional[Shader] = None
-        self._ops_preparation_task: Optional[Task] = None
-        self._ops_vtx_cache: Optional[
+        self._scene_preparation_task: Optional[Task] = None
+        self._scene_vtx_cache: Optional[
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         ] = None
         self._show_travel_moves = False
@@ -229,8 +362,8 @@ class Canvas3D(Gtk.GLArea):
         logger.info("GLArea unrealized. Cleaning up GL resources.")
         self.make_current()
         try:
-            if self._ops_preparation_task:
-                self._ops_preparation_task.cancel()
+            if self._scene_preparation_task:
+                self._scene_preparation_task.cancel()
             if self.axis_renderer:
                 self.axis_renderer.cleanup()
             if self.ops_renderer:
@@ -386,9 +519,9 @@ class Canvas3D(Gtk.GLArea):
                     self._model_matrix,  # Pass the model matrix for positions
                 )
             if self.ops_renderer and self.main_shader:
-                # The ops vertices are already in world space, so we do not
-                # apply the scene's _model_matrix. We pass the UI matrix which
-                # only contains camera projection and view.
+                # The ops vertices are now pre-transformed into the scene's
+                # final coordinate space, so we use the UI matrix which only
+                # contains camera projection and view.
                 self.ops_renderer.render(
                     self.main_shader,
                     mvp_matrix_ui_gl,
@@ -614,30 +747,39 @@ class Canvas3D(Gtk.GLArea):
         self._show_travel_moves = visible
         self._update_renderer_from_cache()
 
-    def _on_ops_prepared(self, task: Task):
+    def _on_scene_prepared(self, task: Task):
         """
-        Callback for when the background ops preparation task is finished.
+        Callback for when the background scene preparation task is finished.
         """
         if task.get_status() != "completed":
-            self._ops_vtx_cache = None
+            self._scene_vtx_cache = None
             if self.ops_renderer:
                 self.ops_renderer.clear()
+            logger.error(
+                "[CANVAS3D] Scene preparation task failed or was cancelled."
+            )
             self.queue_render()
             return
 
         # Cache the full vertex data from the background task
-        self._ops_vtx_cache = task.result()
+        logger.debug(
+            "[CANVAS3D] Scene preparation finished. Caching vertex data."
+        )
+        self._scene_vtx_cache = task.result()
         self._update_renderer_from_cache()
 
     def _update_renderer_from_cache(self):
         """
         Helper to update the renderer based on current visibility flags.
         """
-        if not self.ops_renderer or not self._ops_vtx_cache:
+        if not self.ops_renderer or not self._scene_vtx_cache:
             if self.ops_renderer:
                 self.ops_renderer.clear()
+            logger.debug("[CANVAS3D] No vertex cache to update renderer from.")
             self.queue_render()
             return
+
+        logger.debug("[CANVAS3D] Updating renderer from vertex cache.")
 
         (
             powered_verts,
@@ -645,7 +787,7 @@ class Canvas3D(Gtk.GLArea):
             travel_verts,
             zero_power_verts,
             zero_power_colors,
-        ) = self._ops_vtx_cache
+        ) = self._scene_vtx_cache
 
         if self._show_travel_moves:
             # When travel is shown, zero-power cuts are also shown. They are
@@ -672,57 +814,81 @@ class Canvas3D(Gtk.GLArea):
         )
         self.queue_render()
 
-    def set_scene_content(
-        self,
-        vector_ops: Ops,
-        raster_instances: List[Tuple[HybridRasterArtifact, np.ndarray]],
-    ):
+    def update_scene_from_doc(self):
         """
-        Sets the entire scene content from pre-aggregated and transformed data.
+        Updates the entire scene content from the document. This is the main
+        entry point for refreshing the 3D view.
         """
         if not self.ops_renderer or not self.raster_renderer:
             return
 
-        # --- INPUT VALIDATION LOGGING ---
-        scanline_count = sum(
-            1
-            for cmd in vector_ops.commands
-            if isinstance(cmd, ScanLinePowerCommand)
-        )
-        logger.debug(
-            f"Canvas3D.set_scene_content: Received {len(vector_ops.commands)} "
-            f"vector commands, including {scanline_count} "
-            "ScanLinePowerCommands."
-        )
-        # --- END LOGGING ---
+        logger.debug("Canvas3D: Updating scene from document.")
 
         # Theme/color updates only need to happen once per theme change
         if self._theme_is_dirty:
             self._update_theme_and_colors()
         if not self._color_set:
-            logger.warning("Cannot set artifacts, color set not resolved.")
+            logger.warning("Cannot update scene, color set not resolved.")
             return
 
-        # Handle raster instances by clearing and re-adding them
+        # 1. Quickly generate the lightweight scene description
+        scene_description = generate_scene_description(
+            self.doc, self.ops_generator
+        )
+
+        # 2. Handle raster instances immediately on the main thread (fast)
         self.raster_renderer.clear()
-        for artifact, transform_matrix in raster_instances:
-            self.raster_renderer.add_instance(artifact, transform_matrix)
+        for item in scene_description.render_items:
+            if item.raster_artifact:
+                world_transform_matrix = Matrix(item.world_transform)
 
-        # Schedule the vector ops for preparation.
-        self._schedule_ops_preparation(vector_ops)
+                # Decompose the full world transform to separate placement from
+                # scale.
+                (
+                    tx,
+                    ty,
+                    angle_deg,
+                    _,
+                    sy,
+                    skew_deg,
+                ) = world_transform_matrix.decompose()
 
-    def _schedule_ops_preparation(self, ops: Ops):
+                # Recompose a new matrix containing ONLY placement
+                # (translation, rotation, flip, skew). The scale is stripped
+                # out by using 1.0 for sx and only the sign of sy to preserve
+                # reflections.
+                placement_transform = Matrix.compose(
+                    tx, ty, angle_deg, 1.0, math.copysign(1.0, sy), skew_deg
+                )
+
+                # The RasterArtifactRenderer will internally apply its own
+                # scale based on the artifact's dimensions_mm. We only provide
+                # it with the pure placement matrix.
+                self.raster_renderer.add_instance(
+                    item.raster_artifact, placement_transform.to_4x4_numpy()
+                )
+
+        # 3. Schedule the expensive vector preparation for a background thread
+        self._schedule_scene_preparation(scene_description)
+
+    def _schedule_scene_preparation(self, scene_description: SceneDescription):
         """
-        Schedules the given Ops to be prepared for rendering in a
-        background thread.
+        Schedules the given SceneDescription to be prepared for rendering in
+        a background thread.
         """
-        task_key = (id(self), "prepare-3d-ops-vertices")
+        task_key = (id(self), "prepare-3d-scene-vertices")
 
         if self.ops_renderer and self._color_set is not None:
-            self._ops_preparation_task = task_mgr.run_thread(
-                self.ops_renderer.prepare_vertex_data,
-                ops,
+            if self._scene_preparation_task:
+                self._scene_preparation_task.cancel()
+
+            logger.debug("[CANVAS3D] Scheduling scene preparation task.")
+            self._scene_preparation_task = task_mgr.run_thread(
+                prepare_scene_vertices_async,
+                scene_description,
                 self._color_set,
+                self._model_matrix,
+                self.ops_generator,  # Pass the generator proxy
                 key=task_key,
-                when_done=self._on_ops_prepared,
+                when_done=self._on_scene_prepared,
             )

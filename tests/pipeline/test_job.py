@@ -8,7 +8,7 @@ from rayforge.core.import_source import ImportSource
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.shared.tasker.task import CancelledError
-from rayforge.pipeline.job import generate_job_ops
+from rayforge.pipeline.job import assemble_final_job_ops
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 from rayforge.image import SVG_RENDERER
@@ -61,7 +61,7 @@ async def test_generate_job_ops_assembles_correctly(
     doc, machine, mock_ops_generator, real_workpiece
 ):
     """
-    Test that generate_job_ops correctly applies the workpiece's world
+    Test that assemble_final_job_ops correctly applies the workpiece's world
     transform matrix and then converts to machine coordinates.
     """
     # Arrange
@@ -97,7 +97,7 @@ async def test_generate_job_ops_assembles_correctly(
     mock_ops_generator.get_ops.return_value = base_ops
 
     # Act
-    final_ops = await generate_job_ops(doc, machine, mock_ops_generator)
+    final_ops = await assemble_final_job_ops(doc, machine, mock_ops_generator)
 
     # Assert
     mock_ops_generator.get_ops.assert_called_once_with(step, real_workpiece)
@@ -169,7 +169,7 @@ async def test_job_generation_cancellation(doc, machine, mock_ops_generator):
 
     # Act & Assert
     with pytest.raises(CancelledError):
-        await generate_job_ops(
+        await assemble_final_job_ops(
             doc, machine, mock_ops_generator, context=mock_context
         )
 

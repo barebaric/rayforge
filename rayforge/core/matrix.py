@@ -27,8 +27,8 @@ class Matrix:
         Args:
             data: Initialization data. Can be:
                   - Another `Matrix` instance (a copy is made).
-                  - A 3x3 numpy array.
-                  - A 3x3 nested sequence (e.g., list of lists).
+                  - A 3x3 or 4x4 numpy array.
+                  - A 3x3 or 4x4 nested sequence (e.g., list of lists).
                   - `None` (default) to create an identity matrix.
         """
         if data is None:
@@ -38,9 +38,20 @@ class Matrix:
         else:
             try:
                 array_data = np.array(data, dtype=float)
-                if array_data.shape != (3, 3):
-                    raise ValueError("Input data must resolve to a 3x3 shape.")
-                self.m = array_data
+                if array_data.shape == (3, 3):
+                    self.m = array_data
+                elif array_data.shape == (4, 4):
+                    # Allow initialization from a 4x4 matrix by extracting
+                    # the 2D affine components.
+                    self.m = np.identity(3, dtype=float)
+                    # Copy the 2x2 rotation/scale/shear part
+                    self.m[0:2, 0:2] = array_data[0:2, 0:2]
+                    # Copy the 2D translation part
+                    self.m[0:2, 2] = array_data[0:2, 3]
+                else:
+                    raise ValueError(
+                        "Input data must resolve to a 3x3 or 4x4 shape."
+                    )
             except (ValueError, TypeError) as e:
                 raise ValueError(f"Could not create Matrix from data: {e}")
 
@@ -447,7 +458,7 @@ class Matrix:
 
     @staticmethod
     def flip_horizontal(
-        center: Optional[Tuple[float, float]] = None
+        center: Optional[Tuple[float, float]] = None,
     ) -> "Matrix":
         """
         Creates a horizontal flip (mirror along the Y-axis) matrix.
@@ -460,7 +471,7 @@ class Matrix:
 
     @staticmethod
     def flip_vertical(
-        center: Optional[Tuple[float, float]] = None
+        center: Optional[Tuple[float, float]] = None,
     ) -> "Matrix":
         """
         Creates a vertical flip (mirror along the X-axis) matrix.

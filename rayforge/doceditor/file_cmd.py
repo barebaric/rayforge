@@ -7,7 +7,7 @@ from ..core.matrix import Matrix
 from ..image import import_file
 from ..undo import ListItemCommand
 from ..shared.tasker.context import ExecutionContext
-from ..pipeline.job import generate_job_ops
+from ..pipeline.job import assemble_final_job_ops
 from ..pipeline.encoder.gcode import GcodeEncoder
 from ..core.vectorization_config import TraceConfig
 from ..core.layer import Layer
@@ -240,7 +240,7 @@ class FileCmd:
 
             try:
                 # 1. Generate Ops (async, reports progress)
-                ops = await generate_job_ops(
+                ops = await assemble_final_job_ops(
                     self._editor.doc,
                     machine,
                     self._editor.ops_generator,
@@ -250,8 +250,9 @@ class FileCmd:
                 # 2. Encode G-code (sync, but usually fast)
                 context.set_message(_("Encoding G-code..."))
                 encoder = GcodeEncoder.for_machine(machine)
-                gcode, _op_to_line_map = encoder.encode(ops, machine,
-                                                        self._editor.doc)
+                gcode, _op_to_line_map = encoder.encode(
+                    ops, machine, self._editor.doc
+                )
 
                 # 3. Write to file (sync, potentially slow, run in thread)
                 context.set_message(_(f"Saving to {file_path}..."))

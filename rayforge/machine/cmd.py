@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
-from ..pipeline.job import generate_job_ops
+from ..pipeline.job import assemble_final_job_ops
 from ..shared.tasker import task_mgr
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class MachineCmd:
                     logger.warning("Framing cancelled: Frame power is zero.")
                     return
 
-                ops = await generate_job_ops(
+                ops = await assemble_final_job_ops(
                     self._editor.doc,
                     machine,
                     self._editor.ops_generator,
@@ -65,6 +65,7 @@ class MachineCmd:
                 )
                 # Prepend the laser selection command at the beginning
                 from ..core.ops import Ops
+
                 frame_with_laser = Ops()
                 frame_with_laser.set_laser(head.uid)
                 frame_with_laser += frame
@@ -87,7 +88,7 @@ class MachineCmd:
 
         async def send_coro(context: "ExecutionContext"):
             try:
-                ops = await generate_job_ops(
+                ops = await assemble_final_job_ops(
                     self._editor.doc,
                     machine,
                     self._editor.ops_generator,
