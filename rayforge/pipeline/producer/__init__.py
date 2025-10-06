@@ -1,6 +1,6 @@
 # flake8: noqa:F401
 import inspect
-from .base import OpsProducer, PipelineArtifact, HybridRasterArtifact, CutSide
+from .base import OpsProducer, CutSide
 from .depth import DepthEngraver
 from .edge import EdgeTracer
 from .frame import FrameProducer
@@ -20,8 +20,7 @@ producer_by_name = dict(
 
 __all__ = [
     "OpsProducer",
-    "PipelineArtifact",
-    "HybridRasterArtifact",
+    "CutSide",
     "DepthEngraver",
     "EdgeTracer",
     "FrameProducer",

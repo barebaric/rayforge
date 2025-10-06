@@ -8,9 +8,11 @@ from rayforge.core.import_source import ImportSource
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser, Machine
+from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
-from rayforge.pipeline.producer.base import PipelineArtifact, CoordinateSystem
+from rayforge.pipeline.artifact.vector import VectorArtifact
+from rayforge.pipeline.artifact.store import ArtifactStore
 
 
 @pytest.fixture(autouse=True)
@@ -134,16 +136,15 @@ class TestOpsGenerator:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(1, 1, 0)
 
-        # The result from the subprocess is a serialized PipelineArtifact
-        expected_artifact = PipelineArtifact(
+        expected_artifact = VectorArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        expected_result_dict = expected_artifact.to_dict()
-        # The generation ID of the task is 1 (the first one)
+        handle = ArtifactStore.put(expected_artifact)
+        expected_result_dict = handle.to_dict()
         expected_result_tuple = (expected_result_dict, 1)
 
         mock_finished_task = MagicMock(spec=Task)
@@ -151,13 +152,16 @@ class TestOpsGenerator:
         mock_finished_task.get_status.return_value = "completed"
         mock_finished_task.result.return_value = expected_result_tuple
 
-        task_to_complete.when_done(mock_finished_task)
+        try:
+            task_to_complete.when_done(mock_finished_task)
 
-        # Assert
-        cached_ops = generator.get_ops(step, real_workpiece)
-        assert cached_ops is not None
-        # MoveTo + LineTo
-        assert len(cached_ops) == 2
+            # Assert
+            cached_ops = generator.get_ops(step, real_workpiece)
+            assert cached_ops is not None
+            # MoveTo + LineTo
+            assert len(cached_ops) == 2
+        finally:
+            ArtifactStore.release(handle)
 
     def test_generation_cancellation_is_handled(
         self, doc, real_workpiece, mock_task_mgr
@@ -215,27 +219,32 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = PipelineArtifact(
+        artifact = VectorArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             generation_size=real_workpiece.size,
         )
+        handle = ArtifactStore.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (artifact.to_dict(), 1)
-        initial_task.when_done(mock_finished_task)
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
 
-        mock_task_mgr.run_process.reset_mock()
+        try:
+            initial_task.when_done(mock_finished_task)
 
-        # Act
-        real_workpiece.pos = 50, 50
+            mock_task_mgr.run_process.reset_mock()
 
-        # Assert
-        # The `descendant_transform_changed` signal fires, but for
-        # scalable ops, this should not trigger a regeneration.
-        mock_task_mgr.run_process.assert_not_called()
+            # Act
+            real_workpiece.pos = 50, 50
+
+            # Assert
+            # The `descendant_transform_changed` signal fires, but for
+            # scalable ops, this should not trigger a regeneration.
+            mock_task_mgr.run_process.assert_not_called()
+        finally:
+            ArtifactStore.release(handle)
 
     def test_workpiece_angle_change_does_not_regenerate(
         self, doc, real_workpiece, mock_task_mgr
@@ -251,27 +260,32 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = PipelineArtifact(
+        artifact = VectorArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             generation_size=real_workpiece.size,
         )
+        handle = ArtifactStore.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (artifact.to_dict(), 1)
-        initial_task.when_done(mock_finished_task)
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        try:
+            initial_task.when_done(mock_finished_task)
 
-        mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.run_process.reset_mock()
 
-        # Act
-        real_workpiece.angle = 45
+            # Act
+            real_workpiece.angle = 45
 
-        # Assert
-        # The `descendant_transform_changed` signal fires, but the generator
-        # should be smart enough to see the world size hasn't changed.
-        mock_task_mgr.run_process.assert_not_called()
+            # Assert
+            # The `descendant_transform_changed` signal fires, but the
+            # generator should be smart enough to see the world size
+            # hasn't changed.
+            mock_task_mgr.run_process.assert_not_called()
+        finally:
+            ArtifactStore.release(handle)
 
     def test_workpiece_size_change_triggers_regeneration(
         self, doc, real_workpiece, mock_task_mgr
@@ -287,27 +301,31 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
-        initial_artifact = PipelineArtifact(
+        initial_artifact = VectorArtifact(
             ops=Ops(),
             is_scalable=False,  # Not scalable to ensure size change matters
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             generation_size=real_workpiece.size,  # size it was generated for
         )
+        handle = ArtifactStore.put(initial_artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = initial_task.key
         mock_finished_task.get_status.return_value = "completed"
         mock_finished_task.result.return_value = (
-            initial_artifact.to_dict(),
+            handle.to_dict(),
             1,
         )
-        initial_task.when_done(mock_finished_task)
+        try:
+            initial_task.when_done(mock_finished_task)
 
-        mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.run_process.reset_mock()
 
-        # Act
-        real_workpiece.set_size(10, 10)
+            # Act
+            real_workpiece.set_size(10, 10)
 
-        # Assert
-        # The `transform_changed` signal from set_size bubbles up, and the
-        # generator should see that the world size has changed.
-        mock_task_mgr.run_process.assert_called_once()
+            # Assert
+            # The `transform_changed` signal from set_size bubbles up, and the
+            # generator should see that the world size has changed.
+            mock_task_mgr.run_process.assert_called_once()
+        finally:
+            ArtifactStore.release(handle)

@@ -7,8 +7,7 @@ from .base import Artifact
 
 class VectorArtifact(Artifact):
     """
-    Represents a resolution-independent vector artifact. This class replaces
-    the original PipelineArtifact dataclass.
+    Represents a resolution-independent vector artifact.
     """
 
     def __init__(self, *args, **kwargs):

@@ -1,6 +1,7 @@
 import pytest
 import math
 import io
+import json
 import numpy as np
 from contextlib import redirect_stdout
 from typing import cast
@@ -1033,20 +1034,27 @@ def test_estimate_time_complex_path():
     assert time_est == pytest.approx(expected_time, rel=1e-3)
 
 
-def test_numpy_serialization_round_trip_complex():
+def test_numpy_serialization_round_trip_all_commands():
     """
-    Tests the NumPy serialization round trip with all command types that
-    have associated data.
+    Tests the NumPy serialization round trip with all command types to ensure
+    the hybrid serialization strategy works correctly.
     """
     ops = Ops()
-    # Add a variety of commands
-    ops.move_to(1, 1, 1)
-    ops.line_to(2, 2, 2)
-    ops.arc_to(x=3, y=1, z=0, i=-1, j=1, clockwise=False)
-    ops.move_to(10, 10, 10)
-    ops.scan_to(20, 10, 10, bytearray([10, 20, 30]))
-    ops.arc_to(x=30, y=20, z=10, i=0, j=10, clockwise=True)
-    ops.scan_to(40, 20, 10, bytearray([40, 50]))
+    # Add one of each command type
+    ops.job_start()  # Marker
+    ops.layer_start("layer-1")  # Marker with data
+    ops.set_travel_speed(6000)  # State with data
+    ops.set_cut_speed(1500)  # State with data
+    ops.set_power(0.75)  # State with data
+    ops.enable_air_assist()  # State
+    ops.set_laser("laser-xyz")  # State with data
+    ops.move_to(1, 2, 3)  # Geometric
+    ops.line_to(4, 5, 6)  # Geometric
+    ops.arc_to(x=7, y=8, z=9, i=1, j=-1, clockwise=False)  # Geometric
+    ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
+    ops.disable_air_assist()  # State
+    ops.layer_end("layer-1")  # Marker with data
+    ops.job_end()  # Marker
 
     # Perform the round trip
     arrays = ops.to_numpy_arrays()
@@ -1062,68 +1070,59 @@ def test_numpy_serialization_round_trip_complex():
         assert original_cmd.to_dict() == recon_cmd.to_dict()
 
 
-def test_to_numpy_arrays_data_shapes_and_types():
+def test_numpy_serialization_structure_hybrid():
     """
-    Verifies the structure, shape, and data types of the NumPy arrays
-    produced by to_numpy_arrays.
+    Verifies the internal structure of the serialized arrays for a hybrid
+    set of commands.
     """
     ops = Ops()
-    ops.move_to(1, 1, 1)
-    ops.arc_to(x=2, y=2, z=2, i=1, j=1, clockwise=True)
-    ops.line_to(3, 3, 3)
-    ops.scan_to(13, 3, 3, bytearray([1, 2, 3, 4]))
-    ops.arc_to(x=12, y=2, z=2, i=-1, j=1, clockwise=False)
-
-    num_cmds = 5
-    num_arcs = 2
-    num_scanlines = 1
-    total_scanline_bytes = 4
+    ops.move_to(1, 1, 1)  # Geometric, index 0
+    ops.set_power(0.5)  # State, index 1
+    ops.line_to(2, 2, 2)  # Geometric, index 2
 
     arrays = ops.to_numpy_arrays()
 
-    # Check array existence and types
-    assert (
-        isinstance(arrays["types"], np.ndarray)
-        and arrays["types"].dtype == np.int32
-    )
-    assert (
-        isinstance(arrays["endpoints"], np.ndarray)
-        and arrays["endpoints"].dtype == np.float32
-    )
-    assert (
-        isinstance(arrays["arc_data"], np.ndarray)
-        and arrays["arc_data"].dtype == np.float32
-    )
-    assert (
-        isinstance(arrays["arc_map"], np.ndarray)
-        and arrays["arc_map"].dtype == np.int32
-    )
-    assert (
-        isinstance(arrays["scanline_data"], np.ndarray)
-        and arrays["scanline_data"].dtype == np.uint8
-    )
-    assert (
-        isinstance(arrays["scanline_indices"], np.ndarray)
-        and arrays["scanline_indices"].dtype == np.int32
-    )
-    assert (
-        isinstance(arrays["scanline_map"], np.ndarray)
-        and arrays["scanline_map"].dtype == np.int32
-    )
+    # Check that the JSON byte array exists and has content
+    assert "state_marker_json_bytes" in arrays
+    json_bytes = arrays["state_marker_json_bytes"]
+    assert json_bytes.size > 0
 
-    # Check shapes
-    assert arrays["types"].shape == (num_cmds,)
-    assert arrays["endpoints"].shape == (num_cmds, 3)
-    assert arrays["arc_data"].shape == (num_arcs, 3)
-    assert arrays["arc_map"].shape == (num_cmds,)
-    assert arrays["scanline_data"].shape == (total_scanline_bytes,)
-    assert arrays["scanline_indices"].shape == (num_scanlines, 2)
-    assert arrays["scanline_map"].shape == (num_cmds,)
+    # Decode and verify the content
+    json_str = json_bytes.tobytes().decode("utf-8")
+    data = json.loads(json_str)
 
-    # Check map contents
-    assert arrays["arc_map"][1] == 0  # First arc is at index 1
-    assert arrays["arc_map"][4] == 1  # Second arc is at index 4
-    assert arrays["arc_map"][0] == -1  # Not an arc
+    # The dictionary should contain the data for the command at index 1
+    assert "1" in data
+    assert "0" not in data
+    assert "2" not in data
+    assert data["1"]["type"] == "SetPowerCommand"
+    assert data["1"]["power"] == 0.5
 
-    assert arrays["scanline_map"][3] == 0  # Scanline is at index 3
-    assert arrays["scanline_map"][0] == -1  # Not a scanline
+    # Verify that geometric data is still correctly placed
+    assert np.allclose(arrays["endpoints"][0], [1, 1, 1])
+    assert np.allclose(arrays["endpoints"][2], [2, 2, 2])
+    # The endpoint for the state command should be zero, as it's not used
+    assert np.allclose(arrays["endpoints"][1], [0, 0, 0])
+
+
+def test_numpy_serialization_round_trip_only_state():
+    """Tests round-trip with only state/marker commands."""
+    ops = Ops()
+    ops.set_power(0.9)
+    ops.set_laser("laser-abc")
+    ops.layer_start("my-layer")
+
+    arrays = ops.to_numpy_arrays()
+    reconstructed_ops = Ops.from_numpy_arrays(arrays)
+
+    assert len(reconstructed_ops.commands) == 3
+    for original, recon in zip(ops.commands, reconstructed_ops.commands):
+        assert original.to_dict() == recon.to_dict()
+
+
+def test_numpy_serialization_round_trip_empty():
+    """Tests round-trip with an empty Ops object."""
+    ops = Ops()
+    arrays = ops.to_numpy_arrays()
+    reconstructed_ops = Ops.from_numpy_arrays(arrays)
+    assert reconstructed_ops.is_empty()

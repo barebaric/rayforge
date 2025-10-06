@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Dict, Any
 from ...core.ops import Ops
-from ..producer.base import CoordinateSystem
+from ..coord import CoordinateSystem
 
 
 class Artifact(ABC):

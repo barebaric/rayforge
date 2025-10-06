@@ -13,6 +13,7 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+import json
 from ..geo import linearize, query, clipping
 from .commands import (
     State,
@@ -68,6 +69,65 @@ class Ops:
             "last_move_to": self.last_move_to,
         }
 
+    @staticmethod
+    def _create_command_from_dict(cmd_data: Dict[str, Any]) -> Command:
+        """Factory method to create a Command instance from a dictionary."""
+        cmd_type = cmd_data.get("type")
+        if cmd_type == "MoveToCommand":
+            return MoveToCommand(end=tuple(cmd_data["end"]))
+        elif cmd_type == "LineToCommand":
+            return LineToCommand(end=tuple(cmd_data["end"]))
+        elif cmd_type == "ArcToCommand":
+            return ArcToCommand(
+                end=tuple(cmd_data["end"]),
+                center_offset=tuple(cmd_data["center_offset"]),
+                clockwise=cmd_data["clockwise"],
+            )
+        elif cmd_type == "SetPowerCommand":
+            return SetPowerCommand(power=cmd_data["power"])
+        elif cmd_type == "SetCutSpeedCommand":
+            return SetCutSpeedCommand(speed=cmd_data["speed"])
+        elif cmd_type == "SetTravelSpeedCommand":
+            return SetTravelSpeedCommand(speed=cmd_data["speed"])
+        elif cmd_type == "EnableAirAssistCommand":
+            return EnableAirAssistCommand()
+        elif cmd_type == "DisableAirAssistCommand":
+            return DisableAirAssistCommand()
+        elif cmd_type == "SetLaserCommand":
+            return SetLaserCommand(laser_uid=cmd_data["laser_uid"])
+        elif cmd_type == "JobStartCommand":
+            return JobStartCommand()
+        elif cmd_type == "JobEndCommand":
+            return JobEndCommand()
+        elif cmd_type == "LayerStartCommand":
+            return LayerStartCommand(layer_uid=cmd_data["layer_uid"])
+        elif cmd_type == "LayerEndCommand":
+            return LayerEndCommand(layer_uid=cmd_data["layer_uid"])
+        elif cmd_type == "WorkpieceStartCommand":
+            return WorkpieceStartCommand(
+                workpiece_uid=cmd_data["workpiece_uid"]
+            )
+        elif cmd_type == "WorkpieceEndCommand":
+            return WorkpieceEndCommand(workpiece_uid=cmd_data["workpiece_uid"])
+        elif cmd_type == "OpsSectionStartCommand":
+            return OpsSectionStartCommand(
+                section_type=SectionType[cmd_data["section_type"]],
+                workpiece_uid=cmd_data["workpiece_uid"],
+            )
+        elif cmd_type == "OpsSectionEndCommand":
+            return OpsSectionEndCommand(
+                section_type=SectionType[cmd_data["section_type"]]
+            )
+        elif cmd_type == "ScanLinePowerCommand":
+            return ScanLinePowerCommand(
+                end=tuple(cmd_data["end"]),
+                power_values=bytearray(cmd_data["power_values"]),
+            )
+        else:
+            raise TypeError(
+                f"Unknown command type for dict creation: {cmd_type}"
+            )
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Ops:
         """Deserializes a dictionary into an Ops instance."""
@@ -77,75 +137,11 @@ class Ops:
         new_ops.last_move_to = last_move
 
         for cmd_data in data.get("commands", []):
-            cmd_type = cmd_data.get("type")
-            if cmd_type == "MoveToCommand":
-                new_ops.add(MoveToCommand(end=tuple(cmd_data["end"])))
-            elif cmd_type == "LineToCommand":
-                new_ops.add(LineToCommand(end=tuple(cmd_data["end"])))
-            elif cmd_type == "ArcToCommand":
-                new_ops.add(
-                    ArcToCommand(
-                        end=tuple(cmd_data["end"]),
-                        center_offset=tuple(cmd_data["center_offset"]),
-                        clockwise=cmd_data["clockwise"],
-                    )
-                )
-            elif cmd_type == "SetPowerCommand":
-                new_ops.add(SetPowerCommand(power=cmd_data["power"]))
-            elif cmd_type == "SetCutSpeedCommand":
-                new_ops.add(SetCutSpeedCommand(speed=cmd_data["speed"]))
-            elif cmd_type == "SetTravelSpeedCommand":
-                new_ops.add(SetTravelSpeedCommand(speed=cmd_data["speed"]))
-            elif cmd_type == "EnableAirAssistCommand":
-                new_ops.add(EnableAirAssistCommand())
-            elif cmd_type == "DisableAirAssistCommand":
-                new_ops.add(DisableAirAssistCommand())
-            elif cmd_type == "SetLaserCommand":
-                new_ops.add(SetLaserCommand(laser_uid=cmd_data["laser_uid"]))
-            elif cmd_type == "JobStartCommand":
-                new_ops.add(JobStartCommand())
-            elif cmd_type == "JobEndCommand":
-                new_ops.add(JobEndCommand())
-            elif cmd_type == "LayerStartCommand":
-                new_ops.add(LayerStartCommand(layer_uid=cmd_data["layer_uid"]))
-            elif cmd_type == "LayerEndCommand":
-                new_ops.add(LayerEndCommand(layer_uid=cmd_data["layer_uid"]))
-            elif cmd_type == "WorkpieceStartCommand":
-                new_ops.add(
-                    WorkpieceStartCommand(
-                        workpiece_uid=cmd_data["workpiece_uid"]
-                    )
-                )
-            elif cmd_type == "WorkpieceEndCommand":
-                new_ops.add(
-                    WorkpieceEndCommand(
-                        workpiece_uid=cmd_data["workpiece_uid"]
-                    )
-                )
-            elif cmd_type == "OpsSectionStartCommand":
-                new_ops.add(
-                    OpsSectionStartCommand(
-                        section_type=SectionType[cmd_data["section_type"]],
-                        workpiece_uid=cmd_data["workpiece_uid"],
-                    )
-                )
-            elif cmd_type == "OpsSectionEndCommand":
-                new_ops.add(
-                    OpsSectionEndCommand(
-                        section_type=SectionType[cmd_data["section_type"]]
-                    )
-                )
-            elif cmd_type == "ScanLinePowerCommand":
-                new_ops.add(
-                    ScanLinePowerCommand(
-                        end=tuple(cmd_data["end"]),
-                        power_values=bytearray(cmd_data["power_values"]),
-                    )
-                )
-            else:
+            try:
+                new_ops.add(cls._create_command_from_dict(cmd_data))
+            except TypeError as e:
                 logger.warning(
-                    "Skipping unknown command type during deserialization:"
-                    f" {cmd_type}"
+                    f"Skipping unknown command during deserialization: {e}"
                 )
         return new_ops
 
@@ -185,6 +181,9 @@ class Ops:
             (num_scanlines, 2), dtype=np.int32
         )  # start, end into scanline_data
 
+        # Store non-geometric command data in a dict to be JSON serialized
+        state_marker_cmds_data = {}
+
         # Data Population
         arc_idx, scanline_idx, scanline_offset = 0, 0, 0
         for i, cmd in enumerate(self.commands):
@@ -192,6 +191,9 @@ class Ops:
 
             if isinstance(cmd, MovingCommand):
                 endpoints[i] = cmd.end
+            else:
+                # Store state and marker command data for JSON serialization
+                state_marker_cmds_data[str(i)] = cmd.to_dict()
 
             if isinstance(cmd, ArcToCommand):
                 arc_data[arc_idx] = (
@@ -215,6 +217,9 @@ class Ops:
                 scanline_offset += length
                 scanline_idx += 1
 
+        json_str = json.dumps(state_marker_cmds_data)
+        json_bytes = np.frombuffer(json_str.encode("utf-8"), dtype=np.uint8)
+
         return {
             "types": types,
             "endpoints": endpoints,
@@ -223,6 +228,7 @@ class Ops:
             "scanline_data": scanline_data,
             "scanline_indices": scanline_indices,
             "scanline_map": scanline_map,
+            "state_marker_json_bytes": json_bytes,
         }
 
     @classmethod
@@ -240,11 +246,31 @@ class Ops:
         scanline_indices = arrays["scanline_indices"]
         scanline_map = arrays["scanline_map"]
 
+        json_bytes = arrays.get(
+            "state_marker_json_bytes", np.array([], dtype=np.uint8)
+        )
+        if json_bytes.size > 0:
+            json_str = json_bytes.tobytes().decode("utf-8")
+            state_marker_cmds_data = json.loads(json_str)
+        else:
+            state_marker_cmds_data = {}
+
         for i in range(len(types)):
+            # Check if this index corresponds to a state/marker command
+            if str(i) in state_marker_cmds_data:
+                cmd_data = state_marker_cmds_data[str(i)]
+                cmd = cls._create_command_from_dict(cmd_data)
+                new_ops.add(cmd)
+                continue
+
+            # If not, it must be a geometric command.
             cmd_type_enum = types[i]
             CmdClass = COMMAND_CLASS_MAP.get(cmd_type_enum)
 
-            if CmdClass is None or not issubclass(CmdClass, Command):
+            if CmdClass is None or not issubclass(CmdClass, MovingCommand):
+                logger.warning(
+                    f"Skipping unexpected geometric command type: {CmdClass}"
+                )
                 continue
 
             end_tuple = tuple(endpoints[i])
@@ -265,8 +291,8 @@ class Ops:
                 power_values = bytearray(scanline_data[start:end])
                 cmd = CmdClass(end=end_tuple, power_values=power_values)
             else:
-                # For state/marker commands that don't need extra data
-                cmd = CmdClass()
+                # Should not be reached if logic is correct
+                continue
 
             new_ops.add(cmd)
 

@@ -3,11 +3,10 @@ import numpy as np
 import math
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
-from ...core.ops import (
-    Ops,
-    SectionType,
-)
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem
+from ...core.ops import Ops, SectionType
+from ..artifact.vector import VectorArtifact
+from ..coord import CoordinateSystem
+from .base import OpsProducer
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -277,7 +276,7 @@ class Rasterizer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> VectorArtifact:
         if workpiece is None:
             raise ValueError("Rasterizer requires a workpiece context.")
 
@@ -322,7 +321,7 @@ class Rasterizer(OpsProducer):
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
-        return PipelineArtifact(
+        return VectorArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

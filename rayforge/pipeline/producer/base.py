@@ -1,11 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any, Union
+from typing import Optional, TYPE_CHECKING, Dict, Any, Union
 from enum import Enum, auto
-from dataclasses import dataclass, asdict
-import numpy as np
-from ...core.ops import Ops
-from ..coord import CoordinateSystem
+from ..artifact.base import Artifact
+from ..artifact.hybrid import HybridRasterArtifact
+
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -21,146 +20,6 @@ class CutSide(Enum):
     """The final cut will be inside the original path."""
     OUTSIDE = auto()
     """The final cut will be outside the original path."""
-
-
-@dataclass
-class PipelineArtifact:
-    """
-    A self-describing container for the output of an OpsProducer.
-    """
-
-    #: The generated machine operations.
-    ops: Ops
-
-    #: **The Behavioral Contract**: A flag indicating if the ops can be
-    #: mathematically scaled.
-    #: - True: The Ops are resolution-independent vectors. On resize, the
-    #:   OpsGenerator can perform a cheap, real-time `ops.scale()` transform.
-    #: - False: The Ops are resolution-dependent (e.g., raster lines). On
-    #:   resize, the OpsGenerator must trigger an expensive, full regeneration.
-    is_scalable: bool
-
-    #: **The Geometric Contract**: An enum describing the coordinate space in
-    #: which the ops were generated, primarily defining the origin.
-    source_coordinate_system: CoordinateSystem
-
-    #: The dimensions (width, height) of the "canvas" the ops were generated
-    #: for, in units corresponding to the `source_coordinate_system`.
-    #: (e.g., pixels for PIXEL_SPACE, mm for the others). This is essential
-    #: for calculating relative scale factors.
-    source_dimensions: Optional[Tuple[float, float]] = None
-
-    #: The authoritative physical size (width, height) of the workpiece at the
-    #: moment generation was triggered. This is crucial for scalable vector ops
-    #: to ensure the correct canvas size is used, even if the workpiece object
-    #: passed to the producer has had its own `.size` property modified.
-    generation_size: Optional[Tuple[float, float]] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes the artifact to a dictionary for inter-process transfer.
-        """
-        data = asdict(self)
-        data["ops"] = self.ops.to_dict()
-        data["source_coordinate_system"] = self.source_coordinate_system.name
-        # Add a type field for the deserializer factory
-        data["type"] = "vector"
-        return data
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PipelineArtifact":
-        """Deserializes a dictionary back into a PipelineArtifact instance."""
-        return cls(
-            ops=Ops.from_dict(data["ops"]),
-            is_scalable=data["is_scalable"],
-            source_coordinate_system=CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
-            source_dimensions=tuple(data["source_dimensions"])
-            if data.get("source_dimensions")
-            else None,
-            generation_size=tuple(data["generation_size"])
-            if data.get("generation_size")
-            else None,
-        )
-
-
-@dataclass
-class HybridRasterArtifact:
-    """
-    A hybrid artifact for high-performance raster rendering.
-    This is a standalone dataclass to avoid issues with field ordering
-    during inheritance.
-    """
-
-    # Fields without default values must come first
-    ops: Ops
-    is_scalable: bool
-    source_coordinate_system: CoordinateSystem
-    power_texture_data: np.ndarray
-    dimensions_mm: Tuple[float, float]
-    position_mm: Tuple[float, float]
-
-    # Fields with default values
-    source_dimensions: Optional[Tuple[float, float]] = None
-    generation_size: Optional[Tuple[float, float]] = None
-    type: str = "hybrid_raster"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes the artifact to a dictionary for inter-process transfer.
-        """
-        data = asdict(self)
-        data["ops"] = self.ops.to_dict()
-        data["source_coordinate_system"] = self.source_coordinate_system.name
-        data["power_texture_data"] = self.power_texture_data.tolist()
-        data["type"] = "hybrid_raster"
-        return data
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "HybridRasterArtifact":
-        """Deserializes a dict back into a HybridRasterArtifact instance."""
-        return cls(
-            ops=Ops.from_dict(data["ops"]),
-            is_scalable=data["is_scalable"],
-            source_coordinate_system=CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
-            power_texture_data=np.array(
-                data["power_texture_data"], dtype=np.uint8
-            ),
-            dimensions_mm=tuple(data["dimensions_mm"]),
-            position_mm=tuple(data["position_mm"]),
-            source_dimensions=tuple(data["source_dimensions"])
-            if data.get("source_dimensions") is not None
-            else None,
-            generation_size=tuple(data["generation_size"])
-            if data.get("generation_size")
-            else None,
-        )
-
-
-def deserialize_artifact(
-    data: Dict[str, Any],
-) -> Union[PipelineArtifact, HybridRasterArtifact]:
-    """
-    Factory function that deserializes a dictionary into the correct
-    artifact type based on the 'type' field.
-
-    Args:
-        data: A dictionary containing the serialized artifact data.
-
-    Returns:
-        Either a PipelineArtifact or HybridRasterArtifact instance.
-    """
-    artifact_type = data.get("type")
-
-    if artifact_type == "hybrid_raster":
-        return HybridRasterArtifact.from_dict(data)
-    else:
-        # Default to PipelineArtifact for "vector" type or if type is missing
-        # for backward compatibility.
-        return PipelineArtifact.from_dict(data)
 
 
 class OpsProducer(ABC):
@@ -182,7 +41,7 @@ class OpsProducer(ABC):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Union[PipelineArtifact, HybridRasterArtifact]:
+    ) -> Union[Artifact, HybridRasterArtifact]:
         pass
 
     def is_vector_producer(self) -> bool:

@@ -1,13 +1,15 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
+from ...core.geo import Geometry
 from ...core.ops import (
     Ops,
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     SectionType,
 )
-from ...core.geo import Geometry
+from ..artifact.vector import VectorArtifact
+from ..coord import CoordinateSystem
+from .base import OpsProducer, CutSide
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -52,7 +54,7 @@ class FrameProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> VectorArtifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")
 
@@ -107,7 +109,7 @@ class FrameProducer(OpsProducer):
 
         # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
         #    final size, ready for positioning.
-        return PipelineArtifact(
+        return VectorArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

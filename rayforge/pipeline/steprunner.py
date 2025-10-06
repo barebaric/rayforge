@@ -1,7 +1,9 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict, Union
-from ..shared.tasker.proxy import ExecutionContextProxy
 import numpy as np
-
+from ..shared.tasker.proxy import ExecutionContextProxy
+from .artifact.store import ArtifactStore
+from .artifact.base import Artifact
+from .artifact.hybrid import HybridRasterArtifact
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -20,20 +22,18 @@ def run_step_in_subprocess(
     generation_size: Tuple[float, float],
 ):
     """
-    The main entry point for generating operations for a single
-    (Step, WorkPiece) pair in a background process.
+    The main entry point for generating operations for a single (Step,
+    WorkPiece) pair in a background process.
 
-    This function reconstructs the necessary data models from dictionaries,
-    determines whether the operation is vector or raster, and orchestrates the
-    pipeline of producers, modifiers, and transformers.
+    This function reconstructs the necessary data models from dictionaries and
+    orchestrates the pipeline of producers, modifiers, and transformers.
 
-    For vector operations, it produces unscaled Ops in a "natural" or "pixel"
-    coordinate space and returns them with their dimensions. This allows the
-    calling OpsGenerator to cache the result and perform fast scaling on
-    demand.
-
-    For raster operations, it produces Ops in their final millimeter
-    coordinates, often in chunks, as they are not scalable.
+    The final generated artifact (containing Ops and metadata) is serialized
+    into a shared memory block using the `ArtifactStore`. This function then
+    returns a lightweight, serializable `ArtifactHandle` dictionary, which
+    contains the metadata and shared memory name needed to reconstruct the
+    artifact in the main process. This avoids transferring large data volumes
+    over IPC.
     """
     import logging
 
@@ -42,7 +42,7 @@ def run_step_in_subprocess(
     logger.debug(f"Starting step execution with settings: {settings}")
 
     from .modifier import Modifier
-    from .producer import OpsProducer, PipelineArtifact, HybridRasterArtifact
+    from .producer import OpsProducer
     from .transformer import OpsTransformer, ExecutionPhase
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
@@ -65,7 +65,7 @@ def run_step_in_subprocess(
         *,
         y_offset_mm: float = 0.0,
         step_settings: Dict[str, Any],
-    ) -> Union[PipelineArtifact, HybridRasterArtifact]:
+    ) -> Union[Artifact, HybridRasterArtifact]:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
         vector data.
@@ -85,7 +85,7 @@ def run_step_in_subprocess(
             step_settings: The dictionary of settings from the Step.
 
         Returns:
-            A PipelineArtifact object containing the generated operations
+            A Artifact object containing the generated operations
               and metadata.
         """
         for modifier in modifiers:
@@ -103,7 +103,7 @@ def run_step_in_subprocess(
         )
 
     def _execute_vector() -> Iterator[
-        Tuple[Union[PipelineArtifact, HybridRasterArtifact], float]
+        Tuple[Union[Artifact, HybridRasterArtifact], float]
     ]:
         """
         Handles Ops generation for scalable (vector) operations.
@@ -121,7 +121,7 @@ def run_step_in_subprocess(
         by the OpsGenerator.
 
         Yields:
-            A single tuple containing the complete PipelineArtifact and a
+            A single tuple containing the complete Artifact and a
             progress value of 1.0.
         """
         size_mm = workpiece.size
@@ -182,7 +182,7 @@ def run_step_in_subprocess(
         surface.flush()
 
     def _execute_raster() -> Iterator[
-        Tuple[Union[PipelineArtifact, HybridRasterArtifact], float]
+        Tuple[Union[Artifact, HybridRasterArtifact], float]
     ]:
         """
         Handles Ops generation for non-scalable (raster) operations.
@@ -282,7 +282,7 @@ def run_step_in_subprocess(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
     initial_ops = _create_initial_ops()
-    final_artifact = None
+    final_artifact: Optional[Union[Artifact, HybridRasterArtifact]] = None
 
     # This will hold the assembled texture for hybrid raster artifacts
     full_power_texture: Optional[np.ndarray] = None
@@ -447,13 +447,5 @@ def run_step_in_subprocess(
     # is crucial for the generator's cache invalidation logic.
     final_artifact.generation_size = generation_size
 
-    # Check if we have a HybridRasterArtifact and serialize it appropriately
-    if isinstance(final_artifact, HybridRasterArtifact):
-        logger.debug(
-            f"Serializing HybridRasterArtifact with "
-            f"type: {final_artifact.type}"
-        )
-        return final_artifact.to_dict(), generation_id
-    else:
-        logger.debug("Serializing PipelineArtifact")
-        return final_artifact.to_dict(), generation_id
+    handle = ArtifactStore.put(final_artifact)
+    return handle.to_dict(), generation_id

@@ -51,7 +51,7 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
 from .core.step import Step
-from .pipeline.producer.base import PipelineArtifact, HybridRasterArtifact
+from .pipeline.artifact import VectorArtifact, HybridRasterArtifact
 
 
 logger = logging.getLogger(__name__)
@@ -514,7 +514,7 @@ class MainWindow(Adw.ApplicationWindow):
                     )
                     final_transform = transform_without_scale.to_4x4_numpy()
 
-                    if isinstance(artifact, PipelineArtifact):
+                    if isinstance(artifact, VectorArtifact):
                         workpiece_ops.transform(final_transform)
                         vector_ops_to_render.extend(workpiece_ops)
 

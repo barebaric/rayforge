@@ -8,14 +8,11 @@ from rayforge.core.ops import (
     LineToCommand,
     ScanLinePowerCommand,
 )
-from rayforge.pipeline.producer.base import (
-    OpsProducer,
-    HybridRasterArtifact,
-    CoordinateSystem,
-)
-from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
-from rayforge.machine.models.laser import Laser
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.laser import Laser
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer, HybridRasterArtifact
+from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
 
 
 @pytest.fixture

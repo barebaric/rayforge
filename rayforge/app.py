@@ -76,13 +76,14 @@ def main():
             super().__init__(application_id="com.barebaric.rayforge")
             self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
             self.args = args
+            self.win = None
 
         def do_activate(self):
             # Import the window here to avoid module-level side-effects
             from rayforge.mainwindow import MainWindow
             from rayforge.core.vectorization_config import TraceConfig
 
-            win = MainWindow(application=self)
+            self.win = MainWindow(application=self)
             # self.args.filenames will be a list of paths
             if self.args.filenames:
                 for filename in self.args.filenames:
@@ -94,12 +95,12 @@ def main():
                     vector_config = (
                         None if self.args.direct_vector else TraceConfig()
                     )
-                    win.doc_editor.file.load_file_from_path(
+                    self.win.doc_editor.file.load_file_from_path(
                         filename=Path(filename),
                         mime_type=mime_type,
                         vector_config=vector_config,
                     )
-            win.present()
+            self.win.present()
 
     # Import version for the --version flag.
     from rayforge import __version__
@@ -192,6 +193,7 @@ def main():
     # Run application
     app = App(args)
     exit_code = app.run(None)
+    assert app.win is not None
 
     # ===================================================================
     # SECTION 4: SHUTDOWN SEQUENCE
@@ -225,7 +227,9 @@ def main():
         rayforge.config.config_mgr.save()
     logger.info("Saved config.")
 
-    # 4. As the final step, shut down the task manager itself.
+    # 4. As the final step, clean up the document editor and
+    # shut down the task manager itself.
+    app.win.doc_editor.cleanup()
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
 

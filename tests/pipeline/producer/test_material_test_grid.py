@@ -16,13 +16,14 @@ from rayforge.core.ops import (
     MoveToCommand,
     LineToCommand,
 )
-from rayforge.pipeline.producer.base import OpsProducer, CoordinateSystem
+from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.producer.material_test_grid import (
     MaterialTestGridProducer,
     MaterialTestGridType,
 )
 from rayforge.machine.models.machine import Laser
-from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture

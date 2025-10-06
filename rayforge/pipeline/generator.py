@@ -12,7 +12,7 @@ the final job assembler.
 from __future__ import annotations
 import logging
 import math
-from typing import Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, Union, TYPE_CHECKING, cast
 from copy import deepcopy
 from blinker import Signal
 from contextlib import contextmanager
@@ -24,11 +24,11 @@ from ..core.workpiece import WorkPiece
 from ..core.ops import Ops, ScanLinePowerCommand
 from .steprunner import run_step_in_subprocess
 from ..core.group import Group
-from .producer.base import (
-    PipelineArtifact,
-    HybridRasterArtifact,
-    deserialize_artifact,
-)
+from .artifact.vector import VectorArtifact
+from .artifact.hybrid import HybridRasterArtifact
+from .artifact.handle import ArtifactHandle
+from .artifact.store import ArtifactStore
+
 
 if TYPE_CHECKING:
     from ..shared.tasker.task import Task
@@ -43,9 +43,10 @@ class OpsGenerator:
 
     This class acts as a "conductor" for the data pipeline. It connects to the
     `doc.changed` signal and intelligently determines what needs to be
-    regenerated based on model changes. It manages a cache of generated
-    operations, where each entry corresponds to a specific (Step, WorkPiece)
-    pair.
+    regenerated based on model changes. It manages a cache of lightweight
+    `ArtifactHandle` objects, where each handle points to a full `Artifact`
+    (containing Ops data) stored in shared memory. Each cache entry
+    corresponds to a specific (Step, WorkPiece) pair.
 
     The generated Ops are "pure" and workpiece-local; they are not yet
     positioned, rotated, or clipped to the machine work area. That final
@@ -66,10 +67,10 @@ class OpsGenerator:
 
     # Type alias for the structure of the operations cache.
     # Key: (step_uid, workpiece_uid)
-    # Value: PipelineArtifact or HybridRasterArtifact
+    # Value: ArtifactHandle or HybridRasterArtifact
     OpsCacheType = Dict[
         Tuple[str, str],
-        Optional[Union[PipelineArtifact, HybridRasterArtifact]],
+        Optional[ArtifactHandle],
     ]
 
     def __init__(self, doc: "Doc", task_manager: "TaskManager"):
@@ -98,6 +99,18 @@ class OpsGenerator:
         # This will trigger the setter, which connects signals and runs the
         # initial reconciliation.
         self.doc = doc
+
+    def shutdown(self):
+        """
+        Releases all shared memory resources held in the cache. This must be
+        called before application exit to prevent memory leaks.
+        """
+        logger.info("OpsGenerator shutting down and releasing artifacts...")
+        for key in list(self._ops_cache.keys()):
+            handle = self._ops_cache.pop(key, None)
+            if handle:
+                ArtifactStore.release(handle)
+        logger.info("All artifacts released.")
 
     @property
     def doc(self) -> Doc:
@@ -355,24 +368,23 @@ class OpsGenerator:
 
             for step in wp_layer.workflow:
                 key = (step.uid, wp.uid)
-                artifact = self._ops_cache.get(key)
+                handle = self._ops_cache.get(key)
 
                 # Determine if the current state is valid. An artifact is
                 # valid if it exists AND (it's scalable OR (it's not
                 # scalable AND its generation size matches the current
                 # workpiece size)).
                 is_valid = False
-                if artifact:
+                if handle:
                     is_valid = (
-                        artifact.is_scalable
-                        or artifact.generation_size == wp.size
+                        handle.is_scalable or handle.generation_size == wp.size
                     )
 
                 if is_valid:
                     # If valid and scalable, we can send a cheap notification
                     # for live UI updates (e.g., when moving vector ops).
                     # Non-scalable ops don't need this for pure translation.
-                    if artifact and artifact.is_scalable:
+                    if handle and handle.is_scalable:
                         generation_id = self._generation_id_map.get(key, 0)
                         self.ops_generation_finished.send(
                             step, workpiece=wp, generation_id=generation_id
@@ -385,8 +397,8 @@ class OpsGenerator:
                         continue
 
                     old_size_str = (
-                        f"Old size: {artifact.generation_size}"
-                        if artifact
+                        f"Old size: {handle.generation_size}"
+                        if handle
                         else "Artifact missing"
                     )
                     logger.info(
@@ -396,10 +408,15 @@ class OpsGenerator:
                     self._trigger_ops_generation(step, wp)
 
     def _cleanup_key(self, key: Tuple[str, str]):
-        """Removes a cache entry and cancels any associated task."""
+        """
+        Removes a cache entry, releases its shared memory, and cancels any
+        associated task.
+        """
         logger.debug(f"{self.__class__.__name__}._cleanup_key called")
         logger.debug(f"OpsGenerator: Cleaning up key {key}.")
-        self._ops_cache.pop(key, None)
+        handle = self._ops_cache.pop(key, None)
+        if handle:
+            ArtifactStore.release(handle)
         self._generation_id_map.pop(key, None)
         if key in self._active_tasks:
             self._task_manager.cancel_task(key)
@@ -437,11 +454,11 @@ class OpsGenerator:
                 for workpiece in layer.all_workpieces:
                     key = (step.uid, workpiece.uid)
                     is_valid = False
-                    artifact = self._ops_cache.get(key)
-                    if artifact:
+                    handle = self._ops_cache.get(key)
+                    if handle:
                         is_valid = (
-                            artifact.is_scalable
-                            or artifact.generation_size == workpiece.size
+                            handle.is_scalable
+                            or handle.generation_size == workpiece.size
                         )
 
                     if not is_valid:
@@ -600,9 +617,11 @@ class OpsGenerator:
         """
         Callback for when an ops generation task finishes.
 
-        It validates that the result is not from a stale task, updates the
-        ops cache with the final result, and fires the
-        `ops_generation_finished` signal.
+        It validates that the result is not from a stale task, deserializes
+        the incoming `ArtifactHandle` dictionary, updates the cache with this
+        new handle, and fires the `ops_generation_finished` signal. No large
+        data is processed on this callback, ensuring the main thread remains
+        responsive.
         """
         logger.debug(
             f"{self.__class__.__name__}._on_generation_complete called"
@@ -677,23 +696,7 @@ class OpsGenerator:
                 self._ops_cache[key] = None
                 return
 
-            result_dict, result_gen_id = result
-
-            # --- INPUT VALIDATION LOGGING ---
-            if result_dict and "ops" in result_dict:
-                ops_dict = result_dict["ops"]
-                if ops_dict and "commands" in ops_dict:
-                    scanline_count = sum(
-                        1
-                        for cmd_data in ops_dict["commands"]
-                        if cmd_data.get("type") == "ScanLinePowerCommand"
-                    )
-                    logger.debug(
-                        f"OpsGenerator._on_generation_complete: Received "
-                        f"artifact from subprocess for key {key} with "
-                        f"{scanline_count} ScanLinePowerCommands."
-                    )
-            # --- END LOGGING ---
+            result_handle_dict, result_gen_id = result
 
             # Ensure that the result we just received from the subprocess
             # is for the MOST RECENT request we made.
@@ -710,9 +713,9 @@ class OpsGenerator:
                 return
 
             # --- Validation passed, now update state and notify ---
-            if result_dict:
-                artifact = deserialize_artifact(result_dict)
-                self._ops_cache[key] = artifact
+            if result_handle_dict:
+                handle = ArtifactHandle.from_dict(result_handle_dict)
+                self._ops_cache[key] = handle
             else:
                 self._ops_cache[key] = None
 
@@ -737,12 +740,14 @@ class OpsGenerator:
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
-        Retrieves generated operations from the cache.
+        Retrieves generated operations from the cache on-demand.
 
         This is the primary method for consumers (like the UI or the job
-        assembler) to get the result of the pipeline. It returns a deep copy
-        of the cached Ops. If the ops are scalable, this method
-        scales them to the workpiece's current physical size in millimeters.
+        assembler) to get the result of the pipeline. It retrieves the
+        `ArtifactHandle` from the cache, reconstructs the full `Artifact`
+        object from shared memory, and returns a deep copy of its `Ops`. If
+        the ops are scalable, this method also scales them to the workpiece's
+        current physical size in millimeters.
 
         Args:
             step: The Step for which to retrieve operations.
@@ -757,32 +762,30 @@ class OpsGenerator:
         if any(s <= 0 for s in workpiece.size):
             return None
 
-        artifact = self._ops_cache.get(key)
+        handle = self._ops_cache.get(key)
 
-        if artifact is None:
+        if handle is None:
             logger.debug(f"get_ops for {key}: No artifact found in cache.")
             return None
 
         # Check for stale non-scalable artifacts.
-        if (
-            not artifact.is_scalable
-            and artifact.generation_size != workpiece.size
-        ):
+        if not handle.is_scalable and handle.generation_size != workpiece.size:
             logger.debug(
                 f"get_ops for {key}: Found stale artifact. "
-                f"Cache size: {artifact.generation_size}, "
+                f"Cache size: {handle.generation_size}, "
                 f"WP size: {workpiece.size}. Returning None."
             )
             return None
 
         logger.debug(
             f"get_ops for {key}: Found artifact. "
-            f"Scalable: {artifact.is_scalable}."
+            f"Scalable: {handle.is_scalable}."
         )
 
+        artifact = ArtifactStore.get(handle)
         ops = deepcopy(artifact.ops)
 
-        if isinstance(artifact, PipelineArtifact) and artifact.is_scalable:
+        if isinstance(artifact, VectorArtifact) and artifact.is_scalable:
             self._scale_ops_to_workpiece_size(ops, artifact, workpiece)
 
         # --- VALIDATION LOGGING ---
@@ -798,14 +801,15 @@ class OpsGenerator:
 
     def get_artifact(
         self, step: Step, workpiece: WorkPiece
-    ) -> Optional[Union[PipelineArtifact, HybridRasterArtifact]]:
+    ) -> Optional[Union[VectorArtifact, HybridRasterArtifact]]:
         """
-        Retrieves the complete artifact from the cache.
+        Retrieves the complete artifact from the cache on-demand.
 
-        This method returns the entire artifact object (either PipelineArtifact
-        or HybridRasterArtifact) from the cache, without extracting just the
-        ops. This is useful for components that need access to the additional
-        data in the artifact, such as texture data for raster rendering.
+        This method retrieves the `ArtifactHandle` from the cache and uses the
+        `ArtifactStore` to reconstruct the full artifact object (e.g.,
+        `VectorArtifact` or `HybridRasterArtifact`) from shared memory. This
+        is useful for components that need access to additional data in the
+        artifact, such as texture data for raster rendering.
 
         Args:
             step: The Step for which to retrieve the artifact.
@@ -819,37 +823,38 @@ class OpsGenerator:
         if any(s <= 0 for s in workpiece.size):
             return None
 
-        artifact = self._ops_cache.get(key)
+        handle = self._ops_cache.get(key)
 
-        if artifact is None:
+        if handle is None:
             logger.debug(
                 f"get_artifact for {key}: No artifact found in cache."
             )
             return None
 
         # Check for stale non-scalable artifacts.
-        if (
-            not artifact.is_scalable
-            and artifact.generation_size != workpiece.size
-        ):
+        if not handle.is_scalable and handle.generation_size != workpiece.size:
             logger.debug(
                 f"get_artifact for {key}: Found stale artifact. "
-                f"Cache size: {artifact.generation_size}, "
+                f"Cache size: {handle.generation_size}, "
                 f"WP size: {workpiece.size}. Returning None."
             )
             return None
 
         logger.debug(
             f"get_artifact for {key}: Found artifact. "
-            f"Scalable: {artifact.is_scalable}."
+            f"Scalable: {handle.is_scalable}."
         )
         # Return a deep copy to prevent consumers from mutating the cache.
+        artifact = cast(
+            Union[VectorArtifact, HybridRasterArtifact],
+            ArtifactStore.get(handle),
+        )
         return deepcopy(artifact)
 
     def _scale_ops_to_workpiece_size(
         self,
         ops: Ops,
-        artifact: PipelineArtifact,
+        artifact: VectorArtifact,
         workpiece: "WorkPiece",
     ):
         """

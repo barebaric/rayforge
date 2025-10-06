@@ -1,10 +1,8 @@
 import pytest
 import numpy as np
 from rayforge.core.ops import Ops
-from rayforge.pipeline.producer.base import (
-    HybridRasterArtifact,
-    CoordinateSystem,
-)
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.producer.base import HybridRasterArtifact
 
 
 @pytest.fixture

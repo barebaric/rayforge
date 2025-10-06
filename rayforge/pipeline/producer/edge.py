@@ -1,11 +1,13 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
 from ...image.tracing import trace_surface
+from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix
 from ...core.ops import Ops, SectionType
+from ..artifact.vector import VectorArtifact
+from ..coord import CoordinateSystem
+from .base import OpsProducer, CutSide
 
-from ...core.geo import contours, Geometry
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -49,7 +51,7 @@ class EdgeTracer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> VectorArtifact:
         if workpiece is None:
             raise ValueError("EdgeTracer requires a workpiece context.")
 
@@ -157,7 +159,7 @@ class EdgeTracer(OpsProducer):
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
-        return PipelineArtifact(
+        return VectorArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

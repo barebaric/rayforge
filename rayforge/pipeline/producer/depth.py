@@ -3,13 +3,10 @@ import numpy as np
 import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any, Union
-from .base import (
-    OpsProducer,
-    PipelineArtifact,
-    HybridRasterArtifact,
-    CoordinateSystem,
-)
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+from ..coord import CoordinateSystem
+from ..artifact.hybrid import HybridRasterArtifact
+from .base import OpsProducer
 from ...core.ops import (
     Ops,
     SectionType,
@@ -63,7 +60,7 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Union[PipelineArtifact, HybridRasterArtifact]:
+    ) -> HybridRasterArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
@@ -151,12 +148,12 @@ class DepthEngraver(OpsProducer):
         position_mm = (0.0, y_offset_mm)
 
         return HybridRasterArtifact(
-            ops=final_ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             power_texture_data=power_texture_data,
             dimensions_mm=dimensions_mm,
             position_mm=position_mm,
+            ops=final_ops,
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             source_dimensions=(width_px, height_px),
             generation_size=workpiece.size,
         )

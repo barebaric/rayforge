@@ -1,9 +1,6 @@
 import cairo
 import numpy as np
 from typing import Optional, TYPE_CHECKING, Dict, Any
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem, CutSide
-from ...image.hull import get_concave_hull
-from ...image.tracing import prepare_surface
 from ...core.matrix import Matrix
 from ...core.ops import (
     Ops,
@@ -11,6 +8,11 @@ from ...core.ops import (
     OpsSectionEndCommand,
     SectionType,
 )
+from ...image.hull import get_concave_hull
+from ...image.tracing import prepare_surface
+from ..artifact.vector import VectorArtifact
+from ..coord import CoordinateSystem
+from .base import OpsProducer, CutSide
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -58,7 +60,7 @@ class ShrinkWrapProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> VectorArtifact:
         if workpiece is None:
             raise ValueError(
                 "ShrinkWrapProducer requires a workpiece context."
@@ -117,7 +119,7 @@ class ShrinkWrapProducer(OpsProducer):
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
-        return PipelineArtifact(
+        return VectorArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

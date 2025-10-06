@@ -82,6 +82,13 @@ class DocEditor:
         self.tab = TabCmd(self)
         self.machine = MachineCmd(self)
 
+    def cleanup(self):
+        """
+        Shuts down owned long-running services, like the OpsGenerator, to
+        ensure cleanup of resources (e.g., shared memory).
+        """
+        self.ops_generator.shutdown()
+
     def add_tab_from_context(self, context: Dict[str, Any]):
         """
         Public handler for the 'add_tab' action, using context from the UI.

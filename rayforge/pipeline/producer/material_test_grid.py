@@ -10,12 +10,14 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem
+import cairo
 from ...core.ops import (
     Ops,
     SectionType,
 )
-import cairo
+from ..artifact.vector import VectorArtifact
+from ..coord import CoordinateSystem
+from .base import OpsProducer
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -25,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class MaterialTestGridType(Enum):
     """Material test types."""
+
     CUT = "Cut"
     ENGRAVE = "Engrave"
 
@@ -96,7 +99,7 @@ class MaterialTestGridProducer(OpsProducer):
         workpiece: Optional[WorkPiece] = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> VectorArtifact:
         """
         Generates the material test ops.
 
@@ -109,7 +112,7 @@ class MaterialTestGridProducer(OpsProducer):
             y_offset_mm: Unused
 
         Returns:
-            PipelineArtifact containing the test grid ops
+            VectorArtifact containing the test grid ops
         """
         ops = Ops()
 
@@ -149,12 +152,12 @@ class MaterialTestGridProducer(OpsProducer):
             # Use coordinates as-is (r=0 at y=0)
             if self.test_type == MaterialTestGridType.ENGRAVE:
                 self._draw_filled_box(
-                        ops,
-                        element["x"] + offset_x,
-                        element["y"] + offset_y,
-                        element["width"],
-                        element["height"],
-                    )
+                    ops,
+                    element["x"] + offset_x,
+                    element["y"] + offset_y,
+                    element["width"],
+                    element["height"],
+                )
             else:  # Cut mode
                 self._draw_rectangle(
                     ops,
@@ -179,7 +182,7 @@ class MaterialTestGridProducer(OpsProducer):
             )
         )
 
-        return PipelineArtifact(
+        return VectorArtifact(
             ops=ops,
             is_scalable=True,  # Can be scaled mathematically
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -256,12 +259,8 @@ class MaterialTestGridProducer(OpsProducer):
         min_speed, max_speed = self.speed_range
         min_power, max_power = self.power_range
 
-        speed_step = (
-            (max_speed - min_speed) / (cols - 1) if cols > 1 else 0
-        )
-        power_step = (
-            (max_power - min_power) / (rows - 1) if rows > 1 else 0
-        )
+        speed_step = (max_speed - min_speed) / (cols - 1) if cols > 1 else 0
+        power_step = (max_power - min_power) / (rows - 1) if rows > 1 else 0
 
         # Scale label power percentage to machine power range
         # Default to 1000 if laser is None (for testing/compatibility)
@@ -280,6 +279,7 @@ class MaterialTestGridProducer(OpsProducer):
 
         # Create temp context for text extent measurements
         import math
+
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         temp_cr = cairo.Context(temp_surface)
         temp_cr.select_font_face(
@@ -310,7 +310,9 @@ class MaterialTestGridProducer(OpsProducer):
             # Center label horizontally in column
             x_pos = (
                 c * (self.shape_size + self.spacing)
-                + self.shape_size / 2 - extents.height / 2 + offset_x
+                + self.shape_size / 2
+                - extents.height / 2
+                + offset_x
             )
             # Position above grid, accounting for rotated text height
             y_pos = -numeric_label_offset + margin_y
@@ -333,8 +335,8 @@ class MaterialTestGridProducer(OpsProducer):
         x_pos = -axis_label_offset + offset_x
         # Y-axis label centered vertically
         grid_center_y = (
-            (rows * (self.shape_size + self.spacing) - self.spacing) / 2
-        )
+            rows * (self.shape_size + self.spacing) - self.spacing
+        ) / 2
         y_pos = grid_center_y + offset_y + extents.width / 2
         self._text_to_ops(
             y_axis_label,
@@ -490,8 +492,13 @@ class MaterialTestGridProducer(OpsProducer):
         ops.line_to(x, y, 0.0)  # Close
 
     def _draw_filled_box(
-        self, ops: Ops, x: float, y: float, width: float, height: float,
-        line_spacing: float = 0.1
+        self,
+        ops: Ops,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        line_spacing: float = 0.1,
     ):
         """Draws a filled box with horizontal raster lines for engraving.
 
@@ -550,15 +557,9 @@ class MaterialTestGridProducer(OpsProducer):
             test_type=MaterialTestGridType(
                 params.get("test_type", MaterialTestGridType.CUT.value)
             ),
-            speed_range=tuple(
-                params.get("speed_range", (100.0, 500.0))
-            ),
-            power_range=tuple(
-                params.get("power_range", (10.0, 100.0))
-            ),
-            grid_dimensions=tuple(
-                params.get("grid_dimensions", (5, 5))
-            ),
+            speed_range=tuple(params.get("speed_range", (100.0, 500.0))),
+            power_range=tuple(params.get("power_range", (10.0, 100.0))),
+            grid_dimensions=tuple(params.get("grid_dimensions", (5, 5))),
             shape_size=params.get("shape_size", 10.0),
             spacing=params.get("spacing", 2.0),
             include_labels=params.get("include_labels", True),
