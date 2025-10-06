@@ -1031,3 +1031,99 @@ def test_estimate_time_complex_path():
     # Total: 13s
     expected_time = 8.0 + 2.0 + 3.0
     assert time_est == pytest.approx(expected_time, rel=1e-3)
+
+
+def test_numpy_serialization_round_trip_complex():
+    """
+    Tests the NumPy serialization round trip with all command types that
+    have associated data.
+    """
+    ops = Ops()
+    # Add a variety of commands
+    ops.move_to(1, 1, 1)
+    ops.line_to(2, 2, 2)
+    ops.arc_to(x=3, y=1, z=0, i=-1, j=1, clockwise=False)
+    ops.move_to(10, 10, 10)
+    ops.scan_to(20, 10, 10, bytearray([10, 20, 30]))
+    ops.arc_to(x=30, y=20, z=10, i=0, j=10, clockwise=True)
+    ops.scan_to(40, 20, 10, bytearray([40, 50]))
+
+    # Perform the round trip
+    arrays = ops.to_numpy_arrays()
+    reconstructed_ops = Ops.from_numpy_arrays(arrays)
+
+    # Assertions
+    assert len(reconstructed_ops.commands) == len(ops.commands)
+    for original_cmd, recon_cmd in zip(
+        ops.commands, reconstructed_ops.commands
+    ):
+        assert type(original_cmd) is type(recon_cmd)
+        # Use to_dict for a comprehensive comparison of all fields
+        assert original_cmd.to_dict() == recon_cmd.to_dict()
+
+
+def test_to_numpy_arrays_data_shapes_and_types():
+    """
+    Verifies the structure, shape, and data types of the NumPy arrays
+    produced by to_numpy_arrays.
+    """
+    ops = Ops()
+    ops.move_to(1, 1, 1)
+    ops.arc_to(x=2, y=2, z=2, i=1, j=1, clockwise=True)
+    ops.line_to(3, 3, 3)
+    ops.scan_to(13, 3, 3, bytearray([1, 2, 3, 4]))
+    ops.arc_to(x=12, y=2, z=2, i=-1, j=1, clockwise=False)
+
+    num_cmds = 5
+    num_arcs = 2
+    num_scanlines = 1
+    total_scanline_bytes = 4
+
+    arrays = ops.to_numpy_arrays()
+
+    # Check array existence and types
+    assert (
+        isinstance(arrays["types"], np.ndarray)
+        and arrays["types"].dtype == np.int32
+    )
+    assert (
+        isinstance(arrays["endpoints"], np.ndarray)
+        and arrays["endpoints"].dtype == np.float32
+    )
+    assert (
+        isinstance(arrays["arc_data"], np.ndarray)
+        and arrays["arc_data"].dtype == np.float32
+    )
+    assert (
+        isinstance(arrays["arc_map"], np.ndarray)
+        and arrays["arc_map"].dtype == np.int32
+    )
+    assert (
+        isinstance(arrays["scanline_data"], np.ndarray)
+        and arrays["scanline_data"].dtype == np.uint8
+    )
+    assert (
+        isinstance(arrays["scanline_indices"], np.ndarray)
+        and arrays["scanline_indices"].dtype == np.int32
+    )
+    assert (
+        isinstance(arrays["scanline_map"], np.ndarray)
+        and arrays["scanline_map"].dtype == np.int32
+    )
+
+    # Check shapes
+    assert arrays["types"].shape == (num_cmds,)
+    assert arrays["endpoints"].shape == (num_cmds, 3)
+    assert arrays["arc_data"].shape == (num_arcs, 3)
+    assert arrays["arc_map"].shape == (num_cmds,)
+    assert arrays["scanline_data"].shape == (total_scanline_bytes,)
+    assert arrays["scanline_indices"].shape == (num_scanlines, 2)
+    assert arrays["scanline_map"].shape == (num_cmds,)
+
+    # Check map contents
+    assert arrays["arc_map"][1] == 0  # First arc is at index 1
+    assert arrays["arc_map"][4] == 1  # Second arc is at index 4
+    assert arrays["arc_map"][0] == -1  # Not an arc
+
+    assert arrays["scanline_map"][3] == 0  # Scanline is at index 3
+    assert arrays["scanline_map"][0] == -1  # Not a scanline

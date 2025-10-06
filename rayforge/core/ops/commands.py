@@ -517,3 +517,28 @@ class ScanLinePowerCommand(MovingCommand):
             result_commands.extend([move_cmd, scan_cmd])
 
         return result_commands
+
+
+COMMAND_TYPE_MAP = {
+    MoveToCommand: 1,
+    LineToCommand: 2,
+    ArcToCommand: 3,
+    ScanLinePowerCommand: 4,
+    SetPowerCommand: 10,
+    SetCutSpeedCommand: 11,
+    SetTravelSpeedCommand: 12,
+    EnableAirAssistCommand: 13,
+    DisableAirAssistCommand: 14,
+    SetLaserCommand: 15,
+    JobStartCommand: 100,
+    JobEndCommand: 101,
+    LayerStartCommand: 102,
+    LayerEndCommand: 103,
+    WorkpieceStartCommand: 104,
+    WorkpieceEndCommand: 105,
+    OpsSectionStartCommand: 106,
+    OpsSectionEndCommand: 107,
+}
+
+# The reverse mapping for deserialization
+COMMAND_CLASS_MAP = {v: k for k, v in COMMAND_TYPE_MAP.items()}

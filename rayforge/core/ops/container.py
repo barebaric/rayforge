@@ -37,6 +37,8 @@ from .commands import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     ScanLinePowerCommand,
+    COMMAND_TYPE_MAP,
+    COMMAND_CLASS_MAP,
 )
 from .timing import estimate_time
 
@@ -145,6 +147,129 @@ class Ops:
                     "Skipping unknown command type during deserialization:"
                     f" {cmd_type}"
                 )
+        return new_ops
+
+    def to_numpy_arrays(self) -> Dict[str, np.ndarray]:
+        """
+        Serializes the command list into a dictionary of NumPy arrays for
+        efficient storage and transfer. This uses a Struct-of-Arrays approach.
+        """
+        num_cmds = len(self.commands)
+
+        # Pre-allocate arrays by inspecting commands first
+        num_arcs = sum(
+            1 for cmd in self.commands if isinstance(cmd, ArcToCommand)
+        )
+        scanline_lengths = [
+            len(cmd.power_values)
+            for cmd in self.commands
+            if isinstance(cmd, ScanLinePowerCommand)
+        ]
+        total_scanline_bytes = sum(scanline_lengths)
+        num_scanlines = len(scanline_lengths)
+
+        # Array Definitions
+        types = np.zeros(num_cmds, dtype=np.int32)
+        endpoints = np.zeros((num_cmds, 3), dtype=np.float32)
+
+        arc_data = np.zeros((num_arcs, 3), dtype=np.float32)  # i, j, clockwise
+        arc_map = np.full(
+            num_cmds, -1, dtype=np.int32
+        )  # Maps command index to arc_data index
+
+        scanline_data = np.zeros(total_scanline_bytes, dtype=np.uint8)
+        scanline_map = np.full(
+            num_cmds, -1, dtype=np.int32
+        )  # Maps command index to scanline_indices index
+        scanline_indices = np.zeros(
+            (num_scanlines, 2), dtype=np.int32
+        )  # start, end into scanline_data
+
+        # Data Population
+        arc_idx, scanline_idx, scanline_offset = 0, 0, 0
+        for i, cmd in enumerate(self.commands):
+            types[i] = COMMAND_TYPE_MAP[type(cmd)]
+
+            if isinstance(cmd, MovingCommand):
+                endpoints[i] = cmd.end
+
+            if isinstance(cmd, ArcToCommand):
+                arc_data[arc_idx] = (
+                    cmd.center_offset[0],
+                    cmd.center_offset[1],
+                    1.0 if cmd.clockwise else 0.0,
+                )
+                arc_map[i] = arc_idx
+                arc_idx += 1
+
+            if isinstance(cmd, ScanLinePowerCommand):
+                length = len(cmd.power_values)
+                scanline_data[scanline_offset : scanline_offset + length] = (
+                    cmd.power_values
+                )
+                scanline_indices[scanline_idx] = (
+                    scanline_offset,
+                    scanline_offset + length,
+                )
+                scanline_map[i] = scanline_idx
+                scanline_offset += length
+                scanline_idx += 1
+
+        return {
+            "types": types,
+            "endpoints": endpoints,
+            "arc_data": arc_data,
+            "arc_map": arc_map,
+            "scanline_data": scanline_data,
+            "scanline_indices": scanline_indices,
+            "scanline_map": scanline_map,
+        }
+
+    @classmethod
+    def from_numpy_arrays(cls, arrays: Dict[str, np.ndarray]) -> "Ops":
+        """
+        Reconstructs an Ops object from a dictionary of NumPy arrays.
+        """
+        new_ops = cls()
+
+        types = arrays["types"]
+        endpoints = arrays["endpoints"]
+        arc_data = arrays["arc_data"]
+        arc_map = arrays["arc_map"]
+        scanline_data = arrays["scanline_data"]
+        scanline_indices = arrays["scanline_indices"]
+        scanline_map = arrays["scanline_map"]
+
+        for i in range(len(types)):
+            cmd_type_enum = types[i]
+            CmdClass = COMMAND_CLASS_MAP.get(cmd_type_enum)
+
+            if CmdClass is None or not issubclass(CmdClass, Command):
+                continue
+
+            end_tuple = tuple(endpoints[i])
+
+            if issubclass(CmdClass, (MoveToCommand, LineToCommand)):
+                cmd = CmdClass(end=end_tuple)
+            elif issubclass(CmdClass, ArcToCommand):
+                arc_idx = arc_map[i]
+                i_val, j_val, is_cw = arc_data[arc_idx]
+                cmd = CmdClass(
+                    end=end_tuple,
+                    center_offset=(i_val, j_val),
+                    clockwise=bool(is_cw),
+                )
+            elif issubclass(CmdClass, ScanLinePowerCommand):
+                scan_idx = scanline_map[i]
+                start, end = scanline_indices[scan_idx]
+                power_values = bytearray(scanline_data[start:end])
+                cmd = CmdClass(end=end_tuple, power_values=power_values)
+            else:
+                # For state/marker commands that don't need extra data
+                cmd = CmdClass()
+
+            new_ops.add(cmd)
+
         return new_ops
 
     @classmethod
