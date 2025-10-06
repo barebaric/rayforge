@@ -1,5 +1,6 @@
 from __future__ import annotations
 import uuid
+import sys
 import logging
 from typing import Dict, Tuple
 from multiprocessing import shared_memory
@@ -22,6 +23,14 @@ class ArtifactStore:
     This class uses only class methods and is stateless, making it safe to
     use from multiple processes without needing an instance.
     """
+
+    # On Windows, shared memory blocks are destroyed when all handles are
+    # closed. To prevent a block from being destroyed immediately after
+    # creation in `put()`, the creating process must keep a handle open.
+    # This dictionary stores these handles. They are closed and removed
+    # by `release()`. This is not needed on POSIX systems.
+    if sys.platform == "win32":
+        _managed_shms: Dict[str, shared_memory.SharedMemory] = {}
 
     @classmethod
     def put(cls, artifact: Artifact) -> ArtifactHandle:
@@ -58,9 +67,13 @@ class ArtifactStore:
             }
             offset += arr.nbytes
 
-        # We can now close our local handle to the SHM block; the block itself
-        # persists in the OS until unlinked.
-        shm.close()
+        # On POSIX, we can close our local handle; the block persists until
+        # unlinked. On Windows, the block is destroyed when the last handle
+        # is closed, so we must keep this handle open in the creating process.
+        if sys.platform == "win32":
+            cls._managed_shms[shm_name] = shm
+        else:
+            shm.close()
 
         # Create the handle with all necessary metadata
         source_coord_system = artifact.source_coordinate_system
@@ -112,6 +125,13 @@ class ArtifactStore:
         This must be called by the owner of the handle when it's no longer
         needed to prevent memory leaks.
         """
+        if sys.platform == "win32":
+            # If we are in the process that created the block, close the
+            # handle we kept open to ensure the block's survival.
+            if handle.shm_name in cls._managed_shms:
+                shm_obj = cls._managed_shms.pop(handle.shm_name)
+                shm_obj.close()
+
         try:
             shm = shared_memory.SharedMemory(name=handle.shm_name)
             shm.close()
