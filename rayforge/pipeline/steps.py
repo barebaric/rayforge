@@ -92,7 +92,7 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
         Optimize().to_dict(),
     ]
     step.post_step_transformers_dicts = [
-        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
+        # MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
     ]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
@@ -149,7 +149,7 @@ def create_frame_step(name: Optional[str] = None) -> Step:
 
 
 def create_material_test_step(name: Optional[str] = None) -> Step:
-    """ Factory to create a Material Test step. """
+    """Factory to create a Material Test step."""
     assert config.config.machine
     step = Step(
         typelabel=_("Material Test Grid"),

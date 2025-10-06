@@ -12,7 +12,7 @@ the final job assembler.
 from __future__ import annotations
 import logging
 import math
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, Union, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
 from contextlib import contextmanager
@@ -21,10 +21,14 @@ from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
-from ..core.ops import Ops
+from ..core.ops import Ops, ScanLinePowerCommand
 from .steprunner import run_step_in_subprocess
 from ..core.group import Group
-from .producer.base import PipelineArtifact
+from .producer.base import (
+    PipelineArtifact,
+    HybridRasterArtifact,
+    deserialize_artifact,
+)
 
 if TYPE_CHECKING:
     from ..shared.tasker.task import Task
@@ -62,8 +66,11 @@ class OpsGenerator:
 
     # Type alias for the structure of the operations cache.
     # Key: (step_uid, workpiece_uid)
-    # Value: PipelineArtifact
-    OpsCacheType = Dict[Tuple[str, str], Optional[PipelineArtifact]]
+    # Value: PipelineArtifact or HybridRasterArtifact
+    OpsCacheType = Dict[
+        Tuple[str, str],
+        Optional[Union[PipelineArtifact, HybridRasterArtifact]],
+    ]
 
     def __init__(self, doc: "Doc", task_manager: "TaskManager"):
         """
@@ -672,6 +679,22 @@ class OpsGenerator:
 
             result_dict, result_gen_id = result
 
+            # --- INPUT VALIDATION LOGGING ---
+            if result_dict and "ops" in result_dict:
+                ops_dict = result_dict["ops"]
+                if ops_dict and "commands" in ops_dict:
+                    scanline_count = sum(
+                        1
+                        for cmd_data in ops_dict["commands"]
+                        if cmd_data.get("type") == "ScanLinePowerCommand"
+                    )
+                    logger.debug(
+                        f"OpsGenerator._on_generation_complete: Received "
+                        f"artifact from subprocess for key {key} with "
+                        f"{scanline_count} ScanLinePowerCommands."
+                    )
+            # --- END LOGGING ---
+
             # Ensure that the result we just received from the subprocess
             # is for the MOST RECENT request we made.
             # If another request was made while this one was in-flight,
@@ -688,7 +711,7 @@ class OpsGenerator:
 
             # --- Validation passed, now update state and notify ---
             if result_dict:
-                artifact = PipelineArtifact.from_dict(result_dict)
+                artifact = deserialize_artifact(result_dict)
                 self._ops_cache[key] = artifact
             else:
                 self._ops_cache[key] = None
@@ -741,8 +764,6 @@ class OpsGenerator:
             return None
 
         # Check for stale non-scalable artifacts.
-        # If the artifact is not scalable, its generation size must match the
-        # workpiece's current size. If not, it's stale and should not be used.
         if (
             not artifact.is_scalable
             and artifact.generation_size != workpiece.size
@@ -761,17 +782,75 @@ class OpsGenerator:
 
         ops = deepcopy(artifact.ops)
 
-        if artifact.is_scalable:
+        if isinstance(artifact, PipelineArtifact) and artifact.is_scalable:
             self._scale_ops_to_workpiece_size(ops, artifact, workpiece)
 
-        logger.debug(
-            f"get_ops for {key}: Returning final ops with {len(ops)} "
-            f"commands. Bbox: {ops.rect()}"
+        # --- VALIDATION LOGGING ---
+        scanline_count = sum(
+            1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
         )
+        logger.debug(
+            f"OpsGenerator.get_ops: Returning final ops for key {key} with "
+            f"{scanline_count} ScanLinePowerCommands."
+        )
+        # --- END LOGGING ---
         return ops
 
+    def get_artifact(
+        self, step: Step, workpiece: WorkPiece
+    ) -> Optional[Union[PipelineArtifact, HybridRasterArtifact]]:
+        """
+        Retrieves the complete artifact from the cache.
+
+        This method returns the entire artifact object (either PipelineArtifact
+        or HybridRasterArtifact) from the cache, without extracting just the
+        ops. This is useful for components that need access to the additional
+        data in the artifact, such as texture data for raster rendering.
+
+        Args:
+            step: The Step for which to retrieve the artifact.
+            workpiece: The WorkPiece for which to retrieve the artifact.
+
+        Returns:
+            The cached artifact object, or None if no artifact is available.
+        """
+        logger.debug(f"{self.__class__.__name__}.get_artifact called")
+        key = step.uid, workpiece.uid
+        if any(s <= 0 for s in workpiece.size):
+            return None
+
+        artifact = self._ops_cache.get(key)
+
+        if artifact is None:
+            logger.debug(
+                f"get_artifact for {key}: No artifact found in cache."
+            )
+            return None
+
+        # Check for stale non-scalable artifacts.
+        if (
+            not artifact.is_scalable
+            and artifact.generation_size != workpiece.size
+        ):
+            logger.debug(
+                f"get_artifact for {key}: Found stale artifact. "
+                f"Cache size: {artifact.generation_size}, "
+                f"WP size: {workpiece.size}. Returning None."
+            )
+            return None
+
+        logger.debug(
+            f"get_artifact for {key}: Found artifact. "
+            f"Scalable: {artifact.is_scalable}."
+        )
+        # Return a deep copy to prevent consumers from mutating the cache.
+        return deepcopy(artifact)
+
     def _scale_ops_to_workpiece_size(
-        self, ops: Ops, artifact: PipelineArtifact, workpiece: "WorkPiece"
+        self,
+        ops: Ops,
+        artifact: PipelineArtifact,
+        workpiece: "WorkPiece",
     ):
         """
         Scales an Ops object from its source coordinate system to the

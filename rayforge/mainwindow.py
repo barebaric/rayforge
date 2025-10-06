@@ -4,7 +4,9 @@ import math
 import numpy as np
 from pathlib import Path
 from typing import List, Optional, cast
+
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
+
 from . import __version__
 from .shared.tasker import task_mgr
 from .shared.tasker.task import Task, CancelledError
@@ -48,6 +50,8 @@ from .workbench.simulator_cmd import SimulatorCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
+from .core.step import Step
+from .pipeline.producer.base import PipelineArtifact, HybridRasterArtifact
 
 
 logger = logging.getLogger(__name__)
@@ -133,6 +137,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title(_("Rayforge"))
         self._current_machine: Optional[Machine] = None  # For signal handling
         self._last_gcode_previewer_width = 350
+        self._live_3d_view_connected = False
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -148,7 +153,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor = DocEditor(task_mgr, config_mgr)
 
         # Instantiate UI-specific command handlers
-        self.view_cmd = ViewModeCmd(self.doc_editor)
+        self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
 
         # Add a global click handler to manage focus correctly.
@@ -424,7 +429,108 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_view_stack_changed(self, stack: Gtk.Stack, param):
         """Handles logic when switching between 2D and 3D views."""
+        child_name = stack.get_visible_child_name()
+        if child_name == "3d":
+            self._connect_live_3d_view_signals()
+        else:
+            self._disconnect_live_3d_view_signals()
         self._update_actions_and_ui()
+
+    def _connect_live_3d_view_signals(self):
+        """Connects to OpsGenerator signals to update the 3D view live."""
+        if self._live_3d_view_connected:
+            return
+        logger.debug("Connecting live 3D view signals.")
+        gen = self.doc_editor.ops_generator
+        gen.ops_generation_finished.connect(self._on_live_3d_view_update)
+        self._live_3d_view_connected = True
+        # Trigger a full update to draw the current state immediately
+        self._update_3d_view_content()
+
+    def _disconnect_live_3d_view_signals(self):
+        """Disconnects from OpsGenerator signals."""
+        if not self._live_3d_view_connected:
+            return
+        logger.debug("Disconnecting live 3D view signals.")
+        gen = self.doc_editor.ops_generator
+        gen.ops_generation_finished.disconnect(self._on_live_3d_view_update)
+        self._live_3d_view_connected = False
+
+    def _on_live_3d_view_update(
+        self,
+        sender: Optional[Step],
+        *,
+        workpiece: Optional[WorkPiece],
+        generation_id: int,
+    ):
+        """
+        When an artifact's generation is finished, trigger a full scene update
+        for the 3D view. The arguments are optional to allow manual calls.
+        """
+        if self.view_stack.get_visible_child_name() == "3d":
+            self._update_3d_view_content()
+
+    def _update_3d_view_content(self):
+        """
+        Gathers all visible artifacts, transforms them to world space, and
+        updates the 3D canvas. This is the single source of truth for what
+        the 3D view should display.
+        """
+        if not self.canvas3d:
+            return
+
+        generator = self.doc_editor.ops_generator
+        doc = self.doc_editor.doc
+
+        vector_ops_to_render = Ops()
+        raster_instances = []
+
+        # Iterate through all items that should be rendered.
+        for layer in doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                if not step.visible:
+                    continue
+                for workpiece in layer.all_workpieces:
+                    artifact = generator.get_artifact(step, workpiece)
+                    if not artifact:
+                        continue
+
+                    # The Ops from get_ops are already scaled to the
+                    # workpiece's final mm size, but are located at
+                    # the origin.
+                    workpiece_ops = generator.get_ops(step, workpiece)
+                    if not workpiece_ops:
+                        continue
+
+                    # We only need to apply the workpiece's final world
+                    # position and rotation, not its scale.
+                    world_transform = workpiece.get_world_transform()
+                    tx, ty, angle, sx, sy, skew = world_transform.decompose()
+
+                    transform_without_scale = Matrix.compose(
+                        tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
+                    )
+                    final_transform = transform_without_scale.to_4x4_numpy()
+
+                    if isinstance(artifact, PipelineArtifact):
+                        workpiece_ops.transform(final_transform)
+                        vector_ops_to_render.extend(workpiece_ops)
+
+                    elif isinstance(artifact, HybridRasterArtifact):
+                        raster_instances.append((artifact, final_transform))
+
+                        # For hybrid artifacts, the Ops object contains the
+                        # full toolpath, including the ScanLinePowerCommands
+                        # that define the overscan moves. We pass the entire
+                        # object to the rendering pipeline. The OpsRenderer
+                        # will correctly extract the zero-power segments.
+                        workpiece_ops.transform(final_transform)
+                        vector_ops_to_render.extend(workpiece_ops)
+
+        # Pass the aggregated and transformed data to the canvas
+        self.canvas3d.set_scene_content(vector_ops_to_render, raster_instances)
 
     def _update_gcode_preview(self, ops: Optional[Ops]):
         """Generates G-code from Ops and updates the preview panel."""
@@ -452,7 +558,7 @@ class MainWindow(Adw.ApplicationWindow):
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
     ):
         """Delegates the view switching logic to the command module."""
-        self.view_cmd.toggle_3d_view(self, action, value)
+        self.view_cmd.toggle_3d_view(action, value)
 
     def on_show_workpieces_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -696,38 +802,42 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Process workpieces in the layer
             for workpiece in layer.all_workpieces:
-                # Get the final transform from workpiece-local to world
-                world_transform = workpiece.get_world_transform()
-                tx, ty, angle, sx, sy, skew = world_transform.decompose()
-
-                # Re-compose the matrix without the scale component, as the
-                # ops are already scaled to the workpiece's final size.
-                # Note: sy's sign is preserved to handle reflections.
-                transform_without_scale = Matrix.compose(
-                    tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
-                )
-                workpiece_transform = transform_without_scale.to_4x4_numpy()
-
-                # Combine workpiece world transform with machine coordinate
-                # transform.
-                final_transform = workpiece_transform
-                if machine.y_axis_down:
-                    y_down_mat = np.identity(4)
-                    y_down_mat[1, 1] = -1.0
-                    y_down_mat[1, 3] = machine_height
-                    # The machine coordinate transform is applied AFTER the
-                    # workpiece's world transform.
-                    final_transform = y_down_mat @ workpiece_transform
-
                 # Accumulate ops from all steps for this workpiece
                 for step in layer.workflow.steps:
                     if not step.visible:
                         continue
+
                     workpiece_ops = generator.get_ops(step, workpiece)
-                    if workpiece_ops:
-                        # Transform from local to machine coordinates
-                        workpiece_ops.transform(final_transform)
-                        full_ops.extend(workpiece_ops)
+                    if not workpiece_ops:
+                        continue
+
+                    # The ops are correctly scaled in mm, but at the origin.
+                    # We need to apply the workpiece's world transform, but
+                    # WITHOUT its scale component, as that's already baked in.
+                    world_transform = workpiece.get_world_transform()
+                    tx, ty, angle, sx, sy, skew = world_transform.decompose()
+
+                    transform_without_scale = Matrix.compose(
+                        tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
+                    )
+                    workpiece_transform = (
+                        transform_without_scale.to_4x4_numpy()
+                    )
+
+                    # Combine workpiece world transform with machine coordinate
+                    # transform.
+                    final_transform = workpiece_transform
+                    if machine.y_axis_down:
+                        y_down_mat = np.identity(4)
+                        y_down_mat[1, 1] = -1.0
+                        y_down_mat[1, 3] = machine_height
+                        # The machine coordinate transform is applied AFTER the
+                        # workpiece's world transform.
+                        final_transform = y_down_mat @ workpiece_transform
+
+                    # Transform from local to machine coordinates
+                    workpiece_ops.transform(final_transform)
+                    full_ops.extend(workpiece_ops)
 
         # Clip the final aggregated ops to the machine boundaries
         return full_ops.clip(clip_rect)
@@ -735,7 +845,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_post_settle_ops_aggregated(self, task: Task):
         """
         Callback executed on the main thread after the background aggregation
-        of toolpaths is complete. It updates both the 3D view and the running
+        of toolpaths is complete. It updates the G-code preview and
         simulation.
         """
         if task.get_status() != "completed":
@@ -744,9 +854,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         aggregated_ops = task.result()
 
-        # Update the 3D view and simulation (they check their own state)
-        if canvas3d_initialized and hasattr(self, "canvas3d"):
-            self.canvas3d.set_ops(aggregated_ops)
+        # Update simulation (it checks its own state)
         self.simulator_cmd.reload_simulation(aggregated_ops)
 
         # Always update the G-code preview's content.
@@ -765,17 +873,12 @@ class MainWindow(Adw.ApplicationWindow):
         background task to aggregate the final toolpaths for the 3D view
         and/or simulation.
         """
-        is_3d_active = (
-            canvas3d_initialized
-            and hasattr(self, "canvas3d")
-            and self.view_stack.get_visible_child_name() == "3d"
-        )
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         gcode_action = self.action_manager.get_action("toggle_gcode_preview")
         gcode_state = gcode_action.get_state() if gcode_action else None
         is_gcode_visible = gcode_state.get_boolean() if gcode_state else False
 
-        if not is_3d_active and not is_sim_active and not is_gcode_visible:
+        if not is_sim_active and not is_gcode_visible:
             return  # Nothing to update
 
         # This key ensures that if another document change happens quickly,

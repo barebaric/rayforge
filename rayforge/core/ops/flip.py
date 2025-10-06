@@ -39,7 +39,7 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
         if isinstance(new_cmd, ScanLinePowerCommand):
             # For a reversed scanline, we only need to reverse the power data.
             # The geometry (start/end) is handled like any other MovingCommand.
-            new_cmd.power_values.reverse()
+            new_cmd.power_values = new_cmd.power_values[::-1]
         elif isinstance(new_cmd, ArcToCommand):
             # The original arc's start point is the endpoint of the command
             # before it in the original segment.

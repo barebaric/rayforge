@@ -3,8 +3,13 @@ import numpy as np
 import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
-from .base import OpsProducer, PipelineArtifact, CoordinateSystem
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any, Union
+from .base import (
+    OpsProducer,
+    PipelineArtifact,
+    HybridRasterArtifact,
+    CoordinateSystem,
+)
 from ...core.ops import (
     Ops,
     SectionType,
@@ -58,7 +63,7 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> PipelineArtifact:
+    ) -> Union[PipelineArtifact, HybridRasterArtifact]:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
@@ -70,6 +75,10 @@ class DepthEngraver(OpsProducer):
 
         width_px = surface.get_width()
         height_px = surface.get_height()
+
+        # Initialize power texture data with zeros (transparent)
+        power_texture_data = np.zeros((height_px, width_px), dtype=np.uint8)
+
         if width_px > 0 and height_px > 0:
             stride = surface.get_stride()
             buf = surface.get_data()
@@ -87,10 +96,21 @@ class DepthEngraver(OpsProducer):
             gray_image[alpha == 0] = 255
 
             if self.depth_mode == DepthMode.POWER_MODULATION:
-                mode_ops = self._run_power_modulation(
+                (
+                    mode_ops,
+                    resampled_power,
+                    scan_y_px,
+                ) = self._run_power_modulation(
                     gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
                 )
-            else:
+                # Paint the resampled power data into the texture at the
+                # correct scan lines to ensure perfect alignment.
+                for i, y_px_float in enumerate(scan_y_px):
+                    y_px_int = int(round(y_px_float))
+                    if 0 <= y_px_int < height_px:
+                        power_texture_data[y_px_int, :] = resampled_power[i, :]
+
+            else:  # Multi-Pass mode
                 if not np.isclose(self.scan_angle, 0):
                     logger.warning(
                         "Angled scanning is not supported for Multi-Pass "
@@ -100,6 +120,23 @@ class DepthEngraver(OpsProducer):
                 mode_ops = self._run_multi_pass(
                     gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
                 )
+                # For multi-pass, the texture represents the final depth map.
+                pass_map = np.ceil(
+                    ((255 - gray_image) / 255.0) * self.num_depth_levels
+                ).astype(int)
+
+                # Power is proportional to the number of passes at a pixel.
+                num_levels = self.num_depth_levels
+                if num_levels > 0:
+                    power_fractions = pass_map / float(num_levels)
+                    power_texture_data = (power_fractions * 255).astype(
+                        np.uint8
+                    )
+                else:
+                    # If no levels, texture is all zeros.
+                    power_texture_data = np.zeros_like(
+                        pass_map, dtype=np.uint8
+                    )
 
             if not mode_ops.is_empty():
                 final_ops.set_laser(laser.uid)
@@ -108,10 +145,20 @@ class DepthEngraver(OpsProducer):
         # Always close with the section end marker
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
-        return PipelineArtifact(
+        # Calculate dimensions and position in millimeters
+        px_per_mm_x, px_per_mm_y = pixels_per_mm
+        dimensions_mm = (width_px / px_per_mm_x, height_px / px_per_mm_y)
+        position_mm = (0.0, y_offset_mm)
+
+        return HybridRasterArtifact(
             ops=final_ops,
             is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+            power_texture_data=power_texture_data,
+            dimensions_mm=dimensions_mm,
+            position_mm=position_mm,
+            source_dimensions=(width_px, height_px),
+            generation_size=workpiece.size,
         )
 
     def _run_power_modulation(
@@ -119,7 +166,7 @@ class DepthEngraver(OpsProducer):
         gray_image: np.ndarray,
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
-    ) -> Ops:
+    ) -> Tuple[Ops, np.ndarray, np.ndarray]:
         ops = Ops()
         height_px, width_px = gray_image.shape
         px_per_mm_x, px_per_mm_y = pixels_per_mm
@@ -127,7 +174,7 @@ class DepthEngraver(OpsProducer):
 
         occupied_rows = np.any(gray_image < 255, axis=1)
         if not np.any(occupied_rows):
-            return ops
+            return ops, np.array([]), np.array([])
 
         y_min_px, y_max_px = np.where(occupied_rows)[0][[0, -1]]
 
@@ -143,7 +190,7 @@ class DepthEngraver(OpsProducer):
             first_scan_y_mm_local, y_max_mm, self.line_interval
         )
         if len(scan_y_coords_mm) == 0:
-            return ops
+            return ops, np.array([]), np.array([])
 
         scan_y_coords_px = scan_y_coords_mm * px_per_mm_y
         scan_y_coords_px = np.clip(scan_y_coords_px, 0, height_px - 1)
@@ -226,7 +273,7 @@ class DepthEngraver(OpsProducer):
             center_y = height_mm / 2
             ops.rotate(self.scan_angle, center_x, center_y)
 
-        return ops
+        return ops, power_image, scan_y_coords_px
 
     def _run_multi_pass(
         self,

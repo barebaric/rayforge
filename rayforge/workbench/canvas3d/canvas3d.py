@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
@@ -9,15 +9,20 @@ from .gl_utils import Shader
 from .ops_renderer import Ops, OpsRenderer
 from .sphere_renderer import SphereRenderer
 from .axis_renderer_3d import AxisRenderer3D
+from .raster_renderer import RasterArtifactRenderer
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
     TEXT_FRAGMENT_SHADER,
     TEXT_VERTEX_SHADER,
+    RASTER_FRAGMENT_SHADER,
+    RASTER_VERTEX_SHADER,
 )
+from ...core.ops import ScanLinePowerCommand
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
+from ...pipeline.producer.base import HybridRasterArtifact
 
 
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +52,8 @@ class Canvas3D(Gtk.GLArea):
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.ops_renderer: Optional[OpsRenderer] = None
         self.sphere_renderer: Optional[SphereRenderer] = None
+        self.raster_renderer: Optional[RasterArtifactRenderer] = None
+        self.raster_shader: Optional[Shader] = None
         self._ops_preparation_task: Optional[Task] = None
         self._ops_vtx_cache: Optional[
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -64,6 +71,7 @@ class Canvas3D(Gtk.GLArea):
             "zero_power": ("@accent_color", 0.5),
         }
         self._color_set: Optional[ColorSet] = None
+        self._theme_is_dirty = True
 
         if self.y_down:
             # This matrix transforms from a Y-up coordinate system (used by
@@ -88,7 +96,13 @@ class Canvas3D(Gtk.GLArea):
         self.connect("unrealize", self.on_unrealize)
         self.connect("render", self.on_render)
         self.connect("resize", self.on_resize)
+        self.connect("notify::style", self._on_style_changed)
         self._setup_interactions()
+
+    def _on_style_changed(self, widget, gparam):
+        """Marks theme resources as dirty when the GTK theme changes."""
+        self._theme_is_dirty = True
+        self.queue_render()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
@@ -195,6 +209,7 @@ class Canvas3D(Gtk.GLArea):
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
         self._init_gl_resources()
+        self._theme_is_dirty = True
 
         # Create the camera with placeholder values. The correct initial view
         # will be set by reset_view_iso() below.
@@ -222,10 +237,14 @@ class Canvas3D(Gtk.GLArea):
                 self.ops_renderer.cleanup()
             if self.sphere_renderer:
                 self.sphere_renderer.cleanup()
+            if self.raster_renderer:
+                self.raster_renderer.cleanup()
             if self.main_shader:
                 self.main_shader.cleanup()
             if self.text_shader:
                 self.text_shader.cleanup()
+            if self.raster_shader:
+                self.raster_shader.cleanup()
         finally:
             self._gl_initialized = False
 
@@ -243,6 +262,9 @@ class Canvas3D(Gtk.GLArea):
                 SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER
             )
             self.text_shader = Shader(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
+            self.raster_shader = Shader(
+                RASTER_VERTEX_SHADER, RASTER_FRAGMENT_SHADER
+            )
 
             # Get the theme's default font family from GTK
             font_family = "sans-serif"  # A safe fallback
@@ -265,6 +287,8 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.init_gl()
             self.ops_renderer = OpsRenderer()
             self.ops_renderer.init_gl()
+            self.raster_renderer = RasterArtifactRenderer()
+            self.raster_renderer.init_gl()
             if self.sphere_renderer:
                 self.sphere_renderer.init_gl()
 
@@ -277,12 +301,17 @@ class Canvas3D(Gtk.GLArea):
         """
         Resolves the ColorSet and updates other theme-dependent elements.
         """
-        if not self.axis_renderer:
+        if not self.axis_renderer or not self.raster_renderer:
             return
 
         style_context = self.get_style_context()
         resolver = GtkColorResolver(style_context)
         self._color_set = resolver.resolve(self._color_spec)
+
+        if self._color_set:
+            self.raster_renderer.update_color_lut(
+                self._color_set.get_lut("engrave")
+            )
 
         # Get background color and set it for OpenGL. Prioritize the specific
         # 'view_bg_color', but fall back to the generic 'theme_bg_color'.
@@ -315,12 +344,16 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
 
+        self._theme_is_dirty = False
+
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self.camera or not self._gl_initialized:
             return False
 
-        self._update_theme_and_colors()
+        if self._theme_is_dirty:
+            self._update_theme_and_colors()
+
         if not self._color_set:
             return False  # Cannot render without resolved colors
 
@@ -353,10 +386,21 @@ class Canvas3D(Gtk.GLArea):
                     self._model_matrix,  # Pass the model matrix for positions
                 )
             if self.ops_renderer and self.main_shader:
+                # The ops vertices are already in world space, so we do not
+                # apply the scene's _model_matrix. We pass the UI matrix which
+                # only contains camera projection and view.
                 self.ops_renderer.render(
                     self.main_shader,
-                    mvp_matrix_scene_gl,
+                    mvp_matrix_ui_gl,
                     colors=self._color_set,
+                    show_travel_moves=self._show_travel_moves,
+                )
+            if self.raster_renderer and self.raster_shader:
+                # The raster quads are part of the scene and need the scene's
+                # model matrix. Their vertices are local, so the renderer
+                # combines the scene VP with the instance's world model matrix.
+                self.raster_renderer.render(
+                    mvp_matrix_scene, self.raster_shader
                 )
 
         except Exception as e:
@@ -538,7 +582,7 @@ class Canvas3D(Gtk.GLArea):
         # Calculate angle of the previous and current mouse positions
         # relative to the screen pivot.
         angle_prev = math.atan2(y_prev - pivot_y, x_prev - pivot_x)
-        angle_curr = math.atan2(y_curr - pivot_y, x_curr - pivot_x)
+        angle_curr = math.atan2(y_curr - pivot_y, x_curr - pivot_y)
         delta_angle = angle_curr - angle_prev
 
         # Handle atan2 wrap-around from -pi to pi
@@ -586,10 +630,13 @@ class Canvas3D(Gtk.GLArea):
         self._update_renderer_from_cache()
 
     def _update_renderer_from_cache(self):
-        """Helper to update the renderer based on current visibility flags."""
+        """
+        Helper to update the renderer based on current visibility flags.
+        """
         if not self.ops_renderer or not self._ops_vtx_cache:
             if self.ops_renderer:
                 self.ops_renderer.clear()
+            self.queue_render()
             return
 
         (
@@ -600,16 +647,10 @@ class Canvas3D(Gtk.GLArea):
             zero_power_colors,
         ) = self._ops_vtx_cache
 
-        # Combine travel and zero-power moves based on the toggle state
         if self._show_travel_moves:
-            # Zero-power moves use vertex colors, so we need to upload them
-            # along with the travel vertices. This requires a bit more work.
-            # The simplest solution is to render them as part of the powered
-            # VAO, which is not ideal. A better solution is to add a second
-            # colored VAO for travel/zero-power moves, but that is a larger
-            # refactor.
-            # For now, let's append zero-power vertices to the powered ones.
-            # This is a temporary workaround.
+            # When travel is shown, zero-power cuts are also shown. They are
+            # conceptually similar (non-cutting moves). We append them to the
+            # powered buffer as they use vertex colors.
             powered_verts_final = np.concatenate(
                 (powered_verts, zero_power_verts)
             )
@@ -618,6 +659,7 @@ class Canvas3D(Gtk.GLArea):
             )
             travel_verts_final = travel_verts
         else:
+            # When travel is hidden, hide zero-power cuts as well.
             powered_verts_final = powered_verts
             powered_colors_final = powered_colors
             travel_verts_final = np.array([], dtype=np.float32)
@@ -630,35 +672,57 @@ class Canvas3D(Gtk.GLArea):
         )
         self.queue_render()
 
-    def set_ops(self, ops: Ops):
+    def set_scene_content(
+        self,
+        vector_ops: Ops,
+        raster_instances: List[Tuple[HybridRasterArtifact, np.ndarray]],
+    ):
         """
-        Schedules the given operations to be prepared for rendering in a
-        background thread. This method is safe to call from any thread.
+        Sets the entire scene content from pre-aggregated and transformed data.
         """
-        if not self.ops_renderer:
+        if not self.ops_renderer or not self.raster_renderer:
             return
 
-        # Resolve colors now if they haven't been. This can happen if
-        # set_ops is called before the first render.
-        if not self._color_set:
+        # --- INPUT VALIDATION LOGGING ---
+        scanline_count = sum(
+            1
+            for cmd in vector_ops.commands
+            if isinstance(cmd, ScanLinePowerCommand)
+        )
+        logger.debug(
+            f"Canvas3D.set_scene_content: Received {len(vector_ops.commands)} "
+            f"vector commands, including {scanline_count} "
+            "ScanLinePowerCommands."
+        )
+        # --- END LOGGING ---
+
+        # Theme/color updates only need to happen once per theme change
+        if self._theme_is_dirty:
             self._update_theme_and_colors()
-
         if not self._color_set:
-            logger.warning("Cannot set ops, color set could not be resolved.")
-            self.ops_renderer.clear()
-            self.queue_render()
+            logger.warning("Cannot set artifacts, color set not resolved.")
             return
 
-        logger.debug("Received new ops. Scheduling background preparation.")
+        # Handle raster instances by clearing and re-adding them
+        self.raster_renderer.clear()
+        for artifact, transform_matrix in raster_instances:
+            self.raster_renderer.add_instance(artifact, transform_matrix)
 
-        # This key ensures that if a new set_ops is called while an old one is
-        # still being prepared, the old one is cancelled.
+        # Schedule the vector ops for preparation.
+        self._schedule_ops_preparation(vector_ops)
+
+    def _schedule_ops_preparation(self, ops: Ops):
+        """
+        Schedules the given Ops to be prepared for rendering in a
+        background thread.
+        """
         task_key = (id(self), "prepare-3d-ops-vertices")
 
-        self._ops_preparation_task = task_mgr.run_thread(
-            self.ops_renderer.prepare_vertex_data,
-            ops,
-            self._color_set,
-            key=task_key,
-            when_done=self._on_ops_prepared,
-        )
+        if self.ops_renderer and self._color_set is not None:
+            self._ops_preparation_task = task_mgr.run_thread(
+                self.ops_renderer.prepare_vertex_data,
+                ops,
+                self._color_set,
+                key=task_key,
+                when_done=self._on_ops_prepared,
+            )

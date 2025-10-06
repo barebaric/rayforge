@@ -13,6 +13,7 @@ from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.ops import (
     Ops,
+    ScanLinePowerCommand,
 )
 from ..pipeline.generator import OpsGenerator
 from ..core.step import Step
@@ -53,6 +54,15 @@ def _transform_and_clip_workpiece_ops(
     Applies workpiece-specific transforms using its world matrix,
     converts to machine coordinates, and clips the result.
     """
+    # --- VALIDATION LOGGING: BEFORE ---
+    pre_transform_scanlines = sum(
+        1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
+    )
+    logger.debug(
+        f"JobAssembler: Pre-transform/clip for '{workpiece.name}': "
+        f"{pre_transform_scanlines} ScanLinePowerCommands."
+    )
+
     # The ops from the generator are already scaled to the workpiece's final
     # size in millimeters, but located at the origin. We only need to apply
     # the rotation and translation components from the world matrix.
@@ -91,7 +101,20 @@ def _transform_and_clip_workpiece_ops(
     ops.transform(final_transform)
 
     # 5. Clip to machine boundaries
-    return ops.clip(clip_rect)
+    clipped_ops = ops.clip(clip_rect)
+
+    # --- VALIDATION LOGGING: AFTER ---
+    post_clip_scanlines = sum(
+        1
+        for cmd in clipped_ops.commands
+        if isinstance(cmd, ScanLinePowerCommand)
+    )
+    logger.debug(
+        f"JobAssembler: Post-transform/clip for '{workpiece.name}': "
+        f"{post_clip_scanlines} ScanLinePowerCommands."
+    )
+
+    return clipped_ops
 
 
 async def generate_job_ops(
@@ -188,6 +211,17 @@ async def generate_job_ops(
                 workpiece_ops = ops_generator.get_ops(step, workpiece)
                 if not workpiece_ops:
                     continue
+
+                # --- VALIDATION LOGGING ---
+                scanline_count = sum(
+                    1
+                    for cmd in workpiece_ops.commands
+                    if isinstance(cmd, ScanLinePowerCommand)
+                )
+                logger.debug(
+                    f"JobAssembler: Got ops for '{workpiece.name}' from "
+                    f"generator with {scanline_count} ScanLinePowerCommands."
+                )
 
                 # Wrap the workpiece ops with start/end markers
                 ops_with_markers = Ops()

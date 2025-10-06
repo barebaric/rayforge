@@ -281,12 +281,7 @@ def test_run_optimization_with_unsplit_scanline():
 
     # Path 2: A raster line that is fully "on". It should be flipped.
     ops.move_to(20, 0, 0)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(10, 0, 0),
-            power_values=bytearray([10, 20, 30]),
-        )
-    )
+    ops.scan_to(10, 0, 0, power_values=bytearray([10, 20, 30]))
 
     optimizer = Optimize()
     optimizer.run(ops)
@@ -333,12 +328,7 @@ def test_run_optimization_with_split_scanline():
     # Path B: from x=100 to x=102.857
     # Path C: from x=107.142 to x=110
     ops.move_to(100, 5, 0)
-    ops.add(
-        ScanLinePowerCommand(
-            end=(110, 5, 0),
-            power_values=bytearray([50, 50, 0, 0, 0, 60, 60]),
-        )
-    )
+    ops.scan_to(110, 5, 0, power_values=bytearray([50, 50, 0, 0, 0, 60, 60]))
 
     optimizer = Optimize()
     optimizer.run(ops)
@@ -404,7 +394,7 @@ def test_optimizer_does_not_split_overscanned_scanline():
     power_values = bytearray([0, 0] + [50, 100, 150] + [0, 0])
 
     ops.move_to(*start_pt)
-    ops.add(ScanLinePowerCommand(end=end_pt, power_values=power_values))
+    ops.scan_to(*end_pt, power_values=power_values)
 
     # Act: Run the optimizer
     optimizer = Optimize()
@@ -430,3 +420,229 @@ def test_optimizer_does_not_split_overscanned_scanline():
 
     # 4. The power values should still contain the zero-power padding.
     assert final_scan_cmd.power_values == power_values
+
+
+def test_run_optimization_scanline_flip_preserves_state():
+    """
+    Verify that when a ScanLine segment is flipped, the new commands
+    (MoveTo, ScanLinePowerCommand) correctly inherit the state.
+    """
+    ops = Ops()
+    ops.set_power(0.85)
+    ops.set_cut_speed(1234)
+    ops.enable_air_assist(True)
+
+    # Path 1: A vector line from (0,0) to (10,0)
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    # Path 2: A raster line that should be flipped to minimize travel
+    ops.move_to(20, 0)
+    ops.scan_to(10, 0, power_values=bytearray([10, 20, 30]))
+
+    optimizer = Optimize()
+    optimizer.run(ops)
+    ops.preload_state()
+
+    scan_cmds = [
+        c for c in ops.commands if isinstance(c, ScanLinePowerCommand)
+    ]
+    assert len(scan_cmds) == 1
+    scan_cmd = scan_cmds[0]
+
+    move_cmd_idx = ops.commands.index(scan_cmd) - 1
+    move_cmd = ops.commands[move_cmd_idx]
+    assert isinstance(move_cmd, MoveToCommand)
+
+    # Check state on the new MoveTo for the flipped segment
+    assert move_cmd.state is not None
+    assert move_cmd.state.power == pytest.approx(0.85)
+    assert move_cmd.state.cut_speed == pytest.approx(1234)
+    assert move_cmd.state.air_assist is True
+
+    # Check state on the flipped ScanLinePowerCommand
+    assert scan_cmd.state is not None
+    assert scan_cmd.state.power == pytest.approx(0.85)
+    assert scan_cmd.state.cut_speed == pytest.approx(1234)
+    assert scan_cmd.state.air_assist is True
+
+
+def test_run_optimization_scanline_split_preserves_state():
+    """
+    Verify that when a ScanLine is split, all new sub-segments correctly
+    inherit the original state.
+    """
+    ops = Ops()
+    ops.set_power(0.77)
+    ops.set_travel_speed(5678)
+    ops.enable_air_assist(False)
+
+    # A raster line that will be split into two segments
+    ops.move_to(0, 0)
+    ops.scan_to(10, 0, power_values=bytearray([50, 50, 0, 0, 60, 60]))
+    # A far away vector line to ensure no reordering happens
+    ops.move_to(100, 100)
+    ops.line_to(101, 101)
+
+    optimizer = Optimize()
+    optimizer.run(ops)
+    ops.preload_state()
+
+    # The original ScanLine should be replaced by two new ones
+    scan_cmds = [
+        c for c in ops.commands if isinstance(c, ScanLinePowerCommand)
+    ]
+    assert len(scan_cmds) == 2
+
+    for scan_cmd in scan_cmds:
+        move_cmd_idx = ops.commands.index(scan_cmd) - 1
+        move_cmd = ops.commands[move_cmd_idx]
+        assert isinstance(move_cmd, MoveToCommand)
+
+        # Verify state on the new MoveTo for the sub-segment
+        assert move_cmd.state is not None
+        assert move_cmd.state.power == pytest.approx(0.77)
+        assert move_cmd.state.travel_speed == pytest.approx(5678)
+        assert move_cmd.state.air_assist is False
+
+        # Verify state on the new ScanLinePowerCommand for the sub-segment
+        assert scan_cmd.state is not None
+        assert scan_cmd.state.power == pytest.approx(0.77)
+        assert scan_cmd.state.travel_speed == pytest.approx(5678)
+        assert scan_cmd.state.air_assist is False
+
+
+def test_run_with_state_change_and_scanlines():
+    """
+    Verify that ScanLine segments with different states are not reordered
+    across state boundaries, and that each optimized block has the correct
+    state.
+    """
+    ops = Ops()
+
+    # Part 1: Power 0.4 - Inefficient path with scanlines
+    ops.set_power(0.4)
+    ops.move_to(0, 0)
+    ops.scan_to(10, 0, power_values=bytearray([10]))
+    ops.move_to(0, 10)
+    ops.scan_to(10, 10, power_values=bytearray([20]))
+
+    # State change acts as an optimization boundary
+    ops.set_power(0.9)
+
+    # Part 2: Power 0.9 - Inefficient path with scanlines
+    ops.move_to(100, 100)
+    ops.scan_to(110, 100, power_values=bytearray([30]))
+    ops.move_to(100, 110)
+    ops.scan_to(110, 110, power_values=bytearray([40]))
+
+    optimizer = Optimize()
+    optimizer.run(ops)
+    ops.preload_state()
+
+    # Find the index where the state changes
+    power_change_idx = -1
+    for i, cmd in enumerate(ops.commands):
+        if (
+            isinstance(cmd, MovingCommand)
+            and cmd.state
+            and cmd.state.power == pytest.approx(0.9)
+        ):
+            power_change_idx = i
+            break
+
+    assert power_change_idx != -1, "A segment with power 0.9 should exist"
+
+    # Check all moving commands before the state change
+    for i in range(power_change_idx):
+        cmd = ops.commands[i]
+        if isinstance(cmd, MovingCommand) and cmd.state:
+            assert cmd.end[0] < 50, (
+                "Points from Part 1 should be in first half"
+            )
+            assert cmd.state.power == pytest.approx(0.4), (
+                "State should be power 0.4"
+            )
+
+    # Check all moving commands at and after the state change
+    for i in range(power_change_idx, len(ops.commands)):
+        cmd = ops.commands[i]
+        if isinstance(cmd, MovingCommand) and cmd.state:
+            assert cmd.end[0] > 50, (
+                "Points from Part 2 should be in second half"
+            )
+            assert cmd.state.power == pytest.approx(0.9), (
+                "State should be power 0.9"
+            )
+
+    # Also check that optimization occurred within the first block
+    # Initial travel: move(0,0)->scan(10,0) -> move(0,10)->scan(10,10)
+    # Travel is from (10,0) to (0,10) = sqrt(10^2 + 10^2) ~= 14.14
+    # Optimized travel: move(0,0)->scan(10,0) -> move(10,10)->scan(0,10)
+    # Travel is from (10,0) to (10,10) = 10.
+    # We can verify this by checking the order of the Y coordinates.
+    y_coords = [
+        cmd.end[1]
+        for cmd in ops.commands[:power_change_idx]
+        if isinstance(cmd, ScanLinePowerCommand)
+    ]
+    assert y_coords == [0, 10] or y_coords == [10, 0], (
+        "Optimization should order by y-coord"
+    )
+
+
+def test_run_optimization_with_overscan_and_flip_preserves_state():
+    """
+    Tests that an overscanned ScanLine that gets flipped by the optimizer
+    correctly preserves its state. This simulates the real-world scenario
+    where the error was observed.
+    """
+    ops = Ops()
+    ops.set_power(0.66)
+    ops.set_cut_speed(2000)
+
+    # Path 1: A vector line from (0,0) to (10,10)
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+
+    # Path 2: An overscanned raster line that should be flipped.
+    # The content is from (30,10) to (20,10), but overscan extends it.
+    start_pt_overscan = (35.0, 10.0, 0.0)
+    end_pt_overscan = (15.0, 10.0, 0.0)
+    power_values = bytearray([0, 0] + [100, 120, 140] + [0, 0])
+    ops.move_to(*start_pt_overscan)
+    ops.scan_to(*end_pt_overscan, power_values=power_values)
+
+    # The optimizer should connect Path 1's end (10,10) to the nearest
+    # point on Path 2, which is its end (15,10), causing a flip.
+
+    optimizer = Optimize()
+    optimizer.run(ops)
+    ops.preload_state()
+
+    # Find the scan command after optimization
+    scan_cmds = [
+        c for c in ops.commands if isinstance(c, ScanLinePowerCommand)
+    ]
+    assert len(scan_cmds) == 1
+    flipped_scan_cmd = scan_cmds[0]
+
+    # Find its preceding MoveTo command
+    move_cmd_idx = ops.commands.index(flipped_scan_cmd) - 1
+    move_cmd = ops.commands[move_cmd_idx]
+    assert isinstance(move_cmd, MoveToCommand)
+
+    # Check state on the new MoveTo for the flipped segment
+    assert move_cmd.state is not None
+    assert move_cmd.state.power == pytest.approx(0.66)
+    assert move_cmd.state.cut_speed == pytest.approx(2000)
+
+    # Check state on the flipped ScanLinePowerCommand
+    assert flipped_scan_cmd.state is not None
+    assert flipped_scan_cmd.state.power == pytest.approx(0.66)
+    assert flipped_scan_cmd.state.cut_speed == pytest.approx(2000)
+
+    # Verify the geometry and power values were flipped correctly
+    assert move_cmd.end == pytest.approx(end_pt_overscan)
+    assert flipped_scan_cmd.end == pytest.approx(start_pt_overscan)
+    assert flipped_scan_cmd.power_values == power_values[::-1]

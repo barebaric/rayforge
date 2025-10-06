@@ -119,6 +119,10 @@ class Shader:
         """Sets a float uniform."""
         GL.glUniform1f(self.get_uniform_location(name), value)
 
+    def set_int(self, name: str, value: int) -> None:
+        """Sets an integer uniform."""
+        GL.glUniform1i(self.get_uniform_location(name), value)
+
 
 class BaseRenderer:
     """A base class for an OpenGL renderer that manages its own resources."""
@@ -153,10 +157,18 @@ class BaseRenderer:
         """Adds a child renderer to be cleaned up automatically."""
         self._owned_renderers.append(renderer)
 
+    def _cleanup_self(self) -> None:
+        """
+        A method for subclasses to override for their specific cleanup logic.
+        """
+        pass
+
     @final
     def cleanup(self) -> None:
         """Cleans up all tracked OpenGL resources."""
         try:
+            self._cleanup_self()
+
             for renderer in self._owned_renderers:
                 renderer.cleanup()
 
@@ -164,7 +176,9 @@ class BaseRenderer:
                 self.shader.cleanup()
 
             if self._owned_textures:
-                GL.glDeleteTextures(self._owned_textures)
+                GL.glDeleteTextures(
+                    len(self._owned_textures), self._owned_textures
+                )
                 self._owned_textures.clear()
 
             if self._owned_vaos:

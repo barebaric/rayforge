@@ -1,5 +1,6 @@
-from typing import Any, List, Tuple, Iterator, Optional, Dict
+from typing import Any, List, Tuple, Iterator, Optional, Dict, Union
 from ..shared.tasker.proxy import ExecutionContextProxy
+import numpy as np
 
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
@@ -41,7 +42,7 @@ def run_step_in_subprocess(
     logger.debug(f"Starting step execution with settings: {settings}")
 
     from .modifier import Modifier
-    from .producer import OpsProducer, PipelineArtifact
+    from .producer import OpsProducer, PipelineArtifact, HybridRasterArtifact
     from .transformer import OpsTransformer, ExecutionPhase
     from ..core.workpiece import WorkPiece
     from ..machine.models.laser import Laser
@@ -64,7 +65,7 @@ def run_step_in_subprocess(
         *,
         y_offset_mm: float = 0.0,
         step_settings: Dict[str, Any],
-    ) -> PipelineArtifact:
+    ) -> Union[PipelineArtifact, HybridRasterArtifact]:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
         vector data.
@@ -101,7 +102,9 @@ def run_step_in_subprocess(
             y_offset_mm=y_offset_mm,
         )
 
-    def _execute_vector() -> Iterator[Tuple[PipelineArtifact, float]]:
+    def _execute_vector() -> Iterator[
+        Tuple[Union[PipelineArtifact, HybridRasterArtifact], float]
+    ]:
         """
         Handles Ops generation for scalable (vector) operations.
 
@@ -178,7 +181,9 @@ def run_step_in_subprocess(
         yield artifact, 1.0
         surface.flush()
 
-    def _execute_raster() -> Iterator[Tuple[PipelineArtifact, float]]:
+    def _execute_raster() -> Iterator[
+        Tuple[Union[PipelineArtifact, HybridRasterArtifact], float]
+    ]:
         """
         Handles Ops generation for non-scalable (raster) operations.
 
@@ -278,6 +283,10 @@ def run_step_in_subprocess(
     )
     initial_ops = _create_initial_ops()
     final_artifact = None
+
+    # This will hold the assembled texture for hybrid raster artifacts
+    full_power_texture: Optional[np.ndarray] = None
+
     is_vector = opsproducer.is_vector_producer()
 
     execute_weight = 0.20
@@ -298,8 +307,52 @@ def run_step_in_subprocess(
             new_ops = initial_ops.copy()
             new_ops.extend(final_artifact.ops)
             final_artifact.ops = new_ops
+
+            # If dealing with a chunked raster, prepare the full texture buffer
+            if not is_vector and isinstance(
+                final_artifact, HybridRasterArtifact
+            ):
+                size_mm = workpiece.size
+                px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+                full_width_px = int(size_mm[0] * px_per_mm_x)
+                full_height_px = int(size_mm[1] * px_per_mm_y)
+                if full_width_px > 0 and full_height_px > 0:
+                    full_power_texture = np.zeros(
+                        (full_height_px, full_width_px), dtype=np.uint8
+                    )
         else:
             final_artifact.ops.extend(chunk_artifact.ops)
+
+        # For all chunks, paint their texture into the full buffer
+        if full_power_texture is not None and isinstance(
+            chunk_artifact, HybridRasterArtifact
+        ):
+            px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+            chunk_h_px, chunk_w_px = chunk_artifact.power_texture_data.shape
+
+            # y-offset from top in mm, convert to pixels
+            y_start_px = int(
+                round(chunk_artifact.position_mm[1] * px_per_mm_y)
+            )
+            x_start_px = 0  # Chunks are full width
+
+            y_end_px = y_start_px + chunk_h_px
+            x_end_px = x_start_px + chunk_w_px
+
+            # Check bounds to prevent errors from floating point inaccuracies
+            if (
+                y_end_px <= full_power_texture.shape[0]
+                and x_end_px <= full_power_texture.shape[1]
+            ):
+                full_power_texture[
+                    y_start_px:y_end_px, x_start_px:x_end_px
+                ] = chunk_artifact.power_texture_data
+            else:
+                logger.warning(
+                    f"Chunk texture out of bounds. Target: "
+                    f"[{y_start_px}:{y_end_px}, {x_start_px}:{x_end_px}] "
+                    f"in {full_power_texture.shape}"
+                )
 
         # Send intermediate chunks for raster operations
         if not is_vector:
@@ -320,6 +373,21 @@ def run_step_in_subprocess(
         # If no artifact was produced (e.g., empty image), return a tuple
         # with None to match the success return type.
         return None, generation_id
+
+    # If we aggregated a hybrid raster, update the final artifact with the
+    # complete data
+    if full_power_texture is not None and isinstance(
+        final_artifact, HybridRasterArtifact
+    ):
+        final_artifact.power_texture_data = full_power_texture
+        # The final artifact represents the whole workpiece, at its origin
+        final_artifact.position_mm = (0.0, 0.0)
+        final_artifact.dimensions_mm = workpiece.size
+        # The source dimensions should also reflect the full pixel buffer
+        final_artifact.source_dimensions = (
+            full_power_texture.shape[1],
+            full_power_texture.shape[0],
+        )
 
     # --- Transform phase ---
     enabled_transformers = [t for t in opstransformers if t.enabled]
@@ -379,4 +447,13 @@ def run_step_in_subprocess(
     # is crucial for the generator's cache invalidation logic.
     final_artifact.generation_size = generation_size
 
-    return final_artifact.to_dict(), generation_id
+    # Check if we have a HybridRasterArtifact and serialize it appropriately
+    if isinstance(final_artifact, HybridRasterArtifact):
+        logger.debug(
+            f"Serializing HybridRasterArtifact with "
+            f"type: {final_artifact.type}"
+        )
+        return final_artifact.to_dict(), generation_id
+    else:
+        logger.debug("Serializing PipelineArtifact")
+        return final_artifact.to_dict(), generation_id

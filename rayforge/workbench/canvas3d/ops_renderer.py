@@ -84,6 +84,7 @@ class OpsRenderer(BaseRenderer):
         Processes an Ops object into numpy arrays of vertices. This method is
         thread-safe and can be run in the background.
         """
+        logger.debug(f"OpsRenderer: Preparing {len(ops.commands)} commands.")
         powered_vertices: List[float] = []
         powered_colors: List[float] = []
         travel_vertices: List[float] = []
@@ -93,88 +94,70 @@ class OpsRenderer(BaseRenderer):
         current_power = 0.0
 
         cut_lut = colors.get_lut("cut")
-        engrave_lut = colors.get_lut("engrave")
         zero_power_rgba = colors.get_rgba("zero_power")
 
         ops.preload_state()
-        for command in ops.commands:
+        for i, command in enumerate(ops.commands):
             if not isinstance(command, Command) or command.is_marker_command():
                 continue
 
             if hasattr(command, "state") and command.state is not None:
                 current_power = command.state.power
 
-            if isinstance(command, ScanLinePowerCommand):
-                power_values = command.power_values
-                if not power_values or command.end is None:
-                    last_point = command.end or last_point
-                    continue
-
-                p_start = np.array(last_point, dtype=np.float32)
-                p_end = np.array(command.end, dtype=np.float32)
-                line_vec = p_end - p_start
-                num_values = len(power_values)
-
-                # Generate a line segment for each power value ("pixel")
-                for i, power in enumerate(power_values):
-                    t_start = i / num_values
-                    t_end = (i + 1) / num_values
-                    start_pt = p_start + line_vec * t_start
-                    end_pt = p_start + line_vec * t_end
-
-                    # Calculate colors for both vertices of this segment
-                    if power > 0:
-                        # power is 0-255, which can be used directly as a
-                        # LUT index.
-                        power_idx = min(255, power)
-                        start_color = tuple(engrave_lut[power_idx])
-
-                        # For the end color, use the next power value if
-                        # available,
-                        # otherwise use the same color
-                        if i + 1 < len(power_values):
-                            next_power = power_values[i + 1]
-                            if next_power > 0:
-                                next_power_idx = min(255, next_power)
-                                end_color = tuple(engrave_lut[next_power_idx])
-                            else:
-                                end_color = zero_power_rgba
-                        else:
-                            end_color = start_color
-                    else:
-                        start_color = zero_power_rgba
-                        # For the end color, use the next power value if
-                        # available
-                        if i + 1 < len(power_values):
-                            next_power = power_values[i + 1]
-                            if next_power > 0:
-                                next_power_idx = min(255, next_power)
-                                end_color = tuple(engrave_lut[next_power_idx])
-                            else:
-                                end_color = zero_power_rgba
-                        else:
-                            end_color = start_color
-
-                    # Add vertices and their corresponding colors
-                    if power > 0:
-                        powered_vertices.extend(start_pt)
-                        powered_vertices.extend(end_pt)
-                        powered_colors.extend(start_color)
-                        powered_colors.extend(end_color)
-                    else:
-                        zero_power_vertices.extend(start_pt)
-                        zero_power_vertices.extend(end_pt)
-                        zero_power_colors.extend(start_color)
-                        zero_power_colors.extend(end_color)
-
-                last_point = command.end
-                continue
-
             if command.end is None:
                 continue
 
             end_point = tuple(map(float, command.end))
             start_point = last_point
+
+            if isinstance(command, ScanLinePowerCommand):
+                logger.debug(
+                    f"OpsRenderer: Processing ScanLinePowerCommand at "
+                    f"index {i}."
+                )
+                # The RasterArtifactRenderer shows the powered image. Here, we
+                # only care about visualizing the zero-power toolpath moves
+                # (e.g., overscan) from the ScanLine command.
+                num_steps = len(command.power_values)
+                if num_steps > 0:
+                    p_start_vec = np.array(start_point)
+                    line_vec = np.array(end_point) - p_start_vec
+
+                    is_zero = np.array(command.power_values) == 0
+                    if np.any(is_zero):
+                        padded = np.concatenate(([False], is_zero, [False]))
+                        diffs = np.diff(padded.astype(int))
+                        starts = np.where(diffs == 1)[0]
+                        ends = np.where(diffs == -1)[0]
+
+                        if starts.size > 0:
+                            logger.debug(
+                                f"OpsRenderer: Found {starts.size} zero-power "
+                                f"segments in ScanLine. Adding to "
+                                f"zero-power buffer."
+                            )
+                            for z_idx, (start_idx, end_idx) in enumerate(
+                                zip(starts, ends)
+                            ):
+                                t_start = start_idx / num_steps
+                                t_end = end_idx / num_steps
+                                chunk_start = p_start_vec + t_start * line_vec
+                                chunk_end = p_start_vec + t_end * line_vec
+                                zero_power_vertices.extend(chunk_start)
+                                zero_power_vertices.extend(chunk_end)
+                                zero_power_colors.extend(zero_power_rgba)
+                                zero_power_colors.extend(zero_power_rgba)
+                                logger.debug(
+                                    f"  -> Seg {z_idx}: "
+                                    f"from {chunk_start.round(2)} to "
+                                    f"{chunk_end.round(2)}"
+                                )
+
+                # CRITICAL: The logical tool position moves to the end of the
+                # scanline, regardless of what was drawn. This prevents
+                # subsequent travel moves from being corrupted.
+                last_point = command.end
+                continue
 
             if isinstance(command, MoveToCommand):
                 if not np.allclose(start_point, end_point):
@@ -186,7 +169,6 @@ class OpsRenderer(BaseRenderer):
                 if is_zero_power:
                     color = zero_power_rgba
                 else:
-                    # current_power is now 0.0-1.0, so scale to 0-255
                     power_idx = min(255, int(current_power * 255.0))
                     color = tuple(cut_lut[power_idx])
 
@@ -217,6 +199,13 @@ class OpsRenderer(BaseRenderer):
 
             last_point = command.end
 
+        logger.debug(
+            f"OpsRenderer: Prepared vertices. Powered: "
+            f"{len(powered_vertices) // 3}, "
+            f"Travel: {len(travel_vertices) // 3}, "
+            f"Zero-Power Cuts: {len(zero_power_vertices) // 3}"
+        )
+
         return (
             np.array(powered_vertices, dtype=np.float32),
             np.array(powered_colors, dtype=np.float32),
@@ -243,14 +232,16 @@ class OpsRenderer(BaseRenderer):
         shader: Shader,
         mvp_matrix: np.ndarray,
         colors: ColorSet,
+        show_travel_moves: bool,
     ) -> None:
         """
-        Renders the toolpaths.
+        Renders the toolpaths. The vertices are assumed to be in world space.
 
         Args:
             shader: The shader program to use for rendering lines.
             mvp_matrix: The combined Model-View-Projection matrix.
             colors: The resolved ColorSet containing color data.
+            show_travel_moves: Whether to render the travel move paths.
         """
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
@@ -261,8 +252,8 @@ class OpsRenderer(BaseRenderer):
             GL.glBindVertexArray(self.powered_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
 
-        # Draw travel moves (uses a uniform color)
-        if self.travel_vertex_count > 0:
+        # Draw travel moves (uses a uniform color), if enabled
+        if show_travel_moves and self.travel_vertex_count > 0:
             shader.set_float("uUseVertexColor", 0.0)
             shader.set_vec4("uColor", colors.get_rgba("travel"))
             GL.glBindVertexArray(self.travel_vao)

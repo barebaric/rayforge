@@ -85,3 +85,44 @@ void main() {
     vTexCoord = aVertex.zw;
 }
 """
+
+RASTER_VERTEX_SHADER = """
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoord;
+
+uniform mat4 uMVP;
+
+out vec2 vTexCoord;
+
+void main() {
+    gl_Position = uMVP * vec4(aPos, 1.0);
+    vTexCoord = aTexCoord;
+}
+"""
+
+RASTER_FRAGMENT_SHADER = """
+#version 330 core
+in vec2 vTexCoord;
+out vec4 FragColor;
+
+uniform sampler2D uTexture;
+uniform sampler2D uColorLUT;
+
+void main() {
+    // Sample the power value from the texture
+    float power = texture(uTexture, vTexCoord).r;
+
+    // Discard zero-power areas (make them transparent)
+    if (power <= 0.0) {
+        discard;
+    }
+
+    // Map power value to a color using the lookup table.
+    // The second coordinate (0.5) samples the middle of the 1-pixel-high LUT
+    // texture.
+    vec4 color = texture(uColorLUT, vec2(power, 0.5));
+
+    FragColor = color;
+}
+"""
