@@ -10,7 +10,7 @@ from rayforge.core.geo import Geometry
 from rayforge.core.step import Step
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.artifact.handle import ArtifactHandle
-from rayforge.pipeline.artifact.vector import VectorArtifact
+from rayforge.pipeline.artifact.vertex import VertexArtifact
 from rayforge.pipeline.artifact.hybrid import HybridRasterArtifact
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.producer.edge import EdgeTracer
@@ -85,7 +85,7 @@ def rasterable_workpiece():
     return wp
 
 
-def test_vector_producer_returns_handle(mock_proxy, base_workpiece):
+def test_vector_producer_returns_vertex_artifact(mock_proxy, base_workpiece):
     # Arrange
     step = Step(typelabel="Contour")
     step.opsproducer_dict = EdgeTracer().to_dict()
@@ -114,17 +114,22 @@ def test_vector_producer_returns_handle(mock_proxy, base_workpiece):
         handle = ArtifactHandle.from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, VectorArtifact)
+        assert isinstance(reconstructed_artifact, VertexArtifact)
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
+        # Verify vertex data was created
+        assert reconstructed_artifact.powered_vertices.size > 0
+        assert reconstructed_artifact.powered_colors.size > 0
     finally:
         # Cleanup
         if handle:
             ArtifactStore.release(handle)
 
 
-def test_raster_producer_returns_handle(mock_proxy, rasterable_workpiece):
+def test_raster_producer_returns_hybrid_artifact(
+    mock_proxy, rasterable_workpiece
+):
     # Arrange
     step = Step(typelabel="Engrave")
     step.opsproducer_dict = DepthEngraver().to_dict()
@@ -167,6 +172,15 @@ def test_raster_producer_returns_handle(mock_proxy, rasterable_workpiece):
         )
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
+
+        # For a raster artifact, powered vertices should be empty (handled by
+        # texture), but travel/zero-power moves (like overscan) should exist.
+        assert reconstructed_artifact.powered_vertices.size == 0
+        assert reconstructed_artifact.powered_colors.size == 0
+        assert (
+            reconstructed_artifact.travel_vertices.size > 0
+            or reconstructed_artifact.zero_power_vertices.size > 0
+        )
     finally:
         # Cleanup
         if handle:
@@ -237,7 +251,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         handle = ArtifactHandle.from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, VectorArtifact)
+        assert isinstance(reconstructed_artifact, VertexArtifact)
         assert len(reconstructed_artifact.ops.commands) == 24
     finally:
         # Cleanup

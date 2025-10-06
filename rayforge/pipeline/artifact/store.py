@@ -11,6 +11,7 @@ from .base import Artifact
 from .handle import ArtifactHandle
 from .hybrid import HybridRasterArtifact
 from .vector import VectorArtifact
+from .vertex import VertexArtifact
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,13 @@ class ArtifactStore:
         if isinstance(artifact, HybridRasterArtifact):
             arrays["power_texture_data"] = artifact.power_texture_data
 
+        # Add vertex data if the artifact is a VertexArtifact or subclass
+        if isinstance(artifact, VertexArtifact):
+            arrays["powered_vertices"] = artifact.powered_vertices
+            arrays["powered_colors"] = artifact.powered_colors
+            arrays["travel_vertices"] = artifact.travel_vertices
+            arrays["zero_power_vertices"] = artifact.zero_power_vertices
+
         total_bytes = sum(arr.nbytes for arr in arrays.values())
         return arrays, total_bytes
 
@@ -184,6 +192,17 @@ class ArtifactStore:
             "generation_size": handle.generation_size,
         }
 
+        if handle.artifact_type in ("vertex", "hybrid_raster"):
+            # For vertex-based artifacts, we copy the vertex data from the
+            # shared memory view into new, owned NumPy arrays.
+            vertex_args = {
+                "powered_vertices": arrays["powered_vertices"].copy(),
+                "powered_colors": arrays["powered_colors"].copy(),
+                "travel_vertices": arrays["travel_vertices"].copy(),
+                "zero_power_vertices": arrays["zero_power_vertices"].copy(),
+            }
+            common_args.update(vertex_args)
+
         if handle.artifact_type == "hybrid_raster":
             if handle.dimensions_mm is None or handle.position_mm is None:
                 raise ValueError(
@@ -191,8 +210,6 @@ class ArtifactStore:
                     "dimensions_mm or position_mm metadata."
                 )
 
-            # Explicitly copy the texture data from the shared memory view
-            # into a new, owned NumPy array for the artifact.
             texture_copy = arrays["power_texture_data"].copy()
 
             return HybridRasterArtifact(
@@ -201,7 +218,10 @@ class ArtifactStore:
                 position_mm=handle.position_mm,
                 **common_args,
             )
+        elif handle.artifact_type == "vertex":
+            return VertexArtifact(**common_args)
         elif handle.artifact_type == "vector":
+            # This is the legacy path for non-vertex artifacts
             return VectorArtifact(**common_args)
         else:
             raise TypeError(

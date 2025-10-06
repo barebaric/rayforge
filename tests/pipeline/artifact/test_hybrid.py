@@ -26,6 +26,11 @@ class TestHybridRasterArtifact(unittest.TestCase):
             position_mm=(5.0, 10.0),
             source_dimensions=(100, 50),
             generation_size=(50.0, 25.0),
+            # Add some dummy vertex data to test serialization
+            powered_vertices=np.array([[0, 0, 0], [10, 0, 0]], np.float32),
+            powered_colors=np.array(
+                [[0.5, 0.5, 0.5, 1], [1, 1, 1, 1]], np.float32
+            ),
         )
 
         artifact_dict = artifact.to_dict()
@@ -39,6 +44,13 @@ class TestHybridRasterArtifact(unittest.TestCase):
         self.assertEqual(len(reconstructed.ops.commands), 2)
         np.testing.assert_array_equal(
             reconstructed.power_texture_data, texture
+        )
+        # Test vertex data round-trip
+        np.testing.assert_array_equal(
+            reconstructed.powered_vertices, artifact.powered_vertices
+        )
+        np.testing.assert_array_equal(
+            reconstructed.powered_colors, artifact.powered_colors
         )
 
 

@@ -4,6 +4,8 @@ from ..shared.tasker.proxy import ExecutionContextProxy
 from .artifact.store import ArtifactStore
 from .artifact.base import Artifact
 from .artifact.hybrid import HybridRasterArtifact
+from ..pipeline.encoder.vertexencoder import VertexEncoder
+from .artifact.vertex import VertexArtifact
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -438,6 +440,47 @@ def run_step_in_subprocess(
     if settings["air_assist"]:
         final_artifact.ops.disable_air_assist()
 
+    # After all transformations, encode the final Ops into vertex data and
+    # create the final artifact type (`VertexArtifact` or an augmented
+    # `HybridRasterArtifact`) for storage.
+
+    logger.debug("Encoding final ops into vertex data for rendering.")
+    encoder = VertexEncoder()
+    vertex_data = encoder.encode(final_artifact.ops)
+
+    if isinstance(final_artifact, HybridRasterArtifact):
+        final_artifact_to_store = HybridRasterArtifact(
+            # Existing HybridRasterArtifact fields
+            power_texture_data=final_artifact.power_texture_data,
+            dimensions_mm=final_artifact.dimensions_mm,
+            position_mm=final_artifact.position_mm,
+            # Base Artifact fields
+            ops=final_artifact.ops,
+            is_scalable=final_artifact.is_scalable,
+            source_coordinate_system=final_artifact.source_coordinate_system,
+            source_dimensions=final_artifact.source_dimensions,
+            # New vertex data fields
+            powered_vertices=vertex_data["powered_vertices"],
+            powered_colors=vertex_data["powered_colors"],
+            travel_vertices=vertex_data["travel_vertices"],
+            zero_power_vertices=vertex_data["zero_power_vertices"],
+        )
+    else:
+        # The original artifact was a VectorArtifact; we now replace it with
+        # a VertexArtifact containing the final processed data.
+        final_artifact_to_store = VertexArtifact(
+            # Base Artifact fields
+            ops=final_artifact.ops,
+            is_scalable=final_artifact.is_scalable,
+            source_coordinate_system=final_artifact.source_coordinate_system,
+            source_dimensions=final_artifact.source_dimensions,
+            # New vertex data fields
+            powered_vertices=vertex_data["powered_vertices"],
+            powered_colors=vertex_data["powered_colors"],
+            travel_vertices=vertex_data["travel_vertices"],
+            zero_power_vertices=vertex_data["zero_power_vertices"],
+        )
+
     proxy.set_message(
         _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
     )
@@ -445,7 +488,7 @@ def run_step_in_subprocess(
 
     # Attach the workpiece size for which this artifact was generated. This
     # is crucial for the generator's cache invalidation logic.
-    final_artifact.generation_size = generation_size
+    final_artifact_to_store.generation_size = generation_size
 
-    handle = ArtifactStore.put(final_artifact)
+    handle = ArtifactStore.put(final_artifact_to_store)
     return handle.to_dict(), generation_id

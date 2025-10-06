@@ -4,11 +4,23 @@ from typing import Optional, Tuple, List
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
+from ...core.matrix import Matrix
+from ...core.step import Step
+from ...core.workpiece import WorkPiece
+from ...shared.util.colors import ColorSet
+from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
+from ...shared.tasker import task_mgr, Task
+from ...pipeline.scene_assembler import (
+    SceneDescription,
+    generate_scene_description,
+)
+from ...pipeline.generator import OpsGenerator
+from ...pipeline.artifact.hybrid import HybridRasterArtifact
+from ...pipeline.artifact.vertex import VertexArtifact
+from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
 from .ops_renderer import OpsRenderer
-from .sphere_renderer import SphereRenderer
-from .axis_renderer_3d import AxisRenderer3D
 from .raster_renderer import RasterArtifactRenderer
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
@@ -18,16 +30,7 @@ from .shaders import (
     RASTER_FRAGMENT_SHADER,
     RASTER_VERTEX_SHADER,
 )
-from ...shared.util.colors import ColorSet
-from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
-from ...shared.tasker import task_mgr, Task
-from ...pipeline.scene_assembler import (
-    SceneDescription,
-    generate_scene_description,
-)
-from ...pipeline.generator import OpsGenerator
-from ...core.matrix import Matrix
-
+from .sphere_renderer import SphereRenderer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,15 +40,15 @@ def prepare_scene_vertices_async(
     scene_description: SceneDescription,
     color_set: ColorSet,
     scene_model_matrix: np.ndarray,
-    ops_generator_proxy: OpsGenerator,
+    ops_generator: OpsGenerator,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
 
     It iterates through a lightweight SceneDescription, loads the required
     artifact data, generates vertices in local space, applies the final
-    world transformation, and aggregates the results into VBO-ready
-    numpy arrays.
+    world transformation, and aggregates the results into VBO-ready numpy
+    arrays.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -53,35 +56,69 @@ def prepare_scene_vertices_async(
     all_zero_power_verts: List[np.ndarray] = []
     all_zero_power_colors: List[np.ndarray] = []
 
-    # This temporary renderer instance is used only for its data-processing
-    # logic, not its GL resources.
-    renderer = OpsRenderer()
+    zero_power_rgba = np.array(
+        color_set.get_rgba("zero_power"), dtype=np.float32
+    )
+    # For now, use a single LUT for all powered moves in 3D
+    power_lut = color_set.get_lut("cut")
 
-    logger.debug("--- [CANVAS3D_TASK] Starting scene vertex preparation ---")
+    logger.debug("Starting scene vertex preparation")
 
     for i, item in enumerate(scene_description.render_items):
-        # 1. Use the generator's new decoupled API to get correctly scaled Ops.
-        #    The Ops will be scaled to mm, but located at the local origin.
-        ops_to_process = ops_generator_proxy.get_scaled_ops(
-            item.step_uid, item.workpiece_uid, Matrix(item.world_transform)
+        logger.debug(
+            f"Processing RenderItem {i} (WP UID: {item.workpiece_uid})"
         )
 
-        if not ops_to_process or ops_to_process.is_empty():
-            logger.debug("[CANVAS3D_TASK] Ops are empty. Skipping.")
+        step = ops_generator.doc.find_descendant_by_uid(item.step_uid)
+        workpiece = ops_generator.doc.find_descendant_by_uid(
+            item.workpiece_uid
+        )
+
+        if not isinstance(step, Step) or not isinstance(workpiece, WorkPiece):
+            logger.warning(
+                "Could not find valid step/workpiece for UIDs. Skipping."
+            )
             continue
 
-        # 2. Generate local-space vertices from the correctly scaled Ops.
-        (
-            p_verts,
-            p_colors,
-            t_verts,
-            zp_verts,
-            zp_colors,
-        ) = renderer.prepare_vertex_data(ops_to_process, color_set)
+        artifact = ops_generator.get_artifact(step, workpiece)
 
-        # 3. The vertices are now correctly scaled but at the origin.
-        #    We must apply the placement (rotation, translation, flip, skew)
-        #    from the world matrix, but without re-applying the scale.
+        if not artifact or not isinstance(artifact, VertexArtifact):
+            logger.debug(
+                "Artifact is missing or is not a vertex type. "
+                "Skipping vector processing."
+            )
+            continue
+
+        # 1. Get pre-computed, local-space vertices from the artifact.
+        p_verts = artifact.powered_vertices
+        p_colors_std = artifact.powered_colors
+        t_verts = artifact.travel_vertices
+        zp_verts = artifact.zero_power_vertices
+
+        # If the artifact is a hybrid raster, its powered moves are visualized
+        # by the RasterArtifactRenderer. We only process its non-powered moves
+        # here to avoid double-drawing.
+        if isinstance(artifact, HybridRasterArtifact):
+            p_verts = np.array([], dtype=np.float32)
+            p_colors_std = np.array([], dtype=np.float32)
+
+        # 2. Recolor the vertices using the current theme's ColorSet.
+        if p_verts.size > 0:
+            power_levels = p_colors_std[:, 0]  # Use R channel as power
+            power_indices = np.clip((power_levels * 255), 0, 255).astype(int)
+            p_colors = power_lut[power_indices]
+        else:
+            p_colors = np.array([], dtype=np.float32)
+
+        if t_verts.size > 0:
+            pass  # Travel moves are colored uniformly in the shader
+        if zp_verts.size > 0:
+            num_zp_verts = zp_verts.shape[0]
+            zp_colors = np.tile(zero_power_rgba, (num_zp_verts, 1))
+        else:
+            zp_colors = np.array([], dtype=np.float32)
+
+        # 3. Apply placement transform (no scale) from the world matrix.
         world_matrix_obj = Matrix(item.world_transform)
         (tx, ty, angle_deg, _, sy, skew_deg) = world_matrix_obj.decompose()
 
@@ -98,16 +135,12 @@ def prepare_scene_vertices_async(
         def _transform_vertices(verts: np.ndarray, transform: np.ndarray):
             if verts.size == 0:
                 return verts
-            # Reshape to Nx3
-            points = verts.reshape(-1, 3)
-            # Convert to homogenous Nx4 (x, y, z, 1)
+            points = verts
             homogenous_points = np.hstack(
                 [points, np.ones((points.shape[0], 1), dtype=points.dtype)]
             )
-            # Apply transform (T @ P^T)^T
             transformed_points = (transform @ homogenous_points.T).T
-            # Drop w and flatten back to 1D array
-            return transformed_points[:, :3].astype(np.float32).flatten()
+            return transformed_points[:, :3].astype(np.float32)
 
         if p_verts.size > 0:
             all_powered_verts.append(
@@ -126,29 +159,46 @@ def prepare_scene_vertices_async(
 
     # 5. Concatenate all results into single arrays
     final_powered_verts = (
-        np.concatenate(all_powered_verts)
+        np.concatenate(all_powered_verts).flatten()
         if all_powered_verts
         else np.array([], dtype=np.float32)
     )
     final_powered_colors = (
-        np.concatenate(all_powered_colors)
+        np.concatenate(all_powered_colors).flatten()
         if all_powered_colors
         else np.array([], dtype=np.float32)
     )
-    final_travel_verts = (
+    travel_verts_3d = (
         np.concatenate(all_travel_verts)
         if all_travel_verts
         else np.array([], dtype=np.float32)
     )
-    final_zero_power_verts = (
+    zero_power_verts_3d = (
         np.concatenate(all_zero_power_verts)
         if all_zero_power_verts
         else np.array([], dtype=np.float32)
     )
     final_zero_power_colors = (
-        np.concatenate(all_zero_power_colors)
+        np.concatenate(all_zero_power_colors).flatten()
         if all_zero_power_colors
         else np.array([], dtype=np.float32)
+    )
+
+    # Add a small Z-offset to non-powered moves to prevent Z-fighting with
+    # the raster texture quad, which is drawn at Z=0.
+    Z_OFFSET_NON_POWERED = 0.01
+    if travel_verts_3d.size > 0:
+        travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
+    if zero_power_verts_3d.size > 0:
+        zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
+
+    final_travel_verts = travel_verts_3d.flatten()
+    final_zero_power_verts = zero_power_verts_3d.flatten()
+
+    logger.debug(
+        f"Total scene vertices prepared. Powered: "
+        f"{final_powered_verts.size // 3}, "
+        f"Travel: {final_travel_verts.size // 3}"
     )
 
     return (
@@ -844,14 +894,9 @@ class Canvas3D(Gtk.GLArea):
 
                 # Decompose the full world transform to separate placement from
                 # scale.
-                (
-                    tx,
-                    ty,
-                    angle_deg,
-                    _,
-                    sy,
-                    skew_deg,
-                ) = world_transform_matrix.decompose()
+                (tx, ty, angle_deg, _, sy, skew_deg) = (
+                    world_transform_matrix.decompose()
+                )
 
                 # Recompose a new matrix containing ONLY placement
                 # (translation, rotation, flip, skew). The scale is stripped
