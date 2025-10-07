@@ -14,6 +14,10 @@ from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.artifact.vector import VectorArtifact
 from rayforge.pipeline.artifact.store import ArtifactStore
 
+# Import the new subprocess functions to check against them
+from rayforge.pipeline.steprunner import run_step_in_subprocess
+from rayforge.pipeline.timerunner import run_time_estimation_in_subprocess
+
 
 @pytest.fixture(autouse=True)
 def setup_real_config(mocker):
@@ -23,6 +27,7 @@ def setup_real_config(mocker):
     test_machine.dimensions = (200, 150)
     test_machine.max_cut_speed = 5000
     test_machine.max_travel_speed = 10000
+    test_machine.acceleration = 1000  # Add acceleration for tests
     test_machine.heads.clear()
     test_machine.add_head(test_laser)
 
@@ -117,6 +122,9 @@ class TestOpsGenerator:
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
+        # Verify it was the correct kind of process
+        called_func = mock_task_mgr.run_process.call_args[0][0]
+        assert called_func is run_step_in_subprocess
 
     def test_generation_success_emits_signals_and_caches_result(
         self, doc, real_workpiece, mock_task_mgr
@@ -186,7 +194,7 @@ class TestOpsGenerator:
         # Assert
         assert generator.get_ops(step, real_workpiece) is None
 
-    def test_step_change_triggers_regeneration(
+    def test_step_change_triggers_time_estimation_not_regeneration(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
@@ -194,36 +202,17 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        OpsGenerator(doc, mock_task_mgr)  # Initial generation
-
-        # Reset the mock to ignore the initial setup call.
-        mock_task_mgr.run_process.reset_mock()
-
-        # Act
-        step.set_power(0.5)
-
-        # Assert
+        # Initial generation
+        OpsGenerator(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
 
-    def test_workpiece_pos_change_does_not_regenerate(
-        self, doc, real_workpiece, mock_task_mgr
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = create_contour_step()
-        layer.workflow.add_step(step)
-        OpsGenerator(doc, mock_task_mgr)  # Initial generation
-        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
-
-        # Simulate the completion of the initial generation task to populate
-        # the cache.
+        # Simulate completion of the initial Ops generation
         initial_task = mock_task_mgr.created_tasks[0]
         artifact = VectorArtifact(
             ops=Ops(),
             is_scalable=True,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         handle = ArtifactStore.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
@@ -233,20 +222,67 @@ class TestOpsGenerator:
 
         try:
             initial_task.when_done(mock_finished_task)
+            # This completion will trigger a time estimation task. We reset
+            # the mock to ignore this and focus on the next action.
+            mock_task_mgr.run_process.reset_mock()
 
+            # Act
+            step.set_power(0.5)
+
+            # Assert
+            mock_task_mgr.run_process.assert_called_once()
+            called_func = mock_task_mgr.run_process.call_args[0][0]
+            assert called_func is run_time_estimation_in_subprocess
+        finally:
+            ArtifactStore.release(handle)
+
+    def test_workpiece_pos_change_triggers_time_estimation_only(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+        OpsGenerator(doc, mock_task_mgr)  # Initial generation
+        mock_task_mgr.run_process.assert_called_once()
+
+        # Simulate the completion of the initial generation task
+        initial_task = mock_task_mgr.created_tasks[0]
+        artifact = VectorArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = initial_task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            initial_task.when_done(mock_finished_task)
+            # The completion of the ops task triggers a time estimation task.
+            assert mock_task_mgr.run_process.call_count == 2
+            assert (
+                mock_task_mgr.created_tasks[1].target
+                is run_time_estimation_in_subprocess
+            )
             mock_task_mgr.run_process.reset_mock()
 
             # Act
             real_workpiece.pos = 50, 50
 
-            # Assert
-            # The `descendant_transform_changed` signal fires, but for
-            # scalable ops, this should not trigger a regeneration.
-            mock_task_mgr.run_process.assert_not_called()
+            # Assert: A new time estimation is triggered, but NOT an ops
+            # regeneration
+            mock_task_mgr.run_process.assert_called_once()
+            called_func = mock_task_mgr.run_process.call_args[0][0]
+            assert called_func is run_time_estimation_in_subprocess
         finally:
             ArtifactStore.release(handle)
 
-    def test_workpiece_angle_change_does_not_regenerate(
+    def test_workpiece_angle_change_triggers_time_estimation_only(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
@@ -255,16 +291,15 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
         OpsGenerator(doc, mock_task_mgr)  # Initial generation
-        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
+        mock_task_mgr.run_process.assert_called_once()
 
-        # Simulate the completion of the initial generation task to populate
-        # the cache.
+        # Simulate the completion of the initial generation task
         initial_task = mock_task_mgr.created_tasks[0]
         artifact = VectorArtifact(
             ops=Ops(),
             is_scalable=True,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         handle = ArtifactStore.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
@@ -273,17 +308,22 @@ class TestOpsGenerator:
         mock_finished_task.result.return_value = (handle.to_dict(), 1)
         try:
             initial_task.when_done(mock_finished_task)
-
+            # The completion of the ops task triggers a time estimation task.
+            assert mock_task_mgr.run_process.call_count == 2
+            assert (
+                mock_task_mgr.created_tasks[1].target
+                is run_time_estimation_in_subprocess
+            )
             mock_task_mgr.run_process.reset_mock()
 
             # Act
             real_workpiece.angle = 45
 
-            # Assert
-            # The `descendant_transform_changed` signal fires, but the
-            # generator should be smart enough to see the world size
-            # hasn't changed.
-            mock_task_mgr.run_process.assert_not_called()
+            # Assert: A new time estimation is triggered, but NOT an ops
+            # regeneration
+            mock_task_mgr.run_process.assert_called_once()
+            called_func = mock_task_mgr.run_process.call_args[0][0]
+            assert called_func is run_time_estimation_in_subprocess
         finally:
             ArtifactStore.release(handle)
 
@@ -317,7 +357,7 @@ class TestOpsGenerator:
         )
         try:
             initial_task.when_done(mock_finished_task)
-
+            # The completion of the ops task triggers a time estimation task.
             mock_task_mgr.run_process.reset_mock()
 
             # Act
@@ -327,5 +367,8 @@ class TestOpsGenerator:
             # The `transform_changed` signal from set_size bubbles up, and the
             # generator should see that the world size has changed.
             mock_task_mgr.run_process.assert_called_once()
+            # Verify it's a full regeneration, not just a time estimate
+            called_func = mock_task_mgr.run_process.call_args[0][0]
+            assert called_func is run_step_in_subprocess
         finally:
             ArtifactStore.release(handle)

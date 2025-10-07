@@ -2,13 +2,11 @@ import json
 import logging
 from pathlib import Path
 from typing import List, Optional, cast
-import asyncio
-
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 
 from . import __version__
 from .shared.tasker import task_mgr
-from .shared.tasker.task import Task, CancelledError
+from .shared.tasker.task import Task
 from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -256,6 +254,10 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.ops_generator.processing_state_changed.connect(
             self._on_ops_processing_state_changed
+        )
+        # Connect to the new time estimation signal
+        self.doc_editor.ops_generator.time_estimation_updated.connect(
+            self._update_estimated_time
         )
 
         # Create the view stack for 2D and 3D views
@@ -750,13 +752,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Always update the G-code preview's content.
         self._update_gcode_preview(aggregated_ops)
-
-        # Update estimated machining time
-        logger.debug(
-            f"Updating estimated time from aggregated ops: "
-            f"{len(aggregated_ops) if aggregated_ops else 0} commands"
-        )
-        self.status_monitor.update_estimated_time_from_ops(aggregated_ops)
 
     def _on_document_settled(self, sender):
         """
@@ -1299,104 +1294,46 @@ class MainWindow(Adw.ApplicationWindow):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
-    def _update_estimated_time(self):
+    def _update_estimated_time(self, sender=None):
         """
-        Updates the estimated machining time display by calculating it in a
-        background thread to avoid blocking the UI.
+        Updates the estimated machining time display by synchronously summing
+        pre-calculated values from the OpsGenerator's time cache.
         """
         logger.debug("_update_estimated_time called")
-        # Show "Calculating..." while processing
-        self.status_monitor.estimated_time_label.set_text(_("Calculating..."))
 
-        task_key = "calculate-estimated-time"
-        task_mgr.run_thread(
-            self._calculate_estimated_time,
-            when_done=self._on_estimated_time_calculated,
-            key=task_key,
-        )
-
-    def _calculate_estimated_time(self) -> float:
-        """
-        Calculates the estimated machining time for all operations in the
-        document. This is run in a background thread.
-
-        Returns:
-            The estimated time in seconds.
-        """
-        logger.debug("_calculate_estimated_time called")
-        try:
-
-            async def _get_ops():
-                machine = config.machine
-                if not machine:
-                    return Ops()
-                return await assemble_final_job_ops(
-                    self.doc_editor.doc,
-                    machine,
-                    self.doc_editor.ops_generator,
-                    None,  # No context needed for this thread
-                )
-
-            aggregated_ops = asyncio.run(_get_ops())
-
-            logger.debug(
-                f"Aggregated ops: "
-                f"{len(aggregated_ops) if aggregated_ops else 0} "
-                f"commands"
+        if self.doc_editor.ops_generator.is_busy:
+            self.status_monitor.estimated_time_label.set_text(
+                _("Calculating...")
             )
-            if not aggregated_ops or aggregated_ops.is_empty():
-                logger.debug("No ops to calculate time from")
-                return 0.0
-
-            machine = config.machine
-            if machine:
-                estimated_time = aggregated_ops.estimate_time(
-                    default_cut_speed=machine.max_cut_speed,
-                    default_travel_speed=machine.max_travel_speed,
-                    acceleration=machine.acceleration,
-                )
-            else:
-                # Fallback to defaults if no machine is configured
-                estimated_time = aggregated_ops.estimate_time()
-            logger.debug(f"Calculated time: {estimated_time} seconds")
-            return estimated_time
-        except Exception as e:
-            logger.error(
-                f"Failed to calculate estimated time: {e}", exc_info=True
-            )
-            return 0.0
-
-    def _on_estimated_time_calculated(self, task):
-        """
-        Callback executed on the main thread after the estimated time
-        calculation is complete.
-        """
-        logger.debug(
-            f"Estimated time calculation completed with status: "
-            f"{task.get_status()}"
-        )
-
-        if task.get_status() != "completed":
-            try:
-                task.result()
-            except CancelledError as e:
-                # This happens for example when the document changes
-                # rapidly and the previous task is cancelled.
-                logger.debug(f"Estimated time calculation was cancelled: {e}")
-            self.status_monitor.set_estimated_time(0.0)
             return
 
-        try:
-            estimated_time = task.result()
-            self.status_monitor.set_estimated_time(estimated_time)
-        except Exception as e:
-            logger.warning(f"Failed to get estimated time result: {e}")
-            self.status_monitor.set_estimated_time(0.0)
+        total_time = 0.0
+        is_calculating = False
+        doc = self.doc_editor.doc
+        ops_gen = self.doc_editor.ops_generator
+
+        for layer in doc.layers:
+            for step, workpiece in layer.get_renderable_items():
+                time_val = ops_gen.get_estimated_time(step, workpiece)
+                if time_val is None:
+                    # A value of None means it's pending calculation
+                    is_calculating = True
+                    break
+                elif time_val > 0:  # -1 indicates an error, 0 is valid
+                    total_time += time_val
+            if is_calculating:
+                break
+
+        if is_calculating:
+            self.status_monitor.estimated_time_label.set_text(
+                _("Calculating...")
+            )
+        else:
+            self.status_monitor.set_estimated_time(total_time)
 
     def _on_ops_generation_finished(self, step, workpiece, generation_id):
         """
         Called when ops generation is finished for a step/workpiece pair.
-        Triggers an update of the estimated machining time.
         """
         logger.debug(
             f"Ops generation finished for {step.name} on {workpiece.name}"
@@ -1409,5 +1346,4 @@ class MainWindow(Adw.ApplicationWindow):
         Updates the estimated time when all processing is complete.
         """
         logger.debug(f"Ops processing state changed: {is_processing}")
-        if not is_processing:  # When all processing is done
-            self._update_estimated_time()
+        self._update_estimated_time()

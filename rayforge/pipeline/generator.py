@@ -24,6 +24,7 @@ from ..core.workpiece import WorkPiece
 from ..core.ops import Ops, ScanLinePowerCommand
 from ..core.matrix import Matrix
 from .steprunner import run_step_in_subprocess
+from .timerunner import run_time_estimation_in_subprocess
 from ..core.group import Group
 from .artifact.vector import VectorArtifact
 from .artifact.hybrid import HybridRasterArtifact
@@ -46,7 +47,7 @@ class OpsGenerator:
     `doc.changed` signal and intelligently determines what needs to be
     regenerated based on model changes. It manages a cache of lightweight
     `ArtifactHandle` objects, where each handle points to a full `Artifact`
-    (containing Ops data) stored in shared memory. Each cache entry
+    (containing Ops data) in shared memory. Each cache entry
     corresponds to a specific (Step, WorkPiece) pair.
 
     The generated Ops are "pure" and workpiece-local; they are not yet
@@ -73,6 +74,10 @@ class OpsGenerator:
         Tuple[str, str],
         Optional[ArtifactHandle],
     ]
+    # Type alias for the time estimation cache
+    # Key: (step_uid, workpiece_uid, width, height)
+    # Value: float (time in seconds)
+    TimeCacheType = Dict[Tuple[str, str, float, float], Optional[float]]
 
     def __init__(self, doc: "Doc", task_manager: "TaskManager"):
         """
@@ -86,8 +91,15 @@ class OpsGenerator:
         self._doc: Doc = Doc()
         self._task_manager = task_manager
         self._ops_cache: OpsGenerator.OpsCacheType = {}
+        self._time_cache: OpsGenerator.TimeCacheType = {}
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
+        self._time_generation_id_map: Dict[
+            Tuple[str, str, float, float], int
+        ] = {}
         self._active_tasks: Dict[Tuple[str, str], "Task"] = {}
+        self._active_time_tasks: Dict[
+            Tuple[str, str, float, float], "Task"
+        ] = {}
         self._pause_count = 0
 
         # Signals for notifying the UI of generation progress
@@ -96,6 +108,8 @@ class OpsGenerator:
         self.ops_generation_finished = Signal()
         # Fired when is_busy changes (0->N tasks or N->0 tasks)
         self.processing_state_changed = Signal()
+        # New signal for time estimation updates
+        self.time_estimation_updated = Signal()
 
         # This will trigger the setter, which connects signals and runs the
         # initial reconciliation.
@@ -134,10 +148,15 @@ class OpsGenerator:
             # caches
             for key in list(self._active_tasks.keys()):
                 self._cleanup_key(key)
+            for key in list(self._active_time_tasks.keys()):
+                self._cleanup_time_key(key)
+
             # Ensure cache is fully cleared in case some items had no active
             # tasks
             self._ops_cache.clear()
             self._generation_id_map.clear()
+            self._time_cache.clear()
+            self._time_generation_id_map.clear()
 
         self._doc = new_doc
 
@@ -152,7 +171,7 @@ class OpsGenerator:
     @property
     def is_busy(self) -> bool:
         """Returns True if any ops generation tasks are currently running."""
-        return bool(self._active_tasks)
+        return bool(self._active_tasks) or bool(self._active_time_tasks)
 
     def _connect_signals(self):
         """Connects to the document's signals."""
@@ -332,9 +351,12 @@ class OpsGenerator:
         logger.debug(
             f"OpsGenerator: Noticed updated {origin.__class__.__name__}"
         )
-        # A Step's properties (power, speed, etc.) changed, so regenerate
+        # A Step's properties (power, speed, etc.) changed
         if isinstance(origin, Step):
-            self._update_ops_for_step(origin)
+            # If a property affecting time (but not geometry) changes, we only
+            # need to re-trigger time estimations.
+            self._invalidate_time_cache_for_step(origin)
+            self._update_ops_for_step(origin, re_estimate_time_only=True)
         # A generic 'updated'
         # signal on a workpiece now means its *content* (source image) has
         # changed, which requires regeneration. Transform changes are handled
@@ -371,10 +393,7 @@ class OpsGenerator:
                 key = (step.uid, wp.uid)
                 handle = self._ops_cache.get(key)
 
-                # Determine if the current state is valid. An artifact is
-                # valid if it exists AND (it's scalable OR (it's not
-                # scalable AND its generation size matches the current
-                # workpiece size)).
+                # Determine if the base artifact is valid
                 is_valid = False
                 if handle:
                     is_valid = (
@@ -382,9 +401,13 @@ class OpsGenerator:
                     )
 
                 if is_valid:
+                    # The base artifact is valid. We don't need to regenerate
+                    # it. We only need to trigger a time estimation for the
+                    # new size.
+                    self._trigger_time_estimation(step, wp)
+
                     # If valid and scalable, we can send a cheap notification
                     # for live UI updates (e.g., when moving vector ops).
-                    # Non-scalable ops don't need this for pure translation.
                     if handle and handle.is_scalable:
                         generation_id = self._generation_id_map.get(key, 0)
                         self.ops_generation_finished.send(
@@ -408,6 +431,27 @@ class OpsGenerator:
                     )
                     self._trigger_ops_generation(step, wp)
 
+    def _cleanup_time_key(self, key: Tuple[str, str, float, float]):
+        """Removes a time cache entry and cancels its task."""
+        logger.debug(f"OpsGenerator: Cleaning up time key {key}.")
+        self._time_cache.pop(key, None)
+        self._time_generation_id_map.pop(key, None)
+        if key in self._active_time_tasks:
+            self._task_manager.cancel_task(key)
+            self._active_time_tasks.pop(key, None)
+
+    def _invalidate_time_cache_for_step(self, step: Step):
+        """Removes all time cache entries associated with a given step."""
+        keys_to_clean = [k for k in self._time_cache if k[0] == step.uid]
+        for key in keys_to_clean:
+            self._cleanup_time_key(key)
+
+    def _invalidate_time_cache_for_workpiece(self, workpiece: WorkPiece):
+        """Removes all time cache entries associated with a given workpiece."""
+        keys_to_clean = [k for k in self._time_cache if k[1] == workpiece.uid]
+        for key in keys_to_clean:
+            self._cleanup_time_key(key)
+
     def _cleanup_key(self, key: Tuple[str, str]):
         """
         Removes a cache entry, releases its shared memory, and cancels any
@@ -415,6 +459,15 @@ class OpsGenerator:
         """
         logger.debug(f"{self.__class__.__name__}._cleanup_key called")
         logger.debug(f"OpsGenerator: Cleaning up key {key}.")
+
+        # Also clean up any associated time cache entries
+        step_uid, wp_uid = key
+        time_keys_to_clean = [
+            k for k in self._time_cache if k[0] == step_uid and k[1] == wp_uid
+        ]
+        for tkey in time_keys_to_clean:
+            self._cleanup_time_key(tkey)
+
         handle = self._ops_cache.pop(key, None)
         if handle:
             ArtifactStore.release(handle)
@@ -453,6 +506,7 @@ class OpsGenerator:
                 continue
             for step in layer.workflow.steps:
                 for workpiece in layer.all_workpieces:
+                    # Check base artifact validity
                     key = (step.uid, workpiece.uid)
                     is_valid = False
                     handle = self._ops_cache.get(key)
@@ -464,20 +518,29 @@ class OpsGenerator:
 
                     if not is_valid:
                         self._trigger_ops_generation(step, workpiece)
+                    else:
+                        # Base artifact is valid, just ensure time is estimated
+                        self._trigger_time_estimation(step, workpiece)
 
-    def _update_ops_for_step(self, step: Step):
+    def _update_ops_for_step(
+        self, step: Step, re_estimate_time_only: bool = False
+    ):
         """Triggers ops generation for a single step across all workpieces."""
         logger.debug(f"{self.__class__.__name__}._update_ops_for_step called")
         workflow = step.workflow
         if workflow and isinstance(workflow.parent, Layer):
             for workpiece in workflow.parent.all_workpieces:
-                self._trigger_ops_generation(step, workpiece)
+                if re_estimate_time_only:
+                    self._trigger_time_estimation(step, workpiece)
+                else:
+                    self._trigger_ops_generation(step, workpiece)
 
     def _update_ops_for_workpiece(self, workpiece: WorkPiece):
         """Triggers ops generation for a single workpiece across all steps."""
         logger.debug(
             f"{self.__class__.__name__}._update_ops_for_workpiece called"
         )
+        self._invalidate_time_cache_for_workpiece(workpiece)
         workpiece_layer = workpiece.layer
         if workpiece_layer and workpiece_layer.workflow:
             for step in workpiece_layer.workflow:
@@ -641,16 +704,26 @@ class OpsGenerator:
                 f"Ignoring stale ops callback for {key} "
                 f"(gen {task_generation_id})."
             )
+            # Must also check busy state
+            is_busy_now = self.is_busy
+            if was_busy and not is_busy_now:
+                self.processing_state_changed.send(self, is_processing=False)
             return
 
         workpiece = self._find_workpiece_by_uid(w_uid)
         step = self._find_step_by_uid(s_uid)
         if not workpiece or not step:
+            # Task is complete, but models are gone. Clean up.
+            is_busy_now = self.is_busy
+            if was_busy and not is_busy_now:
+                self.processing_state_changed.send(self, is_processing=False)
             return
 
         if task.get_status() == "completed":
             # This method will now handle cache update and signal sending
             self._handle_completed_task(task, key, step, workpiece)
+            # Now that the base artifact exists, trigger time estimation.
+            self._trigger_time_estimation(step, workpiece)
         else:
             # Handle failed or cancelled tasks
             wp_name = (
@@ -738,6 +811,106 @@ class OpsGenerator:
                 exc_info=True,
             )
             self._ops_cache[key] = None
+
+    def _trigger_time_estimation(self, step: Step, workpiece: WorkPiece):
+        """Starts an asynchronous task to estimate machining time."""
+        if any(s <= 0 for s in workpiece.size) or not config.config.machine:
+            return
+
+        key = (step.uid, workpiece.uid, workpiece.size[0], workpiece.size[1])
+        if key in self._time_cache and self._time_cache[key] is not None:
+            return  # Already have a valid estimate for this exact state
+
+        # Check if the base artifact handle is available yet
+        base_key = (step.uid, workpiece.uid)
+        handle = self._ops_cache.get(base_key)
+        if handle is None:
+            # The base artifact isn't ready. Time estimation will be triggered
+            # by the _on_generation_complete callback when it's done.
+            return
+
+        if key in self._active_time_tasks:
+            logger.debug(f"Cancelling existing time task for key {key}.")
+            self._task_manager.cancel_task(key)
+            self._active_time_tasks.pop(key, None)
+
+        generation_id = self._time_generation_id_map.get(key, 0) + 1
+        self._time_generation_id_map[key] = generation_id
+
+        self._time_cache[key] = None  # Mark as pending
+
+        was_busy = self.is_busy
+
+        def when_done_callback(task: "Task"):
+            self._on_time_estimation_complete(task, key, generation_id)
+
+        machine = config.config.machine
+        task = self._task_manager.run_process(
+            run_time_estimation_in_subprocess,
+            handle.to_dict(),
+            workpiece.size,
+            step.post_step_transformers_dicts,
+            machine.max_cut_speed,
+            machine.max_travel_speed,
+            machine.acceleration,
+            generation_id,
+            key=key,
+            when_done=when_done_callback,
+        )
+        self._active_time_tasks[key] = task
+        if not was_busy and self.is_busy:
+            self.processing_state_changed.send(self, is_processing=True)
+
+    def _on_time_estimation_complete(
+        self, task: "Task", key: tuple, task_generation_id: int
+    ):
+        """Callback for when a time estimation task finishes."""
+        was_busy = self.is_busy
+        self._active_time_tasks.pop(key, None)
+
+        current_gen_id = self._time_generation_id_map.get(key)
+        if current_gen_id != task_generation_id:
+            logger.debug(f"Ignoring stale time estimation callback for {key}.")
+            is_busy_now = self.is_busy
+            if was_busy and not is_busy_now:
+                self.processing_state_changed.send(self, is_processing=False)
+            return
+
+        if task.get_status() == "completed":
+            try:
+                result_time, result_gen_id = task.result()
+                if self._time_generation_id_map.get(key) == result_gen_id:
+                    self._time_cache[key] = result_time
+                    self.time_estimation_updated.send(self)
+                else:
+                    logger.warning(
+                        f"Ignoring stale time estimation result for {key}."
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Error getting time estimation result for {key}: {e}",
+                    exc_info=True,
+                )
+                self._time_cache[key] = -1.0  # Mark as errored
+                self.time_estimation_updated.send(self)
+        else:
+            logger.warning(
+                f"Time estimation for {key} failed. "
+                f"Status: {task.get_status()}"
+            )
+            self._time_cache[key] = -1.0  # Mark as errored
+            self.time_estimation_updated.send(self)
+
+        is_busy_now = self.is_busy
+        if was_busy and not is_busy_now:
+            self.processing_state_changed.send(self, is_processing=False)
+
+    def get_estimated_time(
+        self, step: Step, workpiece: WorkPiece
+    ) -> Optional[float]:
+        """Retrieves a cached time estimate if available."""
+        key = (step.uid, workpiece.uid, workpiece.size[0], workpiece.size[1])
+        return self._time_cache.get(key)
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
