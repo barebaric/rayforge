@@ -17,14 +17,14 @@ class ArtifactHandle:
     # The unique name of the shared memory block
     shm_name: str
 
-    # Metadata to reconstruct the artifact class
-    artifact_type: str  # 'vector' or 'hybrid_raster'
+    # Metadata to reconstruct the artifact
+    artifact_type: str  # 'vector', 'vertex', or 'hybrid_raster'
     is_scalable: bool
     source_coordinate_system_name: str
     source_dimensions: Optional[Tuple[float, float]]
     generation_size: Optional[Tuple[float, float]]
 
-    # Extra metadata for HybridRasterArtifact
+    # Extra metadata for artifacts containing texture data ('hybrid_raster')
     dimensions_mm: Optional[Tuple[float, float]] = None
     position_mm: Optional[Tuple[float, float]] = None
 

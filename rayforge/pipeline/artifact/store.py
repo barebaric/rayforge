@@ -7,7 +7,7 @@ from multiprocessing import shared_memory
 import numpy as np
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
-from .base import Artifact
+from .base import Artifact, VertexData, TextureData
 from .handle import ArtifactHandle
 
 logger = logging.getLogger(__name__)
@@ -85,9 +85,9 @@ class ArtifactStore:
             array_metadata=array_metadata,
         )
 
-        if artifact.raster_data:
-            handle.dimensions_mm = artifact.raster_data.get("dimensions_mm")
-            handle.position_mm = artifact.raster_data.get("position_mm")
+        if artifact.texture_data:
+            handle.dimensions_mm = artifact.texture_data.dimensions_mm
+            handle.position_mm = artifact.texture_data.position_mm
 
         return handle
 
@@ -153,16 +153,18 @@ class ArtifactStore:
         """
         arrays = artifact.ops.to_numpy_arrays()
 
-        if (
-            artifact.raster_data
-            and "power_texture_data" in artifact.raster_data
-        ):
-            arrays["power_texture_data"] = artifact.raster_data[
-                "power_texture_data"
-            ]
+        if artifact.texture_data:
+            arrays["power_texture_data"] = (
+                artifact.texture_data.power_texture_data
+            )
 
         if artifact.vertex_data:
-            arrays.update(artifact.vertex_data)
+            arrays["powered_vertices"] = artifact.vertex_data.powered_vertices
+            arrays["powered_colors"] = artifact.vertex_data.powered_colors
+            arrays["travel_vertices"] = artifact.vertex_data.travel_vertices
+            arrays["zero_power_vertices"] = (
+                artifact.vertex_data.zero_power_vertices
+            )
 
         total_bytes = sum(arr.nbytes for arr in arrays.values())
         return arrays, total_bytes
@@ -189,26 +191,26 @@ class ArtifactStore:
 
         vertex_data = None
         if handle.artifact_type in ("vertex", "hybrid_raster"):
-            vertex_data = {
-                "powered_vertices": arrays["powered_vertices"].copy(),
-                "powered_colors": arrays["powered_colors"].copy(),
-                "travel_vertices": arrays["travel_vertices"].copy(),
-                "zero_power_vertices": arrays["zero_power_vertices"].copy(),
-            }
+            vertex_data = VertexData(
+                powered_vertices=arrays["powered_vertices"].copy(),
+                powered_colors=arrays["powered_colors"].copy(),
+                travel_vertices=arrays["travel_vertices"].copy(),
+                zero_power_vertices=arrays["zero_power_vertices"].copy(),
+            )
 
-        raster_data = None
+        texture_data = None
         if handle.artifact_type == "hybrid_raster":
             if handle.dimensions_mm is None or handle.position_mm is None:
                 raise ValueError(
-                    "HybridRasterArtifact handle is missing required "
+                    "hybrid_raster handle is missing required "
                     "dimensions_mm or position_mm metadata."
                 )
-            raster_data = {
-                "power_texture_data": arrays["power_texture_data"].copy(),
-                "dimensions_mm": handle.dimensions_mm,
-                "position_mm": handle.position_mm,
-            }
+            texture_data = TextureData(
+                power_texture_data=arrays["power_texture_data"].copy(),
+                dimensions_mm=handle.dimensions_mm,
+                position_mm=handle.position_mm,
+            )
 
         return Artifact(
-            **common_args, vertex_data=vertex_data, raster_data=raster_data
+            **common_args, vertex_data=vertex_data, texture_data=texture_data
         )

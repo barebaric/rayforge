@@ -285,7 +285,7 @@ def run_step_in_subprocess(
     initial_ops = _create_initial_ops()
     final_artifact: Optional[Artifact] = None
 
-    # This will hold the assembled texture for hybrid raster artifacts
+    # This will hold the assembled texture for hybrid artifacts
     full_power_texture: Optional[np.ndarray] = None
 
     is_vector = opsproducer.is_vector_producer()
@@ -310,7 +310,7 @@ def run_step_in_subprocess(
             final_artifact.ops = new_ops
 
             # If dealing with a chunked raster, prepare the full texture buffer
-            if not is_vector and final_artifact.raster_data:
+            if not is_vector and final_artifact.texture_data:
                 size_mm = workpiece.size
                 px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
                 full_width_px = int(size_mm[0] * px_per_mm_x)
@@ -325,18 +325,15 @@ def run_step_in_subprocess(
         # For all chunks, paint their texture into the full buffer
         if (
             full_power_texture is not None
-            and chunk_artifact.raster_data
-            and "power_texture_data" in chunk_artifact.raster_data
+            and chunk_artifact.texture_data is not None
         ):
             px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-            texture_data = chunk_artifact.raster_data["power_texture_data"]
+            texture_data = chunk_artifact.texture_data.power_texture_data
             chunk_h_px, chunk_w_px = texture_data.shape
 
             # y-offset from top in mm, convert to pixels
             y_start_px = int(
-                round(
-                    chunk_artifact.raster_data["position_mm"][1] * px_per_mm_y
-                )
+                round(chunk_artifact.texture_data.position_mm[1] * px_per_mm_y)
             )
             x_start_px = 0  # Chunks are full width
 
@@ -378,13 +375,13 @@ def run_step_in_subprocess(
         # with None to match the success return type.
         return None, generation_id
 
-    # If we aggregated a hybrid raster, update the final artifact with the
-    # complete data
-    if full_power_texture is not None and final_artifact.raster_data:
-        final_artifact.raster_data["power_texture_data"] = full_power_texture
+    # If we aggregated a hybrid, update the final artifact with the complete
+    # data
+    if full_power_texture is not None and final_artifact.texture_data:
+        final_artifact.texture_data.power_texture_data = full_power_texture
         # The final artifact represents the whole workpiece, at its origin
-        final_artifact.raster_data["position_mm"] = (0.0, 0.0)
-        final_artifact.raster_data["dimensions_mm"] = workpiece.size
+        final_artifact.texture_data.position_mm = (0.0, 0.0)
+        final_artifact.texture_data.dimensions_mm = workpiece.size
         # The source dimensions should also reflect the full pixel buffer
         final_artifact.source_dimensions = (
             full_power_texture.shape[1],
@@ -453,7 +450,7 @@ def run_step_in_subprocess(
         source_dimensions=final_artifact.source_dimensions,
         generation_size=generation_size,
         vertex_data=vertex_data,
-        raster_data=final_artifact.raster_data,
+        texture_data=final_artifact.texture_data,
     )
 
     proxy.set_message(

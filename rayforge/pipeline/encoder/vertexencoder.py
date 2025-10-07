@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 import numpy as np
 from ...core.ops import Ops
 from ...core.ops.commands import (
@@ -11,6 +11,7 @@ from ...core.ops.commands import (
 )
 from ...core.geo.linearize import linearize_arc
 from .base import OpsEncoder
+from ..artifact.base import VertexData
 
 
 class VertexEncoder(OpsEncoder):
@@ -36,7 +37,7 @@ class VertexEncoder(OpsEncoder):
         lut[:, 3] = 1.0  # A
         return lut
 
-    def encode(self, ops: Ops) -> Dict[str, np.ndarray]:
+    def encode(self, ops: Ops) -> VertexData:
         """
         Converts Ops into vertex arrays for different path types.
 
@@ -44,11 +45,7 @@ class VertexEncoder(OpsEncoder):
             ops: The Ops object to encode
 
         Returns:
-            Dictionary containing vertex arrays for different path types:
-            - powered_vertices: (N, 3) array for powered cutting moves
-            - powered_colors: (N, 4) array for RGBA colors of powered moves
-            - travel_vertices: (M, 3) array for travel moves
-            - zero_power_vertices: (K, 3) array for zero-power moves
+            A VertexData object containing the computed vertex arrays.
         """
         powered_v: List[float] = []
         powered_c: List[float] = []
@@ -112,21 +109,21 @@ class VertexEncoder(OpsEncoder):
                         )
                         current_pos = cmd.end
 
-        # Convert lists to numpy arrays
-        return {
-            "powered_vertices": np.array(powered_v, dtype=np.float32).reshape(
+        # Convert lists to numpy arrays and return a VertexData object
+        return VertexData(
+            powered_vertices=np.array(powered_v, dtype=np.float32).reshape(
                 -1, 3
             ),
-            "powered_colors": np.array(powered_c, dtype=np.float32).reshape(
+            powered_colors=np.array(powered_c, dtype=np.float32).reshape(
                 -1, 4
             ),
-            "travel_vertices": np.array(travel_v, dtype=np.float32).reshape(
+            travel_vertices=np.array(travel_v, dtype=np.float32).reshape(
                 -1, 3
             ),
-            "zero_power_vertices": np.array(
+            zero_power_vertices=np.array(
                 zero_power_v, dtype=np.float32
             ).reshape(-1, 3),
-        }
+        )
 
     def _handle_scanline(
         self,

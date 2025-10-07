@@ -1,13 +1,13 @@
 """
-Tests for the RasterArtifactRenderer class.
+Tests for the TextureArtifactRenderer class.
 """
 
 import numpy as np
 from unittest.mock import patch
-from rayforge.workbench.canvas3d.raster_renderer import RasterArtifactRenderer
-from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.producer.base import HybridRasterArtifact
-from rayforge.core.ops.container import Ops
+from rayforge.workbench.canvas3d.texture_renderer import (
+    TextureArtifactRenderer,
+)
+from rayforge.pipeline.artifact.base import TextureData
 
 
 def test_texture_coordinates_orientation():
@@ -57,7 +57,7 @@ def test_texture_coordinates_orientation():
 
 def test_add_instance_with_different_sizes():
     """
-    Test that raster instances are added correctly with different workpiece
+    Test that texture instances are added correctly with different workpiece
     sizes.
 
     This test verifies that the model matrix correctly scales the quad to
@@ -69,18 +69,15 @@ def test_add_instance_with_different_sizes():
     for i in range(10):
         power_texture[i, i] = 255  # Diagonal line at full power
 
-    # Create a sample artifact with default size (100mm x 100mm)
-    sample_artifact = HybridRasterArtifact(
-        ops=Ops(),
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+    # Create a sample TextureData object
+    sample_texture_data = TextureData(
         power_texture_data=power_texture,
         dimensions_mm=(100.0, 100.0),  # 100mm x 100mm
         position_mm=(0.0, 0.0),
     )
 
     # Create a renderer instance
-    renderer = RasterArtifactRenderer()
+    renderer = TextureArtifactRenderer()
 
     # Mock all OpenGL calls
     with (
@@ -104,7 +101,7 @@ def test_add_instance_with_different_sizes():
         transform_matrix = np.identity(4, dtype=np.float32)
 
         with patch("OpenGL.GL.glGenTextures", return_value=1):
-            renderer.add_instance(sample_artifact, transform_matrix)
+            renderer.add_instance(sample_texture_data, transform_matrix)
 
             # Check that an instance was added
             assert len(renderer.instances) == 1
@@ -134,17 +131,14 @@ def test_add_instance_with_different_sizes():
             )
 
         # Test with larger size (200mm x 200mm)
-        large_artifact = HybridRasterArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        large_texture_data = TextureData(
             power_texture_data=power_texture,
             dimensions_mm=(200.0, 200.0),  # 200mm x 200mm
             position_mm=(0.0, 0.0),
         )
 
         with patch("OpenGL.GL.glGenTextures", return_value=2):
-            renderer.add_instance(large_artifact, transform_matrix)
+            renderer.add_instance(large_texture_data, transform_matrix)
 
             # Check that a second instance was added
             assert len(renderer.instances) == 2

@@ -12,10 +12,8 @@ from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
-from rayforge.pipeline.artifact.base import Artifact
+from rayforge.pipeline.artifact.base import Artifact, VertexData
 from rayforge.pipeline.artifact.store import ArtifactStore
-
-# Import the new subprocess functions to check against them
 from rayforge.pipeline.steprunner import run_step_in_subprocess
 from rayforge.pipeline.timerunner import run_time_estimation_in_subprocess
 
@@ -146,12 +144,10 @@ class TestOpsGenerator:
         expected_ops.line_to(1, 1, 0)
 
         # All artifacts now contain vertex data
-        vertex_data = {
-            "powered_vertices": np.array([[0, 0, 0], [1, 1, 0]]),
-            "powered_colors": np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
-            "travel_vertices": np.array([]),
-            "zero_power_vertices": np.array([]),
-        }
+        vertex_data = VertexData(
+            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
+            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
+        )
 
         expected_artifact = Artifact(
             ops=expected_ops,

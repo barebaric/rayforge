@@ -1,15 +1,85 @@
 from __future__ import annotations
 import numpy as np
 from typing import Optional, Tuple, Dict, Any
+from dataclasses import dataclass, field
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
+
+
+@dataclass
+class VertexData:
+    """A container for GPU-friendly vertex arrays."""
+
+    powered_vertices: np.ndarray = field(
+        default_factory=lambda: np.empty((0, 3), dtype=np.float32)
+    )
+    powered_colors: np.ndarray = field(
+        default_factory=lambda: np.empty((0, 4), dtype=np.float32)
+    )
+    travel_vertices: np.ndarray = field(
+        default_factory=lambda: np.empty((0, 3), dtype=np.float32)
+    )
+    zero_power_vertices: np.ndarray = field(
+        default_factory=lambda: np.empty((0, 3), dtype=np.float32)
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "powered_vertices": self.powered_vertices.tolist(),
+            "powered_colors": self.powered_colors.tolist(),
+            "travel_vertices": self.travel_vertices.tolist(),
+            "zero_power_vertices": self.zero_power_vertices.tolist(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VertexData":
+        return cls(
+            powered_vertices=np.array(
+                data.get("powered_vertices", []), dtype=np.float32
+            ).reshape(-1, 3),
+            powered_colors=np.array(
+                data.get("powered_colors", []), dtype=np.float32
+            ).reshape(-1, 4),
+            travel_vertices=np.array(
+                data.get("travel_vertices", []), dtype=np.float32
+            ).reshape(-1, 3),
+            zero_power_vertices=np.array(
+                data.get("zero_power_vertices", []), dtype=np.float32
+            ).reshape(-1, 3),
+        )
+
+
+@dataclass
+class TextureData:
+    """A container for texture-based raster data."""
+
+    power_texture_data: np.ndarray
+    dimensions_mm: Tuple[float, float]
+    position_mm: Tuple[float, float]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "power_texture_data": self.power_texture_data.tolist(),
+            "dimensions_mm": self.dimensions_mm,
+            "position_mm": self.position_mm,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TextureData":
+        return cls(
+            power_texture_data=np.array(
+                data["power_texture_data"], dtype=np.uint8
+            ),
+            dimensions_mm=tuple(data["dimensions_mm"]),
+            position_mm=tuple(data["position_mm"]),
+        )
 
 
 class Artifact:
     """
     A self-describing output of an OpsProducer.
     This class uses composition to hold different types of data (vector,
-    vertex, raster) instead of a complex inheritance hierarchy.
+    vertex, texture) instead of a complex inheritance hierarchy.
     """
 
     def __init__(
@@ -19,8 +89,8 @@ class Artifact:
         source_coordinate_system: CoordinateSystem,
         source_dimensions: Optional[Tuple[float, float]] = None,
         generation_size: Optional[Tuple[float, float]] = None,
-        vertex_data: Optional[Dict[str, np.ndarray]] = None,
-        raster_data: Optional[Dict[str, Any]] = None,
+        vertex_data: Optional[VertexData] = None,
+        texture_data: Optional[TextureData] = None,
     ):
         self.ops = ops
         self.is_scalable = is_scalable
@@ -28,12 +98,12 @@ class Artifact:
         self.source_dimensions = source_dimensions
         self.generation_size = generation_size
         self.vertex_data = vertex_data
-        self.raster_data = raster_data
+        self.texture_data = texture_data
 
     @property
     def artifact_type(self) -> str:
         """Determines the artifact type based on its data components."""
-        if self.raster_data:
+        if self.texture_data:
             return "hybrid_raster"
         if self.vertex_data:
             return "vertex"
@@ -50,49 +120,24 @@ class Artifact:
             "generation_size": self.generation_size,
         }
         if self.vertex_data:
-            data["vertex_data"] = {
-                key: arr.tolist() for key, arr in self.vertex_data.items()
-            }
-        if self.raster_data:
-            raster_serializable = self.raster_data.copy()
-            if "power_texture_data" in raster_serializable:
-                raster_serializable["power_texture_data"] = (
-                    raster_serializable["power_texture_data"].tolist()
-                )
-            data["raster_data"] = raster_serializable
+            data["vertex_data"] = self.vertex_data.to_dict()
+        if self.texture_data:
+            data["texture_data"] = self.texture_data.to_dict()
         return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Artifact":
         """Deserializes a dictionary into an Artifact instance."""
-        vertex_data = None
-        if "vertex_data" in data and data["vertex_data"]:
-            vertex_data = {
-                "powered_vertices": np.array(
-                    data["vertex_data"].get("powered_vertices", []),
-                    dtype=np.float32,
-                ).reshape(-1, 3),
-                "powered_colors": np.array(
-                    data["vertex_data"].get("powered_colors", []),
-                    dtype=np.float32,
-                ).reshape(-1, 4),
-                "travel_vertices": np.array(
-                    data["vertex_data"].get("travel_vertices", []),
-                    dtype=np.float32,
-                ).reshape(-1, 3),
-                "zero_power_vertices": np.array(
-                    data["vertex_data"].get("zero_power_vertices", []),
-                    dtype=np.float32,
-                ).reshape(-1, 3),
-            }
-
-        raster_data = None
-        if "raster_data" in data and data["raster_data"]:
-            raster_data = data["raster_data"].copy()
-            if "power_texture_data" in raster_data:
-                raster_data["power_texture_data"] = np.array(
-                    raster_data["power_texture_data"], dtype=np.uint8
-                )
+        vertex_data = (
+            VertexData.from_dict(data["vertex_data"])
+            if "vertex_data" in data and data["vertex_data"]
+            else None
+        )
+        texture_data = (
+            TextureData.from_dict(data["texture_data"])
+            if "texture_data" in data and data["texture_data"]
+            else None
+        )
 
         return cls(
             ops=Ops.from_dict(data["ops"]),
@@ -107,5 +152,5 @@ class Artifact:
             if data.get("generation_size")
             else None,
             vertex_data=vertex_data,
-            raster_data=raster_data,
+            texture_data=texture_data,
         )

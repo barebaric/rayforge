@@ -86,7 +86,7 @@ void main() {
 }
 """
 
-RASTER_VERTEX_SHADER = """
+TEXTURE_VERTEX_SHADER = """
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoord;
@@ -101,7 +101,7 @@ void main() {
 }
 """
 
-RASTER_FRAGMENT_SHADER = """
+TEXTURE_FRAGMENT_SHADER = """
 #version 330 core
 in vec2 vTexCoord;
 out vec4 FragColor;

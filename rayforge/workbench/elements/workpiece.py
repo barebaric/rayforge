@@ -66,7 +66,7 @@ class WorkPieceView(CanvasElement):
         self._ops_generation_ids: Dict[
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
-        self._raster_textures: Dict[str, cairo.ImageSurface] = {}
+        self._texture_surfaces: Dict[str, cairo.ImageSurface] = {}
         # Cached artifacts to avoid re-fetching from generator on every draw.
         self._artifact_cache: Dict[str, Optional[Artifact]] = {}
 
@@ -254,7 +254,7 @@ class WorkPieceView(CanvasElement):
             future.cancel()
         self._ops_surfaces.pop(step_uid, None)
         self._ops_recordings.pop(step_uid, None)
-        self._raster_textures.pop(step_uid, None)
+        self._texture_surfaces.pop(step_uid, None)
         self._artifact_cache.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
@@ -354,7 +354,7 @@ class WorkPieceView(CanvasElement):
             self._ops_surfaces.pop(step.uid, None)
             # Also clear the specific texture cache, as it may be stale
             # (e.g., artifact changed from raster to vector).
-            self._raster_textures.pop(step.uid, None)
+            self._texture_surfaces.pop(step.uid, None)
             if self.canvas:
                 self.canvas.queue_draw()
             return
@@ -783,8 +783,8 @@ class WorkPieceView(CanvasElement):
         """Renders the base workpiece content to a new surface."""
         return self.data.render_to_pixels(width=width, height=height)
 
-    def _draw_from_vertex_artifact(self, ctx: cairo.Context):
-        """Draws ops overlays directly from pre-computed vertex artifacts."""
+    def _draw_from_artifact(self, ctx: cairo.Context):
+        """Draws ops overlays directly from pre-computed artifacts."""
         self._resolve_colors_if_needed()
         if not self.canvas or not self._color_set:
             return
@@ -796,7 +796,7 @@ class WorkPieceView(CanvasElement):
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
 
-        # --- Aggregate artifacts and draw raster components first ---
+        # --- Aggregate artifacts and draw texture components first ---
         artifacts_to_draw: List[Artifact] = []
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
@@ -809,35 +809,34 @@ class WorkPieceView(CanvasElement):
 
                 # Use the local cache instead of fetching from the generator.
                 artifact = self._artifact_cache.get(step.uid)
-                if artifact and artifact.vertex_data:
+                if artifact:
                     artifacts_to_draw.append(artifact)
-
-                    if artifact.raster_data:
-                        self._draw_raster_texture(ctx, step, artifact)
+                    if artifact.texture_data:
+                        self._draw_texture(ctx, step, artifact)
 
         if not artifacts_to_draw:
             return
 
         # --- Aggregate vector components from all artifacts ---
         all_powered_v = [
-            a.vertex_data["powered_vertices"]
+            a.vertex_data.powered_vertices
             for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data["powered_vertices"].size > 0
+            if a.vertex_data and a.vertex_data.powered_vertices.size > 0
         ]
         all_powered_c = [
-            a.vertex_data["powered_colors"]
+            a.vertex_data.powered_colors
             for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data["powered_colors"].size > 0
+            if a.vertex_data and a.vertex_data.powered_colors.size > 0
         ]
         all_travel_v = [
-            a.vertex_data["travel_vertices"]
+            a.vertex_data.travel_vertices
             for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data["travel_vertices"].size > 0
+            if a.vertex_data and a.vertex_data.travel_vertices.size > 0
         ]
         all_zero_power_v = [
-            a.vertex_data["zero_power_vertices"]
+            a.vertex_data.zero_power_vertices
             for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data["zero_power_vertices"].size > 0
+            if a.vertex_data and a.vertex_data.zero_power_vertices.size > 0
         ]
 
         # --- Draw all aggregated vector components ---
@@ -889,17 +888,17 @@ class WorkPieceView(CanvasElement):
 
         ctx.restore()
 
-    def _draw_raster_texture(
+    def _draw_texture(
         self, ctx: cairo.Context, step: Step, artifact: Artifact
     ):
-        """Generates, caches, and draws the themed raster texture."""
-        if not self._color_set or not artifact.raster_data:
+        """Generates, caches, and draws the themed texture."""
+        if not self._color_set or not artifact.texture_data:
             return
         world_w, world_h = self.data.size
 
-        texture = self._raster_textures.get(step.uid)
-        power_data = artifact.raster_data.get("power_texture_data")
-        if not texture and power_data is not None and power_data.size > 0:
+        texture = self._texture_surfaces.get(step.uid)
+        power_data = artifact.texture_data.power_texture_data
+        if not texture and power_data.size > 0:
             engrave_lut = self._color_set.get_lut("engrave")
             rgba_texture = engrave_lut[power_data]
 
@@ -925,12 +924,12 @@ class WorkPieceView(CanvasElement):
                 w,
                 h,
             )
-            self._raster_textures[step.uid] = texture
+            self._texture_surfaces[step.uid] = texture
 
         if texture:
             ctx.save()
-            pos_mm = artifact.raster_data["position_mm"]
-            dim_mm = artifact.raster_data["dimensions_mm"]
+            pos_mm = artifact.texture_data.position_mm
+            dim_mm = artifact.texture_data.dimensions_mm
 
             # Context is 1x1 Y-UP space, origin at bottom-left of workpiece.
             # Convert all mm values to normalized coordinates first.
@@ -992,7 +991,7 @@ class WorkPieceView(CanvasElement):
             return
 
         if self.USE_NEW_RENDER_PATH:
-            self._draw_from_vertex_artifact(ctx)
+            self._draw_from_artifact(ctx)
 
         # Draw intermediate chunk surfaces for progressive rendering,
         # regardless of the rendering path. They are cleared when the final

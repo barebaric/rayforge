@@ -105,7 +105,7 @@ def test_run_requires_workpiece(
         producer.run(laser, white_surface, (10, 10))
 
 
-def test_run_returns_hybrid_raster_artifact_with_correct_metadata(
+def test_run_returns_hybrid_artifact_with_correct_metadata(
     producer: DepthEngraver,
     laser: Laser,
     white_surface: cairo.ImageSurface,
@@ -124,12 +124,12 @@ def test_run_returns_hybrid_raster_artifact_with_correct_metadata(
     assert artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
     assert artifact.source_dimensions == (10, 10)
     assert artifact.generation_size == (10.0, 10.0)
-    assert artifact.raster_data is not None
-    assert artifact.raster_data["dimensions_mm"] == (10.0, 10.0)
-    assert artifact.raster_data["position_mm"] == (0.0, 0.0)
+    assert artifact.texture_data is not None
+    assert artifact.texture_data.dimensions_mm == (10.0, 10.0)
+    assert artifact.texture_data.position_mm == (0.0, 0.0)
     assert artifact.ops is not None
-    assert artifact.raster_data["power_texture_data"] is not None
-    assert artifact.raster_data["power_texture_data"].shape == (10, 10)
+    assert artifact.texture_data.power_texture_data is not None
+    assert artifact.texture_data.power_texture_data.shape == (10, 10)
 
 
 def test_run_wraps_ops_in_section_markers(
@@ -218,9 +218,9 @@ def test_power_modulation_generates_correct_ops_and_texture(
     assert power_vals[2] == pytest.approx(expected_texture_row[2], 1)
 
     # Assert Texture data
-    assert artifact.raster_data is not None
-    assert artifact.raster_data["power_texture_data"].shape == (1, 3)
-    texture_row = artifact.raster_data["power_texture_data"][0]
+    assert artifact.texture_data is not None
+    assert artifact.texture_data.power_texture_data.shape == (1, 3)
+    texture_row = artifact.texture_data.power_texture_data[0]
     assert texture_row[0] == pytest.approx(229, 1)
     assert texture_row[1] == pytest.approx(127, 1)
     assert texture_row[2] == pytest.approx(26, 1)
@@ -278,9 +278,9 @@ def test_multi_pass_generates_correct_ops_and_texture(
     # Black (gray=0) -> 4 passes -> power = 4/4 = 1.0 -> 255
     # Gray (gray=127) -> ceil((1-127/255)*4) = ceil(2.007) = 3 passes
     #   -> power = 3/4 = 0.75 -> 191.25
-    assert artifact.raster_data is not None
-    assert artifact.raster_data["power_texture_data"].shape == (10, 2)
-    black_col = artifact.raster_data["power_texture_data"][:, 0]
-    gray_col = artifact.raster_data["power_texture_data"][:, 1]
+    assert artifact.texture_data is not None
+    assert artifact.texture_data.power_texture_data.shape == (10, 2)
+    black_col = artifact.texture_data.power_texture_data[:, 0]
+    gray_col = artifact.texture_data.power_texture_data[:, 1]
     assert np.all(np.isclose(black_col, 255))
     assert np.all(np.isclose(gray_col, 191, atol=1))

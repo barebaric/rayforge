@@ -13,7 +13,7 @@ from rayforge.pipeline.scene_assembler import (
     generate_scene_description,
 )
 from rayforge.pipeline.artifact.handle import ArtifactHandle
-from rayforge.pipeline.artifact.base import Artifact
+from rayforge.pipeline.artifact.base import Artifact, TextureData
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.ops import Ops
 
@@ -107,17 +107,17 @@ def mock_artifact_handle():
 
 @pytest.fixture
 def mock_hybrid_artifact():
-    """Create a mock hybrid raster artifact."""
-    raster_data = {
-        "power_texture_data": np.zeros((10, 10)),
-        "dimensions_mm": (10.0, 10.0),
-        "position_mm": (0.0, 0.0),
-    }
+    """Create a mock hybrid artifact."""
+    texture_data = TextureData(
+        power_texture_data=np.zeros((10, 10)),
+        dimensions_mm=(10.0, 10.0),
+        position_mm=(0.0, 0.0),
+    )
     return Artifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        raster_data=raster_data,
+        texture_data=texture_data,
     )
 
 
@@ -141,7 +141,7 @@ class TestRenderItem:
         world_transform = np.eye(4)
         item = RenderItem(
             artifact_handle=mock_artifact_handle,
-            raster_data=mock_hybrid_artifact.raster_data,
+            texture_data=mock_hybrid_artifact.texture_data,
             world_transform=world_transform,
             workpiece_size=(10.0, 20.0),
             step_uid="step_1",
@@ -149,18 +149,18 @@ class TestRenderItem:
         )
 
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_data == mock_hybrid_artifact.raster_data
+        assert item.texture_data == mock_hybrid_artifact.texture_data
         assert np.array_equal(item.world_transform, world_transform)
         assert item.workpiece_size == (10.0, 20.0)
         assert item.step_uid == "step_1"
         assert item.workpiece_uid == "workpiece_1"
 
-    def test_render_item_without_raster(self, mock_artifact_handle):
-        """Test creating a RenderItem without raster artifact."""
+    def test_render_item_without_texture(self, mock_artifact_handle):
+        """Test creating a RenderItem without texture data."""
         world_transform = np.eye(4)
         item = RenderItem(
             artifact_handle=mock_artifact_handle,
-            raster_data=None,
+            texture_data=None,
             world_transform=world_transform,
             workpiece_size=(10.0, 20.0),
             step_uid="step_1",
@@ -168,7 +168,7 @@ class TestRenderItem:
         )
 
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_data is None
+        assert item.texture_data is None
 
 
 class TestSceneDescription:
@@ -180,7 +180,7 @@ class TestSceneDescription:
         items = [
             RenderItem(
                 artifact_handle=mock_artifact_handle,
-                raster_data=None,
+                texture_data=None,
                 world_transform=world_transform,
                 workpiece_size=(10.0, 20.0),
                 step_uid="step_1",
@@ -188,7 +188,7 @@ class TestSceneDescription:
             ),
             RenderItem(
                 artifact_handle=None,
-                raster_data=None,
+                texture_data=None,
                 world_transform=world_transform,
                 workpiece_size=(15.0, 25.0),
                 step_uid="step_2",
@@ -260,7 +260,7 @@ class TestGenerateSceneDescription:
 
         item = scene.render_items[0]
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_data is None
+        assert item.texture_data is None
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
         assert item.workpiece_size == mock_workpiece.size
@@ -298,7 +298,7 @@ class TestGenerateSceneDescription:
 
         item = scene.render_items[0]
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_data == mock_hybrid_artifact.raster_data
+        assert item.texture_data == mock_hybrid_artifact.texture_data
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
 
@@ -383,7 +383,7 @@ class TestGenerateSceneDescription:
 
         item = scene.render_items[0]
         assert item.artifact_handle is None  # Should be None when not in cache
-        assert item.raster_data is None  # Not a hybrid artifact
+        assert item.texture_data is None  # Not a hybrid artifact
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
 

@@ -1,5 +1,5 @@
 """
-A renderer for visualizing raster artifacts using GPU texture rendering.
+A renderer for visualizing texture-based artifacts using GPU texture rendering.
 """
 
 import logging
@@ -7,13 +7,15 @@ from typing import List, Dict, Any
 import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
+from ...pipeline.artifact.base import TextureData
+
 
 logger = logging.getLogger(__name__)
 
 
-class RasterArtifactRenderer(BaseRenderer):
+class TextureArtifactRenderer(BaseRenderer):
     """
-    Renders raster artifacts as textured quads for high-performance
+    Renders texture-based artifacts as textured quads for high-performance
     visualization.
 
     This renderer uses a single quad with a texture containing power values,
@@ -22,21 +24,21 @@ class RasterArtifactRenderer(BaseRenderer):
     """
 
     def __init__(self):
-        """Initializes the RasterArtifactRenderer."""
+        """Initializes the TextureArtifactRenderer."""
         super().__init__()
         self.vao: int = 0
         self.vbo: int = 0
         self.texture: int = 0
         self.color_lut_texture: int = 0
         self.is_initialized: bool = False
-        # A list to hold dictionaries for each raster instance
+        # A list to hold dictionaries for each texture instance
         self.instances: List[Dict[str, Any]] = []
 
     def init_gl(self):
         """
         Initializes OpenGL resources for rendering textured quads.
 
-        Creates the VAO/VBO for a quad and OpenGL Textures for the raster
+        Creates the VAO/VBO for a quad and OpenGL Textures for the texture
         data and color lookup table (LUT).
         """
         if self.is_initialized:
@@ -122,7 +124,7 @@ class RasterArtifactRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
         self.is_initialized = True
-        logger.debug("RasterArtifactRenderer initialized")
+        logger.debug("TextureArtifactRenderer initialized")
 
     def _cleanup_self(self):
         """Cleans up OpenGL resources specific to this renderer."""
@@ -133,7 +135,7 @@ class RasterArtifactRenderer(BaseRenderer):
             self.clear()
             self.is_initialized = False
         except Exception as e:
-            logger.warning(f"RasterArtifactRenderer cleanup warning: {e}")
+            logger.warning(f"TextureArtifactRenderer cleanup warning: {e}")
 
     def clear(self):
         """Clears all instances and their associated textures."""
@@ -148,14 +150,10 @@ class RasterArtifactRenderer(BaseRenderer):
         self.instances.clear()
 
     def add_instance(
-        self, raster_data: Dict[str, Any], transform_matrix: np.ndarray
+        self, texture_data: TextureData, transform_matrix: np.ndarray
     ):
-        """Adds a raster artifact to be rendered in the next frame."""
-        if not self.is_initialized or not raster_data:
-            return
-
-        power_texture_data = raster_data.get("power_texture_data")
-        if power_texture_data is None:
+        """Adds a texture artifact to be rendered in the next frame."""
+        if not self.is_initialized:
             return
 
         texture_id = GL.glGenTextures(1)
@@ -173,7 +171,7 @@ class RasterArtifactRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
         )
 
-        height, width = power_texture_data.shape
+        height, width = texture_data.power_texture_data.shape
         # Tell OpenGL that our data is tightly packed (1-byte alignment).
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
         GL.glTexImage2D(
@@ -185,7 +183,7 @@ class RasterArtifactRenderer(BaseRenderer):
             0,
             GL.GL_RED,
             GL.GL_UNSIGNED_BYTE,
-            power_texture_data,
+            texture_data.power_texture_data,
         )
         # Restore the default alignment.
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
@@ -194,10 +192,10 @@ class RasterArtifactRenderer(BaseRenderer):
         # This local model matrix scales the unit quad to the artifact's
         # physical size and positions it within its local workpiece space.
         local_model_matrix = np.identity(4, dtype=np.float32)
-        local_model_matrix[0, 3] = raster_data["position_mm"][0]
-        local_model_matrix[1, 3] = raster_data["position_mm"][1]
-        local_model_matrix[0, 0] = raster_data["dimensions_mm"][0]
-        local_model_matrix[1, 1] = raster_data["dimensions_mm"][1]
+        local_model_matrix[0, 3] = texture_data.position_mm[0]
+        local_model_matrix[1, 3] = texture_data.position_mm[1]
+        local_model_matrix[0, 0] = texture_data.dimensions_mm[0]
+        local_model_matrix[1, 1] = texture_data.dimensions_mm[1]
 
         # The final model matrix combines the local geometry with the
         # workpiece's world transform.
@@ -232,7 +230,7 @@ class RasterArtifactRenderer(BaseRenderer):
 
     def render(self, view_proj_scene_matrix: np.ndarray, shader: Shader):
         """
-        Renders all raster instances.
+        Renders all texture instances.
 
         Args:
             view_proj_scene_matrix: The combined Projection * View * SceneModel

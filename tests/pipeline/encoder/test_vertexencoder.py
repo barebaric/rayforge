@@ -17,10 +17,10 @@ class TestVertexEncoder:
         ops = Ops()
         result = encoder.encode(ops)
 
-        assert result["powered_vertices"].shape == (0, 3)
-        assert result["powered_colors"].shape == (0, 4)
-        assert result["travel_vertices"].shape == (0, 3)
-        assert result["zero_power_vertices"].shape == (0, 3)
+        assert result.powered_vertices.shape == (0, 3)
+        assert result.powered_colors.shape == (0, 4)
+        assert result.travel_vertices.shape == (0, 3)
+        assert result.zero_power_vertices.shape == (0, 3)
 
     def test_encode_simple_cut_and_travel(self, encoder: VertexEncoder):
         """Test encoding a simple cut with travel move."""
@@ -35,22 +35,22 @@ class TestVertexEncoder:
         result = encoder.encode(ops)
 
         # Check travel vertices (2 MoveTo commands = 2 segments = 4 vertices)
-        assert result["travel_vertices"].shape == (4, 3)
-        travel_coords = result["travel_vertices"]
+        assert result.travel_vertices.shape == (4, 3)
+        travel_coords = result.travel_vertices
         np.testing.assert_array_equal(travel_coords[0], [0.0, 0.0, 0.0])
         np.testing.assert_array_equal(travel_coords[1], [0.0, 0.0, 0.0])
         np.testing.assert_array_equal(travel_coords[2], [0.0, 0.0, 0.0])
         np.testing.assert_array_equal(travel_coords[3], [10.0, 0.0, 0.0])
 
         # Check powered vertices (1 LineTo command = 1 segment = 2 vertices)
-        assert result["powered_vertices"].shape == (2, 3)
-        assert result["powered_colors"].shape == (2, 4)
-        powered_coords = result["powered_vertices"]
+        assert result.powered_vertices.shape == (2, 3)
+        assert result.powered_colors.shape == (2, 4)
+        powered_coords = result.powered_vertices
         np.testing.assert_array_equal(powered_coords[0], [10.0, 0.0, 0.0])
         np.testing.assert_array_equal(powered_coords[1], [10.0, 10.0, 0.0])
 
         # Check colors (should be white for power 1.0)
-        powered_colors = result["powered_colors"]
+        powered_colors = result.powered_colors
         expected_color = [1.0, 1.0, 1.0, 1.0]  # White RGBA
         np.testing.assert_array_equal(powered_colors[0], expected_color)
         np.testing.assert_array_equal(powered_colors[1], expected_color)
@@ -65,15 +65,15 @@ class TestVertexEncoder:
         result = encoder.encode(ops)
 
         # Should have zero-power vertices, not travel vertices
-        assert result["zero_power_vertices"].shape == (2, 3)
-        assert result["powered_vertices"].shape == (0, 3)
-        assert result["travel_vertices"].shape == (
+        assert result.zero_power_vertices.shape == (2, 3)
+        assert result.powered_vertices.shape == (0, 3)
+        assert result.travel_vertices.shape == (
             2,
             3,
         )  # From the initial MoveTo
 
         # Check the coordinates of the zero-power move
-        zero_power_coords = result["zero_power_vertices"]
+        zero_power_coords = result.zero_power_vertices
         np.testing.assert_array_equal(zero_power_coords[0], [0.0, 0.0, 0.0])
         np.testing.assert_array_equal(zero_power_coords[1], [5.0, 5.0, 0.0])
 
@@ -88,20 +88,19 @@ class TestVertexEncoder:
         result = encoder.encode(ops)
 
         # Arc should be linearized into multiple segments
-        assert result["powered_vertices"].shape[0] >= 4  # At least 2 segments
-        assert result["powered_vertices"].shape[0] % 2 == 0  # Even vertices
+        assert result.powered_vertices.shape[0] >= 4  # At least 2 segments
+        assert result.powered_vertices.shape[0] % 2 == 0  # Even vertices
         assert (
-            result["powered_colors"].shape[0]
-            == result["powered_vertices"].shape[0]
+            result.powered_colors.shape[0] == result.powered_vertices.shape[0]
         )
 
         # Check that colors correspond to power 0.5 (mid-gray)
-        powered_colors = result["powered_colors"]
+        powered_colors = result.powered_colors
         expected_color = [0.49803922, 0.49803922, 0.49803922, 1.0]  # 127/255
         np.testing.assert_array_almost_equal(powered_colors[0], expected_color)
 
         # Check start and end points
-        powered_coords = result["powered_vertices"]
+        powered_coords = result.powered_vertices
         np.testing.assert_array_almost_equal(
             powered_coords[0], [0.0, 10.0, 0.0]
         )
@@ -124,14 +123,14 @@ class TestVertexEncoder:
         result = encoder.encode(ops)
 
         # Powered segments should be empty, as the texture handles them.
-        assert result["powered_vertices"].shape == (0, 3)
-        assert result["powered_colors"].shape == (0, 4)
+        assert result.powered_vertices.shape == (0, 3)
+        assert result.powered_colors.shape == (0, 4)
 
         # Zero-power segments: two 1-unit chunks. 2 segments = 4 vertices
-        assert result["zero_power_vertices"].shape == (4, 3)
+        assert result.zero_power_vertices.shape == (4, 3)
 
         # Check coordinates of the zero-power segments
-        zero_v = result["zero_power_vertices"]
+        zero_v = result.zero_power_vertices
 
         # First zero-power chunk (0-1mm)
         np.testing.assert_array_almost_equal(zero_v[0], [0.0, 0.0, 0.0])
@@ -166,17 +165,17 @@ class TestVertexEncoder:
         result = encoder.encode(ops)
 
         # Check travel vertices (3 MoveTo commands = 6 vertices)
-        assert result["travel_vertices"].shape == (6, 3)
+        assert result.travel_vertices.shape == (6, 3)
 
         # Check powered vertices (2 cut moves = 4 vertices)
-        assert result["powered_vertices"].shape == (4, 3)
-        assert result["powered_colors"].shape == (4, 4)
+        assert result.powered_vertices.shape == (4, 3)
+        assert result.powered_colors.shape == (4, 4)
 
         # Check zero-power vertices (1 zero-power LineTo = 2 vertices)
-        assert result["zero_power_vertices"].shape == (2, 3)
+        assert result.zero_power_vertices.shape == (2, 3)
 
         # Verify colors match power levels
-        powered_colors = result["powered_colors"]
+        powered_colors = result.powered_colors
         # First cut at full power
         np.testing.assert_array_equal(powered_colors[0], [1.0, 1.0, 1.0, 1.0])
         # Second cut at half power
@@ -210,7 +209,7 @@ class TestVertexEncoder:
 
         result = encoder.encode(ops)
 
-        powered_coords = result["powered_vertices"]
+        powered_coords = result.powered_vertices
         assert powered_coords.shape == (4, 3)
 
         # Check Z coordinates are preserved

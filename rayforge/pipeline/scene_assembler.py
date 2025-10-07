@@ -7,10 +7,11 @@ the UI.
 from __future__ import annotations
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, TYPE_CHECKING, Dict, Any
+from typing import List, Optional, Tuple, TYPE_CHECKING, Dict
 import numpy as np
 
 from ..core.layer import Layer
+from .artifact.base import TextureData
 
 if TYPE_CHECKING:
     from .generator import OpsGenerator
@@ -28,7 +29,7 @@ class RenderItem:
     """A lightweight instruction for rendering one artifact."""
 
     artifact_handle: Optional[ArtifactHandle]
-    raster_data: Optional[Dict[str, Any]]
+    texture_data: Optional[TextureData]
     world_transform: np.ndarray  # 4x4 numpy matrix
     workpiece_size: Tuple[float, float]
     step_uid: str
@@ -81,7 +82,7 @@ def generate_scene_description(
 
             item = RenderItem(
                 artifact_handle=handle,
-                raster_data=artifact.raster_data if artifact else None,
+                texture_data=artifact.texture_data if artifact else None,
                 world_transform=workpiece.get_world_transform().to_4x4_numpy(),
                 workpiece_size=workpiece.size,
                 step_uid=step.uid,

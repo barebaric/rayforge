@@ -19,14 +19,14 @@ from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
 from .ops_renderer import OpsRenderer
-from .raster_renderer import RasterArtifactRenderer
+from .texture_renderer import TextureArtifactRenderer
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
     TEXT_FRAGMENT_SHADER,
     TEXT_VERTEX_SHADER,
-    RASTER_FRAGMENT_SHADER,
-    RASTER_VERTEX_SHADER,
+    TEXTURE_FRAGMENT_SHADER,
+    TEXTURE_VERTEX_SHADER,
 )
 from .sphere_renderer import SphereRenderer
 
@@ -81,23 +81,23 @@ def prepare_scene_vertices_async(
         artifact = ops_generator.get_artifact(step, workpiece)
 
         if not artifact or not artifact.vertex_data:
-            logger.warning(
+            logger.debug(
                 "Artifact is missing or has no vertex data. "
                 "Skipping vector processing."
             )
             continue
 
-        vertex_data = artifact.vertex_data
         # 1. Get pre-computed, local-space vertices from the artifact.
-        p_verts = vertex_data["powered_vertices"]
-        p_colors_std = vertex_data["powered_colors"]
-        t_verts = vertex_data["travel_vertices"]
-        zp_verts = vertex_data["zero_power_vertices"]
+        vertex_data = artifact.vertex_data
+        p_verts = vertex_data.powered_vertices
+        p_colors_std = vertex_data.powered_colors
+        t_verts = vertex_data.travel_vertices
+        zp_verts = vertex_data.zero_power_vertices
 
-        # If the artifact is a hybrid raster, its powered moves are visualized
-        # by the RasterArtifactRenderer. We only process its non-powered moves
-        # here to avoid double-drawing.
-        if artifact.raster_data:
+        # If the artifact has texture data, its powered moves are visualized
+        # by the TextureArtifactRenderer. We only process its non-powered
+        # moves here to avoid double-drawing.
+        if artifact.texture_data:
             p_verts = np.array([], dtype=np.float32)
             p_colors_std = np.array([], dtype=np.float32)
 
@@ -184,7 +184,7 @@ def prepare_scene_vertices_async(
     )
 
     # Add a small Z-offset to non-powered moves to prevent Z-fighting with
-    # the raster texture quad, which is drawn at Z=0.
+    # the texture quad, which is drawn at Z=0.
     Z_OFFSET_NON_POWERED = 0.01
     if travel_verts_3d.size > 0:
         travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
@@ -234,8 +234,8 @@ class Canvas3D(Gtk.GLArea):
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.ops_renderer: Optional[OpsRenderer] = None
         self.sphere_renderer: Optional[SphereRenderer] = None
-        self.raster_renderer: Optional[RasterArtifactRenderer] = None
-        self.raster_shader: Optional[Shader] = None
+        self.texture_renderer: Optional[TextureArtifactRenderer] = None
+        self.texture_shader: Optional[Shader] = None
         self._scene_preparation_task: Optional[Task] = None
         self._scene_vtx_cache: Optional[
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -419,14 +419,14 @@ class Canvas3D(Gtk.GLArea):
                 self.ops_renderer.cleanup()
             if self.sphere_renderer:
                 self.sphere_renderer.cleanup()
-            if self.raster_renderer:
-                self.raster_renderer.cleanup()
+            if self.texture_renderer:
+                self.texture_renderer.cleanup()
             if self.main_shader:
                 self.main_shader.cleanup()
             if self.text_shader:
                 self.text_shader.cleanup()
-            if self.raster_shader:
-                self.raster_shader.cleanup()
+            if self.texture_shader:
+                self.texture_shader.cleanup()
         finally:
             self._gl_initialized = False
 
@@ -444,8 +444,8 @@ class Canvas3D(Gtk.GLArea):
                 SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER
             )
             self.text_shader = Shader(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
-            self.raster_shader = Shader(
-                RASTER_VERTEX_SHADER, RASTER_FRAGMENT_SHADER
+            self.texture_shader = Shader(
+                TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER
             )
 
             # Get the theme's default font family from GTK
@@ -469,8 +469,8 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.init_gl()
             self.ops_renderer = OpsRenderer()
             self.ops_renderer.init_gl()
-            self.raster_renderer = RasterArtifactRenderer()
-            self.raster_renderer.init_gl()
+            self.texture_renderer = TextureArtifactRenderer()
+            self.texture_renderer.init_gl()
             if self.sphere_renderer:
                 self.sphere_renderer.init_gl()
 
@@ -483,7 +483,7 @@ class Canvas3D(Gtk.GLArea):
         """
         Resolves the ColorSet and updates other theme-dependent elements.
         """
-        if not self.axis_renderer or not self.raster_renderer:
+        if not self.axis_renderer or not self.texture_renderer:
             return
 
         style_context = self.get_style_context()
@@ -491,7 +491,7 @@ class Canvas3D(Gtk.GLArea):
         self._color_set = resolver.resolve(self._color_spec)
 
         if self._color_set:
-            self.raster_renderer.update_color_lut(
+            self.texture_renderer.update_color_lut(
                 self._color_set.get_lut("engrave")
             )
 
@@ -577,12 +577,12 @@ class Canvas3D(Gtk.GLArea):
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
-            if self.raster_renderer and self.raster_shader:
-                # The raster quads are part of the scene and need the scene's
+            if self.texture_renderer and self.texture_shader:
+                # The texture quads are part of the scene and need the scene's
                 # model matrix. Their vertices are local, so the renderer
                 # combines the scene VP with the instance's world model matrix.
-                self.raster_renderer.render(
-                    mvp_matrix_scene, self.raster_shader
+                self.texture_renderer.render(
+                    mvp_matrix_scene, self.texture_shader
                 )
 
         except Exception as e:
@@ -868,7 +868,7 @@ class Canvas3D(Gtk.GLArea):
         Updates the entire scene content from the document. This is the main
         entry point for refreshing the 3D view.
         """
-        if not self.ops_renderer or not self.raster_renderer:
+        if not self.ops_renderer or not self.texture_renderer:
             return
 
         logger.debug("Canvas3D: Updating scene from document.")
@@ -885,10 +885,10 @@ class Canvas3D(Gtk.GLArea):
             self.doc, self.ops_generator
         )
 
-        # 2. Handle raster instances immediately on the main thread (fast)
-        self.raster_renderer.clear()
+        # 2. Handle texture instances immediately on the main thread (fast)
+        self.texture_renderer.clear()
         for item in scene_description.render_items:
-            if item.raster_data:
+            if item.texture_data:
                 world_transform_matrix = Matrix(item.world_transform)
 
                 # Decompose the full world transform to separate placement from
@@ -905,11 +905,11 @@ class Canvas3D(Gtk.GLArea):
                     tx, ty, angle_deg, 1.0, math.copysign(1.0, sy), skew_deg
                 )
 
-                # The RasterArtifactRenderer will internally apply its own
-                # scale based on the artifact's dimensions_mm. We only provide
+                # The TextureArtifactRenderer will internally apply its own
+                # scale based on the texture's dimensions_mm. We only provide
                 # it with the pure placement matrix.
-                self.raster_renderer.add_instance(
-                    item.raster_data, placement_transform.to_4x4_numpy()
+                self.texture_renderer.add_instance(
+                    item.texture_data, placement_transform.to_4x4_numpy()
                 )
 
         # 3. Schedule the expensive vector preparation for a background thread

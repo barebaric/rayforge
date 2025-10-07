@@ -115,7 +115,7 @@ class OpsRenderer(BaseRenderer):
                     f"OpsRenderer: Processing ScanLinePowerCommand at "
                     f"index {i}."
                 )
-                # The RasterArtifactRenderer shows the powered image. Here, we
+                # The TextureRenderer shows the powered image. Here, we
                 # only care about visualizing the zero-power toolpath moves
                 # (e.g., overscan) from the ScanLine command.
                 num_steps = len(command.power_values)

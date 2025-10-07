@@ -6,6 +6,8 @@ from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     ArtifactStore,
     Artifact,
+    VertexData,
+    TextureData,
 )
 
 
@@ -30,16 +32,14 @@ class TestArtifactStore(unittest.TestCase):
         ops.line_to(10, 0, 0)
         ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
 
-        vertex_data = {
-            "powered_vertices": np.array(
+        vertex_data = VertexData(
+            powered_vertices=np.array(
                 [[0, 0, 0], [10, 0, 0]], dtype=np.float32
             ),
-            "powered_colors": np.array(
+            powered_colors=np.array(
                 [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
             ),
-            "travel_vertices": np.empty((0, 3), dtype=np.float32),
-            "zero_power_vertices": np.empty((0, 3), dtype=np.float32),
-        }
+        )
 
         return Artifact(
             ops=ops,
@@ -56,17 +56,13 @@ class TestArtifactStore(unittest.TestCase):
         ops.move_to(0, 0, 0)
         ops.scan_to(10, 0, 0, power_values=bytearray(range(256)))
         texture = np.arange(10000, dtype=np.uint8).reshape((100, 100))
-        raster_data = {
-            "power_texture_data": texture,
-            "dimensions_mm": (50.0, 50.0),
-            "position_mm": (5.0, 10.0),
-        }
-        vertex_data = {
-            "powered_vertices": np.empty((0, 3), dtype=np.float32),
-            "powered_colors": np.empty((0, 4), dtype=np.float32),
-            "travel_vertices": np.empty((0, 3), dtype=np.float32),
-            "zero_power_vertices": np.empty((0, 3), dtype=np.float32),
-        }
+
+        texture_data = TextureData(
+            power_texture_data=texture,
+            dimensions_mm=(50.0, 50.0),
+            position_mm=(5.0, 10.0),
+        )
+        vertex_data = VertexData()
         return Artifact(
             ops=ops,
             is_scalable=False,
@@ -74,7 +70,7 @@ class TestArtifactStore(unittest.TestCase):
             source_dimensions=(200, 200),
             generation_size=(50, 50),
             vertex_data=vertex_data,
-            raster_data=raster_data,
+            texture_data=texture_data,
         )
 
     def test_internal_conversion_round_trip(self):
@@ -132,7 +128,7 @@ class TestArtifactStore(unittest.TestCase):
         self.assertIsInstance(retrieved_artifact, Artifact)
         self.assertEqual(retrieved_artifact.artifact_type, "vertex")
         self.assertIsNotNone(retrieved_artifact.vertex_data)
-        self.assertIsNone(retrieved_artifact.raster_data)
+        self.assertIsNone(retrieved_artifact.texture_data)
         self.assertEqual(
             len(original_artifact.ops.commands),
             len(retrieved_artifact.ops.commands),
@@ -152,7 +148,7 @@ class TestArtifactStore(unittest.TestCase):
     def test_put_get_release_hybrid_artifact(self):
         """
         Tests the full put -> get -> release lifecycle with a
-        HybridRaster-like Artifact.
+        Hybrid-like Artifact.
         """
         original_artifact = self._create_sample_hybrid_artifact()
 
@@ -166,18 +162,18 @@ class TestArtifactStore(unittest.TestCase):
         # 3. Verify hybrid-specific attributes
         self.assertIsInstance(retrieved_artifact, Artifact)
         self.assertEqual(retrieved_artifact.artifact_type, "hybrid_raster")
-        self.assertIsNotNone(retrieved_artifact.raster_data)
-        self.assertIsNotNone(original_artifact.raster_data)
-        assert retrieved_artifact.raster_data is not None
-        assert original_artifact.raster_data is not None
+        self.assertIsNotNone(retrieved_artifact.texture_data)
+        self.assertIsNotNone(original_artifact.texture_data)
+        assert retrieved_artifact.texture_data is not None
+        assert original_artifact.texture_data is not None
 
         self.assertEqual(
-            original_artifact.raster_data["dimensions_mm"],
-            retrieved_artifact.raster_data["dimensions_mm"],
+            original_artifact.texture_data.dimensions_mm,
+            retrieved_artifact.texture_data.dimensions_mm,
         )
         np.testing.assert_array_equal(
-            original_artifact.raster_data["power_texture_data"],
-            retrieved_artifact.raster_data["power_texture_data"],
+            original_artifact.texture_data.power_texture_data,
+            retrieved_artifact.texture_data.power_texture_data,
         )
         self.assertEqual(
             len(original_artifact.ops.commands),
