@@ -962,7 +962,7 @@ class WorkPieceView(CanvasElement):
             ctx.translate(0.5, 0.5)
 
             ctx.set_source_surface(texture, 0, 0)
-            ctx.get_source().set_filter(cairo.FILTER_GOOD)
+            ctx.get_source().set_filter(cairo.Filter.GOOD)
             ctx.paint()
 
             ctx.restore()
