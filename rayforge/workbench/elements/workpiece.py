@@ -2,6 +2,7 @@ import logging
 from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from concurrent.futures import Future
+import numpy as np
 from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
@@ -11,6 +12,8 @@ from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from .tab_handle import TabHandleElement
+from ...pipeline.artifact.vertex import VertexArtifact
+from ...pipeline.artifact.hybrid import HybridRasterArtifact
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
@@ -37,6 +40,8 @@ class WorkPieceView(CanvasElement):
     This allows the ops margin to be drawn correctly.
     """
 
+    USE_NEW_RENDER_PATH = True
+
     def __init__(
         self, workpiece: WorkPiece, ops_generator: "OpsGenerator", **kwargs
     ):
@@ -62,6 +67,7 @@ class WorkPieceView(CanvasElement):
         self._ops_generation_ids: Dict[
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
+        self._raster_textures: Dict[str, cairo.ImageSurface] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -247,6 +253,7 @@ class WorkPieceView(CanvasElement):
             future.cancel()
         self._ops_surfaces.pop(step_uid, None)
         self._ops_recordings.pop(step_uid, None)
+        self._raster_textures.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -333,6 +340,15 @@ class WorkPieceView(CanvasElement):
             f"Scheduling async recording of drawing commands."
         )
         self._ops_generation_ids[step.uid] = generation_id
+
+        if self.USE_NEW_RENDER_PATH:
+            # Clear intermediate chunk surfaces, as the final artifact is now
+            # ready to be drawn in the next paint cycle.
+            self._ops_surfaces.pop(step.uid, None)
+            self._raster_textures.pop(step.uid, None)
+            if self.canvas:
+                self.canvas.queue_draw()
+            return
 
         if future := self._ops_render_futures.pop(step.uid, None):
             future.cancel()
@@ -747,7 +763,8 @@ class WorkPieceView(CanvasElement):
 
         # Trigger the ops re-render. This will happen inside the same
         # debounced call as the base surface update.
-        self.trigger_ops_rerender()
+        if not self.USE_NEW_RENDER_PATH:
+            self.trigger_ops_rerender()
 
         return res
 
@@ -756,6 +773,199 @@ class WorkPieceView(CanvasElement):
     ) -> Optional[cairo.ImageSurface]:
         """Renders the base workpiece content to a new surface."""
         return self.data.render_to_pixels(width=width, height=height)
+
+    def _draw_from_vertex_artifact(self, ctx: cairo.Context):
+        """Draws ops overlays directly from pre-computed vertex artifacts."""
+        self._resolve_colors_if_needed()
+        if not self.canvas or not self._color_set:
+            return
+
+        world_w, world_h = self.data.size
+        if world_w < 1e-9 or world_h < 1e-9:
+            return
+
+        work_surface = cast("WorkSurface", self.canvas)
+        show_travel = work_surface.show_travel_moves
+
+        # --- Aggregate artifacts and draw raster components first ---
+        artifacts_to_draw = []
+        if self.data.layer and self.data.layer.workflow:
+            for step in self.data.layer.workflow.steps:
+                if not self._ops_visibility.get(step.uid, True):
+                    continue
+                # Skip drawing the final artifact if an intermediate chunk
+                # surface exists for this step.
+                if step.uid in self._ops_surfaces:
+                    continue
+
+                artifact = self.ops_generator.get_artifact(step, self.data)
+                if isinstance(
+                    artifact, (VertexArtifact, HybridRasterArtifact)
+                ):
+                    artifacts_to_draw.append(artifact)
+
+                    if isinstance(artifact, HybridRasterArtifact):
+                        self._draw_raster_texture(ctx, step, artifact)
+
+        if not artifacts_to_draw:
+            return
+
+        # --- Aggregate vector components from all artifacts ---
+        all_powered_v = [
+            a.powered_vertices
+            for a in artifacts_to_draw
+            if a.powered_vertices.size > 0
+        ]
+        all_powered_c = [
+            a.powered_colors
+            for a in artifacts_to_draw
+            if a.powered_colors.size > 0
+        ]
+        all_travel_v = [
+            a.travel_vertices
+            for a in artifacts_to_draw
+            if a.travel_vertices.size > 0
+        ]
+        all_zero_power_v = [
+            a.zero_power_vertices
+            for a in artifacts_to_draw
+            if a.zero_power_vertices.size > 0
+        ]
+
+        # --- Draw all aggregated vector components ---
+        ctx.save()
+        # The context is for a 1x1 Y-UP space. Scale to workpiece mm space.
+        ctx.scale(1.0 / world_w, 1.0 / world_h)
+        ctx.set_hairline(True)
+        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
+
+        # --- Draw Travel & Zero-Power Moves ---
+        if show_travel:
+            if all_travel_v:
+                travel_v = np.concatenate(all_travel_v).reshape(-1, 2, 3)
+                ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
+                for start, end in travel_v:
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+            if all_zero_power_v:
+                zero_v = np.concatenate(all_zero_power_v).reshape(-1, 2, 3)
+                ctx.set_source_rgba(*self._color_set.get_rgba("zero_power"))
+                for start, end in zero_v:
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+
+        # --- Draw Powered Moves (Grouped by Color) ---
+        if all_powered_v:
+            powered_v = np.concatenate(all_powered_v).reshape(-1, 2, 3)
+            powered_c = np.concatenate(all_powered_c)
+            cut_lut = self._color_set.get_lut("cut")
+
+            # Use power from the first vertex of each segment for color.
+            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+            themed_colors_per_segment = cut_lut[power_indices]
+
+            unique_colors, inverse_indices = np.unique(
+                themed_colors_per_segment, axis=0, return_inverse=True
+            )
+
+            for i, color in enumerate(unique_colors):
+                ctx.set_source_rgba(*color)
+                segment_indices = np.where(inverse_indices == i)[0]
+                for seg_idx in segment_indices:
+                    start, end = powered_v[seg_idx]
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+
+        ctx.restore()
+
+    def _draw_raster_texture(
+        self,
+        ctx: cairo.Context,
+        step: Step,
+        artifact: HybridRasterArtifact,
+    ):
+        """Generates, caches, and draws the themed raster texture."""
+        if not self._color_set:
+            return
+        world_w, world_h = self.data.size
+
+        texture = self._raster_textures.get(step.uid)
+        if not texture and artifact.power_texture_data.size > 0:
+            power_data = artifact.power_texture_data
+            engrave_lut = self._color_set.get_lut("engrave")
+            rgba_texture = engrave_lut[power_data]
+
+            # Manually set alpha to 0 where power is 0 for transparency
+            zero_power_mask = power_data == 0
+            rgba_texture[zero_power_mask, 3] = 0.0
+
+            h, w = rgba_texture.shape[:2]
+            # Create pre-multiplied BGRA data for Cairo
+            alpha_ch = rgba_texture[..., 3, np.newaxis]
+            rgb_ch = rgba_texture[..., :3]
+            bgra_texture = np.empty((h, w, 4), dtype=np.uint8)
+            # Pre-multiply RGB by Alpha, then convert to BGRA byte order
+            premultiplied_rgb = rgb_ch * alpha_ch * 255
+            bgra_texture[..., 0] = premultiplied_rgb[..., 2]  # B
+            bgra_texture[..., 1] = premultiplied_rgb[..., 1]  # G
+            bgra_texture[..., 2] = premultiplied_rgb[..., 0]  # R
+            bgra_texture[..., 3] = alpha_ch.squeeze() * 255  # A
+
+            texture = cairo.ImageSurface.create_for_data(
+                memoryview(np.ascontiguousarray(bgra_texture)),
+                cairo.FORMAT_ARGB32,
+                w,
+                h,
+            )
+            self._raster_textures[step.uid] = texture
+
+        if texture:
+            ctx.save()
+            pos_mm = artifact.position_mm
+            dim_mm = artifact.dimensions_mm
+
+            # Context is 1x1 Y-UP space, origin at bottom-left of workpiece.
+            # Convert all mm values to normalized coordinates first.
+            norm_w = dim_mm[0] / world_w
+            norm_h = dim_mm[1] / world_h
+            norm_x = pos_mm[0] / world_w
+            norm_y_bottom = (world_h - pos_mm[1] - dim_mm[1]) / world_h
+
+            tex_w_px = texture.get_width()
+            tex_h_px = texture.get_height()
+
+            if tex_w_px <= 0 or tex_h_px <= 0:
+                ctx.restore()
+                return
+
+            # Go to the bottom-left corner of the destination rectangle.
+            ctx.translate(norm_x, norm_y_bottom)
+
+            # We are now in a local space. Flip Y and translate to prepare
+            # for drawing the Y-down surface.
+            ctx.translate(0, norm_h)
+            ctx.scale(1, -1)
+
+            # At this point, the origin is at the top-left of the destination
+            # rectangle, and the Y-axis points down. The user space has the
+            # same dimensions (in mm) as the destination rectangle.
+
+            # Now, scale the context so that drawing the full pixel-sized
+            # texture will fit exactly into this destination rectangle.
+            ctx.scale(norm_w / tex_w_px, norm_h / tex_h_px)
+
+            # Add a half-pixel offset in the new, pixel-scaled space to
+            # align the raster grid with vector coordinates.
+            ctx.translate(0.5, 0.5)
+
+            ctx.set_source_surface(texture, 0, 0)
+            ctx.get_source().set_filter(cairo.FILTER_GOOD)
+            ctx.paint()
+
+            ctx.restore()
 
     def draw(self, ctx: cairo.Context):
         """Draws the element's content and ops overlays.
@@ -771,14 +981,21 @@ class WorkPieceView(CanvasElement):
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)
 
-        # Draw Ops Surfaces (hide during simulation mode)
+        # Draw Ops (hide during simulation mode)
         worksurface = cast("WorkSurface", self.canvas) if self.canvas else None
-        if (
-            not worksurface
-            or worksurface.is_simulation_mode()
-        ):
+        if not worksurface or worksurface.is_simulation_mode():
             return
 
+        if self.USE_NEW_RENDER_PATH:
+            self._draw_from_vertex_artifact(ctx)
+
+        # Draw intermediate chunk surfaces for progressive rendering,
+        # regardless of the rendering path. They are cleared when the final
+        # artifact is ready.
+        self._draw_intermediate_chunks(ctx)
+
+    def _draw_intermediate_chunks(self, ctx: cairo.Context):
+        """Draws the old-style rasterized chunk surfaces."""
         # Draw each ops surface that is visible.
         self._resolve_colors_if_needed()
         for step_uid, surface_tuple in self._ops_surfaces.items():
