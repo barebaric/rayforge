@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def _instantiate_transformers_from_step(step: Step) -> List[OpsTransformer]:
     """Helper to create transformer instances from a step's config."""
     transformers: List[OpsTransformer] = []
-    for t_dict in step.post_step_transformers_dicts:
+    for t_dict in step.per_step_transformers_dicts:
         if not t_dict.get("enabled", True):
             continue
         cls_name = t_dict.get("name")
@@ -235,9 +235,9 @@ async def assemble_final_job_ops(
                 )
                 step_combined_ops += clipped_ops
 
-            # Apply post-step transformers to the combined ops for this step
-            post_transformers = _instantiate_transformers_from_step(step)
-            for transformer in post_transformers:
+            # Apply per-step transformers to the combined ops for this step
+            per_step_transformers = _instantiate_transformers_from_step(step)
+            for transformer in per_step_transformers:
                 if context:
                     context.set_message(
                         _("Applying '{transformer}' to '{step}'").format(

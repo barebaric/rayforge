@@ -36,7 +36,8 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
             title: The title for the preferences group.
             target_dict: The dictionary from the Step model (e.g.,
                 step.opsproducer_dict or an item from
-                step.opstransformers_dicts) that this widget will modify.
+                step.per_workpiece_transformers_dicts) that this widget
+                will modify.
             page: The parent Adw.PreferencesPage to which conditional groups
                   can be added or removed.
             step: The parent Step object, for context and signaling.

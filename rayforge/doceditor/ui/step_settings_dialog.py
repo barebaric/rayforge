@@ -222,8 +222,8 @@ class StepSettingsDialog(Adw.Window):
         )
 
         # 3. Path Post-Processing Transformers
-        if self.step.opstransformers_dicts:
-            for t_dict in self.step.opstransformers_dicts:
+        if self.step.per_workpiece_transformers_dicts:
+            for t_dict in self.step.per_workpiece_transformers_dicts:
                 transformer_name = t_dict.get("name")
                 if transformer_name:
                     WidgetClass = WIDGET_REGISTRY.get(transformer_name)
@@ -239,8 +239,8 @@ class StepSettingsDialog(Adw.Window):
                         page.add(widget)
 
         # 4. Post-Step (Assembly) Transformers
-        if self.step.post_step_transformers_dicts:
-            for t_dict in self.step.post_step_transformers_dicts:
+        if self.step.per_step_transformers_dicts:
+            for t_dict in self.step.per_step_transformers_dicts:
                 transformer_name = t_dict.get("name")
                 if transformer_name:
                     WidgetClass = WIDGET_REGISTRY.get(transformer_name)

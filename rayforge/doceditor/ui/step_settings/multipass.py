@@ -79,7 +79,7 @@ class MultiPassSettingsWidget(StepComponentSettingsWidget):
             key="passes",
             new_value=new_value,
             name=_("Change number of passes"),
-            on_change_callback=self.step.post_step_transformer_changed.send,
+            on_change_callback=self.step.per_step_transformer_changed.send,
         )
         self.history_manager.execute(command)
 
@@ -93,6 +93,6 @@ class MultiPassSettingsWidget(StepComponentSettingsWidget):
             key="z_step_down",
             new_value=new_value,
             name=_("Change Z Step-Down"),
-            on_change_callback=self.step.post_step_transformer_changed.send,
+            on_change_callback=self.step.per_step_transformer_changed.send,
         )
         self.history_manager.execute(command)

@@ -34,7 +34,7 @@ class Workflow(DocItem):
             name: The user-facing name for the work plan.
         """
         super().__init__(name=name)
-        self.post_step_transformer_changed = Signal()
+        self.per_step_transformer_changed = Signal()
 
     def to_dict(self) -> Dict:
         """Serializes the workflow and its children to a dictionary."""
@@ -55,39 +55,39 @@ class Workflow(DocItem):
         """Allows iteration over the work steps."""
         return iter(self.steps)
 
-    def _on_post_step_transformer_changed(self, step: Step):
+    def _on_per_step_transformer_changed(self, step: Step):
         """
-        Handles changes to post-step transformers from a child step and
+        Handles changes to per-step transformers from a child step and
         bubbles the signal up.
         """
-        self.post_step_transformer_changed.send(self)
+        self.per_step_transformer_changed.send(self)
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
         if isinstance(child, Step):
-            child.post_step_transformer_changed.connect(
-                self._on_post_step_transformer_changed
+            child.per_step_transformer_changed.connect(
+                self._on_per_step_transformer_changed
             )
         super().add_child(child, index)
         return child
 
     def remove_child(self, child: DocItem):
         if isinstance(child, Step):
-            child.post_step_transformer_changed.disconnect(
-                self._on_post_step_transformer_changed
+            child.per_step_transformer_changed.disconnect(
+                self._on_per_step_transformer_changed
             )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):
         old_steps = self.steps
         for step in old_steps:
-            step.post_step_transformer_changed.disconnect(
-                self._on_post_step_transformer_changed
+            step.per_step_transformer_changed.disconnect(
+                self._on_per_step_transformer_changed
             )
 
         new_steps = [c for c in new_children if isinstance(c, Step)]
         for step in new_steps:
-            step.post_step_transformer_changed.connect(
-                self._on_post_step_transformer_changed
+            step.per_step_transformer_changed.connect(
+                self._on_per_step_transformer_changed
             )
 
         super().set_children(new_children)

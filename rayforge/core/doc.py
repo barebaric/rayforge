@@ -173,14 +173,14 @@ class Doc(DocItem):
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
-    def _on_layer_post_transformer_changed(self, sender):
+    def _on_layer_per_step_transformer_changed(self, sender):
         """Special-case bubbling for a non-standard signal."""
         self.job_assembly_invalidated.send(self)
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
         if isinstance(child, Layer):
-            child.post_step_transformer_changed.connect(
-                self._on_layer_post_transformer_changed
+            child.per_step_transformer_changed.connect(
+                self._on_layer_per_step_transformer_changed
             )
         super().add_child(child, index)
         return child
@@ -188,8 +188,8 @@ class Doc(DocItem):
     def remove_child(self, child: DocItem):
         if isinstance(child, Layer):
             if child.workflow:
-                child.post_step_transformer_changed.disconnect(
-                    self._on_layer_post_transformer_changed
+                child.per_step_transformer_changed.disconnect(
+                    self._on_layer_per_step_transformer_changed
                 )
         super().remove_child(child)
 
@@ -200,14 +200,14 @@ class Doc(DocItem):
         for layer in old_layers:
             # Ensure the layer has a workflow before disconnecting
             if layer.workflow:
-                layer.post_step_transformer_changed.disconnect(
-                    self._on_layer_post_transformer_changed
+                layer.per_step_transformer_changed.disconnect(
+                    self._on_layer_per_step_transformer_changed
                 )
 
         new_layers = [c for c in new_children_list if isinstance(c, Layer)]
         for layer in new_layers:
-            layer.post_step_transformer_changed.connect(
-                self._on_layer_post_transformer_changed
+            layer.per_step_transformer_changed.connect(
+                self._on_layer_per_step_transformer_changed
             )
         super().set_children(new_children_list)
 

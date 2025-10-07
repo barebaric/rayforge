@@ -52,7 +52,7 @@ class Layer(DocItem):
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
-        self.post_step_transformer_changed = Signal()
+        self.per_step_transformer_changed = Signal()
 
         # A new layer gets a workflow automatically.
         workflow = Workflow(f"{name} Workflow")
@@ -127,11 +127,11 @@ class Layer(DocItem):
         """
         Bubbles up the post_transformer_changed signal from the workflow.
         """
-        self.post_step_transformer_changed.send(self)
+        self.per_step_transformer_changed.send(self)
 
     def add_child(self, child: T, index: Optional[int] = None) -> T:
         if isinstance(child, Workflow):
-            child.post_step_transformer_changed.connect(
+            child.per_step_transformer_changed.connect(
                 self._on_workflow_post_transformer_changed
             )
         super().add_child(child, index)
@@ -142,7 +142,7 @@ class Layer(DocItem):
             # Check if the workflow actually exists before trying to disconnect
             wf = self.workflow
             if wf and wf is child:
-                wf.post_step_transformer_changed.disconnect(
+                wf.per_step_transformer_changed.disconnect(
                     self._on_workflow_post_transformer_changed
                 )
         super().remove_child(child)
@@ -150,14 +150,14 @@ class Layer(DocItem):
     def set_children(self, new_children: Iterable[DocItem]):
         # Disconnect any existing workflow signal handlers
         if self.workflow:
-            self.workflow.post_step_transformer_changed.disconnect(
+            self.workflow.per_step_transformer_changed.disconnect(
                 self._on_workflow_post_transformer_changed
             )
 
         # Connect to the new ones
         for child in new_children:
             if isinstance(child, Workflow):
-                child.post_step_transformer_changed.connect(
+                child.per_step_transformer_changed.connect(
                     self._on_workflow_post_transformer_changed
                 )
 

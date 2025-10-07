@@ -34,15 +34,15 @@ def create_contour_step(
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
-    step.opstransformers_dicts = [
+    step.per_workpiece_transformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
     ]
     if optimize:
-        step.opstransformers_dicts.append(
+        step.per_workpiece_transformers_dicts.append(
             Optimize().to_dict(),
         )
-    step.post_step_transformers_dicts = [
+    step.per_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
@@ -63,11 +63,11 @@ def create_raster_step(name: Optional[str] = None) -> Step:
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
-    step.opstransformers_dicts = [
+    step.per_workpiece_transformers_dicts = [
         OverscanTransformer().to_dict(),
         Optimize().to_dict(),
     ]
-    step.post_step_transformers_dicts = [
+    step.per_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.max_cut_speed = config.config.machine.max_cut_speed
@@ -87,11 +87,11 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
-    step.opstransformers_dicts = [
+    step.per_workpiece_transformers_dicts = [
         OverscanTransformer().to_dict(),
         Optimize().to_dict(),
     ]
-    step.post_step_transformers_dicts = [
+    step.per_step_transformers_dicts = [
         # MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
     ]
     step.max_cut_speed = config.config.machine.max_cut_speed
@@ -111,12 +111,12 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
-    step.opstransformers_dicts = [
+    step.per_workpiece_transformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
         Optimize().to_dict(),
     ]
-    step.post_step_transformers_dicts = [
+    step.per_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
@@ -135,11 +135,11 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     step.opsproducer_dict = FrameProducer().to_dict()
     # FrameProducer does not use image data, so no modifiers are needed.
     step.modifiers_dicts = []
-    step.opstransformers_dicts = [
+    step.per_workpiece_transformers_dicts = [
         TabOpsTransformer().to_dict(),
         Optimize().to_dict(),
     ]
-    step.post_step_transformers_dicts = [
+    step.per_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
@@ -159,9 +159,9 @@ def create_material_test_step(name: Optional[str] = None) -> Step:
     # Material test doesn't use image modifiers
     step.modifiers_dicts = []
     # No transformers - ops are already optimally ordered
-    step.opstransformers_dicts = []
+    step.per_workpiece_transformers_dicts = []
     # No post-step transformers - we don't want path optimization
-    step.post_step_transformers_dicts = []
+    step.per_step_transformers_dicts = []
     step.selected_laser_uid = config.config.machine.get_default_head().uid
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed

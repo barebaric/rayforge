@@ -75,7 +75,7 @@ async def test_generate_job_ops_assembles_correctly(
 
     # The new way to specify passes is via a post-assembly transformer
     multi_pass_transformer = MultiPassTransformer(passes=2)
-    step.post_step_transformers_dicts = [multi_pass_transformer.to_dict()]
+    step.per_step_transformers_dicts = [multi_pass_transformer.to_dict()]
 
     layer.workflow.add_step(step)
 

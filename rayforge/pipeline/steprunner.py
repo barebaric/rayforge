@@ -15,7 +15,7 @@ def run_step_in_subprocess(
     workpiece_dict: dict[str, Any],
     opsproducer_dict: dict[str, Any],
     modifiers_dict: List[dict],
-    opstransformers_dict: List[dict],
+    per_workpiece_transformers_dicts: List[dict],
     laser_dict: dict[str, Any],
     settings: dict,
     generation_id: int,
@@ -54,7 +54,7 @@ def run_step_in_subprocess(
     modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [
-        OpsTransformer.from_dict(m) for m in opstransformers_dict
+        OpsTransformer.from_dict(m) for m in per_workpiece_transformers_dicts
     ]
     laser = Laser.from_dict(laser_dict)
     workpiece = WorkPiece.from_dict(workpiece_dict)

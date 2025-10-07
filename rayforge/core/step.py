@@ -36,18 +36,19 @@ class Step(DocItem, ABC):
         self.selected_laser_uid: Optional[str] = None
 
         # Configuration for the pipeline, stored as dictionaries.
-        # - ops-transformers are used per single workpiece.
-        # - post-step transformers are applied on the combined ops
-        #   of all workpieces of this step.
+        # - `per_workpiece_transformers` run in the background on a single
+        #   workpiece before caching.
+        # - `per_step_transformers` run on the combined ops of all workpieces
+        #   in a step during final job assembly.
         self.modifiers_dicts: List[Dict[str, Any]] = []
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
-        self.opstransformers_dicts: List[Dict[str, Any]] = []
-        self.post_step_transformers_dicts: List[Dict[str, Any]] = []
+        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
+        self.per_step_transformers_dicts: List[Dict[str, Any]] = []
 
         self.pixels_per_mm = 50, 50
 
         # Signals for notifying of model changes
-        self.post_step_transformer_changed = Signal()
+        self.per_step_transformer_changed = Signal()
         self.visibility_changed = Signal()
 
         # Default machine-dependent values. These will be overwritten by
@@ -73,8 +74,10 @@ class Step(DocItem, ABC):
             "selected_laser_uid": self.selected_laser_uid,
             "modifiers_dicts": self.modifiers_dicts,
             "opsproducer_dict": self.opsproducer_dict,
-            "opstransformers_dicts": self.opstransformers_dicts,
-            "post_step_transformers_dicts": self.post_step_transformers_dicts,
+            "per_workpiece_transformers_dicts": (
+                self.per_workpiece_transformers_dicts
+            ),
+            "per_step_transformers_dicts": self.per_step_transformers_dicts,
             "pixels_per_mm": self.pixels_per_mm,
             "power": self.power,
             "max_power": self.max_power,
@@ -97,10 +100,10 @@ class Step(DocItem, ABC):
         step.selected_laser_uid = data.get("selected_laser_uid")
         step.modifiers_dicts = data["modifiers_dicts"]
         step.opsproducer_dict = data["opsproducer_dict"]
-        step.opstransformers_dicts = data["opstransformers_dicts"]
-        step.post_step_transformers_dicts = data[
-            "post_step_transformers_dicts"
+        step.per_workpiece_transformers_dicts = data[
+            "per_workpiece_transformers_dicts"
         ]
+        step.per_step_transformers_dicts = data["per_step_transformers_dicts"]
         step.pixels_per_mm = data.get("pixels_per_mm", (50, 50))
         step.power = data.get("power", 1.0)
         step.max_power = data.get("max_power", 1000)

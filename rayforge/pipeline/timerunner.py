@@ -16,7 +16,7 @@ def run_time_estimation_in_subprocess(
     proxy: ExecutionContextProxy,
     artifact_handle_dict: Dict[str, Any],
     target_size_mm: Tuple[float, float],
-    post_step_transformers_dicts: List[Dict[str, Any]],
+    per_step_transformers_dicts: List[Dict[str, Any]],
     cut_speed: float,
     travel_speed: float,
     acceleration: float,
@@ -34,8 +34,8 @@ def run_time_estimation_in_subprocess(
         artifact_handle_dict: A dictionary representation of the ArtifactHandle
                               for the base geometry.
         target_size_mm: The final (width, height) in mm to scale the Ops to.
-        post_step_transformers_dicts: A list of dictionaries defining the
-                                      post-step transformers to apply.
+        per_step_transformers_dicts: A list of dictionaries defining the
+                                      per-step transformers to apply.
         cut_speed: The machine's maximum cut speed in mm/min.
         travel_speed: The machine's maximum travel speed in mm/min.
         acceleration: The machine's acceleration in mm/s^2.
@@ -70,9 +70,9 @@ def run_time_estimation_in_subprocess(
             scale_y = target_h / source_h
             ops.scale(scale_x, scale_y)
 
-    # --- 3. Apply post-step transformers ---
+    # --- 3. Apply per-step transformers ---
     transformers: List[OpsTransformer] = []
-    for t_dict in post_step_transformers_dicts:
+    for t_dict in per_step_transformers_dicts:
         if not t_dict.get("enabled", True):
             continue
         cls_name = t_dict.get("name")
