@@ -15,7 +15,7 @@ from ...core.ops import (
     Ops,
     SectionType,
 )
-from ..artifact.vector import VectorArtifact
+from ..artifact.base import Artifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
 
@@ -99,7 +99,7 @@ class MaterialTestGridProducer(OpsProducer):
         workpiece: Optional[WorkPiece] = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> VectorArtifact:
+    ) -> Artifact:
         """
         Generates the material test ops.
 
@@ -182,7 +182,7 @@ class MaterialTestGridProducer(OpsProducer):
             )
         )
 
-        return VectorArtifact(
+        return Artifact(
             ops=ops,
             is_scalable=True,  # Can be scaled mathematically
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

@@ -12,7 +12,7 @@ the final job assembler.
 from __future__ import annotations
 import logging
 import math
-from typing import Dict, Optional, Tuple, Union, TYPE_CHECKING, cast
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 from copy import deepcopy
 from blinker import Signal
 from contextlib import contextmanager
@@ -26,8 +26,7 @@ from ..core.matrix import Matrix
 from .steprunner import run_step_in_subprocess
 from .timerunner import run_time_estimation_in_subprocess
 from ..core.group import Group
-from .artifact.vector import VectorArtifact
-from .artifact.hybrid import HybridRasterArtifact
+from .artifact.base import Artifact
 from .artifact.handle import ArtifactHandle
 from .artifact.store import ArtifactStore
 
@@ -69,7 +68,7 @@ class OpsGenerator:
 
     # Type alias for the structure of the operations cache.
     # Key: (step_uid, workpiece_uid)
-    # Value: ArtifactHandle or HybridRasterArtifact
+    # Value: ArtifactHandle
     OpsCacheType = Dict[
         Tuple[str, str],
         Optional[ArtifactHandle],
@@ -976,7 +975,7 @@ class OpsGenerator:
         artifact = ArtifactStore.get(handle)
         ops = deepcopy(artifact.ops)
 
-        if isinstance(artifact, VectorArtifact) and artifact.is_scalable:
+        if artifact.is_scalable:
             self._scale_ops_to_final_size(ops, artifact, final_size)
 
         scanline_count = sum(
@@ -990,15 +989,14 @@ class OpsGenerator:
 
     def get_artifact(
         self, step: Step, workpiece: WorkPiece
-    ) -> Optional[Union[VectorArtifact, HybridRasterArtifact]]:
+    ) -> Optional[Artifact]:
         """
         Retrieves the complete artifact from the cache on-demand.
 
         This method retrieves the `ArtifactHandle` from the cache and uses the
-        `ArtifactStore` to reconstruct the full artifact object (e.g.,
-        `VectorArtifact` or `HybridRasterArtifact`) from shared memory. This
-        is useful for components that need access to additional data in the
-        artifact, such as texture data for raster rendering.
+        `ArtifactStore` to reconstruct the full artifact object from shared
+        memory. This is useful for components that need access to additional
+        data in the artifact, such as texture data for raster rendering.
 
         Args:
             step: The Step for which to retrieve the artifact.
@@ -1034,16 +1032,13 @@ class OpsGenerator:
             f"Scalable: {handle.is_scalable}."
         )
         # Return a deep copy to prevent consumers from mutating the cache.
-        artifact = cast(
-            Union[VectorArtifact, HybridRasterArtifact],
-            ArtifactStore.get(handle),
-        )
+        artifact = ArtifactStore.get(handle)
         return deepcopy(artifact)
 
     def _scale_ops_to_final_size(
         self,
         ops: Ops,
-        artifact: VectorArtifact,
+        artifact: Artifact,
         final_size_mm: Tuple[float, float],
     ):
         """

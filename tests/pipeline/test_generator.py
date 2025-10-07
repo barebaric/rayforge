@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from unittest.mock import MagicMock
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
@@ -11,7 +12,7 @@ from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
-from rayforge.pipeline.artifact.vector import VectorArtifact
+from rayforge.pipeline.artifact.base import Artifact
 from rayforge.pipeline.artifact.store import ArtifactStore
 
 # Import the new subprocess functions to check against them
@@ -144,12 +145,21 @@ class TestOpsGenerator:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(1, 1, 0)
 
-        expected_artifact = VectorArtifact(
+        # All artifacts now contain vertex data
+        vertex_data = {
+            "powered_vertices": np.array([[0, 0, 0], [1, 1, 0]]),
+            "powered_colors": np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
+            "travel_vertices": np.array([]),
+            "zero_power_vertices": np.array([]),
+        }
+
+        expected_artifact = Artifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            vertex_data=vertex_data,
         )
         handle = ArtifactStore.put(expected_artifact)
         expected_result_dict = handle.to_dict()
@@ -208,7 +218,7 @@ class TestOpsGenerator:
 
         # Simulate completion of the initial Ops generation
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = VectorArtifact(
+        artifact = Artifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -249,7 +259,7 @@ class TestOpsGenerator:
 
         # Simulate the completion of the initial generation task
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = VectorArtifact(
+        artifact = Artifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -295,7 +305,7 @@ class TestOpsGenerator:
 
         # Simulate the completion of the initial generation task
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = VectorArtifact(
+        artifact = Artifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -341,7 +351,7 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
-        initial_artifact = VectorArtifact(
+        initial_artifact = Artifact(
             ops=Ops(),
             is_scalable=False,  # Not scalable to ensure size change matters
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

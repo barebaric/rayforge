@@ -5,7 +5,7 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 from ..coord import CoordinateSystem
-from ..artifact.hybrid import HybridRasterArtifact
+from ..artifact.base import Artifact
 from .base import OpsProducer
 from ...core.ops import (
     Ops,
@@ -60,7 +60,7 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> HybridRasterArtifact:
+    ) -> Artifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
@@ -147,15 +147,28 @@ class DepthEngraver(OpsProducer):
         dimensions_mm = (width_px / px_per_mm_x, height_px / px_per_mm_y)
         position_mm = (0.0, y_offset_mm)
 
-        return HybridRasterArtifact(
-            power_texture_data=power_texture_data,
-            dimensions_mm=dimensions_mm,
-            position_mm=position_mm,
+        # Always include the (potentially empty) vertex data.
+        vertex_data = {
+            "powered_vertices": np.empty((0, 3), dtype=np.float32),
+            "powered_colors": np.empty((0, 4), dtype=np.float32),
+            "travel_vertices": np.empty((0, 3), dtype=np.float32),
+            "zero_power_vertices": np.empty((0, 3), dtype=np.float32),
+        }
+
+        raster_data = {
+            "power_texture_data": power_texture_data,
+            "dimensions_mm": dimensions_mm,
+            "position_mm": position_mm,
+        }
+
+        return Artifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             source_dimensions=(width_px, height_px),
             generation_size=workpiece.size,
+            vertex_data=vertex_data,
+            raster_data=raster_data,
         )
 
     def _run_power_modulation(

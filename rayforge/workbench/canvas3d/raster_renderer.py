@@ -3,13 +3,10 @@ A renderer for visualizing raster artifacts using GPU texture rendering.
 """
 
 import logging
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import List, Dict, Any
 import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
-
-if TYPE_CHECKING:
-    from ...pipeline.producer.base import HybridRasterArtifact
 
 logger = logging.getLogger(__name__)
 
@@ -151,10 +148,14 @@ class RasterArtifactRenderer(BaseRenderer):
         self.instances.clear()
 
     def add_instance(
-        self, artifact: "HybridRasterArtifact", transform_matrix: np.ndarray
+        self, raster_data: Dict[str, Any], transform_matrix: np.ndarray
     ):
         """Adds a raster artifact to be rendered in the next frame."""
-        if not self.is_initialized:
+        if not self.is_initialized or not raster_data:
+            return
+
+        power_texture_data = raster_data.get("power_texture_data")
+        if power_texture_data is None:
             return
 
         texture_id = GL.glGenTextures(1)
@@ -172,7 +173,7 @@ class RasterArtifactRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
         )
 
-        height, width = artifact.power_texture_data.shape
+        height, width = power_texture_data.shape
         # Tell OpenGL that our data is tightly packed (1-byte alignment).
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
         GL.glTexImage2D(
@@ -184,7 +185,7 @@ class RasterArtifactRenderer(BaseRenderer):
             0,
             GL.GL_RED,
             GL.GL_UNSIGNED_BYTE,
-            artifact.power_texture_data,
+            power_texture_data,
         )
         # Restore the default alignment.
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
@@ -193,10 +194,10 @@ class RasterArtifactRenderer(BaseRenderer):
         # This local model matrix scales the unit quad to the artifact's
         # physical size and positions it within its local workpiece space.
         local_model_matrix = np.identity(4, dtype=np.float32)
-        local_model_matrix[0, 3] = artifact.position_mm[0]
-        local_model_matrix[1, 3] = artifact.position_mm[1]
-        local_model_matrix[0, 0] = artifact.dimensions_mm[0]
-        local_model_matrix[1, 1] = artifact.dimensions_mm[1]
+        local_model_matrix[0, 3] = raster_data["position_mm"][0]
+        local_model_matrix[1, 3] = raster_data["position_mm"][1]
+        local_model_matrix[0, 0] = raster_data["dimensions_mm"][0]
+        local_model_matrix[1, 1] = raster_data["dimensions_mm"][1]
 
         # The final model matrix combines the local geometry with the
         # workpiece's world transform.

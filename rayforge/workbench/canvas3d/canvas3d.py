@@ -15,8 +15,6 @@ from ...pipeline.scene_assembler import (
     generate_scene_description,
 )
 from ...pipeline.generator import OpsGenerator
-from ...pipeline.artifact.hybrid import HybridRasterArtifact
-from ...pipeline.artifact.vertex import VertexArtifact
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
@@ -82,23 +80,24 @@ def prepare_scene_vertices_async(
 
         artifact = ops_generator.get_artifact(step, workpiece)
 
-        if not artifact or not isinstance(artifact, VertexArtifact):
-            logger.debug(
-                "Artifact is missing or is not a vertex type. "
+        if not artifact or not artifact.vertex_data:
+            logger.warning(
+                "Artifact is missing or has no vertex data. "
                 "Skipping vector processing."
             )
             continue
 
+        vertex_data = artifact.vertex_data
         # 1. Get pre-computed, local-space vertices from the artifact.
-        p_verts = artifact.powered_vertices
-        p_colors_std = artifact.powered_colors
-        t_verts = artifact.travel_vertices
-        zp_verts = artifact.zero_power_vertices
+        p_verts = vertex_data["powered_vertices"]
+        p_colors_std = vertex_data["powered_colors"]
+        t_verts = vertex_data["travel_vertices"]
+        zp_verts = vertex_data["zero_power_vertices"]
 
         # If the artifact is a hybrid raster, its powered moves are visualized
         # by the RasterArtifactRenderer. We only process its non-powered moves
         # here to avoid double-drawing.
-        if isinstance(artifact, HybridRasterArtifact):
+        if artifact.raster_data:
             p_verts = np.array([], dtype=np.float32)
             p_colors_std = np.array([], dtype=np.float32)
 
@@ -889,7 +888,7 @@ class Canvas3D(Gtk.GLArea):
         # 2. Handle raster instances immediately on the main thread (fast)
         self.raster_renderer.clear()
         for item in scene_description.render_items:
-            if item.raster_artifact:
+            if item.raster_data:
                 world_transform_matrix = Matrix(item.world_transform)
 
                 # Decompose the full world transform to separate placement from
@@ -910,7 +909,7 @@ class Canvas3D(Gtk.GLArea):
                 # scale based on the artifact's dimensions_mm. We only provide
                 # it with the pure placement matrix.
                 self.raster_renderer.add_instance(
-                    item.raster_artifact, placement_transform.to_4x4_numpy()
+                    item.raster_data, placement_transform.to_4x4_numpy()
                 )
 
         # 3. Schedule the expensive vector preparation for a background thread

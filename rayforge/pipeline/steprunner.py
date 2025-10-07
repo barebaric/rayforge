@@ -1,11 +1,9 @@
-from typing import Any, List, Tuple, Iterator, Optional, Dict, Union
+from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
 from ..shared.tasker.proxy import ExecutionContextProxy
 from .artifact.store import ArtifactStore
 from .artifact.base import Artifact
-from .artifact.hybrid import HybridRasterArtifact
 from ..pipeline.encoder.vertexencoder import VertexEncoder
-from .artifact.vertex import VertexArtifact
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -68,7 +66,7 @@ def run_step_in_subprocess(
         *,
         y_offset_mm: float = 0.0,
         step_settings: Dict[str, Any],
-    ) -> Union[Artifact, HybridRasterArtifact]:
+    ) -> Artifact:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
         vector data.
@@ -105,9 +103,7 @@ def run_step_in_subprocess(
             y_offset_mm=y_offset_mm,
         )
 
-    def _execute_vector() -> Iterator[
-        Tuple[Union[Artifact, HybridRasterArtifact], float]
-    ]:
+    def _execute_vector() -> Iterator[Tuple[Artifact, float]]:
         """
         Handles Ops generation for scalable (vector) operations.
 
@@ -188,9 +184,7 @@ def run_step_in_subprocess(
         yield artifact, 1.0
         surface.flush()
 
-    def _execute_raster() -> Iterator[
-        Tuple[Union[Artifact, HybridRasterArtifact], float]
-    ]:
+    def _execute_raster() -> Iterator[Tuple[Artifact, float]]:
         """
         Handles Ops generation for non-scalable (raster) operations.
 
@@ -289,7 +283,7 @@ def run_step_in_subprocess(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
     initial_ops = _create_initial_ops()
-    final_artifact: Optional[Union[Artifact, HybridRasterArtifact]] = None
+    final_artifact: Optional[Artifact] = None
 
     # This will hold the assembled texture for hybrid raster artifacts
     full_power_texture: Optional[np.ndarray] = None
@@ -316,9 +310,7 @@ def run_step_in_subprocess(
             final_artifact.ops = new_ops
 
             # If dealing with a chunked raster, prepare the full texture buffer
-            if not is_vector and isinstance(
-                final_artifact, HybridRasterArtifact
-            ):
+            if not is_vector and final_artifact.raster_data:
                 size_mm = workpiece.size
                 px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
                 full_width_px = int(size_mm[0] * px_per_mm_x)
@@ -331,15 +323,20 @@ def run_step_in_subprocess(
             final_artifact.ops.extend(chunk_artifact.ops)
 
         # For all chunks, paint their texture into the full buffer
-        if full_power_texture is not None and isinstance(
-            chunk_artifact, HybridRasterArtifact
+        if (
+            full_power_texture is not None
+            and chunk_artifact.raster_data
+            and "power_texture_data" in chunk_artifact.raster_data
         ):
             px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-            chunk_h_px, chunk_w_px = chunk_artifact.power_texture_data.shape
+            texture_data = chunk_artifact.raster_data["power_texture_data"]
+            chunk_h_px, chunk_w_px = texture_data.shape
 
             # y-offset from top in mm, convert to pixels
             y_start_px = int(
-                round(chunk_artifact.position_mm[1] * px_per_mm_y)
+                round(
+                    chunk_artifact.raster_data["position_mm"][1] * px_per_mm_y
+                )
             )
             x_start_px = 0  # Chunks are full width
 
@@ -353,7 +350,7 @@ def run_step_in_subprocess(
             ):
                 full_power_texture[
                     y_start_px:y_end_px, x_start_px:x_end_px
-                ] = chunk_artifact.power_texture_data
+                ] = texture_data
             else:
                 logger.warning(
                     f"Chunk texture out of bounds. Target: "
@@ -383,13 +380,11 @@ def run_step_in_subprocess(
 
     # If we aggregated a hybrid raster, update the final artifact with the
     # complete data
-    if full_power_texture is not None and isinstance(
-        final_artifact, HybridRasterArtifact
-    ):
-        final_artifact.power_texture_data = full_power_texture
+    if full_power_texture is not None and final_artifact.raster_data:
+        final_artifact.raster_data["power_texture_data"] = full_power_texture
         # The final artifact represents the whole workpiece, at its origin
-        final_artifact.position_mm = (0.0, 0.0)
-        final_artifact.dimensions_mm = workpiece.size
+        final_artifact.raster_data["position_mm"] = (0.0, 0.0)
+        final_artifact.raster_data["dimensions_mm"] = workpiece.size
         # The source dimensions should also reflect the full pixel buffer
         final_artifact.source_dimensions = (
             full_power_texture.shape[1],
@@ -446,54 +441,25 @@ def run_step_in_subprocess(
         final_artifact.ops.disable_air_assist()
 
     # After all transformations, encode the final Ops into vertex data and
-    # create the final artifact type (`VertexArtifact` or an augmented
-    # `HybridRasterArtifact`) for storage.
-
+    # create the final artifact for storage.
     logger.debug("Encoding final ops into vertex data for rendering.")
     encoder = VertexEncoder()
     vertex_data = encoder.encode(final_artifact.ops)
 
-    if isinstance(final_artifact, HybridRasterArtifact):
-        final_artifact_to_store = HybridRasterArtifact(
-            # Existing HybridRasterArtifact fields
-            power_texture_data=final_artifact.power_texture_data,
-            dimensions_mm=final_artifact.dimensions_mm,
-            position_mm=final_artifact.position_mm,
-            # Base Artifact fields
-            ops=final_artifact.ops,
-            is_scalable=final_artifact.is_scalable,
-            source_coordinate_system=final_artifact.source_coordinate_system,
-            source_dimensions=final_artifact.source_dimensions,
-            # New vertex data fields
-            powered_vertices=vertex_data["powered_vertices"],
-            powered_colors=vertex_data["powered_colors"],
-            travel_vertices=vertex_data["travel_vertices"],
-            zero_power_vertices=vertex_data["zero_power_vertices"],
-        )
-    else:
-        # The original artifact was a VectorArtifact; we now replace it with
-        # a VertexArtifact containing the final processed data.
-        final_artifact_to_store = VertexArtifact(
-            # Base Artifact fields
-            ops=final_artifact.ops,
-            is_scalable=final_artifact.is_scalable,
-            source_coordinate_system=final_artifact.source_coordinate_system,
-            source_dimensions=final_artifact.source_dimensions,
-            # New vertex data fields
-            powered_vertices=vertex_data["powered_vertices"],
-            powered_colors=vertex_data["powered_colors"],
-            travel_vertices=vertex_data["travel_vertices"],
-            zero_power_vertices=vertex_data["zero_power_vertices"],
-        )
+    final_artifact_to_store = Artifact(
+        ops=final_artifact.ops,
+        is_scalable=final_artifact.is_scalable,
+        source_coordinate_system=final_artifact.source_coordinate_system,
+        source_dimensions=final_artifact.source_dimensions,
+        generation_size=generation_size,
+        vertex_data=vertex_data,
+        raster_data=final_artifact.raster_data,
+    )
 
     proxy.set_message(
         _("Finalizing '{workpiece}'").format(workpiece=workpiece.name)
     )
     proxy.set_progress(1.0)
-
-    # Attach the workpiece size for which this artifact was generated. This
-    # is crucial for the generator's cache invalidation logic.
-    final_artifact_to_store.generation_size = generation_size
 
     handle = ArtifactStore.put(final_artifact_to_store)
     return handle.to_dict(), generation_id

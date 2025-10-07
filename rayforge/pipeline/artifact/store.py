@@ -9,9 +9,6 @@ from ...core.ops import Ops
 from ..coord import CoordinateSystem
 from .base import Artifact
 from .handle import ArtifactHandle
-from .hybrid import HybridRasterArtifact
-from .vector import VectorArtifact
-from .vertex import VertexArtifact
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +77,7 @@ class ArtifactStore:
         source_coord_system = artifact.source_coordinate_system
         handle = ArtifactHandle(
             shm_name=shm_name,
-            artifact_type=artifact.type,
+            artifact_type=artifact.artifact_type,
             is_scalable=artifact.is_scalable,
             source_coordinate_system_name=source_coord_system.name,
             source_dimensions=artifact.source_dimensions,
@@ -88,9 +85,9 @@ class ArtifactStore:
             array_metadata=array_metadata,
         )
 
-        if isinstance(artifact, HybridRasterArtifact):
-            handle.dimensions_mm = artifact.dimensions_mm
-            handle.position_mm = artifact.position_mm
+        if artifact.raster_data:
+            handle.dimensions_mm = artifact.raster_data.get("dimensions_mm")
+            handle.position_mm = artifact.raster_data.get("position_mm")
 
         return handle
 
@@ -156,15 +153,16 @@ class ArtifactStore:
         """
         arrays = artifact.ops.to_numpy_arrays()
 
-        if isinstance(artifact, HybridRasterArtifact):
-            arrays["power_texture_data"] = artifact.power_texture_data
+        if (
+            artifact.raster_data
+            and "power_texture_data" in artifact.raster_data
+        ):
+            arrays["power_texture_data"] = artifact.raster_data[
+                "power_texture_data"
+            ]
 
-        # Add vertex data if the artifact is a VertexArtifact or subclass
-        if isinstance(artifact, VertexArtifact):
-            arrays["powered_vertices"] = artifact.powered_vertices
-            arrays["powered_colors"] = artifact.powered_colors
-            arrays["travel_vertices"] = artifact.travel_vertices
-            arrays["zero_power_vertices"] = artifact.zero_power_vertices
+        if artifact.vertex_data:
+            arrays.update(artifact.vertex_data)
 
         total_bytes = sum(arr.nbytes for arr in arrays.values())
         return arrays, total_bytes
@@ -177,9 +175,6 @@ class ArtifactStore:
         Builds a full artifact object from a handle and a dictionary of
         NumPy array views. This is a pure function, making it easy to test.
         """
-        # When reconstructing Ops, the from_numpy_arrays method implicitly
-        # creates copies of the data by building new Python objects (tuples,
-        # bytearrays, etc.), so it is already safe.
         ops = Ops.from_numpy_arrays(arrays)
 
         common_args = {
@@ -192,39 +187,28 @@ class ArtifactStore:
             "generation_size": handle.generation_size,
         }
 
+        vertex_data = None
         if handle.artifact_type in ("vertex", "hybrid_raster"):
-            # For vertex-based artifacts, we copy the vertex data from the
-            # shared memory view into new, owned NumPy arrays.
-            vertex_args = {
+            vertex_data = {
                 "powered_vertices": arrays["powered_vertices"].copy(),
                 "powered_colors": arrays["powered_colors"].copy(),
                 "travel_vertices": arrays["travel_vertices"].copy(),
                 "zero_power_vertices": arrays["zero_power_vertices"].copy(),
             }
-            common_args.update(vertex_args)
 
+        raster_data = None
         if handle.artifact_type == "hybrid_raster":
             if handle.dimensions_mm is None or handle.position_mm is None:
                 raise ValueError(
                     "HybridRasterArtifact handle is missing required "
                     "dimensions_mm or position_mm metadata."
                 )
+            raster_data = {
+                "power_texture_data": arrays["power_texture_data"].copy(),
+                "dimensions_mm": handle.dimensions_mm,
+                "position_mm": handle.position_mm,
+            }
 
-            texture_copy = arrays["power_texture_data"].copy()
-
-            return HybridRasterArtifact(
-                power_texture_data=texture_copy,
-                dimensions_mm=handle.dimensions_mm,
-                position_mm=handle.position_mm,
-                **common_args,
-            )
-        elif handle.artifact_type == "vertex":
-            return VertexArtifact(**common_args)
-        elif handle.artifact_type == "vector":
-            # This is the legacy path for non-vertex artifacts
-            return VectorArtifact(**common_args)
-        else:
-            raise TypeError(
-                "Unknown artifact type for reconstruction: "
-                f"{handle.artifact_type}"
-            )
+        return Artifact(
+            **common_args, vertex_data=vertex_data, raster_data=raster_data
+        )

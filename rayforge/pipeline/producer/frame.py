@@ -7,7 +7,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
     SectionType,
 )
-from ..artifact.vector import VectorArtifact
+from ..artifact.base import Artifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
 
@@ -54,7 +54,7 @@ class FrameProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> VectorArtifact:
+    ) -> Artifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")
 
@@ -109,7 +109,7 @@ class FrameProducer(OpsProducer):
 
         # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
         #    final size, ready for positioning.
-        return VectorArtifact(
+        return Artifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

@@ -10,7 +10,7 @@ from ...core.ops import (
 )
 from ...image.hull import get_concave_hull
 from ...image.tracing import prepare_surface
-from ..artifact.vector import VectorArtifact
+from ..artifact.base import Artifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
 
@@ -60,7 +60,7 @@ class ShrinkWrapProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> VectorArtifact:
+    ) -> Artifact:
         if workpiece is None:
             raise ValueError(
                 "ShrinkWrapProducer requires a workpiece context."
@@ -119,7 +119,7 @@ class ShrinkWrapProducer(OpsProducer):
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
-        return VectorArtifact(
+        return Artifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

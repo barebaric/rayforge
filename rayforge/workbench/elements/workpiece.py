@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Union
+from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from concurrent.futures import Future
 import numpy as np
@@ -12,9 +12,7 @@ from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from .tab_handle import TabHandleElement
-from ...pipeline.artifact.vector import VectorArtifact
-from ...pipeline.artifact.vertex import VertexArtifact
-from ...pipeline.artifact.hybrid import HybridRasterArtifact
+from ...pipeline.artifact.base import Artifact
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
@@ -70,12 +68,7 @@ class WorkPieceView(CanvasElement):
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
         self._raster_textures: Dict[str, cairo.ImageSurface] = {}
         # Cached artifacts to avoid re-fetching from generator on every draw.
-        self._artifact_cache: Dict[
-            str,
-            Optional[
-                Union[VectorArtifact, VertexArtifact, HybridRasterArtifact]
-            ],
-        ] = {}
+        self._artifact_cache: Dict[str, Optional[Artifact]] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -804,7 +797,7 @@ class WorkPieceView(CanvasElement):
         show_travel = work_surface.show_travel_moves
 
         # --- Aggregate artifacts and draw raster components first ---
-        artifacts_to_draw = []
+        artifacts_to_draw: List[Artifact] = []
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
                 if not self._ops_visibility.get(step.uid, True):
@@ -816,12 +809,10 @@ class WorkPieceView(CanvasElement):
 
                 # Use the local cache instead of fetching from the generator.
                 artifact = self._artifact_cache.get(step.uid)
-                if isinstance(
-                    artifact, (VertexArtifact, HybridRasterArtifact)
-                ):
+                if artifact and artifact.vertex_data:
                     artifacts_to_draw.append(artifact)
 
-                    if isinstance(artifact, HybridRasterArtifact):
+                    if artifact.raster_data:
                         self._draw_raster_texture(ctx, step, artifact)
 
         if not artifacts_to_draw:
@@ -829,24 +820,24 @@ class WorkPieceView(CanvasElement):
 
         # --- Aggregate vector components from all artifacts ---
         all_powered_v = [
-            a.powered_vertices
+            a.vertex_data["powered_vertices"]
             for a in artifacts_to_draw
-            if a.powered_vertices.size > 0
+            if a.vertex_data and a.vertex_data["powered_vertices"].size > 0
         ]
         all_powered_c = [
-            a.powered_colors
+            a.vertex_data["powered_colors"]
             for a in artifacts_to_draw
-            if a.powered_colors.size > 0
+            if a.vertex_data and a.vertex_data["powered_colors"].size > 0
         ]
         all_travel_v = [
-            a.travel_vertices
+            a.vertex_data["travel_vertices"]
             for a in artifacts_to_draw
-            if a.travel_vertices.size > 0
+            if a.vertex_data and a.vertex_data["travel_vertices"].size > 0
         ]
         all_zero_power_v = [
-            a.zero_power_vertices
+            a.vertex_data["zero_power_vertices"]
             for a in artifacts_to_draw
-            if a.zero_power_vertices.size > 0
+            if a.vertex_data and a.vertex_data["zero_power_vertices"].size > 0
         ]
 
         # --- Draw all aggregated vector components ---
@@ -899,19 +890,16 @@ class WorkPieceView(CanvasElement):
         ctx.restore()
 
     def _draw_raster_texture(
-        self,
-        ctx: cairo.Context,
-        step: Step,
-        artifact: HybridRasterArtifact,
+        self, ctx: cairo.Context, step: Step, artifact: Artifact
     ):
         """Generates, caches, and draws the themed raster texture."""
-        if not self._color_set:
+        if not self._color_set or not artifact.raster_data:
             return
         world_w, world_h = self.data.size
 
         texture = self._raster_textures.get(step.uid)
-        if not texture and artifact.power_texture_data.size > 0:
-            power_data = artifact.power_texture_data
+        power_data = artifact.raster_data.get("power_texture_data")
+        if not texture and power_data is not None and power_data.size > 0:
             engrave_lut = self._color_set.get_lut("engrave")
             rgba_texture = engrave_lut[power_data]
 
@@ -941,8 +929,8 @@ class WorkPieceView(CanvasElement):
 
         if texture:
             ctx.save()
-            pos_mm = artifact.position_mm
-            dim_mm = artifact.dimensions_mm
+            pos_mm = artifact.raster_data["position_mm"]
+            dim_mm = artifact.raster_data["dimensions_mm"]
 
             # Context is 1x1 Y-UP space, origin at bottom-left of workpiece.
             # Convert all mm values to normalized coordinates first.

@@ -1,13 +1,11 @@
 import unittest
-from typing import cast
 import numpy as np
 from multiprocessing import shared_memory
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     ArtifactStore,
-    VectorArtifact,
-    HybridRasterArtifact,
+    Artifact,
 )
 
 
@@ -25,37 +23,58 @@ class TestArtifactStore(unittest.TestCase):
         for handle in self.handles_to_release:
             ArtifactStore.release(handle)
 
-    def _create_sample_vector_artifact(self) -> VectorArtifact:
-        """Helper to generate a consistent vector artifact for tests."""
+    def _create_sample_vertex_artifact(self) -> Artifact:
+        """Helper to generate a consistent vertex artifact for tests."""
         ops = Ops()
         ops.move_to(0, 0, 0)
         ops.line_to(10, 0, 0)
-        # Arc from (10,0) to (0,10) centered at (0,0).
-        # Center offset from start point (10,0) is (-10, 0).
         ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
-        return VectorArtifact(
+
+        vertex_data = {
+            "powered_vertices": np.array(
+                [[0, 0, 0], [10, 0, 0]], dtype=np.float32
+            ),
+            "powered_colors": np.array(
+                [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
+            ),
+            "travel_vertices": np.empty((0, 3), dtype=np.float32),
+            "zero_power_vertices": np.empty((0, 3), dtype=np.float32),
+        }
+
+        return Artifact(
             ops=ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(100, 100),
             generation_size=(50, 50),
+            vertex_data=vertex_data,
         )
 
-    def _create_sample_hybrid_artifact(self) -> HybridRasterArtifact:
+    def _create_sample_hybrid_artifact(self) -> Artifact:
         """Helper to generate a consistent hybrid artifact for tests."""
         ops = Ops()
         ops.move_to(0, 0, 0)
         ops.scan_to(10, 0, 0, power_values=bytearray(range(256)))
         texture = np.arange(10000, dtype=np.uint8).reshape((100, 100))
-        return HybridRasterArtifact(
+        raster_data = {
+            "power_texture_data": texture,
+            "dimensions_mm": (50.0, 50.0),
+            "position_mm": (5.0, 10.0),
+        }
+        vertex_data = {
+            "powered_vertices": np.empty((0, 3), dtype=np.float32),
+            "powered_colors": np.empty((0, 4), dtype=np.float32),
+            "travel_vertices": np.empty((0, 3), dtype=np.float32),
+            "zero_power_vertices": np.empty((0, 3), dtype=np.float32),
+        }
+        return Artifact(
             ops=ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-            power_texture_data=texture,
-            dimensions_mm=(50.0, 50.0),
-            position_mm=(5.0, 10.0),
             source_dimensions=(200, 200),
             generation_size=(50, 50),
+            vertex_data=vertex_data,
+            raster_data=raster_data,
         )
 
     def test_internal_conversion_round_trip(self):
@@ -65,7 +84,7 @@ class TestArtifactStore(unittest.TestCase):
         This validates the core serialization logic.
         """
         for artifact_factory in [
-            self._create_sample_vector_artifact,
+            self._create_sample_vertex_artifact,
             self._create_sample_hybrid_artifact,
         ]:
             with self.subTest(
@@ -90,17 +109,17 @@ class TestArtifactStore(unittest.TestCase):
                 )
 
                 # Verify equality
-                self.assertEqual(
+                self.assertDictEqual(
                     original_artifact.to_dict(),
                     reconstructed_artifact.to_dict(),
                 )
 
-    def test_put_get_release_vector_artifact(self):
+    def test_put_get_release_vertex_artifact(self):
         """
         Tests the full put -> get -> release lifecycle with a
-        VectorArtifact.
+        vertex-based Artifact.
         """
-        original_artifact = self._create_sample_vector_artifact()
+        original_artifact = self._create_sample_vertex_artifact()
 
         # 1. Put the artifact into shared memory
         handle = ArtifactStore.put(original_artifact)
@@ -110,7 +129,10 @@ class TestArtifactStore(unittest.TestCase):
         retrieved_artifact = ArtifactStore.get(handle)
 
         # 3. Verify the retrieved data
-        self.assertIsInstance(retrieved_artifact, VectorArtifact)
+        self.assertIsInstance(retrieved_artifact, Artifact)
+        self.assertEqual(retrieved_artifact.artifact_type, "vertex")
+        self.assertIsNotNone(retrieved_artifact.vertex_data)
+        self.assertIsNone(retrieved_artifact.raster_data)
         self.assertEqual(
             len(original_artifact.ops.commands),
             len(retrieved_artifact.ops.commands),
@@ -130,7 +152,7 @@ class TestArtifactStore(unittest.TestCase):
     def test_put_get_release_hybrid_artifact(self):
         """
         Tests the full put -> get -> release lifecycle with a
-        HybridRasterArtifact.
+        HybridRaster-like Artifact.
         """
         original_artifact = self._create_sample_hybrid_artifact()
 
@@ -138,22 +160,28 @@ class TestArtifactStore(unittest.TestCase):
         handle = ArtifactStore.put(original_artifact)
         self.handles_to_release.append(handle)
 
-        # 2. Get and assert type to help type checker
+        # 2. Get
         retrieved_artifact = ArtifactStore.get(handle)
-        self.assertIsInstance(retrieved_artifact, HybridRasterArtifact)
-        retrieved_hybrid = cast(HybridRasterArtifact, retrieved_artifact)
 
         # 3. Verify hybrid-specific attributes
+        self.assertIsInstance(retrieved_artifact, Artifact)
+        self.assertEqual(retrieved_artifact.artifact_type, "hybrid_raster")
+        self.assertIsNotNone(retrieved_artifact.raster_data)
+        self.assertIsNotNone(original_artifact.raster_data)
+        assert retrieved_artifact.raster_data is not None
+        assert original_artifact.raster_data is not None
+
         self.assertEqual(
-            original_artifact.dimensions_mm, retrieved_hybrid.dimensions_mm
+            original_artifact.raster_data["dimensions_mm"],
+            retrieved_artifact.raster_data["dimensions_mm"],
         )
         np.testing.assert_array_equal(
-            original_artifact.power_texture_data,
-            retrieved_hybrid.power_texture_data,
+            original_artifact.raster_data["power_texture_data"],
+            retrieved_artifact.raster_data["power_texture_data"],
         )
         self.assertEqual(
             len(original_artifact.ops.commands),
-            len(retrieved_hybrid.ops.commands),
+            len(retrieved_artifact.ops.commands),
         )
 
         # 4. Release

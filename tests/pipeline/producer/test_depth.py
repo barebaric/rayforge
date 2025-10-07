@@ -10,8 +10,8 @@ from rayforge.core.ops import (
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import Laser
-from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.producer.base import OpsProducer, HybridRasterArtifact
+from rayforge.pipeline import CoordinateSystem, Artifact
+from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
 
 
@@ -112,23 +112,24 @@ def test_run_returns_hybrid_raster_artifact_with_correct_metadata(
     mock_workpiece: WorkPiece,
 ):
     """
-    Test that run() returns a HybridRasterArtifact with valid structure
+    Test that run() returns a Artifact with valid structure
     and metadata.
     """
     artifact = producer.run(
         laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
 
-    assert isinstance(artifact, HybridRasterArtifact)
+    assert isinstance(artifact, Artifact)
     assert artifact.is_scalable is False
     assert artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
     assert artifact.source_dimensions == (10, 10)
     assert artifact.generation_size == (10.0, 10.0)
-    assert artifact.dimensions_mm == (10.0, 10.0)
-    assert artifact.position_mm == (0.0, 0.0)
+    assert artifact.raster_data is not None
+    assert artifact.raster_data["dimensions_mm"] == (10.0, 10.0)
+    assert artifact.raster_data["position_mm"] == (0.0, 0.0)
     assert artifact.ops is not None
-    assert artifact.power_texture_data is not None
-    assert artifact.power_texture_data.shape == (10, 10)
+    assert artifact.raster_data["power_texture_data"] is not None
+    assert artifact.raster_data["power_texture_data"].shape == (10, 10)
 
 
 def test_run_wraps_ops_in_section_markers(
@@ -197,7 +198,7 @@ def test_power_modulation_generates_correct_ops_and_texture(
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
     # Add type check to satisfy Pylance
-    assert isinstance(artifact, HybridRasterArtifact)
+    assert isinstance(artifact, Artifact)
 
     # Expected values calculation:
     # final_byte = (min_frac + gray_factor * (max_frac-min_frac)) * 255
@@ -217,8 +218,9 @@ def test_power_modulation_generates_correct_ops_and_texture(
     assert power_vals[2] == pytest.approx(expected_texture_row[2], 1)
 
     # Assert Texture data
-    assert artifact.power_texture_data.shape == (1, 3)
-    texture_row = artifact.power_texture_data[0]
+    assert artifact.raster_data is not None
+    assert artifact.raster_data["power_texture_data"].shape == (1, 3)
+    texture_row = artifact.raster_data["power_texture_data"][0]
     assert texture_row[0] == pytest.approx(229, 1)
     assert texture_row[1] == pytest.approx(127, 1)
     assert texture_row[2] == pytest.approx(26, 1)
@@ -254,7 +256,7 @@ def test_multi_pass_generates_correct_ops_and_texture(
     )
 
     # Add type check to satisfy Pylance
-    assert isinstance(artifact, HybridRasterArtifact)
+    assert isinstance(artifact, Artifact)
 
     # -- Assert Ops Data (Z-stepping) --
     lines_by_z = {}
@@ -276,8 +278,9 @@ def test_multi_pass_generates_correct_ops_and_texture(
     # Black (gray=0) -> 4 passes -> power = 4/4 = 1.0 -> 255
     # Gray (gray=127) -> ceil((1-127/255)*4) = ceil(2.007) = 3 passes
     #   -> power = 3/4 = 0.75 -> 191.25
-    assert artifact.power_texture_data.shape == (10, 2)
-    black_col = artifact.power_texture_data[:, 0]
-    gray_col = artifact.power_texture_data[:, 1]
+    assert artifact.raster_data is not None
+    assert artifact.raster_data["power_texture_data"].shape == (10, 2)
+    black_col = artifact.raster_data["power_texture_data"][:, 0]
+    gray_col = artifact.raster_data["power_texture_data"][:, 1]
     assert np.all(np.isclose(black_col, 255))
     assert np.all(np.isclose(gray_col, 191, atol=1))

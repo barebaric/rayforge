@@ -7,11 +7,10 @@ the UI.
 from __future__ import annotations
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, TYPE_CHECKING, Dict
+from typing import List, Optional, Tuple, TYPE_CHECKING, Dict, Any
 import numpy as np
 
 from ..core.layer import Layer
-from .artifact.hybrid import HybridRasterArtifact
 
 if TYPE_CHECKING:
     from .generator import OpsGenerator
@@ -29,7 +28,7 @@ class RenderItem:
     """A lightweight instruction for rendering one artifact."""
 
     artifact_handle: Optional[ArtifactHandle]
-    raster_artifact: Optional[HybridRasterArtifact]
+    raster_data: Optional[Dict[str, Any]]
     world_transform: np.ndarray  # 4x4 numpy matrix
     workpiece_size: Tuple[float, float]
     step_uid: str
@@ -80,17 +79,9 @@ def generate_scene_description(
             handle = ops_generator._ops_cache.get(key)
             artifact = ops_generator.get_artifact(step, workpiece)
 
-            # A RenderItem can have both a handle (for vector ops) and a
-            # raster_artifact (for the textured quad).
-            raster_data = (
-                artifact
-                if isinstance(artifact, HybridRasterArtifact)
-                else None
-            )
-
             item = RenderItem(
                 artifact_handle=handle,
-                raster_artifact=raster_data,
+                raster_data=artifact.raster_data if artifact else None,
                 world_transform=workpiece.get_world_transform().to_4x4_numpy(),
                 workpiece_size=workpiece.size,
                 step_uid=step.uid,

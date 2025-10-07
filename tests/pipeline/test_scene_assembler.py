@@ -13,8 +13,7 @@ from rayforge.pipeline.scene_assembler import (
     generate_scene_description,
 )
 from rayforge.pipeline.artifact.handle import ArtifactHandle
-from rayforge.pipeline.artifact.hybrid import HybridRasterArtifact
-from rayforge.pipeline.artifact.vector import VectorArtifact
+from rayforge.pipeline.artifact.base import Artifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.ops import Ops
 
@@ -23,7 +22,7 @@ from rayforge.core.ops import Ops
 def setup_real_config(mocker):
     """Setup test configuration for machine and laser."""
     from rayforge.machine.models.machine import Laser, Machine
-    
+
     test_laser = Laser()
     test_laser.max_power = 1000
     test_machine = Machine()
@@ -84,12 +83,12 @@ def mock_workpiece():
     workpiece = MagicMock(spec=WorkPiece)
     workpiece.uid = "test_workpiece_uid"
     workpiece.size = (10.0, 20.0)
-    
+
     # Mock the get_world_transform method
     transform_matrix = MagicMock(spec=Matrix)
     transform_matrix.to_4x4_numpy.return_value = np.eye(4)
     workpiece.get_world_transform.return_value = transform_matrix
-    
+
     return workpiece
 
 
@@ -109,20 +108,23 @@ def mock_artifact_handle():
 @pytest.fixture
 def mock_hybrid_artifact():
     """Create a mock hybrid raster artifact."""
-    return HybridRasterArtifact(
+    raster_data = {
+        "power_texture_data": np.zeros((10, 10)),
+        "dimensions_mm": (10.0, 10.0),
+        "position_mm": (0.0, 0.0),
+    }
+    return Artifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        power_texture_data=np.zeros((10, 10)),
-        dimensions_mm=(10.0, 10.0),
-        position_mm=(0.0, 0.0),
+        raster_data=raster_data,
     )
 
 
 @pytest.fixture
 def mock_vector_artifact():
     """Create a mock vector artifact."""
-    return VectorArtifact(
+    return Artifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -139,15 +141,15 @@ class TestRenderItem:
         world_transform = np.eye(4)
         item = RenderItem(
             artifact_handle=mock_artifact_handle,
-            raster_artifact=mock_hybrid_artifact,
+            raster_data=mock_hybrid_artifact.raster_data,
             world_transform=world_transform,
             workpiece_size=(10.0, 20.0),
             step_uid="step_1",
             workpiece_uid="workpiece_1",
         )
-        
+
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_artifact == mock_hybrid_artifact
+        assert item.raster_data == mock_hybrid_artifact.raster_data
         assert np.array_equal(item.world_transform, world_transform)
         assert item.workpiece_size == (10.0, 20.0)
         assert item.step_uid == "step_1"
@@ -158,15 +160,15 @@ class TestRenderItem:
         world_transform = np.eye(4)
         item = RenderItem(
             artifact_handle=mock_artifact_handle,
-            raster_artifact=None,
+            raster_data=None,
             world_transform=world_transform,
             workpiece_size=(10.0, 20.0),
             step_uid="step_1",
             workpiece_uid="workpiece_1",
         )
-        
+
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_artifact is None
+        assert item.raster_data is None
 
 
 class TestSceneDescription:
@@ -178,7 +180,7 @@ class TestSceneDescription:
         items = [
             RenderItem(
                 artifact_handle=mock_artifact_handle,
-                raster_artifact=None,
+                raster_data=None,
                 world_transform=world_transform,
                 workpiece_size=(10.0, 20.0),
                 step_uid="step_1",
@@ -186,14 +188,14 @@ class TestSceneDescription:
             ),
             RenderItem(
                 artifact_handle=None,
-                raster_artifact=None,
+                raster_data=None,
                 world_transform=world_transform,
                 workpiece_size=(15.0, 25.0),
                 step_uid="step_2",
                 workpiece_uid="workpiece_2",
             ),
         ]
-        
+
         scene = SceneDescription(render_items=items)
         assert len(scene.render_items) == 2
         assert scene.render_items[0].step_uid == "step_1"
@@ -211,9 +213,9 @@ class TestGenerateSceneDescription:
     def test_empty_document(self, mock_doc, mock_ops_generator):
         """Test with an empty document."""
         mock_doc.layers = []
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 0
 
@@ -223,9 +225,9 @@ class TestGenerateSceneDescription:
         """Test with a layer that has no renderable items."""
         mock_layer.get_renderable_items.return_value = []
         mock_doc.layers = [mock_layer]
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 0
         mock_layer.get_renderable_items.assert_called_once()
@@ -245,25 +247,25 @@ class TestGenerateSceneDescription:
         renderable_items = [(mock_step, mock_workpiece)]
         mock_layer.get_renderable_items.return_value = renderable_items
         mock_doc.layers = [mock_layer]
-        
+
         # Setup artifact cache and generator
         key = (mock_step.uid, mock_workpiece.uid)
         mock_ops_generator._ops_cache[key] = mock_artifact_handle
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 1
-        
+
         item = scene.render_items[0]
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_artifact is None
+        assert item.raster_data is None
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
         assert item.workpiece_size == mock_workpiece.size
         assert np.array_equal(item.world_transform, np.eye(4))
-        
+
         mock_ops_generator.get_artifact.assert_called_once_with(
             mock_step, mock_workpiece
         )
@@ -283,20 +285,20 @@ class TestGenerateSceneDescription:
         renderable_items = [(mock_step, mock_workpiece)]
         mock_layer.get_renderable_items.return_value = renderable_items
         mock_doc.layers = [mock_layer]
-        
+
         # Setup artifact cache and generator
         key = (mock_step.uid, mock_workpiece.uid)
         mock_ops_generator._ops_cache[key] = mock_artifact_handle
         mock_ops_generator.get_artifact.return_value = mock_hybrid_artifact
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 1
-        
+
         item = scene.render_items[0]
         assert item.artifact_handle == mock_artifact_handle
-        assert item.raster_artifact == mock_hybrid_artifact
+        assert item.raster_data == mock_hybrid_artifact.raster_data
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
 
@@ -316,7 +318,7 @@ class TestGenerateSceneDescription:
         layer1.get_renderable_items.return_value = [
             (mock_step, mock_workpiece)
         ]
-        
+
         # Create second step and workpiece for layer2
         step2 = MagicMock(spec=Step)
         step2.uid = "step2_uid"
@@ -326,30 +328,30 @@ class TestGenerateSceneDescription:
         transform_matrix = MagicMock(spec=Matrix)
         transform_matrix.to_4x4_numpy.return_value = np.eye(4)
         workpiece2.get_world_transform.return_value = transform_matrix
-        
+
         layer2 = MagicMock(spec=Layer)
         layer2.name = "layer2"
         layer2.get_renderable_items.return_value = [(step2, workpiece2)]
-        
+
         mock_doc.layers = [layer1, layer2]
-        
+
         # Setup artifact cache and generator
         key1 = (mock_step.uid, mock_workpiece.uid)
         key2 = (step2.uid, workpiece2.uid)
         mock_ops_generator._ops_cache[key1] = mock_artifact_handle
         mock_ops_generator._ops_cache[key2] = mock_artifact_handle
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 2
-        
+
         # Check first item
         item1 = scene.render_items[0]
         assert item1.step_uid == mock_step.uid
         assert item1.workpiece_uid == mock_workpiece.uid
-        
+
         # Check second item
         item2 = scene.render_items[1]
         assert item2.step_uid == step2.uid
@@ -370,18 +372,18 @@ class TestGenerateSceneDescription:
         renderable_items = [(mock_step, mock_workpiece)]
         mock_layer.get_renderable_items.return_value = renderable_items
         mock_doc.layers = [mock_layer]
-        
+
         # Don't add to cache, but still return artifact from get_artifact
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-        
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 1
-        
+
         item = scene.render_items[0]
         assert item.artifact_handle is None  # Should be None when not in cache
-        assert item.raster_artifact is None  # Not a hybrid artifact
+        assert item.raster_data is None  # Not a hybrid artifact
         assert item.step_uid == mock_step.uid
         assert item.workpiece_uid == mock_workpiece.uid
 
@@ -400,28 +402,29 @@ class TestGenerateSceneDescription:
         renderable_items = [(mock_step, mock_workpiece)]
         mock_layer.get_renderable_items.return_value = renderable_items
         mock_doc.layers = [mock_layer]
-        
+
         # Setup artifact cache and generator
         key = (mock_step.uid, mock_workpiece.uid)
         mock_ops_generator._ops_cache[key] = mock_artifact_handle
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-        
+
         # Create a custom transformation matrix
-        custom_transform = np.array([
-            [1.0, 0.0, 0.0, 10.0],
-            [0.0, 1.0, 0.0, 20.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ])
-        mock_workpiece.get_world_transform.return_value.to_4x4_numpy.return_value = (
-            custom_transform
+        custom_transform = np.array(
+            [
+                [1.0, 0.0, 0.0, 10.0],
+                [0.0, 1.0, 0.0, 20.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
         )
-        
+        func = mock_workpiece.get_world_transform.return_value.to_4x4_numpy
+        func.return_value = custom_transform
+
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-        
+
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 1
-        
+
         item = scene.render_items[0]
         assert np.array_equal(item.world_transform, custom_transform)
-        mock_workpiece.get_world_transform.return_value.to_4x4_numpy.assert_called_once()
+        func.assert_called_once()
