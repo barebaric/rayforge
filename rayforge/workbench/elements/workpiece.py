@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
+from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Union
 import cairo
 from concurrent.futures import Future
 import numpy as np
@@ -12,6 +12,7 @@ from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from .tab_handle import TabHandleElement
+from ...pipeline.artifact.vector import VectorArtifact
 from ...pipeline.artifact.vertex import VertexArtifact
 from ...pipeline.artifact.hybrid import HybridRasterArtifact
 
@@ -68,6 +69,13 @@ class WorkPieceView(CanvasElement):
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
         self._raster_textures: Dict[str, cairo.ImageSurface] = {}
+        # Cached artifacts to avoid re-fetching from generator on every draw.
+        self._artifact_cache: Dict[
+            str,
+            Optional[
+                Union[VectorArtifact, VertexArtifact, HybridRasterArtifact]
+            ],
+        ] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -254,6 +262,7 @@ class WorkPieceView(CanvasElement):
         self._ops_surfaces.pop(step_uid, None)
         self._ops_recordings.pop(step_uid, None)
         self._raster_textures.pop(step_uid, None)
+        self._artifact_cache.pop(step_uid, None)
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -342,9 +351,16 @@ class WorkPieceView(CanvasElement):
         self._ops_generation_ids[step.uid] = generation_id
 
         if self.USE_NEW_RENDER_PATH:
+            # Fetch and cache the final artifact.
+            # This is a one-time fetch after generation completes.
+            artifact = self.ops_generator.get_artifact(step, self.data)
+            self._artifact_cache[step.uid] = artifact
+
             # Clear intermediate chunk surfaces, as the final artifact is now
             # ready to be drawn in the next paint cycle.
             self._ops_surfaces.pop(step.uid, None)
+            # Also clear the specific texture cache, as it may be stale
+            # (e.g., artifact changed from raster to vector).
             self._raster_textures.pop(step.uid, None)
             if self.canvas:
                 self.canvas.queue_draw()
@@ -798,7 +814,8 @@ class WorkPieceView(CanvasElement):
                 if step.uid in self._ops_surfaces:
                     continue
 
-                artifact = self.ops_generator.get_artifact(step, self.data)
+                # Use the local cache instead of fetching from the generator.
+                artifact = self._artifact_cache.get(step.uid)
                 if isinstance(
                     artifact, (VertexArtifact, HybridRasterArtifact)
                 ):
