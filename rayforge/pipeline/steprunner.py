@@ -39,8 +39,9 @@ def run_step_in_subprocess(
     """
     import logging
 
-    logger = logging.getLogger("rayforge.models.step.run_step_in_subprocess")
-    logger.setLevel(proxy.parent_log_level)
+    logger = logging.getLogger(
+        "rayforge.pipeline.steprunner.run_step_in_subprocess"
+    )
     logger.debug(f"Starting step execution with settings: {settings}")
 
     from .modifier import Modifier
@@ -169,6 +170,10 @@ def run_step_in_subprocess(
             target_width = int(target_width * scale_factor)
             target_height = int(target_height * scale_factor)
 
+        logger.debug(
+            f"Vector producer rendering '{workpiece.name}' to "
+            f"{target_width}x{target_height} px."
+        )
         # This is a blocking call, which is fine in a subprocess.
         surface = workpiece.render_to_pixels(target_width, target_height)
         if not surface:
