@@ -318,6 +318,12 @@ class Machine:
                 return head
         return None
 
+    def get_default_head(self) -> Laser:
+        """Returns the first laser head, or raises an error if none exist."""
+        if not self.heads:
+            raise ValueError("Machine has no laser heads configured.")
+        return self.heads[0]
+
     def remove_head(self, head: Laser):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)

@@ -278,3 +278,26 @@ class TestMachine:
 
         # Check that acceleration is preserved
         assert new_machine.acceleration == 2500
+
+    def test_get_default_head(self, machine: Machine):
+        """Test that get_default_head() returns the first laser head."""
+        default_head = machine.get_default_head()
+        assert isinstance(default_head, Laser)
+        assert len(machine.heads) == 1
+
+        # Add another head
+        laser2 = Laser()
+        laser2.uid = "test-laser-2"
+        machine.add_head(laser2)
+
+        # Should still return the first head (the one from __init__)
+        default_head = machine.get_default_head()
+        assert default_head is machine.heads[0]
+        assert len(machine.heads) == 2
+
+        # Test with empty heads list - should raise ValueError
+        machine.heads.clear()
+        with pytest.raises(
+            ValueError, match="Machine has no laser heads configured"
+        ):
+            machine.get_default_head()

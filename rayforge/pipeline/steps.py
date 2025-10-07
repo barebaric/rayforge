@@ -45,7 +45,7 @@ def create_contour_step(
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
+    step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
@@ -119,7 +119,7 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
+    step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
@@ -142,7 +142,7 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     step.post_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
-    step.kerf_mm = config.config.machine.heads[0].spot_size_mm[0]
+    step.kerf_mm = config.config.machine.get_default_head().spot_size_mm[0]
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
     return step
@@ -162,7 +162,7 @@ def create_material_test_step(name: Optional[str] = None) -> Step:
     step.opstransformers_dicts = []
     # No post-step transformers - we don't want path optimization
     step.post_step_transformers_dicts = []
-    step.laser_dict = config.config.machine.heads[0].to_dict()
+    step.selected_laser_uid = config.config.machine.get_default_head().uid
     step.max_cut_speed = config.config.machine.max_cut_speed
     step.max_travel_speed = config.config.machine.max_travel_speed
 
