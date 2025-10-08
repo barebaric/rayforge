@@ -393,6 +393,14 @@ class OpsGenerator:
 
             for step in wp_layer.workflow:
                 key = (step.uid, wp.uid)
+
+                # If a generation is already running for this pair, do not
+                # interrupt it. Let it finish. The completion handler will then
+                # check if the result is still valid for the workpiece's final
+                # size.
+                if key in self._active_tasks:
+                    continue
+
                 handle = self._ops_cache.get(key)
 
                 # Determine if the base artifact is valid
@@ -733,9 +741,13 @@ class OpsGenerator:
 
         if task.get_status() == "completed":
             # This method will now handle cache update and signal sending
-            self._handle_completed_task(task, key, step, workpiece)
-            # Now that the base artifact exists, trigger time estimation.
-            self._trigger_time_estimation(step, workpiece)
+            task_succeeded = self._handle_completed_task(
+                task, key, step, workpiece
+            )
+            # Now that the base artifact exists and is valid, trigger
+            # time estimation.
+            if task_succeeded:
+                self._trigger_time_estimation(step, workpiece)
         else:
             # Handle failed or cancelled tasks
             wp_name = (
@@ -768,10 +780,13 @@ class OpsGenerator:
         key: Tuple[str, str],
         step: Step,
         workpiece: WorkPiece,
-    ):
+    ) -> bool:
         """
         Processes the result of a successfully completed task, validates it,
         updates the cache, and sends the final notification.
+
+        Returns:
+            True if a valid artifact was successfully cached, False otherwise.
         """
         logger.debug(
             f"{self.__class__.__name__}._handle_completed_task called"
@@ -791,7 +806,7 @@ class OpsGenerator:
                     f"{type(result)}"
                 )
                 self._ops_cache[key] = None
-                return
+                return False
 
             result_handle_dict, result_gen_id = result
 
@@ -814,9 +829,24 @@ class OpsGenerator:
                     )
                     # Clean up the resource from the stale result.
                     ArtifactStore.release(handle)
-                    # DO NOT update cache or send signal. The newer task will
-                    # do that.
-                    return
+                    return False
+
+                # Post-completion validity check. If the workpiece size has
+                # changed while this non-scalable artifact was generating,
+                # it's stale.
+                if (
+                    not handle.is_scalable
+                    and handle.generation_size != workpiece.size
+                ):
+                    logger.info(
+                        f"Completed generation for {key} is now stale. "
+                        f"Generated for size {handle.generation_size}, "
+                        f"workpiece is now {workpiece.size}. "
+                        f"Triggering regeneration."
+                    )
+                    ArtifactStore.release(handle)
+                    self._trigger_ops_generation(step, workpiece)
+                    return False
 
                 # The old handle was already released in
                 # _trigger_ops_generation.
@@ -826,6 +856,7 @@ class OpsGenerator:
             self.ops_generation_finished.send(
                 step, workpiece=workpiece, generation_id=result_gen_id
             )
+            return True
 
         except Exception as e:
             logger.error(
@@ -839,6 +870,7 @@ class OpsGenerator:
             self.ops_generation_finished.send(
                 step, workpiece=workpiece, generation_id=result_gen_id
             )
+            return False
 
     def _trigger_time_estimation(self, step: Step, workpiece: WorkPiece):
         """Starts an asynchronous task to estimate machining time."""
