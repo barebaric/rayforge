@@ -378,3 +378,407 @@ class TestOpsGenerator:
             assert called_func is run_step_in_subprocess
         finally:
             ArtifactStore.release(handle)
+
+    def test_shutdown_releases_all_artifacts(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Simulate completion of a task to populate the cache
+        task = mock_task_mgr.created_tasks[0]
+        artifact = Artifact(
+            ops=Ops(),
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=real_workpiece.size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Verify handle is in cache
+            assert (
+                generator.get_artifact_handle(step.uid, real_workpiece.uid)
+                is not None
+            )
+
+            # Act
+            generator.shutdown()
+
+            # Assert
+            assert (
+                generator.get_artifact_handle(step.uid, real_workpiece.uid)
+                is None
+            )
+        finally:
+            # handle should already be released by shutdown
+            pass
+
+    def test_doc_property_getter(self, doc, mock_task_mgr):
+        # Arrange
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act & Assert
+        assert generator.doc is doc
+
+    def test_doc_property_setter_with_same_doc(self, doc, mock_task_mgr):
+        # Arrange
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act - setting the same document should not cause issues
+        generator.doc = doc
+
+        # Assert
+        assert generator.doc is doc
+
+    def test_doc_property_setter_with_different_doc(self, doc, mock_task_mgr):
+        # Arrange
+        generator = OpsGenerator(doc, mock_task_mgr)
+        new_doc = Doc()
+
+        # Act
+        generator.doc = new_doc
+
+        # Assert
+        assert generator.doc is new_doc
+
+    def test_is_busy_property(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Initial state - should be busy with one task
+        assert generator.is_busy is True
+
+        # Complete the task
+        task = mock_task_mgr.created_tasks[0]
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (None, 1)
+
+        # Act
+        task.when_done(mock_finished_task)
+
+        # Assert - should not be busy anymore
+        assert generator.is_busy is False
+
+    def test_pause_resume_functionality(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+        mock_task_mgr.run_process.reset_mock()  # Reset after initialization
+
+        # Act - pause the generator
+        generator.pause()
+        assert generator.is_paused is True
+
+        # Try to trigger regeneration - should not happen while paused
+        real_workpiece.set_size(20, 20)
+        mock_task_mgr.run_process.assert_not_called()
+
+        # Resume the generator
+        generator.resume()
+        assert generator.is_paused is False
+
+        # Assert - reconciliation should happen after resume
+        mock_task_mgr.run_process.assert_called()
+
+    def test_paused_context_manager(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+        mock_task_mgr.run_process.reset_mock()  # Reset after initialization
+
+        # Act - use context manager
+        with generator.paused():
+            assert generator.is_paused is True
+            # Try to trigger regeneration - should not happen while paused
+            real_workpiece.set_size(20, 20)
+            mock_task_mgr.run_process.assert_not_called()
+
+        # Assert - should be resumed after context
+        assert generator.is_paused is False
+        # Reconciliation should happen after resume
+        mock_task_mgr.run_process.assert_called()
+
+    def test_is_paused_property(self, doc, mock_task_mgr):
+        # Arrange
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Initial state
+        assert generator.is_paused is False
+
+        # After pause
+        generator.pause()
+        assert generator.is_paused is True
+
+        # After resume
+        generator.resume()
+        assert generator.is_paused is False
+
+    def test_get_estimated_time(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act & Assert - No estimate initially
+        assert generator.get_estimated_time(step, real_workpiece) is None
+
+        # Simulate a time estimation completion
+        time_key = (
+            step.uid,
+            real_workpiece.uid,
+            real_workpiece.size[0],
+            real_workpiece.size[1],
+        )
+        generator._time_cache[time_key] = 42.5
+
+        # Act & Assert - Should return cached value
+        assert generator.get_estimated_time(step, real_workpiece) == 42.5
+
+    def test_get_artifact_handle(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act & Assert - No handle initially
+        assert (
+            generator.get_artifact_handle(step.uid, real_workpiece.uid) is None
+        )
+
+        # Simulate a completed task
+        task = mock_task_mgr.created_tasks[0]
+        artifact = Artifact(
+            ops=Ops(),
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=real_workpiece.size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Act & Assert - Should return the handle
+            retrieved_handle = generator.get_artifact_handle(
+                step.uid, real_workpiece.uid
+            )
+            assert retrieved_handle is not None
+            assert retrieved_handle.generation_size == real_workpiece.size
+        finally:
+            ArtifactStore.release(handle)
+
+    def test_get_scaled_ops(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act & Assert - No ops initially
+        world_transform = real_workpiece.get_world_transform()
+        assert (
+            generator.get_scaled_ops(
+                step.uid, real_workpiece.uid, world_transform
+            )
+            is None
+        )
+
+        # Simulate a completed task with scalable artifact
+        task = mock_task_mgr.created_tasks[0]
+        expected_ops = Ops()
+        expected_ops.move_to(0, 0, 0)
+        expected_ops.line_to(10, 10, 0)
+
+        artifact = Artifact(
+            ops=expected_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+            generation_size=real_workpiece.size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Act
+            scaled_ops = generator.get_scaled_ops(
+                step.uid, real_workpiece.uid, world_transform
+            )
+
+            # Assert
+            assert scaled_ops is not None
+            assert len(scaled_ops) == 2  # MoveTo + LineTo
+        finally:
+            ArtifactStore.release(handle)
+
+    def test_get_scaled_ops_with_stale_non_scalable_artifact(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Simulate a completed task with non-scalable artifact at
+        # different size
+        task = mock_task_mgr.created_tasks[0]
+        original_size = (25, 15)  # Different from workpiece size
+        artifact = Artifact(
+            ops=Ops(),
+            is_scalable=False,  # Not scalable
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=original_size,
+            generation_size=original_size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Act - Try to get scaled ops for different size
+            world_transform = real_workpiece.get_world_transform()
+            scaled_ops = generator.get_scaled_ops(
+                step.uid, real_workpiece.uid, world_transform
+            )
+
+            # Assert - Should return None for stale non-scalable artifact
+            assert scaled_ops is None
+        finally:
+            ArtifactStore.release(handle)
+
+    def test_get_artifact(self, doc, real_workpiece, mock_task_mgr):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Act & Assert - No artifact initially
+        assert generator.get_artifact(step, real_workpiece) is None
+
+        # Simulate a completed task
+        task = mock_task_mgr.created_tasks[0]
+        expected_ops = Ops()
+        expected_ops.move_to(0, 0, 0)
+        expected_ops.line_to(10, 10, 0)
+
+        artifact = Artifact(
+            ops=expected_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+            generation_size=real_workpiece.size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Act
+            retrieved_artifact = generator.get_artifact(step, real_workpiece)
+
+            # Assert
+            assert retrieved_artifact is not None
+            assert retrieved_artifact.is_scalable is True
+            assert len(retrieved_artifact.ops) == 2  # MoveTo + LineTo
+            assert retrieved_artifact.source_dimensions == real_workpiece.size
+        finally:
+            ArtifactStore.release(handle)
+
+    def test_get_artifact_with_stale_non_scalable_artifact(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        generator = OpsGenerator(doc, mock_task_mgr)
+
+        # Simulate a completed task with non-scalable artifact at
+        # different size
+        task = mock_task_mgr.created_tasks[0]
+        original_size = (25, 15)  # Different from workpiece size
+        artifact = Artifact(
+            ops=Ops(),
+            is_scalable=False,  # Not scalable
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=original_size,
+            generation_size=original_size,
+        )
+        handle = ArtifactStore.put(artifact)
+        mock_finished_task = MagicMock(spec=Task)
+        mock_finished_task.key = task.key
+        mock_finished_task.get_status.return_value = "completed"
+        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+
+        try:
+            task.when_done(mock_finished_task)
+
+            # Act - Try to get artifact for different size
+            retrieved_artifact = generator.get_artifact(step, real_workpiece)
+
+            # Assert - Should return None for stale non-scalable artifact
+            assert retrieved_artifact is None
+        finally:
+            ArtifactStore.release(handle)

@@ -142,16 +142,19 @@ class OpsGenerator:
         # Disconnect from the old document if it exists
         if self._doc:
             self._disconnect_signals()
-            # Clean up state related to the old document
-            # Cancel any running tasks associated with the old doc and clear
-            # caches
-            for key in list(self._active_tasks.keys()):
+            # Clean up state related to the old document.
+            # Iterating through the entire ops cache and calling _cleanup_key
+            # is the most robust way, as it handles the artifact, its
+            # associated active task, AND any related time cache entries.
+            for key in list(self._ops_cache.keys()):
                 self._cleanup_key(key)
+
+            # There might be active time tasks for which the base artifact
+            # generation failed or was never created. Clean these up too.
             for key in list(self._active_time_tasks.keys()):
                 self._cleanup_time_key(key)
 
-            # Ensure cache is fully cleared in case some items had no active
-            # tasks
+            # The caches should now be empty, but clear them to be certain.
             self._ops_cache.clear()
             self._generation_id_map.clear()
             self._time_cache.clear()
@@ -581,6 +584,16 @@ class OpsGenerator:
         self.ops_generation_starting.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
+
+        # Before starting a new generation (which will eventually
+        # replace the cached item), we must release the resource for the
+        # artifact that is currently in the cache for this key.
+        old_handle = self._ops_cache.pop(key, None)
+        if old_handle:
+            logger.debug(f"Releasing previously cached artifact for {key}.")
+            ArtifactStore.release(old_handle)
+
+        # Mark the cache entry as pending (None)
         self._ops_cache[key] = None
 
         was_busy = self.is_busy
@@ -735,7 +748,11 @@ class OpsGenerator:
                 f"'{wp_name}' failed. "
                 f"Status: {task.get_status()}."
             )
+            # The cache entry for this key is already None and its previous
+            # artifact was released in _trigger_ops_generation.
+            # Nothing more to do.
             self._ops_cache[key] = None
+
             # Still notify the view so it can stop showing a "loading" state
             self.ops_generation_finished.send(
                 step, workpiece=workpiece, generation_id=task_generation_id
@@ -759,6 +776,13 @@ class OpsGenerator:
         logger.debug(
             f"{self.__class__.__name__}._handle_completed_task called"
         )
+        wp_name = (
+            workpiece.source_file.name
+            if workpiece.source_file
+            else workpiece.name
+        )
+        result_gen_id = -1  # Default value
+
         try:
             result = task.result()
             if not isinstance(result, tuple) or len(result) != 2:
@@ -771,45 +795,50 @@ class OpsGenerator:
 
             result_handle_dict, result_gen_id = result
 
-            # Ensure that the result we just received from the subprocess
-            # is for the MOST RECENT request we made.
-            # If another request was made while this one was in-flight,
-            # this check will fail, and we will discard this stale result.
-            if self._generation_id_map.get(key) != result_gen_id:
-                logger.warning(
-                    f"Ignoring stale subprocess result for {key}. "
-                    f"Expected gen {self._generation_id_map.get(key)}, "
-                    f"got {result_gen_id}."
-                )
-                # DO NOT update cache or send signal for this stale result.
-                # The signal for the newer task will arrive later.
-                return
-
-            # --- Validation passed, now update state and notify ---
-            if result_handle_dict:
-                handle = ArtifactHandle.from_dict(result_handle_dict)
-                self._ops_cache[key] = handle
-            else:
+            # If the subprocess failed to create an artifact, there's no handle
+            # to leak from this run.
+            if not result_handle_dict:
+                logger.debug(f"Task for {key} produced no artifact.")
                 self._ops_cache[key] = None
+                # Fall through to send 'finished' signal
+            else:
+                # A resource was created. Deserialize the handle.
+                handle = ArtifactHandle.from_dict(result_handle_dict)
 
-            # Now that the cache is guaranteed to be up-to-date with a valid
-            # result, we can safely notify the view to re-render.
+                # Ensure the result is for the MOST RECENT request we made.
+                if self._generation_id_map.get(key) != result_gen_id:
+                    logger.warning(
+                        f"Ignoring stale subprocess result for {key}. "
+                        f"Expected gen {self._generation_id_map.get(key)}, "
+                        f"got {result_gen_id}. Releasing its resources."
+                    )
+                    # Clean up the resource from the stale result.
+                    ArtifactStore.release(handle)
+                    # DO NOT update cache or send signal. The newer task will
+                    # do that.
+                    return
+
+                # The old handle was already released in
+                # _trigger_ops_generation.
+                self._ops_cache[key] = handle
+
+            # Now that the cache is up-to-date, notify the view to re-render.
             self.ops_generation_finished.send(
                 step, workpiece=workpiece, generation_id=result_gen_id
             )
 
         except Exception as e:
-            # Check source_file before using it in the log message
-            wp_name = (
-                workpiece.source_file.name
-                if workpiece.source_file
-                else workpiece.name
-            )
             logger.error(
                 f"Error getting result for '{step.name}' on '{wp_name}': {e}",
                 exc_info=True,
             )
             self._ops_cache[key] = None
+
+            # Still notify the view so it knows the task is done
+            # (even if failed)
+            self.ops_generation_finished.send(
+                step, workpiece=workpiece, generation_id=result_gen_id
+            )
 
     def _trigger_time_estimation(self, step: Step, workpiece: WorkPiece):
         """Starts an asynchronous task to estimate machining time."""
@@ -921,6 +950,22 @@ class OpsGenerator:
             step.uid, workpiece.uid, workpiece.get_world_transform()
         )
 
+    def get_artifact_handle(
+        self, step_uid: str, workpiece_uid: str
+    ) -> Optional[ArtifactHandle]:
+        """
+        Retrieves the handle for a generated artifact from the cache.
+
+        Args:
+            step_uid: The UID of the Step.
+            workpiece_uid: The UID of the WorkPiece.
+
+        Returns:
+            The cached ArtifactHandle, or None if it is not available.
+        """
+        key = step_uid, workpiece_uid
+        return self._ops_cache.get(key)
+
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix
     ) -> Optional[Ops]:
@@ -998,6 +1043,9 @@ class OpsGenerator:
         memory. This is useful for components that need access to additional
         data in the artifact, such as texture data for raster rendering.
 
+        The returned object's data (e.g. NumPy arrays) are copies and are safe
+        for the consumer to use, as they are detached from shared memory.
+
         Args:
             step: The Step for which to retrieve the artifact.
             workpiece: The WorkPiece for which to retrieve the artifact.
@@ -1031,9 +1079,11 @@ class OpsGenerator:
             f"get_artifact for {key}: Found artifact. "
             f"Scalable: {handle.is_scalable}."
         )
-        # Return a deep copy to prevent consumers from mutating the cache.
-        artifact = ArtifactStore.get(handle)
-        return deepcopy(artifact)
+
+        # ArtifactStore.get() returns an object with COPIED data, detached
+        # from the shared memory block. It is safe to return directly.
+        # The crash was caused by the lifecycle bug, not this method.
+        return ArtifactStore.get(handle)
 
     def _scale_ops_to_final_size(
         self,

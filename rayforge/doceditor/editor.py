@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import asyncio
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
@@ -10,6 +11,8 @@ from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
 from ..pipeline.generator import OpsGenerator
 from ..machine.cmd import MachineCmd
+from ..pipeline.artifact.handle import ArtifactHandle
+from ..pipeline.artifact.store import ArtifactStore
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
@@ -62,6 +65,10 @@ class DocEditor:
         self.ops_generator = OpsGenerator(self.doc, self._task_manager)
         self.history_manager: "HistoryManager" = self.doc.history_manager
 
+        # A set to track temporary artifacts (e.g., for job previews)
+        # that don't live in the OpsGenerator cache.
+        self._transient_artifact_handles: set[ArtifactHandle] = set()
+
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
@@ -87,6 +94,16 @@ class DocEditor:
         Shuts down owned long-running services, like the OpsGenerator, to
         ensure cleanup of resources (e.g., shared memory).
         """
+        # This is the safety net for any transient job artifacts that were
+        # in-flight when the application was closed.
+        logger.info(
+            f"Releasing {len(self._transient_artifact_handles)} "
+            "transient job artifacts..."
+        )
+        for handle in list(self._transient_artifact_handles):
+            ArtifactStore.release(handle)
+        self._transient_artifact_handles.clear()
+
         self.ops_generator.shutdown()
 
     def add_tab_from_context(self, context: Dict[str, Any]):
@@ -160,36 +177,47 @@ class DocEditor:
         Imports a file from the specified path and waits for the operation
         to complete.
         """
-        import_future = asyncio.get_running_loop().create_future()
-
-        def when_done_callback(task):
-            try:
-                task.result()  # Re-raises exceptions from the task
-                import_future.set_result(True)
-            except Exception as e:
-                import_future.set_exception(e)
-
-        self.file.load_file_from_path(
-            filename, mime_type, vector_config, when_done=when_done_callback
-        )
-        await import_future
+        # Directly await the private async method, which is self-contained.
+        await self.file._load_file_async(filename, mime_type, vector_config)
 
     async def export_gcode_to_path(self, output_path: "Path") -> None:
         """
         Exports the current document to a G-code file at the specified path
-        and waits for the operation to complete.
+        and waits for the operation to complete. This awaitable version is
+        useful for tests.
         """
         export_future = asyncio.get_running_loop().create_future()
 
-        def when_done_callback(task):
+        def _on_export_assembly_done(
+            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            error: Optional[Exception],
+        ):
+            handle: Optional[ArtifactHandle] = None
             try:
-                task.result()  # Re-raises exceptions from the task
-                export_future.set_result(True)
-            except Exception as e:
-                export_future.set_exception(e)
+                if error:
+                    export_future.set_exception(error)
+                    return
+                if not result:
+                    exc = ValueError("Assembly process returned no result.")
+                    export_future.set_exception(exc)
+                    return
 
-        self.file.export_gcode_to_path(
-            output_path, when_done=when_done_callback
+                _time, temp_gcode_path, handle = result
+
+                shutil.move(temp_gcode_path, output_path)
+                logger.info(f"Test export successful to {output_path}")
+                export_future.set_result(True)
+
+            except Exception as e:
+                if not export_future.done():
+                    export_future.set_exception(e)
+            finally:
+                if handle:
+                    ArtifactStore.release(handle)
+
+        # Call the non-blocking method and provide our callback to bridge it
+        self.file.assemble_job_in_background(
+            when_done=_on_export_assembly_done
         )
         await export_future
 

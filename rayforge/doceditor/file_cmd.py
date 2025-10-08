@@ -1,21 +1,29 @@
 import asyncio
 import logging
+import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Dict, Callable
+from dataclasses import asdict
+
 from ..core.item import DocItem
-from ..core.matrix import Matrix
-from ..image import import_file
-from ..undo import ListItemCommand
-from ..shared.tasker.context import ExecutionContext
-from ..pipeline.job import assemble_final_job_ops
-from ..pipeline.encoder.gcode import GcodeEncoder
-from ..core.vectorization_config import TraceConfig
 from ..core.layer import Layer
+from ..core.matrix import Matrix
+from ..core.vectorization_config import TraceConfig
+from ..image import import_file
+from ..pipeline.jobrunner import (
+    run_job_assembly_in_subprocess,
+    JobDescription,
+    WorkItemInstruction,
+)
+from ..pipeline.artifact.handle import ArtifactHandle
+from ..pipeline.artifact.store import ArtifactStore
+from ..undo import ListItemCommand
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
-    from ..shared.tasker.manager import TaskManager
+    from ..doceditor.editor import DocEditor
     from ..config import ConfigManager
+    from ..shared.tasker.manager import TaskManager
+    from ..shared.tasker.task import Task
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +41,94 @@ class FileCmd:
         self._editor = editor
         self._task_manager = task_manager
         self._config_manager = config_manager
+
+    async def _load_file_async(
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
+    ):
+        """
+        The core awaitable logic for loading a file and committing it to the
+        document. This is a pure async method without TaskManager context.
+        """
+        try:
+            # 1. Run blocking I/O and CPU work in a background thread.
+            payload = await asyncio.to_thread(
+                import_file, filename, mime_type, vector_config
+            )
+
+            if not payload or not payload.items:
+                msg = _("Import failed: No items were created.")
+                logger.warning(
+                    f"Importer created no items for '{filename.name}'."
+                )
+                # You might want to notify the user here as well
+                self._editor.notification_requested.send(self, message=msg)
+                return
+
+            # 2. Perform document modifications (must be on main thread).
+            # In tests, the asyncio loop is the main thread, so this is safe.
+            if payload.source:
+                self._editor.doc.add_import_source(payload.source)
+
+            imported_items = payload.items
+            self._fit_and_center_imported_items(imported_items)
+            target_layer = cast(Layer, self._editor.default_workpiece_layer)
+            cmd_name = _("Import {name}").format(name=filename.name)
+
+            with self._editor.history_manager.transaction(cmd_name) as t:
+                for item in imported_items:
+                    command = ListItemCommand(
+                        owner_obj=target_layer,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                    t.execute(command)
+
+        except Exception as e:
+            logger.error(
+                f"Import task for {filename.name} failed.", exc_info=e
+            )
+            # Re-raise the exception so the caller (e.g., the test) knows
+            # about the failure.
+            raise
+
+    def load_file_from_path(
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
+    ):
+        """
+        Public, synchronous method to launch a file import in the background.
+        This is the clean entry point for the UI.
+        """
+
+        # This wrapper adapts our clean async method to the TaskManager,
+        # which expects a coroutine that accepts a 'ctx' argument.
+        async def wrapper(ctx, fn, mt, vc):
+            # The 'ctx' from the task manager is ignored.
+            try:
+                # Update task message for UI feedback
+                ctx.set_message(_(f"Importing {filename.name}..."))
+                await self._load_file_async(fn, mt, vc)
+                ctx.set_message(_("Import complete!"))
+            except Exception:
+                # The async method already logs the full error.
+                # Just update the task status for the UI.
+                ctx.set_message(_("Import failed."))
+                # Re-raise to ensure the task manager marks the task as failed.
+                raise
+
+        self._task_manager.add_coroutine(
+            wrapper,
+            filename,
+            mime_type,
+            vector_config,
+            key=f"import-{filename.name}",
+        )
 
     def _calculate_items_bbox(
         self,
@@ -134,139 +230,134 @@ class FileCmd:
                 # Pre-multiply to apply translation in world space
                 item.matrix = translation_matrix @ item.matrix
 
-    def load_file_from_path(
+    def _prepare_job_description(self) -> JobDescription:
+        """Constructs the JobDescription from the current document state."""
+        doc = self._editor.doc
+        ops_generator = self._editor.ops_generator
+        machine = self._config_manager.config.machine
+        if not machine:
+            raise ValueError("Cannot prepare job: No machine configured.")
+
+        work_items_by_step: Dict[str, list] = {}
+        per_step_transformers_by_step: Dict[str, list] = {}
+
+        for layer in doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                work_items_for_step = []
+                for item_step, workpiece in layer.get_renderable_items():
+                    if item_step.uid != step.uid:
+                        continue
+
+                    handle = ops_generator.get_artifact_handle(
+                        step.uid, workpiece.uid
+                    )
+                    if handle:
+                        world_transform = workpiece.get_world_transform()
+                        instruction = WorkItemInstruction(
+                            artifact_handle_dict=handle.to_dict(),
+                            world_transform_list=world_transform.to_list(),
+                            workpiece_dict=workpiece.to_dict(),
+                        )
+                        work_items_for_step.append(instruction)
+
+                if work_items_for_step:
+                    work_items_by_step[step.uid] = work_items_for_step
+
+                per_step_transformers_by_step[step.uid] = (
+                    step.per_step_transformers_dicts
+                )
+
+        return JobDescription(
+            work_items_by_step=work_items_by_step,
+            per_step_transformers_by_step=per_step_transformers_by_step,
+            machine_dict=machine.to_dict(),
+            doc_dict=doc.to_dict(),
+        )
+
+    def assemble_job_in_background(
         self,
-        filename: Path,
-        mime_type: Optional[str],
-        vector_config: Optional[TraceConfig],
-        when_done: Optional[Callable] = None,
+        when_done: Callable[
+            [
+                Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+                Optional[Exception],
+            ],
+            None,
+        ],
     ):
         """
-        Orchestrates the loading of a specific file path using the
-        importer, running the import process in a background task.
+        Asynchronously runs the full job assembly in a background process.
+        This method is non-blocking and returns immediately.
+
+        Args:
+            when_done: A callback executed upon completion. It receives
+                       a result tuple (time, path, handle) on success,
+                       or (None, error) on failure.
+        """
+        try:
+            job_desc = self._prepare_job_description()
+        except Exception as e:
+            when_done(None, e)
+            return
+
+        def _when_done_wrapper(task: "Task"):
+            try:
+                # Re-raises exceptions from the task
+                raw_result = task.result()
+                time, path, handle_dict = raw_result
+                handle = (
+                    ArtifactHandle.from_dict(handle_dict)
+                    if handle_dict
+                    else None
+                )
+                when_done((time, path, handle), None)
+            except Exception as e:
+                when_done(None, e)
+
+        self._task_manager.run_process(
+            run_job_assembly_in_subprocess,
+            job_description_dict=asdict(job_desc),
+            key="job-assembly",
+            when_done=_when_done_wrapper,
+        )
+
+    def export_gcode_to_path(self, file_path: Path):
+        """
+        Asynchronously generates and exports G-code to a specific path.
+        This is a non-blocking, fire-and-forget method for the UI.
         """
 
-        async def import_coro(context: ExecutionContext):
-            context.set_message(_(f"Importing {filename.name}..."))
-            context.flush()
-
-            # The import_file function handles I/O and CPU work, so we run
-            # the whole thing in a background thread.
-            import_payload = await asyncio.to_thread(
-                import_file, filename, mime_type, vector_config
-            )
-
-            if not import_payload or not import_payload.items:
-                msg = _("Import failed: No items were created.")
-                logger.warning(
-                    f"Importer created no items for '{filename.name}'."
-                )
-                context.set_message(msg)
-                return None  # Return None to signify no items to add.
-
-            context.set_message(_("Import complete!"))
-            context.set_progress(1.0)
-            context.flush()
-            return import_payload
-
-        # This callback runs on the MAIN THREAD after the background task is
-        # finished. It is the only safe place to modify the document.
-        def commit_to_document(task):
-            # First, call the original when_done if it exists.
-            if when_done:
-                when_done(task)
-
+        def _on_export_assembly_done(
+            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            error: Optional[Exception],
+        ):
+            handle: Optional[ArtifactHandle] = None
             try:
-                # This will re-raise any exception from the background task.
-                payload = task.result()
-                if not payload:
-                    return  # No items were imported.
+                if error:
+                    raise error
+                if not result:
+                    raise ValueError("Assembly process returned no result.")
 
-                # 1. Register the import source with the document.
-                if payload.source:
-                    self._editor.doc.add_import_source(payload.source)
+                _time, temp_gcode_path, handle = result
 
-                # The importer is now responsible for linking WorkPieces to
-                # the source, so we no longer need to do it here.
-
-                # 2. Center and add them to the document in a transaction.
-                imported_items = payload.items
-                self._fit_and_center_imported_items(imported_items)
-                target_layer = cast(
-                    Layer, self._editor.default_workpiece_layer
+                # Post-processing: move the file to its final destination
+                shutil.move(temp_gcode_path, file_path)
+                logger.info(f"Successfully exported G-code to {file_path}")
+                msg = _("Export successful: {name}").format(
+                    name=file_path.name
                 )
-                cmd_name = _("Import {name}").format(name=filename.name)
+                self._editor.notification_requested.send(self, message=msg)
 
-                with self._editor.history_manager.transaction(cmd_name) as t:
-                    for item in imported_items:
-                        command = ListItemCommand(
-                            owner_obj=target_layer,
-                            item=item,
-                            undo_command="remove_child",
-                            redo_command="add_child",
-                        )
-                        t.execute(command)
             except Exception as e:
                 logger.error(
-                    f"Import task for {filename.name} failed.", exc_info=e
+                    f"G-code export to {file_path} failed.", exc_info=e
                 )
-
-        # Add the coroutine to the task manager with our safe callback.
-        self._task_manager.add_coroutine(
-            import_coro,
-            key=f"import-{filename.name}",
-            # when_done is wrapped to run on the main thread.
-            when_done=commit_to_document,
-        )
-
-    def export_gcode_to_path(
-        self, file_path: Path, when_done: Optional[Callable] = None
-    ):
-        """
-        Headless version of G-code export that writes to a specific path.
-        This is used by the async facade on DocEditor and for testing.
-        """
-
-        def write_gcode_sync(path, gcode):
-            """Blocking I/O function to be run in a thread."""
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(gcode)
-
-        async def export_coro(context: ExecutionContext):
-            machine = self._config_manager.config.machine
-            if not machine:
-                context.set_message("Error: No machine configured.")
-                raise ValueError("Cannot export G-code without a machine.")
-
-            try:
-                # 1. Generate Ops (async, reports progress)
-                ops = await assemble_final_job_ops(
-                    self._editor.doc,
-                    machine,
-                    self._editor.ops_generator,
-                    context,
+                self._editor.notification_requested.send(
+                    self, message=_("Export failed: {error}").format(error=e)
                 )
+            finally:
+                if handle:
+                    ArtifactStore.release(handle)
 
-                # 2. Encode G-code (sync, but usually fast)
-                context.set_message(_("Encoding G-code..."))
-                encoder = GcodeEncoder.for_machine(machine)
-                gcode, _op_to_line_map = encoder.encode(
-                    ops, machine, self._editor.doc
-                )
-
-                # 3. Write to file (sync, potentially slow, run in thread)
-                context.set_message(_(f"Saving to {file_path}..."))
-                await asyncio.to_thread(write_gcode_sync, file_path, gcode)
-
-                context.set_message(_("Export complete!"))
-                context.set_progress(1.0)
-                context.flush()
-
-            except Exception:
-                logger.error("Failed to export G-code", exc_info=True)
-                raise  # Re-raise to be caught by the task manager
-
-        # Add the coroutine to the task manager
-        self._task_manager.add_coroutine(
-            export_coro, key="export-gcode", when_done=when_done
-        )
+        self.assemble_job_in_background(when_done=_on_export_assembly_done)

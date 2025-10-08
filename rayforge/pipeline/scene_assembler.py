@@ -73,11 +73,10 @@ def generate_scene_description(
 
     for layer, items in work_items_by_layer.items():
         for step, workpiece in items:
-            key = (step.uid, workpiece.uid)
             # Fetch both the handle and the full artifact. The handle is for
             # the vector part, while the full artifact is needed if it's a
             # raster type. `get_artifact` is a cached lookup, so it's fast.
-            handle = ops_generator._ops_cache.get(key)
+            handle = ops_generator.get_artifact_handle(step.uid, workpiece.uid)
             artifact = ops_generator.get_artifact(step, workpiece)
 
             item = RenderItem(

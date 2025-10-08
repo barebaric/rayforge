@@ -53,7 +53,7 @@ def mock_doc():
 def mock_ops_generator():
     """Create a mock ops generator with cache."""
     generator = MagicMock()
-    generator._ops_cache = {}
+    generator.get_artifact_handle = MagicMock()
     generator.get_artifact = MagicMock()
     return generator
 
@@ -249,8 +249,9 @@ class TestGenerateSceneDescription:
         mock_doc.layers = [mock_layer]
 
         # Setup artifact cache and generator
-        key = (mock_step.uid, mock_workpiece.uid)
-        mock_ops_generator._ops_cache[key] = mock_artifact_handle
+        mock_ops_generator.get_artifact_handle.return_value = (
+            mock_artifact_handle
+        )
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
@@ -266,6 +267,9 @@ class TestGenerateSceneDescription:
         assert item.workpiece_size == mock_workpiece.size
         assert np.array_equal(item.world_transform, np.eye(4))
 
+        mock_ops_generator.get_artifact_handle.assert_called_once_with(
+            mock_step.uid, mock_workpiece.uid
+        )
         mock_ops_generator.get_artifact.assert_called_once_with(
             mock_step, mock_workpiece
         )
@@ -287,8 +291,9 @@ class TestGenerateSceneDescription:
         mock_doc.layers = [mock_layer]
 
         # Setup artifact cache and generator
-        key = (mock_step.uid, mock_workpiece.uid)
-        mock_ops_generator._ops_cache[key] = mock_artifact_handle
+        mock_ops_generator.get_artifact_handle.return_value = (
+            mock_artifact_handle
+        )
         mock_ops_generator.get_artifact.return_value = mock_hybrid_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
@@ -336,10 +341,9 @@ class TestGenerateSceneDescription:
         mock_doc.layers = [layer1, layer2]
 
         # Setup artifact cache and generator
-        key1 = (mock_step.uid, mock_workpiece.uid)
-        key2 = (step2.uid, workpiece2.uid)
-        mock_ops_generator._ops_cache[key1] = mock_artifact_handle
-        mock_ops_generator._ops_cache[key2] = mock_artifact_handle
+        mock_ops_generator.get_artifact_handle.return_value = (
+            mock_artifact_handle
+        )
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
@@ -373,7 +377,8 @@ class TestGenerateSceneDescription:
         mock_layer.get_renderable_items.return_value = renderable_items
         mock_doc.layers = [mock_layer]
 
-        # Don't add to cache, but still return artifact from get_artifact
+        # Set mocks to return None as if cache is empty
+        mock_ops_generator.get_artifact_handle.return_value = None
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
@@ -404,8 +409,9 @@ class TestGenerateSceneDescription:
         mock_doc.layers = [mock_layer]
 
         # Setup artifact cache and generator
-        key = (mock_step.uid, mock_workpiece.uid)
-        mock_ops_generator._ops_cache[key] = mock_artifact_handle
+        mock_ops_generator.get_artifact_handle.return_value = (
+            mock_artifact_handle
+        )
         mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         # Create a custom transformation matrix

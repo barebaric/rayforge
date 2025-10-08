@@ -34,10 +34,9 @@ class SimulatorCmd:
             self._exit_mode()
         action.set_state(value)
 
-    def reload_simulation(self, new_ops: Ops):
+    def reload_simulation(self, new_ops: Optional[Ops]):
         """
-        Reloads the simulation with a new set of operations. This is called
-        when the document changes while in simulation mode.
+        Reloads the simulation with a new set of operations.
         """
         if not self.simulation_overlay or not self.preview_controls:
             return
@@ -46,18 +45,19 @@ class SimulatorCmd:
 
         was_playing = self.preview_controls.playing
 
-        # Update the overlay and G-code preview
-        self.simulation_overlay.set_ops(new_ops)
-        self._win._update_gcode_preview(new_ops)
+        ops_to_load = new_ops or Ops()
 
-        # Reset the controls and restart playback if it was active
+        self.simulation_overlay.set_ops(ops_to_load)
+
         self.preview_controls.reset()
         if was_playing:
             self.preview_controls._start_playback()
 
     def _enter_mode(self):
-        """Enters preview mode by creating overlay and enabling it on the
-        canvas."""
+        """
+        Enters preview mode synchronously. It then requests an immediate
+        data refresh from the main window.
+        """
         win = self._win
         # If the 3D view is active, switch back to the 2D view because
         # simulation is only supported on the 2D canvas.
@@ -74,15 +74,8 @@ class SimulatorCmd:
         else:
             work_area_size = (100.0, 100.0)
 
-        # Create simulation overlay
+        # Create an empty simulation overlay. It will be populated shortly.
         self.simulation_overlay = SimulationOverlay(work_area_size)
-
-        # Aggregate operations from all layers
-        full_ops = win._aggregate_ops_for_3d_view()
-        self.simulation_overlay.set_ops(full_ops)
-        win._update_gcode_preview(full_ops)
-
-        # Enable simulation mode on the canvas
         win.surface.set_simulation_mode(True, self.simulation_overlay)
 
         # Create and show preview controls
@@ -91,14 +84,14 @@ class SimulatorCmd:
         self._preview_controls_handler_id = self.preview_controls.connect(
             "step-changed", self._on_simulation_step_changed
         )
-        # Ensure G-code preview is visible, but don't hide it on exit
+        # Ensure G-code preview is also visible
         gcode_action = win.action_manager.get_action("toggle_gcode_preview")
         state = gcode_action.get_state()
         if not (state and state.get_boolean()):
             gcode_action.change_state(GLib.Variant.new_boolean(True))
 
-        # Auto-start playback
-        self.preview_controls._start_playback()
+        # Call the public method on MainWindow to trigger the async data load.
+        win.refresh_previews()
 
     def _exit_mode(self):
         """Exits simulation mode by disabling it on the canvas."""

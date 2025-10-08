@@ -1,12 +1,11 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional, cast, Tuple
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 
 from . import __version__
 from .shared.tasker import task_mgr
-from .shared.tasker.task import Task
 from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -14,7 +13,6 @@ from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
 from .core.workpiece import WorkPiece
-from .core.ops import Ops
 from .core.import_source import ImportSource
 from .image.material_test_grid_renderer import MaterialTestRenderer
 from .pipeline.steps import (
@@ -30,6 +28,7 @@ from .workbench.surface import WorkSurface
 from .workbench.elements.stock import StockElement
 from .doceditor.ui.layer_list import LayerListView
 from .doceditor.ui.stock_list import StockListView
+from .machine.cmd import MachineCmd
 from .machine.transport import TransportStatus
 from .shared.ui.task_bar import TaskBar
 from .machine.ui.log_dialog import MachineLogDialog
@@ -47,7 +46,9 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.previewer import GcodePreviewer
 from .core.step import Step
-from .pipeline.job import assemble_final_job_ops
+from .pipeline.artifact.store import ArtifactStore
+from .pipeline.artifact.handle import ArtifactHandle
+from .core.ops import Ops
 
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,7 @@ class MainWindow(Adw.ApplicationWindow):
         # OpsGenerator.
         assert config_mgr is not None
         self.doc_editor = DocEditor(task_mgr, config_mgr)
+        self.machine_cmd = MachineCmd(self.doc_editor)
 
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
@@ -480,27 +482,17 @@ class MainWindow(Adw.ApplicationWindow):
             return
         self.canvas3d.update_scene_from_doc()
 
-    def _update_gcode_preview(self, ops: Optional[Ops]):
-        """Generates G-code from Ops and updates the preview panel."""
-        if ops is None or not config.machine:
+    def _update_gcode_preview(
+        self, gcode_string: Optional[str], op_to_line_map: Optional[dict]
+    ):
+        """Updates the G-code preview panel from a pre-generated string."""
+        if gcode_string is None:
             self.gcode_previewer.clear()
             return
 
-        machine = config.machine
-        doc = self.doc_editor.doc
-
-        try:
-            encoder = GcodeEncoder.for_machine(machine)
-            gcode_string, op_to_line_map = encoder.encode(ops, machine, doc)
-            self.gcode_previewer.set_gcode(gcode_string)
+        self.gcode_previewer.set_gcode(gcode_string)
+        if op_to_line_map:
             self.gcode_previewer.set_op_to_line_map(op_to_line_map)
-        except Exception:
-            logger.error(
-                "Failed to generate G-code for preview", exc_info=True
-            )
-            toast = Adw.Toast.new(_("Failed to generate G-code preview."))
-            self.toast_overlay.add_toast(toast)
-            self.gcode_previewer.clear()
 
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
@@ -547,35 +539,11 @@ class MainWindow(Adw.ApplicationWindow):
             self.left_content_pane.set_position(
                 self._last_gcode_previewer_width
             )
-            # Trigger a background task to generate fresh G-code for the view
-            task_key = "aggregate-gcode-preview-ops"
-
-            async def _aggregate_coro(context):
-                machine = config.machine
-                if not machine:
-                    return None
-                return await assemble_final_job_ops(
-                    self.doc_editor.doc,
-                    machine,
-                    self.doc_editor.ops_generator,
-                    context,
-                )
-
-            task_mgr.add_coroutine(
-                _aggregate_coro,
-                when_done=self._on_gcode_preview_ops_aggregated,
-                key=task_key,
-            )
+            # The content will be loaded by the 'document-settled' handler.
+            # We just need to trigger it in case the doc is already settled.
+            self.refresh_previews()
         else:
             self.left_content_pane.set_position(0)
-
-    def _on_gcode_preview_ops_aggregated(self, task: Task):
-        """Callback to update the G-code preview after ops are generated."""
-        if task.get_status() != "completed":
-            logger.warning("G-code preview aggregation failed.")
-            return
-        ops = task.result()
-        self._update_gcode_preview(ops)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -673,7 +641,7 @@ class MainWindow(Adw.ApplicationWindow):
             logger.info(
                 "Machine connected in ALARM state. Auto-clearing alarm."
             )
-            self.doc_editor.machine.clear_alarm(machine)
+            self.machine_cmd.clear_alarm(machine)
         self._update_actions_and_ui()
 
     def on_history_changed(
@@ -735,60 +703,95 @@ class MainWindow(Adw.ApplicationWindow):
         """Shows a toast when requested by the DocEditor."""
         self.toast_overlay.add_toast(Adw.Toast.new(message))
 
-    def _on_post_settle_ops_aggregated(self, task: Task):
+    def _on_assembly_for_preview_finished(
+        self,
+        result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+        error: Optional[Exception],
+    ):
+        """Callback for when the job assembly for previews is complete."""
+        handle: Optional[ArtifactHandle] = None
+        if result:
+            _time, _gcode_path, handle = result
+
+        if error:
+            logger.error(
+                "Failed to aggregate ops for preview/simulation",
+                exc_info=error,
+            )
+            # If aggregation failed, ensure any partially created handle
+            # is released before clearing previews.
+            if handle:
+                ArtifactStore.release(handle)
+            handle = None
+
+        # Schedule the UI update on the main thread, passing the handle.
+        # The handle will be released in the main thread callback.
+        GLib.idle_add(self._on_previews_ready, handle)
+
+    def _on_previews_ready(self, handle: Optional[ArtifactHandle]):
         """
-        Callback executed on the main thread after the background aggregation
-        of toolpaths is complete. It updates the G-code preview and
-        simulation.
+        Main-thread callback to distribute assembled Ops to all consumers.
+        This method is responsible for releasing the artifact handle.
         """
-        if task.get_status() != "completed":
-            logger.warning("Toolpath aggregation failed or was cancelled.")
-            return
+        aggregated_ops: Optional[Ops] = None
+        try:
+            if handle:
+                artifact = ArtifactStore.get(handle)
+                aggregated_ops = artifact.ops
 
-        aggregated_ops = task.result()
+            # 1. Update Simulation
+            self.simulator_cmd.reload_simulation(aggregated_ops)
 
-        # Update simulation (it checks its own state)
-        self.simulator_cmd.reload_simulation(aggregated_ops)
+            # 2. Update G-code Preview
+            gcode_action = self.action_manager.get_action(
+                "toggle_gcode_preview"
+            )
+            state = gcode_action.get_state()
+            is_gcode_visible = state and state.get_boolean()
 
-        # Always update the G-code preview's content.
-        self._update_gcode_preview(aggregated_ops)
+            if is_gcode_visible and aggregated_ops and config.machine:
+                encoder = GcodeEncoder.for_machine(config.machine)
+                gcode_str, op_map = encoder.encode(
+                    aggregated_ops, config.machine, self.doc_editor.doc
+                )
+                self._update_gcode_preview(gcode_str, op_map)
+            else:
+                self._update_gcode_preview(None, None)
 
-    def _on_document_settled(self, sender):
+        finally:
+            if handle:
+                ArtifactStore.release(handle)
+
+        return GLib.SOURCE_REMOVE
+
+    def refresh_previews(self):
         """
-        Called when all background processing is complete. Kicks off a
-        background task to aggregate the final toolpaths for the 3D view
-        and/or simulation.
+        Public method to trigger a refresh of all data previews, like the
+        simulator and G-code view.
         """
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         gcode_action = self.action_manager.get_action("toggle_gcode_preview")
         gcode_state = gcode_action.get_state() if gcode_action else None
-        is_gcode_visible = gcode_state.get_boolean() if gcode_state else False
+        is_gcode_visible = gcode_state and gcode_state.get_boolean()
 
         if not is_sim_active and not is_gcode_visible:
-            return  # Nothing to update
+            return
 
-        # This key ensures that if another document change happens quickly,
-        # the previous (now stale) aggregation task will be cancelled.
-        task_key = "aggregate-post-settle-ops"
+        if not config.machine:
+            # Pass None to clear previews if no machine is configured
+            self._on_previews_ready(None)
+            return
 
-        async def _aggregate_coro(context):
-            machine = config.machine
-            if not machine:
-                return None
-            return await assemble_final_job_ops(
-                self.doc_editor.doc,
-                machine,
-                self.doc_editor.ops_generator,
-                context,
-            )
-
-        task_mgr.add_coroutine(
-            _aggregate_coro,
-            when_done=self._on_post_settle_ops_aggregated,
-            key=task_key,
+        self.doc_editor.file.assemble_job_in_background(
+            when_done=self._on_assembly_for_preview_finished
         )
 
-        # Also update estimated time when document settles
+    def _on_document_settled(self, sender):
+        """
+        Called when all background processing is complete. This is the main
+        hook for refreshing previews that depend on the final assembled job.
+        """
+        self.refresh_previews()
         self._update_estimated_time()
 
     def _on_selection_changed(
@@ -1114,22 +1117,23 @@ class MainWindow(Adw.ApplicationWindow):
             logger.error(f"Error saving file: {e.message}")
             return
 
+        # This is now a non-blocking call.
         self.doc_editor.file.export_gcode_to_path(file_path)
 
     def on_home_clicked(self, action, param):
         if not config.machine:
             return
-        self.doc_editor.machine.home_machine(config.machine)
+        self.machine_cmd.home_machine(config.machine)
 
     def on_frame_clicked(self, action, param):
         if not config.machine:
             return
-        self.doc_editor.machine.frame_job(config.machine)
+        self.machine_cmd.frame_job(config.machine)
 
     def on_send_clicked(self, action, param):
         if not config.machine:
             return
-        self.doc_editor.machine.send_job(config.machine)
+        self.machine_cmd.send_job(config.machine)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -1141,18 +1145,18 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         is_requesting_hold = value.get_boolean()
-        self.doc_editor.machine.set_hold(config.machine, is_requesting_hold)
+        self.machine_cmd.set_hold(config.machine, is_requesting_hold)
         action.set_state(value)
 
     def on_cancel_clicked(self, action, param):
         if not config.machine:
             return
-        self.doc_editor.machine.cancel_job(config.machine)
+        self.machine_cmd.cancel_job(config.machine)
 
     def on_clear_alarm_clicked(self, action, param):
         if not config.machine:
             return
-        self.doc_editor.machine.clear_alarm(config.machine)
+        self.machine_cmd.clear_alarm(config.machine)
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""

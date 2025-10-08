@@ -242,13 +242,15 @@ class Machine:
 
     def set_driver(self, driver_cls: Type[Driver], args=None):
         new_driver_name = driver_cls.__name__
-        if self.driver_name == new_driver_name and self.driver_args == (
-            args or {}
+        new_args = args or {}
+        if (
+            self.driver_name == new_driver_name
+            and self.driver_args == new_args
         ):
             return
 
         self.driver_name = new_driver_name
-        self.driver_args = args or {}
+        self.driver_args = new_args
         # Use a key to ensure only one rebuild task is pending per machine
         task_mgr.add_coroutine(
             self._rebuild_driver_instance, key=(self.id, "rebuild-driver")
@@ -507,9 +509,12 @@ class Machine:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Machine":
+    def from_dict(
+        cls, data: Dict[str, Any], is_inert: bool = False
+    ) -> "Machine":
         ma = cls()
         ma_data = data.get("machine", {})
+        ma.id = ma_data.get("id", ma.id)
         ma.name = ma_data.get("name", ma.name)
         ma.driver_name = ma_data.get("driver")
         ma.driver_args = ma_data.get("driver_args", {})
@@ -552,9 +557,10 @@ class Machine:
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", 3)
 
-        task_mgr.add_coroutine(
-            ma._rebuild_driver_instance, key=(ma.id, "rebuild-driver")
-        )
+        if not is_inert:
+            task_mgr.add_coroutine(
+                ma._rebuild_driver_instance, key=(ma.id, "rebuild-driver")
+            )
 
         return ma
 

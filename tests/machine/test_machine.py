@@ -11,18 +11,27 @@ from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
+import rayforge.machine.driver as driver_module
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.dummy import NoDeviceDriver
-from rayforge.pipeline.generator import OpsGenerator
-from rayforge.shared.tasker import task_mgr as global_task_mgr
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.config import initialize_managers
+from rayforge.core.matrix import Matrix
+
+
+class OtherDriver(NoDeviceDriver):
+    """A second dummy driver class for testing purposes."""
+
+    pass
+
+
+driver_module.register_driver(OtherDriver)
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def task_mgr_fixture(monkeypatch):
+async def task_mgr(monkeypatch):
     """
     Provides a test-isolated TaskManager, configured to bridge its main-thread
     callbacks to the asyncio event loop. This instance replaces the global
@@ -37,8 +46,8 @@ async def task_mgr_fixture(monkeypatch):
     tm = TaskManager(main_thread_scheduler=asyncio_scheduler)
 
     # Patch the global singleton ONLY where it is defined.
-    # All other modules that import it will get this patched instance.
-    monkeypatch.setattr("rayforge.shared.tasker.task_mgr", tm)
+    # This ensures any app code that imports it directly gets our instance.
+    monkeypatch.setattr("rayforge.machine.models.machine.task_mgr", tm)
 
     yield tm
 
@@ -77,17 +86,14 @@ def machine() -> Machine:
 
 
 @pytest.fixture
-def doc_editor(doc: Doc, test_config_manager) -> DocEditor:
+def doc_editor(
+    doc: Doc, test_config_manager, task_mgr: TaskManager
+) -> DocEditor:
     """
     Provides a DocEditor instance with real dependencies, configured
-    to use the test's `doc` instance. Explicitly depends on
-    test_config_manager to ensure correct initialization order.
+    to use the test's `doc` and `task_mgr` instances.
     """
-    # Use the yielded test_config_manager directly instead of the global name.
-    editor = DocEditor(global_task_mgr, test_config_manager)
-    editor.doc = doc
-    editor.ops_generator = OpsGenerator(doc, global_task_mgr)
-    return editor
+    return DocEditor(task_mgr, test_config_manager, doc)
 
 
 def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
@@ -100,14 +106,15 @@ def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
         renderer=SVG_RENDERER,
     )
     workpiece = WorkPiece(name=source_file.name)
+    workpiece.matrix = workpiece.matrix @ Matrix.scale(10, 10)
     workpiece.import_source_uid = source.uid
     return workpiece, source
 
 
-async def wait_for_tasks_to_finish():
-    """Polls the task manager until it is idle."""
+async def wait_for_tasks_to_finish(task_mgr: TaskManager):
+    """Polls the given task manager until it is idle."""
     for _ in range(200):  # 2-second timeout
-        if not global_task_mgr.has_tasks():
+        if not task_mgr.has_tasks():
             return
         await asyncio.sleep(0.01)
     pytest.fail("Task manager did not become idle in time.")
@@ -124,82 +131,120 @@ class TestMachine:
         assert machine.acceleration == 1000
 
     @pytest.mark.asyncio
-    async def test_set_driver(self, machine: Machine, mocker):
+    async def test_set_driver(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """Test that changing the driver triggers a rebuild and cleanup."""
         assert isinstance(machine.driver, NoDeviceDriver)
-        old_driver_cleanup_spy = mocker.spy(machine.driver, "cleanup")
+        assert machine.driver_name is None
 
-        # set_driver schedules the rebuild asynchronously
-        machine.set_driver(NoDeviceDriver, {})
+        # Keep a reference to the original driver to ensure it's not the same
+        old_driver = machine.driver
+        old_driver_id = id(old_driver)
 
-        # Wait for the task to complete
-        await wait_for_tasks_to_finish()
+        # Spy on the INSTANCE method before it gets replaced.
+        cleanup_spy = mocker.spy(old_driver, "cleanup")
 
-        # Verify the old driver was cleaned up and a new one is in place
-        old_driver_cleanup_spy.assert_called_once()
-        assert isinstance(machine.driver, NoDeviceDriver)
+        # set_driver schedules the rebuild asynchronously.
+        # Use distinct args to ensure it's not a no-op compared to the fixture.
+        machine.set_driver(OtherDriver, {"port": "/dev/null"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Verify the correct new driver is in place.
+        assert isinstance(machine.driver, OtherDriver)
+        assert id(machine.driver) != old_driver_id
+        cleanup_spy.assert_called_once()
+        assert machine.driver_name == "OtherDriver"
+        assert machine.driver_args == {"port": "/dev/null"}
 
     @pytest.mark.asyncio
     async def test_send_job_calls_driver_run(
-        self, doc: Doc, machine: Machine, doc_editor: DocEditor, mocker
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
     ):
         """
         Verify that sending a job correctly calls the driver's run method
         with the expected arguments, including the `doc`.
         """
-        wp, source = create_test_workpiece_and_source()
+        # --- Arrange ---
+        # Add a workpiece to the document, which will trigger ops generation.
+        workpiece, source = create_test_workpiece_and_source()
         doc.add_import_source(source)
-        doc.active_layer.add_child(wp)
+        doc.active_layer.add_child(workpiece)
+
+        # Wait for the background processing to finish.
+        await doc_editor.wait_until_settled()
 
         run_spy = mocker.spy(machine.driver, "run")
         machine_cmd = MachineCmd(doc_editor)
 
-        machine_cmd.send_job(machine)
-        await wait_for_tasks_to_finish()
+        # --- Act ---
+        # Run the full job assembly pipeline and send it to the driver.
+        await machine_cmd.send_job(machine)
 
+        # --- Assert ---
         run_spy.assert_called_once()
-        args, kwargs = run_spy.call_args
-        assert len(args) == 3
-        assert isinstance(args[0], Ops)
-        assert args[1] is machine
-        assert args[2] is doc
-        assert not kwargs
+        ops, received_machine, received_doc = run_spy.call_args.args
+        assert isinstance(ops, Ops)
+        assert not ops.is_empty()
+        assert received_machine is machine
+        assert received_doc is doc
 
     @pytest.mark.asyncio
     async def test_frame_job_calls_driver_run(
-        self, doc: Doc, machine: Machine, doc_editor: DocEditor, mocker
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
     ):
         """Verify that framing a job calls the driver's run method."""
-        wp, source = create_test_workpiece_and_source()
-        doc.add_import_source(source)
-        doc.active_layer.add_child(wp)
-
-        laser = Laser()
-        laser.frame_power = 1  # Must be an integer
-        machine.heads = [laser]
+        # --- Arrange ---
+        # Configure the machine to be capable of framing.
+        head = machine.get_default_head()
+        head.frame_power = 1
         assert machine.can_frame() is True
+
+        # Add a workpiece to the document.
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_import_source(source)
+        doc.active_layer.add_child(workpiece)
+
+        # Wait for background processing to complete.
+        await doc_editor.wait_until_settled()
 
         run_spy = mocker.spy(machine.driver, "run")
         machine_cmd = MachineCmd(doc_editor)
 
-        machine_cmd.frame_job(machine)
-        await wait_for_tasks_to_finish()
+        # --- Act ---
+        await machine_cmd.frame_job(machine)
 
+        # --- Assert ---
         run_spy.assert_called_once()
-        args, kwargs = run_spy.call_args
-        assert isinstance(args[0], Ops)
-        assert args[1] is machine
-        assert args[2] is doc
+        ops, received_machine, received_doc = run_spy.call_args.args
+        assert isinstance(ops, Ops)
+        assert not ops.is_empty()
+        assert received_machine is machine
+        assert received_doc is doc
 
     @pytest.mark.asyncio
-    async def test_simple_commands(self, machine: Machine, mocker):
+    async def test_simple_commands(
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        doc_editor: DocEditor,
+    ):
         """
         Test simple fire-and-forget commands like home, cancel, etc.,
         ensuring they correctly delegate to the driver.
         """
-        machine_cmd = MachineCmd(mocker.MagicMock(spec=DocEditor))
+        machine_cmd = MachineCmd(doc_editor)
 
-        # Spy on all relevant driver methods
+        # Spy on the INSTANCE methods now that the fixture is stable
         home_spy = mocker.spy(machine.driver, "home")
         cancel_spy = mocker.spy(machine.driver, "cancel")
         set_hold_spy = mocker.spy(machine.driver, "set_hold")
@@ -208,39 +253,39 @@ class TestMachine:
 
         # Home
         machine_cmd.home_machine(machine)
-        await wait_for_tasks_to_finish()
+        await wait_for_tasks_to_finish(task_mgr)
         home_spy.assert_called_once()
 
         # Cancel
         machine_cmd.cancel_job(machine)
-        await wait_for_tasks_to_finish()
+        await wait_for_tasks_to_finish(task_mgr)
         cancel_spy.assert_called_once()
 
         # Hold
         machine_cmd.set_hold(machine, True)
-        await wait_for_tasks_to_finish()
+        await wait_for_tasks_to_finish(task_mgr)
         set_hold_spy.assert_called_once_with(True)
 
         # Resume
         machine_cmd.set_hold(machine, False)
-        await wait_for_tasks_to_finish()
+        await wait_for_tasks_to_finish(task_mgr)
         assert set_hold_spy.call_count == 2
         set_hold_spy.assert_called_with(False)
 
         # Clear Alarm
         machine_cmd.clear_alarm(machine)
-        await wait_for_tasks_to_finish()
+        await wait_for_tasks_to_finish(task_mgr)
         clear_alarm_spy.assert_called_once()
 
         # Select Tool
-        # Add a second laser to make index 1 valid
         laser2 = Laser()
         laser2.tool_number = 5  # Give it a distinct tool number
         machine.add_head(laser2)
         assert len(machine.heads) == 2
 
-        machine_cmd.select_tool(machine, 1)
-        await wait_for_tasks_to_finish()
+        machine_cmd.select_tool(machine, 1)  # Select head at index 1
+        await wait_for_tasks_to_finish(task_mgr)
+        # Assert that the driver was called with the correct tool number (5)
         select_tool_spy.assert_called_once_with(5)
 
     @pytest.mark.asyncio
@@ -280,7 +325,7 @@ class TestMachine:
         assert new_machine.acceleration == 2500
 
     def test_get_default_head(self, machine: Machine):
-        """Test that get_default_head() returns the first laser head."""
+        """Returns the first laser head, or raises an error if none exist."""
         default_head = machine.get_default_head()
         assert isinstance(default_head, Laser)
         assert len(machine.heads) == 1
