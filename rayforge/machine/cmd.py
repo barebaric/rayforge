@@ -81,7 +81,6 @@ class MachineCmd:
 
             # This coroutine will now run in the task manager
             async def _run_frame(ctx):
-                nonlocal handle
                 try:
                     assert handle is not None, "Handle must exist to run frame"
                     artifact = ArtifactStore.get(handle)
@@ -171,7 +170,6 @@ class MachineCmd:
                 return
 
             async def _run_job(ctx):
-                nonlocal handle
                 try:
                     assert handle is not None, "Handle must exist to run job"
                     artifact = ArtifactStore.get(handle)
