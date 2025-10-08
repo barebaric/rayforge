@@ -37,6 +37,33 @@ class Doc(DocItem):
         # The new workpiece layer should be active by default
         self._active_layer_index: int = 0
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> "Doc":
+        """Deserializes the document from a dictionary."""
+        doc = cls()
+        doc.uid = data.get("uid", doc.uid)
+
+        # Clear the default layer created by __init__
+        doc.set_children([])
+        # Reset the index to a safe value before adding new layers
+        doc._active_layer_index = -1
+
+        layers = [Layer.from_dict(d) for d in data.get("children", [])]
+        stock_items = [
+            StockItem.from_dict(d) for d in data.get("stock_items", [])
+        ]
+        doc.set_children(layers + stock_items)
+
+        doc._active_layer_index = data.get("active_layer_index", 0)
+
+        import_sources = {
+            uid: ImportSource.from_dict(src_data)
+            for uid, src_data in data.get("import_sources", {}).items()
+        }
+        doc.import_sources = import_sources
+
+        return doc
+
     @property
     def stock_items(self) -> List["StockItem"]:
         """Returns a list of all child items that are StockItems."""
@@ -158,6 +185,8 @@ class Doc(DocItem):
     @property
     def active_layer(self) -> Layer:
         """Returns the currently active layer."""
+        if not self.layers:
+            raise IndexError("Document has no layers.")
         return self.layers[self._active_layer_index]
 
     @active_layer.setter
@@ -255,12 +284,17 @@ class Doc(DocItem):
             )
 
         # Preserve the active layer if it still exists in the new list
-        old_active_layer = self.active_layer
+        old_active_layer = None
+        if self.layers and self._active_layer_index >= 0:
+            old_active_layer = self.active_layer
+
         try:
-            new_active_index = new_layers_list.index(old_active_layer)
+            if old_active_layer:
+                new_active_index = new_layers_list.index(old_active_layer)
+            else:
+                new_active_index = 0
         except ValueError:
             # The old active layer is not in the new list, so pick a default.
-            # Fall back to the first layer in the new list.
             new_active_index = 0
 
         # IMPORTANT: Update the active index BEFORE calling set_children.

@@ -28,6 +28,10 @@ class ConcreteItem(DocItem):
     def to_dict(self) -> Dict:
         return {"name": self.name}
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> "ConcreteItem":
+        return cls(name=data.get("name", "ConcreteItem"))
+
 
 class SimpleWorkPiece(WorkPiece):
     """

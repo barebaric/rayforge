@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
@@ -229,3 +229,88 @@ def test_doc_serialization_with_stock_items(doc):
     stock2_dict = data_dict["stock_items"][1]
     assert stock2_dict["name"] == "Stock 2"
     assert stock2_dict["thickness"] == 15.0
+
+
+def test_doc_from_dict_deserialization():
+    """Tests deserializing a Doc from a dictionary."""
+    doc_dict = {
+        "uid": "test-doc-uid",
+        "type": "doc",
+        "active_layer_index": 0,
+        "children": [
+            {
+                "uid": "layer1-uid",
+                "type": "layer",
+            }
+        ],
+        "stock_items": [],
+        "import_sources": {},
+    }
+
+    with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
+        mock_layer = MagicMock()
+        mock_layer_from_dict.return_value = mock_layer
+
+        doc = Doc.from_dict(doc_dict)
+
+        assert isinstance(doc, Doc)
+        assert len(doc.children) == 1
+        mock_layer_from_dict.assert_called_once_with(
+            {
+                "uid": "layer1-uid",
+                "type": "layer",
+            }
+        )
+
+
+def test_doc_roundtrip_serialization():
+    """Tests that to_dict() and from_dict() produce equivalent objects."""
+    # Create a document with layers
+    original = Doc()
+    original.uid = "test-doc-uid"
+
+    # Add a second layer
+    layer2 = Layer("Layer 2")
+    original.add_layer(layer2)
+    original.active_layer = layer2
+
+    # Serialize and deserialize
+    data = original.to_dict()
+    restored = Doc.from_dict(data)
+
+    # Check that the restored object has the same properties
+    assert restored.uid == original.uid
+    assert len(restored.layers) == len(original.layers)
+    assert restored.uid == "test-doc-uid"
+    assert len(restored.layers) == 2
+
+
+def test_doc_from_dict_with_default_active_layer_index():
+    """Tests that from_dict uses default active_layer_index when missing."""
+    doc_dict = {
+        "uid": "test-doc-uid",
+        "type": "doc",
+        "children": [
+            {
+                "uid": "layer1-uid",
+                "type": "layer",
+            }
+        ],
+        "stock_items": [],
+        "import_sources": {},
+    }
+
+    with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
+        mock_layer = MagicMock()
+        mock_layer_from_dict.return_value = mock_layer
+
+        doc = Doc.from_dict(doc_dict)
+
+        assert isinstance(doc, Doc)
+        assert len(doc.children) == 1
+        mock_layer_from_dict.assert_called_once_with(
+            {
+                "uid": "layer1-uid",
+                "type": "layer",
+            }
+        )

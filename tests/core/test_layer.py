@@ -1,11 +1,12 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from blinker import Signal
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.layer import Layer
+from rayforge.core.matrix import Matrix
 
 
 @pytest.fixture
@@ -194,3 +195,130 @@ def test_layer_from_dict_handles_missing_stock_item_uid():
     layer = Layer.from_dict(layer_dict)
 
     assert layer.stock_item_uid is None
+
+
+def test_layer_to_dict_serialization():
+    """Tests serializing a Layer to a dictionary."""
+    layer = Layer("Test Layer")
+    layer.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
+    layer.visible = False
+    layer.stock_item_uid = "test-stock-uid"
+
+    wp = WorkPiece("test.svg")
+    wp.matrix = Matrix.translation(1, 2)
+    layer.add_child(wp)
+
+    data = layer.to_dict()
+
+    expected_matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
+
+    assert data["type"] == "layer"
+    assert data["name"] == "Test Layer"
+    assert data["matrix"] == expected_matrix.to_list()
+    assert data["visible"] is False
+    assert data["stock_item_uid"] == "test-stock-uid"
+    assert "children" in data
+    assert len(data["children"]) == 2  # WorkPiece and Workflow
+
+
+def test_layer_from_dict_deserialization():
+    """Tests deserializing a Layer from a dictionary."""
+    layer_dict = {
+        "uid": "test-layer-uid",
+        "type": "layer",
+        "name": "Deserialized Layer",
+        "matrix": [[1, 0, 10], [0, 1, 20], [0, 0, 1]],
+        "visible": False,
+        "stock_item_uid": "test-stock-uid",
+        "children": [],
+    }
+
+    layer = Layer.from_dict(layer_dict)
+
+    assert isinstance(layer, Layer)
+    assert layer.uid == "test-layer-uid"
+    assert layer.name == "Deserialized Layer"
+    assert layer.matrix == Matrix.translation(10, 20)
+    assert layer.visible is False
+    assert layer.stock_item_uid == "test-stock-uid"
+
+
+def test_layer_from_dict_with_no_children():
+    """Tests deserializing a Layer with no children."""
+    layer_dict = {
+        "uid": "empty-layer-uid",
+        "type": "layer",
+        "name": "Empty Layer",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "visible": True,
+        "stock_item_uid": None,
+        "children": [],
+    }
+
+    layer = Layer.from_dict(layer_dict)
+
+    assert isinstance(layer, Layer)
+    assert layer.uid == "empty-layer-uid"
+    assert layer.name == "Empty Layer"
+    assert layer.visible is True
+    assert layer.stock_item_uid is None
+    assert len(layer.children) == 0
+    assert layer.workflow is None
+
+
+def test_layer_from_dict_ignores_unknown_child_types():
+    """Tests that from_dict ignores children with unknown types."""
+    layer_dict = {
+        "uid": "mixed-layer-uid",
+        "type": "layer",
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "children": [
+            {
+                "uid": "workflow-uid",
+                "type": "workflow",
+            },
+            {
+                "uid": "unknown-uid",
+                "type": "unknown_type",
+            },
+        ],
+    }
+
+    with patch(
+        "rayforge.core.workflow.Workflow.from_dict"
+    ) as mock_workflow_from_dict:
+        mock_workflow = MagicMock()
+        mock_workflow_from_dict.return_value = mock_workflow
+
+        layer = Layer.from_dict(layer_dict)
+
+        assert isinstance(layer, Layer)
+        assert len(layer.children) == 1
+        mock_workflow_from_dict.assert_called_once_with(
+            {
+                "uid": "workflow-uid",
+                "type": "workflow",
+            }
+        )
+
+
+def test_layer_roundtrip_serialization():
+    """Tests that to_dict() and from_dict() produce equivalent objects."""
+    # Create a layer with various properties
+    original = Layer("Roundtrip Layer")
+    original.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
+    original.visible = False
+    original.stock_item_uid = "test-stock-uid"
+
+    # Serialize and deserialize
+    data = original.to_dict()
+    restored = Layer.from_dict(data)
+
+    # Check that the restored object has the same properties
+    assert restored.uid == original.uid
+    assert restored.name == original.name
+    assert restored.matrix == original.matrix
+    assert restored.visible == original.visible
+    assert restored.stock_item_uid == original.stock_item_uid
+    # Layer always has at least a workflow child
+    assert len(restored.children) >= 1

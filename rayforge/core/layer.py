@@ -17,9 +17,11 @@ from typing import (
 )
 from blinker import Signal
 
-from ..core.step import Step
-from ..core.workflow import Workflow
+from .group import Group
 from .item import DocItem
+from .matrix import Matrix
+from .step import Step
+from .workflow import Workflow
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
@@ -73,16 +75,22 @@ class Layer(DocItem):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Layer":
         """Deserializes a dictionary into a Layer instance."""
-        from .matrix import Matrix
-
         layer = cls(name=data.get("name", "Layer"))
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
         layer.stock_item_uid = data.get("stock_item_uid")
 
-        # For now, we'll skip loading children as it requires complex
-        # deserialization logic that's not needed for current functionality
+        children = []
+        for child_data in data.get("children", []):
+            child_type = child_data.get("type")
+            if child_type == "workflow":
+                children.append(Workflow.from_dict(child_data))
+            elif child_type == "workpiece":
+                children.append(WorkPiece.from_dict(child_data))
+            elif child_type == "group":
+                children.append(Group.from_dict(child_data))
+        layer.set_children(children)
 
         return layer
 

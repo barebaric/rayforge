@@ -141,3 +141,28 @@ def test_stock_item_from_dict_handles_missing_thickness():
     stock = StockItem.from_dict(stock_dict)
 
     assert stock.thickness is None
+
+
+def test_stock_item_roundtrip_serialization():
+    """Tests that to_dict() and from_dict() produce equivalent objects."""
+    # Create a stock item with various properties
+    geo = Geometry()
+    geo.move_to(10, 20)
+    geo.line_to(30, 40)
+
+    original = StockItem(name="Roundtrip Stock", geometry=geo)
+    original.matrix = Matrix.translation(5, 15) @ Matrix.scale(2, 3)
+    original.thickness = 12.5
+    original.visible = False
+
+    # Serialize and deserialize
+    data = original.to_dict()
+    restored = StockItem.from_dict(data)
+
+    # Check that the restored object has the same properties
+    assert restored.uid == original.uid
+    assert restored.name == original.name
+    assert restored.matrix == original.matrix
+    assert restored.thickness == original.thickness
+    assert restored.visible == original.visible
+    assert restored.geometry.rect() == original.geometry.rect()

@@ -4,9 +4,10 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 
 from __future__ import annotations
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict
+from typing import List, Optional, TypeVar, Iterable, Dict, Any
 from blinker import Signal
 from .item import DocItem
+from .matrix import Matrix
 from .step import Step
 
 
@@ -45,6 +46,21 @@ class Workflow(DocItem):
             "matrix": self.matrix.to_list(),
             "children": [child.to_dict() for child in self.children],
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Workflow":
+        """Deserializes a dictionary into a Workflow instance."""
+        workflow = cls(name=data.get("name", "Workflow"))
+        workflow.uid = data["uid"]
+        workflow.matrix = Matrix.from_list(data["matrix"])
+
+        steps = [
+            Step.from_dict(d)
+            for d in data.get("children", [])
+            if d.get("type") == "step"
+        ]
+        workflow.set_children(steps)
+        return workflow
 
     @property
     def steps(self) -> List[Step]:

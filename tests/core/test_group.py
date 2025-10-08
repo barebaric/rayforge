@@ -366,3 +366,68 @@ def test_factory_returns_none_if_only_stock_items(stock_item_factory):
 
     result = Group.create_from_items([stock1, stock2], layer)
     assert result is None
+
+
+def test_group_to_dict_serialization():
+    """Tests serializing a Group to a dictionary."""
+    group = Group(name="Test Group")
+    group.matrix = Matrix.translation(10, 20) @ Matrix.scale(2, 3)
+
+    wp1 = WorkPiece("wp1.svg")
+    wp2 = WorkPiece("wp2.svg")
+    group.add_child(wp1)
+    group.add_child(wp2)
+
+    data = group.to_dict()
+
+    expected_matrix = Matrix.translation(10, 20) @ Matrix.scale(2, 3)
+
+    assert data["type"] == "group"
+    assert data["name"] == "Test Group"
+    assert data["matrix"] == expected_matrix.to_list()
+    assert "children" in data
+    assert len(data["children"]) == 2
+
+
+def test_group_to_dict_with_nested_groups():
+    """Tests serializing a Group with nested Groups."""
+    outer_group = Group("Outer Group")
+    inner_group = Group("Inner Group")
+    wp = WorkPiece("test.svg")
+
+    inner_group.add_child(wp)
+    outer_group.add_child(inner_group)
+
+    data = outer_group.to_dict()
+
+    assert data["type"] == "group"
+    assert data["name"] == "Outer Group"
+    assert len(data["children"]) == 1
+    assert data["children"][0]["type"] == "group"
+    assert data["children"][0]["name"] == "Inner Group"
+    assert len(data["children"][0]["children"]) == 1
+
+
+def test_group_roundtrip_serialization():
+    """Tests that to_dict() and from_dict() produce equivalent objects."""
+    # Create a group with children
+    original = Group("Roundtrip Group")
+    original.matrix = Matrix.translation(10, 20) @ Matrix.rotation(45)
+
+    wp1 = WorkPiece("wp1.svg")
+    wp2 = WorkPiece("wp2.svg")
+    original.add_child(wp1)
+    original.add_child(wp2)
+
+    # Serialize and deserialize
+    data = original.to_dict()
+    restored = Group.from_dict(data)
+
+    # Check that the restored object has the same properties
+    assert restored.uid == original.uid
+    assert restored.name == original.name
+    assert restored.matrix == original.matrix
+    assert len(restored.children) == len(original.children)
+    assert all(
+        child.name in ["wp1.svg", "wp2.svg"] for child in restored.children
+    )

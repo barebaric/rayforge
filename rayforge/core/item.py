@@ -72,6 +72,12 @@ class DocItem(ABC):
         """Serializes the item to a dictionary."""
         raise NotImplementedError
 
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, data: Dict) -> "DocItem":
+        """Deserializes the item from a dictionary."""
+        raise NotImplementedError
+
     def __iter__(self):
         """
         Provides a non-recursive iterator over the item's direct children.
