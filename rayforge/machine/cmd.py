@@ -23,7 +23,7 @@ class MachineCmd:
     def home_machine(self, machine: "Machine"):
         """Adds a 'home' task to the task manager for the given machine."""
         driver = machine.driver
-        self._editor._task_manager.add_coroutine(
+        self._editor.task_manager.add_coroutine(
             lambda ctx: driver.home(), key="home-machine"
         )
 
@@ -37,7 +37,7 @@ class MachineCmd:
         tool_number = head.tool_number
 
         driver = machine.driver
-        self._editor._task_manager.add_coroutine(
+        self._editor.task_manager.add_coroutine(
             lambda ctx: driver.select_tool(tool_number), key="select-head"
         )
 
@@ -125,7 +125,7 @@ class MachineCmd:
                     if handle:
                         ArtifactStore.release(handle)
 
-            self._editor._task_manager.add_coroutine(_run_frame)
+            self._editor.task_manager.add_coroutine(_run_frame)
 
         self._editor.file.assemble_job_in_background(
             when_done=_on_assembly_done
@@ -190,7 +190,7 @@ class MachineCmd:
                     if handle:
                         ArtifactStore.release(handle)
 
-            self._editor._task_manager.add_coroutine(_run_job)
+            self._editor.task_manager.add_coroutine(_run_job)
 
         self._editor.file.assemble_job_in_background(
             when_done=_on_assembly_done
@@ -202,20 +202,20 @@ class MachineCmd:
         Adds a task to set the machine's hold state (pause/resume).
         """
         driver = machine.driver
-        self._editor._task_manager.add_coroutine(
+        self._editor.task_manager.add_coroutine(
             lambda ctx: driver.set_hold(is_requesting_hold), key="set-hold"
         )
 
     def cancel_job(self, machine: "Machine"):
         """Adds a task to cancel the currently running job on the machine."""
         driver = machine.driver
-        self._editor._task_manager.add_coroutine(
+        self._editor.task_manager.add_coroutine(
             lambda ctx: driver.cancel(), key="cancel-job"
         )
 
     def clear_alarm(self, machine: "Machine"):
         """Adds a task to clear any active alarm on the machine."""
         driver = machine.driver
-        self._editor._task_manager.add_coroutine(
+        self._editor.task_manager.add_coroutine(
             lambda ctx: driver.clear_alarm(), key="clear-alarm"
         )

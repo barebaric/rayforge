@@ -59,10 +59,10 @@ class DocEditor:
             doc: An optional existing Doc object. If None, a new one is
                  created.
         """
-        self._task_manager = task_manager
+        self.task_manager = task_manager
         self._config_manager = config_manager
         self.doc = doc or Doc()
-        self.ops_generator = OpsGenerator(self.doc, self._task_manager)
+        self.ops_generator = OpsGenerator(self.doc, self.task_manager)
         self.history_manager: "HistoryManager" = self.doc.history_manager
 
         # A set to track temporary artifacts (e.g., for job previews)
@@ -79,10 +79,10 @@ class DocEditor:
 
         # Instantiate and link command handlers, passing dependencies.
         self.edit = EditCmd(self)
-        self.file = FileCmd(self, self._task_manager, self._config_manager)
-        self.group = GroupCmd(self, self._task_manager)
+        self.file = FileCmd(self, self.task_manager, self._config_manager)
+        self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
-        self.layout = LayoutCmd(self, self._task_manager)
+        self.layout = LayoutCmd(self, self.task_manager)
         self.transform = TransformCmd(self)
         self.stock = StockCmd(self)
         self.step = StepCmd(self)
