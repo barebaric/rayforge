@@ -15,7 +15,7 @@ from ....undo import DictItemCommand
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....undo import HistoryManager
+    from ....doceditor.editor import DocEditor
 
 
 # Preset selector constants
@@ -53,20 +53,22 @@ class MaterialTestGridSettingsWidget(
 
     def __init__(
         self,
+        editor: "DocEditor",
+        title: str,
         target_dict: Dict[str, Any],
         page: Adw.PreferencesPage,
         step: "Step",
-        history_manager: "HistoryManager",
         **kwargs,
     ):
         # Get current params
         producer = MaterialTestGridProducer.from_dict(target_dict)
 
         super().__init__(
+            editor,
+            title,
             target_dict=target_dict,
             page=page,
             step=step,
-            history_manager=history_manager,
             **kwargs,
         )
 
