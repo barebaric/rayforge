@@ -69,7 +69,7 @@ def main():
     import gi
 
     gi.require_version("Adw", "1")
-    from gi.repository import Adw
+    from gi.repository import Adw, GLib
 
     class App(Adw.Application):
         def __init__(self, args):
@@ -81,26 +81,43 @@ def main():
         def do_activate(self):
             # Import the window here to avoid module-level side-effects
             from rayforge.mainwindow import MainWindow
-            from rayforge.core.vectorization_config import TraceConfig
 
             self.win = MainWindow(application=self)
-            # self.args.filenames will be a list of paths
-            if self.args.filenames:
-                for filename in self.args.filenames:
-                    mime_type, _ = mimetypes.guess_type(filename)
 
-                    # Default to tracing any file that supports it. If
-                    # --direct-vector is passed, attempt to use vectors
-                    # directly by passing a None config.
-                    vector_config = (
-                        None if self.args.direct_vector else TraceConfig()
-                    )
-                    self.win.doc_editor.file.load_file_from_path(
-                        filename=Path(filename),
-                        mime_type=mime_type,
-                        vector_config=vector_config,
-                    )
+            # Don't load files until the window is fully mapped and
+            # allocated on screen. The 'map' signal guarantees this.
+            if self.args.filenames:
+                # We connect a one-shot handler to the 'map' event.
+                self.win.connect("map", self._load_initial_files)
+
             self.win.present()
+
+        def _load_initial_files(self, widget):
+            """
+            Loads files passed via the command line. This is called from the
+            'map' signal handler to ensure the main window is fully initialized.
+            """
+            # This import must be inside the method.
+            from rayforge.core.vectorization_config import TraceConfig
+
+            assert self.win is not None
+            # self.args.filenames will be a list of paths
+            for filename in self.args.filenames:
+                mime_type, _ = mimetypes.guess_type(filename)
+
+                # Default to tracing any file that supports it. If
+                # --direct-vector is passed, attempt to use vectors
+                # directly by passing a None config.
+                vector_config = (
+                    None if self.args.direct_vector else TraceConfig()
+                )
+                self.win.doc_editor.file.load_file_from_path(
+                    filename=Path(filename),
+                    mime_type=mime_type,
+                    vector_config=vector_config,
+                )
+
+            return GLib.SOURCE_REMOVE  # ensure this handler only runs once
 
     # Import version for the --version flag.
     from rayforge import __version__

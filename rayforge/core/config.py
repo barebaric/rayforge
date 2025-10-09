@@ -89,7 +89,9 @@ class ConfigManager:
         self.machine_mgr = machine_mgr
         self.config: Config = Config()
 
-        self.load_config()
+        # Load first, which may trigger 'changed' signals if defaults are set
+        self.load()
+        # Connect the auto-save handler *after* loading is complete.
         self.config.changed.connect(self._on_config_changed)
 
     def _on_config_changed(self, sender, **kwargs):
@@ -101,7 +103,7 @@ class ConfigManager:
         with open(self.filepath, "w") as f:
             yaml.safe_dump(self.config.to_dict(), f)
 
-    def load_config(self) -> "Config":
+    def load(self) -> "Config":
         if not self.filepath.exists():
             self.config = Config()
             return self.config
