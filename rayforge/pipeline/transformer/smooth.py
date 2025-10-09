@@ -116,7 +116,7 @@ class Smooth(OpsTransformer):
 
     @property
     def description(self) -> str:
-        return _("Smooths the path by applying a Gaussian filter")
+        return _("Smooths the path by applying a Gaussian filter.")
 
     def run(
         self,

@@ -68,7 +68,7 @@ class OverscanTransformer(OpsTransformer):
 
     @property
     def description(self) -> str:
-        return _("Extends raster lines to ensure constant engraving speed")
+        return _("Extends raster lines to ensure constant engraving speed.")
 
     def run(
         self,

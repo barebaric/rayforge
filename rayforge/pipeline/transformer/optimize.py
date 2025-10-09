@@ -524,7 +524,7 @@ class Optimize(OpsTransformer):
 
     @property
     def description(self) -> str:
-        return _("Minimizes travel distance by reordering segments")
+        return _("Minimizes travel distance by reordering segments.")
 
     def run(
         self,

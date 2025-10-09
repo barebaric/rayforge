@@ -4,7 +4,7 @@ Material Test Grid Settings Widget
 Provides UI for configuring material test array parameters.
 """
 
-from typing import Dict, Any, TYPE_CHECKING, Tuple
+from typing import Dict, Any, TYPE_CHECKING, Tuple, cast
 from gi.repository import Gtk, Adw, GLib  # noqa: F401
 from .base import StepComponentSettingsWidget
 from ....shared.util.adwfix import get_spinrow_float, get_spinrow_int
@@ -43,7 +43,6 @@ PRESETS = {
         "speed_range": (1000.0, 20000.0),
         "power_range": (30.0, 100.0),
     },
-
 }
 
 
@@ -95,9 +94,7 @@ class MaterialTestGridSettingsWidget(
         preset_row.set_selected(0)  # Start with PRESET_NONE selected
 
         # Create a separate group for presets
-        preset_group = Adw.PreferencesGroup(
-            title=_("Presets")
-        )
+        preset_group = Adw.PreferencesGroup(title=_("Presets"))
         preset_group.add(preset_row)
         self.add(preset_group)
 
@@ -149,13 +146,11 @@ class MaterialTestGridSettingsWidget(
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
-            page_increment=100.0
+            page_increment=100.0,
         )
         self.speed_min_row = Adw.SpinRow(
             title=_("Minimum Speed"),
-            subtitle=_(
-                "Starting speed for test grid (mm/min)"
-            ),
+            subtitle=_("Starting speed for test grid (mm/min)"),
             adjustment=min_adj,
             digits=0,
         )
@@ -167,13 +162,11 @@ class MaterialTestGridSettingsWidget(
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
-            page_increment=100.0
+            page_increment=100.0,
         )
         self.speed_max_row = Adw.SpinRow(
             title=_("Maximum Speed"),
-            subtitle=_(
-                "Ending speed for test grid (mm/min)"
-            ),
+            subtitle=_("Ending speed for test grid (mm/min)"),
             adjustment=max_adj,
             digits=0,
         )
@@ -323,7 +316,10 @@ class MaterialTestGridSettingsWidget(
             return
 
         model = row.get_model()
-        preset_name = model.get_string(selected_idx)
+        if model is None:
+            return
+        string_list = cast(Gtk.StringList, model)
+        preset_name = string_list.get_string(selected_idx)
 
         # Ignore PRESET_NONE selection - it's just a placeholder
         if not preset_name or preset_name == PRESET_NONE:
@@ -352,8 +348,11 @@ class MaterialTestGridSettingsWidget(
 
         # Find and set test type by matching string
         model = self.test_type_row.get_model()
-        for i in range(model.get_n_items()):
-            if model.get_string(i) == test_type:
+        if model is None:
+            return
+        string_list = cast(Gtk.StringList, model)
+        for i in range(string_list.get_n_items()):
+            if string_list.get_string(i) == test_type:
                 self.test_type_row.set_selected(i)
                 break
 
@@ -362,7 +361,10 @@ class MaterialTestGridSettingsWidget(
         selected_idx = row.get_selected()
         if selected_idx != Gtk.INVALID_LIST_POSITION:
             model = row.get_model()
-            test_type_text = model.get_string(selected_idx)
+            if model is None:
+                return
+            string_list = cast(Gtk.StringList, model)
+            test_type_text = string_list.get_string(selected_idx)
             # Store enum value string for serialization
             self._update_param("test_type", test_type_text)
 
@@ -419,6 +421,7 @@ class MaterialTestGridSettingsWidget(
     def _update_import_source_data(self):
         """Updates the ImportSource data with current parameters."""
         import json
+
         params_dict = self.target_dict.get("params", {})
 
         # Find the workpiece associated with this step
@@ -428,6 +431,7 @@ class MaterialTestGridSettingsWidget(
         for layer in self.step.doc.layers:
             for item in layer.children:
                 from ....core.workpiece import WorkPiece
+
                 if isinstance(item, WorkPiece):
                     source = item.source
                     if (
@@ -435,9 +439,7 @@ class MaterialTestGridSettingsWidget(
                         and source.metadata.get("type") == "material_test"
                     ):
                         # Update the import source data
-                        source.data = json.dumps(params_dict).encode(
-                            "utf-8"
-                        )
+                        source.data = json.dumps(params_dict).encode("utf-8")
                         source.original_data = source.data
                         # Clear render cache so it re-renders
                         item.clear_render_cache()
@@ -457,6 +459,7 @@ class MaterialTestGridSettingsWidget(
         for layer in self.step.doc.layers:
             for item in layer.children:
                 from ....core.workpiece import WorkPiece
+
                 if isinstance(item, WorkPiece):
                     source = item.source
                     if (
@@ -544,13 +547,24 @@ class MaterialTestGridSettingsWidget(
 
         # Get the root window
         root = self.get_root()
-        if isinstance(root, MainWindow):
-            action = root.action_manager.get_action("view_mode")
-            if action:
-                current_mode = action.get_state().get_string()
-                if current_mode == "preview":
-                    # Switch back to 2D view
-                    action.change_state(GLib.Variant.new_string("2d"))
-                    root.on_view_mode_changed(
-                        action, GLib.Variant.new_string("2d")
-                    )
+        if not isinstance(root, MainWindow):
+            return
+
+        action = root.action_manager.get_action("view_mode")
+        if not action:
+            return
+
+        state = action.get_state()
+        if state is None:
+            return
+
+        current_mode = state.get_string()
+        if current_mode != "preview":
+            return
+
+        # Switch back to 2D view
+        action.change_state(GLib.Variant.new_string("2d"))
+        # Safely call the method if it exists
+        view_mode_changed = getattr(root, "on_view_mode_changed", None)
+        if callable(view_mode_changed):
+            view_mode_changed(action, GLib.Variant.new_string("2d"))

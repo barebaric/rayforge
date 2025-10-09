@@ -76,7 +76,7 @@ class MultiPassTransformer(OpsTransformer):
     @property
     def description(self) -> str:
         return _(
-            "Repeats the path multiple times, optionally stepping down in Z"
+            "Repeats the path multiple times, optionally stepping down in Z."
         )
 
     def run(
