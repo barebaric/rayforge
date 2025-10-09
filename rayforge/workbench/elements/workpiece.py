@@ -482,19 +482,15 @@ class WorkPieceView(CanvasElement):
         self._ops_recordings[step_uid] = recording
 
         # Find the Step object to trigger the initial rasterization.
-        found_step = None
         if self.data.layer and self.data.layer.workflow:
             for step_obj in self.data.layer.workflow.steps:
                 if step_obj.uid == step_uid:
-                    found_step = step_obj
-                    break
-        if found_step:
-            self._trigger_ops_rasterization(found_step, received_gen_id)
-        else:
-            logger.warning(
-                "Could not find step '%s' to rasterize after recording.",
-                step_uid,
-            )
+                    self._trigger_ops_rasterization(step_obj, received_gen_id)
+                    return
+        logger.warning(
+            "Could not find step '%s' to rasterize after recording.",
+            step_uid,
+        )
 
     def _trigger_ops_rasterization(self, step: Step, generation_id: int):
         """
