@@ -1,5 +1,6 @@
 import logging
 import math
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, List, Tuple, Dict
 from ...core.ops import (
     Ops,
@@ -34,6 +35,24 @@ if TYPE_CHECKING:
     from ...machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class GcodeOpMap:
+    """
+    A container for a bidirectional mapping between Ops command indices and
+    G-code line numbers.
+
+    Attributes:
+        op_to_gcode: Maps an Ops command index to a list of G-code line
+                     numbers it generated. An empty list means the command
+                     produced no G-code.
+        gcode_to_op: Maps a G-code line number back to the Ops command
+                     index that generated it.
+    """
+
+    op_to_gcode: Dict[int, List[int]] = field(default_factory=dict)
+    gcode_to_op: Dict[int, int] = field(default_factory=dict)
 
 
 class GcodeEncoder(OpsEncoder):
@@ -82,7 +101,7 @@ class GcodeEncoder(OpsEncoder):
 
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
-    ) -> Tuple[str, Dict[int, int]]:
+    ) -> Tuple[str, GcodeOpMap]:
         """Main encoding workflow"""
         # Set the coordinate format based on the machine's precision setting
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
@@ -93,14 +112,26 @@ class GcodeEncoder(OpsEncoder):
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
         )
         gcode: List[str] = []
-        op_to_line_map: Dict[int, int] = {}
+        op_map = GcodeOpMap()
 
+        # Include a bi-directional map from ops to line number.
+        # Since this is an n:n mapping, this needs to be stored as
+        # two separate maps.
         for i, cmd in enumerate(ops):
-            op_to_line_map[i] = len(gcode)
+            start_line = len(gcode)
             self._handle_command(gcode, cmd, context)
+            end_line = len(gcode)
+
+            if end_line > start_line:
+                line_indices = list(range(start_line, end_line))
+                op_map.op_to_gcode[i] = line_indices
+                for line_num in line_indices:
+                    op_map.gcode_to_op[line_num] = i
+            else:
+                op_map.op_to_gcode[i] = []
 
         self._finalize(gcode)
-        return "\n".join(gcode), op_to_line_map
+        return "\n".join(gcode), op_map
 
     def _emit_scripts(
         self, context: GcodeContext, gcode: List[str], trigger: ScriptTrigger

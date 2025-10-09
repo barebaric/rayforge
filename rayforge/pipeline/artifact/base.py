@@ -1,9 +1,11 @@
 from __future__ import annotations
+import json
 import numpy as np
 from typing import Optional, Tuple, Dict, Any
 from dataclasses import dataclass, field
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
+from ..encoder.gcode import GcodeOpMap
 
 
 @dataclass
@@ -93,6 +95,7 @@ class Artifact:
         texture_data: Optional[TextureData] = None,
         gcode_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
+        time_estimate: Optional[float] = None,
     ):
         self.ops = ops
         self.is_scalable = is_scalable
@@ -103,6 +106,11 @@ class Artifact:
         self.texture_data = texture_data
         self.gcode_bytes = gcode_bytes
         self.op_map_bytes = op_map_bytes
+        self.time_estimate = time_estimate
+
+        # Caching properties for deserialized data
+        self._gcode_str: Optional[str] = None
+        self._op_map_obj: Optional[GcodeOpMap] = None
 
     @property
     def artifact_type(self) -> str:
@@ -115,6 +123,33 @@ class Artifact:
             return "vertex"
         return "vector"
 
+    @property
+    def gcode(self) -> Optional[str]:
+        """
+        Lazily decodes and caches the G-code string from its byte array.
+        """
+        if self._gcode_str is None and self.gcode_bytes is not None:
+            self._gcode_str = self.gcode_bytes.tobytes().decode("utf-8")
+        return self._gcode_str
+
+    @property
+    def op_map(self) -> Optional[GcodeOpMap]:
+        """
+        Lazily decodes and caches the GcodeOpMap from its byte array.
+        """
+        if self._op_map_obj is None and self.op_map_bytes is not None:
+            map_str = self.op_map_bytes.tobytes().decode("utf-8")
+            map_dict = json.loads(map_str)
+            self._op_map_obj = GcodeOpMap(
+                op_to_gcode={
+                    int(k): v for k, v in map_dict["op_to_gcode"].items()
+                },
+                gcode_to_op={
+                    int(k): v for k, v in map_dict["gcode_to_op"].items()
+                },
+            )
+        return self._op_map_obj
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the artifact properties to a dictionary."""
         data = {
@@ -124,6 +159,7 @@ class Artifact:
             "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
             "generation_size": self.generation_size,
+            "time_estimate": self.time_estimate,
         }
         if self.vertex_data:
             data["vertex_data"] = self.vertex_data.to_dict()
@@ -175,4 +211,5 @@ class Artifact:
             texture_data=texture_data,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
+            time_estimate=data.get("time_estimate"),
         )

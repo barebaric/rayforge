@@ -14,6 +14,7 @@ class TestArtifactHandle(unittest.TestCase):
             source_coordinate_system_name="PIXEL_SPACE",
             source_dimensions=(1024, 768),
             generation_size=(100.0, 75.0),
+            time_estimate=123.4,
             dimensions_mm=(100.0, 75.0),
             position_mm=(10.0, 20.0),
             array_metadata={

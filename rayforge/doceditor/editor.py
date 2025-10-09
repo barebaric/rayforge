@@ -188,20 +188,12 @@ class DocEditor:
         export_future = asyncio.get_running_loop().create_future()
 
         def _on_export_assembly_done(
-            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
-            error: Optional[Exception],
+            handle: Optional[ArtifactHandle], error: Optional[Exception]
         ):
-            handle: Optional[ArtifactHandle] = None
             try:
                 if error:
                     export_future.set_exception(error)
                     return
-                if not result:
-                    exc = ValueError("Assembly process returned no result.")
-                    export_future.set_exception(exc)
-                    return
-
-                _time, handle = result
                 if not handle:
                     exc = ValueError("Assembly process returned no artifact.")
                     export_future.set_exception(exc)

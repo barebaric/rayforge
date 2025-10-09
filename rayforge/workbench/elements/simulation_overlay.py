@@ -198,10 +198,11 @@ class SimulationOverlay(CanvasElement):
 
         # Draw each operation with heatmap color and power transparency
         for cmd, state, start_pos in steps:
+            ctx.set_line_width(0.2)
+            ctx.set_dash([])
+
             if cmd.is_travel_command():
                 ctx.set_source_rgba(0.5, 0.5, 0.5, 0.2)  # Faint gray
-                ctx.set_line_width(0.1)
-                ctx.set_dash([])
                 if cmd.end:
                     ctx.move_to(start_pos[0], start_pos[1])
                     ctx.line_to(cmd.end[0], cmd.end[1])
@@ -213,10 +214,7 @@ class SimulationOverlay(CanvasElement):
             power = state.power if state.power is not None else 100.0
             r, g, b = speed_to_heatmap_color(speed, min_speed, max_speed)
             alpha = 0.1 + (power / 100.0) * 0.9
-
             ctx.set_source_rgba(r, g, b, alpha)
-            ctx.set_line_width(0.2)
-            ctx.set_dash([])
 
             if isinstance(cmd, ArcToCommand):
                 for seg_start, seg_end in linearize_arc(cmd, start_pos):

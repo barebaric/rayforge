@@ -79,6 +79,7 @@ class TestArtifact(unittest.TestCase):
         self.assertIsNone(reconstructed.texture_data)
         self.assertIsNone(reconstructed.gcode_bytes)
         self.assertIsNone(reconstructed.op_map_bytes)
+        self.assertIsNone(reconstructed.time_estimate)
 
     def test_vertex_serialization_round_trip(self):
         """Tests serialization for a vertex-like artifact."""
@@ -162,6 +163,7 @@ class TestArtifact(unittest.TestCase):
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
+            time_estimate=123.45,
         )
 
         reconstructed = Artifact.from_dict(artifact.to_dict())
@@ -169,6 +171,7 @@ class TestArtifact(unittest.TestCase):
         self.assertEqual(reconstructed.artifact_type, "final_job")
         self.assertIsNotNone(reconstructed.gcode_bytes)
         self.assertIsNotNone(reconstructed.op_map_bytes)
+        self.assertEqual(reconstructed.time_estimate, 123.45)
 
         # Add assertions to satisfy the type checker
         assert reconstructed.gcode_bytes is not None

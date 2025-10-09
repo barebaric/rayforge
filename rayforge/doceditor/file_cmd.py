@@ -278,11 +278,7 @@ class FileCmd:
     def assemble_job_in_background(
         self,
         when_done: Callable[
-            [
-                Optional[Tuple[float, Optional[ArtifactHandle]]],
-                Optional[Exception],
-            ],
-            None,
+            [Optional[ArtifactHandle], Optional[Exception]], None
         ],
     ):
         """
@@ -291,8 +287,8 @@ class FileCmd:
 
         Args:
             when_done: A callback executed upon completion. It receives
-                       a result tuple (time, handle) on success,
-                       or (None, error) on failure.
+                       an ArtifactHandle on success, or (None, error) on
+                       failure.
         """
         try:
             job_desc = self._prepare_job_description()
@@ -303,14 +299,13 @@ class FileCmd:
         def _when_done_wrapper(task: "Task"):
             try:
                 # Re-raises exceptions from the task
-                raw_result = task.result()
-                time, handle_dict = raw_result
+                handle_dict = task.result()
                 handle = (
                     ArtifactHandle.from_dict(handle_dict)
                     if handle_dict
                     else None
                 )
-                when_done((time, handle), None)
+                when_done(handle, None)
             except Exception as e:
                 when_done(None, e)
 
@@ -328,17 +323,11 @@ class FileCmd:
         """
 
         def _on_export_assembly_done(
-            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
-            error: Optional[Exception],
+            handle: Optional[ArtifactHandle], error: Optional[Exception]
         ):
-            handle: Optional[ArtifactHandle] = None
             try:
                 if error:
                     raise error
-                if not result:
-                    raise ValueError("Assembly process returned no result.")
-
-                _time, handle = result
                 if not handle:
                     raise ValueError("Assembly process returned no artifact.")
 

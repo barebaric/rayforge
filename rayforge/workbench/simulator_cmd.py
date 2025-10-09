@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 from gi.repository import GLib
 
 from ..config import config
-from ..core.ops import Ops
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
 from ..pipeline.artifact.base import Artifact
@@ -37,18 +36,25 @@ class SimulatorCmd:
 
     def reload_simulation(self, new_artifact: Optional[Artifact]):
         """
-        Reloads the simulation with the Ops from a new, final job artifact.
+        Reloads the simulation with a new, final job artifact.
         """
         if not self.simulation_overlay or not self.preview_controls:
             return
 
-        logger.debug("Reloading simulation with new operations.")
+        logger.debug("Reloading simulation with new artifact.")
 
         was_playing = self.preview_controls.playing
 
-        ops_to_load = new_artifact.ops if new_artifact else Ops()
-
-        self.simulation_overlay.set_ops(ops_to_load)
+        if new_artifact:
+            # The overlay gets the Ops for rendering geometry
+            self.simulation_overlay.set_ops(new_artifact.ops)
+            # The controls get the G-code and map to drive the timeline
+            self.preview_controls.set_playback_source(
+                new_artifact.gcode_bytes, new_artifact.op_map_bytes
+            )
+        else:
+            self.simulation_overlay.set_ops(None)
+            self.preview_controls.set_playback_source(None, None)
 
         self.preview_controls.reset()
         if was_playing:
@@ -112,5 +118,5 @@ class SimulatorCmd:
         self.simulation_overlay = None
         win.gcode_previewer.clear_highlight()
 
-    def _on_simulation_step_changed(self, sender, step):
-        self._win.gcode_previewer.highlight_op(step)
+    def _on_simulation_step_changed(self, sender, line_number):
+        self._win.gcode_previewer.highlight_line(line_number)

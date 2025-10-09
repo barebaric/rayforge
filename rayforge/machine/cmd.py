@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import asyncio
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from ..pipeline.artifact.store import ArtifactStore
 from ..pipeline.artifact.handle import ArtifactHandle
@@ -49,8 +49,7 @@ class MachineCmd:
         job_future = asyncio.get_running_loop().create_future()
 
         def _on_assembly_done(
-            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
-            error: Optional[Exception],
+            handle: Optional[ArtifactHandle], error: Optional[Exception]
         ):
             if error:
                 logger.error(
@@ -62,16 +61,9 @@ class MachineCmd:
                     self,
                     message=_("Framing failed: {error}").format(error=error),
                 )
+                if handle:
+                    ArtifactStore.release(handle)
                 return
-
-            if not result:
-                exc = ValueError("Assembly for framing returned no result.")
-                logger.error(exc)
-                if not job_future.done():
-                    job_future.set_exception(exc)
-                return
-
-            _time, handle = result
 
             if not handle:
                 logger.warning("Framing job has no operations to run.")
@@ -82,7 +74,6 @@ class MachineCmd:
             # This coroutine will now run in the task manager
             async def _run_frame(ctx):
                 try:
-                    assert handle is not None, "Handle must exist to run frame"
                     artifact = ArtifactStore.get(handle)
                     ops = artifact.ops
 
@@ -122,8 +113,7 @@ class MachineCmd:
                         message=_("Framing failed: {error}").format(error=e),
                     )
                 finally:
-                    if handle:
-                        ArtifactStore.release(handle)
+                    ArtifactStore.release(handle)
 
             self._editor.task_manager.add_coroutine(_run_frame)
 
@@ -140,8 +130,7 @@ class MachineCmd:
         job_future = asyncio.get_running_loop().create_future()
 
         def _on_assembly_done(
-            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
-            error: Optional[Exception],
+            handle: Optional[ArtifactHandle], error: Optional[Exception]
         ):
             if error:
                 logger.error(
@@ -152,16 +141,9 @@ class MachineCmd:
                 self._editor.notification_requested.send(
                     self, message=_("Job failed: {error}").format(error=error)
                 )
+                if handle:
+                    ArtifactStore.release(handle)
                 return
-
-            if not result:
-                exc = ValueError("Assembly for sending returned no result.")
-                logger.error(exc)
-                if not job_future.done():
-                    job_future.set_exception(exc)
-                return
-
-            _time, handle = result
 
             if not handle:
                 logger.warning("Job has no operations to run.")
@@ -171,7 +153,6 @@ class MachineCmd:
 
             async def _run_job(ctx):
                 try:
-                    assert handle is not None, "Handle must exist to run job"
                     artifact = ArtifactStore.get(handle)
                     ops = artifact.ops
                     await machine.driver.run(ops, machine, self._editor.doc)

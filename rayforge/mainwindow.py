@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional, cast, Tuple
+from typing import List, Optional, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 
 from . import __version__
@@ -20,6 +20,7 @@ from .pipeline.steps import (
     create_contour_step,
     create_material_test_step,
 )
+from .pipeline.encoder.gcode import GcodeOpMap
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
@@ -481,7 +482,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
-        self, gcode_string: Optional[str], op_to_line_map: Optional[dict]
+        self, gcode_string: Optional[str], op_map: Optional[GcodeOpMap]
     ):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
@@ -489,8 +490,8 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         self.gcode_previewer.set_gcode(gcode_string)
-        if op_to_line_map:
-            self.gcode_previewer.set_op_to_line_map(op_to_line_map)
+        if op_map:
+            self.gcode_previewer.set_op_map(op_map)
 
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
@@ -703,21 +704,15 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_assembly_for_preview_finished(
         self,
-        result: Optional[Tuple[float, Optional[ArtifactHandle]]],
+        handle: Optional[ArtifactHandle],
         error: Optional[Exception],
     ):
         """Callback for when the job assembly for previews is complete."""
-        handle: Optional[ArtifactHandle] = None
-        if result:
-            _time, handle = result
-
         if error:
             logger.error(
                 "Failed to aggregate ops for preview/simulation",
                 exc_info=error,
             )
-            # If aggregation failed, ensure any partially created handle
-            # is released before clearing previews.
             if handle:
                 ArtifactStore.release(handle)
             handle = None
@@ -747,20 +742,9 @@ class MainWindow(Adw.ApplicationWindow):
             is_gcode_visible = state and state.get_boolean()
 
             if is_gcode_visible and final_artifact:
-                gcode_str, op_map = None, None
-                if final_artifact.gcode_bytes is not None:
-                    gcode_str = final_artifact.gcode_bytes.tobytes().decode(
-                        "utf-8"
-                    )
-                if final_artifact.op_map_bytes is not None:
-                    map_str = final_artifact.op_map_bytes.tobytes().decode(
-                        "utf-8"
-                    )
-                    op_map = {
-                        int(k): v for k, v in json.loads(map_str).items()
-                    }
-
-                self._update_gcode_preview(gcode_str, op_map)
+                self._update_gcode_preview(
+                    final_artifact.gcode, final_artifact.op_map
+                )
             else:
                 self._update_gcode_preview(None, None)
 

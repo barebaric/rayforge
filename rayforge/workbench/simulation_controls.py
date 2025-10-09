@@ -1,7 +1,11 @@
 """Preview playback controls overlay."""
 
+import json
+from typing import Optional
+import numpy as np
 from gi.repository import Gtk, GLib, GObject
 from ..core.ops import ScanLinePowerCommand
+from ..pipeline.encoder.gcode import GcodeOpMap
 
 
 class PreviewControls(Gtk.Box):
@@ -26,6 +30,9 @@ class PreviewControls(Gtk.Box):
             **kwargs,
         )
         self.simulation_overlay = simulation_overlay
+        self.op_map: Optional[GcodeOpMap] = None
+        self.num_gcode_lines = 0
+
         self.playing = False
         self.playback_timeout_id = None
         self.loop_enabled = False
@@ -118,11 +125,37 @@ class PreviewControls(Gtk.Box):
         self._update_slider_range()
         self._update_status_label()
 
+    def set_playback_source(
+        self,
+        gcode_bytes: Optional[np.ndarray],
+        op_map_bytes: Optional[np.ndarray],
+    ):
+        """Sets the source data for driving the playback timeline."""
+        if gcode_bytes is not None:
+            gcode_str = gcode_bytes.tobytes().decode("utf-8")
+            self.num_gcode_lines = gcode_str.count("\n")
+        else:
+            self.num_gcode_lines = 0
+
+        if op_map_bytes is not None:
+            map_str = op_map_bytes.tobytes().decode("utf-8")
+            map_dict = json.loads(map_str)
+            self.op_map = GcodeOpMap(
+                op_to_gcode={
+                    int(k): v for k, v in map_dict["op_to_gcode"].items()
+                },
+                gcode_to_op={
+                    int(k): v for k, v in map_dict["gcode_to_op"].items()
+                },
+            )
+        else:
+            self.op_map = None
+        self.reset()
+
     def _update_slider_range(self):
-        """Updates the slider range based on the number of steps."""
-        step_count = self.simulation_overlay.get_step_count()
-        if step_count > 0:
-            self.slider.set_range(0, step_count - 1)
+        """Updates the slider range based on the number of G-code lines."""
+        if self.num_gcode_lines > 0:
+            self.slider.set_range(0, self.num_gcode_lines - 1)
             self.slider.set_value(0)
         else:
             self.slider.set_range(0, 0)
@@ -131,48 +164,57 @@ class PreviewControls(Gtk.Box):
 
     def _update_status_label(self):
         """Updates the status label with step count, speed and power."""
-        current = int(self.slider.get_value())
-        total = self.simulation_overlay.get_step_count()
-        state = self.simulation_overlay.get_current_state()
+        gcode_line_idx = int(self.slider.get_value())
+        total = self.num_gcode_lines
 
-        cmd = None
-        timeline = self.simulation_overlay.timeline
-        if timeline.steps and 0 <= current < len(timeline.steps):
-            cmd, _, _ = timeline.steps[current]
+        if self.op_map and gcode_line_idx in self.op_map.gcode_to_op:
+            op_index = self.op_map.gcode_to_op[gcode_line_idx]
+            timeline = self.simulation_overlay.timeline
+            if timeline.steps and 0 <= op_index < len(timeline.steps):
+                cmd, state, _ = timeline.steps[op_index]
+                speed = state.cut_speed or 0.0
+                power_percent = (state.power or 0.0) * 100.0
 
-        if state:
-            speed = state.cut_speed if state.cut_speed is not None else 0.0
-            power = state.power if state.power is not None else 0.0
-            power_percent = power * 100.0
+                if cmd.is_travel_command():
+                    power_display = "0%"
+                elif isinstance(cmd, ScanLinePowerCommand):
+                    power_display = f"~{power_percent:.0f}% (Raster)"
+                else:
+                    power_display = f"{power_percent:.0f}%"
 
-            if cmd and cmd.is_travel_command():
-                power_display = "0%"
-            elif isinstance(cmd, ScanLinePowerCommand):
-                power_display = f"~{power_percent:.0f}%"
-            else:
-                power_display = f"{power_percent:.0f}%"
-
-            self.status_label.set_markup(
-                (
-                    f"<small>Step: {current + 1}/{total}  |  "
-                    f"Speed: {speed:.0f} mm/min  |  "
-                    f"Power: {power_display}</small>"
+                self.status_label.set_markup(
+                    (
+                        f"<small>Line: {gcode_line_idx + 1}/{total} | "
+                        f"Speed: {speed:.0f} mm/min | "
+                        f"Power: {power_display}</small>"
+                    )
                 )
-            )
-        else:
-            self.status_label.set_markup(
-                f"<small>Step: {current + 1}/{total}  |  "
-                f"Speed: -  |  Power: -</small>"
-            )
+                return
+
+        self.status_label.set_markup(
+            f"<small>Line: {gcode_line_idx + 1}/{total} | "
+            f"Speed: - | Power: -</small>"
+        )
 
     def _on_slider_changed(self, slider):
         """Handles slider value changes."""
-        step = int(slider.get_value())
-        self.simulation_overlay.set_step(step)
-        self._update_status_label()
-        self.emit("step-changed", step)
+        gcode_line_idx = int(slider.get_value())
 
-        # Trigger redraw of the canvas
+        if self.op_map and gcode_line_idx in self.op_map.gcode_to_op:
+            op_index = self.op_map.gcode_to_op[gcode_line_idx]
+            self.simulation_overlay.set_step(op_index)
+        else:
+            # If no op corresponds (e.g., comment), draw up to last valid op
+            last_op_idx = -1
+            for i in range(gcode_line_idx, -1, -1):
+                if self.op_map and i in self.op_map.gcode_to_op:
+                    last_op_idx = self.op_map.gcode_to_op[i]
+                    break
+            self.simulation_overlay.set_step(last_op_idx)
+
+        self._update_status_label()
+        self.emit("step-changed", gcode_line_idx)
+
         if self.simulation_overlay.canvas:
             self.simulation_overlay.canvas.queue_draw()
 
@@ -194,7 +236,7 @@ class PreviewControls(Gtk.Box):
         """Handles step forward button clicks."""
         self._pause_playback()
         current = int(self.slider.get_value())
-        max_step = self.simulation_overlay.get_step_count() - 1
+        max_step = self.num_gcode_lines - 1
         new_value = min(max_step, current + 1)
         self.slider.set_value(new_value)
 
@@ -206,7 +248,7 @@ class PreviewControls(Gtk.Box):
     def _on_go_to_end_clicked(self, button):
         """Handles go to end button clicks."""
         self._pause_playback()
-        max_step = self.simulation_overlay.get_step_count() - 1
+        max_step = self.num_gcode_lines - 1
         self.slider.set_value(max_step)
 
     def _start_playback(self):
@@ -214,16 +256,13 @@ class PreviewControls(Gtk.Box):
         self.playing = True
         self.play_button.set_icon_name("media-playback-pause-symbolic")
 
-        # Calculate step increment to complete in target duration
         fps = 24
-        step_count = self.simulation_overlay.get_step_count()
-        if step_count > 0:
+        if self.num_gcode_lines > 0:
             target_frames = self.target_duration_sec * fps
-            self.step_increment = step_count / target_frames
+            self.step_increment = self.num_gcode_lines / target_frames
         else:
             self.step_increment = 1.0
 
-        # Start playback timer
         ms_per_frame = int(1000 / fps)
         self.playback_timeout_id = GLib.timeout_add(
             ms_per_frame, self._advance_step
@@ -240,26 +279,21 @@ class PreviewControls(Gtk.Box):
 
     def _advance_step(self):
         """Advances to the next step during playback."""
-        current = self.slider.get_value()  # Use float value
-        max_step = self.simulation_overlay.get_step_count() - 1
-
-        # Advance by step increment (can be fractional)
+        current = self.slider.get_value()
+        max_step = self.num_gcode_lines - 1
         next_value = current + self.step_increment
 
         if next_value >= max_step:
             if self.loop_enabled:
-                # Loop back to the beginning
                 self.slider.set_value(0)
                 return True
             else:
-                # Reached the end, set to final step and pause
                 self.slider.set_value(max_step)
                 self._pause_playback()
                 return False
 
-        # Advance slider by increment
         self.slider.set_value(next_value)
-        return True  # Continue playback
+        return True
 
     def reset(self):
         """Resets the controls to initial state."""

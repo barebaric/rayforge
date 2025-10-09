@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from gi.repository import Gtk, GLib
+from blinker import Signal
 from .highlighter import GcodeHighlighter
 
 if TYPE_CHECKING:
@@ -16,6 +17,7 @@ class GcodeEditor(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.set_can_focus(True)
+        self.line_activated = Signal()
 
         self.text_view = Gtk.TextView(
             monospace=True,
@@ -61,6 +63,15 @@ class GcodeEditor(Gtk.Box):
 
         self.connect("map", self._on_map)
         self.connect("unmap", self._on_unmap)
+
+        # Connect to cursor movement to detect line activation
+        buffer.connect("mark-set", self._on_cursor_move)
+
+    def _on_cursor_move(self, buffer, location, mark):
+        """Fires the line-activated signal when the cursor moves."""
+        if mark.get_name() == "insert":
+            line_number = location.get_line()
+            self.line_activated.send(self, line_number=line_number)
 
     def _on_search_changed(self, search_entry: Gtk.SearchEntry):
         """Callback to highlight search results in the text buffer."""
@@ -121,17 +132,28 @@ class GcodeEditor(Gtk.Box):
 
     def highlight_line(self, line_number: int):
         buffer = self.text_view.get_buffer()
-        if self.current_highlight_line != -1:
-            _, start = buffer.get_iter_at_line(self.current_highlight_line)
-            _, end = buffer.get_iter_at_line(self.current_highlight_line + 1)
-            buffer.remove_tag(self.highlight_tag, start, end)
 
+        # Remove the old highlight if it exists
+        if self.current_highlight_line != -1:
+            found, start_iter = buffer.get_iter_at_line(
+                self.current_highlight_line
+            )
+            if found:
+                end_iter = start_iter.copy()
+                if not end_iter.ends_line():
+                    end_iter.forward_to_line_end()
+                buffer.remove_tag(self.highlight_tag, start_iter, end_iter)
+
+        # Add the new highlight if valid
         if line_number != -1:
-            _, start = buffer.get_iter_at_line(line_number)
-            _, end = buffer.get_iter_at_line(line_number + 1)
-            buffer.apply_tag(self.highlight_tag, start, end)
-            # Scroll to the highlighted line
-            self.text_view.scroll_to_iter(start, 0.0, True, 0.5, 0.5)
+            found, start_iter = buffer.get_iter_at_line(line_number)
+            if found:
+                end_iter = start_iter.copy()
+                if not end_iter.ends_line():
+                    end_iter.forward_to_line_end()
+                buffer.apply_tag(self.highlight_tag, start_iter, end_iter)
+                # Scroll to the highlighted line
+                self.text_view.scroll_to_iter(start_iter, 0.0, True, 0.5, 0.5)
 
         self.current_highlight_line = line_number
 

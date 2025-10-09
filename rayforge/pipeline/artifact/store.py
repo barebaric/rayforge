@@ -82,6 +82,7 @@ class ArtifactStore:
             source_coordinate_system_name=source_coord_system.name,
             source_dimensions=artifact.source_dimensions,
             generation_size=artifact.generation_size,
+            time_estimate=artifact.time_estimate,
             array_metadata=array_metadata,
         )
 
@@ -192,6 +193,7 @@ class ArtifactStore:
             ],
             "source_dimensions": handle.source_dimensions,
             "generation_size": handle.generation_size,
+            "time_estimate": handle.time_estimate,
         }
 
         gcode_bytes = arrays.get("gcode_bytes")

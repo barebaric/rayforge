@@ -23,6 +23,7 @@ class ArtifactHandle:
     source_coordinate_system_name: str
     source_dimensions: Optional[Tuple[float, float]]
     generation_size: Optional[Tuple[float, float]]
+    time_estimate: Optional[float]
 
     # Extra metadata for artifacts containing texture data ('hybrid_raster')
     dimensions_mm: Optional[Tuple[float, float]] = None

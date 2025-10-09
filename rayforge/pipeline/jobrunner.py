@@ -1,7 +1,7 @@
 import logging
 import json
-from dataclasses import dataclass
-from typing import Dict, Any, List, Tuple, Optional
+from dataclasses import dataclass, asdict
+from typing import Dict, Any, List, Optional
 import numpy as np
 
 from ..machine.models.machine import Machine
@@ -117,12 +117,11 @@ def _transform_and_clip_workpiece_ops(
 
 def run_job_assembly_in_subprocess(
     proxy: ExecutionContextProxy, job_description_dict: Dict[str, Any]
-) -> Tuple[float, Optional[Dict[str, Any]]]:
+) -> Optional[Dict[str, Any]]:
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
-    Returns the final time and a handle to the final comprehensive job
-    artifact.
+    Returns a handle to the final comprehensive job artifact.
     """
     # When deserialized, the dataclass becomes a dict.
     job_desc_dict = job_description_dict
@@ -226,11 +225,11 @@ def run_job_assembly_in_subprocess(
 
     proxy.set_message(_("Generating G-code..."))
     encoder = GcodeEncoder.for_machine(machine)
-    gcode_str, op_to_line_map = encoder.encode(final_ops, machine, doc)
+    gcode_str, op_map_obj = encoder.encode(final_ops, machine, doc)
 
     # Encode G-code and map to byte arrays for storage in the artifact
     gcode_bytes = np.frombuffer(gcode_str.encode("utf-8"), dtype=np.uint8)
-    op_map_str = json.dumps(op_to_line_map)
+    op_map_str = json.dumps(asdict(op_map_obj))
     op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
     # Generate vertex data for UI preview/simulation
@@ -246,9 +245,10 @@ def run_job_assembly_in_subprocess(
         vertex_data=vertex_data,
         gcode_bytes=gcode_bytes,
         op_map_bytes=op_map_bytes,
+        time_estimate=final_time,
     )
     final_handle = ArtifactStore.put(final_artifact)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))
-    return final_time, final_handle.to_dict()
+    return final_handle.to_dict()

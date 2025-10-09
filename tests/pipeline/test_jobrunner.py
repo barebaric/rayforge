@@ -97,7 +97,7 @@ def test_jobrunner_assembles_correctly(machine):
     mock_proxy = MagicMock()
 
     # --- Act ---
-    _time, final_handle_dict = run_job_assembly_in_subprocess(
+    final_handle_dict = run_job_assembly_in_subprocess(
         mock_proxy, asdict(job_desc)
     )
 

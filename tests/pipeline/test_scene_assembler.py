@@ -101,6 +101,7 @@ def mock_artifact_handle():
         is_scalable=True,
         source_coordinate_system_name="source",
         source_dimensions=(10.0, 20.0),
+        time_estimate=12.34,
         generation_size=(10.0, 20.0),
     )
 
