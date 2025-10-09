@@ -21,6 +21,7 @@ class GcodePreviewer(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
         self.op_activated = Signal()
+        self.line_activated = Signal()
         self.editor = GcodeEditor()
         self.op_map: Optional[GcodeOpMap] = None
 
@@ -34,6 +35,7 @@ class GcodePreviewer(Gtk.Box):
         self.append(self.editor)
 
     def _on_line_activated(self, sender, *, line_number: int):
+        self.line_activated.send(self, line_number=line_number)
         if self.op_map and line_number in self.op_map.gcode_to_op:
             op_index = self.op_map.gcode_to_op[line_number]
             self.op_activated.send(self, op_index=op_index)
@@ -56,9 +58,9 @@ class GcodePreviewer(Gtk.Box):
     def set_op_map(self, op_map: GcodeOpMap):
         self.op_map = op_map
 
-    def highlight_line(self, line_number: int):
+    def highlight_line(self, line_number: int, use_align: bool = True):
         """Highlights a specific line number in the editor."""
-        self.editor.highlight_line(line_number)
+        self.editor.highlight_line(line_number, use_align)
 
     def highlight_op(self, op_index: int):
         if not self.op_map or op_index not in self.op_map.op_to_gcode:

@@ -24,6 +24,7 @@ class SimulatorCmd:
         self.simulation_overlay: Optional[SimulationOverlay] = None
         self.preview_controls: Optional[PreviewControls] = None
         self._preview_controls_handler_id: Optional[int] = None
+        self._is_syncing = False  # Flag to prevent signal feedback loops
 
     def toggle_mode(self, action: "Gio.SimpleAction", value: "GLib.Variant"):
         """Toggles the execution preview simulation overlay."""
@@ -33,6 +34,17 @@ class SimulatorCmd:
         else:
             self._exit_mode()
         action.set_state(value)
+
+    def sync_from_gcode(self, line_number: int):
+        """
+        Updates the simulation slider from an external event (e.g., a G-code
+        editor click) without causing a feedback loop.
+        """
+        if not self.preview_controls:
+            return
+        self._is_syncing = True
+        self.preview_controls.set_playback_position(line_number)
+        self._is_syncing = False
 
     def reload_simulation(self, new_artifact: Optional[Artifact]):
         """
@@ -119,4 +131,8 @@ class SimulatorCmd:
         win.gcode_previewer.clear_highlight()
 
     def _on_simulation_step_changed(self, sender, line_number):
-        self._win.gcode_previewer.highlight_line(line_number)
+        # If the update was triggered by a G-code click, do nothing to
+        # prevent a feedback loop.
+        if self._is_syncing:
+            return
+        self._win.gcode_previewer.highlight_line(line_number, use_align=True)

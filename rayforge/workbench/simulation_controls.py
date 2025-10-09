@@ -125,6 +125,12 @@ class PreviewControls(Gtk.Box):
         self._update_slider_range()
         self._update_status_label()
 
+    def set_playback_position(self, line_number: int):
+        """Programmatically sets the slider and simulation to a G-code line."""
+        # Setting the slider's value will automatically trigger the
+        # '_on_slider_changed' signal, which updates the simulation.
+        self.slider.set_value(line_number)
+
     def set_playback_source(
         self,
         gcode_bytes: Optional[np.ndarray],
@@ -199,19 +205,25 @@ class PreviewControls(Gtk.Box):
     def _on_slider_changed(self, slider):
         """Handles slider value changes."""
         gcode_line_idx = int(slider.get_value())
+        timeline = self.simulation_overlay.timeline
+        op_index = -1
+        timeline_index = -1
 
         if self.op_map and gcode_line_idx in self.op_map.gcode_to_op:
             op_index = self.op_map.gcode_to_op[gcode_line_idx]
-            self.simulation_overlay.set_step(op_index)
-        else:
-            # If no op corresponds (e.g., comment), draw up to last valid op
-            last_op_idx = -1
+            if op_index in timeline.op_to_timeline_index:
+                timeline_index = timeline.op_to_timeline_index[op_index]
+
+        if timeline_index == -1:
+            # If no op corresponds (e.g., comment), find the last valid one
             for i in range(gcode_line_idx, -1, -1):
                 if self.op_map and i in self.op_map.gcode_to_op:
-                    last_op_idx = self.op_map.gcode_to_op[i]
-                    break
-            self.simulation_overlay.set_step(last_op_idx)
+                    op_idx = self.op_map.gcode_to_op[i]
+                    if op_idx in timeline.op_to_timeline_index:
+                        timeline_index = timeline.op_to_timeline_index[op_idx]
+                        break
 
+        self.simulation_overlay.set_step(timeline_index)
         self._update_status_label()
         self.emit("step-changed", gcode_line_idx)
 

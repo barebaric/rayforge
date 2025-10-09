@@ -2,7 +2,7 @@
 
 import cairo
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 from ...core.ops import Ops, State
 from ...core.ops.commands import ArcToCommand, ScanLinePowerCommand
 from ..canvas.element import CanvasElement
@@ -51,6 +51,7 @@ class OpsTimeline:
         self.ops = ops
         self.steps = []
         self.speed_range = (0.0, 1000.0)  # (min, max) from all operations
+        self.op_to_timeline_index: Dict[int, int] = {}
         if ops:
             self._rebuild_timeline()
 
@@ -62,6 +63,7 @@ class OpsTimeline:
     def _rebuild_timeline(self):
         """Builds timeline and calculates speed range from ALL operations."""
         self.steps = []
+        self.op_to_timeline_index = {}
         if not self.ops or self.ops.is_empty():
             self.speed_range = (0.0, 1000.0)
             return
@@ -69,8 +71,9 @@ class OpsTimeline:
         current_state = State(power=0.0)
         current_pos = (0.0, 0.0, 0.0)
         speeds = []
+        timeline_idx = 0
 
-        for cmd in self.ops:
+        for op_idx, cmd in enumerate(self.ops):
             # Update state if this is a state command
             if cmd.is_state_command():
                 cmd.apply_to_state(current_state)
@@ -80,6 +83,8 @@ class OpsTimeline:
                 self.steps.append(
                     (cmd, State(**current_state.__dict__), current_pos)
                 )
+                self.op_to_timeline_index[op_idx] = timeline_idx
+                timeline_idx += 1
 
                 # Update current_pos
                 if cmd.end is not None:

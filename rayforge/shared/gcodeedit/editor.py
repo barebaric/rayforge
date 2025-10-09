@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Gdk
 from blinker import Signal
 from .highlighter import GcodeHighlighter
 
@@ -49,12 +49,17 @@ class GcodeEditor(Gtk.Box):
 
         style_context = self.get_style_context()
         found, color = style_context.lookup_color("theme_selected_bg_color")
-        if found:
-            self.search_tag.set_property("background", color.to_string())
-            self.highlight_tag.set_property("background", color.to_string())
+        if found and color:
+            self.search_tag.set_property("background-rgba", color)
+            highlight_color = color.copy()
+            highlight_color.alpha = 0.3
+            self.highlight_tag.set_property("background-rgba", highlight_color)
         else:
             self.search_tag.set_property("background", "#4A90D9")
-            self.highlight_tag.set_property("background", "#fce94f")
+            fallback_rgba = Gdk.RGBA()
+            fallback_rgba.parse("#fce94f")
+            fallback_rgba.alpha = 0.3
+            self.highlight_tag.set_property("background-rgba", fallback_rgba)
 
         self.append(self.search_bar)
         self.append(self.scrolled_window)
@@ -130,7 +135,7 @@ class GcodeEditor(Gtk.Box):
         )
         self.search_bar.set_search_mode(False)
 
-    def highlight_line(self, line_number: int):
+    def highlight_line(self, line_number: int, use_align: bool = True):
         buffer = self.text_view.get_buffer()
 
         # Remove the old highlight if it exists
@@ -152,8 +157,11 @@ class GcodeEditor(Gtk.Box):
                 if not end_iter.ends_line():
                     end_iter.forward_to_line_end()
                 buffer.apply_tag(self.highlight_tag, start_iter, end_iter)
-                # Scroll to the highlighted line
-                self.text_view.scroll_to_iter(start_iter, 0.0, True, 0.5, 0.5)
+                # Scroll to the highlighted line with optional alignment
+                yalign = 0.5 if use_align else 0.0
+                self.text_view.scroll_to_iter(
+                    start_iter, 0.0, use_align, 0.5, yalign
+                )
 
         self.current_highlight_line = line_number
 

@@ -277,6 +277,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.gcode_previewer.set_size_request(
             self._last_gcode_previewer_width, -1
         )
+        self.gcode_previewer.line_activated.connect(
+            self._on_gcode_line_activated
+        )
 
         # Create a new paned for the left side of the window
         self.left_content_pane = Gtk.Paned(
@@ -407,6 +410,18 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def _on_gcode_line_activated(self, sender, *, line_number: int):
+        """
+        Handles the user activating a line in the G-code previewer.
+        Syncs the highlight and the simulation slider.
+        """
+        # 1. Update the visual highlight to match the cursor, no scroll.
+        self.gcode_previewer.highlight_line(line_number, use_align=False)
+
+        # 2. If simulation is active, update its position.
+        if self.simulator_cmd.preview_controls:
+            self.simulator_cmd.sync_from_gcode(line_number)
 
     def _on_left_pane_position_changed(self, paned, param):
         """
