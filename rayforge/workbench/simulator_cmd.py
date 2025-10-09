@@ -103,6 +103,7 @@ class SimulatorCmd:
         self.preview_controls.step_changed.connect(
             self._on_simulation_step_changed
         )
+        self.preview_controls.close_requested.connect(self._on_close_requested)
         # Ensure G-code preview is also visible
         gcode_action = win.action_manager.get_action("toggle_gcode_preview")
         state = gcode_action.get_state()
@@ -117,10 +118,18 @@ class SimulatorCmd:
         win = self._win
         win.surface.set_simulation_mode(False)
 
+        # Update the simulate_mode action state to False
+        sim_action = win.action_manager.get_action("simulate_mode")
+        if sim_action:
+            sim_action.set_state(GLib.Variant.new_boolean(False))
+
         # Remove preview controls
         if self.preview_controls:
             self.preview_controls.step_changed.disconnect(
                 self._on_simulation_step_changed
+            )
+            self.preview_controls.close_requested.disconnect(
+                self._on_close_requested
             )
             win.surface_overlay.remove_overlay(self.preview_controls)
             self.preview_controls = None
@@ -134,3 +143,7 @@ class SimulatorCmd:
         if self._is_syncing:
             return
         self._win.gcode_previewer.highlight_line(line_number, use_align=True)
+
+    def _on_close_requested(self, sender):
+        """Handles close button signal from preview controls."""
+        self._exit_mode()

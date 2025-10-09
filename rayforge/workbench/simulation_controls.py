@@ -7,6 +7,8 @@ from gi.repository import Gtk, GLib
 from blinker import Signal
 from ..core.ops import ScanLinePowerCommand
 from ..pipeline.encoder.gcode import GcodeOpMap
+from ..icons import get_icon
+from ..shared.util.gtk import apply_css
 
 
 class PreviewControls(Gtk.Box):
@@ -28,6 +30,7 @@ class PreviewControls(Gtk.Box):
         )
         self.simulation_overlay = simulation_overlay
         self.step_changed = Signal()
+        self.close_requested = Signal()
         self.op_map: Optional[GcodeOpMap] = None
         self.num_gcode_lines = 0
 
@@ -50,6 +53,44 @@ class PreviewControls(Gtk.Box):
         # Create a styled container box
         self.add_css_class("card")
 
+        # Apply CSS for close button styling
+        apply_css("""
+            .preview-controls .close-button {
+                min-width: 24px;
+                min-height: 24px;
+                padding: 0;
+                margin: 0;
+            }
+
+            .preview-controls .close-button:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        """)
+
+        # Create a top-level box to contain the close button and main content
+        self.top_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.append(self.top_box)
+
+        # Create a header box for the close button
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        header_box.set_halign(Gtk.Align.END)
+
+        # Create the close button
+        self.close_button = Gtk.Button(child=get_icon("close-symbolic"))
+        self.close_button.set_tooltip_text("Close")
+        self.close_button.add_css_class("flat")
+        self.close_button.add_css_class("close-button")
+        self.close_button.set_margin_top(4)
+        self.close_button.set_margin_end(4)
+        self.close_button.connect("clicked", self._on_close_clicked)
+
+        header_box.append(self.close_button)
+        self.top_box.append(header_box)
+
+        # Create a container for the main content
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.top_box.append(self.content_box)
+
         # Slider for scrubbing
         self.slider = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
@@ -64,7 +105,7 @@ class PreviewControls(Gtk.Box):
         self.slider.set_margin_start(12)
         self.slider.set_margin_end(12)
         self.slider.connect("value-changed", self._on_slider_changed)
-        self.append(self.slider)
+        self.content_box.append(self.slider)
 
         # Button box
         button_box = Gtk.Box(
@@ -72,7 +113,7 @@ class PreviewControls(Gtk.Box):
             spacing=6,
         )
         button_box.set_halign(Gtk.Align.CENTER)
-        self.append(button_box)
+        self.content_box.append(button_box)
 
         # Go to Start button
         self.go_to_start_button = Gtk.Button()
@@ -117,7 +158,7 @@ class PreviewControls(Gtk.Box):
         self.status_label = Gtk.Label()
         self.status_label.set_margin_top(6)
         self.status_label.set_margin_bottom(6)
-        self.append(self.status_label)
+        self.content_box.append(self.status_label)
 
         # Initialize slider range and labels
         self._update_slider_range()
@@ -309,3 +350,7 @@ class PreviewControls(Gtk.Box):
         """Resets the controls to initial state."""
         self._pause_playback()
         self._update_slider_range()
+
+    def _on_close_clicked(self, button):
+        """Handles close button clicks."""
+        self.close_requested.send(self)
