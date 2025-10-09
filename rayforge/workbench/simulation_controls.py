@@ -3,7 +3,8 @@
 import json
 from typing import Optional
 import numpy as np
-from gi.repository import Gtk, GLib, GObject
+from gi.repository import Gtk, GLib
+from blinker import Signal
 from ..core.ops import ScanLinePowerCommand
 from ..pipeline.encoder.gcode import GcodeOpMap
 
@@ -13,10 +14,6 @@ class PreviewControls(Gtk.Box):
     Control panel for preview playback with play/pause, slider, and
     progress display. Designed to overlay on top of the canvas.
     """
-
-    __gsignals__ = {
-        "step-changed": (GObject.SignalFlags.RUN_FIRST, None, (int,))
-    }
 
     def __init__(
         self,
@@ -30,6 +27,7 @@ class PreviewControls(Gtk.Box):
             **kwargs,
         )
         self.simulation_overlay = simulation_overlay
+        self.step_changed = Signal()
         self.op_map: Optional[GcodeOpMap] = None
         self.num_gcode_lines = 0
 
@@ -225,7 +223,7 @@ class PreviewControls(Gtk.Box):
 
         self.simulation_overlay.set_step(timeline_index)
         self._update_status_label()
-        self.emit("step-changed", gcode_line_idx)
+        self.step_changed.send(self, line_number=gcode_line_idx)
 
         if self.simulation_overlay.canvas:
             self.simulation_overlay.canvas.queue_draw()

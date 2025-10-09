@@ -23,7 +23,7 @@ class SimulatorCmd:
         self._win = win
         self.simulation_overlay: Optional[SimulationOverlay] = None
         self.preview_controls: Optional[PreviewControls] = None
-        self._preview_controls_handler_id: Optional[int] = None
+        self._preview_controls_handler = None
         self._is_syncing = False  # Flag to prevent signal feedback loops
 
     def toggle_mode(self, action: "Gio.SimpleAction", value: "GLib.Variant"):
@@ -100,8 +100,8 @@ class SimulatorCmd:
         # Create and show preview controls
         self.preview_controls = PreviewControls(self.simulation_overlay)
         win.surface_overlay.add_overlay(self.preview_controls)
-        self._preview_controls_handler_id = self.preview_controls.connect(
-            "step-changed", self._on_simulation_step_changed
+        self.preview_controls.step_changed.connect(
+            self._on_simulation_step_changed
         )
         # Ensure G-code preview is also visible
         gcode_action = win.action_manager.get_action("toggle_gcode_preview")
@@ -119,11 +119,9 @@ class SimulatorCmd:
 
         # Remove preview controls
         if self.preview_controls:
-            if self._preview_controls_handler_id:
-                self.preview_controls.disconnect(
-                    self._preview_controls_handler_id
-                )
-                self._preview_controls_handler_id = None
+            self.preview_controls.step_changed.disconnect(
+                self._on_simulation_step_changed
+            )
             win.surface_overlay.remove_overlay(self.preview_controls)
             self.preview_controls = None
 
