@@ -8,6 +8,7 @@ from ..config import config
 from ..core.ops import Ops
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
+from ..pipeline.artifact.base import Artifact
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
@@ -34,9 +35,9 @@ class SimulatorCmd:
             self._exit_mode()
         action.set_state(value)
 
-    def reload_simulation(self, new_ops: Optional[Ops]):
+    def reload_simulation(self, new_artifact: Optional[Artifact]):
         """
-        Reloads the simulation with a new set of operations.
+        Reloads the simulation with the Ops from a new, final job artifact.
         """
         if not self.simulation_overlay or not self.preview_controls:
             return
@@ -45,7 +46,7 @@ class SimulatorCmd:
 
         was_playing = self.preview_controls.playing
 
-        ops_to_load = new_ops or Ops()
+        ops_to_load = new_artifact.ops if new_artifact else Ops()
 
         self.simulation_overlay.set_ops(ops_to_load)
 

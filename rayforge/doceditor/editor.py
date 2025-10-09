@@ -1,7 +1,6 @@
 from __future__ import annotations
 import logging
 import asyncio
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
@@ -189,7 +188,7 @@ class DocEditor:
         export_future = asyncio.get_running_loop().create_future()
 
         def _on_export_assembly_done(
-            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
             error: Optional[Exception],
         ):
             handle: Optional[ArtifactHandle] = None
@@ -202,9 +201,21 @@ class DocEditor:
                     export_future.set_exception(exc)
                     return
 
-                _time, temp_gcode_path, handle = result
+                _time, handle = result
+                if not handle:
+                    exc = ValueError("Assembly process returned no artifact.")
+                    export_future.set_exception(exc)
+                    return
 
-                shutil.move(temp_gcode_path, output_path)
+                artifact = ArtifactStore.get(handle)
+                if artifact.gcode_bytes is None:
+                    exc = ValueError("Final artifact is missing G-code data.")
+                    export_future.set_exception(exc)
+                    return
+
+                gcode_str = artifact.gcode_bytes.tobytes().decode("utf-8")
+                output_path.write_text(gcode_str, encoding="utf-8")
+
                 logger.info(f"Test export successful to {output_path}")
                 export_future.set_result(True)
 

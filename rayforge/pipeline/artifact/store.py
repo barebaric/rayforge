@@ -153,6 +153,11 @@ class ArtifactStore:
         """
         arrays = artifact.ops.to_numpy_arrays()
 
+        if artifact.gcode_bytes is not None:
+            arrays["gcode_bytes"] = artifact.gcode_bytes
+        if artifact.op_map_bytes is not None:
+            arrays["op_map_bytes"] = artifact.op_map_bytes
+
         if artifact.texture_data:
             arrays["power_texture_data"] = (
                 artifact.texture_data.power_texture_data
@@ -189,8 +194,20 @@ class ArtifactStore:
             "generation_size": handle.generation_size,
         }
 
+        gcode_bytes = arrays.get("gcode_bytes")
+        op_map_bytes = arrays.get("op_map_bytes")
+
         vertex_data = None
-        if handle.artifact_type in ("vertex", "hybrid_raster"):
+        # Reconstruct vertex data if its component arrays are present
+        if all(
+            key in arrays
+            for key in [
+                "powered_vertices",
+                "powered_colors",
+                "travel_vertices",
+                "zero_power_vertices",
+            ]
+        ):
             vertex_data = VertexData(
                 powered_vertices=arrays["powered_vertices"].copy(),
                 powered_colors=arrays["powered_colors"].copy(),
@@ -199,7 +216,7 @@ class ArtifactStore:
             )
 
         texture_data = None
-        if handle.artifact_type == "hybrid_raster":
+        if "power_texture_data" in arrays:
             if handle.dimensions_mm is None or handle.position_mm is None:
                 raise ValueError(
                     "hybrid_raster handle is missing required "
@@ -212,5 +229,13 @@ class ArtifactStore:
             )
 
         return Artifact(
-            **common_args, vertex_data=vertex_data, texture_data=texture_data
+            **common_args,
+            vertex_data=vertex_data,
+            texture_data=texture_data,
+            gcode_bytes=gcode_bytes.copy()
+            if gcode_bytes is not None
+            else None,
+            op_map_bytes=op_map_bytes.copy()
+            if op_map_bytes is not None
+            else None,
         )

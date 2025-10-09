@@ -1,5 +1,5 @@
 import logging
-import tempfile
+import json
 from dataclasses import dataclass
 from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
@@ -11,6 +11,7 @@ from ..core.workpiece import WorkPiece
 from ..core.doc import Doc
 from ..pipeline.transformer import OpsTransformer, transformer_by_name
 from ..pipeline.encoder.gcode import GcodeEncoder
+from ..pipeline.encoder.vertexencoder import VertexEncoder
 from .artifact.store import ArtifactStore
 from .artifact.handle import ArtifactHandle
 from .artifact.base import Artifact
@@ -116,11 +117,11 @@ def _transform_and_clip_workpiece_ops(
 
 def run_job_assembly_in_subprocess(
     proxy: ExecutionContextProxy, job_description_dict: Dict[str, Any]
-) -> Tuple[float, str, Optional[Dict[str, Any]]]:
+) -> Tuple[float, Optional[Dict[str, Any]]]:
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
-    Returns the final time, G-code path, and a handle to the final Ops
+    Returns the final time and a handle to the final comprehensive job
     artifact.
     """
     # When deserialized, the dataclass becomes a dict.
@@ -227,20 +228,27 @@ def run_job_assembly_in_subprocess(
     encoder = GcodeEncoder.for_machine(machine)
     gcode_str, op_to_line_map = encoder.encode(final_ops, machine, doc)
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, suffix=".gcode", encoding="utf-8"
-    ) as f:
-        f.write(gcode_str)
-        gcode_file_path = f.name
+    # Encode G-code and map to byte arrays for storage in the artifact
+    gcode_bytes = np.frombuffer(gcode_str.encode("utf-8"), dtype=np.uint8)
+    op_map_str = json.dumps(op_to_line_map)
+    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
+
+    # Generate vertex data for UI preview/simulation
+    proxy.set_message(_("Encoding paths for preview..."))
+    vertex_encoder = VertexEncoder()
+    vertex_data = vertex_encoder.encode(final_ops)
 
     proxy.set_message(_("Storing final job artifact..."))
     final_artifact = Artifact(
         ops=final_ops,
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        vertex_data=vertex_data,
+        gcode_bytes=gcode_bytes,
+        op_map_bytes=op_map_bytes,
     )
     final_handle = ArtifactStore.put(final_artifact)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))
-    return final_time, gcode_file_path, final_handle.to_dict()
+    return final_time, final_handle.to_dict()

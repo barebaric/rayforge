@@ -1,4 +1,5 @@
 import pytest
+import json
 from unittest.mock import MagicMock
 from pathlib import Path
 from dataclasses import asdict
@@ -96,7 +97,7 @@ def test_jobrunner_assembles_correctly(machine):
     mock_proxy = MagicMock()
 
     # --- Act ---
-    _time, _gcode_path, final_handle_dict = run_job_assembly_in_subprocess(
+    _time, final_handle_dict = run_job_assembly_in_subprocess(
         mock_proxy, asdict(job_desc)
     )
 
@@ -122,6 +123,20 @@ def test_jobrunner_assembles_correctly(machine):
     # Verify second pass is identical
     assert move_cmds[1].end == move_cmds[0].end
     assert line_cmds[1].end == line_cmds[0].end
+
+    # Assert comprehensive artifact content
+    assert final_artifact.artifact_type == "final_job"
+    assert final_artifact.vertex_data is not None
+    assert final_artifact.gcode_bytes is not None
+    assert final_artifact.op_map_bytes is not None
+
+    gcode_str = final_artifact.gcode_bytes.tobytes().decode("utf-8")
+    op_map_str = final_artifact.op_map_bytes.tobytes().decode("utf-8")
+    op_map = json.loads(op_map_str)
+
+    assert "G1" in gcode_str  # Check for a linear move command
+    assert isinstance(op_map, dict)
+    assert len(op_map) > 0
 
     # --- Cleanup ---
     ArtifactStore.release(base_handle)

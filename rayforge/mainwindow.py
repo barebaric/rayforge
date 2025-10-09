@@ -20,7 +20,6 @@ from .pipeline.steps import (
     create_contour_step,
     create_material_test_step,
 )
-from .pipeline.encoder.gcode import GcodeEncoder
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
 from .doceditor.ui.workflow_view import WorkflowView
@@ -48,7 +47,6 @@ from .shared.gcodeedit.previewer import GcodePreviewer
 from .core.step import Step
 from .pipeline.artifact.store import ArtifactStore
 from .pipeline.artifact.handle import ArtifactHandle
-from .core.ops import Ops
 
 
 logger = logging.getLogger(__name__)
@@ -705,13 +703,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_assembly_for_preview_finished(
         self,
-        result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+        result: Optional[Tuple[float, Optional[ArtifactHandle]]],
         error: Optional[Exception],
     ):
         """Callback for when the job assembly for previews is complete."""
         handle: Optional[ArtifactHandle] = None
         if result:
-            _time, _gcode_path, handle = result
+            _time, handle = result
 
         if error:
             logger.error(
@@ -733,14 +731,13 @@ class MainWindow(Adw.ApplicationWindow):
         Main-thread callback to distribute assembled Ops to all consumers.
         This method is responsible for releasing the artifact handle.
         """
-        aggregated_ops: Optional[Ops] = None
+        final_artifact = None
         try:
             if handle:
-                artifact = ArtifactStore.get(handle)
-                aggregated_ops = artifact.ops
+                final_artifact = ArtifactStore.get(handle)
 
             # 1. Update Simulation
-            self.simulator_cmd.reload_simulation(aggregated_ops)
+            self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
             gcode_action = self.action_manager.get_action(
@@ -749,11 +746,20 @@ class MainWindow(Adw.ApplicationWindow):
             state = gcode_action.get_state()
             is_gcode_visible = state and state.get_boolean()
 
-            if is_gcode_visible and aggregated_ops and config.machine:
-                encoder = GcodeEncoder.for_machine(config.machine)
-                gcode_str, op_map = encoder.encode(
-                    aggregated_ops, config.machine, self.doc_editor.doc
-                )
+            if is_gcode_visible and final_artifact:
+                gcode_str, op_map = None, None
+                if final_artifact.gcode_bytes is not None:
+                    gcode_str = final_artifact.gcode_bytes.tobytes().decode(
+                        "utf-8"
+                    )
+                if final_artifact.op_map_bytes is not None:
+                    map_str = final_artifact.op_map_bytes.tobytes().decode(
+                        "utf-8"
+                    )
+                    op_map = {
+                        int(k): v for k, v in json.loads(map_str).items()
+                    }
+
                 self._update_gcode_preview(gcode_str, op_map)
             else:
                 self._update_gcode_preview(None, None)

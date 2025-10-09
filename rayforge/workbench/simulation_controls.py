@@ -1,6 +1,7 @@
 """Preview playback controls overlay."""
 
 from gi.repository import Gtk, GLib, GObject
+from ..core.ops import ScanLinePowerCommand
 
 
 class PreviewControls(Gtk.Box):
@@ -134,23 +135,20 @@ class PreviewControls(Gtk.Box):
         total = self.simulation_overlay.get_step_count()
         state = self.simulation_overlay.get_current_state()
 
-        # Check if current step is a travel command
-        is_travel = False
-        if self.simulation_overlay.timeline.steps and 0 <= current < len(
-            self.simulation_overlay.timeline.steps
-        ):
-            cmd, _, _ = self.simulation_overlay.timeline.steps[current]
-            is_travel = cmd.is_travel_command()
+        cmd = None
+        timeline = self.simulation_overlay.timeline
+        if timeline.steps and 0 <= current < len(timeline.steps):
+            cmd, _, _ = timeline.steps[current]
 
         if state:
             speed = state.cut_speed if state.cut_speed is not None else 0.0
             power = state.power if state.power is not None else 0.0
-            # Convert normalized power (0.0-1.0) to percentage (0-100%)
             power_percent = power * 100.0
 
-            # Show power as 0% for travel moves (laser is off)
-            if is_travel:
+            if cmd and cmd.is_travel_command():
                 power_display = "0%"
+            elif isinstance(cmd, ScanLinePowerCommand):
+                power_display = f"~{power_percent:.0f}%"
             else:
                 power_display = f"{power_percent:.0f}%"
 

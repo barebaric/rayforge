@@ -1,4 +1,5 @@
 import unittest
+import json
 import numpy as np
 from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact.base import Artifact, VertexData, TextureData
@@ -41,6 +42,15 @@ class TestArtifact(unittest.TestCase):
         )
         self.assertEqual(hybrid_artifact.artifact_type, "hybrid_raster")
 
+        # Final job type (has gcode_bytes)
+        final_job_artifact = Artifact(
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
+        )
+        self.assertEqual(final_job_artifact.artifact_type, "final_job")
+
     def test_vector_serialization_round_trip(self):
         """Tests serialization for a vector-like artifact."""
         ops = Ops()
@@ -67,6 +77,8 @@ class TestArtifact(unittest.TestCase):
         self.assertEqual(reconstructed.generation_size, (50, 100))
         self.assertIsNone(reconstructed.vertex_data)
         self.assertIsNone(reconstructed.texture_data)
+        self.assertIsNone(reconstructed.gcode_bytes)
+        self.assertIsNone(reconstructed.op_map_bytes)
 
     def test_vertex_serialization_round_trip(self):
         """Tests serialization for a vertex-like artifact."""
@@ -138,6 +150,38 @@ class TestArtifact(unittest.TestCase):
         )
         self.assertEqual(reconstructed.texture_data.dimensions_mm, (10, 20))
         self.assertEqual(reconstructed.texture_data.position_mm, (1, 2))
+
+    def test_final_job_serialization_round_trip(self):
+        """Tests serialization for a final_job artifact."""
+        gcode_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
+        op_map_bytes = np.frombuffer(json.dumps({0: 0}).encode(), np.uint8)
+
+        artifact = Artifact(
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            gcode_bytes=gcode_bytes,
+            op_map_bytes=op_map_bytes,
+        )
+
+        reconstructed = Artifact.from_dict(artifact.to_dict())
+
+        self.assertEqual(reconstructed.artifact_type, "final_job")
+        self.assertIsNotNone(reconstructed.gcode_bytes)
+        self.assertIsNotNone(reconstructed.op_map_bytes)
+
+        # Add assertions to satisfy the type checker
+        assert reconstructed.gcode_bytes is not None
+        assert artifact.gcode_bytes is not None
+        np.testing.assert_array_equal(
+            reconstructed.gcode_bytes, artifact.gcode_bytes
+        )
+
+        assert reconstructed.op_map_bytes is not None
+        assert artifact.op_map_bytes is not None
+        np.testing.assert_array_equal(
+            reconstructed.op_map_bytes, artifact.op_map_bytes
+        )
 
 
 if __name__ == "__main__":

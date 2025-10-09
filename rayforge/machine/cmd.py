@@ -49,7 +49,7 @@ class MachineCmd:
         job_future = asyncio.get_running_loop().create_future()
 
         def _on_assembly_done(
-            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
             error: Optional[Exception],
         ):
             if error:
@@ -71,7 +71,7 @@ class MachineCmd:
                     job_future.set_exception(exc)
                 return
 
-            _time, _gcode_path, handle = result
+            _time, handle = result
 
             if not handle:
                 logger.warning("Framing job has no operations to run.")
@@ -140,7 +140,7 @@ class MachineCmd:
         job_future = asyncio.get_running_loop().create_future()
 
         def _on_assembly_done(
-            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
             error: Optional[Exception],
         ):
             if error:
@@ -161,7 +161,7 @@ class MachineCmd:
                     job_future.set_exception(exc)
                 return
 
-            _time, _gcode_path, handle = result
+            _time, handle = result
 
             if not handle:
                 logger.warning("Job has no operations to run.")

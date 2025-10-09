@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Dict, Callable
 from dataclasses import asdict
@@ -280,7 +279,7 @@ class FileCmd:
         self,
         when_done: Callable[
             [
-                Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+                Optional[Tuple[float, Optional[ArtifactHandle]]],
                 Optional[Exception],
             ],
             None,
@@ -292,7 +291,7 @@ class FileCmd:
 
         Args:
             when_done: A callback executed upon completion. It receives
-                       a result tuple (time, path, handle) on success,
+                       a result tuple (time, handle) on success,
                        or (None, error) on failure.
         """
         try:
@@ -305,13 +304,13 @@ class FileCmd:
             try:
                 # Re-raises exceptions from the task
                 raw_result = task.result()
-                time, path, handle_dict = raw_result
+                time, handle_dict = raw_result
                 handle = (
                     ArtifactHandle.from_dict(handle_dict)
                     if handle_dict
                     else None
                 )
-                when_done((time, path, handle), None)
+                when_done((time, handle), None)
             except Exception as e:
                 when_done(None, e)
 
@@ -329,7 +328,7 @@ class FileCmd:
         """
 
         def _on_export_assembly_done(
-            result: Optional[Tuple[float, str, Optional[ArtifactHandle]]],
+            result: Optional[Tuple[float, Optional[ArtifactHandle]]],
             error: Optional[Exception],
         ):
             handle: Optional[ArtifactHandle] = None
@@ -339,10 +338,18 @@ class FileCmd:
                 if not result:
                     raise ValueError("Assembly process returned no result.")
 
-                _time, temp_gcode_path, handle = result
+                _time, handle = result
+                if not handle:
+                    raise ValueError("Assembly process returned no artifact.")
 
-                # Post-processing: move the file to its final destination
-                shutil.move(temp_gcode_path, file_path)
+                # Get artifact, decode G-code, and write to file
+                artifact = ArtifactStore.get(handle)
+                if artifact.gcode_bytes is None:
+                    raise ValueError("Final artifact is missing G-code data.")
+
+                gcode_str = artifact.gcode_bytes.tobytes().decode("utf-8")
+                file_path.write_text(gcode_str, encoding="utf-8")
+
                 logger.info(f"Successfully exported G-code to {file_path}")
                 msg = _("Export successful: {name}").format(
                     name=file_path.name

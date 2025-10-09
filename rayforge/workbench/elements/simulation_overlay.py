@@ -1,9 +1,12 @@
 """Preview overlay element for rendering operations playback on the canvas."""
 
 import cairo
+import numpy as np
 from typing import Tuple, Optional
 from ...core.ops import Ops, State
+from ...core.ops.commands import ArcToCommand, ScanLinePowerCommand
 from ..canvas.element import CanvasElement
+from ...core.geo.linearize import linearize_arc
 
 
 def speed_to_heatmap_color(
@@ -79,7 +82,8 @@ class OpsTimeline:
                 )
 
                 # Update current_pos
-                current_pos = cmd.end
+                if cmd.end is not None:
+                    current_pos = cmd.end
 
                 # Track speeds for range calculation
                 if current_state.cut_speed is not None:
@@ -194,46 +198,77 @@ class SimulationOverlay(CanvasElement):
 
         # Draw each operation with heatmap color and power transparency
         for cmd, state, start_pos in steps:
-            # Get speed (default to 1000 if not set)
-            speed = state.cut_speed if state.cut_speed is not None else 1000.0
-
-            # Get power (default to 100 if not set)
-            power = state.power if state.power is not None else 100.0
-
             if cmd.is_travel_command():
-                r, g, b, alpha = 1.0, 0.5, 0.0, 0.5  # Orange, 50% transparent
-            else:
-                # Map speed to heatmap color
-                r, g, b = speed_to_heatmap_color(speed, min_speed, max_speed)
-
-                # Map power to transparency: 0% → 10% opacity, 100% →
-                # 100% opacity. Ensures even low-power moves remain
-                # faintly visible
-                alpha = 0.1 + (power / 100.0) * 0.9
-
-            ctx.set_source_rgba(r, g, b, alpha)
-            ctx.set_line_width(0.1)  # 0.1mm line width
-
-            # Use dashed lines for travel moves
-            if cmd.is_travel_command():
-                ctx.set_dash([1, 1])  # 1px on, 1px off
-            else:
-                ctx.set_dash([])  # Solid line
-
-            # Draw the operation
-            if hasattr(cmd, "end") and cmd.end is not None:
-                if (
-                    not hasattr(cmd, "is_travel_command")
-                    or not cmd.is_travel_command()
-                ):
+                ctx.set_source_rgba(0.5, 0.5, 0.5, 0.2)  # Faint gray
+                ctx.set_line_width(0.1)
+                ctx.set_dash([])
+                if cmd.end:
                     ctx.move_to(start_pos[0], start_pos[1])
                     ctx.line_to(cmd.end[0], cmd.end[1])
                     ctx.stroke()
+                continue
+
+            # Get speed and power for cutting moves
+            speed = state.cut_speed if state.cut_speed is not None else 1000.0
+            power = state.power if state.power is not None else 100.0
+            r, g, b = speed_to_heatmap_color(speed, min_speed, max_speed)
+            alpha = 0.1 + (power / 100.0) * 0.9
+
+            ctx.set_source_rgba(r, g, b, alpha)
+            ctx.set_line_width(0.2)
+            ctx.set_dash([])
+
+            if isinstance(cmd, ArcToCommand):
+                for seg_start, seg_end in linearize_arc(cmd, start_pos):
+                    ctx.move_to(seg_start[0], seg_start[1])
+                    ctx.line_to(seg_end[0], seg_end[1])
+                    ctx.stroke()
+            elif isinstance(cmd, ScanLinePowerCommand):
+                self._draw_scanline(ctx, cmd, start_pos, state)
+            elif cmd.end:  # This handles LineToCommand
+                ctx.move_to(start_pos[0], start_pos[1])
+                ctx.line_to(cmd.end[0], cmd.end[1])
+                ctx.stroke()
 
         # Draw laser head position indicator
         current_pos = self.get_current_position()
         if current_pos:
             self._draw_laser_head(ctx, current_pos)
+
+    def _draw_scanline(
+        self,
+        ctx: cairo.Context,
+        cmd: ScanLinePowerCommand,
+        start_pos: tuple,
+        state: State,
+    ):
+        """Draws a ScanLinePowerCommand as a series of colored segments."""
+        if cmd.end is None:
+            return
+
+        p_start = np.array(start_pos[:2], dtype=np.float32)
+        p_end = np.array(cmd.end[:2], dtype=np.float32)
+        line_vec = p_end - p_start
+        num_steps = len(cmd.power_values)
+        if num_steps == 0:
+            return
+
+        min_s, max_s = self.timeline.speed_range
+        r, g, b = speed_to_heatmap_color(state.cut_speed or 0.0, min_s, max_s)
+
+        for i, power_byte in enumerate(cmd.power_values):
+            if power_byte == 0:
+                continue
+
+            alpha = 0.1 + (power_byte / 255.0) * 0.9
+            t_start, t_end = i / num_steps, (i + 1) / num_steps
+            seg_start_pt = p_start + t_start * line_vec
+            seg_end_pt = p_start + t_end * line_vec
+
+            ctx.set_source_rgba(r, g, b, alpha)
+            ctx.move_to(seg_start_pt[0], seg_start_pt[1])
+            ctx.line_to(seg_end_pt[0], seg_end_pt[1])
+            ctx.stroke()
 
     def _draw_laser_head(self, ctx: cairo.Context, pos: Tuple[float, float]):
         """Draws the laser head indicator at the given position in mm."""

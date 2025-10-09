@@ -1,4 +1,5 @@
 import unittest
+import json
 import numpy as np
 from multiprocessing import shared_memory
 from rayforge.core.ops import Ops
@@ -73,6 +74,22 @@ class TestArtifactStore(unittest.TestCase):
             texture_data=texture_data,
         )
 
+    def _create_sample_final_job_artifact(self) -> Artifact:
+        """Helper to generate a final job artifact for tests."""
+        gcode_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
+        op_map = {0: 0, 1: 1, 2: 2}
+        op_map_bytes = np.frombuffer(
+            json.dumps(op_map).encode("utf-8"), dtype=np.uint8
+        )
+        return Artifact(
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            gcode_bytes=gcode_bytes,
+            op_map_bytes=op_map_bytes,
+            vertex_data=VertexData(),  # Final jobs have vertex data
+        )
+
     def test_internal_conversion_round_trip(self):
         """
         Tests the private conversion methods in isolation without shared
@@ -82,6 +99,7 @@ class TestArtifactStore(unittest.TestCase):
         for artifact_factory in [
             self._create_sample_vertex_artifact,
             self._create_sample_hybrid_artifact,
+            self._create_sample_final_job_artifact,
         ]:
             with self.subTest(
                 artifact_type=artifact_factory().__class__.__name__
@@ -179,6 +197,45 @@ class TestArtifactStore(unittest.TestCase):
             len(original_artifact.ops.commands),
             len(retrieved_artifact.ops.commands),
         )
+
+        # 4. Release
+        ArtifactStore.release(handle)
+
+        # 5. Verify release
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle.shm_name)
+
+    def test_put_get_release_final_job_artifact(self):
+        """
+        Tests the full put -> get -> release lifecycle with a
+        final_job Artifact.
+        """
+        original_artifact = self._create_sample_final_job_artifact()
+
+        # 1. Put
+        handle = ArtifactStore.put(original_artifact)
+        self.handles_to_release.append(handle)
+
+        # 2. Get
+        retrieved_artifact = ArtifactStore.get(handle)
+
+        # 3. Verify
+        self.assertEqual(retrieved_artifact.artifact_type, "final_job")
+        self.assertIsNotNone(retrieved_artifact.gcode_bytes)
+        self.assertIsNotNone(retrieved_artifact.op_map_bytes)
+        self.assertIsNotNone(retrieved_artifact.vertex_data)
+
+        # Add assertions to satisfy the type checker
+        assert retrieved_artifact.gcode_bytes is not None
+        assert retrieved_artifact.op_map_bytes is not None
+
+        # Decode and verify content
+        gcode_str = retrieved_artifact.gcode_bytes.tobytes().decode("utf-8")
+        op_map_str = retrieved_artifact.op_map_bytes.tobytes().decode("utf-8")
+        op_map = {int(k): v for k, v in json.loads(op_map_str).items()}
+
+        self.assertEqual(gcode_str, "G1 X10 Y20")
+        self.assertDictEqual(op_map, {0: 0, 1: 1, 2: 2})
 
         # 4. Release
         ArtifactStore.release(handle)

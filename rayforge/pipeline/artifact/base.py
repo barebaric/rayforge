@@ -91,6 +91,8 @@ class Artifact:
         generation_size: Optional[Tuple[float, float]] = None,
         vertex_data: Optional[VertexData] = None,
         texture_data: Optional[TextureData] = None,
+        gcode_bytes: Optional[np.ndarray] = None,
+        op_map_bytes: Optional[np.ndarray] = None,
     ):
         self.ops = ops
         self.is_scalable = is_scalable
@@ -99,10 +101,14 @@ class Artifact:
         self.generation_size = generation_size
         self.vertex_data = vertex_data
         self.texture_data = texture_data
+        self.gcode_bytes = gcode_bytes
+        self.op_map_bytes = op_map_bytes
 
     @property
     def artifact_type(self) -> str:
         """Determines the artifact type based on its data components."""
+        if self.gcode_bytes is not None or self.op_map_bytes is not None:
+            return "final_job"
         if self.texture_data:
             return "hybrid_raster"
         if self.vertex_data:
@@ -123,6 +129,10 @@ class Artifact:
             data["vertex_data"] = self.vertex_data.to_dict()
         if self.texture_data:
             data["texture_data"] = self.texture_data.to_dict()
+        if self.gcode_bytes is not None:
+            data["gcode_bytes"] = self.gcode_bytes.tolist()
+        if self.op_map_bytes is not None:
+            data["op_map_bytes"] = self.op_map_bytes.tolist()
         return data
 
     @classmethod
@@ -136,6 +146,16 @@ class Artifact:
         texture_data = (
             TextureData.from_dict(data["texture_data"])
             if "texture_data" in data and data["texture_data"]
+            else None
+        )
+        gcode_bytes = (
+            np.array(data["gcode_bytes"], dtype=np.uint8)
+            if "gcode_bytes" in data and data["gcode_bytes"] is not None
+            else None
+        )
+        op_map_bytes = (
+            np.array(data["op_map_bytes"], dtype=np.uint8)
+            if "op_map_bytes" in data and data["op_map_bytes"] is not None
             else None
         )
 
@@ -153,4 +173,6 @@ class Artifact:
             else None,
             vertex_data=vertex_data,
             texture_data=texture_data,
+            gcode_bytes=gcode_bytes,
+            op_map_bytes=op_map_bytes,
         )
