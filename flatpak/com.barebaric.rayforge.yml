@@ -196,6 +196,5 @@ modules:
       - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
     sources:
       - type: git 
-        url: https://github.com/barebaric/rayforge.git
-        branch: main
-        commit: 09626272619076d7d2c00678ae275080bd56c3c5
+        url: https://github.com/fllmn/rayforge.git
+        branch: flatpak-refactor
