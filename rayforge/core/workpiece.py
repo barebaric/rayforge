@@ -208,7 +208,7 @@ class WorkPiece(DocItem):
         }
 
     @classmethod
-    def from_dict(cls, state: Dict[str, Any]) -> "WorkPiece":
+    def from_dict(cls, data: Dict[str, Any]) -> "WorkPiece":
         """
         Restores a WorkPiece instance from a dictionary.
         """
@@ -216,31 +216,31 @@ class WorkPiece(DocItem):
         from ..image import renderer_by_name
 
         vectors = (
-            Geometry.from_dict(state["vectors"]) if state["vectors"] else None
+            Geometry.from_dict(data["vectors"]) if data["vectors"] else None
         )
 
         wp = cls(
-            name=state["name"],
+            name=data["name"],
             vectors=vectors,
         )
-        wp.uid = state["uid"]
-        wp.matrix = Matrix.from_list(state["matrix"])
+        wp.uid = data["uid"]
+        wp.matrix = Matrix.from_list(data["matrix"])
 
         loaded_tabs = []
-        for t_data in state.get("tabs", []):
+        for t_data in data.get("tabs", []):
             t_data_copy = t_data.copy()
             # Ignore 'length' for backward compatibility with older files.
             t_data_copy.pop("length", None)
             loaded_tabs.append(Tab(**t_data_copy))
         wp.tabs = loaded_tabs
-        wp.tabs_enabled = state.get("tabs_enabled", True)
-        wp.import_source_uid = state.get("import_source_uid")
+        wp.tabs_enabled = data.get("tabs_enabled", True)
+        wp.import_source_uid = data.get("import_source_uid")
 
         # Hydrate with transient data if provided for subprocesses
-        if "data" in state:
-            wp._data = state["data"]
-        if "renderer_name" in state:
-            renderer_name = state["renderer_name"]
+        if "data" in data:
+            wp._data = data["data"]
+        if "renderer_name" in data:
+            renderer_name = data["renderer_name"]
             if renderer_name in renderer_by_name:
                 wp._renderer = renderer_by_name[renderer_name]
 
