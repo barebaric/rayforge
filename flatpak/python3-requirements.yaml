@@ -60,26 +60,6 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/3c/a6/bc1012356d8ece4d66dd75c4b9fc6c1f6650ddd5991e421177d9f8f671be/platformdirs-4.3.6-py3-none-any.whl
         sha256: 73e575e1408ab8103900836b97580d5307456908a03e92031bab39e4554cc3fb
-  - name: python3-pycairo
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} "pycairo==1.28.0" --no-build-isolation
-    sources:
-        type: file
-        url: https://files.pythonhosted.org/packages/40/d9/412da520de9052b7e80bfc810ec10f5cb3dbfa4aa3e23c2820dc61cdb3d0/pycairo-1.28.0.tar.gz
-        sha256: 26ec5c6126781eb167089a123919f87baa2740da2cca9098be8b3a6b91cc5fbc
-  - name: python3-pygobject
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pygobject==3.50.0" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/40/d9/412da520de9052b7e80bfc810ec10f5cb3dbfa4aa3e23c2820dc61cdb3d0/pycairo-1.28.0.tar.gz
-        sha256: 26ec5c6126781eb167089a123919f87baa2740da2cca9098be8b3a6b91cc5fbc
-      - type: file
-        url: https://files.pythonhosted.org/packages/2b/58/d34e67a79631177e3c08e7d02b5165147f590171f2cae6769502af5f7f7e/pygobject-3.50.0.tar.gz
-        sha256: 4500ad3dbf331773d8dedf7212544c999a76fc96b63a91b3dcac1e5925a1d103
   - name: python3-PyOpenGL
     buildsystem: simple
     build-commands:
@@ -93,11 +73,11 @@ modules:
     buildsystem: simple
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} "pyopengl-accelerate==3.1.9" --no-build-isolation
+        --prefix=${FLATPAK_DEST} "pyopengl-accelerate==3.1.10" --no-build-isolation
     sources:
       - type: file
-        url: https://files.pythonhosted.org/packages/9d/9e/a87f972148971c785773dcc792226530ff78840420e34b3cc51b221693a2/pyopengl_accelerate-3.1.9.tar.gz
-        sha256: 85957c7c76975818ff759ec9243f9dc7091ef6f373ea37a2eb50c320fd9a86f3
+        url: https://files.pythonhosted.org/packages/6d/49/dffa946f07e84eb4666d7fb5553a1d569d54405c863ff7a19b71758712f6/pyopengl_accelerate-3.1.10.tar.gz
+        sha256: 82751c83f0a6f732b8b5923990edc2441d38176a98756b1718e8d6c4379f5a71
   - name: python3-pypdf
     buildsystem: simple
     build-commands:
