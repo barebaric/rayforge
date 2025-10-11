@@ -134,8 +134,30 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             ),
         )
 
-        # Initial setup - No longer needed to fiddle with bounds here
         self._on_mode_changed(mode_row, None)
+
+    def _commit_power_range_change(self):
+        """Commits the min/max power to the model via command(s)."""
+        min_p = self.min_power_adj.get_value() / 100.0
+        max_p = self.max_power_adj.get_value() / 100.0
+
+        params = self.target_dict.setdefault("params", {})
+        min_changed = abs(params.get("min_power", 0.0) - min_p) > 1e-6
+        max_changed = abs(params.get("max_power", 0.0) - max_p) > 1e-6
+
+        if not min_changed and not max_changed:
+            return
+
+        with self.history_manager.transaction(_("Change Power Range")):
+            if min_changed:
+                self.editor.step.set_step_param(
+                    params, "min_power", min_p, _("Change Min Power")
+                )
+            if max_changed:
+                self.editor.step.set_step_param(
+                    params, "max_power", max_p, _("Change Max Power")
+                )
+        self.step.updated.send(self.step)
 
     def _on_min_power_scale_changed(self, scale: Gtk.Scale):
         new_min_value = self.min_power_adj.get_value()
@@ -156,9 +178,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(
-            self._on_param_changed, "min_power", new_min_value / 100
-        )
+        self._debounce(self._commit_power_range_change)
 
     def _on_max_power_scale_changed(self, scale: Gtk.Scale):
         new_max_value = self.max_power_adj.get_value()
@@ -179,9 +199,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Debounce the value that the user is actively changing.
-        self._debounce(
-            self._on_param_changed, "max_power", new_max_value / 100
-        )
+        self._debounce(self._commit_power_range_change)
 
     def _on_mode_changed(self, row, _):
         selected_idx = row.get_selected()

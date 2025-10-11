@@ -1,20 +1,13 @@
-"""
-Material Test Grid Producer
-
-Generates a grid of test shapes with varying speed and power settings for
-material testing. Unlike typical producers, this generates ops directly from
-parameters without requiring pixel data.
-"""
-
-from __future__ import annotations
 import logging
-from enum import Enum
-from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
+import math
 import cairo
-from ...core.ops import (
-    Ops,
-    SectionType,
-)
+import re
+from enum import Enum
+from typing import Tuple, Dict, Any, List, Optional, TYPE_CHECKING
+
+from ...core.ops import Ops, SectionType
+from ...core.geo.geometry import Geometry
+from ...core.matrix import Matrix
 from ..artifact.base import Artifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
@@ -22,7 +15,52 @@ from .base import OpsProducer
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
 
+
 logger = logging.getLogger(__name__)
+
+_TRACE_DPI = 300.0
+_MM_PER_INCH = 25.4
+
+
+def get_material_test_proportional_size(
+    params: Dict[str, Any],
+) -> Tuple[float, float]:
+    """
+    Calculates the natural size in mm for a material test grid.
+
+    This is a standalone function to allow the ProceduralImporter to
+    determine the initial WorkPiece size without instantiating the producer.
+
+    Args:
+        params: A dictionary of geometric parameters for the grid, including
+          'grid_dimensions', 'shape_size', 'spacing', and 'include_labels'.
+
+    Returns:
+        A tuple of (width, height) in millimeters.
+    """
+    cols, rows = map(int, params.get("grid_dimensions", (5, 5)))
+    shape_size = params.get("shape_size", 10.0)
+    spacing = params.get("spacing", 2.0)
+    include_labels = params.get("include_labels", True)
+
+    base_margin_left = 15.0
+    base_margin_top = 15.0
+    width = (cols * shape_size) + ((cols - 1) * spacing)
+    height = (rows * shape_size) + ((rows - 1) * spacing)
+    if include_labels:
+        width += base_margin_left
+        height += base_margin_top
+    return width, height
+
+
+def draw_material_test_preview(
+    ctx: cairo.Context, width: float, height: float, params: Dict[str, Any]
+):
+    """
+    Stable, importable entry point for the generic procedural renderer.
+    This function delegates the actual drawing to the producer class.
+    """
+    MaterialTestGridProducer.draw_preview(ctx, width, height, params)
 
 
 class MaterialTestGridType(Enum):
@@ -35,10 +73,8 @@ class MaterialTestGridType(Enum):
 class MaterialTestGridProducer(OpsProducer):
     """
     Generates a material test grid with varying speed and power settings.
-
-    Each cell in the grid represents a unique speed/power combination.
-    Cells are executed in risk-optimized order (highest speed first, then
-    lowest power) to minimize material charring.
+    This producer creates both the final machine operations and a matching
+    visual preview for the UI.
     """
 
     def __init__(
@@ -50,492 +86,355 @@ class MaterialTestGridProducer(OpsProducer):
         shape_size: float = 10.0,
         spacing: float = 2.0,
         include_labels: bool = True,
+        label_power_percent: float = 10.0,
     ):
-        """
-        Initializes the MaterialTestGridProducer.
-
-        Args:
-            test_type: MaterialTestGridType.CUT or MaterialTestGridType.ENGRAVE
-            speed_range: (min_speed, max_speed) in mm/min
-            power_range: (min_power, max_power) in percentage (0-100)
-            grid_dimensions: (columns, rows) for the grid
-            shape_size: Size of each test square in mm
-            spacing: Gap between squares in mm
-            include_labels: Whether to add speed/power labels
-        """
         super().__init__()
-        # Handle string-to-enum conversion for deserialization
         if isinstance(test_type, str):
             self.test_type = MaterialTestGridType(test_type)
-        elif isinstance(test_type, MaterialTestGridType):
-            self.test_type = test_type
         else:
-            raise TypeError(
-                "test_type must be a MaterialTestGridType or a valid string"
-            )
+            self.test_type = test_type
         self.speed_range = speed_range
         self.power_range = power_range
         self.grid_dimensions = grid_dimensions
         self.shape_size = shape_size
         self.spacing = spacing
         self.include_labels = include_labels
+        self.label_power_percent = label_power_percent
 
     @property
     def supports_power(self) -> bool:
-        """The grid generator does not support a fixed power setting."""
         return False
 
     @property
     def supports_cut_speed(self) -> bool:
-        """The grid generator does not support a fixed speed setting."""
         return False
 
     def run(
         self,
         laser,
-        surface,  # Unused - no rendering needed
-        pixels_per_mm,  # Unused
+        surface,
+        pixels_per_mm,
         *,
-        workpiece: Optional[WorkPiece] = None,
+        workpiece: Optional["WorkPiece"] = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
     ) -> Artifact:
-        """
-        Generates the material test ops.
-
-        Args:
-            laser: Laser config (used for max_power scaling)
-            surface: Unused - no rendering needed
-            pixels_per_mm: Unused
-            workpiece: Used only for UID marking in ops sections
-            settings: Unused - no runtime settings needed
-            y_offset_mm: Unused
-
-        Returns:
-            VectorArtifact containing the test grid ops
-        """
-        ops = Ops()
-
-        if workpiece:
-            ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
-
-        # Calculate dimensions for Y-flip calculation
-        cols, rows = self.grid_dimensions
-        grid_width = cols * (self.shape_size + self.spacing) - self.spacing
-        grid_height = rows * (self.shape_size + self.spacing) - self.spacing
-
-        # Generate labels first (if enabled) so they're processed first
-        # The label generator returns the margin sizes it needs
-        # (x and y can differ)
-        if self.include_labels:
-            margin_x, margin_y = self._generate_labels(
-                ops, grid_width, grid_height, laser
+        if workpiece is None:
+            raise ValueError(
+                "MaterialTestGridProducer requires a workpiece context."
             )
-            offset_x = margin_x
-            offset_y = margin_y
-        else:
-            margin_x = 0.0
-            margin_y = 0.0
-            offset_x = 0.0
-            offset_y = 0.0
 
-        # Generate test squares in risk-sorted order
-        test_elements = self._create_test_grid()
+        # Only run on the designated workpiece for this step.
+        if settings:
+            owner_uid = settings.get("generated_workpiece_uid")
+            if owner_uid and owner_uid != workpiece.uid:
+                return Artifact(
+                    ops=Ops(),
+                    is_scalable=False,
+                    source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+                    source_dimensions=workpiece.size or (0, 0),
+                )
 
-        # Sort by risk: highest speed (safest) first, then lowest power
-        test_elements.sort(key=lambda e: (-e["speed"], e["power"]))
+        width_mm, height_mm = workpiece.size
+        params = self.to_dict()["params"]
+        elements = self._calculate_abstract_layout(params, width_mm, height_mm)
+        grid_elements = [el for el in elements if el["class"] == "grid-rect"]
+        label_elements = [el for el in elements if "label" in el["class"]]
 
-        for element in test_elements:
-            power_normalized = element["power"] / 100.0
-            ops.set_power(power_normalized)
-            ops.set_cut_speed(element["speed"])
-            # Use coordinates as-is (r=0 at y=0)
+        main_ops = Ops()
+        main_ops.set_laser(laser.uid)
+        main_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
+
+        # Sort for risk, highest risk first (high speed -> low speed)
+        grid_elements.sort(key=lambda e: (-e["speed"], e["power"]))
+
+        for element in grid_elements:
+            main_ops.set_power(element["power"] / 100.0)
+            main_ops.set_cut_speed(element["speed"])
             if self.test_type == MaterialTestGridType.ENGRAVE:
-                self._draw_filled_box(
-                    ops,
-                    element["x"] + offset_x,
-                    element["y"] + offset_y,
-                    element["width"],
-                    element["height"],
-                )
-            else:  # Cut mode
-                self._draw_rectangle(
-                    ops,
-                    element["x"] + offset_x,
-                    element["y"] + offset_y,
-                    element["width"],
-                    element["height"],
-                )
+                self._draw_filled_box(main_ops, **element)
+            else:
+                self._draw_rectangle(main_ops, **element)
 
-        if workpiece:
-            ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        # Labels are always outlines, engraved at a configurable power.
+        if label_elements:
+            text_ops = self._vectorize_text_to_ops(params, width_mm, height_mm)
+            main_ops.set_power(self.label_power_percent / 100.0)
+            main_ops.set_cut_speed(1000)
+            main_ops.extend(text_ops)
 
-        # Calculate total dimensions (reuse grid dimensions and margins
-        # from above)
-        total_width = grid_width + margin_x
-        total_height = grid_height + margin_y
+        main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        logger.info(
-            (
-                f"Generated material test grid: {cols}x{rows} cells, "
-                f"{grid_width:.1f}x{grid_height:.1f} mm"
-            )
-        )
+        if not main_ops.is_empty():
+            main_ops.scale(1, -1)
+            main_ops.translate(0, height_mm)
 
         return Artifact(
-            ops=ops,
-            is_scalable=True,  # Can be scaled mathematically
+            ops=main_ops,
+            is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=(total_width, total_height),
-            generation_size=(total_width, total_height),
+            source_dimensions=(width_mm, height_mm),
         )
 
-    def _create_test_grid(self) -> list:
-        """Creates the list of test element dictionaries."""
-        cols, rows = self.grid_dimensions
-        cols, rows = int(cols), int(rows)  # Ensure integers for range()
-        min_speed, max_speed = self.speed_range
-        min_power, max_power = self.power_range
+    @classmethod
+    def draw_preview(
+        cls,
+        ctx: cairo.Context,
+        width_px: float,
+        height_px: float,
+        params: Dict[str, Any],
+    ):
+        """
+        Draws a visual-only preview by dynamically calculating the layout in
+        pixel space. This prevents stretching.
+        """
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+        ctx.set_source_rgb(0, 0, 0)
 
-        # Rows vary speed (Y-axis), columns vary power (X-axis)
+        elements = cls._calculate_abstract_layout(params, width_px, height_px)
+        test_type_str = params.get("test_type", "Cut")
+        test_type = MaterialTestGridType(test_type_str)
+
+        for el in elements:
+            if el["class"] == "grid-rect":
+                ctx.set_line_width(0.2 * (width_px / 73.0))  # Scale line
+                ctx.rectangle(el["x"], el["y"], el["width"], el["height"])
+                if test_type == MaterialTestGridType.ENGRAVE:
+                    ctx.set_source_rgb(0.5, 0.5, 0.5)
+                    ctx.fill_preserve()
+                ctx.set_source_rgb(0, 0, 0)
+                ctx.stroke()
+            elif "label" in el["class"]:
+                cls._setup_text_path_on_context(ctx, **el)
+                ctx.fill()
+
+    @staticmethod
+    def _calculate_abstract_layout(
+        params: Dict[str, Any], target_width: float, target_height: float
+    ) -> List[Dict]:
+        """
+        Shared logic to calculate the positions and properties of all grid
+        elements based on a complete set of parameters. Works for both
+        pixel and millimeter coordinate systems.
+        """
+        base_width, base_height = get_material_test_proportional_size(params)
+        scale_x = target_width / base_width if base_width > 1e-9 else 1.0
+        scale_y = target_height / base_height if base_height > 1e-9 else 1.0
+
+        cols, rows = map(int, params.get("grid_dimensions", (5, 5)))
+        min_speed, max_speed = params.get("speed_range", (100.0, 500.0))
+        min_power, max_power = params.get("power_range", (10.0, 100.0))
+        shape_size = params.get("shape_size", 10.0)
+        spacing = params.get("spacing", 2.0)
+        include_labels = params.get("include_labels", True)
+
         speed_step = (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
         power_step = (max_power - min_power) / (cols - 1) if cols > 1 else 0
+
+        margin_left, margin_top = (
+            (15.0 * scale_x, 15.0 * scale_y) if include_labels else (0.0, 0.0)
+        )
+        shape_w, shape_h = shape_size * scale_x, shape_size * scale_y
+        spacing_x, spacing_y = spacing * scale_x, spacing * scale_y
 
         elements = []
         for r in range(rows):
             for c in range(cols):
-                current_speed = min_speed + r * speed_step
-                current_power = min_power + c * power_step
-
-                x_pos = c * (self.shape_size + self.spacing)
-                y_pos = r * (self.shape_size + self.spacing)
-
                 elements.append(
                     {
-                        "type": "box",
-                        "x": x_pos,
-                        "y": y_pos,
-                        "width": self.shape_size,
-                        "height": self.shape_size,
-                        "speed": current_speed,
-                        "power": current_power,
+                        "class": "grid-rect",
+                        "x": margin_left + c * (shape_w + spacing_x),
+                        "y": margin_top + r * (shape_h + spacing_y),
+                        "width": shape_w,
+                        "height": shape_h,
+                        "speed": min_speed + r * speed_step,
+                        "power": min_power + c * power_step,
                     }
                 )
 
+        if include_labels:
+            # Make font size proportional to the available margin space, which
+            # adapts to non-uniform scaling. Use the smaller margin to ensure
+            # text always fits.
+            font_size_axis = min(margin_left, margin_top) * 0.25
+            font_size_grid = font_size_axis * 0.85
+
+            # Add an absolute minimum size in target units (pixels or mm) to
+            # prevent text from becoming illegible if squashed.
+            min_abs_font_size = 2.0
+            font_size_axis = max(font_size_axis, min_abs_font_size * 1.1)
+            font_size_grid = max(font_size_grid, min_abs_font_size)
+
+            grid_w = target_width - margin_left
+            grid_h = target_height - margin_top
+
+            # Position labels proportionally within their margin spaces.
+            elements.extend(
+                [
+                    {
+                        "x": margin_left + grid_w / 2,
+                        "y": margin_top * 0.3,
+                        "text": "Power (%)",
+                        "class": "axis-label",
+                        "font_size": font_size_axis,
+                    },
+                    {
+                        "x": margin_left * 0.3,
+                        "y": margin_top + grid_h / 2,
+                        "text": "Speed (mm/min)",
+                        "class": "axis-label",
+                        "font_size": font_size_axis,
+                        "transform": "rotate(-90)",
+                    },
+                ]
+            )
+            for c in range(cols):
+                text = f"{int(min_power + c * power_step)}"
+                elements.append(
+                    {
+                        "x": margin_left
+                        + c * (shape_w + spacing_x)
+                        + shape_w / 2,
+                        "y": margin_top * 0.75,
+                        "text": text,
+                        "class": "grid-label",
+                        "font_size": font_size_grid,
+                    }
+                )
+            for r in range(rows):
+                text = f"{int(min_speed + r * speed_step)}"
+                elements.append(
+                    {
+                        "x": margin_left * 0.9,
+                        "y": margin_top
+                        + r * (shape_h + spacing_y)
+                        + shape_h / 2,
+                        "text": text,
+                        "class": "grid-label",
+                        "font_size": font_size_grid,
+                        "align_h": "right",
+                    }
+                )
         return elements
 
-    def _generate_labels(
-        self,
-        ops: Ops,
-        grid_width: float,
-        grid_height: float,
-        laser,
-    ) -> tuple[float, float]:
-        """Generates axis labels and numeric annotations using shared
-        layout.
-
-        Args:
-            ops: Ops container to add label commands to
-            grid_width: Grid width (not including margins)
-            grid_height: Grid height (not including margins)
-            laser: Laser config for power scaling
-
-        Returns:
-            Tuple of (margin_x, margin_y) in mm - the margin sizes needed
-            for labels
+    @staticmethod
+    def _vectorize_text_to_ops(
+        params: Dict[str, Any], width_mm: float, height_mm: float
+    ) -> Ops:
         """
-        # Calculate font size and scaling
-        font_size = 4.375
-        font_scale = font_size / 2.5
-
-        # Calculate margins based on font size
-        # For now, use same margin for both axes (could differ in future)
-        margin_x = 15.0 * font_scale
-        margin_y = 15.0 * font_scale
-        offset_x = margin_x
-        offset_y = margin_y
-        cols, rows = self.grid_dimensions
-        cols, rows = int(cols), int(rows)  # Ensure integers for range()
-        min_speed, max_speed = self.speed_range
-        min_power, max_power = self.power_range
-
-        speed_step = (max_speed - min_speed) / (cols - 1) if cols > 1 else 0
-        power_step = (max_power - min_power) / (rows - 1) if rows > 1 else 0
-
-        # Scale label power percentage to machine power range
-        # Default to 1000 if laser is None (for testing/compatibility)
-        max_power = laser.max_power if laser else 1000
-        label_power_percent = 10.0
-        label_power = (label_power_percent / 100.0) * max_power
-        label_speed = 1000.0
-
-        # Reduced from 5.0 to bring closer
-        numeric_label_offset = 2.0 * font_scale
-        axis_label_offset = 12.0 * font_scale
-
-        # Main axis labels (swapped: X=power, Y=speed)
-        x_axis_label = "power (%)"
-        y_axis_label = "speed (mm/min)"
-
-        # Create temp context for text extent measurements
-        import math
-
-        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
-        temp_cr = cairo.Context(temp_surface)
-        temp_cr.select_font_face(
-            "Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
-        )
-        temp_cr.set_font_size(font_size)
-
-        # X-axis label centered below
-        extents = temp_cr.text_extents(x_axis_label)
-        x_pos = grid_width / 2 - extents.width / 2 + offset_x
-        y_pos = -(10.0 * font_scale) + offset_y
-        self._text_to_ops(
-            x_axis_label,
-            x_pos,
-            y_pos,
-            font_size,
-            "Sans",
-            ops,
-            label_power,
-            label_speed,
-        )
-
-        # Numeric labels for (X-axis)
-        for c in range(cols):
-            current_power = min_power + c * power_step
-            label_text = f"{int(current_power)}"
-            extents = temp_cr.text_extents(label_text)
-            # Center label horizontally in column
-            x_pos = (
-                c * (self.shape_size + self.spacing)
-                + self.shape_size / 2
-                - extents.height / 2
-                + offset_x
-            )
-            # Position above grid, accounting for rotated text height
-            y_pos = -numeric_label_offset + margin_y
-            self._text_to_ops(
-                label_text,
-                x_pos,
-                y_pos,
-                font_size,
-                "Sans",
-                ops,
-                label_power,
-                label_speed,
-                rotation=-math.pi / 2,  # -90 degrees (vertical)
-            )
-
-        # Y-axis label (left of grid, rotated 90 degrees counter-clockwise)
-        # Position needs adjustment to account for rotation and text centering
-        extents = temp_cr.text_extents(y_axis_label)
-
-        x_pos = -axis_label_offset + offset_x
-        # Y-axis label centered vertically
-        grid_center_y = (
-            rows * (self.shape_size + self.spacing) - self.spacing
-        ) / 2
-        y_pos = grid_center_y + offset_y + extents.width / 2
-        self._text_to_ops(
-            y_axis_label,
-            x_pos,
-            y_pos,
-            font_size,
-            "Sans",
-            ops,
-            label_power,
-            label_speed,
-            rotation=-math.pi / 2,  # -90 degrees
-        )
-
-        # Numeric labels for speed (Y-axis) - swapped from power
-        for r in range(rows):
-            current_speed = min_speed + r * speed_step
-            label_text = f"{int(current_speed)}"
-            extents = temp_cr.text_extents(label_text)
-            x_pos = -numeric_label_offset - extents.width + offset_x
-            # Row center position
-            row_center = (
-                r * (self.shape_size + self.spacing) + self.shape_size / 2
-            )
-            y_pos = row_center + offset_y - extents.height / 2
-            self._text_to_ops(
-                label_text,
-                x_pos,
-                y_pos,
-                font_size,
-                "Sans",
-                ops,
-                label_power,
-                label_speed,
-            )
-
-        return margin_x, margin_y
-
-    def _text_to_ops(
-        self,
-        text: str,
-        x: float,
-        y: float,
-        font_size: float,
-        font_face: str,
-        ops: Ops,
-        power: float,
-        speed: float,
-        rotation: float = 0.0,
-    ):
-        """Converts text to vector ops using Cairo.
-
-        Args:
-            rotation: Rotation angle in radians (counter-clockwise)
+        Generates clean vector outlines for text by creating a single combined
+        path in Cairo before converting to Geometry.
         """
-        import math
+        px_per_mm = _TRACE_DPI / _MM_PER_INCH
+        width_px = int(width_mm * px_per_mm)
+        height_px = int(height_mm * px_per_mm)
 
-        # Create temporary surface for text path generation
-        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
-        temp_cr = cairo.Context(temp_surface)
-        temp_cr.select_font_face(
-            font_face, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+        ctx = cairo.Context(surface)
+
+        label_elements = [
+            el
+            for el in MaterialTestGridProducer._calculate_abstract_layout(
+                params, width_px, height_px
+            )
+            if "label" in el["class"]
+        ]
+
+        ctx.new_path()
+        for el in label_elements:
+            MaterialTestGridProducer._setup_text_path_on_context(ctx, **el)
+
+        path_data = ctx.copy_path_flat()
+        if not path_data:
+            return Ops()
+
+        geo = Geometry.from_cairo_path(path_data)
+        if geo.is_empty():
+            return Ops()
+
+        scale_back = 1.0 / px_per_mm
+        scaling_matrix = Matrix.scale(scale_back, scale_back)
+        geo.transform(scaling_matrix.to_4x4_numpy())
+
+        return Ops.from_geometry(geo)
+
+    @staticmethod
+    def _setup_text_path_on_context(ctx: cairo.Context, **el):
+        """
+        Configures a Cairo context and adds a text path to it. This is the
+        shared logic for both preview and direct vectorization.
+        """
+        ctx.save()
+        is_axis = el["class"] == "axis-label"
+        align_h = el.get("align_h", "center")
+        ctx.select_font_face(
+            "Sans",
+            cairo.FONT_SLANT_NORMAL,
+            cairo.FONT_WEIGHT_BOLD if is_axis else cairo.FONT_WEIGHT_NORMAL,
         )
-        temp_cr.set_font_size(font_size)
+        ctx.set_font_size(el["font_size"])
+        extents = ctx.text_extents(el["text"])
+        ctx.translate(el["x"], el["y"])
+        if "transform" in el:
+            match = re.search(r"rotate\((.+?)\)", el["transform"])
+            if match:
+                ctx.rotate(math.radians(float(match.group(1))))
 
-        # Generate text path
-        temp_cr.new_path()
-        temp_cr.move_to(0, 0)
-        temp_cr.text_path(text)
-        path_data = temp_cr.copy_path()
+        if align_h == "right":
+            x_offset = -(extents.x_bearing + extents.width)
+        elif align_h == "left":
+            x_offset = -extents.x_bearing
+        else:  # "center"
+            x_offset = -(extents.x_bearing + extents.width / 2)
 
-        ops.set_power(power / 100.0)
-        ops.set_cut_speed(int(speed))
+        ctx.move_to(
+            x_offset,
+            -(extents.y_bearing + extents.height / 2),
+        )
+        ctx.text_path(el["text"])
+        ctx.restore()
 
-        # Scale factor to match show_text rendering size
-        # Empirically determined to match the rendered text size
-        path_scale = 1
-
-        # Pre-compute rotation matrix if needed
-        cos_r = math.cos(rotation)
-        sin_r = math.sin(rotation)
-
-        # Convert path to ops
-        # Track first point of current subpath for closing
-        first_point = None
-        current_point = None
-
-        for path_type, points in path_data:  # type: ignore
-            if path_type == cairo.PATH_MOVE_TO:
-                px, py = points[0], points[1]
-                # Scale the path coordinates
-                px *= path_scale
-                py *= path_scale
-                # Flip Y coordinate (text is naturally upside down in geometry)
-                py = -py
-                # Apply rotation
-                rx = px * cos_r - py * sin_r
-                ry = px * sin_r + py * cos_r
-                final_point = (x + rx, y + ry, 0.0)
-                ops.move_to(*final_point)
-                first_point = final_point
-                current_point = final_point
-            elif path_type == cairo.PATH_LINE_TO:
-                px, py = points[0], points[1]
-                # Scale the path coordinates
-                px *= path_scale
-                py *= path_scale
-                # Flip Y coordinate
-                py = -py
-                # Apply rotation
-                rx = px * cos_r - py * sin_r
-                ry = px * sin_r + py * cos_r
-                final_point = (x + rx, y + ry, 0.0)
-                ops.line_to(*final_point)
-                current_point = final_point
-            elif path_type == cairo.PATH_CURVE_TO:
-                p1x, p1y, p2x, p2y, p3x, p3y = points
-                # Scale the path coordinates
-                p1x *= path_scale
-                p1y *= path_scale
-                p2x *= path_scale
-                p2y *= path_scale
-                p3x *= path_scale
-                p3y *= path_scale
-                # Flip Y coordinates
-                p1y = -p1y
-                p2y = -p2y
-                p3y = -p3y
-                # Apply rotation to all control points
-                r1x = p1x * cos_r - p1y * sin_r
-                r1y = p1x * sin_r + p1y * cos_r
-                r2x = p2x * cos_r - p2y * sin_r
-                r2y = p2x * sin_r + p2y * cos_r
-                r3x = p3x * cos_r - p3y * sin_r
-                r3y = p3x * sin_r + p3y * cos_r
-                c1 = (x + r1x, y + r1y, 0.0)
-                c2 = (x + r2x, y + r2y, 0.0)
-                end = (x + r3x, y + r3y, 0.0)
-                ops.bezier_to(c1, c2, end)
-                current_point = end
-            elif path_type == cairo.PATH_CLOSE_PATH:
-                # Close the path by drawing a line back to the first point
-                if first_point and current_point != first_point:
-                    ops.line_to(*first_point)
-
-    def _draw_rectangle(
-        self, ops: Ops, x: float, y: float, width: float, height: float
-    ):
-        """Draws a rectangle outline to the ops."""
+    @staticmethod
+    def _draw_rectangle(ops: Ops, **el):
+        x, y, w, h = el["x"], el["y"], el["width"], el["height"]
         ops.move_to(x, y, 0.0)
-        ops.line_to(x + width, y, 0.0)
-        ops.line_to(x + width, y + height, 0.0)
-        ops.line_to(x, y + height, 0.0)
-        ops.line_to(x, y, 0.0)  # Close
+        ops.line_to(x + w, y, 0.0)
+        ops.line_to(x + w, y + h, 0.0)
+        ops.line_to(x, y + h, 0.0)
+        ops.line_to(x, y, 0.0)
 
-    def _draw_filled_box(
-        self,
-        ops: Ops,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        line_spacing: float = 0.1,
-    ):
-        """Draws a filled box with horizontal raster lines for engraving.
+    @staticmethod
+    def _draw_filled_box(ops: Ops, line_spacing: float = 0.2, **el):
+        """Generates a serpentine (back-and-forth) fill pattern."""
+        x, y, w, h = el["x"], el["y"], el["width"], el["height"]
+        if h < 1e-6:
+            return
 
-        Args:
-            ops: The Ops object to add commands to
-            x: X position of the box
-            y: Y position of the box
-            width: Width of the box
-            height: Height of the box
-            line_spacing: Spacing between raster lines in mm (default 0.1mm)
-        """
-        # Calculate number of lines needed
-        num_lines = int(height / line_spacing) + 1
+        num_lines = int(h / line_spacing)
+        if num_lines < 1:
+            # If the box is thinner than the line spacing, draw one line
+            ops.move_to(x, y + h / 2, 0.0)
+            ops.line_to(x + w, y + h / 2, 0.0)
+            return
 
-        # Draw horizontal lines from bottom to top
-        for i in range(num_lines):
-            y_pos = y + (i * line_spacing)
-            if y_pos > y + height:
-                y_pos = y + height
+        y_step = h / num_lines
+        ops.move_to(x, y, 0.0)
+        last_x = x
 
-            # Alternate direction for efficiency (bidirectional raster)
-            if i % 2 == 0:
-                # Left to right
-                ops.move_to(x, y_pos, 0.0)
-                ops.line_to(x + width, y_pos, 0.0)
-            else:
-                # Right to left
-                ops.move_to(x + width, y_pos, 0.0)
-                ops.line_to(x, y_pos, 0.0)
+        for i in range(num_lines + 1):
+            cur_y = y + i * y_step
+            # Move to the current Y level on the correct side
+            ops.line_to(last_x, cur_y, 0.0)
 
-    @property
-    def requires_full_render(self) -> bool:
-        """Material test doesn't need rendering."""
-        return False
+            if i % 2 == 0:  # Even lines, go right
+                ops.line_to(x + w, cur_y, 0.0)
+                last_x = x + w
+            else:  # Odd lines, go left
+                ops.line_to(x, cur_y, 0.0)
+                last_x = x
 
     def to_dict(self) -> dict:
-        """Serializes the producer configuration."""
         return {
             "type": self.__class__.__name__,
             "params": {
@@ -546,21 +445,11 @@ class MaterialTestGridProducer(OpsProducer):
                 "shape_size": self.shape_size,
                 "spacing": self.spacing,
                 "include_labels": self.include_labels,
+                "label_power_percent": self.label_power_percent,
             },
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "MaterialTestGridProducer":
-        """Deserializes a MaterialTestGridProducer from a dictionary."""
         params = data.get("params", {})
-        return cls(
-            test_type=MaterialTestGridType(
-                params.get("test_type", MaterialTestGridType.CUT.value)
-            ),
-            speed_range=tuple(params.get("speed_range", (100.0, 500.0))),
-            power_range=tuple(params.get("power_range", (10.0, 100.0))),
-            grid_dimensions=tuple(params.get("grid_dimensions", (5, 5))),
-            shape_size=params.get("shape_size", 10.0),
-            spacing=params.get("spacing", 2.0),
-            include_labels=params.get("include_labels", True),
-        )
+        return cls(**params)

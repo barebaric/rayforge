@@ -1,4 +1,3 @@
-import json
 import logging
 from pathlib import Path
 from typing import List, Optional, cast
@@ -13,13 +12,7 @@ from .machine.models.machine import Machine
 from .core.group import Group
 from .core.item import DocItem
 from .core.workpiece import WorkPiece
-from .core.import_source import ImportSource
-from .image.material_test_grid_renderer import MaterialTestRenderer
-from .pipeline.steps import (
-    STEP_FACTORIES,
-    create_contour_step,
-    create_material_test_step,
-)
+from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .pipeline.encoder.gcode import GcodeOpMap
 from .undo import HistoryManager, Command
 from .doceditor.editor import DocEditor
@@ -1253,51 +1246,8 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present(self)
 
     def on_show_material_test(self, action, param):
-        """Creates a material test grid and adds it to the active layer."""
-        step = create_material_test_step()
-        active_layer = self.doc_editor.doc.active_layer
-        workflow = active_layer.workflow
-        if workflow is None:
-            return
-        workflow.add_step(step)
-
-        # Create material-test type ImportSource with encoded parameters
-        if step.opsproducer_dict is None:
-            return
-        producer_params = step.opsproducer_dict["params"]
-        import_source = ImportSource(
-            source_file=Path("[material-test]"),
-            original_data=json.dumps(producer_params).encode("utf-8"),
-            renderer=MaterialTestRenderer(),
-            metadata={"type": "material_test"},
-        )
-
-        # Create new workpiece
-        workpiece = WorkPiece(name=_("Material Test Grid"))
-        workpiece.import_source_uid = import_source.uid
-
-        # Calculate and set natural size
-        cols, rows = producer_params["grid_dimensions"]
-        shape_size = producer_params["shape_size"]
-        spacing = producer_params["spacing"]
-        width = cols * (shape_size + spacing) - spacing
-        height = rows * (shape_size + spacing) - spacing
-        workpiece.set_size(width, height)
-
-        # Add to document and postion in center of workspace
-        self.doc_editor.doc.add_import_source(import_source)
-        active_layer.add_child(workpiece)
-        if config.machine:
-            ws_width, ws_height = config.machine.dimensions
-            workpiece.pos = (
-                ws_width / 2 - width / 2,
-                ws_height / 2 - height / 2,
-            )
-
-        logger.info(
-            f"Created material test: {cols}x{rows} grid, "
-            f"{width:.1f}x{height:.1f} mm"
-        )
+        """Creates a material test grid by delegating to the editor command."""
+        self.doc_editor.material_test.create_test_grid()
 
     def _on_preferences_dialog_closed(self, dialog):
         logger.debug("Preferences dialog closed")

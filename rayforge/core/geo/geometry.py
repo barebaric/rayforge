@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import logging
+import cairo
 from typing import (
     Iterator,
     List,
@@ -613,6 +614,30 @@ class Geometry:
         from . import analysis  # Local import to prevent circular dependency
 
         return analysis.encloses(self, other)
+
+    @classmethod
+    def from_cairo_path(
+        cls: Type[T_Geometry], path_data: cairo.Path
+    ) -> T_Geometry:
+        """
+        Creates a Geometry instance from a flattened Cairo path data structure.
+
+        Args:
+            path_data: An iterable of (path_type, points) tuples, as returned
+                       by `cairo.Context.copy_path_flat()`.
+
+        Returns:
+            A new Geometry instance.
+        """
+        new_geo = cls()
+        for path_type, points in path_data:  # type: ignore
+            if path_type == cairo.PATH_MOVE_TO:
+                new_geo.move_to(points[0], points[1])
+            elif path_type == cairo.PATH_LINE_TO:
+                new_geo.line_to(points[0], points[1])
+            elif path_type == cairo.PATH_CLOSE_PATH:
+                new_geo.close_path()
+        return new_geo
 
     @classmethod
     def from_points(

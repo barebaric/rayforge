@@ -34,6 +34,7 @@ class Step(DocItem, ABC):
         self.typelabel = typelabel
         self.visible = True
         self.selected_laser_uid: Optional[str] = None
+        self.generated_workpiece_uid: Optional[str] = None
 
         # Configuration for the pipeline, stored as dictionaries.
         # - `per_workpiece_transformers` run in the background on a single
@@ -72,6 +73,7 @@ class Step(DocItem, ABC):
             "typelabel": self.typelabel,
             "visible": self.visible,
             "selected_laser_uid": self.selected_laser_uid,
+            "generated_workpiece_uid": self.generated_workpiece_uid,
             "modifiers_dicts": self.modifiers_dicts,
             "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
@@ -98,6 +100,7 @@ class Step(DocItem, ABC):
         step.matrix = Matrix.from_list(data["matrix"])
         step.visible = data["visible"]
         step.selected_laser_uid = data.get("selected_laser_uid")
+        step.generated_workpiece_uid = data.get("generated_workpiece_uid")
         step.modifiers_dicts = data["modifiers_dicts"]
         step.opsproducer_dict = data["opsproducer_dict"]
         step.per_workpiece_transformers_dicts = data[
@@ -128,6 +131,7 @@ class Step(DocItem, ABC):
             "air_assist": self.air_assist,
             "pixels_per_mm": self.pixels_per_mm,
             "kerf_mm": self.kerf_mm,
+            "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
     @property

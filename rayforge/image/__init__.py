@@ -18,6 +18,7 @@ from .pdf.importer import PdfImporter
 from .pdf.renderer import PDF_RENDERER
 from .png.importer import PngImporter
 from .png.renderer import PNG_RENDERER
+from .procedural.renderer import PROCEDURAL_RENDERER
 from .ruida.importer import RuidaImporter
 from .ruida.renderer import RUIDA_RENDERER
 from .svg.importer import SvgImporter
@@ -118,6 +119,7 @@ def import_file(
 renderer_by_name: Dict[str, Renderer] = {
     "BmpRenderer": BMP_RENDERER,
     "DxfRenderer": DXF_RENDERER,
+    "ProceduralRenderer": PROCEDURAL_RENDERER,
     "JpgRenderer": JPG_RENDERER,
     "MaterialTestRenderer": MaterialTestRenderer(),
     "OpsRenderer": OPS_RENDERER,
