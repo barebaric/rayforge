@@ -1,23 +1,168 @@
 from gi.repository import Gtk, Adw
 from blinker import Signal
-from typing import List
+from typing import List, cast
 from ..models.camera import Camera
 from ..controller import CameraController
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 from ...icons import get_icon
+from ...shared.util.adw import PreferencesGroupWithButton
+
+
+class CameraRow(Gtk.Box):
+    """A widget representing a single Camera in a ListBox."""
+
+    def __init__(self, camera: Camera):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.camera = camera
+        self.delete_button: Gtk.Button
+        self.title_label: Gtk.Label
+        self.subtitle_label: Gtk.Label
+        self._setup_ui()
+
+        # Signals
+        self.remove_clicked = Signal()
+        """Signal emitted when the remove button is clicked.
+        Sends: sender, camera (Camera)
+        """
+
+    def _setup_ui(self):
+        """Builds the user interface for the row."""
+        self.set_margin_top(6)
+        self.set_margin_bottom(6)
+        self.set_margin_start(12)
+        self.set_margin_end(6)
+
+        labels_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=0, hexpand=True
+        )
+        self.append(labels_box)
+
+        self.title_label = Gtk.Label(
+            label=self.camera.name,
+            halign=Gtk.Align.START,
+            xalign=0,
+        )
+        labels_box.append(self.title_label)
+
+        self.subtitle_label = Gtk.Label(
+            label=self._get_subtitle_text(),
+            halign=Gtk.Align.START,
+            xalign=0,
+        )
+        self.subtitle_label.add_css_class("dim-label")
+        labels_box.append(self.subtitle_label)
+
+        self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
+        self.delete_button.add_css_class("flat")
+        self.delete_button.connect("clicked", self._on_remove_clicked)
+        self.append(self.delete_button)
+
+    def _get_subtitle_text(self) -> str:
+        """Generates the subtitle text from camera properties."""
+        return _("Device ID: {device_id}").format(
+            device_id=self.camera.device_id
+        )
+
+    def _on_remove_clicked(self, button: Gtk.Button):
+        """Emits a signal requesting the removal of this camera."""
+        self.remove_clicked.send(self, camera=self.camera)
+
+
+class CameraListEditor(PreferencesGroupWithButton):
+    """An Adwaita widget for displaying and managing a list of cameras."""
+
+    def __init__(self, **kwargs):
+        super().__init__(button_label=_("Add New Camera"), **kwargs)
+        self._setup_ui()
+
+        # Signals
+        self.add_requested = Signal()
+        """Signal emitted when the 'Add New Camera' button is clicked."""
+        self.remove_requested = Signal()
+        """Signal emitted when a camera's remove button is clicked.
+        Sends: sender, camera (Camera)
+        """
+
+    def _setup_ui(self):
+        """Configures the widget's list box and placeholder."""
+        placeholder = Gtk.Label(
+            label=_("No cameras configured"),
+            halign=Gtk.Align.CENTER,
+            margin_top=12,
+            margin_bottom=12,
+        )
+        placeholder.add_css_class("dim-label")
+        self.list_box.set_placeholder(placeholder)
+        self.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.list_box.set_show_separators(True)
+
+    def set_cameras(self, cameras: List[Camera]):
+        """Rebuilds the list to match the provided list of cameras."""
+        selected_camera = None
+        selected_row = self.list_box.get_selected_row()
+        if selected_row:
+            camera_row_widget = cast(CameraRow, selected_row.get_child())
+            selected_camera = camera_row_widget.camera
+
+        row_count = 0
+        while self.list_box.get_row_at_index(row_count):
+            row_count += 1
+
+        new_selection_index = -1
+        for i, camera in enumerate(cameras):
+            if camera == selected_camera:
+                new_selection_index = i
+
+            if i < row_count:
+                row = self.list_box.get_row_at_index(i)
+                if not row:
+                    continue
+                camera_row = cast(CameraRow, row.get_child())
+                camera_row.camera = camera
+                camera_row.title_label.set_label(camera.name)
+                camera_row.subtitle_label.set_label(
+                    camera_row._get_subtitle_text()
+                )
+            else:
+                list_box_row = Gtk.ListBoxRow()
+                list_box_row.set_child(self.create_row_widget(camera))
+                self.list_box.append(list_box_row)
+
+        while row_count > len(cameras):
+            last_row = self.list_box.get_row_at_index(row_count - 1)
+            if last_row:
+                self.list_box.remove(last_row)
+            row_count -= 1
+
+        if new_selection_index >= 0:
+            row = self.list_box.get_row_at_index(new_selection_index)
+            self.list_box.select_row(row)
+        elif len(cameras) > 0:
+            row = self.list_box.get_row_at_index(0)
+            self.list_box.select_row(row)
+        else:
+            if self.list_box.get_selected_row():
+                self.list_box.unselect_all()
+            else:
+                self.list_box.emit("row-selected", None)
+
+    def create_row_widget(self, item: Camera) -> Gtk.Widget:
+        """Creates a CameraRow for the given camera item."""
+        row = CameraRow(item)
+        row.remove_clicked.connect(self._on_row_remove_clicked)
+        return row
+
+    def _on_add_clicked(self, button: Gtk.Button):
+        """Emits the add_requested signal."""
+        self.add_requested.send(self)
+
+    def _on_row_remove_clicked(self, row_widget: CameraRow, camera: Camera):
+        """Bubbles up the remove_requested signal from a CameraRow."""
+        self.remove_requested.send(self, camera=camera)
 
 
 class CameraPreferencesPage(Adw.PreferencesPage):
-    camera_add_requested = Signal()
-    """Signal emitted when a user requests to add a camera.
-    Sends: sender, device_id (str)
-    """
-    camera_remove_requested = Signal()
-    """Signal emitted when a user requests to remove a camera.
-    Sends: sender, camera (Camera)
-    """
-
     def __init__(self, **kwargs):
         super().__init__(
             title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs
@@ -25,80 +170,43 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         self._controllers: List[CameraController] = []
         self._cameras: List[Camera] = []
 
-        # List of Cameras
-        camera_list_group = Adw.PreferencesGroup(
+        # Signals
+        self.camera_add_requested = Signal()
+        """Signal emitted when a user requests to add a camera.
+        Sends: sender, device_id (str)
+        """
+        self.camera_remove_requested = Signal()
+        """Signal emitted when a user requests to remove a camera.
+        Sends: sender, camera (Camera)
+        """
+
+        # List of Cameras, using the new reusable widget
+        self.camera_list_editor = CameraListEditor(
             title=_("Cameras"),
             description=_(
                 "Stream a camera image directly onto the work surface."
             ),
         )
-        self.add(camera_list_group)
-        self.camera_list = Gtk.ListBox()
-        self.camera_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.camera_list.set_show_separators(True)
-        camera_list_group.add(self.camera_list)
-
-        # Add and Remove buttons for cameras
-        camera_button_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=5,
-            halign=Gtk.Align.END,
-        )
-        add_camera_button = Gtk.Button(child=get_icon("add-symbolic"))
-        add_camera_button.connect("clicked", self.on_add_camera)
-        remove_camera_button = Gtk.Button(icon_name="list-remove-symbolic")
-        remove_camera_button.connect("clicked", self.on_remove_camera)
-        camera_button_box.append(add_camera_button)
-        camera_button_box.append(remove_camera_button)
-        camera_list_group.add(camera_button_box)
+        self.add(self.camera_list_editor)
 
         # Configuration panel for the selected Camera
         self.camera_properties_widget = CameraProperties(None)
         self.add(self.camera_properties_widget)
 
-        # Connect signals for cameras
-        self.camera_list.connect("row-selected", self.on_camera_selected)
+        # Connect signals
+        self.camera_list_editor.add_requested.connect(self.on_add_camera)
+        self.camera_list_editor.remove_requested.connect(self.on_remove_camera)
+        self.camera_list_editor.list_box.connect(
+            "row-selected", self.on_camera_selected
+        )
 
     def set_controllers(self, controllers: List[CameraController]):
         """Sets the list of camera controllers and refreshes the UI."""
         self._controllers = controllers
         self._cameras = [c.config for c in controllers]
-        self._populate_camera_list()
+        self.camera_list_editor.set_cameras(self._cameras)
 
-    def _populate_camera_list(self):
-        """Populate the list of Cameras from the internal list."""
-        selected_row = self.camera_list.get_selected_row()
-        selected_index = selected_row.get_index() if selected_row else -1
-
-        # Clear the listbox
-        while child := self.camera_list.get_row_at_index(0):
-            self.camera_list.remove(child)
-
-        # Repopulate from the internal list
-        for camera in self._cameras:
-            row = Adw.ActionRow(
-                title=_("Camera: {name}").format(name=camera.name)
-            )
-            row.set_margin_top(5)
-            row.set_margin_bottom(5)
-            self.camera_list.append(row)
-
-        # Restore selection
-        if 0 <= selected_index < len(self._cameras):
-            row = self.camera_list.get_row_at_index(selected_index)
-        elif self._cameras:
-            # If previous selection is invalid, select the first item
-            row = self.camera_list.get_row_at_index(0)
-        else:
-            row = None
-
-        if row:
-            self.camera_list.select_row(row)
-        else:
-            # Explicitly set properties to None if list is empty
-            self.camera_properties_widget.set_controller(None)
-
-    def on_add_camera(self, button):
+    def on_add_camera(self, sender):
         """Show a dialog to select a new camera device."""
         dialog = CameraSelectionDialog(self.get_ancestor(Gtk.Window))
         dialog.present()
@@ -115,19 +223,20 @@ class CameraPreferencesPage(Adw.PreferencesPage):
                 self.camera_add_requested.send(self, device_id=device_id)
         dialog.destroy()
 
-    def on_remove_camera(self, button):
+    def on_remove_camera(self, sender, camera: Camera):
         """Emit a signal to request removal of the selected Camera."""
-        selected_row = self.camera_list.get_selected_row()
-        if selected_row:
-            index = selected_row.get_index()
-            camera_to_remove = self._cameras[index]
-            self.camera_remove_requested.send(self, camera=camera_to_remove)
+        self.camera_remove_requested.send(self, camera=camera)
 
     def on_camera_selected(self, listbox, row):
         """Update the configuration panel when a Camera is selected."""
         if row is not None:
-            index = row.get_index()
-            selected_controller = self._controllers[index]
+            camera_row = cast(CameraRow, row.get_child())
+            selected_camera = camera_row.camera
+            # Find the controller that matches this camera model
+            selected_controller = next(
+                (c for c in self._controllers if c.config == selected_camera),
+                None,
+            )
             self.camera_properties_widget.set_controller(selected_controller)
         else:
             self.camera_properties_widget.set_controller(None)
