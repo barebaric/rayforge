@@ -32,7 +32,6 @@ class DepthEngraver(OpsProducer):
     def __init__(
         self,
         scan_angle: float = 0.0,
-        line_interval: float = 0.1,
         bidirectional: bool = True,
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
         speed: float = 3000.0,
@@ -42,7 +41,6 @@ class DepthEngraver(OpsProducer):
         z_step_down: float = 0.0,
     ):
         self.scan_angle = scan_angle
-        self.line_interval = line_interval
         self.bidirectional = bidirectional
         self.depth_mode = depth_mode
         self.speed = speed
@@ -76,6 +74,9 @@ class DepthEngraver(OpsProducer):
         # Initialize power texture data with zeros (transparent)
         power_texture_data = np.zeros((height_px, width_px), dtype=np.uint8)
 
+        # The line interval is now derived from the laser's spot size
+        line_interval_mm = laser.spot_size_mm[1]
+
         if width_px > 0 and height_px > 0:
             stride = surface.get_stride()
             buf = surface.get_data()
@@ -98,7 +99,10 @@ class DepthEngraver(OpsProducer):
                     resampled_power,
                     scan_y_px,
                 ) = self._run_power_modulation(
-                    gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
+                    gray_image.astype(np.uint8),
+                    pixels_per_mm,
+                    y_offset_mm,
+                    line_interval_mm,
                 )
                 # Paint the resampled power data into the texture at the
                 # correct scan lines to ensure perfect alignment.
@@ -115,7 +119,10 @@ class DepthEngraver(OpsProducer):
                         "(0 degrees)."
                     )
                 mode_ops = self._run_multi_pass(
-                    gray_image.astype(np.uint8), pixels_per_mm, y_offset_mm
+                    gray_image.astype(np.uint8),
+                    pixels_per_mm,
+                    y_offset_mm,
+                    line_interval_mm,
                 )
                 # For multi-pass, the texture represents the final depth map.
                 pass_map = np.ceil(
@@ -169,6 +176,7 @@ class DepthEngraver(OpsProducer):
         gray_image: np.ndarray,
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
+        line_interval_mm: float,
     ) -> Tuple[Ops, np.ndarray, np.ndarray]:
         ops = Ops()
         height_px, width_px = gray_image.shape
@@ -185,12 +193,12 @@ class DepthEngraver(OpsProducer):
         y_max_mm = (y_max_px + 1) / px_per_mm_y
 
         global_y_min_mm = y_offset_mm + y_min_mm
-        num_intervals = math.ceil(global_y_min_mm / self.line_interval)
-        first_scan_y_mm_global = num_intervals * self.line_interval
+        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
+        first_scan_y_mm_global = num_intervals * line_interval_mm
         first_scan_y_mm_local = first_scan_y_mm_global - y_offset_mm
 
         scan_y_coords_mm = np.arange(
-            first_scan_y_mm_local, y_max_mm, self.line_interval
+            first_scan_y_mm_local, y_max_mm, line_interval_mm
         )
         if len(scan_y_coords_mm) == 0:
             return ops, np.array([]), np.array([])
@@ -283,6 +291,7 @@ class DepthEngraver(OpsProducer):
         gray_image: np.ndarray,
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
+        line_interval_mm: float,
     ) -> Ops:
         ops = Ops()
         height_px = gray_image.shape[0]
@@ -299,7 +308,12 @@ class DepthEngraver(OpsProducer):
 
             z_offset = -((pass_level - 1) * self.z_step_down)
             pass_ops = self._rasterize_mask_horizontally(
-                mask, pixels_per_mm, height_mm, y_offset_mm, z_offset
+                mask,
+                pixels_per_mm,
+                height_mm,
+                y_offset_mm,
+                z_offset,
+                line_interval_mm,
             )
             ops.extend(pass_ops)
         return ops
@@ -311,6 +325,7 @@ class DepthEngraver(OpsProducer):
         height_mm: float,
         y_offset_mm: float,
         z: float,
+        line_interval_mm: float,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = mask.shape
@@ -332,8 +347,8 @@ class DepthEngraver(OpsProducer):
 
         # Align to global grid
         global_y_min_mm = y_offset_mm + y_min_mm
-        num_intervals = math.ceil(global_y_min_mm / self.line_interval)
-        first_global_y_mm = num_intervals * self.line_interval
+        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
+        first_global_y_mm = num_intervals * line_interval_mm
         y_start_mm = first_global_y_mm - y_offset_mm
 
         # Correction for vertical alignment: center the raster line in
@@ -346,7 +361,7 @@ class DepthEngraver(OpsProducer):
         y_extent_mm = (y_max + 1) / px_per_mm_y
 
         # Iterate over rows in millimeters (floating-point)
-        y_step_mm = self.line_interval
+        y_step_mm = line_interval_mm
         for y_mm in np.arange(y_start_mm, y_extent_mm, y_step_mm):
             # Convert y_mm to pixel coordinates (floating-point)
             y_px = int(round(y_mm * px_per_mm_y))
@@ -390,7 +405,6 @@ class DepthEngraver(OpsProducer):
             "type": self.__class__.__name__,
             "params": {
                 "scan_angle": self.scan_angle,
-                "line_interval": self.line_interval,
                 "bidirectional": self.bidirectional,
                 "depth_mode": self.depth_mode.name,
                 "speed": self.speed,
@@ -411,7 +425,6 @@ class DepthEngraver(OpsProducer):
         # Create a new dictionary with defaults, then update with loaded data
         init_args = {
             "scan_angle": 0.0,
-            "line_interval": 0.1,
             "bidirectional": True,
             "speed": 3000.0,
             "min_power": 0.0,

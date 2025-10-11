@@ -26,6 +26,7 @@ def laser() -> Laser:
     """Returns a default laser model."""
     laser_instance = Laser()
     laser_instance.max_power = 1000
+    laser_instance.spot_size_mm = (0.1, 0.1)
     return laser_instance
 
 
@@ -52,7 +53,6 @@ def test_initialization_defaults(producer: DepthEngraver):
     """Verify the producer initializes with expected default values."""
     assert producer.depth_mode == DepthMode.POWER_MODULATION
     assert producer.scan_angle == 0.0
-    assert producer.line_interval == 0.1
     assert producer.bidirectional is True
     assert producer.speed == 3000.0
     assert producer.min_power == 0.0
@@ -193,7 +193,7 @@ def test_power_modulation_generates_correct_ops_and_texture(
     ctx.fill()
 
     mock_workpiece.set_size(0.3, 0.1)  # 0.3mm wide, 0.1mm tall
-    producer = DepthEngraver(min_power=0.1, max_power=0.9, line_interval=0.1)
+    producer = DepthEngraver(min_power=0.1, max_power=0.9)
 
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
@@ -248,7 +248,6 @@ def test_multi_pass_generates_correct_ops_and_texture(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=4,
         z_step_down=0.1,
-        line_interval=0.1,
     )
 
     artifact = producer.run(
