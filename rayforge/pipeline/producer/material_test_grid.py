@@ -152,7 +152,8 @@ class MaterialTestGridProducer(OpsProducer):
             main_ops.set_power(element["power"] / 100.0)
             main_ops.set_cut_speed(element["speed"])
             if self.test_type == MaterialTestGridType.ENGRAVE:
-                self._draw_filled_box(main_ops, **element)
+                line_spacing = laser.spot_size_mm[1]
+                self._draw_filled_box(main_ops, line_spacing, **element)
             else:
                 self._draw_rectangle(main_ops, **element)
 
@@ -405,7 +406,7 @@ class MaterialTestGridProducer(OpsProducer):
         ops.line_to(x, y, 0.0)
 
     @staticmethod
-    def _draw_filled_box(ops: Ops, line_spacing: float = 0.2, **el):
+    def _draw_filled_box(ops: Ops, line_spacing: float, **el):
         """Generates a serpentine (back-and-forth) fill pattern."""
         x, y, w, h = el["x"], el["y"], el["width"], el["height"]
         if h < 1e-6:
