@@ -12,6 +12,8 @@ site_dir: ../build/website
 # This maps the structure of the website to source markdown files.
 nav:
   - Home: index.md
+  - Blog:
+      - blog/index.md
   - Getting Started:
       - getting-started/index.md
       - Installation: getting-started/installation.md
@@ -86,8 +88,7 @@ nav:
       - Using Camera Alignment: guides/using-camera-alignment.md
       - Creating Material Test Grid: guides/creating-material-test-grid.md
       - Batch Production Workflow: guides/batch-production-workflow.md
-  - Blog:
-      - blog/index.md
+
 # Declare any markdown files not in the nav tree to remove warnings
 not_in_nav: "includes/abbreviations.md"
 
