@@ -1,4 +1,4 @@
-name: Documentation CI/CD
+name: Build and deploy website
 
 on:
   push:
@@ -74,10 +74,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.WEBSITE_DEPLOY_KEY }}
 
+      - name: Add github.com to known_hosts
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
+        run: ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Deploy with Mike
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
         run: |
           pixi run mike deploy \
+            --verbose \
+            --push \
             --remote git@github.com:barebaric/rayforge-website.git \
             --branch main \
             "${{ steps.get_version.outputs.version }}" \
