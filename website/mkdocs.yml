@@ -7,7 +7,9 @@ site_author: Rayforge Contributors
 repo_url: https://github.com/barebaric/rayforge
 repo_name: barebaric/rayforge
 copyright: Copyright &copy; 2024-2025 Rayforge
-edit_uri: edit/main/website/
+edit_uri: edit/main/website/content
+docs_dir: content
+site_dir: ../build/website
 
 # This maps the structure of the website to source markdown files.
 nav:
