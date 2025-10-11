@@ -160,6 +160,7 @@ depends-on = ["compile-translations"]
 cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
+# Tasks for developing and generating the website
 [tasks.site-serve]
 # Start live reload server for website development
 cmd = "pixi run -e docs mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
