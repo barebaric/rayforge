@@ -165,4 +165,6 @@ depends-on = ["compile-translations"]
 cmd = "pixi run -e docs mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
 
 [tasks.site-build]
+# renderer the static site to site
 cmd = "pixi run -e docs mkdocs build -f website/mkdocs.yml --strict --clean"
+

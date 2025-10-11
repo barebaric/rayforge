@@ -95,12 +95,6 @@ kbd {
 }
 
 
-
-/* Hide GitHub source link in header */
-.md-header__source {
-  display: none;
-}
-
 /* Increase size of tab text */
 .md-tabs__item a.md-tabs__link {
     font-size: 0.8rem;

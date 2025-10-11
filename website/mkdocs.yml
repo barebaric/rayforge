@@ -6,6 +6,8 @@ repo_url: https://github.com/barebaric/rayforge
 repo_name: barebaric/rayforge
 copyright: Copyright &copy; 2024-2025 Rayforge
 edit_uri: edit/main/website/
+docs_dir: .
+site_dir: ../build/website
 
 # This maps the structure of the website to source markdown files.
 nav:
@@ -87,20 +89,7 @@ nav:
   - Blog:
       - blog/index.md
 # Declare any markdown files not in the nav tree to remove warnings
-not_in_nav:
-   "includes/abbreviations.md"
-
-# Basic site information
-site_name: Rayforge
-site_url: https://barebaric.github.io/rayforge/
-site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
-site_author: Rayforge Contributors
-repo_url: https://github.com/barebaric/rayforge
-repo_name: barebaric/rayforge
-copyright: Copyright &copy; 2024-2025 Rayforge 
-# This configures the github url prefix for the edit-this-page icons
-edit_uri: edit/trunk/website/
-docs_dir: .
+not_in_nav: "includes/abbreviations.md"
 
 # Theme tweaks
 theme:
