@@ -126,7 +126,6 @@ theme:
     - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
-    - navigation.integration
     - search.highlight
     - search.share
     - search.suggest

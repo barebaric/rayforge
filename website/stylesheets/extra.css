@@ -17,6 +17,10 @@
   }
 }
 
+/* Hide GitHub source link in header */
+.md-header__source {
+  display: none;
+}
 
 /* Cards styling */
 .grid.cards {
