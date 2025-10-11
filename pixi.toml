@@ -169,3 +169,9 @@ cmd = "pixi run -e docs mkdocs serve -f website/mkdocs.yml --livereload --watch-
 # renderer the static site to site
 cmd = "pixi run -e docs mkdocs build -f website/mkdocs.yml --strict --clean"
 
+[tasks.mike]
+cmd = "pixi run -e docs _mike --"
+
+[feature.docs.tasks._mike]
+# The actual mike command that runs inside the 'docs' environment.
+cmd = "cd website && mike"
