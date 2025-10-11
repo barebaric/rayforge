@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 256 256"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="laser_cutting_icon.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient4"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#465572;stop-opacity:1;"
+         offset="0"
+         id="stop4" />
+      <stop
+         style="stop-color:#6a81a6;stop-opacity:1;"
+         offset="1"
+         id="stop5" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4"
+       id="linearGradient5"
+       x1="190.85487"
+       y1="269.2326"
+       x2="15.522861"
+       y2="-1.0178918"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview4"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="3.9296875"
+     inkscape:cx="127.87276"
+     inkscape:cy="128"
+     inkscape:window-width="3840"
+     inkscape:window-height="2020"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <!-- Background -->
+  <rect
+     width="256"
+     height="256"
+     rx="40"
+     fill="#2D2D2D"
+     id="rect1"
+     style="fill:url(#linearGradient5);fill-opacity:1" />
+  <!-- Laser Beam -->
+  <line
+     x1="128"
+     y1="30"
+     x2="128"
+     y2="180"
+     stroke="red"
+     stroke-width="6"
+     stroke-linecap="round"
+     id="line1" />
+  <!-- Laser Sparks -->
+  <circle
+     cx="128"
+     cy="180"
+     r="10"
+     fill="red"
+     id="circle1" />
+  <line
+     x1="110"
+     y1="175"
+     x2="95"
+     y2="165"
+     stroke="red"
+     stroke-width="3"
+     stroke-linecap="round"
+     id="line2" />
+  <line
+     x1="146"
+     y1="175"
+     x2="161"
+     y2="165"
+     stroke="red"
+     stroke-width="3"
+     stroke-linecap="round"
+     id="line3" />
+  <line
+     x1="128"
+     y1="192"
+     x2="128"
+     y2="210"
+     stroke="red"
+     stroke-width="3"
+     stroke-linecap="round"
+     id="line4" />
+  <!-- Cutting Material -->
+  <rect
+     x="59.491055"
+     y="200"
+     width="137.0179"
+     height="20"
+     fill="#ffffff"
+     id="rect4"
+     style="stroke-width:1.00374" />
+</svg>

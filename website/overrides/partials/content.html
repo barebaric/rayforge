@@ -1,0 +1,14 @@
+{#-
+  Override to support hiding title via front matter
+-#}
+{% include "partials/tags.html" %}
+{% include "partials/actions.html" %}
+{% if "title" not in page.meta.get("hide", []) %}
+  {% if "\u003ch1" not in page.content %}
+    <h1>{{ page.title | d(config.site_name, true)}}</h1>
+  {% endif %}
+{% endif %}
+{{ page.content }}
+{% include "partials/source-file.html" %}
+{% include "partials/feedback.html" %}
+{% include "partials/comments.html" %}

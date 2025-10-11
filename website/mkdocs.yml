@@ -1,0 +1,235 @@
+site_name: Rayforge
+site_url: https://rayforge.org/
+site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
+site_author: Rayforge Contributors
+repo_url: https://github.com/barebaric/rayforge
+repo_name: barebaric/rayforge
+copyright: Copyright &copy; 2024-2025 Rayforge
+edit_uri: edit/main/website/
+
+# This maps the structure of the website to source markdown files.
+nav:
+  - Home: index.md
+  - Blog:
+      - blog/index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - First Time Setup: getting-started/first-time-setup.md
+      - Quick Start Guide: getting-started/quick-start.md
+      - Framing Your Job: getting-started/framing-your-job.md
+      - Simulating Your Job: getting-started/simulating-your-job.md
+  - Documentation:
+      - Concepts:
+          - concepts/index.md
+          - Coordinates & Origin: concepts/coordinates-and-origin.md
+          - G-code Basics: concepts/gcode-basics.md
+          - Laser Safety: concepts/laser-safety.md
+          - Power vs Speed: concepts/power-vs-speed.md
+          - Understanding Operations: concepts/understanding-operations.md
+      - User Interface:
+          - ui/index.md
+          - Main Window: ui/main-window.md
+          - Canvas Tools: ui/canvas-tools.md
+          - 3D Preview: ui/3d-preview.md
+          - Settings & Preferences: ui/settings.md
+      - Features:
+          - features/index.md
+          - Operations:
+              - features/operations/index.md
+              - Contour Cutting: features/operations/contour.md
+              - Raster Engraving: features/operations/raster.md
+              - Depth Engraving: features/operations/depth.md
+              - Shrink Wrap: features/operations/shrink-wrap.md
+              - Material Test Grid: features/operations/material-test-grid.md
+          - Multi-Layer Workflow: features/multi-layer.md
+          - Camera Integration: features/camera.md
+          - Simulation Mode: features/simulation-mode.md
+          - Holding Tabs: features/holding-tabs.md
+          - G-code Macros & Hooks: features/macros-hooks.md
+          - Overscan & Kerf: features/overscan-kerf.md
+          - Overscan: features/overscan.md
+          - Kerf Compensation: features/kerf.md
+      - Machine Setup:
+          - machine/index.md
+          - Machine Profiles: machine/profiles.md
+          - Device Configuration: machine/device-config.md
+          - GRBL Settings: machine/grbl-settings.md
+          - Multiple Lasers: machine/multi-laser.md
+      - File Formats:
+          - files/index.md
+          - Importing Files: files/importing.md
+          - Supported Formats: files/formats.md
+          - Exporting G-code: files/exporting.md
+      - Troubleshooting:
+          - troubleshooting/index.md
+          - Connection Issues: troubleshooting/connection.md
+          - Common Problems: troubleshooting/common.md
+          - Performance: troubleshooting/performance.md
+          - Permissions (Snap): troubleshooting/snap-permissions.md
+      - Reference:
+          - reference/index.md
+          - Keyboard Shortcuts: reference/shortcuts.md
+          - G-code Dialect Support: reference/gcode-dialects.md
+          - Firmware Compatibility: reference/firmware.md
+      - Contributing:
+          - contributing/index.md
+  - Guides:
+      - guides/index.md
+      - Achieving Perfect Focus: guides/achieving-perfect-focus.md
+      - Reducing Burn Marks: guides/reducing-burn-marks.md
+      - Cutting Thick Materials: guides/cutting-thick-materials.md
+      - Multi-Material Projects: guides/multi-material-projects.md
+      - Custom G-code Automation: guides/custom-gcode-automation.md
+      - Optimizing Large Jobs: guides/optimizing-large-jobs.md
+      - Calibrating Your Workspace: guides/calibrating-your-workspace.md
+      - Using Camera Alignment: guides/using-camera-alignment.md
+      - Creating Material Test Grid: guides/creating-material-test-grid.md
+      - Batch Production Workflow: guides/batch-production-workflow.md
+
+# Declare any markdown files not in the nav tree to remove warnings
+not_in_nav: "includes/abbreviations.md"
+
+# Theme tweaks
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  logo: assets/rf-logo-01.svg
+  favicon: assets/rf-01.png
+  font:
+    text: Ubuntu Sans
+    code: Ubuntu Sans Mono
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+    # NOTE: Theme supports a dark mode but disabled for simpler interface
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+# Extra options are used for the overriden theme templates in overrides/
+extra:
+  version:
+    provider: mike
+    default: stable
+
+  generator: false # Disable "Generated with MkDocs" footer
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/barebaric/rayforge
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/rayforge/
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+
+  # Coverpage configuration
+  home_cover_image: assets/rf-logo-white-01.svg
+  home_tagline: Rayforge
+  home_description: |
+    Modern G-code sender and control software for GRBL-based laser cutters and engravers
+  home_gradient_hsla: hsla(231deg, 48%, 48%, 1)
+  home_button1_name: Features
+  home_button1_url: ./#key-features
+  home_button1_theme: md-button
+
+  home_button2_name: Get Started
+  home_button2_url: getting-started/
+  home_button2_theme: md-button
+
+extra_css:
+  - stylesheets/extra.css
+
+# Plugins change the build-step behavior of MkDocs.
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - blog
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
+      skip_classes:
+        - custom-skip-class-name
+      auto_caption: false
+      caption_position: bottom
+
+# Markdown Extensions modify how Markdown is interpreted and rendered.
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.blocks.caption
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: barebaric
+      repo: rayforge
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde

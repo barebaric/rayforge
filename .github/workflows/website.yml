@@ -1,0 +1,84 @@
+name: Documentation CI/CD
+
+on:
+  push:
+    # Trigger on new version tags
+    tags:
+      - "v*.*.*"
+    # Trigger on pushes to the main branch to update existing docs
+    branches:
+      - main
+  pull_request:
+    # Trigger on pull requests targeting the main branch
+    branches:
+      - main
+  # Allow manual runs from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for mike versioning
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.55.0
+          cache: true
+
+      - name: Configure Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Build documentation
+        run: pixi run site-build
+
+      - name: Upload artifact for pull request review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: build/website/
+          retention-days: 7
+
+      - name: Determine Version
+        id: get_version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION_NAME="${{ github.ref_name }}"
+            echo "Triggered by tag push. Deploying new version: $VERSION_NAME"
+          else
+            echo "Triggered by branch/manual push. Finding latest tag to update..."
+            VERSION_NAME=$(git describe --tags --abbrev=0)
+            if [[ -z "$VERSION_NAME" ]]; then
+              echo "::error::No tags found in history. Cannot determine version to update."
+              exit 1
+            fi
+            echo "Found latest version to update: $VERSION_NAME"
+          fi
+          echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      # The following steps are for DEPLOYMENT and will NOT run on pull requests.
+      # They are also protected against running on forks.
+      - name: Configure SSH
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+
+      - name: Deploy with Mike
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
+        run: |
+          pixi run mike deploy \
+            --remote git@github.com:barebaric/rayforge-website.git \
+            --branch main \
+            "${{ steps.get_version.outputs.version }}" \
+            stable

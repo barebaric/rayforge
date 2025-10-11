@@ -20,3 +20,9 @@ debian/.debhelper
 *.mo
 *.po~
 *.mo~
+
+# MkDocs
+site/
+.cache/
+
+material
