@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw
-from ..models.camera import Camera
+from ..controller import CameraController
 from .display_widget import CameraDisplay
 
 
@@ -8,23 +8,24 @@ logger = logging.getLogger(__name__)
 
 
 class CameraImageSettingsDialog(Adw.MessageDialog):
-    def __init__(self, parent, camera: Camera, **kwargs):
+    def __init__(self, parent, controller: CameraController, **kwargs):
         super().__init__(
             transient_for=parent,
             modal=True,
             heading=_("{camera_name} - Camera Image Settings").format(
-                camera_name=camera.name
+                camera_name=controller.config.name
             ),
             close_response="cancel",
             **kwargs,
         )
-        self.camera = camera
+        self.controller = controller
+        self.camera = controller.config
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.set_extra_child(main_box)
 
         # Camera Display
-        self.camera_display = CameraDisplay(self.camera)
+        self.camera_display = CameraDisplay(self.controller)
         main_box.append(self.camera_display)
 
         # Settings

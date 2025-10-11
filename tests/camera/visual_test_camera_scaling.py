@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 from rayforge.camera.models.camera import Camera
+from rayforge.camera.controller import CameraController
 
 
 def run_visual_test():
     # Create a mock camera instance
-    camera = Camera("Visual Test Camera", "0")
+    camera_config = Camera("Visual Test Camera", "0")
+    controller = CameraController(camera_config)
 
     # Create a dummy image with a grid pattern for visual verification
     raw_image = np.zeros((400, 400, 3), dtype=np.uint8)  # Black background
@@ -30,12 +32,12 @@ def run_visual_test():
         raw_image, (300, 300), (350, 350), (0, 255, 255), -1
     )  # Yellow square
 
-    camera._image_data = raw_image
+    controller._image_data = raw_image
 
     # Define corresponding points to introduce some perspective distortion
     image_points = [(50, 50), (350, 50), (380, 350), (20, 350)]
     world_points = [(0, 0), (200, 0), (200, 200), (0, 200)]
-    camera.image_to_world = image_points, world_points
+    camera_config.image_to_world = image_points, world_points
 
     output_size = (400, 400)  # Desired output image size in pixels
     physical_area = ((0, 0), (200, 200))  # The 200x200mm area we want to view
@@ -71,7 +73,9 @@ def run_visual_test():
     cv2.destroyWindow("Raw Image with Image Points")
 
     # Test the general get_work_surface_image functionality
-    aligned_image = camera.get_work_surface_image(output_size, physical_area)
+    aligned_image = controller.get_work_surface_image(
+        output_size, physical_area
+    )
 
     if aligned_image is not None:
         if aligned_image.shape[2] == 3:
@@ -147,7 +151,8 @@ def run_visual_test():
 
         cv2.imshow("Transformed Work Surface Image", display_image)
         print(
-            "Displaying 'Transformed Work Surface Image'. Close window to continue."
+            "Displaying 'Transformed Work Surface Image'. Close window to "
+            "continue."
         )
     else:
         print("Failed to generate work surface image.")
@@ -165,33 +170,31 @@ def run_visual_test():
     cv2.destroyWindow("Transformed Work Surface Image")
 
 
+instructions = """
+Running visual test for get_work_surface_image.
+
+First, a 'Raw Image with Image Points' window will appear.
+  - This shows the original image with yellow circles marking the
+    'image_points'.
+  - These points define the skewed region in the raw image that will
+    be transformed.
+Close this window to proceed.
+
+Next, a 'Transformed Work Surface Image' window will appear.
+  - This is the result of get_work_surface_image, showing the
+    'un-skewed' view.
+  - A red border outlines the expected 200x200mm physical area
+    (400x400 pixels).
+  - Magenta circles mark the 'world_points' (0,0), (200,0),
+    (200,200), (0,200)mm,
+    which should align with the corners of the red border.
+  - The green grid lines should appear straight and evenly spaced.
+  - The colored squares should be visible and their shapes corrected,
+    appearing
+    at their expected relative positions within the un-skewed grid.
+Close this window to finish the test.
+""".strip()
+
 if __name__ == "__main__":
-    print("Running visual test for get_work_surface_image.")
-    print("First, a 'Raw Image with Image Points' window will appear.")
-    print(
-        "  - This shows the original image with yellow circles marking the 'image_points'."
-    )
-    print(
-        "  - These points define the skewed region in the raw image that will be transformed."
-    )
-    print("Close this window to proceed.")
-    print("\nNext, a 'Transformed Work Surface Image' window will appear.")
-    print(
-        "  - This is the result of get_work_surface_image, showing the 'un-skewed' view."
-    )
-    print(
-        "  - A red border outlines the expected 200x200mm physical area (400x400 pixels)."
-    )
-    print(
-        "  - Magenta circles mark the 'world_points' (0,0), (200,0), (200,200), (0,200)mm,"
-    )
-    print("    which should align with the corners of the red border.")
-    print("  - The green grid lines should appear straight and evenly spaced.")
-    print(
-        "  - The colored squares should be visible and their shapes corrected, appearing"
-    )
-    print(
-        "    at their expected relative positions within the un-skewed grid."
-    )
-    print("Close this window to finish the test.")
+    print(instructions)
     run_visual_test()

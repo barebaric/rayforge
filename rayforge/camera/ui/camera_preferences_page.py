@@ -2,13 +2,13 @@ from gi.repository import Gtk, Adw
 from blinker import Signal
 from typing import List
 from ..models.camera import Camera
+from ..controller import CameraController
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 from ...icons import get_icon
 
 
 class CameraPreferencesPage(Adw.PreferencesPage):
-
     camera_add_requested = Signal()
     """Signal emitted when a user requests to add a camera.
     Sends: sender, device_id (str)
@@ -22,6 +22,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         super().__init__(
             title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs
         )
+        self._controllers: List[CameraController] = []
         self._cameras: List[Camera] = []
 
         # List of Cameras
@@ -58,9 +59,10 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         # Connect signals for cameras
         self.camera_list.connect("row-selected", self.on_camera_selected)
 
-    def set_cameras(self, cameras: List[Camera]):
-        """Sets the list of cameras to be displayed and refreshes the UI."""
-        self._cameras = cameras
+    def set_controllers(self, controllers: List[CameraController]):
+        """Sets the list of camera controllers and refreshes the UI."""
+        self._controllers = controllers
+        self._cameras = [c.config for c in controllers]
         self._populate_camera_list()
 
     def _populate_camera_list(self):
@@ -94,7 +96,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
             self.camera_list.select_row(row)
         else:
             # Explicitly set properties to None if list is empty
-            self.camera_properties_widget.set_camera(None)
+            self.camera_properties_widget.set_controller(None)
 
     def on_add_camera(self, button):
         """Show a dialog to select a new camera device."""
@@ -125,7 +127,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         """Update the configuration panel when a Camera is selected."""
         if row is not None:
             index = row.get_index()
-            selected_camera = self._cameras[index]
-            self.camera_properties_widget.set_camera(selected_camera)
+            selected_controller = self._controllers[index]
+            self.camera_properties_widget.set_controller(selected_controller)
         else:
-            self.camera_properties_widget.set_camera(None)
+            self.camera_properties_widget.set_controller(None)

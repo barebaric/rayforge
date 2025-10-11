@@ -2,6 +2,7 @@ import logging
 from blinker import Signal
 from typing import TYPE_CHECKING, Optional, Tuple, cast, Dict, List, Sequence
 from gi.repository import Graphene, Gdk, Gtk
+from ..camera.controller import CameraController
 from ..core.group import Group
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
@@ -435,6 +436,10 @@ class WorkSurface(Canvas):
             self.machine.changed.connect(self._on_machine_changed)
             self.reset_view()
 
+        # Synchronize camera elements to match the new machine. This is called
+        # after the machine is set (or cleared) to ensure the view is correct.
+        self._sync_camera_elements()
+
     def set_pan(self, pan_x_mm: float, pan_y_mm: float):
         """Sets the pan position in mm and updates the axis importer."""
         self.pan_x_mm = pan_x_mm
@@ -773,6 +778,43 @@ class WorkSurface(Canvas):
             cast(WorkPieceView, wp_elem).set_base_image_visible(visible)
         self.queue_draw()
 
+    def set_camera_controllers(self, controllers: List[CameraController]):
+        """
+        Manages camera elements and their subscriptions based on the
+        provided list of live controllers.
+        """
+        current_elements = {
+            cast(CameraImageElement, e).controller: e
+            for e in self.find_by_type(CameraImageElement)
+        }
+        current_controllers = set(current_elements.keys())
+        new_controllers = set(controllers)
+
+        # Remove elements for controllers that are no longer active
+        for controller in current_controllers - new_controllers:
+            element = current_elements[controller]
+            element.remove()  # This will disconnect signals
+            controller.unsubscribe()
+            logger.debug(
+                f"Unsubscribed and removed element for camera "
+                f"{controller.config.name}"
+            )
+
+        # Add elements for new controllers
+        for controller in new_controllers - current_controllers:
+            element = CameraImageElement(controller)
+            element.set_visible(
+                self._cam_visible and controller.config.enabled
+            )
+            self.root.insert(0, element)  # Insert at the bottom of the z-stack
+            controller.subscribe()
+            logger.debug(
+                f"Subscribed and added element for camera "
+                f"{controller.config.name}"
+            )
+
+        self.queue_draw()
+
     def set_camera_image_visibility(self, visible: bool):
         self._cam_visible = visible
         for elem in self.find_by_type(CameraImageElement):
@@ -792,6 +834,8 @@ class WorkSurface(Canvas):
             f"machine={machine.name if machine else 'None'}"
         )
         if not machine:
+            # Machine was likely removed or changed to None, clear cameras
+            self._sync_camera_elements()
             return
 
         # Check for changes that require a full view reset. A change to either
@@ -805,12 +849,12 @@ class WorkSurface(Canvas):
         else:
             # No major reset needed, but other properties like the list of
             # cameras might have changed.
-            self._sync_camera_elements(machine)
+            self._sync_camera_elements()
 
     def reset_view(self):
         """
         Resets the view to fit the given machine's properties, including a
-        full reset of pan, zoom, and size. Also syncs camera elements.
+        full reset of pan, zoom, and size.
         """
         if not self.machine:
             return
@@ -834,37 +878,33 @@ class WorkSurface(Canvas):
             else 1.0
         )
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
-        self._sync_camera_elements(self.machine)
+        self._sync_camera_elements()
         self.queue_draw()
 
-    def _sync_camera_elements(self, machine: Machine):
-        """Adds, removes, and updates camera elements on the canvas."""
-        # Get current camera elements on the canvas
-        current_camera_elements = {
-            cast(CameraImageElement, elem).camera: elem
-            for elem in self.find_by_type(CameraImageElement)
-        }
-        cameras_on_canvas = set(current_camera_elements.keys())
-        cameras_in_model = set(machine.cameras)
-        # If there are no changes, do nothing.
-        if cameras_on_canvas == cameras_in_model:
+    def _sync_camera_elements(self):
+        """
+        Synchronizes the camera elements on the canvas with the cameras
+        defined in the current machine model.
+        """
+        from ..config import camera_mgr
+
+        if not self.machine:
+            self.set_camera_controllers([])
             return
 
-        logger.debug("Syncing camera elements.")
+        # Get the controller for each camera model in the current machine
+        machine_camera_controllers = []
+        for camera_model in self.machine.cameras:
+            controller = camera_mgr.get_controller(camera_model.device_id)
+            if controller:
+                machine_camera_controllers.append(controller)
+            else:
+                logger.warning(
+                    "Could not find a live controller for camera "
+                    f"with device ID '{camera_model.device_id}'."
+                )
 
-        # Add new camera elements
-        for camera in cameras_in_model - cameras_on_canvas:
-            elem = CameraImageElement(camera)
-            elem.set_visible(self._cam_visible and camera.enabled)
-            self.root.insert(0, elem)
-            logger.debug(f"Added CameraImageElement for camera {camera.name}")
-
-        # Remove camera elements that no longer exist in the machine
-        for camera in cameras_on_canvas - cameras_in_model:
-            current_camera_elements[camera].remove()
-            logger.debug(
-                f"Removed CameraImageElement for camera {camera.name}"
-            )
+        self.set_camera_controllers(machine_camera_controllers)
 
     def do_snapshot(self, snapshot):
         # Update theme colors right before drawing to catch any live changes.

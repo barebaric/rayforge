@@ -1,26 +1,28 @@
 import logging
 from gi.repository import Gtk, Gdk, GdkPixbuf, Graphene, Pango, PangoCairo
-from ..models.camera import Camera
+from ..controller import CameraController
 
 
 logger = logging.getLogger(__name__)
 
 
 class CameraDisplay(Gtk.DrawingArea):
-    def __init__(self, camera: Camera):
+    def __init__(self, controller: CameraController):
         super().__init__()
-        self.camera = camera
+        self.controller = controller
+        self.camera = controller.config
         self.set_hexpand(True)
         self.set_vexpand(True)
         self.set_size_request(640, 480)
         self.marked_points = []
+        self.active_point_index = -1
         self.start()
         self.connect("destroy", self.on_destroy)
 
     def start(self):
         """
         Starts the camera display by connecting to the image_captured signal
-        and enabling the camera.
+        and subscribing to the controller.
         """
         logger.debug(
             "CameraDisplay.start called for camera %s (instance: %s)",
@@ -28,21 +30,23 @@ class CameraDisplay(Gtk.DrawingArea):
             id(self),
         )
         self.queue_draw()
-        self.camera.image_captured.connect(self.on_image_captured)
+        self.controller.image_captured.connect(self.on_image_captured)
         self.camera.settings_changed.connect(self.on_settings_changed)
+        self.controller.subscribe()
 
     def stop(self):
         """
-        Stops the camera display by disconnecting the image_captured signal.
-        This method should be called when the display is no longer needed.
+        Stops the camera display by disconnecting the image_captured signal
+        and unsubscribing from the controller.
         """
         logger.debug(
             "CameraDisplay.stop called for camera %s (instance: %s)",
             self.camera.name,
             id(self),
         )
-        self.camera.image_captured.disconnect(self.on_image_captured)
+        self.controller.image_captured.disconnect(self.on_image_captured)
         self.camera.settings_changed.disconnect(self.on_settings_changed)
+        self.controller.unsubscribe()
 
     def set_marked_points(self, points, active_point_index=-1):
         self.marked_points = points or []
@@ -61,7 +65,7 @@ class CameraDisplay(Gtk.DrawingArea):
             self._draw_disabled_message(ctx, width, height)
             return
 
-        pixbuf = self.camera.pixbuf
+        pixbuf = self.controller.pixbuf
         if pixbuf is None:
             logger.debug("No pixbuf available for camera %s", self.camera.name)
             self._draw_no_image_message(ctx, width, height)
@@ -81,11 +85,14 @@ class CameraDisplay(Gtk.DrawingArea):
         # Draw markers for marked points
         if self.marked_points:
             display_width, display_height = width, height
-            img_width, img_height = self.camera.resolution
+            img_width, img_height = self.controller.resolution
             scale_x = display_width / img_width
             scale_y = display_height / img_height
 
-            for i, (x, y) in enumerate(self.marked_points):
+            for i, point_data in enumerate(self.marked_points):
+                if point_data is None:
+                    continue
+                x, y = point_data
                 display_x = x * scale_x
                 display_y = display_height - (y * scale_y)
 
@@ -137,7 +144,7 @@ class CameraDisplay(Gtk.DrawingArea):
         """Draws a 'No Image' message."""
         self._draw_message(ctx, width, height, "No Image")
 
-    def on_image_captured(self, camera):
+    def on_image_captured(self, controller):
         """Callback for the camera's image_captured signal."""
         self.queue_draw()
 

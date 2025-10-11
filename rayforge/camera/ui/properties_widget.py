@@ -2,6 +2,7 @@ from gi.repository import Gtk, Adw
 from typing import Optional
 import logging
 from ..models.camera import Camera
+from ..controller import CameraController
 from .image_settings_dialog import CameraImageSettingsDialog
 from .alignment_dialog import CameraAlignmentDialog
 
@@ -10,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class CameraProperties(Adw.PreferencesGroup):
-    def __init__(self, camera: Optional[Camera], **kwargs):
+    def __init__(self, controller: Optional[CameraController], **kwargs):
         super().__init__(**kwargs)
+        self._controller: Optional[CameraController] = None
         self._camera: Optional[Camera] = None
         self._updating_ui: bool = False
 
@@ -54,12 +56,15 @@ class CameraProperties(Adw.PreferencesGroup):
         image_alignment_row.add_suffix(self.image_alignment_button)
         self.add(image_alignment_row)
 
-        self.set_camera(camera)
+        self.set_controller(controller)
 
-    def set_camera(self, camera: Optional[Camera]):
+    def set_controller(self, controller: Optional[CameraController]):
         if self._camera:
             self._camera.changed.disconnect(self._on_camera_changed)
-        self._camera = camera
+
+        self._controller = controller
+        self._camera = controller.config if controller else None
+
         if self._camera:
             self._camera.changed.connect(self._on_camera_changed)
             self.update_ui()
@@ -113,22 +118,18 @@ class CameraProperties(Adw.PreferencesGroup):
 
     def on_image_settings_button_clicked(self, button):
         """Open the CameraImageSettingsDialog."""
-        if not self._camera:
+        if not self._controller:
             return
         window = self.get_ancestor(Gtk.Window)
         if isinstance(window, Gtk.Window):
-            dialog = CameraImageSettingsDialog(
-                window, self._camera
-            )
+            dialog = CameraImageSettingsDialog(window, self._controller)
             dialog.present()
 
     def on_image_alignment_button_clicked(self, button):
         """Open the CameraImageAlignmentDialog."""
-        if not self._camera:
+        if not self._controller:
             return
         window = self.get_ancestor(Gtk.Window)
         if isinstance(window, Gtk.Window):
-            dialog = CameraAlignmentDialog(
-                window, self._camera
-            )
+            dialog = CameraAlignmentDialog(window, self._controller)
             dialog.present()

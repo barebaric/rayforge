@@ -2,6 +2,7 @@ from gi.repository import Gtk, Adw, GdkPixbuf
 from typing import Optional
 from ...shared.util.gtk import apply_css
 from ..models.camera import Camera
+from ..controller import CameraController
 
 
 class CameraSelectionDialog(Adw.MessageDialog):
@@ -47,19 +48,21 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.carousel.connect("page-changed", self.on_page_changed)
 
     def list_available_cameras(self):
-        self.available_devices = Camera.list_available_devices()
+        self.available_devices = CameraController.list_available_devices()
         if not self.available_devices:
             label = Gtk.Label(label=_("No cameras found."))
             self.carousel.append(label)
             return
 
         for device_id in self.available_devices:
-            camera = Camera(
+            # Create a temporary config and controller to capture a preview
+            temp_config = Camera(
                 name=_("Camera {device_id}").format(device_id=device_id),
                 device_id=device_id,
             )
-            camera.capture_image()
-            pixbuf = camera.pixbuf
+            temp_controller = CameraController(temp_config)
+            temp_controller.capture_image()
+            pixbuf = temp_controller.pixbuf
 
             if not pixbuf:
                 label = Gtk.Label(

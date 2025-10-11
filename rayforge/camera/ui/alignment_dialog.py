@@ -3,7 +3,8 @@ import math
 from typing import List, Optional, Tuple
 import numpy as np
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ..models.camera import Camera, Pos
+from ..models.camera import Pos
+from ..controller import CameraController
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget
 from ...icons import get_icon
@@ -13,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 class CameraAlignmentDialog(Adw.Window):
-    def __init__(self, parent: Gtk.Window, camera: Camera, **kwargs):
+    def __init__(
+        self, parent: Gtk.Window, controller: CameraController, **kwargs
+    ):
         super().__init__(
             transient_for=parent,
             modal=True,
@@ -22,7 +25,8 @@ class CameraAlignmentDialog(Adw.Window):
             **kwargs,
         )
 
-        self.camera = camera
+        self.controller = controller
+        self.camera = controller.config
         self.image_points: List[Optional[Pos]] = []
         self.world_points: List[Pos] = []
         self.active_point_index = -1
@@ -49,7 +53,7 @@ class CameraAlignmentDialog(Adw.Window):
         header_bar.set_title_widget(
             Adw.WindowTitle(
                 title=_("{camera_name} – Image Alignment").format(
-                    camera_name=camera.name
+                    camera_name=self.camera.name
                 ),
                 subtitle="",
             )
@@ -67,7 +71,7 @@ class CameraAlignmentDialog(Adw.Window):
         content.append(vbox)
 
         self.overlay = Gtk.Overlay()
-        self.camera_display = CameraDisplay(camera)
+        self.camera_display = CameraDisplay(controller)
         self.overlay.set_child(self.camera_display)
         vbox.append(self.overlay)
 
@@ -159,8 +163,8 @@ class CameraAlignmentDialog(Adw.Window):
             "resize", lambda w, x, y: self._on_display_ready()
         )
 
-        if camera.image_to_world:
-            img_pts, wld_pts = camera.image_to_world
+        if self.camera.image_to_world:
+            img_pts, wld_pts = self.camera.image_to_world
             self.image_points, self.world_points = list(img_pts), list(wld_pts)
 
         self.set_active_point(0)
@@ -193,7 +197,7 @@ class CameraAlignmentDialog(Adw.Window):
             return True  # Try again if the display is not ready.
 
         # Convert image coordinates to display coordinates.
-        source_width, source_height = self.camera.resolution
+        source_width, source_height = self.controller.resolution
         display_x = img_x * (display_width / source_width)
         display_y = display_height - (img_y * (display_height / source_height))
 
@@ -286,7 +290,7 @@ class CameraAlignmentDialog(Adw.Window):
             self.camera_display.get_width(),
             self.camera_display.get_height(),
         )
-        image_width, image_height = self.camera.resolution
+        image_width, image_height = self.controller.resolution
 
         scale_x = display_width / image_width if display_width > 0 else 1
         scale_y = display_height / image_height if display_height > 0 else 1
@@ -436,7 +440,7 @@ class CameraAlignmentDialog(Adw.Window):
             self.camera_display.get_width(),
             self.camera_display.get_height(),
         )
-        image_width, image_height = self.camera.resolution
+        image_width, image_height = self.controller.resolution
 
         if display_width <= 0 or display_height <= 0:
             return 0.0, 0.0

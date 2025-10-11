@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 from typing import Optional
 from platformdirs import user_config_dir
-from .machine.models.machine import MachineManager
+from .camera.manager import CameraManager
 from .core.config import ConfigManager
+from .machine.models.machine import MachineManager
 import logging
 
 
@@ -18,8 +19,8 @@ logger.info(f"Config dir is {CONFIG_DIR}")
 
 
 def getflag(name, default=False):
-    default = 'true' if default else 'false'
-    return os.environ.get(name, default).lower() in ('true', '1')
+    default = "true" if default else "false"
+    return os.environ.get(name, default).lower() in ("true", "1")
 
 
 # Load all machines. If none exist, create a default machine.
@@ -28,6 +29,7 @@ def getflag(name, default=False):
 machine_mgr = None
 config_mgr: Optional[ConfigManager] = None
 config = None  # Will be an alias for config_mgr.config after init
+camera_mgr: CameraManager
 
 
 def initialize_managers():
@@ -39,7 +41,7 @@ def initialize_managers():
     This prevents expensive I/O and state setup from running automatically
     when a module is imported into a subprocess.
     """
-    global machine_mgr, config_mgr, config
+    global machine_mgr, config_mgr, config, camera_mgr
 
     # Idempotency check: If already initialized, do nothing.
     if config_mgr is not None:
@@ -55,7 +57,7 @@ def initialize_managers():
         machine = machine_mgr.create_default_machine()
         logger.info(f"Created default machine {machine.id}")
 
-    # Load the config file.
+    # Load the config file. This must happen before CameraManager init.
     config_mgr = ConfigManager(CONFIG_FILE, machine_mgr)
     config = config_mgr.config  # Set the global config alias
     if not config.machine:
@@ -66,3 +68,12 @@ def initialize_managers():
         config.set_machine(machine)
         assert config.machine
     logger.info(f"Config loaded. Using machine {config.machine.id}")
+
+    # Initialize the camera manager AFTER config is loaded and active machine
+    # is set
+    camera_mgr = CameraManager()
+    camera_mgr.initialize()
+    logger.info(
+        f"Camera manager initialized with {len(camera_mgr.controllers)} "
+        "controllers."
+    )

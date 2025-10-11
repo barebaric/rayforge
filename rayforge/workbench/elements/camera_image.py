@@ -4,7 +4,7 @@ import cairo
 import cv2
 import numpy as np
 from gi.repository import GLib
-from ...camera.models.camera import Camera
+from ...camera.controller import CameraController
 from ..canvas import CanvasElement
 from typing import TYPE_CHECKING, cast
 
@@ -20,18 +20,18 @@ MAX_PROCESSING_DIMENSION = 2048
 
 
 class CameraImageElement(CanvasElement):
-    def __init__(self, camera: Camera, **kwargs):
+    def __init__(self, controller: CameraController, **kwargs):
         # We are not a standard buffered element because we manage our own
         # surface cache to prevent flicker. We will use a custom draw() method.
         super().__init__(
             x=0, y=0, width=1.0, height=1.0, buffered=False, **kwargs
         )
         self.selectable = False
-        self.camera = camera
-        self.camera.image_captured.connect(self._on_state_changed)
+        self.controller = controller
+        self.camera = controller.config  # Convenience alias for the data model
+        self.controller.image_captured.connect(self._on_state_changed)
         self.camera.changed.connect(self._on_camera_model_changed)
         self.camera.settings_changed.connect(self._on_state_changed)
-        self.camera.subscribe()
         self.set_visible(self.camera.enabled)
 
         # Cache for the processed cairo surface and its underlying data buffer.
@@ -59,11 +59,10 @@ class CameraImageElement(CanvasElement):
 
     def remove(self):
         """
-        Extends the base remove to unsubscribe from the camera stream before
-        being removed from the canvas.
+        Extends the base remove to disconnect signals before being removed
+        from the canvas. Subscription is managed by the WorkSurface.
         """
-        self.camera.unsubscribe()
-        self.camera.image_captured.disconnect(self._on_state_changed)
+        self.controller.image_captured.disconnect(self._on_state_changed)
         self.camera.changed.disconnect(self._on_camera_model_changed)
         self.camera.settings_changed.disconnect(self._on_state_changed)
         super().remove()
@@ -136,7 +135,7 @@ class CameraImageElement(CanvasElement):
         output_height = self.canvas.get_height()
 
         if (
-            self.camera.image_data is None
+            self.controller.image_data is None
             or output_width <= 0
             or output_height <= 0
         ):
@@ -150,7 +149,7 @@ class CameraImageElement(CanvasElement):
             )
 
         current_key = (
-            id(self.camera.image_data),
+            id(self.controller.image_data),
             output_width,
             output_height,
             physical_area,
@@ -163,7 +162,7 @@ class CameraImageElement(CanvasElement):
 
     def _process_and_update_cache(self, key_for_this_job: tuple) -> bool:
         """The actual work, to be run by GLib.idle_add."""
-        image_data = self.camera.image_data
+        image_data = self.controller.image_data
         img_data_id, width, height, p_area, transp = key_for_this_job
 
         if image_data is None or id(image_data) != img_data_id:
@@ -213,7 +212,7 @@ class CameraImageElement(CanvasElement):
                 processing_height = round(processing_height * scale)
 
             # Let ValueError propagate to the caller's handler.
-            transformed_image = self.camera.get_work_surface_image(
+            transformed_image = self.controller.get_work_surface_image(
                 output_size=(processing_width, processing_height),
                 physical_area=physical_area,
             )
