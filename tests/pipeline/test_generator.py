@@ -200,7 +200,7 @@ class TestOpsGenerator:
         # Assert
         assert generator.get_ops(step, real_workpiece) is None
 
-    def test_step_change_triggers_time_estimation_not_regeneration(
+    def test_step_change_triggers_full_regeneration(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
@@ -238,7 +238,7 @@ class TestOpsGenerator:
             # Assert
             mock_task_mgr.run_process.assert_called_once()
             called_func = mock_task_mgr.run_process.call_args[0][0]
-            assert called_func is run_time_estimation_in_subprocess
+            assert called_func is run_step_in_subprocess
         finally:
             ArtifactStore.release(handle)
 

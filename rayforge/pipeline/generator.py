@@ -353,12 +353,11 @@ class OpsGenerator:
         logger.debug(
             f"OpsGenerator: Noticed updated {origin.__class__.__name__}"
         )
-        # A Step's properties (power, speed, etc.) changed
+        # A Step's properties (power, speed, producer/transformer settings,
+        # etc.) changed. This always requires a full regeneration of the ops,
+        # as these settings are baked into the cached artifact.
         if isinstance(origin, Step):
-            # If a property affecting time (but not geometry) changes, we only
-            # need to re-trigger time estimations.
-            self._invalidate_time_cache_for_step(origin)
-            self._update_ops_for_step(origin, re_estimate_time_only=True)
+            self._update_ops_for_step(origin, re_estimate_time_only=False)
         # A generic 'updated'
         # signal on a workpiece now means its *content* (source image) has
         # changed, which requires regeneration. Transform changes are handled
