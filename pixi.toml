@@ -167,6 +167,9 @@ cmd = "pixi run -e docs _site-serve"
 [tasks.site-build]
 cmd = "pixi run -e docs _site-build"
 
+[tasks.mike]
+cmd = "pixi run -e docs _mike --"
+
 # Internal docs tasks (called by the wrapper tasks above)
 [feature.docs.tasks._site-serve]
 cmd = "mkdocs serve --livereload --watch-theme"
@@ -174,3 +177,6 @@ cmd = "mkdocs serve --livereload --watch-theme"
 [feature.docs.tasks._site-build]
 cmd = "mkdocs build --strict --clean"
 
+[feature.docs.tasks._mike]
+# The actual mike command that runs inside the 'docs' environment.
+cmd = "mike"

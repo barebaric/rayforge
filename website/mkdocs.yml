@@ -1,3 +1,12 @@
+site_name: Rayforge
+site_url: https://rayforge.org/
+site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
+site_author: Rayforge Contributors
+repo_url: https://github.com/barebaric/rayforge
+repo_name: barebaric/rayforge
+copyright: Copyright &copy; 2024-2025 Rayforge
+edit_uri: edit/main/website/
+
 # This maps the structure of the website to source markdown files.
 nav:
   - Home: index.md
@@ -79,19 +88,7 @@ nav:
       - Batch Production Workflow: guides/batch-production-workflow.md
 
 # Declare any markdown files not in the nav tree to remove warnings
-not_in_nav:
-   "includes/abbreviations.md"
-
-# Basic site information
-site_name: Rayforge
-site_url: https://barebaric.github.io/rayforge/
-site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
-site_author: Rayforge Contributors
-repo_url: https://github.com/barebaric/rayforge
-repo_name: barebaric/rayforge
-copyright: Copyright &copy; 2024-2025 Rayforge 
-# This configures the github url prefix for the edit-this-page icons
-edit_uri: edit/trunk/website/
+not_in_nav: "includes/abbreviations.md"
 
 # Theme tweaks
 theme:
@@ -136,14 +133,17 @@ theme:
 
 # Extra options are used for the overriden theme templates in overrides/
 extra:
+  version:
+    provider: mike
+    default: stable
+
   generator: false # Disable "Generated with MkDocs" footer
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/barebaric/rayforge
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/rayforge/
-  # TODO: setup analytics
-  analytics: 
+  analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
 
@@ -153,10 +153,9 @@ extra:
   home_description: |
     Modern G-code sender and control software for GRBL-based laser cutters and engravers
   home_gradient_hsla: hsla(231deg, 48%, 48%, 1)
-
   home_button1_name: Features
   home_button1_url: ./#key-features
-  home_button1_theme: md-button 
+  home_button1_theme: md-button
 
   home_button2_name: Get Started
   home_button2_url: getting-started/
@@ -234,6 +233,3 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
-
-
-
