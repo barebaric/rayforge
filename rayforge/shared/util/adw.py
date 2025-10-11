@@ -18,6 +18,12 @@ css = """
     border-bottom-right-radius: 12px;
     box-shadow: none;
 }
+
+/* 3. Round the top corners of a selected row if it's the first child. */
+.list-box-in-card row:first-child:selected {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
 """
 
 
