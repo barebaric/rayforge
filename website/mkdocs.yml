@@ -10,8 +10,6 @@ edit_uri: edit/main/website/
 # This maps the structure of the website to source markdown files.
 nav:
   - Home: index.md
-  - Blog:
-      - blog/index.md
   - Getting Started:
       - getting-started/index.md
       - Installation: getting-started/installation.md
@@ -86,9 +84,23 @@ nav:
       - Using Camera Alignment: guides/using-camera-alignment.md
       - Creating Material Test Grid: guides/creating-material-test-grid.md
       - Batch Production Workflow: guides/batch-production-workflow.md
-
+  - Blog:
+      - blog/index.md
 # Declare any markdown files not in the nav tree to remove warnings
-not_in_nav: "includes/abbreviations.md"
+not_in_nav:
+   "includes/abbreviations.md"
+
+# Basic site information
+site_name: Rayforge
+site_url: https://barebaric.github.io/rayforge/
+site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
+site_author: Rayforge Contributors
+repo_url: https://github.com/barebaric/rayforge
+repo_name: barebaric/rayforge
+copyright: Copyright &copy; 2024-2025 Rayforge 
+# This configures the github url prefix for the edit-this-page icons
+edit_uri: edit/trunk/website/
+docs_dir: .
 
 # Theme tweaks
 theme:
@@ -110,7 +122,6 @@ theme:
   features:
     - announce.dismiss
     - content.action.edit
-    - content.action.view
     - content.code.annotate
     - content.code.copy
     - content.tooltips
@@ -126,6 +137,7 @@ theme:
     - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
+    - navigation.integration
     - search.highlight
     - search.share
     - search.suggest

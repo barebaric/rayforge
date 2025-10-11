@@ -160,23 +160,9 @@ depends-on = ["compile-translations"]
 cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
-# Tasks for developing and generating the website
 [tasks.site-serve]
-cmd = "pixi run -e docs _site-serve"
+# Start live reload server for website development
+cmd = "pixi run -e docs mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
 
 [tasks.site-build]
-cmd = "pixi run -e docs _site-build"
-
-[tasks.mike]
-cmd = "pixi run -e docs _mike --"
-
-# Internal docs tasks (called by the wrapper tasks above)
-[feature.docs.tasks._site-serve]
-cmd = "mkdocs serve --livereload --watch-theme"
-
-[feature.docs.tasks._site-build]
-cmd = "mkdocs build --strict --clean"
-
-[feature.docs.tasks._mike]
-# The actual mike command that runs inside the 'docs' environment.
-cmd = "mike"
+cmd = "pixi run -e docs mkdocs build -f website/mkdocs.yml --strict --clean"

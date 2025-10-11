@@ -17,11 +17,6 @@
   }
 }
 
-/* Hide GitHub source link in header */
-.md-header__source {
-  display: none;
-}
-
 
 /* Cards styling */
 .grid.cards {
@@ -97,4 +92,41 @@ kbd {
   font-size: 0.85em;
   padding: 0.1em 0.4em;
   vertical-align: middle;
+}
+
+
+
+/* Hide GitHub source link in header */
+.md-header__source {
+  display: none;
+}
+
+/* Increase size of tab text */
+.md-tabs__item a.md-tabs__link {
+    font-size: 0.8rem;
+} 
+
+/* Responsive adjustments */
+@media screen and (min-width:35em) {
+      nav.md-tabs {
+        display: block;
+    }
+}
+
+@media screen and (min-width: 35em) {
+    .md-header__button.md-logo {
+        display: block;
+    }
+}
+
+@media screen and (min-width: 35em) {
+    .md-header__button.md-icon {
+        display: none;
+    }
+}
+
+@media screen and (max-width:35em) {
+    .tx-hero h1 {
+        font-size: 1.4rem
+    }
 }
