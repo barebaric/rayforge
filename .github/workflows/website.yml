@@ -84,7 +84,6 @@ jobs:
           cd website
           pixi run mike deploy \
             --push \
-            --force \
             --remote git@github.com:barebaric/rayforge-website.git \
             --branch main \
             "${{ steps.get_version.outputs.version }}" \
