@@ -1,8 +1,9 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 from blinker import Signal
 from .models.camera import Camera
 from .controller import CameraController
+from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class CameraManager:
 
     def __init__(self):
         self._controllers: Dict[str, CameraController] = {}
+        self._active_machine: Optional[Machine] = None
 
         # Signals
         self.controller_added = Signal()
@@ -34,7 +36,8 @@ class CameraManager:
         from ..config import config
 
         config.changed.connect(self._on_config_changed)
-        self._reconcile_controllers()
+        # Manually trigger the first check to set up the initial machine
+        self._on_config_changed(config)
 
     def shutdown(self):
         """Shuts down all active camera controllers."""
@@ -42,6 +45,13 @@ class CameraManager:
         from ..config import config
 
         config.changed.disconnect(self._on_config_changed)
+        # Disconnect from the last active machine
+        if self._active_machine:
+            self._active_machine.changed.disconnect(
+                self._on_active_machine_changed
+            )
+            self._active_machine = None
+
         for controller in list(self._controllers.values()):
             self._destroy_controller(controller.config.device_id)
         logger.info("All camera controllers shut down.")
@@ -56,8 +66,42 @@ class CameraManager:
         return self._controllers.get(device_id)
 
     def _on_config_changed(self, sender, **kwargs):
-        """Handler for when the global config or active machine changes."""
-        logger.debug("Configuration changed, reconciling camera controllers.")
+        """
+        Handler for when the global config changes. This method is now
+        responsible for tracking the active machine and connecting/
+        disconnecting from its `changed` signal.
+        """
+        from ..config import config
+
+        if self._active_machine is not config.machine:
+            logger.debug(
+                "Active machine changed, updating signal connections."
+            )
+            # Disconnect from the old machine if it exists
+            if self._active_machine:
+                self._active_machine.changed.disconnect(
+                    self._on_active_machine_changed
+                )
+
+            # Connect to the new machine
+            self._active_machine = config.machine
+            if self._active_machine:
+                self._active_machine.changed.connect(
+                    self._on_active_machine_changed
+                )
+
+        # Always reconcile when the config changes, as this is the top-level
+        # trigger for a machine switch.
+        self._reconcile_controllers()
+
+    def _on_active_machine_changed(self, sender, **kwargs):
+        """
+        Handler for when the currently active machine's properties change
+        (e.g., a camera is added or removed).
+        """
+        logger.debug(
+            "Active machine's properties changed, reconciling cameras."
+        )
         self._reconcile_controllers()
 
     def _destroy_controller(self, device_id: str):
