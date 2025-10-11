@@ -214,11 +214,16 @@ class SimulationOverlay(CanvasElement):
                     ctx.stroke()
                 continue
 
-            # Get speed and power for cutting moves
+            # Get speed and power for cutting moves.
             speed = state.cut_speed if state.cut_speed is not None else 1000.0
-            power = state.power if state.power is not None else 100.0
+            power = state.power if state.power is not None else 1.0
+
+            # Speed is visualized as color
             r, g, b = speed_to_heatmap_color(speed, min_speed, max_speed)
-            alpha = 0.1 + (power / 100.0) * 0.9
+
+            # Maps power [0.0-1.0] to alpha
+            alpha = 0.1 + power * 0.9
+
             ctx.set_source_rgba(r, g, b, alpha)
 
             if isinstance(cmd, ArcToCommand):
@@ -257,12 +262,15 @@ class SimulationOverlay(CanvasElement):
             return
 
         min_s, max_s = self.timeline.speed_range
+
+        # Speed -> Color
         r, g, b = speed_to_heatmap_color(state.cut_speed or 0.0, min_s, max_s)
 
         for i, power_byte in enumerate(cmd.power_values):
             if power_byte == 0:
                 continue
 
+            # Power -> Transparency (Opacity)
             alpha = 0.1 + (power_byte / 255.0) * 0.9
             t_start, t_end = i / num_steps, (i + 1) / num_steps
             seg_start_pt = p_start + t_start * line_vec
