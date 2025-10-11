@@ -1,6 +1,6 @@
 from typing import List, Optional
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ...machine.models.script import Script
+from ..models.macro import Macro
 from ...pipeline.encoder.context import GcodeContext
 from ...icons import get_icon
 
@@ -8,41 +8,41 @@ from ...icons import get_icon
 FORBIDDEN_NAME_CHARS = "();[]{}<>"
 
 
-class CodeEditorDialog(Adw.Window):
-    """A generic modal dialog for editing a G-code script."""
+class GcodeEditorDialog(Adw.Window):
+    """A generic modal dialog for editing a G-code macro."""
 
     def __init__(
         self,
         parent: Gtk.Window,
-        script: Script,
+        macro: Macro,
         *,
         allow_name_edit: bool = False,
-        existing_scripts: List[Script] | None = None,
+        existing_macros: Optional[List[Macro]] = None,
         default_code: Optional[List[str]] = None,
         variable_context_level: str = "job",
     ):
         """
-        Initializes the script editor dialog.
+        Initializes the macro editor dialog.
 
         Args:
             parent: The parent window.
-            script: The Script to be edited.
-            allow_name_edit: If True, shows an entry row to edit the script
+            macro: The macro to be edited.
+            allow_name_edit: If True, shows an entry row to edit the macro
               name.
-            existing_scripts: A list of other scripts to check for name
+            existing_macros: A list of other macros to check for name
               uniqueness.
             default_code: If provided, an "Append Default" button is shown.
             variable_context_level: The context level for variable
               documentation.
         """
         super().__init__(modal=True, transient_for=parent)
-        self.script = script
+        self.macro = macro
         self.saved = False
         self._allow_name_edit = allow_name_edit
-        self.existing_scripts = existing_scripts or []
+        self.existing_macros = existing_macros or []
         self.default_code = default_code or []
         self.variable_context_level = variable_context_level
-        self.set_title(_("Edit Script"))
+        self.set_title(_("Edit Macro"))
         self.set_size_request(750, 700)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -85,7 +85,7 @@ class CodeEditorDialog(Adw.Window):
         header.pack_end(self.save_button)
 
         self.name_row = Adw.EntryRow(title=_("Name"))
-        self.name_row.set_text(self.script.name)
+        self.name_row.set_text(self.macro.name)
         self.name_row.set_margin_top(6)
 
         self.error_label = Gtk.Label(halign=Gtk.Align.START, margin_start=12)
@@ -97,7 +97,7 @@ class CodeEditorDialog(Adw.Window):
             self.name_row.connect("notify::text", self._validate_name)
         else:
             self.set_title(
-                _("Edit Script for {name}").format(name=self.script.name)
+                _("Edit Macro for {name}").format(name=self.macro.name)
             )
 
         scrolled_window = Gtk.ScrolledWindow(
@@ -120,7 +120,7 @@ class CodeEditorDialog(Adw.Window):
         )
         self.text_view.add_css_class("monospace")
         buffer = self.text_view.get_buffer()
-        buffer.set_text("\n".join(self.script.code), -1)
+        buffer.set_text("\n".join(self.macro.code), -1)
         scrolled_window.set_child(self.text_view)
 
         # Add a key controller to listen for the Escape key
@@ -210,7 +210,7 @@ class CodeEditorDialog(Adw.Window):
         scrolled_window.set_child(list_box)
 
         macros_to_include = [
-            m for m in self.existing_scripts if m.uid != self.script.uid
+            m for m in self.existing_macros if m.uid != self.macro.uid
         ]
 
         if macros_to_include:
@@ -268,7 +268,7 @@ class CodeEditorDialog(Adw.Window):
         buffer.insert(buffer.get_end_iter(), "\n".join(self.default_code), -1)
 
     def _validate_name(self, *args):
-        """Checks the validity of the script name and updates UI feedback."""
+        """Checks the validity of the macro name and updates UI feedback."""
         if not self._allow_name_edit:
             self.save_button.set_sensitive(True)
             return
@@ -283,11 +283,11 @@ class CodeEditorDialog(Adw.Window):
                 "Name contains invalid characters: {chars}"
             ).format(chars=FORBIDDEN_NAME_CHARS)
         else:
-            for other_script in self.existing_scripts:
-                # Check for name collision, ignoring the script we are editing
+            for other_macro in self.existing_macros:
+                # Check for name collision, ignoring the macro we are editing
                 if (
-                    other_script.name == name
-                    and other_script.uid != self.script.uid
+                    other_macro.name == name
+                    and other_macro.uid != self.macro.uid
                 ):
                     error_message = _(
                         "This name is already used by another macro."
@@ -303,14 +303,14 @@ class CodeEditorDialog(Adw.Window):
             self.save_button.set_sensitive(True)
 
     def _on_save_clicked(self, button: Gtk.Button):
-        """Stores the UI content into the script object and closes."""
+        """Stores the UI content into the macro object and closes."""
         buffer = self.text_view.get_buffer()
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
         text = buffer.get_text(start, end, include_hidden_chars=True)
 
         if self._allow_name_edit:
-            self.script.name = self.name_row.get_text()
-        self.script.code = text.splitlines()
+            self.macro.name = self.name_row.get_text()
+        self.macro.code = text.splitlines()
 
         self.saved = True
         self.close()

@@ -1,19 +1,19 @@
 from typing import cast
 from gi.repository import Gtk
 from ...machine.models.machine import Machine
-from ...machine.models.script import Script
+from ..models.macro import Macro
 from ...icons import get_icon
 from ...shared.util.adw import PreferencesGroupWithButton
-from .code_editor import CodeEditorDialog
+from .gcode_editor import GcodeEditorDialog
 
 
 class MacroRow(Gtk.Box):
     """A widget representing a single Macro in a ListBox."""
 
-    def __init__(self, machine: Machine, script: Script):
+    def __init__(self, machine: Machine, macro: Macro):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.machine = machine
-        self.script = script
+        self.macro = macro
         self._setup_ui()
 
     def _setup_ui(self):
@@ -24,7 +24,7 @@ class MacroRow(Gtk.Box):
         self.set_margin_end(6)
 
         title_label = Gtk.Label(
-            label=self.script.name,
+            label=self.macro.name,
             halign=Gtk.Align.START,
             hexpand=True,
             xalign=0,
@@ -36,7 +36,7 @@ class MacroRow(Gtk.Box):
         self.append(suffix_box)
 
         switch = Gtk.Switch(valign=Gtk.Align.CENTER)
-        switch.set_active(self.script.enabled)
+        switch.set_active(self.macro.enabled)
         switch.connect("notify::active", self._on_enable_toggled)
         suffix_box.append(switch)
 
@@ -53,31 +53,31 @@ class MacroRow(Gtk.Box):
     def _on_enable_toggled(self, switch: Gtk.Switch, _):
         """Handles the state change of the enable/disable switch."""
         is_active = switch.get_active()
-        if self.script.enabled != is_active:
-            self.script.enabled = is_active
+        if self.macro.enabled != is_active:
+            self.macro.enabled = is_active
             self.machine.changed.send(self.machine)
 
     def _on_remove_clicked(self, button: Gtk.Button):
         """Asks the machine to remove the associated macro."""
-        self.machine.remove_macro(self.script.uid)
+        self.machine.remove_macro(self.macro.uid)
 
     def _on_edit_clicked(self, button: Gtk.Button):
-        """Opens the CodeEditorDialog to edit the macro."""
+        """Opens the dialog to edit the macro."""
         parent_window = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
 
         # Pass the list of other macros for uniqueness validation
-        existing_scripts = list(self.machine.macros.values())
+        existing_macros = list(self.machine.macros.values())
 
-        dialog = CodeEditorDialog(
+        dialog = GcodeEditorDialog(
             parent_window,
-            self.script,
+            self.macro,
             allow_name_edit=True,
-            existing_scripts=existing_scripts,
+            existing_macros=existing_macros,
         )
         dialog.connect("close-request", self._on_edit_dialog_closed)
         dialog.present()
 
-    def _on_edit_dialog_closed(self, dialog: CodeEditorDialog):
+    def _on_edit_dialog_closed(self, dialog: GcodeEditorDialog):
         """Signals a machine change if the macro was saved."""
         if dialog.saved:
             self.machine.changed.send(self.machine)
@@ -113,32 +113,32 @@ class MacroListEditor(PreferencesGroupWithButton):
         )
         self.set_items(sorted_macros)
 
-    def create_row_widget(self, item: Script) -> Gtk.Widget:
-        """Creates a MacroRow for the given script item."""
+    def create_row_widget(self, item: Macro) -> Gtk.Widget:
+        """Creates a MacroRow for the given macro item."""
         return MacroRow(self.machine, item)
 
     def _on_add_clicked(self, button: Gtk.Button):
         """Handles the 'Add New Macro' button click."""
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
-        new_script = Script(name=_("New Macro"))
+        new_macro = Macro(name=_("New Macro"))
 
         # Pass the list of existing macros for uniqueness validation
-        existing_scripts = list(self.machine.macros.values())
+        existing_macros = list(self.machine.macros.values())
 
-        editor_dialog = CodeEditorDialog(
+        editor_dialog = GcodeEditorDialog(
             parent,
-            new_script,
+            new_macro,
             allow_name_edit=True,
-            existing_scripts=existing_scripts,
+            existing_macros=existing_macros,
         )
         editor_dialog.connect(
-            "close-request", self._on_new_macro_editor_closed, new_script
+            "close-request", self._on_new_macro_editor_closed, new_macro
         )
         editor_dialog.present()
 
     def _on_new_macro_editor_closed(
-        self, dialog: CodeEditorDialog, new_script: Script
+        self, dialog: GcodeEditorDialog, new_macro: Macro
     ):
         """Asks the machine to add the new macro if it was saved."""
         if dialog.saved:
-            self.machine.add_macro(new_script)
+            self.machine.add_macro(new_macro)

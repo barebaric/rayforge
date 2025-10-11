@@ -4,12 +4,12 @@ from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from ...pipeline.encoder.gcode import GcodeContext
     from ...machine.models.machine import Machine
-    from ...machine.models.script import Script
+    from ...machine.models.macro import Macro
 
 
 class TemplateFormatter:
     """
-    Expands a script by processing variable placeholders (e.g., {obj.attr})
+    Expands a macro by processing variable placeholders (e.g., {obj.attr})
     and @include(Macro Name) directives.
     """
 
@@ -51,38 +51,38 @@ class TemplateFormatter:
             template_string,
         )
 
-    def expand_script(self, script: "Script") -> List[str]:
+    def expand_macro(self, macro: "Macro") -> List[str]:
         """
-        Public entry point to fully expand a script.
+        Public entry point to fully expand a macro.
 
         Args:
-            script: The top-level script (e.g., from a hook) to expand.
+            macro: The top-level macro (e.g., from a hook) to expand.
 
         Returns:
             A list of fully expanded G-code lines.
         """
         # The call_stack tracks macro names to prevent infinite recursion.
-        return self._recursive_expand(script, call_stack=set())
+        return self._recursive_expand(macro, call_stack=set())
 
     def _recursive_expand(
-        self, script: "Script", call_stack: set[str]
+        self, macro: "Macro", call_stack: set[str]
     ) -> List[str]:
         """
-        Recursively expands a script, processing includes and formatting
+        Recursively expands a macro, processing includes and formatting
         variables.
         """
         output_lines: List[str] = []
 
-        if script.name in call_stack:
+        if macro.name in call_stack:
             error_msg = (
                 f"; ERROR: Circular dependency detected. Macro "
-                f"'{script.name}' was included again."
+                f"'{macro.name}' was included again."
             )
             return [error_msg]
 
-        call_stack.add(script.name)
+        call_stack.add(macro.name)
 
-        for line in script.code:
+        for line in macro.code:
             match = re.match(r"^\s*@include\((.*?)\)\s*$", line)
             if match:
                 macro_name = match.group(1).strip()
@@ -110,6 +110,6 @@ class TemplateFormatter:
                 # This is a normal G-code line, format it
                 output_lines.append(self.format_string(line))
 
-        # Backtrack: remove the script from the stack after processing
-        call_stack.remove(script.name)
+        # Backtrack: remove the macro from the stack after processing
+        call_stack.remove(macro.name)
         return output_lines

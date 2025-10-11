@@ -1,9 +1,9 @@
 from typing import cast, Dict, Tuple
 from gi.repository import Gtk, Adw
 from ...machine.models.machine import Machine
-from ...machine.models.script import Script, ScriptTrigger
+from ..models.macro import Macro, MacroTrigger
 from ...machine.models.dialect import get_dialect
-from .code_editor import CodeEditorDialog
+from .gcode_editor import GcodeEditorDialog
 
 
 class HookList(Adw.PreferencesGroup):
@@ -17,10 +17,10 @@ class HookList(Adw.PreferencesGroup):
         self.machine = machine
         # Store references to the rows and their widgets to update them later
         self.trigger_widgets: Dict[
-            ScriptTrigger, Tuple[Adw.ActionRow, Gtk.Button, Gtk.Switch]
+            MacroTrigger, Tuple[Adw.ActionRow, Gtk.Button, Gtk.Switch]
         ] = {}
         self._setup_ui()
-        # Connect to machine changes to update row state if a script is
+        # Connect to machine changes to update row state if a macro is
         # added/removed, or if the dialect changes.
         self.machine.changed.connect(self._on_machine_changed)
 
@@ -33,7 +33,7 @@ class HookList(Adw.PreferencesGroup):
             )
         )
 
-        for trigger in ScriptTrigger:
+        for trigger in MacroTrigger:
             row = Adw.ActionRow()
             row.set_title(trigger.name.replace("_", " ").title())
 
@@ -66,7 +66,7 @@ class HookList(Adw.PreferencesGroup):
             self.trigger_widgets[trigger] = (row, reset_button, switch)
             self._update_row_state(trigger)
 
-    def _update_row_state(self, trigger: ScriptTrigger):
+    def _update_row_state(self, trigger: MacroTrigger):
         """Sets the row's subtitle and widget visibility."""
         row, reset_button, switch = self.trigger_widgets[trigger]
 
@@ -75,33 +75,31 @@ class HookList(Adw.PreferencesGroup):
         # A hook is considered "customized" if its key exists in the
         # dictionary,
         # regardless of whether the code is empty or not.
-        is_customized = trigger in self.machine.hookscripts
+        is_customized = trigger in self.machine.hookmacros
 
         reset_button.set_visible(is_customized)
         switch.set_visible(is_customized)
 
-        script = self.machine.hookscripts.get(trigger)
-        if script:
-            switch.set_active(script.enabled)
+        macro = self.machine.hookmacros.get(trigger)
+        if macro:
+            switch.set_active(macro.enabled)
 
     def _on_machine_changed(self, sender: Machine, **kwargs):
         """Update all row styles when the machine model changes."""
         for trigger in self.trigger_widgets.keys():
             self._update_row_state(trigger)
 
-    def _on_enable_toggled(
-        self, switch: Gtk.Switch, _, trigger: ScriptTrigger
-    ):
+    def _on_enable_toggled(self, switch: Gtk.Switch, _, trigger: MacroTrigger):
         """Handles the state change of the enable/disable switch for a hook."""
-        script = self.machine.hookscripts.get(trigger)
-        if script:
+        macro = self.machine.hookmacros.get(trigger)
+        if macro:
             is_active = switch.get_active()
-            if script.enabled != is_active:
-                script.enabled = is_active
+            if macro.enabled != is_active:
+                macro.enabled = is_active
                 self.machine.changed.send(self.machine)
 
-    def _on_reset_clicked(self, button: Gtk.Button, trigger: ScriptTrigger):
-        """Shows a confirmation dialog before resetting a hook script."""
+    def _on_reset_clicked(self, button: Gtk.Button, trigger: MacroTrigger):
+        """Shows a confirmation dialog before resetting a hook macro."""
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
         hook_name = trigger.name.replace("_", " ").title()
 
@@ -113,7 +111,7 @@ class HookList(Adw.PreferencesGroup):
             body=_(
                 "This will remove your custom G-code for this hook. "
                 "The machine will revert to using its built-in default "
-                "script. This action cannot be undone."
+                "macro. This action cannot be undone."
             ),
         )
         dialog.add_response("cancel", _("Cancel"))
@@ -129,35 +127,35 @@ class HookList(Adw.PreferencesGroup):
         self,
         dialog: Adw.MessageDialog,
         response_id: str,
-        trigger: ScriptTrigger,
+        trigger: MacroTrigger,
     ):
         """Handles the response from the reset confirmation dialog."""
         if response_id != "reset":
             return
 
-        if trigger in self.machine.hookscripts:
-            del self.machine.hookscripts[trigger]
+        if trigger in self.machine.hookmacros:
+            del self.machine.hookmacros[trigger]
             self.machine.changed.send(self.machine)
 
-    def _on_edit_clicked(self, button: Gtk.Button, trigger: ScriptTrigger):
+    def _on_edit_clicked(self, button: Gtk.Button, trigger: MacroTrigger):
         """Handles the 'Edit' button click for a specific trigger."""
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
 
         # Determine the default code for this specific trigger
         dialect = get_dialect(self.machine.dialect_name)
         default_code = []
-        if trigger == ScriptTrigger.JOB_START:
+        if trigger == MacroTrigger.JOB_START:
             default_code = dialect.default_preamble
-        elif trigger == ScriptTrigger.JOB_END:
+        elif trigger == MacroTrigger.JOB_END:
             default_code = dialect.default_postscript
 
-        # If a script already exists (even if empty), edit it directly.
+        # If a macro already exists (even if empty), edit it directly.
         # Otherwise, create a new one pre-filled with the dialect's default.
-        existing_script = self.machine.hookscripts.get(trigger)
-        if existing_script is not None:
-            script_to_edit = existing_script
+        existing_macro = self.machine.hookmacros.get(trigger)
+        if existing_macro is not None:
+            macro_to_edit = existing_macro
         else:
-            script_to_edit = Script(
+            macro_to_edit = Macro(
                 name=trigger.name.replace("_", " ").title(),
                 code=default_code or [_("# Your G-code here")],
             )
@@ -165,30 +163,30 @@ class HookList(Adw.PreferencesGroup):
         # Pass the list of available macros for the include popover
         existing_macros = list(self.machine.macros.values())
 
-        editor_dialog = CodeEditorDialog(
+        editor_dialog = GcodeEditorDialog(
             parent,
-            script_to_edit,
+            macro_to_edit,
             allow_name_edit=False,
-            existing_scripts=existing_macros,
+            existing_macros=existing_macros,
             default_code=default_code,
         )
         editor_dialog.connect(
             "close-request",
             self._on_edit_dialog_closed,
             trigger,
-            script_to_edit,
+            macro_to_edit,
         )
         editor_dialog.present()
 
     def _on_edit_dialog_closed(
-        self, dialog: CodeEditorDialog, trigger: ScriptTrigger, script: Script
+        self, dialog: GcodeEditorDialog, trigger: MacroTrigger, macro: Macro
     ):
         """
-        Handles closing the editor. If saved, updates the script in the
+        Handles closing the editor. If saved, updates the macro in the
         machine model's hook dictionary.
         """
         if dialog.saved:
-            # Always save the script, even if its code is empty.
+            # Always save the macro, even if its code is empty.
             # This correctly represents the user's intent.
-            self.machine.hookscripts[trigger] = script
+            self.machine.hookmacros[trigger] = macro
             self.machine.changed.send(self.machine)

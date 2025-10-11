@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ...pipeline.encoder.gcode import GcodeOpMap
 
 
-class GcodePreviewer(Gtk.Box):
+class GcodeViewer(Gtk.Box):
     """
     A specialized, read-only widget for displaying G-code, intended for use
     as a preview panel.

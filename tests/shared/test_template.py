@@ -1,6 +1,6 @@
 import pytest
 from rayforge.shared.util.template import TemplateFormatter
-from rayforge.machine.models.script import Script
+from rayforge.machine.models.macro import Macro
 
 
 class TestTemplateFormatter:
@@ -10,7 +10,7 @@ class TestTemplateFormatter:
         Provides a nested object structure and a mock machine for testing.
         """
 
-        class MockMacro(Script):
+        class MockMacro(Macro):
             pass
 
         class MockMachine:
@@ -121,42 +121,40 @@ class TestTemplateFormatter:
         formatter = TemplateFormatter(machine, context)
         assert formatter.format_string("") == ""
 
-    def test_expand_simple_script(self, context_and_machine):
-        """Test that a script with no includes is formatted correctly."""
+    def test_expand_simple_macro(self, context_and_machine):
+        """Test that a macro with no includes is formatted correctly."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(
-            name="Test", code=["Machine is {machine.name}", "G0 X0"]
-        )
-        result = formatter.expand_script(script)
+        macro = Macro(name="Test", code=["Machine is {machine.name}", "G0 X0"])
+        result = formatter.expand_macro(macro)
         assert result == ["Machine is MyLaser", "G0 X0"]
 
     def test_expand_with_include(self, context_and_machine):
         """Test that @include directives are expanded."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(
+        macro = Macro(
             name="Wrapper", code=["G90", "@include(First Macro)", "G91"]
         )
-        result = formatter.expand_script(script)
+        result = formatter.expand_macro(macro)
         assert result == ["G90", "G0 X10 Y10", "G91"]
 
     def test_expand_with_formatting_and_include(self, context_and_machine):
-        """Test that variables are formatted in the top-level script."""
+        """Test that variables are formatted in the top-level macro."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(
+        macro = Macro(
             name="Wrapper", code=["Job: {job.name}", "@include(Second Macro)"]
         )
-        result = formatter.expand_script(script)
+        result = formatter.expand_macro(macro)
         assert result == ["Job: Test Job", "G0 Z5"]
 
     def test_expand_unknown_macro(self, context_and_machine):
         """Test that including a non-existent macro produces a warning."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(name="Test", code=["@include(Unknown Macro)"])
-        result = formatter.expand_script(script)
+        macro = Macro(name="Test", code=["@include(Unknown Macro)"])
+        result = formatter.expand_macro(macro)
         assert result == [
             "; WARNING: Macro 'Unknown Macro'  not found or disabled."
         ]
@@ -165,8 +163,8 @@ class TestTemplateFormatter:
         """Test that including a disabled macro produces a warning."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(name="Test", code=["@include(Disabled Macro)"])
-        result = formatter.expand_script(script)
+        macro = Macro(name="Test", code=["@include(Disabled Macro)"])
+        result = formatter.expand_macro(macro)
         assert result == [
             "; WARNING: Macro 'Disabled Macro'  not found or disabled."
         ]
@@ -175,8 +173,8 @@ class TestTemplateFormatter:
         """Test that circular dependencies are detected and reported."""
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
-        script = Script(name="Circular1", code=["@include(Circular2)"])
-        result = formatter.expand_script(script)
+        macro = Macro(name="Circular1", code=["@include(Circular2)"])
+        result = formatter.expand_macro(macro)
         assert result == [
             "; ERROR: Circular dependency detected. Macro 'Circular1'"
             " was included again."

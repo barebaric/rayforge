@@ -37,7 +37,7 @@ from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.simulator_cmd import SimulatorCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
-from .shared.gcodeedit.previewer import GcodePreviewer
+from .shared.gcodeedit.viewer import GcodeViewer
 from .core.step import Step
 from .pipeline.artifact.store import ArtifactStore
 from .pipeline.artifact.handle import ArtifactHandle
@@ -266,7 +266,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         # Create the G-code previewer
-        self.gcode_previewer = GcodePreviewer()
+        self.gcode_previewer = GcodeViewer()
         self.gcode_previewer.set_size_request(
             self._last_gcode_previewer_width, -1
         )

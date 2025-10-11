@@ -20,7 +20,7 @@ from ..driver.driver import (
 from ..driver.dummy import NoDeviceDriver
 from ..driver import get_driver_cls
 from .laser import Laser
-from .script import Script, ScriptTrigger
+from .macro import Macro, MacroTrigger
 
 if TYPE_CHECKING:
     from ...shared.varset import VarSet
@@ -49,8 +49,8 @@ class Machine:
         self.clear_alarm_on_connect: bool = False
         self.dialect_name: str = "grbl"
         self.gcode_precision: int = 3
-        self.hookscripts: Dict[ScriptTrigger, Script] = {}
-        self.macros: Dict[str, Script] = {}
+        self.hookmacros: Dict[MacroTrigger, Macro] = {}
+        self.macros: Dict[str, Macro] = {}
         self.heads: List[Laser] = []
         self._heads_ref_for_pyreverse: Laser
         self.cameras: List[Camera] = []
@@ -347,18 +347,18 @@ class Machine:
     def _on_camera_changed(self, camera, *args):
         self.changed.send(self)
 
-    def add_macro(self, script: Script):
+    def add_macro(self, macro: Macro):
         """Adds a macro and notifies listeners."""
-        if script.uid in self.macros:
+        if macro.uid in self.macros:
             return
-        self.macros[script.uid] = script
+        self.macros[macro.uid] = macro
         self.changed.send(self)
 
-    def remove_macro(self, script_uid: str):
+    def remove_macro(self, macro_uid: str):
         """Removes a macro and notifies listeners."""
-        if script_uid not in self.macros:
+        if macro_uid not in self.macros:
             return
-        del self.macros[script_uid]
+        del self.macros[macro_uid]
         self.changed.send(self)
 
     def can_frame(self):
@@ -490,9 +490,9 @@ class Machine:
                 "y_axis_down": self.y_axis_down,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
-                "hookscripts": {
-                    trigger.name: script.to_dict()
-                    for trigger, script in self.hookscripts.items()
+                "hookmacros": {
+                    trigger.name: macro.to_dict()
+                    for trigger, macro in self.hookmacros.items()
                 },
                 "macros": {
                     uid: macro.to_dict() for uid, macro in self.macros.items()
@@ -526,21 +526,21 @@ class Machine:
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
 
-        # Deserialize hookscripts first, if they exist
-        hook_data = ma_data.get("hookscripts", {})
-        for trigger_name, script_data in hook_data.items():
+        # Deserialize hookmacros first, if they exist
+        hook_data = ma_data.get("hookmacros", {})
+        for trigger_name, macro_data in hook_data.items():
             try:
-                trigger = ScriptTrigger[trigger_name]
-                ma.hookscripts[trigger] = Script.from_dict(script_data)
+                trigger = MacroTrigger[trigger_name]
+                ma.hookmacros[trigger] = Macro.from_dict(macro_data)
             except KeyError:
                 logger.warning(
                     f"Skipping unknown hook trigger '{trigger_name}'"
                 )
 
         macro_data = ma_data.get("macros", {})
-        for uid, script_data in macro_data.items():
-            script_data["uid"] = uid  # Ensure UID is consistent with key
-            ma.macros[uid] = Script.from_dict(script_data)
+        for uid, macro_data in macro_data.items():
+            macro_data["uid"] = uid  # Ensure UID is consistent with key
+            ma.macros[uid] = Macro.from_dict(macro_data)
 
         ma.heads = []
         for obj in ma_data.get("heads", {}):

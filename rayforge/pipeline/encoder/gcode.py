@@ -23,7 +23,7 @@ from ...core.ops import (
     WorkpieceEndCommand,
 )
 from ...machine.models.dialect import GcodeDialect, get_dialect
-from ...machine.models.script import ScriptTrigger
+from ...machine.models.macro import MacroTrigger
 from ...shared.util.template import TemplateFormatter
 from .base import OpsEncoder
 from .context import GcodeContext, JobInfo
@@ -133,25 +133,25 @@ class GcodeEncoder(OpsEncoder):
         self._finalize(gcode)
         return "\n".join(gcode), op_map
 
-    def _emit_scripts(
-        self, context: GcodeContext, gcode: List[str], trigger: ScriptTrigger
+    def _emit_macros(
+        self, context: GcodeContext, gcode: List[str], trigger: MacroTrigger
     ):
         """
-        Finds the script for a trigger and uses the TemplateFormatter to
+        Finds the macro for a trigger and uses the TemplateFormatter to
         expand it.
         """
-        script_action = context.machine.hookscripts.get(trigger)
+        macro_action = context.machine.hookmacros.get(trigger)
 
-        if script_action and script_action.enabled:
+        if macro_action and macro_action.enabled:
             formatter = TemplateFormatter(context.machine, context)
-            expanded_lines = formatter.expand_script(script_action)
+            expanded_lines = formatter.expand_macro(macro_action)
             gcode.extend(expanded_lines)
             return
 
-        # If we get here, no user scripts were found, so use defaults.
-        if trigger == ScriptTrigger.JOB_START:
+        # If we get here, no user macros were found, so use defaults.
+        if trigger == MacroTrigger.JOB_START:
             gcode.extend(self.dialect.default_preamble)
-        elif trigger == ScriptTrigger.JOB_END:
+        elif trigger == MacroTrigger.JOB_END:
             gcode.extend(self.dialect.default_postscript)
 
     def _handle_command(
@@ -199,7 +199,7 @@ class GcodeEncoder(OpsEncoder):
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
-                self._emit_scripts(context, gcode, ScriptTrigger.JOB_START)
+                self._emit_macros(context, gcode, MacroTrigger.JOB_START)
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
@@ -208,8 +208,8 @@ class GcodeEncoder(OpsEncoder):
                 if self.air_assist:
                     self._set_air_assist(context, gcode, False)
 
-                # Then, run the user script or the full default postscript.
-                self._emit_scripts(context, gcode, ScriptTrigger.JOB_END)
+                # Then, run the user macro or the full default postscript.
+                self._emit_macros(context, gcode, MacroTrigger.JOB_END)
             case LayerStartCommand(layer_uid=uid):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
@@ -219,9 +219,9 @@ class GcodeEncoder(OpsEncoder):
                         f"Expected Layer for UID {uid}, but "
                         f" found {type(descendant)}"
                     )
-                self._emit_scripts(context, gcode, ScriptTrigger.LAYER_START)
+                self._emit_macros(context, gcode, MacroTrigger.LAYER_START)
             case LayerEndCommand():
-                self._emit_scripts(context, gcode, ScriptTrigger.LAYER_END)
+                self._emit_macros(context, gcode, MacroTrigger.LAYER_END)
                 context.layer = None
             case WorkpieceStartCommand(workpiece_uid=uid):
                 descendant = context.doc.find_descendant_by_uid(uid)
@@ -232,11 +232,9 @@ class GcodeEncoder(OpsEncoder):
                         f"Expected WorkPiece for UID {uid}, "
                         f" but found {type(descendant)}"
                     )
-                self._emit_scripts(
-                    context, gcode, ScriptTrigger.WORKPIECE_START
-                )
+                self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_START)
             case WorkpieceEndCommand():
-                self._emit_scripts(context, gcode, ScriptTrigger.WORKPIECE_END)
+                self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_END)
                 context.workpiece = None
 
     def _emit_modal_speed(self, gcode: List[str], speed: float) -> None:

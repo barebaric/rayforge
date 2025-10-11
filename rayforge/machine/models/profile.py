@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple, Optional
 from .machine import Machine, Laser
-from .script import Script, ScriptTrigger
+from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
 
 
@@ -27,7 +27,7 @@ class MachineProfile:
     driver_args: Optional[Dict[str, Any]] = None
     home_on_start: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
-    hookscripts: Optional[List[Dict[str, Any]]] = None
+    hookmacros: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self) -> Machine:
         """
@@ -66,12 +66,12 @@ class MachineProfile:
             m.max_cut_speed = self.max_cut_speed
         if self.home_on_start is not None:
             m.home_on_start = self.home_on_start
-        if self.hookscripts is not None:
-            for s_data in self.hookscripts:
+        if self.hookmacros is not None:
+            for s_data in self.hookmacros:
                 try:
                     # Profiles define hooks with an internal trigger field
-                    trigger = ScriptTrigger[s_data["trigger"]]
-                    m.hookscripts[trigger] = Script.from_dict(s_data)
+                    trigger = MacroTrigger[s_data["trigger"]]
+                    m.hookmacros[trigger] = Macro.from_dict(s_data)
                 except (KeyError, ValueError) as e:
                     logger.warning(f"Skipping invalid hook in profile: {e}")
 

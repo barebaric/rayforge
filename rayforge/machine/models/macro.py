@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 import uuid
 
 
-class ScriptTrigger(Enum):
+class MacroTrigger(Enum):
     """Defines events in the job lifecycle where G-code can be injected."""
 
     JOB_START = "At the very beginning of the job"
@@ -17,7 +17,7 @@ class ScriptTrigger(Enum):
 
 
 @dataclass
-class Script:
+class Macro:
     """A generic, named block of G-code with an enabled state."""
 
     name: str = ""
@@ -26,7 +26,7 @@ class Script:
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes the Script to a dictionary."""
+        """Serializes the macro to a dictionary."""
         return {
             "uid": self.uid,
             "name": self.name,
@@ -35,11 +35,11 @@ class Script:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Script":
-        """Creates a Script instance from a dictionary."""
+    def from_dict(cls, data: Dict[str, Any]) -> "Macro":
+        """Creates a macro instance from a dictionary."""
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
-            name=data.get("name", _("Unnamed Script")),
+            name=data.get("name", _("Unnamed Macro")),
             code=data.get("code", []),
             enabled=data.get("enabled", True),
         )

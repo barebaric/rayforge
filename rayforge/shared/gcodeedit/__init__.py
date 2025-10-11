@@ -1,5 +1,5 @@
 from .editor import GcodeEditor
 from .highlighter import GcodeHighlighter
-from .previewer import GcodePreviewer
+from .viewer import GcodeViewer
 
-__all__ = ["GcodeEditor", "GcodeHighlighter", "GcodePreviewer"]
+__all__ = ["GcodeEditor", "GcodeHighlighter", "GcodeViewer"]
