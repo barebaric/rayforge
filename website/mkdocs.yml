@@ -1,4 +1,6 @@
 site_name: Rayforge
+docs_dir: .
+site_dir: ../build/website
 site_url: https://rayforge.org/
 site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
 site_author: Rayforge Contributors
@@ -106,7 +108,6 @@ theme:
       scheme: default
       primary: blue
       accent: blue
-    # NOTE: Theme supports a dark mode but disabled for simpler interface
   features:
     - announce.dismiss
     - content.action.edit
