@@ -1,0 +1,228 @@
+site_name: Rayforge
+docs_dir: .
+site_dir: ../build/website
+site_url: https://rayforge.org/
+use_directory_urls: false
+site_description: Modern G-code sender and control software for GRBL-based laser cutters and engravers
+site_author: Rayforge Contributors
+repo_url: https://github.com/barebaric/rayforge
+repo_name: barebaric/rayforge
+copyright: Copyright &copy; 2024-2025 Rayforge
+edit_uri: edit/main/website/content
+docs_dir: content
+site_dir: ../build/website
+
+# This maps the structure of the website to source markdown files.
+nav:
+  - Home: index.md
+  - Blog:
+      - blog/index.md
+  - Documentation:
+      - Concepts:
+          - docs/concepts/index.md
+          - Coordinates and Origin: docs/concepts/coordinates-and-origin.md
+          - G-code Basics: docs/concepts/gcode-basics.md
+          - Laser Safety: docs/concepts/laser-safety.md
+          - Power vs Speed: docs/concepts/power-vs-speed.md
+          - Understanding Operations: docs/concepts/understanding-operations.md
+      - Getting Started:
+          - docs/getting-started/index.md
+          - Installation: docs/getting-started/installation.md
+          - First-Time Setup: docs/getting-started/first-time-setup.md
+          - Quick Start: docs/getting-started/quick-start.md
+          - Framing Your Job: docs/getting-started/framing-your-job.md
+          - Simulating Your Job: docs/getting-started/simulating-your-job.md
+      - UI:
+          - docs/ui/index.md
+          - Main Window: docs/ui/main-window.md
+          - Canvas Tools: docs/ui/canvas-tools.md
+          - 3D Preview: docs/ui/3d-preview.md
+          - Settings: docs/ui/settings.md
+      - Features:
+          - docs/features/index.md
+          - Operations:
+              - docs/features/operations/index.md
+              - Contour: docs/features/operations/contour.md
+              - Raster: docs/features/operations/raster.md
+              - Depth: docs/features/operations/depth.md
+              - Shrink Wrap: docs/features/operations/shrink-wrap.md
+              - Material Test Grid: docs/features/operations/material-test-grid.md
+          - Multi-Layer: docs/features/multi-layer.md
+          - Camera: docs/features/camera.md
+          - Simulation: docs/features/simulation-mode.md
+          - Holding Tabs: docs/features/holding-tabs.md
+          - Macros & Hooks: docs/features/macros-hooks.md
+          - Overscan: docs/features/overscan.md
+          - Kerf: docs/features/kerf.md
+      - Machine Setup:
+          - docs/machine/index.md
+          - Profiles: docs/machine/profiles.md
+          - Device Config: docs/machine/device-config.md
+          - GRBL Settings: docs/machine/grbl-settings.md
+          - Multi-Laser: docs/machine/multi-laser.md
+          - Calibration: docs/machine/calibrating-your-workspace.md
+      - Files:
+          - docs/files/index.md
+          - Importing: docs/files/importing.md
+          - Formats: docs/files/formats.md
+          - Exporting: docs/files/exporting.md
+      - Troubleshooting:
+          - docs/troubleshooting/index.md
+          - Connection: docs/troubleshooting/connection.md
+          - Common Issues: docs/troubleshooting/common.md
+          - Performance: docs/troubleshooting/performance.md
+          - Snap Permissions: docs/troubleshooting/snap-permissions.md
+      - Reference:
+          - docs/reference/index.md
+          - Shortcuts: docs/reference/shortcuts.md
+          - G-code Dialects: docs/reference/gcode-dialects.md
+          - Firmware: docs/reference/firmware.md
+  - Contributing:
+      - contributing/index.md
+
+not_in_nav: docs/includes/abbreviations.md
+
+# Theme tweaks
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  logo: assets/rf-logo-01.svg
+  favicon: assets/rf-01.png
+  font:
+    text: Ubuntu Sans
+    code: Ubuntu Sans Mono
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - navigation.versioning
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+# Extra options are used for the overriden theme templates in overrides/
+extra:
+  version:
+    default: latest
+  latest_docs: "docs"
+
+  generator: false # Disable "Generated with MkDocs" footer
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/barebaric/rayforge
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/rayforge/
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+
+  # Coverpage configuration
+  home_cover_image: assets/rf-logo-white-01.svg
+  home_tagline: Rayforge
+  home_description: |
+    Modern G-code sender and control software for GRBL-based laser cutters and engravers
+  home_gradient_hsla: hsla(231deg, 48%, 48%, 1)
+  home_button1_name: Features
+  home_button1_url: ./#key-features
+  home_button1_theme: md-button
+
+  home_button2_name: Get Started
+  home_button2_url: docs/getting-started/
+  home_button2_theme: md-button
+
+extra_css:
+  - stylesheets/extra.css
+
+# Plugins change the build-step behavior of MkDocs.
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - blog
+  - macros
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
+      skip_classes:
+        - custom-skip-class-name
+      auto_caption: false
+      caption_position: bottom
+
+# Markdown Extensions modify how Markdown is interpreted and rendered.
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.blocks.caption
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: barebaric
+      repo: rayforge
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde

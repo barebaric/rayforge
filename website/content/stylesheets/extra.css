@@ -1,0 +1,129 @@
+/* Custom styles for Rayforge documentation */
+
+/* Import Ubuntu Sans font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&family=Ubuntu+Sans+Mono:ital,wght@0,400..700;1,400..700&display=swap');
+
+/* Transparent frosted glass navbar effect */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .md-header {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    color: black;  
+  }
+
+  [data-md-color-scheme="slate"] .md-header {
+    background-color: rgba(24, 25, 28, 0.8) !important;
+  }
+}
+
+/* Hide GitHub source link in header */
+.md-header__source {
+  display: none;
+}
+
+/* Cards styling */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin: 1.5em 0;
+}
+
+.grid.cards > * {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.grid.cards > *:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Feature list styling */
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.feature-list li {
+  padding: 0.5em 0 0.5em 2em;
+  position: relative;
+}
+
+.feature-list li:before {
+  content: "✓";
+  color: var(--md-accent-fg-color);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+/* Admonition customization for tips */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-left-color: #00e676;
+}
+
+/* Table styling */
+.md-typeset table:not([class]) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Version badge */
+.version-badge {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background-color: var(--md-accent-fg-color);
+  border-radius: 4px;
+  margin-left: 0.5em;
+}
+
+/* Keyboard shortcut styling */
+kbd {
+  background-color: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 4px;
+  box-shadow: 0 2px 0 var(--md-default-fg-color--lightest);
+  font-family: var(--md-code-font-family);
+  font-size: 0.85em;
+  padding: 0.1em 0.4em;
+  vertical-align: middle;
+}
+
+/* Increase size of tab text */
+.md-tabs__item a.md-tabs__link {
+    font-size: 0.8rem;
+} 
+
+/* Responsive adjustments */
+@media screen and (min-width:35em) {
+      nav.md-tabs {
+        display: block;
+    }
+}
+
+@media screen and (min-width: 35em) {
+    .md-header__button.md-logo {
+        display: block;
+    }
+}
+
+@media screen and (min-width: 35em) {
+    .md-header__button.md-icon {
+        display: none;
+    }
+}
+
+@media screen and (max-width:35em) {
+    .tx-hero h1 {
+        font-size: 1.4rem
+    }
+}
