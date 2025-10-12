@@ -160,6 +160,7 @@ class GrblSerialDriver(Driver):
             try:
                 await transport.connect()
                 logger.info("Connection established successfully.")
+                self._on_connection_status_changed(TransportStatus.CONNECTED)
                 logger.debug(f"is_connected: {transport.is_connected}")
 
                 logger.debug("Sending initial status query")
@@ -477,13 +478,15 @@ class GrblSerialDriver(Driver):
 
         # Check for command completion signals
         if line == "ok":
+            self._on_command_status_changed(TransportStatus.IDLE)
             if request:
                 logger.debug(
                     f"Command '{request.command}' completed with 'ok'"
                 )
                 request.finished.set()
         elif line.startswith("error:"):
-            self._on_connection_status_changed(TransportStatus.ERROR, line)
+            # This is a COMMAND error, not a CONNECTION error.
+            self._on_command_status_changed(TransportStatus.ERROR, line)
             if request:
                 request.finished.set()
         else:
