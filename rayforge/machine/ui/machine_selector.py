@@ -104,8 +104,15 @@ class MachineSelector(Gtk.DropDown):
                 if config.machine and machine.id == config.machine.id:
                     selected_index = i
 
-            if self.get_selected() != selected_index:
+            # Only set selected if it's a valid index (>= 0)
+            if selected_index >= 0 and self.get_selected() != selected_index:
                 self.set_selected(selected_index)
+            elif selected_index < 0 and self.get_selected() >= 0:
+                # If no machine is selected (selected_index is -1) but there's
+                # currently a selection, clear it by setting to 0 if possible
+                # or leave it as is if the model is empty
+                if len(self._model) > 0:
+                    self.set_selected(0)
 
         finally:
             self.handler_unblock(self._selection_changed_handler_id)

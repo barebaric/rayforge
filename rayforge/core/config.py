@@ -22,14 +22,15 @@ class Config:
         }
         self.changed = Signal()
 
-    def set_machine(self, machine: Machine):
+    def set_machine(self, machine: Optional[Machine]):
         if self.machine == machine:
             return
         if self.machine:
             self.machine.changed.disconnect(self.changed.send)
         self.machine = machine
         self.changed.send(self)
-        self.machine.changed.connect(self.changed.send)
+        if self.machine:
+            self.machine.changed.connect(self.changed.send)
 
     def set_theme(self, theme: str):
         """Sets the application theme preference."""
@@ -93,9 +94,29 @@ class ConfigManager:
         self.load()
         # Connect the auto-save handler *after* loading is complete.
         self.config.changed.connect(self._on_config_changed)
+        # Listen to machine removal to update config if needed
+        self.machine_mgr.machine_removed.connect(self._on_machine_removed)
 
     def _on_config_changed(self, sender, **kwargs):
         self.save()
+
+    def _on_machine_removed(self, sender, machine_id):
+        """Handle machine removal by clearing config reference if needed."""
+        if self.config.machine and self.config.machine.id == machine_id:
+            msg = f"Current machine {machine_id} removed, clearing config"
+            logger.info(msg)
+            # Clear the machine reference
+            self.config.set_machine(None)
+            # If there are other machines available, select the first one
+            if self.machine_mgr.machines:
+                # Sort by ID for deterministic selection
+                first_machine = list(
+                    sorted(
+                        self.machine_mgr.machines.values(), key=lambda m: m.id
+                    )
+                )[0]
+                self.config.set_machine(first_machine)
+                logger.info(f"Selected new machine {first_machine.id}")
 
     def save(self):
         if not self.config:

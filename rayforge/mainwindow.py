@@ -874,6 +874,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
 
+        # Update the surface to use the new machine
+        self.surface.set_machine(config.machine)
         self.surface.update_from_doc()
         self._update_actions_and_ui()
 
