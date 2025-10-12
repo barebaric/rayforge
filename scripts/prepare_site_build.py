@@ -223,6 +223,7 @@ def main():
 
     deploy_extra["version"] = args.current_version
     deploy_extra["latest_docs"] = "docs/latest"
+    deploy_extra["env"] = "production"
 
     deploy_config = {
         "INHERIT": args.base_config_name,
