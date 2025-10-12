@@ -26,7 +26,7 @@ def on_pre_page_macros(env):
 
     if is_prod and path_parts[0] == "docs":
         try:
-            path = "docs" + "/".join(path_parts[2:])
+            path = "docs/" + "/".join(path_parts[2:])
         except ValueError:
             return
     else:
