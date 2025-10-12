@@ -8,7 +8,7 @@ from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
-from .driver import Driver, DriverSetupError, DeviceStatus
+from .driver import Driver, DriverSetupError, DeviceStatus, DriverPrecheckError
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -47,6 +47,15 @@ class GrblSerialDriver(Driver):
         self._job_running = False
 
     @classmethod
+    def precheck(cls, **kwargs: Any) -> None:
+        """Checks for systemic serial port issues before setup."""
+        try:
+            SerialTransport.check_serial_permissions_globally()
+        except SerialPortPermissionError as e:
+            # Re-raise as a precheck error for the UI.
+            raise DriverPrecheckError(str(e)) from e
+
+    @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
@@ -60,11 +69,6 @@ class GrblSerialDriver(Driver):
         )
 
     def setup(self, **kwargs: Any):
-        try:
-            SerialTransport.check_serial_permissions_globally()
-        except SerialPortPermissionError as e:
-            raise DriverSetupError(str(e)) from e
-
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
 

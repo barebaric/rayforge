@@ -16,6 +16,7 @@ from ..driver.driver import (
     DeviceState,
     DeviceStatus,
     DriverSetupError,
+    DriverPrecheckError,
 )
 from ..driver.dummy import NoDeviceDriver
 from ..driver import get_driver_cls
@@ -41,9 +42,9 @@ class Machine:
 
         self.driver_name: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
+        self.precheck_error: Optional[str] = None
 
         self.driver: Driver = NoDeviceDriver()
-        self._connect_driver_signals()
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
@@ -72,6 +73,7 @@ class Machine:
         self.log_received = Signal()
         self.command_status_changed = Signal()
 
+        self._connect_driver_signals()
         self.add_head(Laser())
 
     async def shutdown(self):
@@ -122,21 +124,25 @@ class Machine:
 
         old_driver = self.driver
         self._disconnect_driver_signals()
+        self.precheck_error = None
 
-        driver_cls = None
         if self.driver_name:
             driver_cls = get_driver_cls(self.driver_name)
-
-        if driver_cls:
-            new_driver = driver_cls()
         else:
-            if self.driver_name:
-                logger.warning(
-                    f"Driver '{self.driver_name}' not found for machine "
-                    f"'{self.name}'. Falling back to NoDeviceDriver."
-                )
-            new_driver = NoDeviceDriver()
+            driver_cls = NoDeviceDriver
 
+        # Run precheck before instantiation. This error is a non-fatal warning.
+        try:
+            driver_cls.precheck(**self.driver_args)
+        except DriverPrecheckError as e:
+            logger.warning(
+                f"Precheck failed for driver {self.driver_name}: {e}"
+            )
+            self.precheck_error = str(e)
+
+        new_driver = driver_cls()
+
+        # Run setup. A setup error is considered fatal and prevents connection.
         try:
             new_driver.setup(**self.driver_args)
         except DriverSetupError as e:
@@ -146,11 +152,17 @@ class Machine:
         self.driver = new_driver
 
         self._connect_driver_signals()
+
+        # A setup error prevents connection, but a precheck error does not.
         if not self.driver.setup_error:
             # Add the connect task with a key unique to this machine
             task_mgr.add_coroutine(
                 lambda ctx: self.driver.connect(),
                 key=(self.id, "driver-connect"),
+            )
+        else:
+            logger.error(
+                "Driver setup failed, connection will not be attempted."
             )
 
         # Notify the UI of the change *after* the new driver is in place.

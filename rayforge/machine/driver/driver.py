@@ -17,6 +17,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class DriverPrecheckError(Exception):
+    """Custom exception for non-fatal pre-flight check failures."""
+
+    pass
+
+
 class DriverSetupError(Exception):
     """Custom exception for driver setup failures."""
 
@@ -114,6 +120,16 @@ class Driver(ABC):
         self.did_setup = False
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None
+
+    @classmethod
+    @abstractmethod
+    def precheck(cls, **kwargs: Any) -> None:
+        """
+        A non-blocking, static check of the configuration that can be run
+        before driver instantiation. It should raise DriverPrecheckError
+        on failure. These failures are considered non-fatal warnings.
+        """
+        pass
 
     def setup(self, **kwargs: Any):
         """

@@ -11,6 +11,7 @@ from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
     Driver,
     DriverSetupError,
+    DriverPrecheckError,
     DeviceConnectionError,
 )
 from .grbl_util import (
@@ -53,6 +54,14 @@ class GrblNetworkDriver(Driver):
         self._cmd_lock = asyncio.Lock()
 
     @classmethod
+    def precheck(cls, **kwargs: Any) -> None:
+        host = cast(str, kwargs.get("host", ""))
+        if not is_valid_hostname_or_ip(host):
+            raise DriverPrecheckError(
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
+            )
+
+    @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
@@ -66,10 +75,8 @@ class GrblNetworkDriver(Driver):
 
     def setup(self, **kwargs: Any):
         host = cast(str, kwargs.get("host", ""))
-        if not is_valid_hostname_or_ip(host):
-            raise DriverSetupError(
-                _("Invalid hostname or IP address: '{host}'").format(host=host)
-            )
+        if not host:
+            raise DriverSetupError(_("Hostname must be configured."))
 
         super().setup()
         self.host = host

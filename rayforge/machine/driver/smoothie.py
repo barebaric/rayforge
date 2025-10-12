@@ -5,7 +5,8 @@ from ...shared.varset import VarSet, HostnameVar, IntVar
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
-from .driver import Driver, DeviceStatus, DriverSetupError
+from ..transport.validators import is_valid_hostname_or_ip
+from .driver import Driver, DeviceStatus, DriverSetupError, DriverPrecheckError
 from .grbl_util import parse_state
 
 if TYPE_CHECKING:
@@ -28,6 +29,15 @@ class SmoothieDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
         self._ok_event = asyncio.Event()
+
+    @classmethod
+    def precheck(cls, **kwargs: Any) -> None:
+        """Checks if the hostname is a valid format."""
+        host = cast(str, kwargs.get("host", ""))
+        if not is_valid_hostname_or_ip(host):
+            raise DriverPrecheckError(
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
+            )
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
@@ -57,9 +67,7 @@ class SmoothieDriver(Driver):
         port = kwargs.get("port", 23)
 
         if not host:
-            raise DriverSetupError(
-                _("Invalid hostname or IP address: '{host}'").format(host=host)
-            )
+            raise DriverSetupError(_("Hostname must be configured."))
         super().setup()
 
         # Initialize transports

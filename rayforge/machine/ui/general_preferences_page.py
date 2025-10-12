@@ -253,13 +253,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.machine.changed.disconnect(self._on_machine_changed)
 
     def _update_error_state(self):
-        """Shows or hides the error banner based on driver state."""
-        driver_instance = self.machine.driver
-        if driver_instance and driver_instance.setup_error:
-            error_msg = driver_instance.setup_error
+        """Shows or hides the error banner based on all possible errors."""
+        errors = []
+        if self.machine.precheck_error:
+            errors.append(self.machine.precheck_error)
+        if self.machine.driver and self.machine.driver.setup_error:
+            errors.append(self.machine.driver.setup_error)
+
+        if errors:
+            full_error_msg = " \n".join(errors)
             self.error_banner.set_title(
                 _("<b>Configuration required:</b> {error}").format(
-                    error=error_msg
+                    error=full_error_msg
                 )
             )
             self.error_banner.set_revealed(True)

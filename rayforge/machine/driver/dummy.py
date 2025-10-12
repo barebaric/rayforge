@@ -18,6 +18,10 @@ class NoDeviceDriver(Driver):
     supports_settings = False
 
     @classmethod
+    def precheck(cls, **kwargs: Any) -> None:
+        pass
+
+    @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(title=_("No settings"))
 
