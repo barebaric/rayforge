@@ -84,15 +84,21 @@ echo "Committing and pushing changes..."
          "repository. Aborting."
     exit 1
   fi
+  if [ ! -d ".github" ]; then
+    echo "CRITICAL ERROR: The deployment directory would delete" \
+         ".github. Aborting."
+    exit 1
+  fi
 
-  git add --force .
+  # Using --all to stage deletions as well
+  git add --all .
   if [ -z "$(git status --porcelain)" ]; then
     echo "No changes to deploy. Exiting."
     exit 0
   fi
 
   git commit -m "Deploy website content for ${DEPLOY_VERSION}"
-  git push origin "${DEPLOY_BRANCH}" --force
+  git push origin "${DEPLOY_BRANCH}"
 )
 
 echo "✅ Deployment successful!"
