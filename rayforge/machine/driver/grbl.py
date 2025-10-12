@@ -42,6 +42,7 @@ class GrblNetworkDriver(Driver):
     label = _("GRBL (Network)")
     subtitle = _("Connect to a GRBL-compatible device over the network")
     supports_settings = True
+    _features = set()  # GRBL doesn't support G0 with speed
 
     def __init__(self):
         super().__init__()

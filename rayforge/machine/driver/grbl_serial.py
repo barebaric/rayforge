@@ -32,6 +32,7 @@ class GrblSerialDriver(Driver):
     label = _("GRBL (Serial)")
     subtitle = _("GRBL-compatible serial connection")
     supports_settings = True
+    _features = set()  # GRBL doesn't support G0 with speed
 
     def __init__(self):
         super().__init__()

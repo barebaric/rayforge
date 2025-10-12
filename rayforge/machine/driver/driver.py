@@ -7,6 +7,7 @@ from enum import Enum, auto
 from ...core.ops import Ops
 from ...debug import debug_log_manager, LogType
 from ..transport import TransportStatus
+from ..models.features import DriverFeature
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -110,6 +111,9 @@ class Driver(ABC):
     label: str
     subtitle: str
     supports_settings: bool = False
+
+    # Feature flags for this driver
+    _features: set[DriverFeature] = set()
 
     def __init__(self):
         self.log_received = Signal()
@@ -286,3 +290,15 @@ class Driver(ABC):
         self.connection_status_changed.send(
             self, status=status, message=message
         )
+
+    def has_feature(self, feature: DriverFeature) -> bool:
+        """
+        Check if this driver supports a specific feature.
+
+        Args:
+            feature: The DriverFeature to check
+
+        Returns:
+            True if the driver supports the feature, False otherwise
+        """
+        return feature in self._features

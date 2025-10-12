@@ -321,6 +321,18 @@ class Machine:
         self.y_axis_down = y_axis_down
         self.changed.send(self)
 
+    def has_feature(self, feature) -> bool:
+        """
+        Check if the machine's driver supports a specific feature.
+
+        Args:
+            feature: The DriverFeature to check
+
+        Returns:
+            True if the driver supports the feature, False otherwise
+        """
+        return self.driver.has_feature(feature)
+
     def add_head(self, head: Laser):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)

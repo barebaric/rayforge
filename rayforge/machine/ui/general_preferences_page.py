@@ -4,6 +4,7 @@ from ...shared.util.adwfix import get_spinrow_int
 from ..models.machine import Machine
 from ...shared.varset.varsetwidget import VarSetWidget
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ..models.features import DriverFeature
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -146,6 +147,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.machine.max_travel_speed
         )
         self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
+        self.travel_speed_row = travel_speed_row
         machine_group.add(travel_speed_row)
 
         # Max Cut Speed
@@ -234,6 +236,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Initialization is complete.
         self._is_initializing = False
 
+        # Update travel speed row based on driver features
+        self._update_travel_speed_state()
+
     def _on_machine_changed(self, sender, **kwargs):
         """
         Handler for the machine's changed signal. This is triggered when
@@ -247,6 +252,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         var_set = driver_cls.get_setup_vars()
         var_set.set_values(self.machine.driver_args)
         self.driver_group.populate(var_set)
+
+        # Update travel speed row based on driver features
+        self._update_travel_speed_state()
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
@@ -359,3 +367,23 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         width = self.machine.dimensions[0]
         height = get_spinrow_int(spinrow)
         self.machine.set_dimensions(width, height)
+
+    def _update_travel_speed_state(self):
+        """Update the travel speed row based on driver features."""
+        if self._is_initializing:
+            return
+
+        has_g0_with_speed = self.machine.has_feature(
+            DriverFeature.G0_WITH_SPEED
+        )
+
+        if has_g0_with_speed:
+            self.travel_speed_row.set_sensitive(True)
+            self.travel_speed_row.set_subtitle(
+                _("Maximum rapid movement speed")
+            )
+        else:
+            self.travel_speed_row.set_sensitive(False)
+            self.travel_speed_row.set_subtitle(
+                _("Not supported by the driver")
+            )

@@ -2,6 +2,7 @@ from .driver import Driver
 from ...core.ops import Ops
 from ...shared.varset import VarSet
 from typing import Any, TYPE_CHECKING, List
+from ..models.features import DriverFeature
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -16,6 +17,7 @@ class NoDeviceDriver(Driver):
     label = _("No driver")
     subtitle = _("No connection")
     supports_settings = False
+    _features = {DriverFeature.G0_WITH_SPEED}
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:

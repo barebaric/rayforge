@@ -8,6 +8,7 @@ from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import Driver, DeviceStatus, DriverSetupError, DriverPrecheckError
 from .grbl_util import parse_state
+from ..models.features import DriverFeature
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -22,6 +23,7 @@ class SmoothieDriver(Driver):
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")
     supports_settings = False
+    _features = {DriverFeature.G0_WITH_SPEED}
 
     def __init__(self):
         super().__init__()
