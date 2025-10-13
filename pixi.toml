@@ -7,7 +7,7 @@ platforms = ["linux-64", "osx-64", "win-64"]
 [environments]
 default = { features = ["test"], solve-group = "default" }
 windows-build = { features = ["windows-build", "test"], solve-group = "default" }
-docs = { features = ["docs"], solve-group = "default" }
+website = { features = ["website"], solve-group = "default" }
 
 [dependencies]
 adwaita-icon-theme = "*"
@@ -80,11 +80,11 @@ pytest-cov = "*"
 pygobject-stubs = "*"
 flake8 = "*"
 
-[feature.docs.dependencies]
+[feature.website.dependencies]
 go = "*"
 nodejs = "*"
 
-[feature.docs.pypi-dependencies]
+[feature.website.pypi-dependencies]
 mkdocs-material = ">=9.5"
 mkdocs-glightbox = "*"
 mkdocs-macros-plugin = "*"
@@ -160,7 +160,7 @@ cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
 # Tasks for developing and generating the website
-[feature.docs.tasks]
+[feature.website.tasks]
 site-serve = "mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
 site-build = "mkdocs build -f website/mkdocs.yml --strict --clean"
 site-deploy = "bash scripts/deploy_website.sh"
