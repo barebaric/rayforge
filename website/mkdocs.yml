@@ -36,6 +36,7 @@ nav:
           - Main Window: docs/ui/main-window.md
           - Canvas Tools: docs/ui/canvas-tools.md
           - 3D Preview: docs/ui/3d-preview.md
+          - Jog Controls: docs/ui/jog-dialog.md
           - Settings: docs/ui/settings.md
       - Features:
           - docs/features/index.md
