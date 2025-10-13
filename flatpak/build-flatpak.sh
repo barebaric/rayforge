@@ -8,6 +8,8 @@ if [ "$(pwd)" != "$(git rev-parse --show-toplevel)" ]; then
     exit 1
 fi
 
+# python3 -m flatpak_pip_generator -r requirements.txt --yaml --ignore-pkg pyclipper,PyGObject,pycairo --runtime='org.gnome.Sdk/49' --ignore-errors --output flatpak/python3-requirements
+
 flatpak run org.flatpak.Builder \
     --force-clean --sandbox --user --install --ccache \
     --install-deps-from=flathub \
