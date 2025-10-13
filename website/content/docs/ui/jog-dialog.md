@@ -11,7 +11,7 @@ You can access the Jog Dialog in several ways:
 - **Keyboard Shortcut**: `Ctrl+J`
 
 !!! note "Connection Required"
-The jog controls are only available when connected to a machine that supports jogging operations.
+    The jog controls are only available when connected to a machine that supports jogging operations.
 
 ## Dialog Layout
 
@@ -33,7 +33,7 @@ The homing section provides buttons to home your machine's axes:
 | Home All | Homes all axes | Homes all axes simultaneously     |
 
 !!! tip "Homing Sequence"
-It's recommended to home all axes before starting any job to ensure accurate positioning.
+    It's recommended to home all axes before starting any job to ensure accurate positioning.
 
 ## Manual Jog Controls
 
@@ -63,7 +63,7 @@ The jog controls are arranged in a grid pattern:
 | Z-               | Z axis down                     | Page Down         |
 
 !!! note "Focus Required"
-Keyboard shortcuts only work when the jog dialog has focus. Click anywhere in the dialog to ensure it has focus.
+    Keyboard shortcuts only work when the jog dialog has focus. Click anywhere in the dialog to ensure it has focus.
 
 ### Visual Feedback
 
@@ -83,7 +83,10 @@ Configure the behavior of jog operations:
 - **Default**: 1,000 mm/min
 - **Purpose**: Controls how fast the laser head moves during jog operations
 
-!!! tip "Speed Selection" - Use lower speeds (100-500 mm/min) for precise positioning - Use higher speeds (1,000-3,000 mm/min) for larger movements - Very high speeds may cause missed steps on some machines
+!!! tip "Speed Selection"
+    - Use lower speeds (100-500 mm/min) for precise positioning
+    - Use higher speeds (1,000-3,000 mm/min) for larger movements
+    - Very high speeds may cause missed steps on some machines
 
 ### Jog Distance
 
@@ -91,7 +94,10 @@ Configure the behavior of jog operations:
 - **Default**: 10.0 mm
 - **Purpose**: Controls how far the laser head moves with each button press
 
-!!! tip "Distance Selection" - Use small distances (0.1-1.0 mm) for fine-tuning - Use medium distances (5-20 mm) for general positioning - Use large distances (50-100 mm) for quick repositioning
+!!! tip "Distance Selection"
+    - Use small distances (0.1-1.0 mm) for fine-tuning
+    - Use medium distances (5-20 mm) for general positioning
+    - Use large distances (50-100 mm) for quick repositioning
 
 ## Machine Compatibility
 

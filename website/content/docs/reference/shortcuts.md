@@ -125,7 +125,7 @@ Complete reference of keyboard shortcuts in RayForge.
 | `F1`     | About            | Show about dialog              |
 
 !!! note "Machine Operations"
-Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
+    Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
 
 ---
 
@@ -213,7 +213,7 @@ When editing G-code or text fields:
 ## Customizing Shortcuts
 
 !!! note "Custom Shortcuts"
-Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be added in future versions.
+    Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be added in future versions.
 
 **Current limitations:**
 

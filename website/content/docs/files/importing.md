@@ -21,7 +21,7 @@ RayForge supports importing various file formats, both vector and raster. This p
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
 !!! note "Raster Import"
-All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
+   All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
 
 ---
 
