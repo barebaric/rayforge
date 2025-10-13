@@ -1,10 +1,10 @@
 # Multi-Layer Workflow
 
-RayForge's multi-layer system allows you to organize complex jobs into separate processing stages, each with its own operations and settings. This is essential for combining different processes like engraving and cutting, or working with multiple materials.
+Rayforge's multi-layer system allows you to organize complex jobs into separate processing stages, each with its own operations and settings. This is essential for combining different processes like engraving and cutting, or working with multiple materials.
 
 ## What Are Layers?
 
-A **layer** in RayForge is:
+A **layer** in Rayforge is:
 
 - **A container** for workpieces (imported shapes, images, text)
 - **A workflow** defining how those workpieces are processed
@@ -64,7 +64,7 @@ Organize by color:
 
 **Workflow:**
 - Import SVG with color-coded paths
-- RayForge can auto-assign paths to layers by color
+- Rayforge can auto-assign paths to layers by color
 - Each layer gets appropriate operation settings
 
 ---
@@ -132,7 +132,7 @@ Layers Panel:
 When importing SVG files:
 
 1. **Enable "Assign by Color"** in import settings
-2. **RayForge creates layers** based on stroke/fill colors
+2. **Rayforge creates layers** based on stroke/fill colors
 3. **Each color** gets its own layer automatically
 
 **Example:** SVG with red, black, and blue paths:

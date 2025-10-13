@@ -1,10 +1,10 @@
 # G-code Dialect Support
 
-RayForge supports multiple G-code dialects to work with different controller firmware.
+Rayforge supports multiple G-code dialects to work with different controller firmware.
 
 ## Supported Dialects
 
-RayForge currently supports these G-code dialects:
+Rayforge currently supports these G-code dialects:
 
 | Dialect | Firmware | Common Use | Status |
 |---------|----------|------------|--------|

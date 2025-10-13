@@ -1,6 +1,6 @@
 # Camera Integration
 
-RayForge supports USB camera integration for precise material alignment and positioning. The camera overlay feature allows you to see exactly where your laser will cut or engrave on the material, eliminating guesswork and reducing material waste.
+Rayforge supports USB camera integration for precise material alignment and positioning. The camera overlay feature allows you to see exactly where your laser will cut or engrave on the material, eliminating guesswork and reducing material waste.
 
 ## Overview
 
@@ -26,7 +26,7 @@ The camera integration provides:
 
 **Compatible cameras:**
 - USB webcams (most common)
-- Laptop built-in cameras (if running RayForge on laptop near machine)
+- Laptop built-in cameras (if running Rayforge on laptop near machine)
 - Any camera supported by Video4Linux2 (V4L2) on Linux or DirectShow on Windows
 
 **Recommended setup:**
@@ -210,7 +210,7 @@ For precise work, you can calibrate the camera to correct barrel/pincushion dist
 1. **Print a checkerboard pattern** (e.g., 86 grid with 25mm squares)
 2. **Capture 10+ images** of the pattern from different angles/positions
 3. **Use OpenCV calibration tools** to calculate camera matrix and distortion coefficients
-4. **Apply calibration** in RayForge (advanced settings)
+4. **Apply calibration** in Rayforge (advanced settings)
 
 !!! note "When to Calibrate"
     Lens distortion correction is only necessary for:
@@ -222,7 +222,7 @@ For precise work, you can calibrate the camera to correct barrel/pincushion dist
 
 ### Multiple Cameras
 
-RayForge supports multiple cameras for different views or machines:
+Rayforge supports multiple cameras for different views or machines:
 
 - Add multiple cameras in preferences
 - Each camera can have independent alignment
@@ -330,7 +330,7 @@ sudo lsof /dev/video0
 - Lower camera resolution in device settings (if accessible)
 - Close other applications using CPU/GPU
 - Update graphics drivers
-- On Linux, ensure using V4L2 backend (automatic in RayForge)
+- On Linux, ensure using V4L2 backend (automatic in Rayforge)
 - Disable camera when not needed to save resources
 
 ---

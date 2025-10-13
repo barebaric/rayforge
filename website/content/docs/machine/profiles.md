@@ -38,7 +38,7 @@ alt: "Machine profile selection dialog"
 
 ## Using Built-in Profiles
 
-RayForge includes profiles for common laser machines. These provide tested default settings to get you running quickly.
+Rayforge includes profiles for common laser machines. These provide tested default settings to get you running quickly.
 
 ### Available Profiles
 
@@ -64,11 +64,11 @@ RayForge includes profiles for common laser machines. These provide tested defau
 
 ### Selecting a Profile
 
-When you first launch RayForge:
+When you first launch Rayforge:
 
 1. Profile selection dialog appears automatically
 2. Choose your machine from the list
-3. RayForge applies all settings from the profile
+3. Rayforge applies all settings from the profile
 4. Connection to device begins automatically
 
 **To change profiles later:**
@@ -132,7 +132,7 @@ alt: "Machine basic settings dialog"
 - Examples: "Workshop K40", "Garage Diode Laser"
 
 **Driver Selection:**
-- Choose how RayForge communicates with your machine
+- Choose how Rayforge communicates with your machine
 - See [Device Configuration](device-config.md) for driver details
 
 **Dimensions (width  height):**
@@ -255,7 +255,7 @@ alt: "Laser head configuration dialog"
 
 ### Profile Storage
 
-RayForge automatically saves profile changes to:
+Rayforge automatically saves profile changes to:
 
 ```
 ~/.config/rayforge/machines/<machine-id>.yaml

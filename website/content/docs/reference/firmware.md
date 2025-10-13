@@ -1,10 +1,10 @@
 # Firmware Compatibility
 
-This page documents firmware compatibility for laser controllers used with RayForge.
+This page documents firmware compatibility for laser controllers used with Rayforge.
 
 ## Overview
 
-RayForge is designed primarily for **GRBL-based controllers** but has experimental support for other firmware types.
+Rayforge is designed primarily for **GRBL-based controllers** but has experimental support for other firmware types.
 
 ### Compatibility Matrix
 
@@ -31,7 +31,7 @@ RayForge is designed primarily for **GRBL-based controllers** but has experiment
 
 GRBL 1.1 is the most common firmware for hobby CNC and laser machines. Released in 2017, it's stable, well-documented, and widely supported.
 
-**Features supported by RayForge:**
+**Features supported by Rayforge:**
 
 -  Serial communication (USB)
 -  Real-time status reporting
@@ -107,20 +107,20 @@ grblHAL is a modern fork of GRBL with enhanced features:
 - More I/O pins
 - Enhanced laser support
 
-**Compatibility with RayForge:**
+**Compatibility with Rayforge:**
 
 -  **Fully compatible** - grblHAL maintains GRBL 1.1 protocol
 -  All GRBL features work
--  Additional features (networking, SD) not yet supported by RayForge
+-  Additional features (networking, SD) not yet supported by Rayforge
 -  Status reporting identical to GRBL
 
 **Using grblHAL:**
 
-1. Select "GRBL Serial" driver in RayForge
+1. Select "GRBL Serial" driver in Rayforge
 2. Connect via USB serial (just like GRBL)
 3. All features work as documented for GRBL
 
-**Future:** RayForge may add support for grblHAL-specific features (networking, etc.)
+**Future:** Rayforge may add support for grblHAL-specific features (networking, etc.)
 
 ---
 
@@ -142,7 +142,7 @@ Smoothieware uses different G-code syntax:
 | **Power Range** | 0-1000 | 0.0-1.0 (float) |
 | **Status** | `<...>` format | Different format |
 
-**Using Smoothieware with RayForge:**
+**Using Smoothieware with Rayforge:**
 
 1. **Select Smoothieware dialect** in machine settings
 2. **Test with low power** first
@@ -191,7 +191,7 @@ Marlin 2.0+ can control lasers when properly configured.
 -  Settings commands different
 -  Air assist (M8/M9) may not work
 
-**Using Marlin with RayForge:**
+**Using Marlin with Rayforge:**
 
 1. **Select Marlin dialect** in machine settings
 2. **Configure Marlin** for laser use
@@ -211,7 +211,7 @@ Marlin 2.0+ can control lasers when properly configured.
 - Laser mode (M4) for constant power
 - Better status reporting
 - More reliable
-- Better RayForge support
+- Better Rayforge support
 
 **How to upgrade:**
 
@@ -265,7 +265,7 @@ Marlin 2.0+ can control lasers when properly configured.
 
 ### Common Controllers
 
-| Board | Typical Firmware | RayForge Support |
+| Board | Typical Firmware | Rayforge Support |
 |-------|------------------|------------------|
 | **Arduino CNC Shield** | GRBL 1.1 |  Excellent |
 | **MKS DLC32** | grblHAL |  Excellent |
@@ -277,7 +277,7 @@ Marlin 2.0+ can control lasers when properly configured.
 
 ### Recommended Controllers
 
-For best RayForge compatibility:
+For best Rayforge compatibility:
 
 1. **Arduino Nano + CNC Shield** (GRBL 1.1)
    - Cheap (~$10-20)
@@ -389,7 +389,7 @@ $22=1       ; Homing enabled
 3. **Check port:**
    - Linux: `/dev/ttyUSB0` or `/dev/ttyACM0`
    - Windows: COM3, COM4, etc.
-   - Correct port selected in RayForge
+   - Correct port selected in Rayforge
 
 4. **Test with terminal:**
    - Use screen, minicom, or PuTTY
@@ -426,7 +426,7 @@ $22=1       ; Homing enabled
 **Solution:**
 
 1. Query firmware version: `$I`
-2. Compare with RayForge expectations
+2. Compare with Rayforge expectations
 3. Upgrade or select correct dialect
 
 ---

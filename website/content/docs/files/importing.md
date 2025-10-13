@@ -1,6 +1,6 @@
 # Importing Files
 
-RayForge supports importing various file formats, both vector and raster. This page explains how to import files and optimize them for best results.
+Rayforge supports importing various file formats, both vector and raster. This page explains how to import files and optimize them for best results.
 
 ## Supported File Formats
 
@@ -38,13 +38,13 @@ RayForge supports importing various file formats, both vector and raster. This p
 ### Method 2: Drag and Drop
 
 1. **Drag file** from your file manager
-2. **Drop onto** the RayForge canvas
+2. **Drop onto** the Rayforge canvas
 3. **Import proceeds** as above
 
 ### Method 3: Command Line
 
 ```bash
-# Open RayForge with a file
+# Open Rayforge with a file
 rayforge myfile.svg
 
 # Multiple files
@@ -59,13 +59,13 @@ SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
 ### Import Options
 
-When importing SVG, RayForge offers two methods:
+When importing SVG, Rayforge offers two methods:
 
 #### 1. Import Vectors Directly (Recommended)
 
 **How it works:**
 
-- Parses SVG and converts paths directly to RayForge geometry
+- Parses SVG and converts paths directly to Rayforge geometry
 - High-fidelity preservation of curves and shapes
 - Maintains exact vector data
 
@@ -143,7 +143,7 @@ When importing SVG, RayForge offers two methods:
 
 6. **Check document units:**
    - Set to mm or inches as appropriate
-   - RayForge uses mm internally
+   - Rayforge uses mm internally
 
 **Common SVG features that may not import:**
 
@@ -161,7 +161,7 @@ DXF (Drawing Exchange Format) is common for CAD software.
 
 ### DXF Versions
 
-RayForge supports standard DXF formats:
+Rayforge supports standard DXF formats:
 
 - **R12/LT2** (recommended) - Best compatibility
 - **R13, R14** - Good support
@@ -182,7 +182,7 @@ RayForge supports standard DXF formats:
 2. **Check units:**
 
    - Verify drawing units (mm vs inches)
-   - RayForge assumes mm by default
+   - Rayforge assumes mm by default
 
 3. **Flatten layers:**
 
@@ -207,7 +207,7 @@ PDF files can contain vector graphics, raster images, or both.
 
 ### How PDF Import Works
 
-RayForge **renders the PDF** to an image, then **traces** it to create vectors.
+Rayforge **renders the PDF** to an image, then **traces** it to create vectors.
 
 **Process:**
 
@@ -249,7 +249,7 @@ Raster images are **automatically traced** to create vector paths.
 
 **How it works:**
 
-1. **Image loaded** into RayForge
+1. **Image loaded** into Rayforge
 2. **Tracing algorithm** detects edges and shapes
 3. **Vector paths created** from the traced edges
 4. **Paths added** to the document as workpieces
@@ -324,7 +324,7 @@ Raster images are **automatically traced** to create vector paths.
 
 ### File Won't Import
 
-**Problem:** RayForge doesn't recognize or can't open the file.
+**Problem:** Rayforge doesn't recognize or can't open the file.
 
 **Solutions:**
 

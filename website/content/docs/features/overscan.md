@@ -56,7 +56,7 @@ With overscan:
 
 ## Configuring Overscan
 
-Overscan is a **transformer** in the RayForge workflow pipeline.
+Overscan is a **transformer** in the Rayforge workflow pipeline.
 
 **To enable:**
 
@@ -182,7 +182,7 @@ Too little overscan:     Correct overscan:
 
 **Out of bounds warning:**
 
-If overscan causes paths to exceed machine limits, RayForge will warn you:
+If overscan causes paths to exceed machine limits, Rayforge will warn you:
 
 ```
 Warning: Overscan extends beyond machine boundaries.
@@ -198,7 +198,7 @@ Reduce overscan distance or reposition the job.
 
 ## Technical Details
 
-**How RayForge implements overscan:**
+**How Rayforge implements overscan:**
 
 1. **Identifies raster sections** in the operation
 2. **For each raster line:**
@@ -297,7 +297,7 @@ Some advanced use cases may need different overscan distances:
 
 ### Overscan Causes Out-of-Bounds Error
 
-**Problem:** RayForge reports job exceeds machine boundaries when overscan is enabled.
+**Problem:** Rayforge reports job exceeds machine boundaries when overscan is enabled.
 
 **Diagnosis:**
 

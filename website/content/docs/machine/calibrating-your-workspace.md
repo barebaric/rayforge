@@ -4,11 +4,11 @@ Ensure your laser cuts accurately to the dimensions you design.
 
 ## Goal
 
-Verify and calibrate your laser's dimensional accuracy so that a 100mm square in RayForge cuts as a true 100mm square on your material.
+Verify and calibrate your laser's dimensional accuracy so that a 100mm square in Rayforge cuts as a true 100mm square on your material.
 
 ## Prerequisites
 
-- RayForge installed and connected to your laser
+- Rayforge installed and connected to your laser
 - Machine homed and ready
 - Test material (cardboard, plywood, or acrylic scrap)
 - Ruler or calipers (digital calipers preferred for accuracy)
@@ -22,11 +22,11 @@ Laser machines use stepper motors with a configured steps-per-millimeter setting
 - Dimensions will be consistently off (e.g., 100mm design cuts as 98mm or 102mm)
 - Assembly projects will fail
 
-**Calibration ensures:** 1mm in RayForge = 1mm on your material
+**Calibration ensures:** 1mm in Rayforge = 1mm on your material
 
 ## Step 1: Check Current Machine Configuration
 
-First, verify your machine dimensions are configured correctly in RayForge.
+First, verify your machine dimensions are configured correctly in Rayforge.
 
 **Open machine settings:**
 
@@ -47,7 +47,7 @@ Create a simple test pattern with known dimensions.
 
 **Design the test:**
 
-1. Create a new project in RayForge
+1. Create a new project in Rayforge
 2. Add a **square** workpiece:
    - Width: 100mm
    - Height: 100mm
@@ -93,7 +93,7 @@ Before cutting, verify the job will run in the correct location.
 
 **Frame the job:**
 
-1. In RayForge, click **Frame Job** (or use keyboard shortcut)
+1. In Rayforge, click **Frame Job** (or use keyboard shortcut)
 2. Laser head will trace the outline of the job boundary
 3. Verify:
    - Position is correct on your material
@@ -114,7 +114,7 @@ Run the calibration test cut.
 
 **Run the job:**
 
-1. Click **Start Job** in RayForge
+1. Click **Start Job** in Rayforge
 2. Monitor the cut closely
 3. Wait for completion
 4. Allow material to cool before removing
@@ -234,7 +234,7 @@ New Y steps/mm = 80.00 * (100 / 101.2) = 79.05
 
 ### Read Current Settings
 
-**In RayForge console:**
+**In Rayforge console:**
 
 1. Open **Console** tab
 2. Send command: `$$` (two dollar signs)
@@ -254,7 +254,7 @@ $102=80.000
 
 **Send new values:**
 
-In the RayForge console:
+In the Rayforge console:
 
 ```
 $100=81.22
@@ -329,7 +329,7 @@ If calibration doesn't solve dimensional errors, check mechanical components:
 **Kerf is NOT a calibration issue:**
 
 - Kerf makes parts slightly smaller than designed
-- Kerf is compensated in RayForge settings (see Overscan & Kerf)
+- Kerf is compensated in Rayforge settings (see Overscan & Kerf)
 
 **Calibration corrects:**
 
@@ -360,7 +360,7 @@ For precision work, test calibration at multiple scales:
 **Possible causes:**
 
 - Wrong firmware settings
-- Wrong machine profile in RayForge
+- Wrong machine profile in Rayforge
 - Mechanical issue (loose pulley, belt)
 
 **Solutions:**

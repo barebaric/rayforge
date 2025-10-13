@@ -207,7 +207,7 @@ This helps confirm the test will run correctly before using material.
 
 ## Editing While Simulating
 
-Unlike many CAM tools, RayForge lets you **edit workpieces during simulation**:
+Unlike many CAM tools, Rayforge lets you **edit workpieces during simulation**:
 
 - Move, scale, rotate objects ✅
 - Change operation settings ✅
@@ -298,7 +298,7 @@ Unlike many CAM tools, RayForge lets you **edit workpieces during simulation**:
 
 - This shows the **actual** execution order
 - If it seems wrong, check your operation settings
-- Remember: RayForge executes operations in layer order
+- Remember: Rayforge executes operations in layer order
 - Material test grids use risk-optimized order (fastest first)
 
 ## Technical Details

@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This page provides detailed information about all file formats supported by RayForge, including capabilities, limitations, and recommendations.
+This page provides detailed information about all file formats supported by Rayforge, including capabilities, limitations, and recommendations.
 
 ## Format Overview
 
@@ -15,7 +15,7 @@ This page provides detailed information about all file formats supported by RayF
 | **JPEG** | Raster |  Trace |  | Photos |
 | **BMP** | Raster |  Trace |  | Simple graphics |
 | **G-code** | Control |  |  | Machine output |
-| **RayForge Project** | Project |  |  | Save/load projects |
+| **Rayforge Project** | Project |  |  | Save/load projects |
 
 ---
 
@@ -30,7 +30,7 @@ This page provides detailed information about all file formats supported by RayF
 
 **What is SVG?**
 
-SVG is an XML-based vector image format. It's the **preferred format** for importing designs into RayForge.
+SVG is an XML-based vector image format. It's the **preferred format** for importing designs into Rayforge.
 
 **Supported Features:**
 
@@ -58,7 +58,7 @@ SVG is an XML-based vector image format. It's the **preferred format** for impor
 3. **Simplify complex paths** to reduce node count
 4. **Flatten groups** when possible
 5. **Remove unused elements** (guides, grids, hidden layers)
-6. **Set document units** to mm (RayForge's native unit)
+6. **Set document units** to mm (Rayforge's native unit)
 
 **Software Recommendations:**
 
@@ -128,7 +128,7 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
    - Explode blocks if needed
    - Remove dimensions and text
 4. **Check units** (mm recommended)
-5. **Test in viewer** before importing to RayForge
+5. **Test in viewer** before importing to Rayforge
 
 **Software Recommendations:**
 
@@ -149,7 +149,7 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
 
 **What is PDF Import?**
 
-RayForge can import PDF files by rasterizing them first, then tracing to vectors.
+Rayforge can import PDF files by rasterizing them first, then tracing to vectors.
 
 **Process:**
 1. PDF rendered to raster image (default 300 DPI)
@@ -263,7 +263,7 @@ All raster formats are **imported by tracing** - converted to vector paths autom
 
 G-code is the **machine control language** used by laser controllers.
 
-**RayForge G-code Features:**
+**Rayforge G-code Features:**
 
 - **Dialect support:** GRBL (primary)
 - **Optimized toolpaths:** Efficient move ordering

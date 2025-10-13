@@ -1,6 +1,6 @@
 # Understanding Operations
 
-Operations are the core of how RayForge converts your designs into laser instructions. This page explains what operations are, the different types available, and how to choose the right one for your project.
+Operations are the core of how Rayforge converts your designs into laser instructions. This page explains what operations are, the different types available, and how to choose the right one for your project.
 
 ## What is an Operation?
 
@@ -28,7 +28,7 @@ Result: Laser fills the circle area with back-and-forth scanning
 
 ## Operation Types
 
-RayForge provides several operation types, each suited for different tasks.
+Rayforge provides several operation types, each suited for different tasks.
 
 ### Contour (Vector Cutting)
 

@@ -347,7 +347,7 @@ For photo engraving:
 
 ### Scan Pattern Generation
 
-RayForge converts filled shapes to scan lines:
+Rayforge converts filled shapes to scan lines:
 
 1. Determine bounding box
 2. Calculate scan lines at specified angle and interval

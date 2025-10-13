@@ -1,6 +1,6 @@
 # Device Configuration
 
-Device configuration determines how RayForge communicates with your laser cutter hardware. Choosing the correct driver and connection settings is essential for reliable operation.
+Device configuration determines how Rayforge communicates with your laser cutter hardware. Choosing the correct driver and connection settings is essential for reliable operation.
 
 ## Overview
 
@@ -36,7 +36,7 @@ alt: "Device configuration dialog"
 
 ## Available Drivers
 
-RayForge supports multiple communication methods to connect to different controller types.
+Rayforge supports multiple communication methods to connect to different controller types.
 
 ### GRBL (Serial)
 
@@ -163,7 +163,7 @@ ping laser.local
 - No USB cable required
 - Can control from any computer on network
 - Multiple clients can monitor status
-- WebUI and RayForge can run simultaneously
+- WebUI and Rayforge can run simultaneously
 
 **Disadvantages:**
 - Network latency may affect responsiveness
@@ -173,7 +173,7 @@ ping laser.local
 ### No Device (Simulator)
 
 **Best for:**
-- Testing RayForge without hardware
+- Testing Rayforge without hardware
 - Designing jobs offline
 - Training and demonstrations
 - Developing G-code workflows
@@ -187,7 +187,7 @@ ping laser.local
 **Use cases:**
 - Preview G-code output
 - Test operation sequences
-- Learn RayForge interface
+- Learn Rayforge interface
 - Design projects away from machine
 
 !!! tip "Testing Without Risk"
@@ -332,7 +332,7 @@ See [GRBL documentation](https://github.com/gnea/grbl/wiki/Grbl-v1.1-Alarms) for
 After configuring driver settings:
 
 1. Click "Test Connection" button
-2. RayForge attempts to connect to device
+2. Rayforge attempts to connect to device
 3. Success: Green indicator, "Connected" status
 4. Failure: Error message with diagnostic info
 
@@ -474,7 +474,7 @@ Check controller documentation or try standard rates first.
 **Firewall issues:**
 - Ensure ports 80 and 81 are open
 - Disable firewall temporarily to test
-- Add firewall exception for RayForge
+- Add firewall exception for Rayforge
 
 ## G-code Precision
 
@@ -500,7 +500,7 @@ Most machines have 0.01mm resolution, making precision=3 optimal.
 
 ## Driver Development
 
-RayForge's driver system is extensible. If your controller isn't supported:
+Rayforge's driver system is extensible. If your controller isn't supported:
 
 **Options:**
 1. Use generic GRBL driver (often works for GRBL-based controllers)

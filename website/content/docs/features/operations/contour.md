@@ -306,7 +306,7 @@ Contour operations work in:
 
 ### Path Generation
 
-RayForge converts vector shapes to G-code:
+Rayforge converts vector shapes to G-code:
 
 1. Offset path (if inside/outside cutting)
 2. Optimize path order (minimize travel)

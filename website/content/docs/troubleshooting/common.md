@@ -1,6 +1,6 @@
 # Common Problems
 
-This page provides quick solutions to frequently encountered issues in RayForge.
+This page provides quick solutions to frequently encountered issues in Rayforge.
 
 ## File Import Issues
 
@@ -166,7 +166,7 @@ This is usually an origin or positioning issue.
 
 ### Slow UI Response
 
-**Problem:** RayForge feels sluggish or unresponsive.
+**Problem:** Rayforge feels sluggish or unresponsive.
 
 **Solutions:**
 
@@ -251,7 +251,7 @@ See [Overscan](../features/overscan.md) guide.
 
 ### Warning: Out of Bounds
 
-**Problem:** RayForge warns that the job exceeds machine boundaries.
+**Problem:** Rayforge warns that the job exceeds machine boundaries.
 
 **Solutions:**
 
@@ -364,7 +364,7 @@ See [Overscan](../features/overscan.md) guide.
 
 If you've tried the solutions above and still have issues, please file a bug report on GitHub with:
 
-1. **RayForge version** and installation method (Snap, source, AppImage, etc.)
+1. **Rayforge version** and installation method (Snap, source, AppImage, etc.)
 2. **Operating system** and version
 3. **Steps to reproduce** the issue
 4. **Expected vs actual behavior**

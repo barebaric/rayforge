@@ -15,7 +15,7 @@ GRBL settings control:
 - **Electrical configuration**: Pin inversions, pullups
 - **Reporting**: Status message format and frequency
 
-These settings are stored on your controller (not in RayForge) and persist across power cycles.
+These settings are stored on your controller (not in Rayforge) and persist across power cycles.
 
 <!-- SCREENSHOT
 id: ui-grbl-settings-panel
@@ -49,10 +49,10 @@ alt: "GRBL settings configuration panel"
 
 ## Accessing GRBL Settings
 
-### From RayForge
+### From Rayforge
 
 1. **Menu:** Preferences  Machine  GRBL Settings
-2. RayForge reads settings from device automatically
+2. Rayforge reads settings from device automatically
 3. Edit values in the interface
 4. Click "Apply" to write changes to controller
 
@@ -134,8 +134,8 @@ $30=1000.0    ; Maximum S value = 100% power
 $31=0.0       ; Minimum S value = 0% power
 ```
 
-!!! tip "Matching RayForge Configuration"
-    The "Max Power" setting in your [Machine Profile](profiles.md) should match your $30 value. If $30=1000, set max power to 1000 in RayForge.
+!!! tip "Matching Rayforge Configuration"
+    The "Max Power" setting in your [Machine Profile](profiles.md) should match your $30 value. If $30=1000, set max power to 1000 in Rayforge.
 
 ### $130 & $131 - Maximum Travel
 
@@ -467,7 +467,7 @@ $132=0.0
 
 ### Backup Procedure
 
-1. **Via RayForge:**
+1. **Via Rayforge:**
    - Open GRBL Settings panel
    - Click "Export Settings"
    - Save file as `grbl-backup-YYYY-MM-DD.txt`
@@ -484,7 +484,7 @@ $132=0.0
    - Send each line (`$100=80.0`, etc.) via console
    - Verify with `$$` command
 
-2. **Via RayForge:**
+2. **Via Rayforge:**
    - Open GRBL Settings panel
    - Click "Import Settings"
    - Select backup file

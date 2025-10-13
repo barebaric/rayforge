@@ -27,7 +27,7 @@ Less power + fast speed = Low energy (light marks, shallow cuts)
 
 **Power control:**
 
-- RayForge uses the S parameter (0-1000) to control power
+- Rayforge uses the S parameter (0-1000) to control power
 - S0 = 0% power (off)
 - S500 = 50% power
 - S1000 = 100% power (maximum your laser can produce)
@@ -296,14 +296,14 @@ Instead of one deep cut, make several shallower cuts:
 
 ---
 
-### Configuring Multi-Pass in RayForge
+### Configuring Multi-Pass in Rayforge
 
 **In operation settings:**
 
 1. Select Contour operation
 2. Set **Passes** to desired number (e.g., 3)
 3. Adjust power/speed as needed
-4. RayForge will automatically repeat the cut path
+4. Rayforge will automatically repeat the cut path
 
 **G-code result:**
 
@@ -431,7 +431,7 @@ Material tells you if settings are correct:
 
 ### Using the Material Test Grid
 
-**RayForge's Material Test Grid** automates power/speed testing:
+**Rayforge's Material Test Grid** automates power/speed testing:
 
 1. **Create grid:** Features > Operations > Material Test Grid
 2. **Set ranges:**
@@ -481,7 +481,7 @@ See [Kerf](../features/kerf.md) for details.
 
 ### Raster Speed Variation
 
-For raster engraving, RayForge varies speed to create different gray tones:
+For raster engraving, Rayforge varies speed to create different gray tones:
 
 **How it works:**
 

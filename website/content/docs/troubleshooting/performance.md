@@ -1,6 +1,6 @@
 # Performance Optimization
 
-This page helps you diagnose and resolve performance issues in RayForge, including slow UI, sluggish rendering, and long processing times.
+This page helps you diagnose and resolve performance issues in Rayforge, including slow UI, sluggish rendering, and long processing times.
 
 ## Common Performance Issues
 
@@ -60,7 +60,7 @@ Large raster images impact performance:
 
 #### Reduce Preview Quality
 
-RayForge may allow adjusting preview quality in preferences:
+Rayforge may allow adjusting preview quality in preferences:
 
 1. Open Settings/Preferences
 2. Look for 3D Preview or Rendering settings
@@ -145,7 +145,7 @@ After (optimized):
 ### Application Startup Slow
 
 **Symptoms:**
-- RayForge takes a long time to launch
+- Rayforge takes a long time to launch
 - Splash screen visible for extended period
 
 **Solutions:**
@@ -190,7 +190,7 @@ After (optimized):
 
 #### Prepare Files in Design Software
 
-**Before exporting to RayForge:**
+**Before exporting to Rayforge:**
 
 1. **Simplify paths:**
    - Inkscape: `Path  Simplify`
@@ -267,7 +267,7 @@ sudo apt install libadwaita-1-0 libgtk-4-1
 
 === "Linux"
     ```bash
-    # Monitor CPU and memory while running RayForge
+    # Monitor CPU and memory while running Rayforge
     htop
 
     # Check GPU usage (if NVIDIA)
@@ -369,7 +369,7 @@ Some users report better performance on X11:
 
 Real-time scanning can slow file operations:
 
-- Add RayForge installation directory to antivirus exclusions
+- Add Rayforge installation directory to antivirus exclusions
 - Add temporary directory to exclusions
 - Don't disable antivirus entirely - use targeted exclusions
 

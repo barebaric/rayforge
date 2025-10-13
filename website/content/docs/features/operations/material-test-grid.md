@@ -1,6 +1,6 @@
 # Material Test Grid
 
-The Material Test Grid generator creates parametric test patterns to help you find optimal laser settings for different materials. Instead of manually creating test squares, RayForge automatically generates a grid with varying speed and power combinations.
+The Material Test Grid generator creates parametric test patterns to help you find optimal laser settings for different materials. Instead of manually creating test squares, Rayforge automatically generates a grid with varying speed and power combinations.
 
 ## Overview
 
@@ -48,7 +48,7 @@ Access the Material Test Grid generator:
 
 ### Step 2: Choose a Preset (Optional)
 
-RayForge includes presets for common scenarios:
+Rayforge includes presets for common scenarios:
 
 | Preset            | Speed Range       | Power Range | Use For               |
 | ----------------- | ----------------- | ----------- | --------------------- |
@@ -175,7 +175,7 @@ Power (%)     Speed (mm/min) →
 
 ## Execution Order (Risk Optimization)
 
-RayForge executes test cells in a **risk-optimized order** to prevent material damage:
+Rayforge executes test cells in a **risk-optimized order** to prevent material damage:
 
 1. **Highest speed first**: Fast speeds are safer (less heat buildup)
 2. **Lowest power within speed**: Minimizes risk at each speed level
@@ -293,7 +293,7 @@ Run the same grid configuration on different materials to build your material li
 
 ### Test cells execute in wrong order
 
-- RayForge uses risk-optimized order (fastest speeds first)
+- Rayforge uses risk-optimized order (fastest speeds first)
 - This is intentional and cannot be changed
 - See [Execution Order](#execution-order-risk-optimization) above
 

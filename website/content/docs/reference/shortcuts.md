@@ -1,6 +1,6 @@
 # Keyboard Shortcuts
 
-Complete reference of keyboard shortcuts in RayForge.
+Complete reference of keyboard shortcuts in Rayforge.
 
 !!! note "Platform Conventions"
     - **Linux/Windows:** `Ctrl` key
@@ -15,7 +15,7 @@ Complete reference of keyboard shortcuts in RayForge.
 | -------- | ----------- | ----------------------- |
 | `Ctrl+I` | Import      | Open file import dialog |
 | `Ctrl+E` | Export      | Export G-code           |
-| `Ctrl+Q` | Quit        | Exit RayForge           |
+| `Ctrl+Q` | Quit        | Exit Rayforge           |
 | `Ctrl+,` | Preferences | Open preferences dialog |
 
 ---
