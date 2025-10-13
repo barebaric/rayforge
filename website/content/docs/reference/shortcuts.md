@@ -11,71 +11,71 @@ Complete reference of keyboard shortcuts in RayForge.
 
 ## File Operations
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+I` | Import | Open file import dialog |
-| `Ctrl+E` | Export | Export G-code |
-| `Ctrl+Q` | Quit | Exit RayForge |
+| Shortcut | Action      | Description             |
+| -------- | ----------- | ----------------------- |
+| `Ctrl+I` | Import      | Open file import dialog |
+| `Ctrl+E` | Export      | Export G-code           |
+| `Ctrl+Q` | Quit        | Exit RayForge           |
 | `Ctrl+,` | Preferences | Open preferences dialog |
 
 ---
 
 ## Edit & Clipboard
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+Z` | Undo | Undo last action |
-| `Ctrl+Y` | Redo | Redo last undone action |
-| `Ctrl+Shift+Z` | Redo (alternate) | Alternative redo shortcut |
-| `Ctrl+X` | Cut | Cut selection to clipboard |
-| `Ctrl+C` | Copy | Copy selection to clipboard |
-| `Ctrl+V` | Paste | Paste from clipboard |
-| `Ctrl+A` | Select All | Select all items in active layer |
-| `Ctrl+D` | Duplicate | Duplicate selected items |
-| `Delete` | Remove | Delete selected items |
-| `Ctrl+Shift+Delete` | Clear | Clear all items from document |
+| Shortcut            | Action           | Description                      |
+| ------------------- | ---------------- | -------------------------------- |
+| `Ctrl+Z`            | Undo             | Undo last action                 |
+| `Ctrl+Y`            | Redo             | Redo last undone action          |
+| `Ctrl+Shift+Z`      | Redo (alternate) | Alternative redo shortcut        |
+| `Ctrl+X`            | Cut              | Cut selection to clipboard       |
+| `Ctrl+C`            | Copy             | Copy selection to clipboard      |
+| `Ctrl+V`            | Paste            | Paste from clipboard             |
+| `Ctrl+A`            | Select All       | Select all items in active layer |
+| `Ctrl+D`            | Duplicate        | Duplicate selected items         |
+| `Delete`            | Remove           | Delete selected items            |
+| `Ctrl+Shift+Delete` | Clear            | Clear all items from document    |
 
 ---
 
 ## View & Display
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `H` | Toggle Workpieces | Show/hide workpiece visibility |
-| `T` | Toggle Tabs | Show/hide holding tabs |
-| `Alt+C` | Toggle Camera | Show/hide camera overlay |
-| `F12` | 3D View | Toggle 3D preview window |
-| `Ctrl+Shift+S` | Simulation Mode | Toggle simulation mode |
+| Shortcut       | Action            | Description                    |
+| -------------- | ----------------- | ------------------------------ |
+| `H`            | Toggle Workpieces | Show/hide workpiece visibility |
+| `T`            | Toggle Tabs       | Show/hide holding tabs         |
+| `Alt+C`        | Toggle Camera     | Show/hide camera overlay       |
+| `F12`          | 3D View           | Toggle 3D preview window       |
+| `Ctrl+Shift+S` | Simulation Mode   | Toggle simulation mode         |
 
 ### 3D View Controls
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `1` | Top View | Switch to top-down view |
-| `2` | Front View | Switch to front view |
-| `7` | Isometric View | Switch to isometric view |
-| `P` | Toggle Perspective | Switch between perspective and orthographic |
+| Shortcut | Action             | Description                                 |
+| -------- | ------------------ | ------------------------------------------- |
+| `1`      | Top View           | Switch to top-down view                     |
+| `2`      | Front View         | Switch to front view                        |
+| `7`      | Isometric View     | Switch to isometric view                    |
+| `P`      | Toggle Perspective | Switch between perspective and orthographic |
 
 ---
 
 ## Layer & Organization
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+G` | Group | Group selected items |
-| `Ctrl+U` | Ungroup | Ungroup selected group |
-| `Ctrl+Page Up` | Move Layer Up | Move layer up in stack |
+| Shortcut         | Action          | Description              |
+| ---------------- | --------------- | ------------------------ |
+| `Ctrl+G`         | Group           | Group selected items     |
+| `Ctrl+U`         | Ungroup         | Ungroup selected group   |
+| `Ctrl+Page Up`   | Move Layer Up   | Move layer up in stack   |
 | `Ctrl+Page Down` | Move Layer Down | Move layer down in stack |
-| `Alt+S` | Add Stock | Add stock/material item |
+| `Alt+S`          | Add Stock       | Add stock/material item  |
 
 ---
 
 ## Tabs (Holding Tabs)
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Alt+T` | Add Tabs (Equidistant) | Add evenly-spaced tabs |
-| `T` | Toggle Tab Visibility | Show/hide tabs overlay |
+| Shortcut | Action                 | Description            |
+| -------- | ---------------------- | ---------------------- |
+| `Alt+T`  | Add Tabs (Equidistant) | Add evenly-spaced tabs |
+| `T`      | Toggle Tab Visibility  | Show/hide tabs overlay |
 
 ---
 
@@ -83,48 +83,49 @@ Complete reference of keyboard shortcuts in RayForge.
 
 ### Alignment
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Shift+Left` | Align Left | Align selected items to left |
-| `Shift+Right` | Align Right | Align selected items to right |
-| `Shift+Up` | Align Top | Align selected items to top |
-| `Shift+Down` | Align Bottom | Align selected items to bottom |
-| `Shift+Home` | Align H-Center | Align selected items horizontally to center |
-| `Shift+End` | Align V-Center | Align selected items vertically to center |
+| Shortcut      | Action         | Description                                 |
+| ------------- | -------------- | ------------------------------------------- |
+| `Shift+Left`  | Align Left     | Align selected items to left                |
+| `Shift+Right` | Align Right    | Align selected items to right               |
+| `Shift+Up`    | Align Top      | Align selected items to top                 |
+| `Shift+Down`  | Align Bottom   | Align selected items to bottom              |
+| `Shift+Home`  | Align H-Center | Align selected items horizontally to center |
+| `Shift+End`   | Align V-Center | Align selected items vertically to center   |
 
 ### Distribution
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
+| Shortcut       | Action              | Description                          |
+| -------------- | ------------------- | ------------------------------------ |
 | `Ctrl+Shift+H` | Spread Horizontally | Distribute items evenly horizontally |
-| `Ctrl+Shift+V` | Spread Vertically | Distribute items evenly vertically |
+| `Ctrl+Shift+V` | Spread Vertically   | Distribute items evenly vertically   |
 
 ### Layout
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Alt+A` | Pixel Perfect | Snap to pixel grid |
+| Shortcut | Action        | Description        |
+| -------- | ------------- | ------------------ |
+| `Alt+A`  | Pixel Perfect | Snap to pixel grid |
 
 ---
 
 ## Transform
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
+| Shortcut  | Action          | Description                        |
+| --------- | --------------- | ---------------------------------- |
 | `Shift+H` | Flip Horizontal | Mirror selected items horizontally |
-| `Shift+V` | Flip Vertical | Mirror selected items vertically |
+| `Shift+V` | Flip Vertical   | Mirror selected items vertically   |
 
 ---
 
 ## Machine Control
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+<` | Machine Settings | Open machine settings dialog |
-| `F1` | About | Show about dialog |
+| Shortcut | Action           | Description                    |
+| -------- | ---------------- | ------------------------------ |
+| `Ctrl+J` | Jog Dialog       | Open manual jog control dialog |
+| `Ctrl+<` | Machine Settings | Open machine settings dialog   |
+| `F1`     | About            | Show about dialog              |
 
 !!! note "Machine Operations"
-    Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
+Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
 
 ---
 
@@ -132,20 +133,20 @@ Complete reference of keyboard shortcuts in RayForge.
 
 ### Mouse Controls
 
-| Input | Action | Description |
-|-------|--------|-------------|
-| **Left Click** | Select | Select item |
-| **Left Drag** | Move | Move selected items |
-| **Ctrl+Left Drag** | Box Select | Select multiple items |
-| **Middle Click Drag** | Pan | Pan the canvas |
-| **Scroll Wheel** | Zoom | Zoom in/out |
-| **Ctrl+Scroll** | Precision Zoom | Finer zoom control |
+| Input                 | Action         | Description           |
+| --------------------- | -------------- | --------------------- |
+| **Left Click**        | Select         | Select item           |
+| **Left Drag**         | Move           | Move selected items   |
+| **Ctrl+Left Drag**    | Box Select     | Select multiple items |
+| **Middle Click Drag** | Pan            | Pan the canvas        |
+| **Scroll Wheel**      | Zoom           | Zoom in/out           |
+| **Ctrl+Scroll**       | Precision Zoom | Finer zoom control    |
 
 ### Arrow Keys
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `` `` `` `` | Nudge | Move selected items by 1 unit |
+| Shortcut      | Action      | Description                     |
+| ------------- | ----------- | ------------------------------- |
+| ` ` ` `       | Nudge       | Move selected items by 1 unit   |
 | `Shift+Arrow` | Large Nudge | Move selected items by 10 units |
 
 ---
@@ -154,15 +155,15 @@ Complete reference of keyboard shortcuts in RayForge.
 
 When editing G-code or text fields:
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+Z` | Undo | Undo text edit |
-| `Ctrl+Y` | Redo | Redo text edit |
-| `Ctrl+A` | Select All | Select all text |
-| `Ctrl+X` | Cut | Cut selected text |
-| `Ctrl+C` | Copy | Copy selected text |
-| `Ctrl+V` | Paste | Paste text |
-| `Ctrl+F` | Find | Find text (if supported) |
+| Shortcut | Action     | Description              |
+| -------- | ---------- | ------------------------ |
+| `Ctrl+Z` | Undo       | Undo text edit           |
+| `Ctrl+Y` | Redo       | Redo text edit           |
+| `Ctrl+A` | Select All | Select all text          |
+| `Ctrl+X` | Cut        | Cut selected text        |
+| `Ctrl+C` | Copy       | Copy selected text       |
+| `Ctrl+V` | Paste      | Paste text               |
+| `Ctrl+F` | Find       | Find text (if supported) |
 
 ---
 
@@ -212,9 +213,10 @@ When editing G-code or text fields:
 ## Customizing Shortcuts
 
 !!! note "Custom Shortcuts"
-    Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be added in future versions.
+Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be added in future versions.
 
 **Current limitations:**
+
 - Shortcuts cannot be changed without modifying source code
 - No GUI for shortcut customization
 - Some actions may not have shortcuts assigned
@@ -236,6 +238,7 @@ When editing G-code or text fields:
 ### Workflow Shortcuts
 
 **Quick edit cycle:**
+
 ```
 1. Import (Ctrl+I)
 2. Arrange items (arrow keys, Shift+Arrow for alignment)
@@ -246,6 +249,7 @@ When editing G-code or text fields:
 ```
 
 **Precision positioning:**
+
 ```
 1. Select item
 2. Arrow keys for 1mm nudges
@@ -324,33 +328,38 @@ Some lesser-known shortcuts:
 
 **Print this quick reference:**
 
-```
-                                                 
-           RayForge Keyboard Shortcuts           
-                                                 $
- FILE                   EDIT                    
- Ctrl+I  Import         Ctrl+Z  Undo            
- Ctrl+E  Export         Ctrl+Y  Redo            
- Ctrl+Q  Quit           Ctrl+C  Copy            
- Ctrl+,  Preferences    Ctrl+V  Paste           
-                        Ctrl+D  Duplicate       
-                        Delete  Remove          
-                                                 $
- VIEW                   ALIGN                   
- H       Workpieces     Shift+ Left            
- T       Tabs           Shift+ Right           
- Alt+C   Camera         Shift+ Top             
- F12     3D View        Shift+ Bottom          
- 1/2/7   View Presets   Shift+Home H-Center     
- P       Perspective    Shift+End  V-Center     
-                                                 $
- SIMULATE               TRANSFORM               
- Ctrl+Shift+S Mode      Shift+H Flip H          
-                        Shift+V Flip V          
-                        Ctrl+G  Group           
-                        Ctrl+U  Ungroup         
-                                                 
-```
+| Category      | Shortcut     | Action           |
+| ------------- | ------------ | ---------------- |
+| **File**      | Ctrl+I       | Import           |
+|               | Ctrl+E       | Export           |
+|               | Ctrl+Q       | Quit             |
+|               | Ctrl+,       | Preferences      |
+| **Edit**      | Ctrl+Z       | Undo             |
+|               | Ctrl+Y       | Redo             |
+|               | Ctrl+C       | Copy             |
+|               | Ctrl+V       | Paste            |
+|               | Ctrl+D       | Duplicate        |
+|               | Delete       | Remove           |
+| **View**      | H            | Workpieces       |
+|               | T            | Tabs             |
+|               | Alt+C        | Camera           |
+|               | F12          | 3D View          |
+|               | 1/2/7        | View Presets     |
+|               | P            | Perspective      |
+| **Align**     | Shift+Left   | Align Left       |
+|               | Shift+Right  | Align Right      |
+|               | Shift+Up     | Align Top        |
+|               | Shift+Down   | Align Bottom     |
+|               | Shift+Home   | H-Center         |
+|               | Shift+End    | V-Center         |
+| **Simulate**  | Ctrl+Shift+S | Mode             |
+| **Transform** | Shift+H      | Flip H           |
+|               | Shift+V      | Flip V           |
+|               | Ctrl+G       | Group            |
+|               | Ctrl+U       | Ungroup          |
+| **Machine**   | Ctrl+J       | Jog Dialog       |
+|               | Ctrl+<       | Machine Settings |
+|               | F1           | About            |
 
 ---
 

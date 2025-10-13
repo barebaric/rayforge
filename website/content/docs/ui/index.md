@@ -19,6 +19,7 @@ The Rayforge interface consists of several key areas:
 - **[Main Window](main-window.md)**: Overview of the main interface elements
 - **[Canvas Tools](canvas-tools.md)**: Tools for manipulating designs on the canvas
 - **[3D Preview](3d-preview.md)**: Visualize G-code toolpaths in 3D
+- **[Jog Dialog](jog-dialog.md)**: Manual machine control and positioning
 - **[Settings & Preferences](settings.md)**: Customize Rayforge to your workflow
 
 ## Theme Support

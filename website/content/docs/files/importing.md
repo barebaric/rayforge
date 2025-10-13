@@ -6,22 +6,22 @@ RayForge supports importing various file formats, both vector and raster. This p
 
 ### Vector Formats
 
-| Format | Extension | Import Method | Best For |
-|--------|-----------|---------------|----------|
-| **SVG** | `.svg` | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF** | `.dxf` | Direct vectors | CAD drawings, technical designs |
-| **PDF** | `.pdf` | Render and trace | Documents with vector content |
+| Format  | Extension | Import Method           | Best For                        |
+| ------- | --------- | ----------------------- | ------------------------------- |
+| **SVG** | `.svg`    | Direct vectors or trace | Vector graphics, logos, designs |
+| **DXF** | `.dxf`    | Direct vectors          | CAD drawings, technical designs |
+| **PDF** | `.pdf`    | Render and trace        | Documents with vector content   |
 
 ### Raster Formats
 
-| Format | Extension | Import Method | Best For |
-|--------|-----------|---------------|----------|
-| **PNG** | `.png` | Trace to vectors | Photos, images with transparency |
-| **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images |
-| **BMP** | `.bmp` | Trace to vectors | Simple graphics, screenshots |
+| Format   | Extension       | Import Method    | Best For                         |
+| -------- | --------------- | ---------------- | -------------------------------- |
+| **PNG**  | `.png`          | Trace to vectors | Photos, images with transparency |
+| **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
+| **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
 !!! note "Raster Import"
-    All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
+All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
 
 ---
 
@@ -29,7 +29,7 @@ RayForge supports importing various file formats, both vector and raster. This p
 
 ### Method 1: File Menu
 
-1. **File  Import** (or Ctrl+I)
+1. **File Import** (or Ctrl+I)
 2. **Select your file** from the file picker
 3. **For SVG:** Choose import method (see below)
 4. **For rasters:** Files are automatically traced
@@ -64,20 +64,24 @@ When importing SVG, RayForge offers two methods:
 #### 1. Import Vectors Directly (Recommended)
 
 **How it works:**
+
 - Parses SVG and converts paths directly to RayForge geometry
 - High-fidelity preservation of curves and shapes
 - Maintains exact vector data
 
 **Pros:**
+
 - Best quality and precision
 - Editable paths
 - Small file size
 
 **Cons:**
+
 - Some advanced SVG features not supported
 - Complex SVGs may have issues
 
 **Use for:**
+
 - Clean vector designs from Inkscape, Illustrator
 - Simple to moderate complexity
 - Designs without advanced SVG features
@@ -85,21 +89,25 @@ When importing SVG, RayForge offers two methods:
 #### 2. Trace Bitmap
 
 **How it works:**
+
 - Renders SVG to a raster image first
 - Traces the rendered image to create vectors
 - More compatible but less precise
 
 **Pros:**
+
 - Handles complex SVG features
 - Robust fallback method
 - Supports effects and filters
 
 **Cons:**
+
 - Quality loss from rasterization
 - Larger file sizes
 - Not as precise
 
 **Use for:**
+
 - SVGs that fail direct import
 - SVGs with effects, filters, gradients
 - When direct import produces errors
@@ -109,22 +117,27 @@ When importing SVG, RayForge offers two methods:
 **Prepare your SVG for best results:**
 
 1. **Convert text to paths:**
+
    - Inkscape: `Path  Object to Path`
    - Illustrator: `Type  Create Outlines`
 
 2. **Simplify complex paths:**
+
    - Inkscape: `Path  Simplify` (Ctrl+L)
    - Remove unnecessary nodes
 
 3. **Ungroup nested groups:**
+
    - Flatten hierarchy where possible
    - `Object  Ungroup` (Ctrl+Shift+G)
 
 4. **Remove hidden elements:**
+
    - Delete guides, grids, construction lines
    - Remove invisible/transparent objects
 
 5. **Save as Plain SVG:**
+
    - Inkscape: "Plain SVG" or "Optimized SVG"
    - Not "Inkscape SVG" (has extra metadata)
 
@@ -161,15 +174,18 @@ RayForge supports standard DXF formats:
 **Before exporting from CAD:**
 
 1. **Simplify the drawing:**
+
    - Remove unnecessary layers
    - Delete dimensions and annotations
    - Remove 3D objects (use 2D projection)
 
 2. **Check units:**
+
    - Verify drawing units (mm vs inches)
    - RayForge assumes mm by default
 
 3. **Flatten layers:**
+
    - Consider exporting only relevant layers
    - Hide or delete construction layers
 
@@ -194,11 +210,13 @@ PDF files can contain vector graphics, raster images, or both.
 RayForge **renders the PDF** to an image, then **traces** it to create vectors.
 
 **Process:**
+
 1. PDF rendered at specified DPI (default 300)
 2. Rendered image traced using vectorization
 3. Resulting paths added to document
 
 **Limitations:**
+
 - Text is rasterized (not editable as paths)
 - Vector quality depends on rendering DPI
 - Multi-page PDFs: only first page imported
@@ -208,10 +226,12 @@ RayForge **renders the PDF** to an image, then **traces** it to create vectors.
 **Best results:**
 
 1. **Use vector PDFs:**
+
    - PDFs created from vector software (Illustrator, Inkscape)
    - Not scanned documents or embedded images
 
 2. **Export SVG instead if possible:**
+
    - Most design software can export SVG directly
    - SVG will have better quality than PDF import
 
@@ -238,12 +258,12 @@ Raster images are **automatically traced** to create vector paths.
 
 **Adjustable parameters:**
 
-| Parameter | Description | Effect |
-|-----------|-------------|--------|
-| **Threshold** | Black/white cutoff | Lower = more detail, higher = simpler |
-| **Despeckle** | Remove noise | Higher = cleaner, removes small details |
-| **Smoothing** | Curve smoothing | Higher = smoother but less accurate |
-| **Corner Threshold** | Sharp vs smooth corners | Lower = more sharp corners |
+| Parameter            | Description             | Effect                                  |
+| -------------------- | ----------------------- | --------------------------------------- |
+| **Threshold**        | Black/white cutoff      | Lower = more detail, higher = simpler   |
+| **Despeckle**        | Remove noise            | Higher = cleaner, removes small details |
+| **Smoothing**        | Curve smoothing         | Higher = smoother but less accurate     |
+| **Corner Threshold** | Sharp vs smooth corners | Lower = more sharp corners              |
 
 **Default settings** work well for most images.
 
@@ -252,18 +272,22 @@ Raster images are **automatically traced** to create vector paths.
 **For best results:**
 
 1. **High contrast:**
+
    - Adjust brightness/contrast in image editor
    - Clear distinction between foreground and background
 
 2. **Clean background:**
+
    - Remove noise and artifacts
    - Solid white or transparent background
 
 3. **Appropriate resolution:**
+
    - 300-500 DPI for photos
    - Too high = slow tracing, too low = poor quality
 
 4. **Crop to content:**
+
    - Remove unnecessary borders
    - Focus on the area to be engraved/cut
 
@@ -272,6 +296,7 @@ Raster images are **automatically traced** to create vector paths.
    - For engraving: grayscale is fine
 
 **Image editing tools:**
+
 - GIMP (free)
 - Photoshop
 - Krita (free)
@@ -280,12 +305,14 @@ Raster images are **automatically traced** to create vector paths.
 ### Trace Quality
 
 **Good trace candidates:**
+
 - Logos with clear edges
 - High-contrast images
 - Line art and drawings
 - Text (though better as vector)
 
 **Poor trace candidates:**
+
 - Low-resolution images
 - Photos with soft edges
 - Images with gradients
@@ -302,7 +329,7 @@ Raster images are **automatically traced** to create vector paths.
 **Solutions:**
 
 1. **Check file format** - Ensure it's a supported type
-2. **Try different format** - Convert SVG  DXF or vice versa
+2. **Try different format** - Convert SVG DXF or vice versa
 3. **Re-export from source** - Original software may have export issues
 4. **Check file corruption** - Open in another application first
 5. **Simplify the file** - Remove complex features and retry
@@ -378,11 +405,13 @@ Raster images are **automatically traced** to create vector paths.
 ### Naming Conventions
 
 **Good file names:**
+
 - `logo-engrave.svg`
 - `box-cuts-3mm-ply.dxf`
 - `photo-portrait-150x200.png`
 
 **Include:**
+
 - Project name
 - Operation type (cut, engrave)
 - Material/thickness if relevant
@@ -403,12 +432,14 @@ Before importing:
 ### Design Software Recommendations
 
 **Vector design:**
+
 - **Inkscape** (free, excellent SVG support)
 - **Adobe Illustrator** (professional, paid)
 - **Affinity Designer** (affordable alternative)
 - **LibreCAD** (free, for DXF/CAD work)
 
 **Raster editing:**
+
 - **GIMP** (free, powerful)
 - **Photoshop** (professional, paid)
 - **Krita** (free, good for digital art)
