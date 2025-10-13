@@ -1,8 +1,7 @@
-from .driver import Driver
+from .driver import Driver, Axis
 from ...core.ops import Ops
 from ...shared.varset import VarSet
-from typing import Any, TYPE_CHECKING, List
-from ..models.features import DriverFeature
+from typing import Any, TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -17,7 +16,6 @@ class NoDeviceDriver(Driver):
     label = _("No driver")
     subtitle = _("No connection")
     supports_settings = False
-    _features = {DriverFeature.G0_WITH_SPEED}
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -42,7 +40,11 @@ class NoDeviceDriver(Driver):
     async def cancel(self) -> None:
         pass
 
-    async def home(self) -> None:
+    def can_home(self, axis: Optional[Axis] = None) -> bool:
+        """Dummy driver supports homing for all axes."""
+        return True
+
+    async def home(self, axes: Optional[Axis] = None) -> None:
         pass
 
     async def move_to(self, pos_x, pos_y) -> None:
@@ -59,3 +61,14 @@ class NoDeviceDriver(Driver):
 
     async def clear_alarm(self) -> None:
         pass
+
+    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+        """Dummy driver supports jogging for all axes."""
+        return True
+
+    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+        pass
+
+    def can_g0_with_speed(self) -> bool:
+        """Dummy driver supports G0 with speed."""
+        return True

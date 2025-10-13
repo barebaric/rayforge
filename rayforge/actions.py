@@ -35,7 +35,7 @@ class ActionManager:
         self._add_action("export", self.win.on_export_clicked)
         self._add_action("about", self.win.show_about_dialog)
         self._add_action("preferences", self.win.show_preferences)
-        self._add_action("machine_settings", self.win.show_machine_settings)
+        self._add_action("machine-settings", self.win.show_machine_settings)
 
         # Tools Actions
         self._add_action("material_test", self.win.on_show_material_test)
@@ -139,15 +139,18 @@ class ActionManager:
         self._add_action("flip-vertical", self.on_flip_vertical)
 
         # Machine Control Actions
-        self._add_action("home", self.win.on_home_clicked)
-        self._add_action("frame", self.win.on_frame_clicked)
-        self._add_action("send", self.win.on_send_clicked)
-        self._add_action("cancel", self.win.on_cancel_clicked)
-        self._add_action("clear_alarm", self.win.on_clear_alarm_clicked)
+        self._add_action("machine-home", self.win.on_home_clicked)
+        self._add_action("machine-frame", self.win.on_frame_clicked)
+        self._add_action("machine-send", self.win.on_send_clicked)
+        self._add_action("machine-cancel", self.win.on_cancel_clicked)
+        self._add_action(
+            "machine-clear-alarm", self.win.on_clear_alarm_clicked
+        )
+        self._add_action("machine-jog", self.win.on_jog_clicked)
 
         # Stateful action for the hold/pause button
         self._add_stateful_action(
-            "hold",
+            "machine-hold",
             self.win.on_hold_state_change,
             GLib.Variant.new_boolean(False),
         )
@@ -332,7 +335,8 @@ class ActionManager:
         app.set_accels_for_action("win.flip-vertical", ["<Shift>v"])
 
         # Machine & Help
-        app.set_accels_for_action("win.machine_settings", ["<Primary>less"])
+        app.set_accels_for_action("win.machine-settings", ["<Primary>less"])
+        app.set_accels_for_action("win.machine-jog", ["<Primary>j"])
         app.set_accels_for_action("win.about", ["F1"])
 
         # NOTE: Direct machine control actions (home, frame, send, etc.) are

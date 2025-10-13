@@ -6,9 +6,14 @@ from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
-from .driver import Driver, DeviceStatus, DriverSetupError, DriverPrecheckError
+from .driver import (
+    Driver,
+    DeviceStatus,
+    DriverSetupError,
+    DriverPrecheckError,
+    Axis,
+)
 from .grbl_util import parse_state
-from ..models.features import DriverFeature
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -23,7 +28,6 @@ class SmoothieDriver(Driver):
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")
     supports_settings = False
-    _features = {DriverFeature.G0_WITH_SPEED}
 
     def __init__(self):
         super().__init__()
@@ -169,11 +173,51 @@ class SmoothieDriver(Driver):
         # Send Ctrl+C
         await self._send_and_wait(b"\x03")
 
-    async def home(self) -> None:
-        await self._send_and_wait(b"$H")
+    def can_home(self, axis: Optional[Axis] = None) -> bool:
+        """Smoothie supports homing for all axes."""
+        return True
+
+    async def home(self, axes: Optional[Axis] = None) -> None:
+        """
+        Homes the specified axes or all axes if none specified.
+
+        Args:
+            axes: Optional axis or combination of axes to home. If None,
+                 homes all axes. Can be a single Axis or multiple axes
+                 using binary operators (e.g. Axis.X|Axis.Y)
+        """
+        if axes is None:
+            await self._send_and_wait(b"$H")
+            return
+
+        # Handle multiple axes - home them one by one
+        for axis in Axis:
+            if axes & axis:
+                assert axis.name
+                axis_letter: str = axis.name.upper()
+                cmd = f"G28 {axis_letter}0"
+                await self._send_and_wait(cmd.encode())
 
     async def move_to(self, pos_x, pos_y) -> None:
         cmd = f"G90 G0 X{float(pos_x)} Y{float(pos_y)}"
+        await self._send_and_wait(cmd.encode())
+
+    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+        """Smoothie supports jogging for all axes."""
+        return True
+
+    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+        """
+        Jogs the machine along a specific axis using G91 incremental mode.
+
+        Args:
+            axis: The Axis enum value
+            distance: The distance to jog in mm (positive or negative)
+            speed: The jog speed in mm/min
+        """
+        assert axis.name
+        axis_letter = axis.name.upper()
+        cmd = f"G91 G0 F{speed} {axis_letter}{distance}"
         await self._send_and_wait(cmd.encode())
 
     async def select_tool(self, tool_number: int) -> None:
@@ -218,3 +262,7 @@ class SmoothieDriver(Driver):
         raise NotImplementedError(
             "Device settings not implemented for this driver"
         )
+
+    def can_g0_with_speed(self) -> bool:
+        """Smoothie supports speed parameter in G0 commands."""
+        return True

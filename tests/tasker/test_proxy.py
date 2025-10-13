@@ -94,7 +94,8 @@ class TestExecutionContextProxy:
         # Report 50% progress within its own context (5/10)
         proxy.set_progress(5)
 
-        # Expected final progress: base + (normalized * range) = 0.2 + (0.5 * 0.5) = 0.45
+        # Expected final progress:
+        #   base + (normalized * range) = 0.2 + (0.5 * 0.5) = 0.45
         assert mock_queue.get_nowait() == ("progress", 0.45)
 
     def test_set_message(self, mock_queue):
@@ -126,7 +127,8 @@ class TestExecutionContextProxy:
 
         assert isinstance(child, ExecutionContextProxy)
         assert child._queue is mock_queue
-        # Expected base: parent_base + (sub_base * parent_range) = 0.1 + (0.5 * 0.8) = 0.5
+        # Expected base:
+        #  parent_base + (sub_base * parent_range) = 0.1 + (0.5 * 0.8) = 0.5
         assert child._base == pytest.approx(0.5)
         # Expected range: parent_range * sub_range = 0.8 * 0.25 = 0.2
         assert child._range == pytest.approx(0.2)
@@ -137,7 +139,8 @@ class TestExecutionContextProxy:
         parent = ExecutionContextProxy(
             mock_queue, base_progress=0.1, progress_range=0.8
         )
-        # Child represents the second half (50%-100%, range 0.5) of the parent's task.
+        # Child represents the second half (50%-100%, range 0.5)
+        # of the parent's task.
         child = parent.sub_context(
             base_progress=0.5, progress_range=0.5, total=200
         )
@@ -147,9 +150,11 @@ class TestExecutionContextProxy:
 
         # Child normalized progress = 0.5
         # Child's contribution to overall progress:
-        # child_base = parent_base + (sub_base * parent_range) = 0.1 + (0.5 * 0.8) = 0.5
+        # child_base = parent_base + (sub_base * parent_range)
+        #            = 0.1 + (0.5 * 0.8) = 0.5
         # child_range = parent_range * sub_range = 0.8 * 0.5 = 0.4
-        # final_progress = child_base + (child_normalized * child_range) = 0.5 + (0.5 * 0.4) = 0.5 + 0.2 = 0.7
+        # final_progress = child_base + (child_normalized * child_range)
+        #                = 0.5 + (0.5 * 0.4) = 0.5 + 0.2 = 0.7
 
         assert mock_queue.get_nowait() == ("progress", pytest.approx(0.7))
 

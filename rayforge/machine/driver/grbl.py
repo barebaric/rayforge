@@ -13,6 +13,7 @@ from .driver import (
     DriverSetupError,
     DriverPrecheckError,
     DeviceConnectionError,
+    Axis,
 )
 from .grbl_util import (
     parse_state,
@@ -42,7 +43,6 @@ class GrblNetworkDriver(Driver):
     label = _("GRBL (Network)")
     subtitle = _("Connect to a GRBL-compatible device over the network")
     supports_settings = True
-    _features = set()  # GRBL doesn't support G0 with speed
 
     def __init__(self):
         super().__init__()
@@ -310,8 +310,30 @@ class GrblNetworkDriver(Driver):
         # respond with 'ok'
         await self._send_command("%18")
 
-    async def home(self) -> None:
-        await self._execute_command("$H")
+    def can_home(self, axis: Optional[Axis] = None) -> bool:
+        """GRBL supports homing for all axes."""
+        return True
+
+    async def home(self, axes: Optional[Axis] = None) -> None:
+        """
+        Homes the specified axes or all axes if none specified.
+
+        Args:
+            axes: Optional axis or combination of axes to home. If None,
+                 homes all axes. Can be a single Axis or multiple axes
+                 using binary operators (e.g. Axis.X|Axis.Y)
+        """
+        if axes is None:
+            await self._execute_command("$H")
+            return
+
+        # Handle multiple axes - home them one by one
+        for axis in Axis:
+            if axes & axis:
+                assert axis.name
+                axis_letter: str = axis.name.upper()
+                cmd = f"$H{axis_letter}"
+                await self._execute_command(cmd)
 
     async def move_to(self, pos_x, pos_y) -> None:
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
@@ -324,6 +346,24 @@ class GrblNetworkDriver(Driver):
 
     async def clear_alarm(self) -> None:
         await self._execute_command("$X")
+
+    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+        """GRBL supports jogging for all axes."""
+        return True
+
+    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+        """
+        Jogs the machine along a specific axis using GRBL's $J command.
+
+        Args:
+            axis: The Axis enum value
+            distance: The distance to jog in mm (positive or negative)
+            speed: The jog speed in mm/min
+        """
+        assert axis.name
+        axis_letter: str = axis.name.upper()
+        cmd = f"$J=G91 G21 F{speed} {axis_letter}{distance}"
+        await self._execute_command(cmd)
 
     def on_http_data_received(self, sender, data: bytes):
         pass
@@ -426,3 +466,7 @@ class GrblNetworkDriver(Driver):
         """Writes a setting by sending '$<key>=<value>'."""
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
+
+    def can_g0_with_speed(self) -> bool:
+        """GRBL doesn't support speed parameter in G0 commands."""
+        return False

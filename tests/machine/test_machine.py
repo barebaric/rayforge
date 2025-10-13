@@ -4,7 +4,6 @@ import pytest_asyncio
 import asyncio
 from pathlib import Path
 from functools import partial
-
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
@@ -16,6 +15,7 @@ from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.dummy import NoDeviceDriver
+from rayforge.machine.driver.driver import Axis
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.config import initialize_managers
 from rayforge.core.matrix import Matrix
@@ -346,3 +346,155 @@ class TestMachine:
             ValueError, match="Machine has no laser heads configured"
         ):
             machine.get_default_head()
+
+    def test_home(self, machine: Machine):
+        """Test that dummy driver has all jog features."""
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
+
+    def test_jog(self, machine: Machine):
+        """Test that dummy driver has all jog features."""
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
+
+    def test_can_g0_with_speed(self, machine: Machine):
+        assert machine.can_g0_with_speed()
+
+    def test_new_driver_methods_smoothie(self, machine):
+        """Test new driver methods for SmoothieDriver."""
+        from rayforge.machine.driver.smoothie import SmoothieDriver
+
+        machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
+
+        # Test G0 with speed support
+        assert machine.can_g0_with_speed()
+
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
+
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
+
+    def test_new_driver_methods_grbl_network(self, machine):
+        """Test new driver methods for GrblNetworkDriver."""
+        from rayforge.machine.driver.grbl import GrblNetworkDriver
+
+        # Create driver directly to avoid setup issues
+        driver = GrblNetworkDriver()
+        driver.setup(host="test")
+        machine.driver = driver
+
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
+
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
+
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
+
+    def test_new_driver_methods_grbl_serial(self, machine):
+        """Test new driver methods for GrblSerialDriver."""
+        from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+
+        # Create driver directly to avoid setup issues
+        driver = GrblSerialDriver()
+        driver.setup(port="/dev/test", baudrate=115200)
+        machine.driver = driver
+
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
+
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
+
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
+
+    @pytest.mark.asyncio
+    async def test_home_method_with_multiple_axes(self, machine, mocker):
+        """
+        Test that home method accepts multiple axes using binary operators.
+        """
+        from rayforge.machine.driver.smoothie import SmoothieDriver
+
+        # Mock the _send_and_wait method to avoid connection issues
+        mock_send_and_wait = mocker.AsyncMock()
+
+        # Create driver directly to avoid setup issues
+        driver = SmoothieDriver()
+        driver._send_and_wait = mock_send_and_wait
+        machine.driver = driver
+
+        # Test home with single axis
+        await machine.home(Axis.X)
+        await machine.home(Axis.Y)
+        await machine.home(Axis.Z)
+
+        # Test home with multiple axes using binary operators
+        await machine.home(Axis.X | Axis.Y)
+        await machine.home(Axis.X | Axis.Z)
+        await machine.home(Axis.Y | Axis.Z)
+        await machine.home(Axis.X | Axis.Y | Axis.Z)
+
+        # Test home with no axes (should home all)
+        await machine.home()
+        await machine.home(None)
+
+        # Verify that _send_and_wait was called for each home operation
+        # 3 single axes + 3*2 for multiple axes (2 axes each)
+        #  + 1*3 for all three axes + 2 for home all/home none
+        assert mock_send_and_wait.call_count == 14
+
+    @pytest.mark.asyncio
+    async def test_machine_jog_methods(self, machine: Machine, mocker):
+        """Test that machine jog methods delegate to driver."""
+        # Mock the driver methods
+        jog_mock = mocker.AsyncMock()
+        home_mock = mocker.AsyncMock()
+        machine.driver.jog = jog_mock
+        machine.driver.home = home_mock
+
+        # Test jog method with single axis
+        await machine.jog(Axis.X, 1.0, 1000)
+        jog_mock.assert_called_once_with(Axis.X, 1.0, 1000)
+
+        # Reset the mock
+        jog_mock.reset_mock()
+
+        # Test jog method with multiple axes using bitmask
+        await machine.jog(Axis.X | Axis.Y, 2.0, 1500)
+        jog_mock.assert_called_once_with(Axis.X | Axis.Y, 2.0, 1500)
+
+        # Reset the mock
+        jog_mock.reset_mock()
+
+        # Test jog method with all axes
+        await machine.jog(Axis.X | Axis.Y | Axis.Z, 0.5, 2000)
+        jog_mock.assert_called_once_with(Axis.X | Axis.Y | Axis.Z, 0.5, 2000)
+
+        # Test home method
+        await machine.home(Axis.Y)
+        home_mock.assert_called_once_with(Axis.Y)

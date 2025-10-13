@@ -3,11 +3,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 from blinker import Signal
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum, auto, IntFlag
 from ...core.ops import Ops
 from ...debug import debug_log_manager, LogType
 from ..transport import TransportStatus
-from ..models.features import DriverFeature
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -79,6 +78,14 @@ DEVICE_STATUS_LABELS = {
 Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
 
 
+class Axis(IntFlag):
+    """Enum for machine axes"""
+
+    X = 1
+    Y = 2
+    Z = 4
+
+
 @dataclass
 class DeviceState:
     status: DeviceStatus = DeviceStatus.UNKNOWN
@@ -111,9 +118,6 @@ class Driver(ABC):
     label: str
     subtitle: str
     supports_settings: bool = False
-
-    # Feature flags for this driver
-    _features: set[DriverFeature] = set()
 
     def __init__(self):
         self.log_received = Signal()
@@ -196,10 +200,29 @@ class Driver(ABC):
         """
         pass
 
+    def can_home(self, axis: Optional["Axis"] = None) -> bool:
+        """
+        Check if this device supports homing for the given axis or axes.
+
+        Args:
+            axis: Optional axis to check. If None, checks if any homing
+                  is supported.
+
+        Returns:
+            True if the device supports homing the specified axis/axes,
+            False otherwise
+        """
+        return True
+
     @abstractmethod
-    async def home(self) -> None:
+    async def home(self, axes: Optional["Axis"] = None) -> None:
         """
         Sends a command to home machine.
+
+        Args:
+            axes: Optional axis or combination of axes to home. If None,
+                homes all axes. Can be a single Axis or multiple axes
+                using binary operators (e.g. Axis.X|Axis.Y)
         """
         pass
 
@@ -237,6 +260,34 @@ class Driver(ABC):
     async def clear_alarm(self) -> None:
         """
         Sends a command to clear any active alarm state.
+        """
+        pass
+
+    def can_jog(self, axis: Optional["Axis"] = None) -> bool:
+        """
+        Check if this device supports jogging for the given axis or axes.
+
+        Args:
+            axis: Optional axis to check. If None, checks if any jogging
+                  is supported.
+
+        Returns:
+            True if the device supports jogging the specified axis/axes,
+            False otherwise
+        """
+        return False
+
+    @abstractmethod
+    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+        """
+        Jogs the machine along a specific axis or combination of axes.
+
+        Args:
+            axis: The axis or combination of axes to jog. Can be a single
+                  Axis or multiple axes using binary operators
+                  (e.g. Axis.X|Axis.Y)
+            distance: The distance to jog in mm (positive or negative)
+            speed: The jog speed in mm/min
         """
         pass
 
@@ -291,14 +342,11 @@ class Driver(ABC):
             self, status=status, message=message
         )
 
-    def has_feature(self, feature: DriverFeature) -> bool:
+    def can_g0_with_speed(self) -> bool:
         """
-        Check if this driver supports a specific feature.
-
-        Args:
-            feature: The DriverFeature to check
+        Check if this device supports speed parameter in G0 commands.
 
         Returns:
-            True if the driver supports the feature, False otherwise
+            True if the device supports G0 with speed, False otherwise
         """
-        return feature in self._features
+        return False

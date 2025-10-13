@@ -20,6 +20,7 @@ from ..driver.driver import (
 )
 from ..driver.dummy import NoDeviceDriver
 from ..driver import get_driver_cls
+from ..driver.driver import Axis
 from .laser import Laser
 from .macro import Macro, MacroTrigger
 
@@ -61,6 +62,7 @@ class Machine:
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
         self.y_axis_down: bool = False
+        self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
         # Signals
@@ -83,10 +85,13 @@ class Machine:
         logger.info(f"Shutting down machine '{self.name}' (id:{self.id})")
         # Cancel any pending connection tasks for this driver
         task_mgr.cancel_task((self.id, "driver-connect"))
-        await self.driver.cleanup()
+        if self.driver is not None:
+            await self.driver.cleanup()
         self._disconnect_driver_signals()
 
     def _connect_driver_signals(self):
+        if self.driver is None:
+            return
         self.driver.connection_status_changed.connect(
             self._on_driver_connection_status_changed
         )
@@ -99,7 +104,7 @@ class Machine:
         self._reset_status()
 
     def _disconnect_driver_signals(self):
-        if not self.driver:
+        if self.driver is None:
             return
         self.driver.connection_status_changed.disconnect(
             self._on_driver_connection_status_changed
@@ -154,7 +159,7 @@ class Machine:
         self._connect_driver_signals()
 
         # A setup error prevents connection, but a precheck error does not.
-        if not self.driver.setup_error:
+        if self.driver is not None and not self.driver.setup_error:
             # Add the connect task with a key unique to this machine
             task_mgr.add_coroutine(
                 lambda ctx: self.driver.connect(),
@@ -246,6 +251,8 @@ class Machine:
 
     async def select_tool(self, index: int):
         """Sends a command to the driver to select a tool."""
+        if self.driver is None:
+            return
         await self.driver.select_tool(index)
 
     def set_name(self, name: str):
@@ -321,17 +328,125 @@ class Machine:
         self.y_axis_down = y_axis_down
         self.changed.send(self)
 
-    def has_feature(self, feature) -> bool:
-        """
-        Check if the machine's driver supports a specific feature.
+    def set_soft_limits_enabled(self, enabled: bool):
+        """Enable or disable soft limits for jog operations."""
+        self.soft_limits_enabled = enabled
+        self.changed.send(self)
 
-        Args:
-            feature: The DriverFeature to check
+    def get_current_position(
+        self,
+    ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+        """Get the current work position of the machine."""
+        return self.device_state.work_pos
 
-        Returns:
-            True if the driver supports the feature, False otherwise
-        """
-        return self.driver.has_feature(feature)
+    def get_soft_limits(self) -> Tuple[float, float, float, float]:
+        """Get the soft limits as (x_min, y_min, x_max, y_max)."""
+        # Use machine dimensions as soft limits
+        return (0.0, 0.0, float(self.dimensions[0]), float(self.dimensions[1]))
+
+    def would_jog_exceed_limits(self, axis: Axis, distance: float) -> bool:
+        """Check if a jog operation would exceed soft limits."""
+        if not self.soft_limits_enabled:
+            return False
+
+        current_pos = self.get_current_position()
+        x_pos, y_pos, z_pos = current_pos
+
+        if x_pos is None or y_pos is None:
+            return False
+
+        x_min, y_min, x_max, y_max = self.get_soft_limits()
+
+        # Check X axis
+        if axis & Axis.X:
+            new_x = x_pos + distance
+            if new_x < x_min or new_x > x_max:
+                return True
+
+        # Check Y axis
+        if axis & Axis.Y:
+            new_y = y_pos + distance
+            if new_y < y_min or new_y > y_max:
+                return True
+
+        return False
+
+    def _adjust_jog_distance_for_limits(
+        self, axis: Axis, distance: float
+    ) -> float:
+        """Adjust jog distance to stay within soft limits."""
+        if not self.soft_limits_enabled:
+            return distance
+
+        current_pos = self.get_current_position()
+        x_pos, y_pos, z_pos = current_pos
+
+        if x_pos is None or y_pos is None:
+            return distance
+
+        x_min, y_min, x_max, y_max = self.get_soft_limits()
+        adjusted_distance = distance
+
+        # Check X axis
+        if axis & Axis.X:
+            new_x = x_pos + distance
+            if new_x < x_min:
+                adjusted_distance = x_min - x_pos
+            elif new_x > x_max:
+                adjusted_distance = x_max - x_pos
+
+        # Check Y axis (only if not already adjusted for X)
+        if axis & Axis.Y and adjusted_distance == distance:
+            new_y = y_pos + distance
+            if new_y < y_min:
+                adjusted_distance = y_min - y_pos
+            elif new_y > y_max:
+                adjusted_distance = y_max - y_pos
+
+        return adjusted_distance
+
+    def can_g0_with_speed(self) -> bool:
+        """Check if the machine's driver supports G0 with speed."""
+        if self.driver is None:
+            return False
+        return self.driver.can_g0_with_speed()
+
+    def can_home(self, axis: Optional[Axis] = None) -> bool:
+        """Check if the machine's driver supports homing for the given axis."""
+        if self.driver is None:
+            return False
+        return self.driver.can_home(axis)
+
+    async def home(self, axes=None):
+        """Homes the specified axes or all axes if none specified."""
+        if self.driver is None:
+            return
+        await self.driver.home(axes)
+
+    async def jog(self, axis: Axis, distance: float, speed: int):
+        """Jogs the machine along a specific axis or combination of axes."""
+        if self.driver is None:
+            return
+
+        # If soft limits are enabled, adjust distance to stay within limits
+        if self.soft_limits_enabled:
+            adjusted_distance = self._adjust_jog_distance_for_limits(
+                axis, distance
+            )
+            if adjusted_distance != distance:
+                logger.debug(
+                    f"Adjusting jog distance from {distance} to "
+                    f"{adjusted_distance} to stay within limits"
+                )
+                distance = adjusted_distance
+
+        await self.driver.jog(axis, distance, speed)
+
+    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+        """Check if machine's supports jogging for the given axis."""
+        if self.driver is None:
+            return False
+        return self.driver.can_jog(axis)
 
     def add_head(self, head: Laser):
         self.heads.append(head)
@@ -445,6 +560,8 @@ class Machine:
         Gets the setting definitions from the machine's active driver
         as a VarSet.
         """
+        if self.driver is None:
+            return []
         return self.driver.get_setting_vars()
 
     async def _read_from_device(self):
@@ -455,7 +572,7 @@ class Machine:
         logger.debug("Machine._read_from_device: Acquiring lock.")
         async with self._settings_lock:
             logger.debug("_read_from_device: Lock acquired.")
-            if not self.driver:
+            if self.driver is None:
                 err = ConnectionError("No driver instance for this machine.")
                 self.settings_error.send(self, error=err)
                 return
@@ -483,7 +600,7 @@ class Machine:
         It no longer triggers an automatic re-read.
         """
         logger.debug(f"_write_setting_to_device(key={key}): Acquiring lock.")
-        if not self.driver:
+        if self.driver is None:
             err = ConnectionError("No driver instance for this machine.")
             self.settings_error.send(self, error=err)
             return
@@ -549,6 +666,9 @@ class Machine:
         ma.dialect_name = ma_data.get("dialect", "grbl")
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
+        ma.soft_limits_enabled = ma_data.get(
+            "soft_limits_enabled", ma.soft_limits_enabled
+        )
 
         # Deserialize hookmacros first, if they exist
         hook_data = ma_data.get("hookmacros", {})

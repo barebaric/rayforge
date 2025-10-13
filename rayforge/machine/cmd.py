@@ -2,12 +2,12 @@ from __future__ import annotations
 import logging
 import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
-
 from ..pipeline.artifact.store import ArtifactStore
 from ..pipeline.artifact.handle import ArtifactHandle
 
 if TYPE_CHECKING:
     from .models.machine import Machine
+    from .driver.driver import Axis
     from ..doceditor.editor import DocEditor
 
 
@@ -208,4 +208,19 @@ class MachineCmd:
         driver = machine.driver
         self._editor.task_manager.add_coroutine(
             lambda ctx: driver.clear_alarm(), key="clear-alarm"
+        )
+
+    def jog(self, machine: "Machine", axis: Axis, distance: float, speed: int):
+        """
+        Adds a task to jog the machine along a specific axis
+        or combination of axes.
+        """
+        self._editor.task_manager.add_coroutine(
+            lambda ctx: machine.jog(axis, distance, speed)
+        )
+
+    def home(self, machine: "Machine", axis: Optional[Axis] = None):
+        """Adds a task to home a specific axis."""
+        self._editor.task_manager.add_coroutine(
+            lambda ctx: machine.driver.home(axis)
         )

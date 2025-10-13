@@ -203,19 +203,19 @@ class MainToolbar(Gtk.Box):
 
         self.home_button = Gtk.Button(child=get_icon("home-symbolic"))
         self.home_button.set_tooltip_text(_("Home the machine"))
-        self.home_button.set_action_name("win.home")
+        self.home_button.set_action_name("win.machine-home")
         self.append(self.home_button)
 
         self.frame_button = Gtk.Button(child=get_icon("frame-symbolic"))
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
         )
-        self.frame_button.set_action_name("win.frame")
+        self.frame_button.set_action_name("win.machine-frame")
         self.append(self.frame_button)
 
         self.send_button = Gtk.Button(child=get_icon("send-symbolic"))
         self.send_button.set_tooltip_text(_("Send to machine"))
-        self.send_button.set_action_name("win.send")
+        self.send_button.set_action_name("win.machine-send")
         self.append(self.send_button)
 
         self.hold_on_icon = get_icon("play-arrow-symbolic")
@@ -223,13 +223,12 @@ class MainToolbar(Gtk.Box):
         self.hold_button = Gtk.ToggleButton()
         self.hold_button.set_child(self.hold_off_icon)
         self.hold_button.set_tooltip_text(_("Pause machine"))
-        # The ToggleButton state is now controlled by the 'win.hold' action
-        self.hold_button.set_action_name("win.hold")
+        self.hold_button.set_action_name("win.machine-hold")
         self.append(self.hold_button)
 
         self.cancel_button = Gtk.Button(child=get_icon("stop-symbolic"))
         self.cancel_button.set_tooltip_text(_("Cancel running job"))
-        self.cancel_button.set_action_name("win.cancel")
+        self.cancel_button.set_action_name("win.machine-cancel")
         self.append(self.cancel_button)
 
         self.clear_alarm_button = Gtk.Button(
@@ -238,8 +237,13 @@ class MainToolbar(Gtk.Box):
         self.clear_alarm_button.set_tooltip_text(
             _("Clear machine alarm (unlock)")
         )
-        self.clear_alarm_button.set_action_name("win.clear_alarm")
+        self.clear_alarm_button.set_action_name("win.machine-clear-alarm")
         self.append(self.clear_alarm_button)
+
+        self.jog_button = Gtk.Button(child=get_icon("jog-symbolic"))
+        self.jog_button.set_tooltip_text(_("Manual jog control"))
+        self.jog_button.set_action_name("win.machine-jog")
+        self.append(self.jog_button)
 
         # Add spacer to push machine selector to the right
         spacer = Gtk.Box()

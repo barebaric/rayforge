@@ -4,7 +4,6 @@ from ...shared.util.adwfix import get_spinrow_int
 from ..models.machine import Machine
 from ...shared.varset.varsetwidget import VarSetWidget
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
-from ..models.features import DriverFeature
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -373,11 +372,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         if self._is_initializing:
             return
 
-        has_g0_with_speed = self.machine.has_feature(
-            DriverFeature.G0_WITH_SPEED
-        )
-
-        if has_g0_with_speed:
+        if self.machine.can_g0_with_speed():
             self.travel_speed_row.set_sensitive(True)
             self.travel_speed_row.set_subtitle(
                 _("Maximum rapid movement speed")

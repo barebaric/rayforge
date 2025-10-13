@@ -8,7 +8,13 @@ from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
-from .driver import Driver, DriverSetupError, DeviceStatus, DriverPrecheckError
+from .driver import (
+    Driver,
+    DriverSetupError,
+    DeviceStatus,
+    DriverPrecheckError,
+    Axis,
+)
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -32,7 +38,6 @@ class GrblSerialDriver(Driver):
     label = _("GRBL (Serial)")
     subtitle = _("GRBL-compatible serial connection")
     supports_settings = True
-    _features = set()  # GRBL doesn't support G0 with speed
 
     def __init__(self):
         super().__init__()
@@ -339,8 +344,30 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         await self._send_command("!" if hold else "~", add_newline=False)
 
-    async def home(self) -> None:
-        await self._execute_command("$H")
+    def can_home(self, axis: Optional[Axis] = None) -> bool:
+        """GRBL supports homing for all axes."""
+        return True
+
+    async def home(self, axes: Optional[Axis] = None) -> None:
+        """
+        Homes the specified axes or all axes if none specified.
+
+        Args:
+            axes: Optional axis or combination of axes to home. If None,
+                 homes all axes. Can be a single Axis or multiple axes
+                 using binary operators (e.g. Axis.X|Axis.Y)
+        """
+        if axes is None:
+            await self._execute_command("$H")
+            return
+
+        # Handle multiple axes - home them one by one
+        for axis in Axis:
+            if axes & axis:
+                assert axis.name
+                axis_letter: str = axis.name.upper()
+                cmd = f"$H{axis_letter}"
+                await self._execute_command(cmd)
 
     async def move_to(self, pos_x, pos_y) -> None:
         cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
@@ -353,6 +380,34 @@ class GrblSerialDriver(Driver):
 
     async def clear_alarm(self) -> None:
         await self._execute_command("$X")
+
+    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+        """GRBL supports jogging for all axes."""
+        return True
+
+    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+        """
+        Jogs the machine along a specific axis or combination of axes
+        using GRBL's $J command.
+
+        Args:
+            axis: The Axis enum value or combination of axes using
+                  binary operators (e.g. Axis.X|Axis.Y)
+            distance: The distance to jog in mm (positive or negative)
+            speed: The jog speed in mm/min
+        """
+        # Build the command with all specified axes
+        cmd_parts = [f"$J=G91 G21 F{speed}"]
+
+        # Add each axis component to the command
+        for single_axis in Axis:
+            if axis & single_axis:
+                assert single_axis.name
+                axis_letter = single_axis.name.upper()
+                cmd_parts.append(f"{axis_letter}{distance}")
+
+        cmd = " ".join(cmd_parts)
+        await self._execute_command(cmd)
 
     def get_setting_vars(self) -> List["VarSet"]:
         return get_grbl_setting_varsets()
@@ -493,3 +548,7 @@ class GrblSerialDriver(Driver):
         else:
             # This could be a welcome message, an alarm, or a setting line
             logger.debug(f"Received informational line: {line}")
+
+    def can_g0_with_speed(self) -> bool:
+        """GRBL doesn't support speed parameter in G0 commands."""
+        return False

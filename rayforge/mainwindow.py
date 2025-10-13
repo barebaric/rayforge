@@ -9,6 +9,7 @@ from .config import config, config_mgr
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
+from .machine.ui.jog_dialog import JogDialog
 from .core.group import Group
 from .core.item import DocItem
 from .core.workpiece import WorkPiece
@@ -902,13 +903,13 @@ class MainWindow(Adw.ApplicationWindow):
 
         if not active_machine:
             am.get_action("export").set_enabled(False)
-            am.get_action("machine_settings").set_enabled(False)
-            am.get_action("home").set_enabled(False)
-            am.get_action("frame").set_enabled(False)
-            am.get_action("send").set_enabled(False)
-            am.get_action("hold").set_enabled(False)
-            am.get_action("cancel").set_enabled(False)
-            am.get_action("clear_alarm").set_enabled(False)
+            am.get_action("machine-settings").set_enabled(False)
+            am.get_action("machine-home").set_enabled(False)
+            am.get_action("machine-frame").set_enabled(False)
+            am.get_action("machine-send").set_enabled(False)
+            am.get_action("machine-hold").set_enabled(False)
+            am.get_action("machine-cancel").set_enabled(False)
+            am.get_action("machine-clear-alarm").set_enabled(False)
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
             )
@@ -934,7 +935,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.toolbar.machine_warning_box.set_visible(
                 bool(active_driver and active_driver.setup_error)
             )
-            am.get_action("machine_settings").set_enabled(True)
+            am.get_action("machine-settings").set_enabled(True)
 
             # A job/task is running if the machine is not idle or a UI task is
             # active.
@@ -942,14 +943,16 @@ class MainWindow(Adw.ApplicationWindow):
                 device_status != DeviceStatus.IDLE or task_mgr.has_tasks()
             )
 
-            am.get_action("home").set_enabled(not is_job_or_task_active)
+            am.get_action("machine-home").set_enabled(
+                not is_job_or_task_active
+            )
 
             can_frame = (
                 active_machine.can_frame()
                 and doc.has_result()
                 and not is_job_or_task_active
             )
-            am.get_action("frame").set_enabled(can_frame)
+            am.get_action("machine-frame").set_enabled(can_frame)
             if not active_machine.can_frame():
                 self.toolbar.frame_button.set_tooltip_text(
                     _("Configure frame power to enable")
@@ -966,7 +969,7 @@ class MainWindow(Adw.ApplicationWindow):
                 and doc.has_result()
                 and not is_job_or_task_active
             )
-            am.get_action("send").set_enabled(send_sensitive)
+            am.get_action("machine-send").set_enabled(send_sensitive)
             self.toolbar.send_button.set_tooltip_text(_("Send to machine"))
 
             hold_sensitive = device_status in (
@@ -975,8 +978,8 @@ class MainWindow(Adw.ApplicationWindow):
                 DeviceStatus.CYCLE,
             )
             is_holding = device_status == DeviceStatus.HOLD
-            am.get_action("hold").set_enabled(hold_sensitive)
-            am.get_action("hold").set_state(
+            am.get_action("machine-hold").set_enabled(hold_sensitive)
+            am.get_action("machine-hold").set_state(
                 GLib.Variant.new_boolean(is_holding)
             )
             if is_holding:
@@ -992,10 +995,12 @@ class MainWindow(Adw.ApplicationWindow):
                 DeviceStatus.JOG,
                 DeviceStatus.CYCLE,
             )
-            am.get_action("cancel").set_enabled(cancel_sensitive)
+            am.get_action("machine-cancel").set_enabled(cancel_sensitive)
 
             clear_alarm_sensitive = device_status == DeviceStatus.ALARM
-            am.get_action("clear_alarm").set_enabled(clear_alarm_sensitive)
+            am.get_action("machine-clear-alarm").set_enabled(
+                clear_alarm_sensitive
+            )
             if clear_alarm_sensitive:
                 self.toolbar.clear_alarm_button.add_css_class(
                     "suggested-action"
@@ -1157,6 +1162,18 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         self.machine_cmd.clear_alarm(config.machine)
+
+    def on_jog_clicked(self, action, param):
+        """Show the jog control dialog."""
+        if not config.machine:
+            return
+
+        dialog = JogDialog(
+            machine=config.machine,
+            machine_cmd=self.machine_cmd,
+        )
+        dialog.set_transient_for(self)
+        dialog.present()
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""

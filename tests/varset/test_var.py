@@ -8,7 +8,6 @@ from rayforge.shared.varset.serialportvar import SerialPortVar
 
 
 class TestVar(unittest.TestCase):
-
     def test_creation_basic(self):
         v = Var(key="test", label="Test", var_type=str, default="hello")
         self.assertEqual(v.key, "test")
@@ -79,7 +78,9 @@ class TestVar(unittest.TestCase):
 
         v_bool = Var(key="test_b", label="Test B", var_type=bool)
 
-        with self.assertRaisesRegex(TypeError, "cannot be coerced to type bool"):
+        with self.assertRaisesRegex(
+            TypeError, "cannot be coerced to type bool"
+        ):
             v_bool.value = "maybe"
 
     def test_validation_logic(self):
@@ -112,7 +113,9 @@ class TestVar(unittest.TestCase):
         )
 
         # 3. Now, explicit validation should fail
-        with self.assertRaisesRegex(ValidationError, "Value out of range 0-100"):
+        with self.assertRaisesRegex(
+            ValidationError, "Value out of range 0-100"
+        ):
             v.validate()
 
         # 4. The value remains the invalid one after the failed validation
@@ -136,7 +139,7 @@ class TestVar(unittest.TestCase):
 
         # Test that None is a valid value if not otherwise constrained
         v.value = None
-        v.validate()  # Should pass, as the checks are guarded by `v is not None`
+        v.validate()  # Should pass, as checks are guarded by `v is not None`
 
         # Test extra validator
         def is_even(v):
@@ -144,7 +147,11 @@ class TestVar(unittest.TestCase):
                 raise ValidationError("Must be even")
 
         v_even = IntVar(
-            key="test_even", label="Test", min_val=0, max_val=10, validator=is_even
+            key="test_even",
+            label="Test",
+            min_val=0,
+            max_val=10,
+            validator=is_even,
         )
 
         v_even.value = 4
@@ -177,7 +184,7 @@ class TestVar(unittest.TestCase):
 
         # Test that None is a valid value if not otherwise constrained
         v.value = None
-        v.validate()  # Should pass, as the checks are guarded by `if v is None`
+        v.validate()  # Should pass, as checks are guarded by `if v is None`
 
         # Test extra validator
         def is_whole(v):

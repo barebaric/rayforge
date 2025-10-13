@@ -146,20 +146,21 @@ class MainMenu(Gio.Menu):
         # Machine Menu
         machine_menu = Gio.Menu()
         jog_group = Gio.Menu()
-        jog_group.append(_("Home"), "win.home")
-        jog_group.append(_("Frame"), "win.frame")
+        jog_group.append(_("Home"), "win.machine-home")
+        jog_group.append(_("Frame"), "win.machine-frame")
+        jog_group.append(_("Jog Controls..."), "win.machine-jog")
         machine_menu.append_section(None, jog_group)
 
         job_group = Gio.Menu()
-        job_group.append(_("Send Job"), "win.send")
-        job_group.append(_("Pause / Resume Job"), "win.hold")
-        job_group.append(_("Cancel Job"), "win.cancel")
-        job_group.append(_("Clear Alarm"), "win.clear_alarm")
+        job_group.append(_("Send Job"), "win.machine-send")
+        job_group.append(_("Pause / Resume Job"), "win.machine-hold")
+        job_group.append(_("Cancel Job"), "win.machine-cancel")
+        job_group.append(_("Clear Alarm"), "win.machine-clear-alarm")
         machine_menu.append_section(None, job_group)
 
         machine_settings_group = Gio.Menu()
         machine_settings_group.append(
-            _("Machine Settings…"), "win.machine_settings"
+            _("Machine Settings…"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
         self.append_submenu(_("_Machine"), machine_menu)
