@@ -4,6 +4,8 @@
 [![Launchpad PPA](https://img.shields.io/badge/PPA-blue)](https://launchpad.net/~knipknap/+archive/ubuntu/rayforge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
+
 # Rayforge
 
 Rayforge is a modern, cross-platform G-code sender and control software for GRBL-based laser cutters and engravers. Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux and Windows, offering a full suite of tools for both hobbyists and professionals.
@@ -46,99 +48,17 @@ You can also check the [official Rayforge homepage](https://rayforge.org).
 
 ## Installation
 
-### Windows
+For installation instructions [refer to our homepage](https://rayforge.org/docs/0.22/getting-started/installation.html).
 
-Download the latest installer from the **[Releases Page](https://github.com/barebaric/rayforge/releases/)**.
-
-### Linux
-
-We offer several installation methods for Linux.
-
-#### Ubuntu & Derivatives (via PPA)
-
-For users on Ubuntu and its derivatives (like Linux Mint, Pop!\_OS), the recommended
-method is our official PPA. This integrates directly with your system's package
-manager and provides automatic updates.
-
-> [!NOTE]
-> The PPA supports **Ubuntu 24.04 LTS and newer**.
-
-Open a terminal and run the following commands:
-
-```bash
-sudo add-apt-repository ppa:knipknap/rayforge
-sudo apt update
-sudo apt install rayforge
-```
-
-#### Cross-Distro (Snap)
-
-The Snap package includes all dependencies and runs in a sandbox. It is the recommended
-method for most other Linux distributions.
-
-[![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
-
-> [!IMPORTANT]
-> The Snap is sandboxed and requires you to manually grant permissions for hardware
-> access. Run these commands after installation.
-
-For camera access:
-
-```bash
-sudo snap connect rayforge:camera
-```
-
-For USB serial port access:
-
-```bash
-# First, enable experimental hotplug support
-sudo snap set system experimental.hotplug=true
-
-# Connect your laser via USB, then run this command
-sudo snap connect rayforge:serial-port
-```
-
-#### From Source (pip)
-
-This method is for developers and advanced users. You must install system dependencies manually.
-
-On Debian/Ubuntu-based systems:
-
-```bash
-sudo apt update
-sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 libvips42t64 libadwaita-1-0 libopencv-dev
-
-pip3 install rayforge
-```
-
-_(Package names may differ on other distributions.)_
-
-### Other Operating Systems (e.g., macOS)
-
-There are no official builds for other platforms, but Rayforge may run from source via
-the `pip` method. Contributions for packaging on other platforms are welcome.
-
-## Contributing
-
-We welcome contributions of all kinds! Whether you're fixing a bug, adding
-a feature, or improving documentation, your help is appreciated.
-
-- **Report a Bug:** Open an [issue](https://github.com/barebaric/rayforge/issues)
-  with a clear description and steps to reproduce.
-- **Suggest a Feature:** Start a discussion or open a feature request issue.
-- **Submit a Pull Request:** Please discuss major changes in an issue first.
-- **Add a Driver:** See the [driver development guide](website/content/docs/developer/driver.md) to add
-  support for your hardware.
-
-### Packaging Help Wanted
-
+!!! note "Packaging help"
 We are actively seeking help to create and maintain a **[Flatpak](flatpak/)** package.
 If you have experience with Flatpak, your contribution would be highly valuable!
 
 ## Development
 
 For detailed information about developing for Rayforge, including setup instructions,
-testing, and contribution guidelines, please see the [Developer Documentation](website/content/docs/developer/development.md).
+testing, and contribution guidelines, please see the
+[Developer Documentation](https://rayforge.org/docs/latest/developer/getting-started/).
 
 ## License
 
