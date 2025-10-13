@@ -197,5 +197,4 @@ modules:
     sources:
       - type: git 
         url: https://github.com/barebaric/rayforge.git
-        branch: main
-        commit: 09626272619076d7d2c00678ae275080bd56c3c5
+        commit: e85545b71830d1e83970c986d8977c99e9cdb1ab
