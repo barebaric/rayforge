@@ -68,6 +68,7 @@ nav:
           - Exporting: docs/files/exporting.md
       - Troubleshooting:
           - docs/troubleshooting/index.md
+          - Debug Reports: docs/troubleshooting/debug.md
           - Connection: docs/troubleshooting/connection.md
           - Common Issues: docs/troubleshooting/common.md
           - Performance: docs/troubleshooting/performance.md
@@ -77,6 +78,17 @@ nav:
           - Shortcuts: docs/reference/shortcuts.md
           - G-code Dialects: docs/reference/gcode-dialects.md
           - Firmware: docs/reference/firmware.md
+  - Developer Documentation:
+      - Getting Started:
+          - Getting the code: docs/developer/getting-started/getting-the-code.md
+          - Setup: docs/developer/getting-started/setup.md
+          - Submitting changes: docs/developer/getting-started/submitting-changes.md
+      - Architecture:
+          - docs/developer/architecture.md
+          - Document Model: docs/developer/docmodel.md
+          - Pipeline: docs/developer/pipeline.md
+          - Task Manager: docs/developer/tasker.md
+          - Drivers: docs/developer/driver.md
   - Contributing:
       - contributing/index.md
 

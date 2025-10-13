@@ -21,7 +21,8 @@ Key principles of the model include:
   children's signals and "bubble them up" the tree. This allows
   high-level components like the `OpsGenerator` to listen for any
   change in the document by connecting to a single signal on the root
-  `Doc` object.
+  `Doc` object. The system tracks both content changes and transform
+  changes separately for efficient updates.
 - **Transformation Hierarchy:** Every `DocItem` has a local transformation
   `Matrix`. An item's final position, scale, and rotation in the "world"
   (the main canvas) is the product of its own local matrix and the

@@ -10,7 +10,6 @@ specific areas, please refer to the linked documents.
 - [Code Architecture](#code-architecture)
 - [Document Model Architecture](#document-model-architecture)
 - [Pipeline Architecture](#pipeline-architecture)
-- [Key Design Patterns](#key-design-patterns)
 
 ---
 
@@ -70,7 +69,7 @@ architecture.
 - **`rayforge/pipeline/`**: The core processing pipeline for generating
   machine operations from the document model.
 - **`rayforge/machine/`**: Hardware interface layer, including device
-  drivers and communication protocols.
+  drivers, transport protocols, and machine models.
 - **`rayforge/doceditor/`**: The main document editor controller and its UI.
 - **`rayforge/workbench/`**: The 2D/3D canvas and visualization systems.
 - **`rayforge/image/`**: Importers for various file formats (SVG, DXF, etc.).

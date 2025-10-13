@@ -10,7 +10,7 @@ Follow these simple steps to generate and share a report:
 
 At the bottom of the main window, you'll find the status bar. It shows the current connection status (e.g., "Connected", "Disconnected"). **Click on this status bar** to open the Log Viewer panel.
 
-![Log area screenshot](machine-logs.png)
+![Log area screenshot](../images/machine-logs.png)
 
 #### 2. Save the Report
 
