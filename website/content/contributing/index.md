@@ -34,7 +34,7 @@ Have an idea for a new feature?
 ### Submit Code
 
 For detailed information on submitting code contributions, please see the
-[Developer Documentation - Getting Started](../{{ latest_docs }}/developer/getting-started/getting-the-code.md) guide.
+[Developer Documentation - Getting Started](../{{ latest_docs }}/developer/getting-started/index.md) guide.
 
 ### Improve Documentation
 
