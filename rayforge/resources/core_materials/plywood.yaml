@@ -1,0 +1,7 @@
+uid: plywood
+name: Plywood
+description: Engineered wood product made from layers of wood veneer
+category: Wood
+appearance:
+  color: "#DEB887"  # Burlywood
+  pattern: wood_grain

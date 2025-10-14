@@ -161,3 +161,25 @@ class StockCmd:
             name=_("Change stock thickness"),
         )
         self._editor.doc.history_manager.execute(command)
+
+    def set_stock_material(
+        self, stock_item: StockItem, new_material_uid: str
+    ):
+        """
+        Sets the material of a StockItem with an undoable command.
+
+        Args:
+            stock_item: The StockItem to modify.
+            new_material_uid: The new material UID for the StockItem.
+        """
+        if new_material_uid == stock_item.material_uid:
+            return
+
+        command = ChangePropertyCommand(
+            target=stock_item,
+            property_name="material_uid",
+            new_value=new_material_uid,
+            setter_method_name="set_material",
+            name=_("Change stock material"),
+        )
+        self._editor.doc.history_manager.execute(command)

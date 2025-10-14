@@ -1,12 +1,14 @@
 import logging
 from gi.repository import Gtk, Adw, GLib
-from typing import TYPE_CHECKING, Tuple
-
+from typing import TYPE_CHECKING, Tuple, Optional
+from ...config import material_mgr
 from ...core.stock import StockItem
-from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...shared.ui.unit_spin_row import UnitSelectorSpinRow
+from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
+    from ...core.material import Material
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ class StockPropertiesDialog(Adw.Window):
         self.connect("destroy", self._on_destroy)
 
         self.set_title(_("Stock Properties"))
-        self.set_default_size(400, 300)
+        self.set_default_size(500, 400)
         self.set_modal(False)
         self.set_resizable(True)
 
@@ -58,39 +60,42 @@ class StockPropertiesDialog(Adw.Window):
 
         # Properties group
         properties_group = Adw.PreferencesGroup()
-        properties_group.set_title(_("Stock Properties"))
 
         # Name field
-        name_row = Adw.EntryRow()
-        name_row.set_title(_("Name"))
-        name_row.set_text(self.stock_item.name)
-        # Connect to the "changed" signal for instant apply
-        name_row.connect("changed", self.on_name_changed)
-        properties_group.add(name_row)
+        self.name_row = Adw.EntryRow()
+        self.name_row.set_title(_("Name"))
+        self.name_row.set_text(self.stock_item.name)
+        self.name_row.connect("changed", self.on_name_changed)
+        properties_group.add(self.name_row)
 
-        # Thickness field using SpinRow
-        thickness_adjustment = Gtk.Adjustment(
-            lower=0,
-            upper=999,
-            step_increment=1,
-            page_increment=10,
-        )
-        thickness_row = Adw.SpinRow(
+        # Thickness field using UnitSelectorSpinRow
+        self.thickness_selector = UnitSelectorSpinRow(
+            quantity="length",
             title=_("Thickness"),
             subtitle=_("Material thickness"),
-            adjustment=thickness_adjustment,
-        )
-        self.thickness_helper = UnitSpinRowHelper(
-            spin_row=thickness_row,
-            quantity="length",
             max_value_in_base=999,
         )
         if self.stock_item.thickness is not None:
-            self.thickness_helper.set_value_in_base_units(
+            self.thickness_selector.set_value_in_base_units(
                 self.stock_item.thickness
             )
-        self.thickness_helper.changed.connect(self.on_thickness_changed)
-        properties_group.add(thickness_row)
+        self.thickness_selector.changed.connect(self.on_thickness_changed)
+        properties_group.add(self.thickness_selector.row)
+
+        # Material display row
+        self.material_row = Adw.ActionRow()
+        self.material_row.set_title(_("Material"))
+
+        # Add a button to open the material selector
+        self.material_button = Gtk.Button(label=_("Select"))
+        self.material_button.set_valign(Gtk.Align.CENTER)
+        self.material_button.connect("clicked", self.on_select_material)
+        self.material_row.add_suffix(self.material_button)
+
+        properties_group.add(self.material_row)
+
+        # Initialize material display
+        self._update_material_display()
 
         content_box.append(properties_group)
 
@@ -132,11 +137,23 @@ class StockPropertiesDialog(Adw.Window):
         if new_name and new_name != self.stock_item.name:
             self._debounce(self._apply_name_change, new_name)
 
-    def on_thickness_changed(self, helper: UnitSpinRowHelper):
-        """Handle thickness spin button changes with instant apply."""
-        new_thickness = helper.get_value_in_base_units()
+    def on_thickness_changed(self, selector: UnitSelectorSpinRow):
+        """Handle thickness selector changes with instant apply."""
+        new_thickness = selector.get_value_in_base_units()
         if new_thickness != self.stock_item.thickness:
             self._debounce(self._apply_thickness_change, new_thickness)
+
+    def on_select_material(self, button: Gtk.Button):
+        """Shows the material selector dialog."""
+        dialog = MaterialSelectorDialog(
+            parent=self, on_select_callback=self._on_material_selected
+        )
+        dialog.present()
+
+    def _on_material_selected(self, material_uid: Optional[str]):
+        """Callback for when a material is selected from the dialog."""
+        if material_uid is not None:
+            self.editor.stock.set_stock_material(self.stock_item, material_uid)
 
     def _apply_name_change(self, new_name):
         """Apply the name change."""
@@ -145,11 +162,18 @@ class StockPropertiesDialog(Adw.Window):
 
     def on_stock_item_updated(self, sender, **kwargs):
         """Update the UI when the stock item changes."""
+        # Update name if it has changed
+        if self.name_row.get_text() != self.stock_item.name:
+            self.name_row.set_text(self.stock_item.name)
+
         # Update the thickness field if it has changed
         if self.stock_item.thickness is not None:
-            self.thickness_helper.set_value_in_base_units(
+            self.thickness_selector.set_value_in_base_units(
                 self.stock_item.thickness
             )
+
+        # Update the material display if it has changed
+        self._update_material_display()
 
     def _apply_thickness_change(self, new_thickness):
         """Apply the thickness change."""
@@ -157,3 +181,34 @@ class StockPropertiesDialog(Adw.Window):
             self.editor.stock.set_stock_thickness(
                 self.stock_item, new_thickness
             )
+
+    def _update_material_display(self):
+        """Update the material display label."""
+        if not self.stock_item.material_uid:
+            self.material_row.set_subtitle(_("None"))
+            return
+
+        material = self.stock_item.material
+        if material:
+            library_name = self._get_material_library_name(material)
+            if library_name:
+                self.material_row.set_subtitle(
+                    f"{library_name}: {material.name}"
+                )
+            else:
+                self.material_row.set_subtitle(material.name)
+        else:
+            self.material_row.set_subtitle(
+                f"❓ {self.stock_item.material_uid}"
+            )
+
+    def _get_material_library_name(
+        self, material: "Material"
+    ) -> Optional[str]:
+        """Get the display name of the library that contains this material."""
+        # Search through all libraries to find which one contains this material
+        for library in material_mgr.get_libraries():
+            if library.get_material(material.uid):
+                return library.display_name
+
+        return None
