@@ -177,7 +177,7 @@ class AboutDialog(Adw.Window):
         hero_box.set_halign(Gtk.Align.CENTER)
         content_box.append(hero_box)
 
-        icon = get_icon("com.barebaric.rayforge")
+        icon = get_icon("org.rayforge.rayforge")
         icon.set_pixel_size(128)
         hero_box.append(icon)
 

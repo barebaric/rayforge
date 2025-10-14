@@ -7,6 +7,6 @@ Comment=Laser cutting and engraving
 Categories=Graphics;2DGraphics;VectorGraphics;Engineering;
 StartupNotify=true
 
-Icon=com.barebaric.rayforge
+Icon=org.rayforge.rayforge
 Exec=rayforge
 Terminal=false

@@ -7,8 +7,8 @@ apps:
   rayforge:
     extensions: [gnome]
     command: bin/rayforge
-    common-id: com.barebaric.rayforge
-    desktop: share/applications/com.barebaric.rayforge.desktop
+    common-id: org.rayforge.rayforge
+    desktop: share/applications/org.rayforge.rayforge.desktop
     plugs:
       - home
       - gsettings
@@ -31,7 +31,7 @@ slots:
   rayforge:
     interface: dbus
     bus: session
-    name: com.barebaric.rayforge
+    name: org.rayforge.rayforge
 
 parts:
   semwraplib:
@@ -55,7 +55,7 @@ parts:
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
-    parse-info: [share/metainfo/com.barebaric.rayforge.metainfo.xml]
+    parse-info: [share/metainfo/org.rayforge.rayforge.metainfo.xml]
     override-pull: |
       craftctl default
       craftctl set version="$(git describe --tags)"

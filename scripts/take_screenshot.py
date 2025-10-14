@@ -270,7 +270,7 @@ def create_patched_app_class():
 
     class PatchedApp(Adw.Application):
         def __init__(self, args):
-            super().__init__(application_id="com.barebaric.rayforge")
+            super().__init__(application_id="org.rayforge.rayforge")
             self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
             self.args = args
             self._screenshot_taken = False

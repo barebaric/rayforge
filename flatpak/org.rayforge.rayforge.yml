@@ -1,4 +1,4 @@
-app-id: com.barebaric.rayforge
+app-id: org.rayforge.rayforge
 runtime: org.gnome.Platform
 runtime-version: '48'
 sdk: org.gnome.Sdk

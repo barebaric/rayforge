@@ -52,9 +52,9 @@ reportMissingModuleSource = false
 mypy_path = "stubs"
 
 [tool.setuptools.data-files]
-"share/applications" = ["data/com.barebaric.rayforge.desktop"]
-"share/metainfo" = ["data/com.barebaric.rayforge.metainfo.xml"]
-"share/icons/hicolor/scalable/apps" = ["data/com.barebaric.rayforge.svg"]
+"share/applications" = ["data/org.rayforge.rayforge.desktop"]
+"share/metainfo" = ["data/org.rayforge.rayforge.metainfo.xml"]
+"share/icons/hicolor/scalable/apps" = ["data/org.rayforge.rayforge.svg"]
 
 [project.optional-dependencies]
 test = [

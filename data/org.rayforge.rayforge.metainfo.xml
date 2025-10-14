@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.barebaric.rayforge</id>
-  <developer id="com.barebaric">
+  <id>org.rayforge.rayforge</id>
+  <developer id="org.rayforge">
     <name translate="no">Samuel Abels</name>
   </developer>
   <content_rating type="oars-1.1" />
@@ -31,7 +31,7 @@
     </p>
   </description>
   
-  <launchable type="desktop-id">com.barebaric.rayforge.desktop</launchable>
+  <launchable type="desktop-id">org.rayforge.rayforge.desktop</launchable>
 
   <recommends>
     <control>keyboard</control>
@@ -39,7 +39,7 @@
     <display_length compare="ge">768</display_length>
   </recommends>
 
-  <icon type="remote">https://raw.githubusercontent.com/barebaric/rayforge/refs/heads/main/data/com.barebaric.rayforge.svg</icon>
+  <icon type="remote">https://raw.githubusercontent.com/barebaric/rayforge/refs/heads/main/data/org.rayforge.rayforge.svg</icon>
 
   <branding>
     <color type="primary" scheme_preference="light">#efb0a1</color>
