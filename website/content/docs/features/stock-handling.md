@@ -6,7 +6,7 @@ Stock handling in Rayforge is a sequential process that allows you to define the
 
 Stock represents the physical piece of material you'll be cutting or engraving. To add stock to your document:
 
-1. In the **Stock Material** panel in the left sidebar, click the **Add Stock** button
+1. In the **Stock Material** panel in the sidebar, click the **Add Stock** button
 2. A new stock item will be created with default dimensions (80% of your machine's workspace)
 3. The stock will appear as a rectangle in the workspace, centered on the machine bed
 

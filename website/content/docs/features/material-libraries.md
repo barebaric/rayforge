@@ -21,13 +21,6 @@ To create your own material library:
 
 Your new library will be created in the user data directory and will be available immediately.
 
-### Library Properties
-
-Each library has the following properties:
-- **Display Name**: Human-readable name shown in the interface
-- **Library ID**: Unique identifier (automatically generated)
-- **Source**: Either "core" or "user"
-- **Directory**: File system location where materials are stored
 
 ## Adding Materials to Libraries
 
@@ -36,11 +29,9 @@ Each library has the following properties:
 1. Select the library where you want to add the material
 2. Click the **Add New Material** button in the materials list
 3. Fill in the material properties:
-   - **UID**: Unique identifier (auto-generated from name)
    - **Name**: Human-readable name
-   - **Description**: Optional detailed description
    - **Category**: Grouping category (e.g., "Wood", "Acrylic")
-   - **Appearance**: Visual properties (color and pattern)
+   - **Appearance**: Visual properties (color)
 4. Click **Save** to add the material to the library
 
 ### Material Properties Explained
@@ -48,7 +39,6 @@ Each library has the following properties:
 #### Name
 - Human-readable name displayed in the interface
 - Can contain spaces and special characters
-- Used to generate the UID if not specified
 
 #### Category
 - Used for organizing materials within the library
