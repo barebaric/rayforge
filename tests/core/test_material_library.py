@@ -466,28 +466,31 @@ class TestMaterialLibrary:
 
             # Create a new library
             library = MaterialLibrary.create(library_dir, "New Test Library")
-            
+
             assert library is not None
             assert library.display_name == "New Test Library"
             assert library.library_id is not None
             assert library.source == "user"
             assert library._directory == library_dir
-            
+
             # Verify the metadata file was created
             meta_file = library_dir / "__library__.yaml"
             assert meta_file.exists()
-            
+
             # Verify the metadata content
             import yaml
+
             with open(meta_file, "r") as f:
                 metadata = yaml.safe_load(f)
             assert metadata["name"] == "New Test Library"
             assert metadata["id"] == library.library_id
-            
+
             # Test creating with empty name (should fail)
             failed_library = MaterialLibrary.create(library_dir, "")
             assert failed_library is None
-            
+
             # Test creating in existing directory (should fail)
-            existing_library = MaterialLibrary.create(library_dir, "Another Library")
+            existing_library = MaterialLibrary.create(
+                library_dir, "Another Library"
+            )
             assert existing_library is None

@@ -382,24 +382,24 @@ class TestLibraryManager:
             library = manager.get_library(lib_id)
             assert library is not None
             assert library.display_name == "Test Library"
-            
+
             # Update the display name directly
             library.set_display_name("Updated Library Name")
-            
+
             # Save the changes
             result = manager.update_library(lib_id)
             assert result is True
-            
+
             # Reload and verify the change persisted
             manager.reload_libraries()
             updated_library = manager.get_library(lib_id)
             assert updated_library is not None
             assert updated_library.display_name == "Updated Library Name"
-            
+
             # Try to update non-existent library
             result = manager.update_library("nonexistent")
             assert result is False
-            
+
             # Try to update core library (should fail)
             core_lib_id = manager.get_library_ids()[0]  # Get core library ID
             result = manager.update_library(core_lib_id)
