@@ -276,9 +276,6 @@ class GrblSerialDriver(Driver):
                             )
                             self._job_running = False
 
-                # Release lock briefly to allow status polling
-                await asyncio.sleep(0.1)
-
             except asyncio.CancelledError:
                 logger.info("Command queue processing cancelled.")
                 break
