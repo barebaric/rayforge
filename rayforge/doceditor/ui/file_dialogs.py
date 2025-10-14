@@ -8,8 +8,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# This module assumes gettext has been installed and `_` is a global builtin.
-
 
 def show_import_dialog(
     win: "MainWindow", callback: Callable, user_data: Any = None

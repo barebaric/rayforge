@@ -36,7 +36,12 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
     methods.
     """
 
-    def __init__(self, button_label: str, **kwargs):
+    def __init__(
+        self,
+        button_label: str,
+        selection_mode: Gtk.SelectionMode = Gtk.SelectionMode.NONE,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         apply_css(css)
 
@@ -46,7 +51,7 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         self.add(container_box)
 
         self.list_box = Gtk.ListBox(
-            selection_mode=Gtk.SelectionMode.NONE, show_separators=True
+            selection_mode=selection_mode, show_separators=True
         )
         self.list_box.add_css_class("list-box-in-card")
         self.list_box.get_style_context().add_class("frame")
@@ -75,12 +80,17 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         """
         Clears and rebuilds the list box with widgets for the given items.
         """
+        # Determine if rows should be selectable based on the list box's mode.
+        is_selectable = (
+            self.list_box.get_selection_mode() != Gtk.SelectionMode.NONE
+        )
+
         while child := self.list_box.get_row_at_index(0):
             self.list_box.remove(child)
 
         for item in items:
             widget = self.create_row_widget(item)
-            row = Gtk.ListBoxRow(child=widget, selectable=False)
+            row = Gtk.ListBoxRow(child=widget, selectable=is_selectable)
             self.list_box.append(row)
 
     def create_row_widget(self, item: Any) -> Gtk.Widget:

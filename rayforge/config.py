@@ -5,6 +5,7 @@ from platformdirs import user_config_dir
 from .camera.manager import CameraManager
 from .core.config import ConfigManager
 from .machine.models.machine import MachineManager
+from .core.library_manager import LibraryManager
 import logging
 
 
@@ -15,6 +16,11 @@ CONFIG_DIR = Path(user_config_dir("rayforge"))
 MACHINE_DIR = CONFIG_DIR / "machines"
 MACHINE_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
+
+# Material directories
+CORE_MATERIALS_DIR = Path(__file__).parent / "resources" / "core_materials"
+USER_MATERIALS_DIR = CONFIG_DIR / "materials"
+
 logger.info(f"Config dir is {CONFIG_DIR}")
 
 
@@ -30,18 +36,19 @@ machine_mgr = None
 config_mgr: Optional[ConfigManager] = None
 config = None  # Will be an alias for config_mgr.config after init
 camera_mgr: CameraManager
+material_mgr = None  # Will be initialized in initialize_managers()
 
 
 def initialize_managers():
     """
-    Initializes the machine and config managers. This function is designed
-    to be called once from the main application process. It is safe to
-    call multiple times (idempotent).
+    Initializes the machine, config, and material managers. This function
+    is designed to be called once from the main application process.
+    It is safe to call multiple times (idempotent).
 
     This prevents expensive I/O and state setup from running automatically
     when a module is imported into a subprocess.
     """
-    global machine_mgr, config_mgr, config, camera_mgr
+    global machine_mgr, config_mgr, config, camera_mgr, material_mgr
 
     # Idempotency check: If already initialized, do nothing.
     if config_mgr is not None:
@@ -76,4 +83,11 @@ def initialize_managers():
     logger.info(
         f"Camera manager initialized with {len(camera_mgr.controllers)} "
         "controllers."
+    )
+
+    # Initialize the material manager
+    material_mgr = LibraryManager(CORE_MATERIALS_DIR, USER_MATERIALS_DIR)
+    material_mgr.load_all_libraries()
+    logger.info(
+        f"Material manager initialized with {len(material_mgr)} materials"
     )

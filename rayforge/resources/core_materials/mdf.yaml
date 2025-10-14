@@ -1,0 +1,7 @@
+uid: mdf
+name: MDF (Medium-Density Fiberboard)
+description: Medium-density fiberboard, a common engineered wood product
+category: Wood
+appearance:
+  color: "#D2691E"  # Chocolate brown
+  pattern: solid

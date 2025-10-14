@@ -1,0 +1,7 @@
+uid: acrylic
+name: Acrylic (PMMA)
+description: Transparent thermoplastic, often known by brand names like Plexiglas or Lucite
+category: Plastic
+appearance:
+  color: "#E0FFFF"  # Light cyan (transparent appearance)
+  pattern: transparent

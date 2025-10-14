@@ -1,6 +1,7 @@
 from gi.repository import Adw, Gdk, Gtk
 from .general_preferences_page import GeneralPreferencesPage
 from ...machine.ui.preferences_page import MachinePreferencesPage
+from ...doceditor.ui.material_manager import MaterialManager
 from ...icons import get_icon
 
 
@@ -46,6 +47,7 @@ class PreferencesWindow(Adw.Window):
         # Populate both the sidebar and the content stack
         self._add_page(GeneralPreferencesPage)
         self._add_page(MachinePreferencesPage)
+        self._add_page(MaterialManager)
 
         # Create the content's NavigationPage wrapper using the first page's
         # title

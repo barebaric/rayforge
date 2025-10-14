@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from .item import DocItem
 from .geo import Geometry
 from .matrix import Matrix
+
+if TYPE_CHECKING:
+    from .material import Material
 
 
 class StockItem(DocItem):
@@ -22,6 +25,7 @@ class StockItem(DocItem):
             geometry if geometry is not None else Geometry()
         )
         self.thickness: Optional[float] = None
+        self.material_uid: Optional[str] = None
         self.visible: bool = True
 
         # If geometry is provided, set the initial matrix to match its
@@ -43,6 +47,7 @@ class StockItem(DocItem):
             "matrix": self.matrix.to_list(),
             "geometry": self.geometry.to_dict(),
             "thickness": self.thickness,
+            "material_uid": self.material_uid,
             "visible": self.visible,
         }
 
@@ -58,6 +63,7 @@ class StockItem(DocItem):
         new_item.uid = data["uid"]
         new_item.matrix = Matrix.from_list(data["matrix"])
         new_item.thickness = data.get("thickness")
+        new_item.material_uid = data.get("material_uid")
         new_item.visible = data.get("visible", True)
 
         return new_item
@@ -72,6 +78,33 @@ class StockItem(DocItem):
         """Setter method for use with undo commands."""
         if self.thickness != value:
             self.thickness = value
+            self.updated.send(self)
+
+    @property
+    def material(self) -> Optional["Material"]:
+        """
+        Gets the Material object for this stock item.
+
+        Returns:
+            Material instance or None if not set or not found
+        """
+        if not self.material_uid:
+            return None
+
+        # Import here to avoid circular imports
+        from ..config import material_mgr
+
+        return material_mgr.get_material_or_none(self.material_uid)
+
+    def set_material(self, material_uid: str):
+        """
+        Setter method for use with undo commands.
+
+        Args:
+            material_uid: The UID of the material to set
+        """
+        if self.material_uid != material_uid:
+            self.material_uid = material_uid
             self.updated.send(self)
 
     def set_visible(self, visible: bool):

@@ -116,8 +116,16 @@ class StockElement(CanvasElement):
                             center_x, center_y, radius, angle1, angle2
                         )
 
-        # Fill the path
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
+        # Get the material color if available
+        material = self.data.material
+        if material:
+            # Use material color with 0.5 alpha
+            r, g, b, a = material.get_display_rgba(0.5)
+            ctx.set_source_rgba(r, g, b, a)
+        else:
+            # Use default color when no material is assigned
+            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
+
         ctx.fill_preserve()
 
         # Stroke the path with a crisp, 1-device-pixel hairline

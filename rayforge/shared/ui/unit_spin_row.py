@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
-from gi.repository import Adw
+from gi.repository import Adw, Gtk
 from blinker import Signal
 from ...config import config
-from ..units.definitions import Unit, get_unit
+from ..units.definitions import Unit, get_unit, get_units_for_quantity
 from ..util.adwfix import get_spinrow_float
 from .formatter import format_value
 
@@ -96,9 +96,8 @@ class UnitSpinRowHelper:
                 self._max_value_in_base, self.quantity
             )
             self.spin_row.set_subtitle(
-                self._original_subtitle_format.format(
-                    max_speed=formatted_max
-                ) + f" ({self._unit.label})"
+                self._original_subtitle_format.format(max_speed=formatted_max)
+                + f" ({self._unit.label})"
             )
         else:
             self.spin_row.set_subtitle(
@@ -139,3 +138,150 @@ class UnitSpinRowHelper:
         display_value = get_spinrow_float(self.spin_row)
         base_value = self._unit.to_base(display_value)
         return float(base_value)
+
+
+class UnitSelectorSpinRow:
+    """
+    A widget that combines a SpinRow with a unit selector dropdown.
+
+    This widget allows users to both specify a value and choose the unit
+    in a single Adw-style row, maintaining visual consistency with the
+    rest of the application.
+    """
+
+    def __init__(
+        self,
+        quantity: str,
+        title: str,
+        subtitle: str = "",
+        max_value_in_base: Optional[float] = None,
+    ):
+        self.quantity = quantity
+        self.title = title
+        self.subtitle = subtitle
+        self._max_value_in_base = max_value_in_base
+        self._is_updating = False
+
+        # Application-level signal for value changes (in base units)
+        self.changed = Signal()
+
+        # Create the main action row
+        self.row = Adw.ActionRow()
+        self.row.set_title(title)
+        if subtitle:
+            self.row.set_subtitle(subtitle)
+
+        # Create the spin button for value
+        self.spin_button = Gtk.SpinButton()
+        adjustment = Gtk.Adjustment(
+            lower=0,
+            upper=999,
+            step_increment=1,
+            page_increment=10,
+        )
+        self.spin_button.set_adjustment(adjustment)
+        self.spin_button.set_valign(Gtk.Align.CENTER)
+
+        # Create the unit dropdown
+        self.unit_dropdown = Gtk.DropDown()
+        self.unit_dropdown.set_valign(Gtk.Align.CENTER)
+
+        # Setup the helper for unit conversion
+        self.helper = UnitSpinRowHelper(
+            spin_row=self._create_spin_row_wrapper(),
+            quantity=quantity,
+            max_value_in_base=max_value_in_base,
+        )
+
+        # Populate unit options
+        self._populate_units()
+
+        # Connect signals
+        self.unit_dropdown.connect("notify::selected", self._on_unit_changed)
+        self.helper.changed.connect(self._on_value_changed)
+
+        # Add widgets to the row (unit after value)
+        self.row.add_suffix(self.spin_button)
+        self.row.add_suffix(self.unit_dropdown)
+
+        # Initial update
+        self._update_format_and_bounds()
+
+    def _create_spin_row_wrapper(self):
+        """
+        Creates a minimal SpinRow wrapper for the UnitSpinRowHelper.
+        This is a workaround since UnitSpinRowHelper expects a SpinRow.
+        """
+        spin_row = Adw.SpinRow()
+        spin_row.set_adjustment(self.spin_button.get_adjustment())
+        return spin_row
+
+    def _populate_units(self):
+        """
+        Populates the unit dropdown with available units for the quantity.
+        """
+        units = get_units_for_quantity(self.quantity)
+        if not units:
+            return
+
+        # Create string list for dropdown
+        string_list = Gtk.StringList()
+        for unit in units:
+            string_list.append(unit.label)
+
+        self.unit_dropdown.set_model(string_list)
+
+        current_unit_name = config.unit_preferences.get(self.quantity)
+
+        for i, unit in enumerate(units):
+            if unit.name == current_unit_name:
+                self.unit_dropdown.set_selected(i)
+                break
+
+    def _on_unit_changed(self, dropdown, pspec):
+        """Handles unit selection changes."""
+        if self._is_updating:
+            return
+
+        # Get the selected unit
+        selected_index = self.unit_dropdown.get_selected()
+        units = get_units_for_quantity(self.quantity)
+
+        if selected_index < len(units):
+            unit = units[selected_index]
+
+            config.unit_preferences[self.quantity] = unit.name
+            config.changed.send(config)
+
+            # Update format and bounds
+            self._update_format_and_bounds()
+
+    def _on_value_changed(self, helper):
+        """Handles value changes from the UnitSpinRowHelper."""
+        if self._is_updating:
+            return
+
+        # Forward the signal
+        if hasattr(self, "changed"):
+            self.changed.send(self)
+
+    def _update_format_and_bounds(self):
+        """Updates the format and bounds based on the current unit."""
+        self.helper.update_format_and_bounds()
+
+        # Update subtitle with unit information
+        if self.helper._unit:
+            self.row.set_subtitle(
+                f"{self.subtitle} ({self.helper._unit.label})"
+            )
+
+    def set_value_in_base_units(self, base_value: float):
+        """Sets the widget's value from an application base unit value."""
+        self.helper.set_value_in_base_units(base_value)
+
+    def get_value_in_base_units(self) -> float:
+        """
+        Gets the widget's current display value and converts it to base
+        units.
+        """
+        return self.helper.get_value_in_base_units()

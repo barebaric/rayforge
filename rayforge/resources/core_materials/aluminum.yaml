@@ -1,0 +1,7 @@
+uid: aluminum
+name: Aluminum
+description: Lightweight metal commonly used in laser cutting applications
+category: Metal
+appearance:
+  color: "#C0C0C0"  # Silver
+  pattern: metallic
