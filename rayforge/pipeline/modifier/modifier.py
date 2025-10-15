@@ -2,6 +2,7 @@ class Modifier:
     """
     Modifies a Cairo surface.
     """
+
     def __init__(self, **kwargs):
         self.label = self.__class__.__name__
 
@@ -9,7 +10,7 @@ class Modifier:
         """
         Serializes the modifier to a dictionary.
         """
-        return {'name': self.__class__.__name__}
+        return {"name": self.__class__.__name__}
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -24,7 +25,7 @@ class Modifier:
         # which imports this module.
         from . import modifier_by_name
 
-        modifier_name = data.get('name')
+        modifier_name = data.get("name")
         if not modifier_name:
             raise ValueError("Dictionary must contain a 'name' key.")
 
@@ -34,7 +35,7 @@ class Modifier:
 
         # Instantiate the class with parameters from the dictionary.
         # This allows for future producers to have configurable state.
-        params = data.get('params', {})
+        params = data.get("params", {})
         return modifier_class(**params)
 
     def run(self, surface):

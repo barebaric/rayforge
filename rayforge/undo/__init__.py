@@ -4,6 +4,7 @@ Undo/Redo Framework Module
 This package provides a transactional undo/redo history manager based on the
 Command pattern.
 """
+
 from .models.history import HistoryManager
 from .models.command import Command
 from .models.composite_cmd import CompositeCommand

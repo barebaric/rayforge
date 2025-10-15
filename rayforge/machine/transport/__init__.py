@@ -7,10 +7,10 @@ from .websocket import WebSocketTransport
 
 
 __all__ = [
-    'Transport',
-    'TransportStatus',
-    'HttpTransport',
-    'SerialTransport',
-    'TelnetTransport',
-    'WebSocketTransport',
+    "Transport",
+    "TransportStatus",
+    "HttpTransport",
+    "SerialTransport",
+    "TelnetTransport",
+    "WebSocketTransport",
 ]

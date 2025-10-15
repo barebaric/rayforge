@@ -43,7 +43,6 @@ class RoundButton(Gtk.Button):
         css_provider.load_from_string(css)
         style_context = self.get_style_context()
         style_context.add_provider(
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
         style_context.add_class("round-button")

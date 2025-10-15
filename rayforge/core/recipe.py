@@ -16,6 +16,7 @@ class Recipe:
     associated metadata (e.g., material, thickness). It lives in a
     user-level library, outside any specific document.
     """
+
     def __init__(self, name: str):
         self.uid: str = str(uuid.uuid4())
         self.name: str = name
@@ -64,7 +65,7 @@ class Recipe:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Recipe':
+    def from_dict(cls, data: Dict[str, Any]) -> "Recipe":
         """
         Deserializes a Recipe from a dictionary.
         NOTE: A loaded Recipe's workflow is not instantiated here because it
@@ -87,6 +88,7 @@ class RecipeManager:
     Manages loading and saving Recipe objects from/to a dedicated folder.
     Automatically saves recipes when they are changed.
     """
+
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
         self.recipes: Dict[str, Recipe] = {}
@@ -114,7 +116,7 @@ class RecipeManager:
         """Saves a single recipe to a YAML file."""
         logger.debug(f"Saving recipe {recipe.name} ({recipe.uid})")
         recipe_file = self.filename_from_id(recipe.uid)
-        with open(recipe_file, 'w') as f:
+        with open(recipe_file, "w") as f:
             data = recipe.to_dict()
             yaml.safe_dump(data, f)
 
@@ -125,7 +127,7 @@ class RecipeManager:
             logger.warning(f"Recipe file not found: {recipe_file}")
             return None
         try:
-            with open(recipe_file, 'r') as f:
+            with open(recipe_file, "r") as f:
                 data = yaml.safe_load(f)
         except Exception as e:
             logger.error(f"Error loading recipe file {recipe_file.name}: {e}")

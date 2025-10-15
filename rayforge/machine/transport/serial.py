@@ -145,7 +145,7 @@ class SerialTransport(Transport):
             460800,
             921600,
             1000000,
-            1843200
+            1843200,
         ]
 
     def __init__(self, port: str, baudrate: int):

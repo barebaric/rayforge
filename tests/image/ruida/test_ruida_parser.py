@@ -17,6 +17,7 @@ def _scramble(byte_val: int) -> int:
 
 def _encode_abs_coords(x_mm: float, y_mm: float) -> bytes:
     """Encodes an absolute XY coordinate pair into 10 bytes."""
+
     def _encode_val(val_mm: float) -> bytes:
         """
         Encodes a single coordinate value into 5 big-endian bytes,
@@ -47,15 +48,15 @@ def create_test_rd_file(filepath: Path) -> None:
     Generates a simple binary .rd file for a 10mm square at 20mm/s, 50% pwr.
     """
     content = bytearray()
-    content += b'\xC9\x04' + (b'\x00' + struct.pack('<f', 20.0))
-    content += b'\xC6\x32' + (b'\x00' + struct.pack('<H', 500))
-    content += b'\xCA\x06' + (b'\x00\x00\x00\x00\x00')
-    content += b'\x88' + _encode_abs_coords(0, 0)
-    content += b'\xA8' + _encode_abs_coords(10, 0)
-    content += b'\xA8' + _encode_abs_coords(10, 10)
-    content += b'\xA8' + _encode_abs_coords(0, 10)
-    content += b'\xA8' + _encode_abs_coords(0, 0)
-    content += b'\xD7'
+    content += b"\xc9\x04" + (b"\x00" + struct.pack("<f", 20.0))
+    content += b"\xc6\x32" + (b"\x00" + struct.pack("<H", 500))
+    content += b"\xca\x06" + (b"\x00\x00\x00\x00\x00")
+    content += b"\x88" + _encode_abs_coords(0, 0)
+    content += b"\xa8" + _encode_abs_coords(10, 0)
+    content += b"\xa8" + _encode_abs_coords(10, 10)
+    content += b"\xa8" + _encode_abs_coords(0, 10)
+    content += b"\xa8" + _encode_abs_coords(0, 0)
+    content += b"\xd7"
     scrambled_content = b"RDWORKV8.01" + bytes([_scramble(b) for b in content])
     filepath.write_bytes(scrambled_content)
 

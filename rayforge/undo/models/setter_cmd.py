@@ -37,9 +37,9 @@ class SetterCommand(Command):
 
     def can_coalesce_with(self, next_command: Command) -> bool:
         return (
-            isinstance(next_command, SetterCommand) and
-            self.target is next_command.target and
-            self.setter_method_name == next_command.setter_method_name
+            isinstance(next_command, SetterCommand)
+            and self.target is next_command.target
+            and self.setter_method_name == next_command.setter_method_name
         )
 
     def coalesce_with(self, next_command: Command) -> bool:

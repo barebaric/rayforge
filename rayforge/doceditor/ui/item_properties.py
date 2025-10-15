@@ -472,9 +472,7 @@ class DocItemPropertiesWidget(Expander):
         if not self.items:
             return
 
-        bounds = (
-            config.machine.dimensions if config.machine else default_dim
-        )
+        bounds = config.machine.dimensions if config.machine else default_dim
 
         sizes_to_set = []
         items_to_resize = []
@@ -543,12 +541,8 @@ class DocItemPropertiesWidget(Expander):
     def _on_reset_y_clicked(self, button):
         if not self.items:
             return
-        bounds = (
-            config.machine.dimensions if config.machine else default_dim
-        )
-        y_axis_down = (
-            config.machine.y_axis_down if config.machine else False
-        )
+        bounds = config.machine.dimensions if config.machine else default_dim
+        y_axis_down = config.machine.y_axis_down if config.machine else False
 
         items_to_reset = []
         target_y_machine = 0.0

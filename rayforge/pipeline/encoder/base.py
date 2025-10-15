@@ -11,6 +11,7 @@ class OpsEncoder(ABC):
     - Ops to image (a cairo surface)
     - Ops to a G-code string
     """
+
     @abstractmethod
     def encode(self, ops: Ops, *args, **kwargs) -> Any:
         pass

@@ -193,6 +193,7 @@ class DragListBox(Gtk.ListBox):
 
 
 if __name__ == "__main__":
+
     class DragListWindow(Gtk.ApplicationWindow):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
