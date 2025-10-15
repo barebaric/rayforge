@@ -7710,8 +7710,8 @@ packages:
   timestamp: 1746622805379
 - pypi: ./
   name: rayforge
-  version: 0.22.post276+git.832c3d79.dirty
-  sha256: 6f429326a7e30c0cc6d62dad1d6ccc156cd74f7f7aefe8575c7eec531a95f9d9
+  version: 0.22.post279+git.34f24716.dirty
+  sha256: 5abbd0fc8800833397e596059712f3249ff3d67f722459402472c128646b8700
   requires_dist:
   - aiohttp==3.12.14
   - blinker==1.9.0
