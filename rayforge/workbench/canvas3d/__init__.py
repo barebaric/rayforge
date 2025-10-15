@@ -27,7 +27,8 @@ def initialize():
     try:
         # The import itself triggers platform-specific initialization and will
         # fail if the necessary libraries are not found (e.g., libGL.so).
-        from OpenGL import GL  # noqa: F401
+        from OpenGL import GL  # Imported for side effects
+        _ = GL  # Mark as used to silence pyflakes
 
         logger.info("PyOpenGL imported successfully. 3D canvas is available.")
         initialized = True
