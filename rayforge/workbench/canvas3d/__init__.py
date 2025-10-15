@@ -28,6 +28,7 @@ def initialize():
         # The import itself triggers platform-specific initialization and will
         # fail if the necessary libraries are not found (e.g., libGL.so).
         from OpenGL import GL  # Imported for side effects
+
         _ = GL  # Mark as used to silence pyflakes
 
         logger.info("PyOpenGL imported successfully. 3D canvas is available.")
@@ -64,11 +65,9 @@ def initialize():
 # remains the definitive source of truth for canvas availability.
 try:
     from .canvas3d import Canvas3D  # type: ignore
-    from .dialog import Canvas3DDialog  # type: ignore
 except Exception as e:
     logger.exception(
-        "Failed to import Canvas3D or Canvas3DDialog. "
-        "The 3D canvas will not be available."
+        "Failed to import Canvas3D. The 3D canvas will not be available."
     )
     initialization_error = f"Canvas3D import failed: {e}"
 
@@ -81,16 +80,7 @@ except Exception as e:
                 "Check logs for details."
             )
 
-    class Canvas3DDialog:
-        """A placeholder class for when the 3D canvas fails to initialize."""
-
-        def __init__(self, *args, **kwargs):
-            raise RuntimeError(
-                "3D Canvas is not available due to an initialization failure. "
-                "Check logs for details."
-            )
 
 __all__ = [
     "Canvas3D",
-    "Canvas3DDialog",
 ]

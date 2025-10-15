@@ -13,7 +13,7 @@ class WebSocketTransport(Transport):
     def __init__(self, uri: str, origin=None):
         super().__init__()
         self.uri = uri
-        self._websocket: Optional[websockets.WebSocketClientProtocol] = None
+        self._websocket: Optional[websockets.ClientConnection] = None
         self._origin = origin
         self._running = False
         self._reconnect_interval = 5

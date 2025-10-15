@@ -55,7 +55,7 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
     # Pyclipper works with integers, so we need to scale our coordinates.
     CLIPPER_SCALE = 1e7
-    pco = pyclipper.PyclipperOffset()
+    pco = pyclipper.PyclipperOffset()  # type: ignore
 
     paths_to_offset = []
     for i, data in enumerate(contour_data):
@@ -86,7 +86,9 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         paths_to_offset.append(scaled_vertices)
 
     pco.AddPaths(
-        paths_to_offset, pyclipper.JT_MITER, pyclipper.ET_CLOSEDPOLYGON
+        paths_to_offset,
+        pyclipper.JT_MITER,  # type: ignore
+        pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
     )
     solution = pco.Execute(offset * CLIPPER_SCALE)
 
