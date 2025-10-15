@@ -79,6 +79,9 @@ pytest-mock = "*"
 pytest-cov = "*"
 pygobject-stubs = "*"
 flake8 = "*"
+pyflakes = "*"
+pyright = "*"
+ruff = "*"
 
 [feature.website.dependencies]
 go = "*"
@@ -99,8 +102,11 @@ pyinstaller = "*"
 workdir = "."
 
 [tasks]
-lint = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
+flake = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
 pyflakes = { env = { PYFLAKES_BUILTINS = "_" }, cmd = "pyflakes rayforge tests" }
+pyright = "pyright rayforge"
+lint = { depends-on = ["flake", "pyflakes", "pyright"] }
+format = "ruff format rayforge tests"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 
