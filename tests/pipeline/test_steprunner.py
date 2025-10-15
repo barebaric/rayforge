@@ -9,8 +9,11 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.step import Step
 from rayforge.machine.models.machine import Laser, Machine
-from rayforge.pipeline import Artifact, ArtifactHandle
-from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.artifact import (
+    create_handle_from_dict,
+    ArtifactStore,
+    WorkPieceArtifact,
+)
 from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
 from rayforge.pipeline.producer.edge import EdgeTracer
 from rayforge.pipeline.producer.depth import DepthEngraver
@@ -111,10 +114,10 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
@@ -165,10 +168,10 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.texture_data is not None
         assert reconstructed_artifact.vertex_data is not None
 
@@ -248,10 +251,10 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.vertex_data is not None
         assert len(reconstructed_artifact.ops.commands) == 24
     finally:

@@ -40,8 +40,7 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.viewer import GcodeViewer
 from .core.step import Step
-from .pipeline.artifact.store import ArtifactStore
-from .pipeline.artifact.handle import ArtifactHandle
+from .pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 
 
 logger = logging.getLogger(__name__)
@@ -713,7 +712,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_assembly_for_preview_finished(
         self,
-        handle: Optional[ArtifactHandle],
+        handle: Optional[JobArtifactHandle],
         error: Optional[Exception],
     ):
         """Callback for when the job assembly for previews is complete."""
@@ -730,7 +729,7 @@ class MainWindow(Adw.ApplicationWindow):
         # The handle will be released in the main thread callback.
         GLib.idle_add(self._on_previews_ready, handle)
 
-    def _on_previews_ready(self, handle: Optional[ArtifactHandle]):
+    def _on_previews_ready(self, handle: Optional[JobArtifactHandle]):
         """
         Main-thread callback to distribute assembled Ops to all consumers.
         This method is responsible for releasing the artifact handle.
@@ -739,6 +738,7 @@ class MainWindow(Adw.ApplicationWindow):
         try:
             if handle:
                 final_artifact = ArtifactStore.get(handle)
+                assert isinstance(final_artifact, JobArtifact)
 
             # 1. Update Simulation
             self.simulator_cmd.reload_simulation(final_artifact)

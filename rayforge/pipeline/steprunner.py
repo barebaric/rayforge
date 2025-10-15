@@ -1,9 +1,8 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
 from ..shared.tasker.proxy import ExecutionContextProxy
-from .artifact.store import ArtifactStore
-from .artifact.base import Artifact
 from ..pipeline.encoder.vertexencoder import VertexEncoder
+from .artifact import ArtifactStore, WorkPieceArtifact
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -66,7 +65,7 @@ def run_step_in_subprocess(
         *,
         y_offset_mm: float = 0.0,
         step_settings: Dict[str, Any],
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
         vector data.
@@ -103,7 +102,7 @@ def run_step_in_subprocess(
             y_offset_mm=y_offset_mm,
         )
 
-    def _execute_vector() -> Iterator[Tuple[Artifact, float]]:
+    def _execute_vector() -> Iterator[Tuple[WorkPieceArtifact, float]]:
         """
         Handles Ops generation for scalable (vector) operations.
 
@@ -184,7 +183,7 @@ def run_step_in_subprocess(
         yield artifact, 1.0
         surface.flush()
 
-    def _execute_raster() -> Iterator[Tuple[Artifact, float]]:
+    def _execute_raster() -> Iterator[Tuple[WorkPieceArtifact, float]]:
         """
         Handles Ops generation for non-scalable (raster) operations.
 
@@ -283,7 +282,7 @@ def run_step_in_subprocess(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
     initial_ops = _create_initial_ops()
-    final_artifact: Optional[Artifact] = None
+    final_artifact: Optional[WorkPieceArtifact] = None
 
     # This will hold the assembled texture for hybrid artifacts
     full_power_texture: Optional[np.ndarray] = None
@@ -443,7 +442,7 @@ def run_step_in_subprocess(
     encoder = VertexEncoder()
     vertex_data = encoder.encode(final_artifact.ops)
 
-    final_artifact_to_store = Artifact(
+    final_artifact_to_store = WorkPieceArtifact(
         ops=final_artifact.ops,
         is_scalable=final_artifact.is_scalable,
         source_coordinate_system=final_artifact.source_coordinate_system,

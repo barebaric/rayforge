@@ -12,8 +12,11 @@ from rayforge.pipeline.scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )
-from rayforge.pipeline.artifact.handle import ArtifactHandle
-from rayforge.pipeline.artifact.base import Artifact, TextureData
+from rayforge.pipeline.artifact import (
+    WorkPieceArtifactHandle,
+    WorkPieceArtifact,
+    TextureData,
+)
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.ops import Ops
 
@@ -95,9 +98,10 @@ def mock_workpiece():
 @pytest.fixture
 def mock_artifact_handle():
     """Create a mock artifact handle."""
-    return ArtifactHandle(
+    return WorkPieceArtifactHandle(
         shm_name="test_shm",
-        artifact_type="vector",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
         source_coordinate_system_name="source",
         source_dimensions=(10.0, 20.0),
@@ -114,7 +118,7 @@ def mock_hybrid_artifact():
         dimensions_mm=(10.0, 10.0),
         position_mm=(0.0, 0.0),
     )
-    return Artifact(
+    return WorkPieceArtifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -125,7 +129,7 @@ def mock_hybrid_artifact():
 @pytest.fixture
 def mock_vector_artifact():
     """Create a mock vector artifact."""
-    return Artifact(
+    return WorkPieceArtifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

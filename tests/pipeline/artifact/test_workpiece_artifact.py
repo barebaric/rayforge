@@ -1,36 +1,22 @@
 import unittest
-import json
 import numpy as np
 from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.artifact import JobArtifact
-from rayforge.pipeline.artifact import VertexData, TextureData
+from rayforge.pipeline.artifact.workpiece import WorkPieceArtifact
+from rayforge.pipeline.artifact.base import VertexData, TextureData
 from rayforge.pipeline import CoordinateSystem
 
 
-class TestArtifact(unittest.TestCase):
-    """Test suite for the composable Artifact class."""
+class TestWorkPieceArtifact(unittest.TestCase):
+    """Test suite for the WorkPieceArtifact class."""
 
     def test_artifact_type_property(self):
-        """Tests that specific artifact types are correctly identified."""
-        # Test WorkPieceArtifact
-        workpiece_artifact = WorkPieceArtifact(
+        """Tests that the artifact type is correctly identified."""
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
-        self.assertIsInstance(workpiece_artifact, WorkPieceArtifact)
-        self.assertEqual(workpiece_artifact.artifact_type, "WorkPieceArtifact")
-
-        # Test JobArtifact
-        job_artifact = JobArtifact(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
-        )
-        self.assertIsInstance(job_artifact, JobArtifact)
-        self.assertEqual(job_artifact.artifact_type, "JobArtifact")
+        self.assertEqual(artifact.artifact_type, "WorkPieceArtifact")
 
     def test_vector_serialization_round_trip(self):
         """Tests serialization for a vector-like artifact."""
@@ -128,39 +114,6 @@ class TestArtifact(unittest.TestCase):
         )
         self.assertEqual(reconstructed.texture_data.dimensions_mm, (10, 20))
         self.assertEqual(reconstructed.texture_data.position_mm, (1, 2))
-
-    def test_final_job_serialization_round_trip(self):
-        """Tests serialization for a final_job artifact."""
-        gcode_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
-        op_map_bytes = np.frombuffer(json.dumps({0: 0}).encode(), np.uint8)
-
-        artifact = JobArtifact(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            gcode_bytes=gcode_bytes,
-            op_map_bytes=op_map_bytes,
-            time_estimate=123.45,
-        )
-
-        reconstructed = JobArtifact.from_dict(artifact.to_dict())
-
-        self.assertIsNotNone(reconstructed.gcode_bytes)
-        self.assertIsNotNone(reconstructed.op_map_bytes)
-        self.assertEqual(reconstructed.time_estimate, 123.45)
-
-        # Add assertions to satisfy the type checker
-        assert reconstructed.gcode_bytes is not None
-        assert artifact.gcode_bytes is not None
-        np.testing.assert_array_equal(
-            reconstructed.gcode_bytes, artifact.gcode_bytes
-        )
-
-        assert reconstructed.op_map_bytes is not None
-        assert artifact.op_map_bytes is not None
-        np.testing.assert_array_equal(
-            reconstructed.op_map_bytes, artifact.op_map_bytes
-        )
 
 
 if __name__ == "__main__":

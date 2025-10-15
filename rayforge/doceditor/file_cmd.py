@@ -14,8 +14,7 @@ from ..pipeline.jobrunner import (
     JobDescription,
     WorkItemInstruction,
 )
-from ..pipeline.artifact.handle import ArtifactHandle
-from ..pipeline.artifact.store import ArtifactStore
+from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
 
 if TYPE_CHECKING:
@@ -278,7 +277,7 @@ class FileCmd:
     def assemble_job_in_background(
         self,
         when_done: Callable[
-            [Optional[ArtifactHandle], Optional[Exception]], None
+            [Optional[JobArtifactHandle], Optional[Exception]], None
         ],
     ):
         """
@@ -301,10 +300,11 @@ class FileCmd:
                 # Re-raises exceptions from the task
                 handle_dict = task.result()
                 handle = (
-                    ArtifactHandle.from_dict(handle_dict)
+                    JobArtifactHandle.from_dict(handle_dict)
                     if handle_dict
                     else None
                 )
+                assert isinstance(handle, JobArtifactHandle)
                 when_done(handle, None)
             except Exception as e:
                 when_done(None, e)
@@ -323,7 +323,7 @@ class FileCmd:
         """
 
         def _on_export_assembly_done(
-            handle: Optional[ArtifactHandle], error: Optional[Exception]
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
         ):
             try:
                 if error:
@@ -333,6 +333,8 @@ class FileCmd:
 
                 # Get artifact, decode G-code, and write to file
                 artifact = ArtifactStore.get(handle)
+                if not isinstance(artifact, JobArtifact):
+                    raise ValueError("Expected a JobArtifact for export.")
                 if artifact.gcode_bytes is None:
                     raise ValueError("Final artifact is missing G-code data.")
 

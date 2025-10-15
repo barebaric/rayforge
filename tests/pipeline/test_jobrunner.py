@@ -12,9 +12,12 @@ from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact.base import Artifact
-from rayforge.pipeline.artifact.store import ArtifactStore
-from rayforge.pipeline.artifact.handle import ArtifactHandle
+from rayforge.pipeline.artifact import (
+    WorkPieceArtifact,
+    JobArtifact,
+    ArtifactStore,
+    create_handle_from_dict,
+)
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.matrix import Matrix
 from rayforge.pipeline.jobrunner import (
@@ -71,7 +74,7 @@ def test_jobrunner_assembles_correctly(machine):
     base_ops = Ops()
     base_ops.move_to(0, 0)
     base_ops.line_to(10, 0)
-    base_artifact = Artifact(
+    base_artifact = WorkPieceArtifact(
         ops=base_ops,
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -105,7 +108,7 @@ def test_jobrunner_assembles_correctly(machine):
     assert final_handle_dict is not None, (
         "final_handle_dict should not be None"
     )
-    final_handle = ArtifactHandle.from_dict(final_handle_dict)
+    final_handle = create_handle_from_dict(final_handle_dict)
     final_artifact = ArtifactStore.get(final_handle)
     final_ops = final_artifact.ops
     final_cmds = list(final_ops)
@@ -125,7 +128,7 @@ def test_jobrunner_assembles_correctly(machine):
     assert line_cmds[1].end == line_cmds[0].end
 
     # Assert comprehensive artifact content
-    assert final_artifact.artifact_type == "final_job"
+    assert isinstance(final_artifact, JobArtifact)
     assert final_artifact.vertex_data is not None
     assert final_artifact.gcode_bytes is not None
     assert final_artifact.op_map_bytes is not None

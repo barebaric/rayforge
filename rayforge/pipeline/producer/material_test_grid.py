@@ -8,7 +8,7 @@ from typing import Tuple, Dict, Any, List, Optional, TYPE_CHECKING
 from ...core.ops import Ops, SectionType
 from ...core.geo.geometry import Geometry
 from ...core.matrix import Matrix
-from ..artifact.base import Artifact
+from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
 
@@ -118,7 +118,7 @@ class MaterialTestGridProducer(OpsProducer):
         workpiece: Optional["WorkPiece"] = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError(
                 "MaterialTestGridProducer requires a workpiece context."
@@ -128,7 +128,7 @@ class MaterialTestGridProducer(OpsProducer):
         if settings:
             owner_uid = settings.get("generated_workpiece_uid")
             if owner_uid and owner_uid != workpiece.uid:
-                return Artifact(
+                return WorkPieceArtifact(
                     ops=Ops(),
                     is_scalable=False,
                     source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -170,7 +170,7 @@ class MaterialTestGridProducer(OpsProducer):
             main_ops.scale(1, -1)
             main_ops.translate(0, height_mm)
 
-        return Artifact(
+        return WorkPieceArtifact(
             ops=main_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

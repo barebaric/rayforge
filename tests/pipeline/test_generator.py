@@ -12,8 +12,12 @@ from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.generator import OpsGenerator
 from rayforge.pipeline.steps import create_contour_step
-from rayforge.pipeline.artifact.base import Artifact, VertexData
-from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.artifact import (
+    WorkPieceArtifact,
+    VertexData,
+    ArtifactStore,
+    WorkPieceArtifactHandle,
+)
 from rayforge.pipeline.steprunner import run_step_in_subprocess
 from rayforge.pipeline.timerunner import run_time_estimation_in_subprocess
 
@@ -149,7 +153,7 @@ class TestOpsGenerator:
             powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
         )
 
-        expected_artifact = Artifact(
+        expected_artifact = WorkPieceArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -214,7 +218,7 @@ class TestOpsGenerator:
 
         # Simulate completion of the initial Ops generation
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -255,7 +259,7 @@ class TestOpsGenerator:
 
         # Simulate the completion of the initial generation task
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -301,7 +305,7 @@ class TestOpsGenerator:
 
         # Simulate the completion of the initial generation task
         initial_task = mock_task_mgr.created_tasks[0]
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
@@ -347,7 +351,7 @@ class TestOpsGenerator:
         # Simulate the completion of the initial generation task to populate
         # the cache.
         initial_task = mock_task_mgr.created_tasks[0]
-        initial_artifact = Artifact(
+        initial_artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,  # Not scalable to ensure size change matters
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -392,7 +396,7 @@ class TestOpsGenerator:
 
         # Simulate completion of a task to populate the cache
         task = mock_task_mgr.created_tasks[0]
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -582,7 +586,7 @@ class TestOpsGenerator:
 
         # Simulate a completed task
         task = mock_task_mgr.created_tasks[0]
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -602,6 +606,7 @@ class TestOpsGenerator:
                 step.uid, real_workpiece.uid
             )
             assert retrieved_handle is not None
+            assert isinstance(retrieved_handle, WorkPieceArtifactHandle)
             assert retrieved_handle.generation_size == real_workpiece.size
         finally:
             ArtifactStore.release(handle)
@@ -630,7 +635,7 @@ class TestOpsGenerator:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(10, 10, 0)
 
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -672,7 +677,7 @@ class TestOpsGenerator:
         # different size
         task = mock_task_mgr.created_tasks[0]
         original_size = (25, 15)  # Different from workpiece size
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,  # Not scalable
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -717,7 +722,7 @@ class TestOpsGenerator:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(10, 10, 0)
 
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -759,7 +764,7 @@ class TestOpsGenerator:
         # different size
         task = mock_task_mgr.created_tasks[0]
         original_size = (25, 15)  # Different from workpiece size
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,  # Not scalable
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

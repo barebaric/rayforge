@@ -12,13 +12,14 @@ import numpy as np
 
 from ..core.layer import Layer
 from .artifact.base import TextureData
+from .artifact.workpiece import WorkPieceArtifact
+from .artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
     from .generator import OpsGenerator
     from ..core.doc import Doc
     from ..core.workpiece import WorkPiece
     from ..core.step import Step
-    from .artifact.handle import ArtifactHandle
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 class RenderItem:
     """A lightweight instruction for rendering one artifact."""
 
-    artifact_handle: Optional[ArtifactHandle]
+    artifact_handle: Optional[BaseArtifactHandle]
     texture_data: Optional[TextureData]
     world_transform: np.ndarray  # 4x4 numpy matrix
     workpiece_size: Tuple[float, float]
@@ -79,9 +80,13 @@ def generate_scene_description(
             handle = ops_generator.get_artifact_handle(step.uid, workpiece.uid)
             artifact = ops_generator.get_artifact(step, workpiece)
 
+            texture_data = None
+            if isinstance(artifact, WorkPieceArtifact):
+                texture_data = artifact.texture_data
+
             item = RenderItem(
                 artifact_handle=handle,
-                texture_data=artifact.texture_data if artifact else None,
+                texture_data=texture_data,
                 world_transform=workpiece.get_world_transform().to_4x4_numpy(),
                 workpiece_size=workpiece.size,
                 step_uid=step.uid,

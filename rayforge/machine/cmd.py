@@ -2,8 +2,7 @@ from __future__ import annotations
 import logging
 import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
-from ..pipeline.artifact.store import ArtifactStore
-from ..pipeline.artifact.handle import ArtifactHandle
+from ..pipeline.artifact import ArtifactStore, JobArtifact, JobArtifactHandle
 
 if TYPE_CHECKING:
     from .models.machine import Machine
@@ -44,10 +43,12 @@ class MachineCmd:
     # --- Refactored Job Execution Logic ---
 
     async def _run_frame_action(
-        self, handle: ArtifactHandle, machine: "Machine"
+        self, handle: JobArtifactHandle, machine: "Machine"
     ):
         """The specific machine action for a framing job."""
         artifact = ArtifactStore.get(handle)
+        if not isinstance(artifact, JobArtifact):
+            raise ValueError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
 
         head = machine.get_default_head()
@@ -69,10 +70,12 @@ class MachineCmd:
         await machine.driver.run(frame_with_laser, machine, self._editor.doc)
 
     async def _run_send_action(
-        self, handle: ArtifactHandle, machine: "Machine"
+        self, handle: JobArtifactHandle, machine: "Machine"
     ):
         """The specific machine action for a send job."""
         artifact = ArtifactStore.get(handle)
+        if not isinstance(artifact, JobArtifact):
+            raise ValueError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
         await machine.driver.run(ops, machine, self._editor.doc)
 
@@ -80,7 +83,7 @@ class MachineCmd:
         self,
         machine: "Machine",
         job_name: str,
-        final_job_action: Callable[[ArtifactHandle, "Machine"], Coroutine],
+        final_job_action: Callable[[JobArtifactHandle, "Machine"], Coroutine],
     ) -> asyncio.Future:
         """
         Generic, non-blocking job starter that orchestrates assembly
@@ -101,7 +104,7 @@ class MachineCmd:
             job_future = asyncio.get_running_loop().create_future()
 
             def _on_assembly_done(
-                handle: Optional[ArtifactHandle], error: Optional[Exception]
+                handle: Optional[JobArtifactHandle], error: Optional[Exception]
             ):
                 if error:
                     logger.error(

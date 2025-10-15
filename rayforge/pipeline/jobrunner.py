@@ -12,9 +12,11 @@ from ..core.doc import Doc
 from ..pipeline.transformer import OpsTransformer, transformer_by_name
 from ..pipeline.encoder.gcode import GcodeEncoder
 from ..pipeline.encoder.vertexencoder import VertexEncoder
-from .artifact.store import ArtifactStore
-from .artifact.handle import ArtifactHandle
-from .artifact.base import Artifact
+from .artifact import (
+    ArtifactStore,
+    JobArtifact,
+    create_handle_from_dict,
+)
 from .coord import CoordinateSystem
 
 
@@ -164,7 +166,7 @@ def run_job_assembly_in_subprocess(
                     )
                 )
 
-                handle = ArtifactHandle.from_dict(
+                handle = create_handle_from_dict(
                     item_dict["artifact_handle_dict"]
                 )
                 artifact = ArtifactStore.get(handle)
@@ -238,7 +240,7 @@ def run_job_assembly_in_subprocess(
     vertex_data = vertex_encoder.encode(final_ops)
 
     proxy.set_message(_("Storing final job artifact..."))
-    final_artifact = Artifact(
+    final_artifact = JobArtifact(
         ops=final_ops,
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

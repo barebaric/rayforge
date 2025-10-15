@@ -7,12 +7,12 @@ from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
-from ..canvas import CanvasElement
+from ...pipeline.artifact import WorkPieceArtifact
 from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
+from ..canvas import CanvasElement
 from .tab_handle import TabHandleElement
-from ...pipeline.artifact.base import Artifact
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
@@ -68,7 +68,7 @@ class WorkPieceView(CanvasElement):
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
         self._texture_surfaces: Dict[str, cairo.ImageSurface] = {}
         # Cached artifacts to avoid re-fetching from generator on every draw.
-        self._artifact_cache: Dict[str, Optional[Artifact]] = {}
+        self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -793,7 +793,7 @@ class WorkPieceView(CanvasElement):
         show_travel = work_surface.show_travel_moves
 
         # --- Aggregate artifacts and draw texture components first ---
-        artifacts_to_draw: List[Artifact] = []
+        artifacts_to_draw: List[WorkPieceArtifact] = []
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
                 if not self._ops_visibility.get(step.uid, True):
@@ -885,7 +885,7 @@ class WorkPieceView(CanvasElement):
         ctx.restore()
 
     def _draw_texture(
-        self, ctx: cairo.Context, step: Step, artifact: Artifact
+        self, ctx: cairo.Context, step: Step, artifact: WorkPieceArtifact
     ):
         """Generates, caches, and draws the themed texture."""
         if not self._color_set or not artifact.texture_data:

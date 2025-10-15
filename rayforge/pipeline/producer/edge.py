@@ -4,7 +4,7 @@ from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix
 from ...core.ops import Ops, SectionType
-from ..artifact.base import Artifact
+from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
 
@@ -51,7 +51,7 @@ class EdgeTracer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("EdgeTracer requires a workpiece context.")
 
@@ -159,7 +159,7 @@ class EdgeTracer(OpsProducer):
 
         # 6. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
-        return Artifact(
+        return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

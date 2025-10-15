@@ -10,8 +10,7 @@ from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
 from ..pipeline.generator import OpsGenerator
 from ..machine.cmd import MachineCmd
-from ..pipeline.artifact.handle import ArtifactHandle
-from ..pipeline.artifact.store import ArtifactStore
+from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
@@ -67,7 +66,7 @@ class DocEditor:
 
         # A set to track temporary artifacts (e.g., for job previews)
         # that don't live in the OpsGenerator cache.
-        self._transient_artifact_handles: set[ArtifactHandle] = set()
+        self._transient_artifact_handles: set[JobArtifactHandle] = set()
 
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
@@ -190,7 +189,7 @@ class DocEditor:
         export_future = asyncio.get_running_loop().create_future()
 
         def _on_export_assembly_done(
-            handle: Optional[ArtifactHandle], error: Optional[Exception]
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
         ):
             try:
                 if error:
@@ -202,6 +201,7 @@ class DocEditor:
                     return
 
                 artifact = ArtifactStore.get(handle)
+                assert isinstance(artifact, JobArtifact)
                 if artifact.gcode_bytes is None:
                     exc = ValueError("Final artifact is missing G-code data.")
                     export_future.set_exception(exc)

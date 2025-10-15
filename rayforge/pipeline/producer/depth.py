@@ -5,7 +5,7 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 from ..coord import CoordinateSystem
-from ..artifact.base import Artifact, VertexData, TextureData
+from ..artifact import WorkPieceArtifact, VertexData, TextureData
 from .base import OpsProducer
 from ...core.ops import (
     Ops,
@@ -58,7 +58,7 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
@@ -161,7 +161,7 @@ class DepthEngraver(OpsProducer):
             position_mm=position_mm,
         )
 
-        return Artifact(
+        return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
