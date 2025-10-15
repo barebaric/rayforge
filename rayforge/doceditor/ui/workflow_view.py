@@ -136,9 +136,7 @@ class WorkflowView(Expander):
                 assert hbox, "Failed to get hbox from draglist row"
                 stepbox = hbox.get_last_child()
                 if isinstance(stepbox, StepBox):
-                    stepbox.set_prefix(
-                        _("Step {seq}: ").format(seq=i + 1)
-                    )
+                    stepbox.set_prefix(_("Step {seq}: ").format(seq=i + 1))
                     stepbox.on_step_changed(stepbox.step)
             return
 

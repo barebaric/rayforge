@@ -138,9 +138,8 @@ class ExecutionContext(BaseExecutionContext):
             self._pending_progress = None
             self._pending_message = None
 
-        if (
-            self._update_callback
-            and (progress is not None or message is not None)
+        if self._update_callback and (
+            progress is not None or message is not None
         ):
             idle_add(self._update_callback, progress, message)
 

@@ -278,9 +278,7 @@ class TabCmd:
         length: float = 1.0,
     ):
         """Adds a single new tab to a workpiece. Undoable."""
-        new_tab = Tab(
-            width=width, segment_index=segment_index, pos=pos
-        )
+        new_tab = Tab(width=width, segment_index=segment_index, pos=pos)
 
         # Create a new list with the added tab
         new_tabs_list = deepcopy(workpiece.tabs)
@@ -328,6 +326,7 @@ class TabCmd:
 
         # This is a simple property change, so we can use a generic command
         from ..undo import ChangePropertyCommand
+
         cmd = ChangePropertyCommand(
             target=workpiece,
             property_name="tabs_enabled",

@@ -5,10 +5,11 @@ from .modifier import Modifier
 from .transparency import MakeTransparent
 
 modifier_by_name = dict(
-    (name, obj) for name, obj in locals().items()
-    if inspect.isclass(obj) and
-    issubclass(obj, Modifier) and
-    not inspect.isabstract(obj)
+    (name, obj)
+    for name, obj in locals().items()
+    if inspect.isclass(obj)
+    and issubclass(obj, Modifier)
+    and not inspect.isabstract(obj)
 )
 
 __all__ = [

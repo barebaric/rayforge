@@ -148,12 +148,8 @@ class MaterialTestRenderer(Renderer):
         min_power, max_power = power_range
 
         # Rows vary speed (Y-axis), columns vary power (X-axis)
-        speed_step = (
-            (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
-        )
-        power_step = (
-            (max_power - min_power) / (cols - 1) if cols > 1 else 0
-        )
+        speed_step = (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
+        power_step = (max_power - min_power) / (cols - 1) if cols > 1 else 0
 
         for r in range(rows):
             for c in range(cols):

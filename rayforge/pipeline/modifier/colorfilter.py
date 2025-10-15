@@ -26,30 +26,34 @@ def make_transparent_except_color(surface, target_r, target_g, target_b):
     mask = ~((r == target_r) & (g == target_g) & (b_channel == target_b))
 
     # Set alpha to 0 for non-matching pixels
-    argb[mask] = ((0x00 << 24) | (r[mask] << 16) |
-                  (g[mask] << 8) | b_channel[mask])
+    argb[mask] = (
+        (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b_channel[mask]
+    )
 
 
 class KeepColor(Modifier):
     """
     Makes everything except for a selected RGB color transparent.
     """
+
     def __init__(self, r, g, b):
         super().__init__()
         self.color = r, g, b
 
     def to_dict(self):
         d = super().to_dict()
-        d.update({
-            'r': self.color[0],
-            'g': self.color[1],
-            'b': self.color[2],
-        })
+        d.update(
+            {
+                "r": self.color[0],
+                "g": self.color[1],
+                "b": self.color[2],
+            }
+        )
         return d
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(r=data['r'], g=data['g'], b=data['b'])
+        return cls(r=data["r"], g=data["g"], b=data["b"])
 
     def run(self, surface):
         make_transparent_except_color(surface, *self.color)
