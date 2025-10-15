@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, cast
 
 import cv2
 import numpy as np
@@ -321,7 +321,7 @@ class PdfImporter(Importer):
 
         # Combine all contours to find the overall bounding box.
         all_points = np.vstack(contours)
-        return cv2.boundingRect(all_points)
+        return cast(Tuple[int, int, int, int], cv2.boundingRect(all_points))
 
     def _trace_pdf_data(
         self, pdf_data: bytes, size_mm: Tuple[float, float]

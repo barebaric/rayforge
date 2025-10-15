@@ -73,6 +73,7 @@ class StepElement(CanvasElement):
         """
         if not self.parent:
             return
+        parent = cast("CanvasElement", self.parent)
 
         step_uid = self.data.uid
         is_visible = self.visible
@@ -83,6 +84,6 @@ class StepElement(CanvasElement):
         )
 
         # Iterate through all children of the parent (the LayerElement)
-        for child in self.parent.children:
+        for child in parent.children:
             if isinstance(child, WorkPieceView):
                 child.set_ops_visibility(step_uid, is_visible)
