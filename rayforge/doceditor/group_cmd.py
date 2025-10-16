@@ -10,7 +10,7 @@ from ..core.matrix import Matrix
 
 if TYPE_CHECKING:
     from .editor import DocEditor
-    from ..pipeline.generator import OpsGenerator
+    from ..pipeline.coordinator import PipelineCoordinator
     from ..shared.tasker.manager import TaskManager
     from ..shared.tasker.context import ExecutionContext
     from ..shared.tasker.task import Task
@@ -25,7 +25,7 @@ class _CreateGroupCommand(Command):
         self,
         layer: Layer,
         items_to_group: List[DocItem],
-        ops_generator: "OpsGenerator",
+        ops_generator: "PipelineCoordinator",
         name: str = "Group Items",
         precalculated_result: Optional[GroupingResult] = None,
     ):
@@ -110,7 +110,7 @@ class _UngroupCommand(Command):
     def __init__(
         self,
         groups_to_ungroup: List[Group],
-        ops_generator: "OpsGenerator",
+        ops_generator: "PipelineCoordinator",
         name: str = "Ungroup Items",
         precalculated_matrices: Optional[Dict[str, Dict[str, Matrix]]] = None,
     ):

@@ -8,7 +8,7 @@ from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
-from ..pipeline.generator import OpsGenerator
+from ..pipeline.coordinator import PipelineCoordinator
 from ..machine.cmd import MachineCmd
 from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from .edit_cmd import EditCmd
@@ -61,7 +61,7 @@ class DocEditor:
         self.task_manager = task_manager
         self._config_manager = config_manager
         self.doc = doc or Doc()
-        self.ops_generator = OpsGenerator(self.doc, self.task_manager)
+        self.ops_generator = PipelineCoordinator(self.doc, self.task_manager)
         self.history_manager: "HistoryManager" = self.doc.history_manager
 
         # A set to track temporary artifacts (e.g., for job previews)

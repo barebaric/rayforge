@@ -4,6 +4,8 @@ from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact import StepArtifact
 from rayforge.pipeline.artifact import VertexData, TextureData
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact.step import TextureInstance
+from rayforge.core.matrix import Matrix
 
 
 class TestStepArtifact(unittest.TestCase):
@@ -36,7 +38,7 @@ class TestStepArtifact(unittest.TestCase):
         reconstructed = StepArtifact.from_dict(artifact_dict)
 
         self.assertIsNotNone(reconstructed.vertex_data)
-        self.assertIsNone(reconstructed.texture_data)
+        self.assertEqual(len(reconstructed.texture_instances), 0)
 
         assert reconstructed.vertex_data is not None
         np.testing.assert_array_equal(
@@ -53,7 +55,7 @@ class TestStepArtifact(unittest.TestCase):
         )
 
     def test_hybrid_serialization_round_trip(self):
-        """Tests serialization for a hybrid artifact with texture data."""
+        """Tests serialization for an artifact with texture instances."""
         vertex_data = VertexData(
             powered_vertices=np.array([[1, 2, 3]], dtype=np.float32),
             powered_colors=np.array([[0, 0, 0, 1]], dtype=np.float32),
@@ -65,27 +67,39 @@ class TestStepArtifact(unittest.TestCase):
             dimensions_mm=(10, 20),
             position_mm=(1, 2),
         )
+        transform = Matrix.translation(50, 60).to_4x4_numpy()
+        texture_instance = TextureInstance(
+            texture_data=texture_data, world_transform=transform
+        )
+
         artifact = StepArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             vertex_data=vertex_data,
-            texture_data=texture_data,
+            texture_instances=[texture_instance],
         )
 
         artifact_dict = artifact.to_dict()
         reconstructed = StepArtifact.from_dict(artifact_dict)
 
         self.assertIsNotNone(reconstructed.vertex_data)
-        self.assertIsNotNone(reconstructed.texture_data)
+        self.assertEqual(len(reconstructed.texture_instances), 1)
 
-        assert reconstructed.texture_data is not None
+        reconstructed_instance = reconstructed.texture_instances[0]
         np.testing.assert_array_equal(
-            reconstructed.texture_data.power_texture_data,
+            reconstructed_instance.texture_data.power_texture_data,
             texture_data.power_texture_data,
         )
-        self.assertEqual(reconstructed.texture_data.dimensions_mm, (10, 20))
-        self.assertEqual(reconstructed.texture_data.position_mm, (1, 2))
+        self.assertEqual(
+            reconstructed_instance.texture_data.dimensions_mm, (10, 20)
+        )
+        self.assertEqual(
+            reconstructed_instance.texture_data.position_mm, (1, 2)
+        )
+        np.testing.assert_allclose(
+            reconstructed_instance.world_transform, transform
+        )
 
 
 if __name__ == "__main__":

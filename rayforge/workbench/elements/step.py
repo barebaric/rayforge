@@ -5,7 +5,7 @@ from ..canvas import CanvasElement
 from .workpiece import WorkPieceView
 
 if TYPE_CHECKING:
-    from ...pipeline.generator import OpsGenerator
+    from ...pipeline.coordinator import PipelineCoordinator
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class StepElement(CanvasElement):
     def __init__(
         self,
         step: Step,
-        ops_generator: "OpsGenerator",
+        ops_generator: "PipelineCoordinator",
         **kwargs,
     ):
         """

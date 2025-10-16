@@ -13,7 +13,7 @@ from .artifact.base import TextureData
 from .artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from .generator import OpsGenerator
+    from .coordinator import PipelineCoordinator
     from ..core.doc import Doc
 
 
@@ -40,22 +40,14 @@ class SceneDescription:
 
 
 def generate_scene_description(
-    doc: "Doc", ops_generator: "OpsGenerator"
+    doc: "Doc", pipeline_coordinator: "PipelineCoordinator"
 ) -> SceneDescription:
     """
     Assembles a lightweight description of the scene for 3D rendering.
 
-    This function iterates through all visible steps, and for each one, it
-    retrieves a handle to its cached `StepArtifact`. This artifact contains
-    the final, aggregated, and transformed geometry for the entire step,
-    ready for rendering.
-
-    Args:
-        doc: The document containing all layers, workflows, and workpieces.
-        ops_generator: The generator instance holding the artifact cache.
-
-    Returns:
-        A SceneDescription object containing render items for each step.
+    This function iterates through all visible steps and creates a single
+    RenderItem for each, pointing to the StepArtifact. The StepArtifact is a
+    self-contained "render bundle" with all necessary data for the 3D canvas.
     """
     render_items: List[RenderItem] = []
     visible_steps = set()
@@ -66,11 +58,11 @@ def generate_scene_description(
                 visible_steps.add(step)
 
     for step in visible_steps:
-        handle = ops_generator.get_step_artifact_handle(step.uid)
+        handle = pipeline_coordinator.get_step_artifact_handle(step.uid)
         if handle:
             item = RenderItem(
                 artifact_handle=handle,
-                texture_data=None,  # Loaded from artifact in the render thread
+                texture_data=None,
                 world_transform=np.identity(4, dtype=np.float32),
                 workpiece_size=(0.0, 0.0),  # Not applicable at step level
                 step_uid=step.uid,

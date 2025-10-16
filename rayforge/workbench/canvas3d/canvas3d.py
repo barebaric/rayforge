@@ -11,7 +11,7 @@ from ...pipeline.scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )
-from ...pipeline.generator import OpsGenerator
+from ...pipeline.coordinator import PipelineCoordinator
 from ...pipeline.artifact import ArtifactStore, StepArtifact
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
@@ -59,15 +59,13 @@ def prepare_scene_vertices_async(
     logger.debug("Starting scene vertex preparation from StepArtifacts")
 
     for i, item in enumerate(scene_description.render_items):
-        logger.debug(f"Processing RenderItem {i} (Step UID: {item.step_uid})")
-
         if not item.artifact_handle:
             continue
 
         artifact = ArtifactStore.get(item.artifact_handle)
 
         if not isinstance(artifact, StepArtifact) or not artifact.vertex_data:
-            logger.debug(
+            logger.error(
                 "Artifact is not a StepArtifact or has no vertex data."
             )
             continue
@@ -178,7 +176,7 @@ class Canvas3D(Gtk.GLArea):
     def __init__(
         self,
         doc,
-        ops_generator: "OpsGenerator",
+        ops_generator: "PipelineCoordinator",
         width_mm: float,
         depth_mm: float,
         y_down: bool = False,
@@ -851,17 +849,16 @@ class Canvas3D(Gtk.GLArea):
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
         for item in scene_description.render_items:
-            if item.artifact_handle:
-                artifact = ArtifactStore.get(item.artifact_handle)
-                if (
-                    isinstance(artifact, StepArtifact)
-                    and artifact.texture_data
-                ):
-                    # StepArtifact geometry is already in world space, so its
-                    # transform is identity.
-                    placement_transform = np.identity(4, dtype=np.float32)
+            if not item.artifact_handle:
+                continue
+
+            artifact = ArtifactStore.get(item.artifact_handle)
+            # Textures are part of the StepArtifact "render bundle"
+            if isinstance(artifact, StepArtifact):
+                for tex_instance in artifact.texture_instances:
                     self.texture_renderer.add_instance(
-                        artifact.texture_data, placement_transform
+                        tex_instance.texture_data,
+                        tex_instance.world_transform,
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread

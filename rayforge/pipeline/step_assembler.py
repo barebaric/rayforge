@@ -2,20 +2,20 @@ from __future__ import annotations
 import logging
 import math
 from typing import List, Dict, Any, Optional
+from ..core.ops import Ops
+from ..core.matrix import Matrix
+from ..core.workpiece import WorkPiece
+from ..pipeline.transformer import OpsTransformer, transformer_by_name
+from ..pipeline.encoder.vertexencoder import VertexEncoder
+from ..shared.tasker.proxy import ExecutionContextProxy
 from .artifact import (
     ArtifactStore,
     StepArtifact,
     create_handle_from_dict,
     WorkPieceArtifact,
-    TextureData,
 )
+from .artifact.step import TextureInstance
 from .coord import CoordinateSystem
-from ..core.ops import Ops
-from ..core.matrix import Matrix
-from ..core.workpiece import WorkPiece
-from ..shared.tasker.proxy import ExecutionContextProxy
-from ..pipeline.transformer import OpsTransformer, transformer_by_name
-from ..pipeline.encoder.vertexencoder import VertexEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def run_step_assembly_in_subprocess(
         return None
 
     combined_ops = Ops()
-    aggregated_texture: Optional[TextureData] = None
+    texture_instances = []
     num_items = len(workpiece_assembly_info)
 
     for i, info in enumerate(workpiece_assembly_info):
@@ -73,6 +73,8 @@ def run_step_assembly_in_subprocess(
 
         workpiece = WorkPiece.from_dict(info["workpiece_dict"])
         ops = artifact.ops.copy()
+        world_matrix = Matrix.from_list(info["world_transform_list"])
+        (tx, ty, angle, sx, sy, skew) = world_matrix.decompose()
 
         # 1. Ensure ops are in final local size (in mm).
         if artifact.is_scalable and artifact.source_dimensions:
@@ -81,25 +83,53 @@ def run_step_assembly_in_subprocess(
             if source_w > 1e-9 and source_h > 1e-9:
                 ops.scale(target_w / source_w, target_h / source_h)
 
-        # 2. Apply a PLACEMENT-ONLY transform to move to world space.
-        # This logic is adapted from the original, correct canvas3d logic.
-        world_matrix = Matrix.from_list(info["world_transform_list"])
-        (tx, ty, angle, sx, sy, skew) = world_matrix.decompose()
-        placement_matrix = Matrix.compose(
+        # 2. Create the single, correct placement-only matrix for this
+        # workpiece. This will be used for both vertices and textures.
+        workpiece_placement_matrix = Matrix.compose(
             tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
         )
-        ops.transform(placement_matrix.to_4x4_numpy())
+
+        # 2. FOR VERTICES: The 'ops' data is pre-scaled. Apply the
+        # placement-only transform to position it correctly.
+        ops.transform(workpiece_placement_matrix.to_4x4_numpy())
         combined_ops.extend(ops)
 
-        # 3. Handle and transform texture data.
-        # For now, we handle one texture per step.
-        if artifact.texture_data and aggregated_texture is None:
-            wx, wy, ww, wh = workpiece.bbox
-            aggregated_texture = TextureData(
-                power_texture_data=artifact.texture_data.power_texture_data,
-                dimensions_mm=(ww, wh),
-                position_mm=(wx, wy),
+        # 3. FOR TEXTURES: The renderer draws a 1x1 unit quad. We must
+        # build a transform to scale it to the chunk's physical size,
+        # place it locally, and then place it in the world.
+        if artifact.texture_data:
+            chunk_w_mm, chunk_h_mm = artifact.texture_data.dimensions_mm
+            chunk_x_off, chunk_y_off_from_top = (
+                artifact.texture_data.position_mm
             )
+            __, workpiece_h_mm = workpiece.size
+
+            # a) Create a matrix to scale the 1x1 unit quad to the chunk's
+            # physical size in millimeters.
+            chunk_scale_matrix = Matrix.scale(chunk_w_mm, chunk_h_mm)
+
+            # b) Create a matrix to translate the correctly-sized chunk
+            # to its position within the workpiece's local Y-up frame.
+            y_pos_local = workpiece_h_mm - chunk_y_off_from_top - chunk_h_mm
+            local_translation_matrix = Matrix.translation(
+                chunk_x_off, y_pos_local
+            )
+
+            # c) The final transform combines these steps in order:
+            # 1. Scale the unit quad to the chunk's physical size.
+            # 2. Translate the chunk to its local position.
+            # 3. Apply the workpiece's world PLACEMENT (no scale).
+            final_transform = (
+                workpiece_placement_matrix
+                @ local_translation_matrix
+                @ chunk_scale_matrix
+            )
+
+            instance = TextureInstance(
+                texture_data=artifact.texture_data,
+                world_transform=final_transform.to_4x4_numpy(),
+            )
+            texture_instances.append(instance)
 
     # 4. Apply per-step transformers to the world-space ops
     transformers = _instantiate_transformers(per_step_transformers_dicts)
@@ -117,14 +147,14 @@ def run_step_assembly_in_subprocess(
     vertex_data = encoder.encode(combined_ops)
     proxy.set_progress(0.95)
 
-    # 6. Create and store the final StepArtifact
+    # 6. Create and store the final StepArtifact "render bundle".
     proxy.set_message(_("Storing final step data..."))
     final_artifact = StepArtifact(
         ops=combined_ops,
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         vertex_data=vertex_data,
-        texture_data=aggregated_texture,
+        texture_instances=texture_instances,
     )
     final_handle = ArtifactStore.put(final_artifact)
     proxy.set_progress(1.0)

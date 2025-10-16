@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
 from rayforge.image import SVG_RENDERER
@@ -10,17 +10,17 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.generator import OpsGenerator
+from rayforge.pipeline.coordinator import PipelineCoordinator
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     VertexData,
     ArtifactStore,
     WorkPieceArtifactHandle,
+    StepArtifactHandle,
 )
 from rayforge.pipeline.steprunner import run_step_in_subprocess
 from rayforge.pipeline.step_assembler import run_step_assembly_in_subprocess
-from rayforge.pipeline.timerunner import run_time_estimation_in_subprocess
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,12 @@ def setup_real_config(mocker):
         machine = test_machine
 
     test_config = TestConfig()
+    # Patch config where it is imported and used by all relevant modules.
     mocker.patch("rayforge.config.config", test_config)
+    mocker.patch("rayforge.pipeline.stage.time.config.config", test_config)
+    mocker.patch(
+        "rayforge.pipeline.stage.workpiece.config.config", test_config
+    )
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
 
@@ -111,6 +116,50 @@ class TestOpsGenerator:
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
+    def _complete_all_tasks(self, mock_task_mgr, handle):
+        """
+        Helper to find and complete all outstanding tasks to bring the
+        generator to an idle state.
+        """
+        processed_keys = set()
+        while True:
+            tasks_to_process = [
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.key not in processed_keys
+            ]
+            if not tasks_to_process:
+                break
+
+            for task_to_complete in tasks_to_process:
+                mock_finished_task = MagicMock(spec=Task)
+                mock_finished_task.key = task_to_complete.key
+                mock_finished_task.get_status.return_value = "completed"
+
+                result = (None, 1)  # Default result
+                if task_to_complete.target is run_step_in_subprocess:
+                    result = (handle.to_dict(), 1)
+                elif (
+                    task_to_complete.target is run_step_assembly_in_subprocess
+                ):
+                    dummy_handle = StepArtifactHandle(
+                        shm_name="dummy",
+                        handle_class_name="StepArtifactHandle",
+                        artifact_type_name="StepArtifact",
+                        is_scalable=False,
+                        source_coordinate_system_name="MILLIMETER_SPACE",
+                        source_dimensions=None,
+                        time_estimate=None,
+                    )
+                    result = (dummy_handle.to_dict(), 1)
+
+                mock_finished_task.result.return_value = result
+                if task_to_complete.when_done:
+                    task_to_complete.when_done(mock_finished_task)
+                processed_keys.add(task_to_complete.key)
+
+        mock_task_mgr.created_tasks.clear()
+
     def test_reconcile_all_triggers_ops_generation(
         self, doc, real_workpiece, mock_task_mgr
     ):
@@ -121,12 +170,10 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
 
         # Act
-        # The OpsGenerator is now created with the mock manager injected.
-        OpsGenerator(doc, mock_task_mgr)
+        PipelineCoordinator(doc, mock_task_mgr)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
-        # Verify it was the correct kind of process
         called_func = mock_task_mgr.run_process.call_args[0][0]
         assert called_func is run_step_in_subprocess
 
@@ -139,7 +186,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
         task_to_complete = mock_task_mgr.created_tasks[0]
 
@@ -148,7 +195,6 @@ class TestOpsGenerator:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(1, 1, 0)
 
-        # All artifacts now contain vertex data
         vertex_data = VertexData(
             powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
             powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
@@ -163,8 +209,7 @@ class TestOpsGenerator:
             vertex_data=vertex_data,
         )
         handle = ArtifactStore.put(expected_artifact)
-        expected_result_dict = handle.to_dict()
-        expected_result_tuple = (expected_result_dict, 1)
+        expected_result_tuple = (handle.to_dict(), 1)
 
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task_to_complete.key
@@ -173,11 +218,8 @@ class TestOpsGenerator:
 
         try:
             task_to_complete.when_done(mock_finished_task)
-
-            # Assert
             cached_ops = generator.get_ops(step, real_workpiece)
             assert cached_ops is not None
-            # MoveTo + LineTo
             assert len(cached_ops) == 2
         finally:
             ArtifactStore.release(handle)
@@ -191,8 +233,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
-        # The constructor has already called run_process once.
+        generator = PipelineCoordinator(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
         task_to_cancel = mock_task_mgr.created_tasks[0]
 
@@ -213,12 +254,8 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        # Initial generation
-        OpsGenerator(doc, mock_task_mgr)
-        mock_task_mgr.run_process.assert_called_once()
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
-        # Simulate completion of the initial Ops generation
-        initial_task = mock_task_mgr.created_tasks[0]
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -226,29 +263,27 @@ class TestOpsGenerator:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         handle = ArtifactStore.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = initial_task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
-
         try:
-            initial_task.when_done(mock_finished_task)
-            # This completion will trigger a time estimation task & step
-            # assembly. We reset the mock to ignore this and focus on the
-            # next action.
+            self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
+            # Invalidate cache by changing a property that does not emit
+            # a signal. The signal is simulated by calling reconcile_all.
+            step.power = 0.5
+            generator._artifact_cache.invalidate_for_step(step.uid)
 
             # Act
-            step.set_power(0.5)
+            generator.reconcile_all()
 
             # Assert
-            mock_task_mgr.run_process.assert_called_once()
-            called_func = mock_task_mgr.run_process.call_args[0][0]
-            assert called_func is run_step_in_subprocess
+            tasks = mock_task_mgr.created_tasks
+            workpiece_tasks = [
+                t for t in tasks if t.target is run_step_in_subprocess
+            ]
+            assert len(workpiece_tasks) == 1
         finally:
             ArtifactStore.release(handle)
 
-    def test_workpiece_pos_change_triggers_time_estimation_only(
+    def test_workpiece_transform_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
@@ -256,11 +291,8 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        OpsGenerator(doc, mock_task_mgr)  # Initial generation
-        mock_task_mgr.run_process.assert_called_once()
+        _generator = PipelineCoordinator(doc, mock_task_mgr)  # noqa: F841
 
-        # Simulate the completion of the initial generation task
-        initial_task = mock_task_mgr.created_tasks[0]
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -268,34 +300,25 @@ class TestOpsGenerator:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         handle = ArtifactStore.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = initial_task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
-
         try:
-            initial_task.when_done(mock_finished_task)
-            # The completion of the ops task triggers a step assembly task and
-            # a time estimation task.
-            assert mock_task_mgr.run_process.call_count == 3
-            targets = [t.target for t in mock_task_mgr.created_tasks]
-            assert run_step_assembly_in_subprocess in targets
-            assert run_time_estimation_in_subprocess in targets
-
+            self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
 
             # Act
-            real_workpiece.pos = 50, 50
+            real_workpiece.pos = (50, 50)
+            # This change fires a signal that the generator handles,
+            # so we don't need to do anything else to trigger it.
 
-            # Assert: A new time estimation is triggered, but NOT an ops
-            # regeneration
-            mock_task_mgr.run_process.assert_called_once()
-            called_func = mock_task_mgr.run_process.call_args[0][0]
-            assert called_func is run_time_estimation_in_subprocess
+            # Assert
+            tasks = mock_task_mgr.created_tasks
+            assembly_tasks = [
+                t for t in tasks if t.target is run_step_assembly_in_subprocess
+            ]
+            assert len(assembly_tasks) == 1
         finally:
             ArtifactStore.release(handle)
 
-    def test_workpiece_angle_change_triggers_time_estimation_only(
+    def test_multipass_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr
     ):
         # Arrange
@@ -303,11 +326,8 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        OpsGenerator(doc, mock_task_mgr)  # Initial generation
-        mock_task_mgr.run_process.assert_called_once()
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
-        # Simulate the completion of the initial generation task
-        initial_task = mock_task_mgr.created_tasks[0]
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -315,28 +335,20 @@ class TestOpsGenerator:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         handle = ArtifactStore.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = initial_task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
         try:
-            initial_task.when_done(mock_finished_task)
-            # The completion of the ops task triggers a step assembly task and
-            # a time estimation task.
-            assert mock_task_mgr.run_process.call_count == 3
-            targets = [t.target for t in mock_task_mgr.created_tasks]
-            assert run_step_assembly_in_subprocess in targets
-            assert run_time_estimation_in_subprocess in targets
+            self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
 
             # Act
-            real_workpiece.angle = 45
+            step.per_step_transformers_dicts = []
+            generator._on_job_assembly_invalidated(sender=doc)
 
-            # Assert: A new time estimation is triggered, but NOT an ops
-            # regeneration
-            mock_task_mgr.run_process.assert_called_once()
-            called_func = mock_task_mgr.run_process.call_args[0][0]
-            assert called_func is run_time_estimation_in_subprocess
+            # Assert
+            tasks = mock_task_mgr.created_tasks
+            assembly_tasks = [
+                t for t in tasks if t.target is run_step_assembly_in_subprocess
+            ]
+            assert len(assembly_tasks) == 1
         finally:
             ArtifactStore.release(handle)
 
@@ -348,41 +360,29 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        OpsGenerator(doc, mock_task_mgr)  # Initial generation
-        mock_task_mgr.run_process.assert_called_once()  # Verify initial call
+        _generator = PipelineCoordinator(doc, mock_task_mgr)  # noqa: F841
 
-        # Simulate the completion of the initial generation task to populate
-        # the cache.
-        initial_task = mock_task_mgr.created_tasks[0]
         initial_artifact = WorkPieceArtifact(
             ops=Ops(),
-            is_scalable=False,  # Not scalable to ensure size change matters
+            is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            generation_size=real_workpiece.size,  # size it was generated for
+            generation_size=real_workpiece.size,
         )
         handle = ArtifactStore.put(initial_artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = initial_task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (
-            handle.to_dict(),
-            1,
-        )
         try:
-            initial_task.when_done(mock_finished_task)
-            # The completion of the ops task triggers a time estimation task.
+            self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
 
             # Act
             real_workpiece.set_size(10, 10)
+            # This change fires a signal that the generator handles.
 
             # Assert
-            # The `transform_changed` signal from set_size bubbles up, and the
-            # generator should see that the world size has changed.
-            mock_task_mgr.run_process.assert_called_once()
-            # Verify it's a full regeneration, not just a time estimate
-            called_func = mock_task_mgr.run_process.call_args[0][0]
-            assert called_func is run_step_in_subprocess
+            tasks = mock_task_mgr.created_tasks
+            workpiece_tasks = [
+                t for t in tasks if t.target is run_step_in_subprocess
+            ]
+            assert len(workpiece_tasks) == 1
         finally:
             ArtifactStore.release(handle)
 
@@ -395,7 +395,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Simulate completion of a task to populate the cache
         task = mock_task_mgr.created_tasks[0]
@@ -434,14 +434,14 @@ class TestOpsGenerator:
 
     def test_doc_property_getter(self, doc, mock_task_mgr):
         # Arrange
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Act & Assert
         assert generator.doc is doc
 
     def test_doc_property_setter_with_same_doc(self, doc, mock_task_mgr):
         # Arrange
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Act - setting the same document should not cause issues
         generator.doc = doc
@@ -451,7 +451,7 @@ class TestOpsGenerator:
 
     def test_doc_property_setter_with_different_doc(self, doc, mock_task_mgr):
         # Arrange
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
         new_doc = Doc()
 
         # Act
@@ -467,7 +467,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Initial state - should be busy with one task
         assert generator.is_busy is True
@@ -494,7 +494,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - pause the generator
@@ -519,7 +519,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - use context manager
@@ -536,7 +536,7 @@ class TestOpsGenerator:
 
     def test_is_paused_property(self, doc, mock_task_mgr):
         # Arrange
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Initial state
         assert generator.is_paused is False
@@ -555,23 +555,20 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        # Patch the method on the specific instance to test delegation
+        with patch.object(
+            generator._time_estimator_stage, "get_estimate"
+        ) as mock_get_estimate:
+            mock_get_estimate.return_value = 42.5
 
-        # Act & Assert - No estimate initially
-        assert generator.get_estimated_time(step, real_workpiece) is None
+            # Act
+            result = generator.get_estimated_time(step, real_workpiece)
 
-        # Simulate a time estimation completion
-        time_key = (
-            step.uid,
-            real_workpiece.uid,
-            real_workpiece.size[0],
-            real_workpiece.size[1],
-        )
-        generator._time_cache[time_key] = 42.5
-
-        # Act & Assert - Should return cached value
-        assert generator.get_estimated_time(step, real_workpiece) == 42.5
+            # Assert - Should return the mocked value from the stage
+            assert result == 42.5
+            mock_get_estimate.assert_called_once_with(step, real_workpiece)
 
     def test_get_artifact_handle(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -580,7 +577,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Act & Assert - No handle initially
         assert (
@@ -621,7 +618,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Act & Assert - No ops initially
         world_transform = real_workpiece.get_world_transform()
@@ -674,7 +671,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -714,7 +711,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Act & Assert - No artifact initially
         assert generator.get_artifact(step, real_workpiece) is None
@@ -761,7 +758,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = OpsGenerator(doc, mock_task_mgr)
+        generator = PipelineCoordinator(doc, mock_task_mgr)
 
         # Simulate a completed task with non-scalable artifact at
         # different size

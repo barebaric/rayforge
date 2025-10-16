@@ -92,15 +92,19 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
 
 def test_step_assembler_handles_texture_data(machine):
     """
-    Tests that texture data is correctly passed through and its bounds are
-    transformed to world space.
+    Tests that texture data is correctly packaged into a TextureInstance
+    with the correct final transformation matrix.
     """
     doc = Doc()
     layer = doc.active_layer
     wp = WorkPiece(name="wp1")
-    wp.matrix = Matrix.translation(50, 60) @ Matrix.scale(20, 10)
-    layer.add_workpiece(wp)  # World bbox is (50, 60, 20, 10)
+    wp_transform = (
+        Matrix.translation(50, 60) @ Matrix.rotation(90) @ Matrix.scale(20, 10)
+    )
+    wp.matrix = wp_transform
+    layer.add_workpiece(wp)
 
+    # This texture chunk covers the whole workpiece.
     texture = TextureData(
         power_texture_data=np.array([[255]], dtype=np.uint8),
         dimensions_mm=(20, 10),
@@ -135,12 +139,21 @@ def test_step_assembler_handles_texture_data(machine):
     final_artifact = ArtifactStore.get(final_handle)
 
     assert isinstance(final_artifact, StepArtifact)
-    assert final_artifact.texture_data is not None
-    # Check that texture position and dimensions are now in world coordinates
-    assert final_artifact.texture_data.position_mm == pytest.approx((50, 60))
-    assert final_artifact.texture_data.dimensions_mm == pytest.approx((20, 10))
+    assert len(final_artifact.texture_instances) == 1
+    instance = final_artifact.texture_instances[0]
+
+    # Re-calculate the expected transform to verify the assembler's logic
+    expected_transform_matrix = wp_transform
+
+    np.testing.assert_allclose(
+        instance.world_transform,
+        expected_transform_matrix.to_4x4_numpy(),
+        atol=1e-6,
+    )
+
+    # The texture data itself should be passed through unmodified
     np.testing.assert_array_equal(
-        final_artifact.texture_data.power_texture_data,
+        instance.texture_data.power_texture_data,
         texture.power_texture_data,
     )
 

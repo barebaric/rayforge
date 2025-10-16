@@ -16,7 +16,7 @@ from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ...pipeline.generator import OpsGenerator
+    from ...pipeline.coordinator import PipelineCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,10 @@ class WorkPieceView(CanvasElement):
     USE_NEW_RENDER_PATH = True
 
     def __init__(
-        self, workpiece: WorkPiece, ops_generator: "OpsGenerator", **kwargs
+        self,
+        workpiece: WorkPiece,
+        ops_generator: "PipelineCoordinator",
+        **kwargs,
     ):
         """Initializes the WorkPieceView.
 

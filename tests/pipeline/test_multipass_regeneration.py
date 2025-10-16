@@ -1,14 +1,38 @@
 """Test that multipass transformer changes trigger re-generation."""
 
 from unittest.mock import MagicMock, patch
+import pytest
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.generator import OpsGenerator
+from rayforge.machine.models.machine import Laser, Machine
+from rayforge.pipeline.coordinator import PipelineCoordinator
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
+@pytest.fixture(autouse=True)
+def setup_real_config(mocker):
+    """Provides a mock machine config for all tests in this file."""
+    test_laser = Laser()
+    test_laser.max_power = 1000
+    test_machine = Machine()
+    test_machine.dimensions = (200, 150)
+    test_machine.max_cut_speed = 5000
+    test_machine.max_travel_speed = 10000
+    test_machine.acceleration = 1000
+    test_machine.heads.clear()
+    test_machine.add_head(test_laser)
+
+    class TestConfig:
+        machine = test_machine
+
+    test_config = TestConfig()
+    mocker.patch("rayforge.config.config", test_config)
+    return test_config
+
+
+@pytest.mark.usefixtures("setup_real_config")
 class TestMultipassRegeneration:
     """Test that changes to multipass transformer trigger re-generation."""
 
@@ -30,12 +54,7 @@ class TestMultipassRegeneration:
         task_manager = MagicMock()
 
         # Create the generator with mocked dependencies
-        with (
-            patch("rayforge.pipeline.generator.logger"),
-            patch("rayforge.pipeline.generator.config") as mock_config,
-        ):
-            # Mock the config to avoid machine dependency
-            mock_config.config.machine = MagicMock()
+        with patch("rayforge.pipeline.coordinator.logger"):
             # Track if the handler was called
             handler_called = MagicMock()
 
@@ -44,7 +63,7 @@ class TestMultipassRegeneration:
                 handler_called()
 
             # Create generator and patch the handler method
-            generator = OpsGenerator(doc, task_manager)
+            generator = PipelineCoordinator(doc, task_manager)
             generator._on_job_assembly_invalidated = track_handler
 
         # Disconnect and reconnect with our tracked handler
