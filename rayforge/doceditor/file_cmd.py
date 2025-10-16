@@ -9,8 +9,8 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
 from ..image import import_file
-from ..pipeline.jobrunner import (
-    run_job_assembly_in_subprocess,
+from ..pipeline.stage.job_runner import (
+    make_job_artifact_in_subprocess,
     JobDescription,
 )
 from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
@@ -287,7 +287,7 @@ class FileCmd:
                 when_done(None, e)
 
         self._task_manager.run_process(
-            run_job_assembly_in_subprocess,
+            make_job_artifact_in_subprocess,
             job_description_dict=asdict(job_desc),
             key="job-assembly",
             when_done=_when_done_wrapper,

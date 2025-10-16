@@ -134,13 +134,13 @@ class StepGeneratorStage(PipelineStage):
         generation_id = self._generation_id_map.get(step.uid, 0) + 1
         self._generation_id_map[step.uid] = generation_id
 
-        from ..step_assembler import run_step_assembly_in_subprocess
+        from .step_runner import make_step_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
             self._on_assembly_complete(task, step, generation_id)
 
         task = self._task_manager.run_process(
-            run_step_assembly_in_subprocess,
+            make_step_artifact_in_subprocess,
             assembly_info,
             step.uid,
             generation_id,

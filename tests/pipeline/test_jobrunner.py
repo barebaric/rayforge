@@ -14,8 +14,8 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
 )
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.jobrunner import (
-    run_job_assembly_in_subprocess,
+from rayforge.pipeline.stage.job_runner import (
+    make_job_artifact_in_subprocess,
     JobDescription,
 )
 from rayforge import config
@@ -74,7 +74,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(machine):
     mock_proxy = MagicMock()
 
     # Act
-    final_handle_dict = run_job_assembly_in_subprocess(
+    final_handle_dict = make_job_artifact_in_subprocess(
         mock_proxy, asdict(job_desc)
     )
 

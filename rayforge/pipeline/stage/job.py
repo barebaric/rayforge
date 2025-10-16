@@ -5,7 +5,7 @@ from blinker import Signal
 
 from .base import PipelineStage
 from ..artifact import JobArtifactHandle, create_handle_from_dict
-from ..jobrunner import JobDescription
+from .job_runner import JobDescription
 from ... import config
 
 if TYPE_CHECKING:
@@ -82,13 +82,13 @@ class JobGeneratorStage(PipelineStage):
             doc_dict=doc.to_dict(),
         )
 
-        from ..jobrunner import run_job_assembly_in_subprocess
+        from .job_runner import make_job_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
             self._on_job_assembly_complete(task)
 
         task = self._task_manager.run_process(
-            run_job_assembly_in_subprocess,
+            make_job_artifact_in_subprocess,
             job_description_dict=job_desc.__dict__,
             key=JobKey,
             when_done=when_done_callback,

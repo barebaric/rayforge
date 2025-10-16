@@ -18,12 +18,12 @@ from ..artifact import (
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...core.matrix import Matrix
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
+    from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.cache import ArtifactCache
-    from ...shared.tasker.manager import TaskManager
-    from ...core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class WorkpieceGeneratorStage(PipelineStage):
 
         self._artifact_cache.invalidate_for_workpiece(step.uid, workpiece.uid)
 
-        from ..steprunner import run_step_in_subprocess
+        from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
             self._on_task_complete(task, key, generation_id, step, workpiece)
@@ -206,7 +206,7 @@ class WorkpieceGeneratorStage(PipelineStage):
             workpiece_dict["renderer_name"] = renderer.__class__.__name__
 
         task = self._task_manager.run_process(
-            run_step_in_subprocess,
+            make_workpiece_artifact_in_subprocess,
             workpiece_dict,
             step.opsproducer_dict,
             step.modifiers_dicts,

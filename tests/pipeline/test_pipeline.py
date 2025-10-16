@@ -19,8 +19,12 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifactHandle,
     StepArtifactHandle,
 )
-from rayforge.pipeline.steprunner import run_step_in_subprocess
-from rayforge.pipeline.step_assembler import run_step_assembly_in_subprocess
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -137,10 +141,13 @@ class TestPipeline:
                 mock_finished_task.get_status.return_value = "completed"
 
                 result = (None, 1)  # Default result
-                if task_to_complete.target is run_step_in_subprocess:
+                if (
+                    task_to_complete.target
+                    is make_workpiece_artifact_in_subprocess
+                ):
                     result = (handle.to_dict(), 1)
                 elif (
-                    task_to_complete.target is run_step_assembly_in_subprocess
+                    task_to_complete.target is make_step_artifact_in_subprocess
                 ):
                     dummy_handle = StepArtifactHandle(
                         shm_name="dummy",
@@ -175,7 +182,7 @@ class TestPipeline:
         # Assert
         mock_task_mgr.run_process.assert_called_once()
         called_func = mock_task_mgr.run_process.call_args[0][0]
-        assert called_func is run_step_in_subprocess
+        assert called_func is make_workpiece_artifact_in_subprocess
 
     def test_generation_success_emits_signals_and_caches_result(
         self, doc, real_workpiece, mock_task_mgr
@@ -277,7 +284,9 @@ class TestPipeline:
             # Assert
             tasks = mock_task_mgr.created_tasks
             workpiece_tasks = [
-                t for t in tasks if t.target is run_step_in_subprocess
+                t
+                for t in tasks
+                if t.target is make_workpiece_artifact_in_subprocess
             ]
             assert len(workpiece_tasks) == 1
         finally:
@@ -312,7 +321,9 @@ class TestPipeline:
             # Assert
             tasks = mock_task_mgr.created_tasks
             assembly_tasks = [
-                t for t in tasks if t.target is run_step_assembly_in_subprocess
+                t
+                for t in tasks
+                if t.target is make_step_artifact_in_subprocess
             ]
             assert len(assembly_tasks) == 1
         finally:
@@ -346,7 +357,9 @@ class TestPipeline:
             # Assert
             tasks = mock_task_mgr.created_tasks
             assembly_tasks = [
-                t for t in tasks if t.target is run_step_assembly_in_subprocess
+                t
+                for t in tasks
+                if t.target is make_step_artifact_in_subprocess
             ]
             assert len(assembly_tasks) == 1
         finally:
@@ -380,7 +393,9 @@ class TestPipeline:
             # Assert
             tasks = mock_task_mgr.created_tasks
             workpiece_tasks = [
-                t for t in tasks if t.target is run_step_in_subprocess
+                t
+                for t in tasks
+                if t.target is make_workpiece_artifact_in_subprocess
             ]
             assert len(workpiece_tasks) == 1
         finally:

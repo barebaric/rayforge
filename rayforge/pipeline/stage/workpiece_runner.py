@@ -1,15 +1,15 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
-from ..shared.tasker.proxy import ExecutionContextProxy
-from ..pipeline.encoder.vertexencoder import VertexEncoder
-from .artifact import ArtifactStore, WorkPieceArtifact
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ..encoder.vertexencoder import VertexEncoder
+from ..artifact import ArtifactStore, WorkPieceArtifact
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
 
 # This top-level function contains the core logic for generating Ops.
 # It is designed to be run in a separate process by the TaskManager.
-def run_step_in_subprocess(
+def make_workpiece_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     workpiece_dict: dict[str, Any],
     opsproducer_dict: dict[str, Any],
@@ -41,12 +41,12 @@ def run_step_in_subprocess(
     )
     logger.debug(f"Starting step execution with settings: {settings}")
 
-    from .modifier import Modifier
-    from .producer import OpsProducer
-    from .transformer import OpsTransformer, ExecutionPhase
-    from ..core.workpiece import WorkPiece
-    from ..machine.models.laser import Laser
-    from ..core.ops import Ops
+    from ..modifier import Modifier
+    from ..producer import OpsProducer
+    from ..transformer import OpsTransformer, ExecutionPhase
+    from ...core.workpiece import WorkPiece
+    from ...machine.models.laser import Laser
+    from ...core.ops import Ops
 
     logger.debug("Imports completed")
 

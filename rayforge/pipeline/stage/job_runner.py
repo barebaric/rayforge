@@ -4,19 +4,19 @@ from dataclasses import dataclass, asdict
 from typing import Dict, Any, Optional
 import numpy as np
 
-from ..machine.models.machine import Machine
-from ..shared.tasker.proxy import ExecutionContextProxy
-from ..core.ops import Ops
-from ..core.doc import Doc
-from ..pipeline.encoder.gcode import GcodeEncoder
-from ..pipeline.encoder.vertexencoder import VertexEncoder
-from .artifact import (
+from ...machine.models.machine import Machine
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ...core.ops import Ops
+from ...core.doc import Doc
+from ..encoder.gcode import GcodeEncoder
+from ..encoder.vertexencoder import VertexEncoder
+from ..artifact import (
     ArtifactStore,
     JobArtifact,
     create_handle_from_dict,
     StepArtifact,
 )
-from .coord import CoordinateSystem
+from ..coord import CoordinateSystem
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class JobDescription:
     doc_dict: Dict[str, Any]
 
 
-def run_job_assembly_in_subprocess(
+def make_job_artifact_in_subprocess(
     proxy: ExecutionContextProxy, job_description_dict: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
     """

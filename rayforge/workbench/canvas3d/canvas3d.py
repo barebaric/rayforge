@@ -7,7 +7,7 @@ from OpenGL import GL
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
-from ...pipeline.scene_assembler import (
+from .scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )

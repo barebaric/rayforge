@@ -17,7 +17,9 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
 from rayforge.pipeline.producer.edge import EdgeTracer
 from rayforge.pipeline.producer.depth import DepthEngraver
-from rayforge.pipeline.steprunner import run_step_in_subprocess
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
@@ -100,7 +102,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -154,7 +156,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             workpiece_dict,
             step.opsproducer_dict,
@@ -203,7 +205,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     generation_size = (10.0, 10.0)
 
     # Act
-    result, result_gen_id = run_step_in_subprocess(
+    result, result_gen_id = make_workpiece_artifact_in_subprocess(
         mock_proxy,
         empty_workpiece.to_dict(),
         step.opsproducer_dict,
@@ -237,7 +239,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,

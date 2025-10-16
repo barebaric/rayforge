@@ -9,12 +9,12 @@ import logging
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
-from .artifact.base import TextureData
-from .artifact.handle import BaseArtifactHandle
+from ...pipeline.artifact.base import TextureData
+from ...pipeline.artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from .pipeline import Pipeline
-    from ..core.doc import Doc
+    from ...pipeline.pipeline import Pipeline
+    from ...core.doc import Doc
 
 
 logger = logging.getLogger(__name__)

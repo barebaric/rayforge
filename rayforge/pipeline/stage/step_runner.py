@@ -2,20 +2,20 @@ from __future__ import annotations
 import logging
 import math
 from typing import List, Dict, Any, Optional
-from ..core.ops import Ops
-from ..core.matrix import Matrix
-from ..core.workpiece import WorkPiece
-from ..pipeline.transformer import OpsTransformer, transformer_by_name
-from ..pipeline.encoder.vertexencoder import VertexEncoder
-from ..shared.tasker.proxy import ExecutionContextProxy
-from .artifact import (
+from ...core.ops import Ops
+from ...core.matrix import Matrix
+from ...core.workpiece import WorkPiece
+from ..transformer import OpsTransformer, transformer_by_name
+from ..encoder.vertexencoder import VertexEncoder
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ..artifact import (
     ArtifactStore,
     StepArtifact,
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from .artifact.step import TextureInstance
-from .coord import CoordinateSystem
+from ..artifact.step import TextureInstance
+from ..coord import CoordinateSystem
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def _instantiate_transformers(
     return transformers
 
 
-def run_step_assembly_in_subprocess(
+def make_step_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     workpiece_assembly_info: List[Dict[str, Any]],
     step_uid: str,

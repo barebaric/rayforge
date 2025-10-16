@@ -3,9 +3,9 @@ Defines the dedicated subprocess for high-fidelity time estimation.
 """
 
 from typing import Any, Tuple, List, Dict
-from ..shared.tasker.proxy import ExecutionContextProxy
-from .artifact import ArtifactStore, create_handle_from_dict
-from ..pipeline.transformer import OpsTransformer, transformer_by_name
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ..artifact import ArtifactStore, create_handle_from_dict
+from ..transformer import OpsTransformer, transformer_by_name
 import logging
 
 logger = logging.getLogger("rayforge.pipeline.timerunner")

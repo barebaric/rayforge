@@ -15,8 +15,8 @@ from rayforge.pipeline.artifact import (
 )
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.matrix import Matrix
-from rayforge.pipeline.step_assembler import (
-    run_step_assembly_in_subprocess,
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
 )
 
 
@@ -61,7 +61,7 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
     mock_proxy = MagicMock()
 
     # Act
-    result = run_step_assembly_in_subprocess(
+    result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",
@@ -126,7 +126,7 @@ def test_step_assembler_handles_texture_data(machine):
     ]
     mock_proxy = MagicMock()
 
-    result = run_step_assembly_in_subprocess(
+    result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",

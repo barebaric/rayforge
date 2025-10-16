@@ -110,7 +110,7 @@ class TimeEstimatorStage(PipelineStage):
         def when_done_callback(task: "Task"):
             self._on_estimation_complete(task, key, generation_id)
 
-        from ..timerunner import run_time_estimation_in_subprocess
+        from .time_runner import run_time_estimation_in_subprocess
 
         machine = config.config.machine
         task = self._task_manager.run_process(
