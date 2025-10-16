@@ -152,6 +152,11 @@ class MainWindow(Adw.ApplicationWindow):
         root_click_gesture.connect("pressed", self._on_root_click_pressed)
         self.add_controller(root_click_gesture)
 
+        # Add a key controller to handle ESC key for exiting simulation mode
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
+
         geometry = _get_monitor_geometry()
         if geometry:
             self.set_default_size(
@@ -1325,3 +1330,13 @@ class MainWindow(Adw.ApplicationWindow):
         """
         logger.debug(f"Ops processing state changed: {is_processing}")
         self._update_estimated_time()
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        """Handle key press events, ESC to exit simulation mode."""
+        if keyval == Gdk.KEY_Escape:
+            # Check if simulation mode is active
+            if self.surface.is_simulation_mode():
+                # Exit simulation mode
+                self.simulator_cmd._exit_mode()
+                return True  # Event handled
+        return False  # Allow other key presses to be processed normally
