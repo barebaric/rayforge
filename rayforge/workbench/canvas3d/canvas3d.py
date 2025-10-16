@@ -242,6 +242,21 @@ class Canvas3D(Gtk.GLArea):
         self.connect("notify::style", self._on_style_changed)
         self._setup_interactions()
 
+        # Connect to the pipeline to receive notifications when to update
+        if self.pipeline:
+            self.pipeline.processing_state_changed.connect(
+                self._on_pipeline_state_changed
+            )
+
+    def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
+        """
+        Handler for when the pipeline's busy state changes. When it becomes
+        not busy, the document has settled and the scene should be updated.
+        """
+        if not is_processing:
+            logger.debug("Pipeline has settled. Updating 3D scene.")
+            self.update_scene_from_doc()
+
     def _on_style_changed(self, widget, gparam):
         """Marks theme resources as dirty when the GTK theme changes."""
         self._theme_is_dirty = True
@@ -370,6 +385,10 @@ class Canvas3D(Gtk.GLArea):
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
         logger.info("GLArea unrealized. Cleaning up GL resources.")
+        if self.pipeline:
+            self.pipeline.processing_state_changed.disconnect(
+                self._on_pipeline_state_changed
+            )
         self.make_current()
         try:
             if self._scene_preparation_task:
