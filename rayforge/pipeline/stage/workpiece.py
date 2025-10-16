@@ -15,6 +15,7 @@ from ..artifact import (
     ArtifactStore,
     create_handle_from_dict,
 )
+from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -46,6 +47,20 @@ class WorkpieceGeneratorStage(PipelineStage):
         self.generation_starting = Signal()
         self.chunk_available = Signal()
         self.generation_finished = Signal()
+
+    def _sizes_are_close(
+        self,
+        size1: Optional[Tuple[float, float]],
+        size2: Optional[Tuple[float, float]],
+    ) -> bool:
+        """Compares two size tuples with a safe tolerance for float errors."""
+        if size1 is None or size2 is None:
+            return False  # If either is None, they can't be close.
+        # Use an absolute tolerance suitable for physical dimensions in mm.
+        # 1e-6 is one-millionth of a millimeter, robust enough for any UI op.
+        return math.isclose(size1[0], size2[0], abs_tol=1e-6) and math.isclose(
+            size1[1], size2[1], abs_tol=1e-6
+        )
 
     @property
     def is_busy(self) -> bool:
@@ -85,19 +100,31 @@ class WorkpieceGeneratorStage(PipelineStage):
 
     def on_workpiece_transform_changed(self, workpiece: "WorkPiece"):
         """
-        Handles transform changes, invalidating non-scalable artifacts.
+        Handles transform changes. Invalidates non-scalable artifacts only
+        if their size has changed, as position/rotation do not affect the
+        base artifact generation for rasters.
         """
         if not workpiece.layer or not workpiece.layer.workflow:
             return
         for step in workpiece.layer.workflow.steps:
             key = (step.uid, workpiece.uid)
             handle = self._artifact_cache.get_workpiece_handle(*key)
-            if handle and not handle.is_scalable:
-                logger.debug(
-                    f"Invalidating non-scalable artifact for {key} due to "
-                    "transform change."
-                )
-                self._cleanup_entry(key)
+
+            # Guard clauses for clarity
+            if not handle or handle.is_scalable:
+                continue
+
+            # If the size is still close enough, the artifact is valid.
+            if self._sizes_are_close(handle.generation_size, workpiece.size):
+                continue
+
+            # If we reach here, the artifact is non-scalable and its size has
+            # meaningfully changed. Invalidate it.
+            logger.debug(
+                f"Invalidating non-scalable artifact for {key} due to size "
+                f"change from {handle.generation_size} to {workpiece.size}."
+            )
+            self._cleanup_entry(key)
 
     def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
         """
@@ -111,11 +138,14 @@ class WorkpieceGeneratorStage(PipelineStage):
             return True
 
         if isinstance(handle, WorkPieceArtifactHandle):
-            if (
-                not handle.is_scalable
-                and handle.generation_size != workpiece.size
-            ):
-                return True
+            if not handle.is_scalable:
+                # A non-scalable artifact is stale if its generation size
+                # doesn't match the workpiece's current size (within
+                # tolerance).
+                if not self._sizes_are_close(
+                    handle.generation_size, workpiece.size
+                ):
+                    return True
         return False
 
     def invalidate_for_step(self, step_uid: str):
@@ -179,8 +209,6 @@ class WorkpieceGeneratorStage(PipelineStage):
         )
 
         self._artifact_cache.invalidate_for_workpiece(step.uid, workpiece.uid)
-
-        from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
             self._on_task_complete(task, key, generation_id, step, workpiece)
@@ -294,15 +322,20 @@ class WorkpieceGeneratorStage(PipelineStage):
                 ArtifactStore.release(handle)
                 return
 
-            if (
-                isinstance(handle, WorkPieceArtifactHandle)
-                and not handle.is_scalable
-                and handle.generation_size != workpiece.size
-            ):
-                logger.info(f"Result for {key} is stale. Regenerating.")
-                ArtifactStore.release(handle)
-                self._launch_task(step, workpiece)
-                return
+            if isinstance(handle, WorkPieceArtifactHandle):
+                if not handle.is_scalable:
+                    # After a task completes, check if its result is now
+                    # stale because the workpiece was resized while it ran.
+                    if not self._sizes_are_close(
+                        handle.generation_size, workpiece.size
+                    ):
+                        logger.info(
+                            f"Result for {key} is stale due to size "
+                            "change during generation. Regenerating."
+                        )
+                        ArtifactStore.release(handle)
+                        self._launch_task(step, workpiece)
+                        return
 
             if not isinstance(handle, WorkPieceArtifactHandle):
                 raise TypeError("Expected a WorkPieceArtifactHandle")
@@ -328,11 +361,13 @@ class WorkpieceGeneratorStage(PipelineStage):
             return None
 
         if isinstance(handle, WorkPieceArtifactHandle):
-            if (
-                not handle.is_scalable
-                and handle.generation_size != workpiece_size
-            ):
-                return None
+            if not handle.is_scalable:
+                # When fetching an artifact, ensure its generation size
+                # matches the requested size within tolerance.
+                if not self._sizes_are_close(
+                    handle.generation_size, workpiece_size
+                ):
+                    return None
 
         artifact = ArtifactStore.get(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
