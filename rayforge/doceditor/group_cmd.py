@@ -10,7 +10,7 @@ from ..core.matrix import Matrix
 
 if TYPE_CHECKING:
     from .editor import DocEditor
-    from ..pipeline.coordinator import PipelineCoordinator
+    from ..pipeline.pipeline import Pipeline
     from ..shared.tasker.manager import TaskManager
     from ..shared.tasker.context import ExecutionContext
     from ..shared.tasker.task import Task
@@ -25,14 +25,14 @@ class _CreateGroupCommand(Command):
         self,
         layer: Layer,
         items_to_group: List[DocItem],
-        ops_generator: "PipelineCoordinator",
+        pipeline: "Pipeline",
         name: str = "Group Items",
         precalculated_result: Optional[GroupingResult] = None,
     ):
         super().__init__(name)
         self.layer = layer
         self.items_to_group = list(items_to_group)
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
         self.new_group: Optional[Group] = None
         self._original_parents: Dict[str, DocItem] = {
             item.uid: item.parent
@@ -54,7 +54,7 @@ class _CreateGroupCommand(Command):
 
         # Pause the generator to prevent it from reacting to the storm of
         # add/remove signals during the model mutation.
-        with self.ops_generator.paused():
+        with self.pipeline.paused():
             self.new_group = result.new_group
             self.layer.add_child(self.new_group)
 
@@ -81,7 +81,7 @@ class _CreateGroupCommand(Command):
         if not self.new_group:
             return
 
-        with self.ops_generator.paused():
+        with self.pipeline.paused():
             # --- Bulk Reparenting for Undo ---
             # 1. Remove all children from the group in one batch.
             self.new_group.remove_children(self.items_to_group)
@@ -110,13 +110,13 @@ class _UngroupCommand(Command):
     def __init__(
         self,
         groups_to_ungroup: List[Group],
-        ops_generator: "PipelineCoordinator",
+        pipeline: "Pipeline",
         name: str = "Ungroup Items",
         precalculated_matrices: Optional[Dict[str, Dict[str, Matrix]]] = None,
     ):
         super().__init__(name)
         self.groups_to_ungroup = list(groups_to_ungroup)
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
         self._precalculated_matrices = precalculated_matrices
         self._undo_data = []
         for group in self.groups_to_ungroup:
@@ -153,7 +153,7 @@ class _UngroupCommand(Command):
 
     def execute(self) -> None:
         """Performs the ungrouping operation."""
-        with self.ops_generator.paused():
+        with self.pipeline.paused():
             for group in self.groups_to_ungroup:
                 parent = group.parent
                 if not parent:
@@ -191,7 +191,7 @@ class _UngroupCommand(Command):
 
     def undo(self) -> None:
         """Reverts the ungrouping by re-creating the original groups."""
-        with self.ops_generator.paused():
+        with self.pipeline.paused():
             for data in reversed(self._undo_data):
                 parent = data["parent"]
                 group_index = data["group_index"]
@@ -260,7 +260,7 @@ class GroupCmd:
             command = _CreateGroupCommand(
                 layer=layer,
                 items_to_group=items_to_group,
-                ops_generator=self._editor.ops_generator,
+                pipeline=self._editor.pipeline,
                 precalculated_result=result,
             )
             self._editor.history_manager.execute(command)
@@ -323,7 +323,7 @@ class GroupCmd:
 
             command = _UngroupCommand(
                 groups_to_ungroup=groups_to_ungroup,
-                ops_generator=self._editor.ops_generator,
+                pipeline=self._editor.pipeline,
                 precalculated_matrices=calculated_matrices,
             )
             self._editor.history_manager.execute(command)

@@ -145,7 +145,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
     generation_size = (50.0, 30.0)
     handle = None
 
-    # Hydrate the workpiece dictionary like OpsGenerator does
+    # Hydrate the workpiece dictionary like Pipeline does
     workpiece_dict = rasterable_workpiece.to_dict()
     workpiece_dict["data"] = rasterable_workpiece.data
     workpiece_dict["renderer_name"] = (

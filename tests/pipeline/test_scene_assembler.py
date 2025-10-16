@@ -47,11 +47,11 @@ def mock_doc() -> Doc:
 
 
 @pytest.fixture
-def mock_ops_generator():
-    """Create a mock ops generator."""
-    generator = MagicMock()
-    generator.get_step_artifact_handle = MagicMock()
-    return generator
+def mock_pipeline():
+    """Create a mock pipeline."""
+    pipeline = MagicMock()
+    pipeline.get_step_artifact_handle = MagicMock()
+    return pipeline
 
 
 @pytest.fixture
@@ -140,29 +140,29 @@ class TestSceneDescription:
 class TestGenerateSceneDescription:
     """Test the generate_scene_description function."""
 
-    def test_empty_document(self, mock_doc, mock_ops_generator):
+    def test_empty_document(self, mock_doc, mock_pipeline):
         """Test with an empty document."""
         mock_doc.layers = []
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
+        scene = generate_scene_description(mock_doc, mock_pipeline)
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 0
 
     def test_invisible_layer(
-        self, mock_doc, mock_ops_generator, mock_layer, mock_step
+        self, mock_doc, mock_pipeline, mock_layer, mock_step
     ):
         """Test that items from an invisible layer are ignored."""
         mock_layer.visible = False
         mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
 
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
+        scene = generate_scene_description(mock_doc, mock_pipeline)
         assert len(scene.render_items) == 0
-        mock_ops_generator.get_step_artifact_handle.assert_not_called()
+        mock_pipeline.get_step_artifact_handle.assert_not_called()
 
     def test_step_with_cached_artifact(
         self,
         mock_doc,
-        mock_ops_generator,
+        mock_pipeline,
         mock_layer,
         mock_step,
         mock_step_artifact_handle,
@@ -170,11 +170,11 @@ class TestGenerateSceneDescription:
         """Test that a visible step with an artifact creates a RenderItem."""
         mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-        mock_ops_generator.get_step_artifact_handle.return_value = (
+        mock_pipeline.get_step_artifact_handle.return_value = (
             mock_step_artifact_handle
         )
 
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
+        scene = generate_scene_description(mock_doc, mock_pipeline)
 
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 1
@@ -187,27 +187,27 @@ class TestGenerateSceneDescription:
         assert item.workpiece_size == (0.0, 0.0)
         assert np.array_equal(item.world_transform, np.eye(4))
 
-        mock_ops_generator.get_step_artifact_handle.assert_called_once_with(
+        mock_pipeline.get_step_artifact_handle.assert_called_once_with(
             mock_step.uid
         )
 
     def test_step_without_cached_artifact(
-        self, mock_doc, mock_ops_generator, mock_layer, mock_step
+        self, mock_doc, mock_pipeline, mock_layer, mock_step
     ):
         """Test that a step without a cached artifact is ignored."""
         mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-        mock_ops_generator.get_step_artifact_handle.return_value = None
+        mock_pipeline.get_step_artifact_handle.return_value = None
 
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
+        scene = generate_scene_description(mock_doc, mock_pipeline)
 
         assert len(scene.render_items) == 0
-        mock_ops_generator.get_step_artifact_handle.assert_called_once_with(
+        mock_pipeline.get_step_artifact_handle.assert_called_once_with(
             mock_step.uid
         )
 
     def test_multiple_steps_and_layers(
-        self, mock_doc, mock_ops_generator, mock_step_artifact_handle
+        self, mock_doc, mock_pipeline, mock_step_artifact_handle
     ):
         """Test with a complex document structure."""
         # Layer 1: Visible, 2 steps, one with artifact, one without
@@ -234,11 +234,9 @@ class TestGenerateSceneDescription:
                 return mock_step_artifact_handle
             return None
 
-        mock_ops_generator.get_step_artifact_handle.side_effect = (
-            mock_get_handle
-        )
+        mock_pipeline.get_step_artifact_handle.side_effect = mock_get_handle
 
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
+        scene = generate_scene_description(mock_doc, mock_pipeline)
 
         # Should get 2 items: s1a and s3.
         # s1b is skipped (no artifact), s2 is skipped (invisible layer).
@@ -246,4 +244,4 @@ class TestGenerateSceneDescription:
         uids = {item.step_uid for item in scene.render_items}
         assert uids == {"s1a", "s3"}
 
-        assert mock_ops_generator.get_step_artifact_handle.call_count == 3
+        assert mock_pipeline.get_step_artifact_handle.call_count == 3

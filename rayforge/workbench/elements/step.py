@@ -5,7 +5,7 @@ from ..canvas import CanvasElement
 from .workpiece import WorkPieceView
 
 if TYPE_CHECKING:
-    from ...pipeline.coordinator import PipelineCoordinator
+    from ...pipeline.pipeline import Pipeline
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class StepElement(CanvasElement):
     def __init__(
         self,
         step: Step,
-        ops_generator: "PipelineCoordinator",
+        pipeline: "Pipeline",
         **kwargs,
     ):
         """
@@ -32,7 +32,7 @@ class StepElement(CanvasElement):
 
         Args:
             step: The Step data object.
-            ops_generator: The central generator for pipeline operations.
+            pipeline: The central generator for pipeline operations.
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         super().__init__(
@@ -45,7 +45,7 @@ class StepElement(CanvasElement):
             visible=step.visible,  # Sync initial visibility
             **kwargs,
         )
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
 
         # Connect to the model signal that drives its behavior
         step.visibility_changed.connect(self._on_visibility_changed)

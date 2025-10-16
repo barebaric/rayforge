@@ -13,7 +13,7 @@ from .artifact.base import TextureData
 from .artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from .coordinator import PipelineCoordinator
+    from .pipeline import Pipeline
     from ..core.doc import Doc
 
 
@@ -40,7 +40,7 @@ class SceneDescription:
 
 
 def generate_scene_description(
-    doc: "Doc", pipeline_coordinator: "PipelineCoordinator"
+    doc: "Doc", pipeline: "Pipeline"
 ) -> SceneDescription:
     """
     Assembles a lightweight description of the scene for 3D rendering.
@@ -58,7 +58,7 @@ def generate_scene_description(
                 visible_steps.add(step)
 
     for step in visible_steps:
-        handle = pipeline_coordinator.get_step_artifact_handle(step.uid)
+        handle = pipeline.get_step_artifact_handle(step.uid)
         if handle:
             item = RenderItem(
                 artifact_handle=handle,

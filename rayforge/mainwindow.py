@@ -137,7 +137,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay.set_child(vbox)
 
         # Create the central document editor. This now owns the Doc and
-        # OpsGenerator.
+        # Pipeline.
         assert config_mgr is not None
         self.doc_editor = DocEditor(task_mgr, config_mgr)
         self.machine_cmd = MachineCmd(self.doc_editor)
@@ -242,15 +242,15 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
 
-        # Connect to OpsGenerator signals
-        self.doc_editor.ops_generator.ops_generation_finished.connect(
+        # Connect to Pipeline signals
+        self.doc_editor.pipeline.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
-        self.doc_editor.ops_generator.processing_state_changed.connect(
+        self.doc_editor.pipeline.processing_state_changed.connect(
             self._on_ops_processing_state_changed
         )
         # Connect to the new time estimation signal
-        self.doc_editor.ops_generator.time_estimation_updated.connect(
+        self.doc_editor.pipeline.time_estimation_updated.connect(
             self._update_estimated_time
         )
 
@@ -302,7 +302,7 @@ class MainWindow(Adw.ApplicationWindow):
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
                 self.doc_editor.doc,
-                self.doc_editor.ops_generator,
+                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -447,22 +447,22 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def _connect_live_3d_view_signals(self):
-        """Connects to OpsGenerator signals to update the 3D view live."""
+        """Connects to Pipeline signals to update the 3D view live."""
         if self._live_3d_view_connected:
             return
         logger.debug("Connecting live 3D view signals.")
-        gen = self.doc_editor.ops_generator
+        gen = self.doc_editor.pipeline
         gen.ops_generation_finished.connect(self._on_live_3d_view_update)
         self._live_3d_view_connected = True
         # Trigger a full update to draw the current state immediately
         self._update_3d_view_content()
 
     def _disconnect_live_3d_view_signals(self):
-        """Disconnects from OpsGenerator signals."""
+        """Disconnects from Pipeline signals."""
         if not self._live_3d_view_connected:
             return
         logger.debug("Disconnecting live 3D view signals.")
-        gen = self.doc_editor.ops_generator
+        gen = self.doc_editor.pipeline
         gen.ops_generation_finished.disconnect(self._on_live_3d_view_update)
         self._live_3d_view_connected = False
 
@@ -865,7 +865,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             self.canvas3d = Canvas3D(
                 self.doc_editor.doc,
-                self.doc_editor.ops_generator,
+                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -1275,11 +1275,11 @@ class MainWindow(Adw.ApplicationWindow):
     def _update_estimated_time(self, sender=None):
         """
         Updates the estimated machining time display by synchronously summing
-        pre-calculated values from the OpsGenerator's time cache.
+        pre-calculated values from the Pipeline's time cache.
         """
         logger.debug("_update_estimated_time called")
 
-        if self.doc_editor.ops_generator.is_busy:
+        if self.doc_editor.pipeline.is_busy:
             self.status_monitor.estimated_time_label.set_text(
                 _("Calculating...")
             )
@@ -1288,7 +1288,7 @@ class MainWindow(Adw.ApplicationWindow):
         total_time = 0.0
         is_calculating = False
         doc = self.doc_editor.doc
-        ops_gen = self.doc_editor.ops_generator
+        ops_gen = self.doc_editor.pipeline
 
         for layer in doc.layers:
             for step, workpiece in layer.get_renderable_items():
@@ -1320,7 +1320,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_ops_processing_state_changed(self, sender, is_processing):
         """
-        Called when the OpsGenerator processing state changes.
+        Called when the Pipeline processing state changes.
         Updates the estimated time when all processing is complete.
         """
         logger.debug(f"Ops processing state changed: {is_processing}")

@@ -10,7 +10,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.coordinator import PipelineCoordinator
+from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
@@ -94,7 +94,7 @@ def doc():
     return d
 
 
-class TestOpsGenerator:
+class TestPipeline:
     # This data is used by multiple tests to create the ImportSource.
     svg_data = b"""
     <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
@@ -119,7 +119,7 @@ class TestOpsGenerator:
     def _complete_all_tasks(self, mock_task_mgr, handle):
         """
         Helper to find and complete all outstanding tasks to bring the
-        generator to an idle state.
+        pipeline to an idle state.
         """
         processed_keys = set()
         while True:
@@ -170,7 +170,7 @@ class TestOpsGenerator:
         layer.workflow.add_step(step)
 
         # Act
-        PipelineCoordinator(doc, mock_task_mgr)
+        Pipeline(doc, mock_task_mgr)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
@@ -186,7 +186,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
         task_to_complete = mock_task_mgr.created_tasks[0]
 
@@ -218,7 +218,7 @@ class TestOpsGenerator:
 
         try:
             task_to_complete.when_done(mock_finished_task)
-            cached_ops = generator.get_ops(step, real_workpiece)
+            cached_ops = pipeline.get_ops(step, real_workpiece)
             assert cached_ops is not None
             assert len(cached_ops) == 2
         finally:
@@ -233,7 +233,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
         task_to_cancel = mock_task_mgr.created_tasks[0]
 
@@ -244,7 +244,7 @@ class TestOpsGenerator:
         task_to_cancel.when_done(mock_cancelled_task)
 
         # Assert
-        assert generator.get_ops(step, real_workpiece) is None
+        assert pipeline.get_ops(step, real_workpiece) is None
 
     def test_step_change_triggers_full_regeneration(
         self, doc, real_workpiece, mock_task_mgr
@@ -254,7 +254,7 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -269,10 +269,10 @@ class TestOpsGenerator:
             # Invalidate cache by changing a property that does not emit
             # a signal. The signal is simulated by calling reconcile_all.
             step.power = 0.5
-            generator._artifact_cache.invalidate_for_step(step.uid)
+            pipeline._artifact_cache.invalidate_for_step(step.uid)
 
             # Act
-            generator.reconcile_all()
+            pipeline.reconcile_all()
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -291,7 +291,7 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        _generator = PipelineCoordinator(doc, mock_task_mgr)  # noqa: F841
+        _pipeline = Pipeline(doc, mock_task_mgr)  # noqa: F841
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -306,7 +306,7 @@ class TestOpsGenerator:
 
             # Act
             real_workpiece.pos = (50, 50)
-            # This change fires a signal that the generator handles,
+            # This change fires a signal that the pipeline handles,
             # so we don't need to do anything else to trigger it.
 
             # Assert
@@ -326,7 +326,7 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -341,7 +341,7 @@ class TestOpsGenerator:
 
             # Act
             step.per_step_transformers_dicts = []
-            generator._on_job_assembly_invalidated(sender=doc)
+            pipeline._on_job_assembly_invalidated(sender=doc)
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -360,7 +360,7 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        _generator = PipelineCoordinator(doc, mock_task_mgr)  # noqa: F841
+        _pipeline = Pipeline(doc, mock_task_mgr)  # noqa: F841
 
         initial_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -375,7 +375,7 @@ class TestOpsGenerator:
 
             # Act
             real_workpiece.set_size(10, 10)
-            # This change fires a signal that the generator handles.
+            # This change fires a signal that the pipeline handles.
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -395,7 +395,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Simulate completion of a task to populate the cache
         task = mock_task_mgr.created_tasks[0]
@@ -416,16 +416,16 @@ class TestOpsGenerator:
 
             # Verify handle is in cache
             assert (
-                generator.get_artifact_handle(step.uid, real_workpiece.uid)
+                pipeline.get_artifact_handle(step.uid, real_workpiece.uid)
                 is not None
             )
 
             # Act
-            generator.shutdown()
+            pipeline.shutdown()
 
             # Assert
             assert (
-                generator.get_artifact_handle(step.uid, real_workpiece.uid)
+                pipeline.get_artifact_handle(step.uid, real_workpiece.uid)
                 is None
             )
         finally:
@@ -434,31 +434,31 @@ class TestOpsGenerator:
 
     def test_doc_property_getter(self, doc, mock_task_mgr):
         # Arrange
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Act & Assert
-        assert generator.doc is doc
+        assert pipeline.doc is doc
 
     def test_doc_property_setter_with_same_doc(self, doc, mock_task_mgr):
         # Arrange
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Act - setting the same document should not cause issues
-        generator.doc = doc
+        pipeline.doc = doc
 
         # Assert
-        assert generator.doc is doc
+        assert pipeline.doc is doc
 
     def test_doc_property_setter_with_different_doc(self, doc, mock_task_mgr):
         # Arrange
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
         new_doc = Doc()
 
         # Act
-        generator.doc = new_doc
+        pipeline.doc = new_doc
 
         # Assert
-        assert generator.doc is new_doc
+        assert pipeline.doc is new_doc
 
     def test_is_busy_property(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -467,10 +467,10 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Initial state - should be busy with one task
-        assert generator.is_busy is True
+        assert pipeline.is_busy is True
 
         # Complete the task
         task = mock_task_mgr.created_tasks[0]
@@ -483,7 +483,7 @@ class TestOpsGenerator:
         task.when_done(mock_finished_task)
 
         # Assert - should not be busy anymore
-        assert generator.is_busy is False
+        assert pipeline.is_busy is False
 
     def test_pause_resume_functionality(
         self, doc, real_workpiece, mock_task_mgr
@@ -494,20 +494,20 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
-        # Act - pause the generator
-        generator.pause()
-        assert generator.is_paused is True
+        # Act - pause the pipeline
+        pipeline.pause()
+        assert pipeline.is_paused is True
 
         # Try to trigger regeneration - should not happen while paused
         real_workpiece.set_size(20, 20)
         mock_task_mgr.run_process.assert_not_called()
 
-        # Resume the generator
-        generator.resume()
-        assert generator.is_paused is False
+        # Resume the pipeline
+        pipeline.resume()
+        assert pipeline.is_paused is False
 
         # Assert - reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
@@ -519,35 +519,35 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - use context manager
-        with generator.paused():
-            assert generator.is_paused is True
+        with pipeline.paused():
+            assert pipeline.is_paused is True
             # Try to trigger regeneration - should not happen while paused
             real_workpiece.set_size(20, 20)
             mock_task_mgr.run_process.assert_not_called()
 
         # Assert - should be resumed after context
-        assert generator.is_paused is False
+        assert pipeline.is_paused is False
         # Reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
     def test_is_paused_property(self, doc, mock_task_mgr):
         # Arrange
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Initial state
-        assert generator.is_paused is False
+        assert pipeline.is_paused is False
 
         # After pause
-        generator.pause()
-        assert generator.is_paused is True
+        pipeline.pause()
+        assert pipeline.is_paused is True
 
         # After resume
-        generator.resume()
-        assert generator.is_paused is False
+        pipeline.resume()
+        assert pipeline.is_paused is False
 
     def test_get_estimated_time(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -555,16 +555,16 @@ class TestOpsGenerator:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Patch the method on the specific instance to test delegation
         with patch.object(
-            generator._time_estimator_stage, "get_estimate"
+            pipeline._time_estimator_stage, "get_estimate"
         ) as mock_get_estimate:
             mock_get_estimate.return_value = 42.5
 
             # Act
-            result = generator.get_estimated_time(step, real_workpiece)
+            result = pipeline.get_estimated_time(step, real_workpiece)
 
             # Assert - Should return the mocked value from the stage
             assert result == 42.5
@@ -577,11 +577,11 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Act & Assert - No handle initially
         assert (
-            generator.get_artifact_handle(step.uid, real_workpiece.uid) is None
+            pipeline.get_artifact_handle(step.uid, real_workpiece.uid) is None
         )
 
         # Simulate a completed task
@@ -602,7 +602,7 @@ class TestOpsGenerator:
             task.when_done(mock_finished_task)
 
             # Act & Assert - Should return the handle
-            retrieved_handle = generator.get_artifact_handle(
+            retrieved_handle = pipeline.get_artifact_handle(
                 step.uid, real_workpiece.uid
             )
             assert retrieved_handle is not None
@@ -618,12 +618,12 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Act & Assert - No ops initially
         world_transform = real_workpiece.get_world_transform()
         assert (
-            generator.get_scaled_ops(
+            pipeline.get_scaled_ops(
                 step.uid, real_workpiece.uid, world_transform
             )
             is None
@@ -652,7 +652,7 @@ class TestOpsGenerator:
             task.when_done(mock_finished_task)
 
             # Act
-            scaled_ops = generator.get_scaled_ops(
+            scaled_ops = pipeline.get_scaled_ops(
                 step.uid, real_workpiece.uid, world_transform
             )
 
@@ -671,7 +671,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -695,7 +695,7 @@ class TestOpsGenerator:
 
             # Act - Try to get scaled ops for different size
             world_transform = real_workpiece.get_world_transform()
-            scaled_ops = generator.get_scaled_ops(
+            scaled_ops = pipeline.get_scaled_ops(
                 step.uid, real_workpiece.uid, world_transform
             )
 
@@ -711,10 +711,10 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Act & Assert - No artifact initially
-        assert generator.get_artifact(step, real_workpiece) is None
+        assert pipeline.get_artifact(step, real_workpiece) is None
 
         # Simulate a completed task
         task = mock_task_mgr.created_tasks[0]
@@ -739,7 +739,7 @@ class TestOpsGenerator:
             task.when_done(mock_finished_task)
 
             # Act
-            retrieved_artifact = generator.get_artifact(step, real_workpiece)
+            retrieved_artifact = pipeline.get_artifact(step, real_workpiece)
 
             # Assert
             assert retrieved_artifact is not None
@@ -758,7 +758,7 @@ class TestOpsGenerator:
         step = create_contour_step()
         layer.workflow.add_step(step)
 
-        generator = PipelineCoordinator(doc, mock_task_mgr)
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -781,7 +781,7 @@ class TestOpsGenerator:
             task.when_done(mock_finished_task)
 
             # Act - Try to get artifact for different size
-            retrieved_artifact = generator.get_artifact(step, real_workpiece)
+            retrieved_artifact = pipeline.get_artifact(step, real_workpiece)
 
             # Assert - Should return None for stale non-scalable artifact
             assert retrieved_artifact is None

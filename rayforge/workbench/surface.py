@@ -336,15 +336,14 @@ class WorkSurface(Canvas):
     def _on_resize_begin(self, sender, elements: List[CanvasElement]):
         """Handles start of a resize, which may invalidate Ops."""
         logger.debug(
-            f"Resize begin for {len(elements)} element(s)."
-            " Pausing ops generator."
+            f"Resize begin for {len(elements)} element(s). Pausing pipeline."
         )
         # Call the generic transform begin handler.
         # Note: resize_begin signal in canvas.py currently doesn't send
         # drag_target, so this call will pass None for drag_target in
         # _on_any_transform_begin, which is correct.
         self._on_any_transform_begin(sender, elements)
-        self.editor.ops_generator.pause()
+        self.editor.pipeline.pause()
 
     def _on_transform_end(self, sender, elements: List[CanvasElement]):
         """
@@ -387,9 +386,9 @@ class WorkSurface(Canvas):
 
         self._transform_start_states.clear()
 
-        # If it was a resize, the ops are now stale. Resume the generator.
+        # If it was a resize, the ops are now stale. Resume the pipeline.
         if self._resizing:
-            self.editor.ops_generator.resume()
+            self.editor.pipeline.resume()
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""

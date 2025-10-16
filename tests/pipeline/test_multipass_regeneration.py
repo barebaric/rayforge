@@ -7,7 +7,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Laser, Machine
-from rayforge.pipeline.coordinator import PipelineCoordinator
+from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
@@ -37,7 +37,7 @@ class TestMultipassRegeneration:
     """Test that changes to multipass transformer trigger re-generation."""
 
     def test_job_assembly_invalidated_signal_connected(self):
-        """Test generator connects to the job_assembly_invalidated signal."""
+        """Test pipeline connects to the job_assembly_invalidated signal."""
         # Create a minimal document structure
         doc = Doc()
         layer = Layer(name="Test Layer")
@@ -53,8 +53,8 @@ class TestMultipassRegeneration:
         # Create a mock task manager
         task_manager = MagicMock()
 
-        # Create the generator with mocked dependencies
-        with patch("rayforge.pipeline.coordinator.logger"):
+        # Create the pipeline with mocked dependencies
+        with patch("rayforge.pipeline.pipeline.logger"):
             # Track if the handler was called
             handler_called = MagicMock()
 
@@ -62,13 +62,13 @@ class TestMultipassRegeneration:
             def track_handler(sender):
                 handler_called()
 
-            # Create generator and patch the handler method
-            generator = PipelineCoordinator(doc, task_manager)
-            generator._on_job_assembly_invalidated = track_handler
+            # Create pipeline and patch the handler method
+            pipeline = Pipeline(doc, task_manager)
+            pipeline._on_job_assembly_invalidated = track_handler
 
         # Disconnect and reconnect with our tracked handler
         doc.job_assembly_invalidated.disconnect(
-            generator._on_job_assembly_invalidated
+            pipeline._on_job_assembly_invalidated
         )
         doc.job_assembly_invalidated.connect(track_handler)
 

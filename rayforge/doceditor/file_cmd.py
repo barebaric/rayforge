@@ -230,7 +230,7 @@ class FileCmd:
     def _prepare_job_description(self) -> JobDescription:
         """Constructs the JobDescription from the current document state."""
         doc = self._editor.doc
-        ops_generator = self._editor.ops_generator
+        pipeline = self._editor.pipeline
         machine = self._config_manager.config.machine
         if not machine:
             raise ValueError("Cannot prepare job: No machine configured.")
@@ -240,7 +240,7 @@ class FileCmd:
             if not layer.workflow:
                 continue
             for step in layer.workflow.steps:
-                handle = ops_generator.get_step_artifact_handle(step.uid)
+                handle = pipeline.get_step_artifact_handle(step.uid)
                 if handle:
                     step_handles[step.uid] = handle.to_dict()
 

@@ -128,11 +128,11 @@ async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
     assert len(editor.doc.all_workpieces) == 1
     # FIX: Assert against the file stem, which is the new default name.
     assert editor.doc.all_workpieces[0].name == "10x10_square"
-    assert editor.is_processing, "OpsGenerator should be busy after import"
+    assert editor.is_processing, "Pipeline should be busy after import"
 
     # Wait 1: Await the reactive processing triggered by the load.
     # Increase timeout as real subprocesses are slower.
-    logger.info("Waiting for OpsGenerator to process the imported file...")
+    logger.info("Waiting for Pipeline to process the imported file...")
     await editor.wait_until_settled(timeout=10)
     logger.info("Document has settled after import.")
 

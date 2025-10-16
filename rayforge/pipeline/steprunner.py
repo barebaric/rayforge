@@ -116,7 +116,7 @@ def run_step_in_subprocess(
 
         In both cases, this function yields the unscaled Ops and the dimensions
         of their coordinate system, allowing for efficient caching and scaling
-        by the OpsGenerator.
+        by the Pipeline.
 
         Yields:
             A single tuple containing the complete Artifact and a

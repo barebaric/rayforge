@@ -42,7 +42,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
 
-        # Signals for notifying the coordinator of generation progress
+        # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
         self.chunk_available = Signal()
         self.generation_finished = Signal()

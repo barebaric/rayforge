@@ -119,7 +119,7 @@ class LayerElement(CanvasElement):
             if isinstance(item_data, WorkPiece):
                 new_elem = WorkPieceView(
                     workpiece=item_data,
-                    ops_generator=work_surface.editor.ops_generator,
+                    pipeline=work_surface.editor.pipeline,
                     canvas=self.canvas,
                     selectable=self.data.visible,
                 )
@@ -181,7 +181,7 @@ class LayerElement(CanvasElement):
         for step_data in steps_to_add:
             step_elem = StepElement(
                 step=step_data,
-                ops_generator=work_surface.editor.ops_generator,
+                pipeline=work_surface.editor.pipeline,
                 canvas=self.canvas,
             )
             self.add(step_elem)

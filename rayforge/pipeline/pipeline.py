@@ -1,8 +1,8 @@
 """
-Defines the PipelineCoordinator, the central orchestrator for the data
+Defines the Pipeline, the central orchestrator for the data
 pipeline.
 
-This module contains the PipelineCoordinator class, which acts as a bridge
+This module contains the Pipeline class, which acts as a bridge
 between the pure data models in the `core` module (Doc, Layer, Step,
 WorkPiece) and the execution logic of the pipeline. Its primary responsibility
 is to listen for changes in the document and delegate tasks to the
@@ -41,9 +41,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PipelineCoordinator:
+class Pipeline:
     """
-    Listens to a Doc model and orchestrates the artifact generation pipeline.
+    Listens to a Doc model and orchestrates the artifact generation.
 
     This class acts as a "conductor" for the data pipeline. It connects to the
     document's signals and delegates invalidation and regeneration tasks to a
@@ -51,7 +51,7 @@ class PipelineCoordinator:
     but it contains no complex generation logic itself.
 
     Attributes:
-        doc (Doc): The document model this coordinator is observing.
+        doc (Doc): The document model this pipeline is observing.
         ops_generation_starting (Signal): Fired when generation begins for a
             (Step, WorkPiece) pair.
         ops_chunk_available (Signal): Fired as chunks of Ops become available
@@ -70,7 +70,7 @@ class PipelineCoordinator:
 
     def __init__(self, doc: "Doc", task_manager: "TaskManager"):
         """
-        Initializes the PipelineCoordinator.
+        Initializes the Pipeline.
 
         Args:
             doc: The top-level Doc object to monitor for changes.
@@ -132,7 +132,7 @@ class PipelineCoordinator:
         Releases all shared memory resources held in the cache. This must be
         called before application exit to prevent memory leaks.
         """
-        logger.info("PipelineCoordinator shutting down...")
+        logger.info("Pipeline shutting down...")
         self._artifact_cache.shutdown()
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
@@ -142,7 +142,7 @@ class PipelineCoordinator:
 
     @property
     def doc(self) -> Doc:
-        """The document model this coordinator is observing."""
+        """The document model this pipeline is observing."""
         return self._doc
 
     @doc.setter
@@ -230,28 +230,28 @@ class PipelineCoordinator:
 
     def pause(self):
         """
-        Increments the pause counter. The coordinator is paused if the
+        Increments the pause counter. The pipeline is paused if the
         counter is > 0.
         """
         if self._pause_count == 0:
-            logger.debug("PipelineCoordinator paused.")
+            logger.debug("Pipeline paused.")
         self._pause_count += 1
 
     def resume(self):
         """
-        Decrements the pause counter. If it reaches 0, the coordinator is
+        Decrements the pause counter. If it reaches 0, the pipeline is
         resumed and reconciles all changes.
         """
         if self._pause_count == 0:
             return
         self._pause_count -= 1
         if self._pause_count == 0:
-            logger.debug("PipelineCoordinator resumed.")
+            logger.debug("Pipeline resumed.")
             self.reconcile_all()
 
     @contextmanager
     def paused(self):
-        """A context manager to safely pause and resume the coordinator."""
+        """A context manager to safely pause and resume the pipeline."""
         self.pause()
         try:
             yield
@@ -260,7 +260,7 @@ class PipelineCoordinator:
 
     @property
     def is_paused(self) -> bool:
-        """Returns True if the coordinator is currently paused."""
+        """Returns True if the pipeline is currently paused."""
         return self._pause_count > 0
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:

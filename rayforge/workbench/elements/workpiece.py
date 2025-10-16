@@ -16,7 +16,7 @@ from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ...pipeline.coordinator import PipelineCoordinator
+    from ...pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -44,19 +44,19 @@ class WorkPieceView(CanvasElement):
     def __init__(
         self,
         workpiece: WorkPiece,
-        ops_generator: "PipelineCoordinator",
+        pipeline: "Pipeline",
         **kwargs,
     ):
         """Initializes the WorkPieceView.
 
         Args:
             workpiece: The WorkPiece data model to visualize.
-            ops_generator: The generator responsible for creating ops.
+            pipeline: The generator responsible for creating ops.
             **kwargs: Additional arguments for the CanvasElement.
         """
         logger.debug(f"Initializing WorkPieceView for '{workpiece.name}'")
         self.data: WorkPiece = workpiece
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
@@ -70,7 +70,7 @@ class WorkPieceView(CanvasElement):
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
         self._texture_surfaces: Dict[str, cairo.ImageSurface] = {}
-        # Cached artifacts to avoid re-fetching from generator on every draw.
+        # Cached artifacts to avoid re-fetching from pipeline on every draw.
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
 
         self._tab_handles: List[TabHandleElement] = []
@@ -116,13 +116,11 @@ class WorkPieceView(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
-        self.ops_generator.ops_generation_starting.connect(
+        self.pipeline.ops_generation_starting.connect(
             self._on_ops_generation_starting
         )
-        self.ops_generator.ops_chunk_available.connect(
-            self._on_ops_chunk_available
-        )
-        self.ops_generator.ops_generation_finished.connect(
+        self.pipeline.ops_chunk_available.connect(self._on_ops_chunk_available)
+        self.pipeline.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
         self._on_transform_changed(self.data)
@@ -212,13 +210,13 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Removing WorkPieceView for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
-        self.ops_generator.ops_generation_starting.disconnect(
+        self.pipeline.ops_generation_starting.disconnect(
             self._on_ops_generation_starting
         )
-        self.ops_generator.ops_chunk_available.disconnect(
+        self.pipeline.ops_chunk_available.disconnect(
             self._on_ops_chunk_available
         )
-        self.ops_generator.ops_generation_finished.disconnect(
+        self.pipeline.ops_generation_finished.disconnect(
             self._on_ops_generation_finished
         )
         super().remove()
@@ -349,7 +347,7 @@ class WorkPieceView(CanvasElement):
         if self.USE_NEW_RENDER_PATH:
             # Fetch and cache the final artifact.
             # This is a one-time fetch after generation completes.
-            artifact = self.ops_generator.get_artifact(step, self.data)
+            artifact = self.pipeline.get_artifact(step, self.data)
             self._artifact_cache[step.uid] = artifact
 
             # Clear intermediate chunk surfaces, as the final artifact is now
@@ -411,7 +409,7 @@ class WorkPieceView(CanvasElement):
             f"Recording vector ops for workpiece "
             f"'{self.data.name}', step '{step.uid}'"
         )
-        ops = self.ops_generator.get_ops(step, self.data)
+        ops = self.pipeline.get_ops(step, self.data)
         if not ops or not self.canvas:
             return None
 
@@ -550,7 +548,7 @@ class WorkPieceView(CanvasElement):
                 return None
         else:
             # Slow fallback calculate bounds from ops.
-            ops = self.ops_generator.get_ops(step, self.data)
+            ops = self.pipeline.get_ops(step, self.data)
             if not ops:
                 return None
             ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(
@@ -605,7 +603,7 @@ class WorkPieceView(CanvasElement):
             ctx.restore()
         else:
             # SLOW FALLBACK: No recording yet, render from Ops directly.
-            ops = self.ops_generator.get_ops(step, self.data)
+            ops = self.pipeline.get_ops(step, self.data)
             if not ops:
                 return None  # Should not happen as we checked above
 
@@ -806,7 +804,7 @@ class WorkPieceView(CanvasElement):
                 if step.uid in self._ops_surfaces:
                     continue
 
-                # Use the local cache instead of fetching from the generator.
+                # Use the local cache instead of fetching from the pipeline.
                 artifact = self._artifact_cache.get(step.uid)
                 if artifact:
                     artifacts_to_draw.append(artifact)

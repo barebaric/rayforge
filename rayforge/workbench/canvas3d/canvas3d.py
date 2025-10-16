@@ -11,7 +11,7 @@ from ...pipeline.scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )
-from ...pipeline.coordinator import PipelineCoordinator
+from ...pipeline.pipeline import Pipeline
 from ...pipeline.artifact import ArtifactStore, StepArtifact
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
@@ -176,7 +176,7 @@ class Canvas3D(Gtk.GLArea):
     def __init__(
         self,
         doc,
-        ops_generator: "PipelineCoordinator",
+        pipeline: "Pipeline",
         width_mm: float,
         depth_mm: float,
         y_down: bool = False,
@@ -184,7 +184,7 @@ class Canvas3D(Gtk.GLArea):
     ):
         super().__init__(**kwargs)
         self.doc = doc
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
         self.width_mm = width_mm
         self.depth_mm = depth_mm
         self.y_down = y_down
@@ -842,9 +842,7 @@ class Canvas3D(Gtk.GLArea):
             return
 
         # 1. Quickly generate the lightweight scene description
-        scene_description = generate_scene_description(
-            self.doc, self.ops_generator
-        )
+        scene_description = generate_scene_description(self.doc, self.pipeline)
 
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
