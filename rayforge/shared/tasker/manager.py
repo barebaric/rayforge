@@ -128,6 +128,17 @@ class TaskManager:
             self._run_task(task, when_done), self._loop
         )
 
+    def schedule_on_main_thread(
+        self, callback: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        """
+        Schedules a callable to be executed on the main thread's event loop.
+
+        This is the designated way for background threads or task callbacks to
+        safely interact with the main thread (e.g., for UI updates).
+        """
+        self._main_thread_scheduler(callback, *args, **kwargs)
+
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any
     ) -> Any:

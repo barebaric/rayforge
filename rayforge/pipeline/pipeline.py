@@ -81,6 +81,7 @@ class Pipeline:
         self._task_manager = task_manager
         self._artifact_cache = ArtifactCache()
         self._pause_count = 0
+        self._last_known_busy_state = False
 
         # Stages
         self._workpiece_stage = WorkpieceGeneratorStage(
@@ -157,6 +158,7 @@ class Pipeline:
 
         self._doc = new_doc
         self._artifact_cache = ArtifactCache()
+        self._last_known_busy_state = False
 
         # Re-initialize stages with the new, empty artifact cache
         self._workpiece_stage = WorkpieceGeneratorStage(
@@ -203,6 +205,19 @@ class Pipeline:
             or self._time_estimator_stage.is_busy
             or self._job_stage.is_busy
         )
+
+    def _check_and_update_processing_state(self):
+        """
+        Deferred check of the pipeline's busy state. This is scheduled on
+        the main thread to run after the current event chain has completed,
+        avoiding race conditions.
+        """
+        current_busy_state = self.is_busy
+        if self._last_known_busy_state != current_busy_state:
+            self.processing_state_changed.send(
+                self, is_processing=current_busy_state
+            )
+            self._last_known_busy_state = current_busy_state
 
     def _connect_signals(self):
         """Connects to the document's signals."""
@@ -342,12 +357,12 @@ class Pipeline:
         self, sender, *, step, workpiece, generation_id
     ):
         """Relays signal from the workpiece stage."""
-        was_busy = self.is_busy
         self.ops_generation_starting.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
-        if not was_busy and self.is_busy:
-            self.processing_state_changed.send(self, is_processing=True)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def _on_workpiece_chunk_available(
         self, sender, *, key, chunk, generation_id
@@ -371,49 +386,48 @@ class Pipeline:
         Relays signal and triggers downstream step assembly and time
         estimation.
         """
-        was_busy = self.is_busy
         self.ops_generation_finished.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
         self._step_stage.mark_stale_and_trigger(step)
         self._time_estimator_stage.generate_estimate(step, workpiece)
-
-        if was_busy and not self.is_busy:
-            self.processing_state_changed.send(self, is_processing=False)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def _on_step_generation_finished(self, sender, *, step, generation_id):
         """Relays signal from the step stage."""
-        was_busy = self.is_busy
         self.step_generation_finished.send(step, generation_id=generation_id)
-        if was_busy and not self.is_busy:
-            self.processing_state_changed.send(self, is_processing=False)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def _on_time_estimation_updated(self, sender):
         """Relays the signal from the time estimator stage."""
-        was_busy = self.is_busy
         self.time_estimation_updated.send(self)
-        if was_busy and not self.is_busy:
-            self.processing_state_changed.send(self, is_processing=False)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def _on_job_generation_finished(self, sender, *, handle):
         """Relays signal from the job stage."""
-        was_busy = self.is_busy
         self.job_generation_finished.send(self, handle=handle)
-        if was_busy and not self.is_busy:
-            self.processing_state_changed.send(self, is_processing=False)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def reconcile_all(self):
         """Synchronizes all stages with the document."""
         if self.is_paused:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
-        was_busy = self.is_busy
         self._workpiece_stage.reconcile(self.doc)
         self._step_stage.reconcile(self.doc)
         self._time_estimator_stage.reconcile(self.doc)
         self._job_stage.reconcile(self.doc)
-        if was_busy and not self.is_busy:
-            self.processing_state_changed.send(self, is_processing=False)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
 
     def get_estimated_time(
         self, step: Step, workpiece: WorkPiece
