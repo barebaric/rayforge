@@ -4,13 +4,14 @@ from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import MultiPassTransformer
 from ....undo import DictItemCommand
 from ....shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
     from ....doceditor.editor import DocEditor
 
 
-class MultiPassSettingsWidget(StepComponentSettingsWidget):
+class MultiPassSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
     """UI for configuring the MultiPassTransformer."""
 
     def __init__(
@@ -61,9 +62,15 @@ class MultiPassSettingsWidget(StepComponentSettingsWidget):
         z_step_adj.set_value(transformer.z_step_down)
         self.add(z_step_row)
 
-        # Connect signals
-        passes_row.connect("changed", self._on_passes_changed, z_step_row)
-        z_step_row.connect("changed", self._on_z_step_down_changed)
+        # Connect signals with debouncing
+        passes_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_passes_changed, r, z_step_row),
+        )
+        z_step_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_z_step_down_changed, r),
+        )
 
         # Set initial sensitivity
         z_step_row.set_sensitive(transformer.passes > 1)
