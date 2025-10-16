@@ -12,7 +12,6 @@ from ..image import import_file
 from ..pipeline.jobrunner import (
     run_job_assembly_in_subprocess,
     JobDescription,
-    WorkItemInstruction,
 )
 from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
@@ -236,40 +235,17 @@ class FileCmd:
         if not machine:
             raise ValueError("Cannot prepare job: No machine configured.")
 
-        work_items_by_step: Dict[str, list] = {}
-        per_step_transformers_by_step: Dict[str, list] = {}
-
+        step_handles: Dict[str, Dict] = {}
         for layer in doc.layers:
             if not layer.workflow:
                 continue
             for step in layer.workflow.steps:
-                work_items_for_step = []
-                for item_step, workpiece in layer.get_renderable_items():
-                    if item_step.uid != step.uid:
-                        continue
-
-                    handle = ops_generator.get_artifact_handle(
-                        step.uid, workpiece.uid
-                    )
-                    if handle:
-                        world_transform = workpiece.get_world_transform()
-                        instruction = WorkItemInstruction(
-                            artifact_handle_dict=handle.to_dict(),
-                            world_transform_list=world_transform.to_list(),
-                            workpiece_dict=workpiece.to_dict(),
-                        )
-                        work_items_for_step.append(instruction)
-
-                if work_items_for_step:
-                    work_items_by_step[step.uid] = work_items_for_step
-
-                per_step_transformers_by_step[step.uid] = (
-                    step.per_step_transformers_dicts
-                )
+                handle = ops_generator.get_step_artifact_handle(step.uid)
+                if handle:
+                    step_handles[step.uid] = handle.to_dict()
 
         return JobDescription(
-            work_items_by_step=work_items_by_step,
-            per_step_transformers_by_step=per_step_transformers_by_step,
+            step_artifact_handles_by_uid=step_handles,
             machine_dict=machine.to_dict(),
             doc_dict=doc.to_dict(),
         )
@@ -304,7 +280,8 @@ class FileCmd:
                     if handle_dict
                     else None
                 )
-                assert isinstance(handle, JobArtifactHandle)
+                if handle:
+                    assert isinstance(handle, JobArtifactHandle)
                 when_done(handle, None)
             except Exception as e:
                 when_done(None, e)

@@ -24,15 +24,18 @@ from ..core.workpiece import WorkPiece
 from ..core.ops import Ops, ScanLinePowerCommand
 from ..core.matrix import Matrix
 from .steprunner import run_step_in_subprocess
+from .step_assembler import run_step_assembly_in_subprocess
 from .timerunner import run_time_estimation_in_subprocess
 from ..core.group import Group
 from .artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
     WorkPieceArtifactHandle,
+    StepArtifactHandle,
     create_handle_from_dict,
     ArtifactStore,
     BaseArtifact,
+    ArtifactCache,
 )
 
 
@@ -71,13 +74,6 @@ class OpsGenerator:
             request the final, complete Ops for rendering.
     """
 
-    # Type alias for the structure of the operations cache.
-    # Key: (step_uid, workpiece_uid)
-    # Value: BaseArtifactHandle
-    OpsCacheType = Dict[
-        Tuple[str, str],
-        Optional[BaseArtifactHandle],
-    ]
     # Type alias for the time estimation cache
     # Key: (step_uid, workpiece_uid, width, height)
     # Value: float (time in seconds)
@@ -94,13 +90,15 @@ class OpsGenerator:
         logger.debug(f"{self.__class__.__name__}.__init__ called")
         self._doc: Doc = Doc()
         self._task_manager = task_manager
-        self._ops_cache: OpsGenerator.OpsCacheType = {}
+        self._artifact_cache = ArtifactCache()
         self._time_cache: OpsGenerator.TimeCacheType = {}
         self._generation_id_map: Dict[Tuple[str, str], int] = {}
+        self._step_generation_id_map: Dict[str, int] = {}
         self._time_generation_id_map: Dict[
             Tuple[str, str, float, float], int
         ] = {}
         self._active_tasks: Dict[Tuple[str, str], "Task"] = {}
+        self._active_step_tasks: Dict[str, "Task"] = {}
         self._active_time_tasks: Dict[
             Tuple[str, str, float, float], "Task"
         ] = {}
@@ -110,6 +108,7 @@ class OpsGenerator:
         self.ops_generation_starting = Signal()
         self.ops_chunk_available = Signal()
         self.ops_generation_finished = Signal()
+        self.step_generation_finished = Signal()
         # Fired when is_busy changes (0->N tasks or N->0 tasks)
         self.processing_state_changed = Signal()
         # New signal for time estimation updates
@@ -125,10 +124,7 @@ class OpsGenerator:
         called before application exit to prevent memory leaks.
         """
         logger.info("OpsGenerator shutting down and releasing artifacts...")
-        for key in list(self._ops_cache.keys()):
-            handle = self._ops_cache.pop(key, None)
-            if handle:
-                ArtifactStore.release(handle)
+        self._artifact_cache.shutdown()
         logger.info("All artifacts released.")
 
     @property
@@ -147,25 +143,24 @@ class OpsGenerator:
         # Disconnect from the old document if it exists
         if self._doc:
             self._disconnect_signals()
-            # Clean up state related to the old document.
-            # Iterating through the entire ops cache and calling _cleanup_key
-            # is the most robust way, as it handles the artifact, its
-            # associated active task, AND any related time cache entries.
-            for key in list(self._ops_cache.keys()):
-                self._cleanup_key(key)
+            # Shut down the cache, releasing all associated artifacts and
+            # cancelling any active tasks.
+            self._artifact_cache.shutdown()
 
             # There might be active time tasks for which the base artifact
             # generation failed or was never created. Clean these up too.
             for key in list(self._active_time_tasks.keys()):
                 self._cleanup_time_key(key)
 
-            # The caches should now be empty, but clear them to be certain.
-            self._ops_cache.clear()
             self._generation_id_map.clear()
+            self._step_generation_id_map.clear()
             self._time_cache.clear()
             self._time_generation_id_map.clear()
+            self._active_tasks.clear()
+            self._active_step_tasks.clear()
 
         self._doc = new_doc
+        self._artifact_cache = ArtifactCache()
 
         # Connect to the new document and reconcile its state
         if self._doc:
@@ -178,7 +173,11 @@ class OpsGenerator:
     @property
     def is_busy(self) -> bool:
         """Returns True if any ops generation tasks are currently running."""
-        return bool(self._active_tasks) or bool(self._active_time_tasks)
+        return (
+            bool(self._active_tasks)
+            or bool(self._active_step_tasks)
+            or bool(self._active_time_tasks)
+        )
 
     def _connect_signals(self):
         """Connects to the document's signals."""
@@ -189,6 +188,9 @@ class OpsGenerator:
         self.doc.descendant_updated.connect(self._on_descendant_updated)
         self.doc.descendant_transform_changed.connect(
             self._on_descendant_transform_changed
+        )
+        self.doc.job_assembly_invalidated.connect(
+            self._on_job_assembly_invalidated
         )
 
     def _disconnect_signals(self):
@@ -203,6 +205,9 @@ class OpsGenerator:
         self.doc.descendant_updated.disconnect(self._on_descendant_updated)
         self.doc.descendant_transform_changed.disconnect(
             self._on_descendant_transform_changed
+        )
+        self.doc.job_assembly_invalidated.disconnect(
+            self._on_job_assembly_invalidated
         )
 
     def pause(self):
@@ -294,7 +299,10 @@ class OpsGenerator:
                 if workpiece_layer and workpiece_layer.workflow:
                     for step in workpiece_layer.workflow:
                         key = (step.uid, workpiece.uid)
-                        if self._ops_cache.get(key) is None:
+                        handle = self._artifact_cache.get_workpiece_handle(
+                            step.uid, workpiece.uid
+                        )
+                        if handle is None:
                             logger.debug(
                                 f"Ops for {key} not found in cache after "
                                 "'add'. Triggering generation."
@@ -320,31 +328,17 @@ class OpsGenerator:
             f"OpsGenerator: Noticed removed {origin.__class__.__name__}"
         )
         if isinstance(origin, Step):
-            keys_to_clean = [k for k in self._ops_cache if k[0] == origin.uid]
+            self._cleanup_step(origin.uid)
         elif isinstance(origin, WorkPiece):
-            keys_to_clean = [k for k in self._ops_cache if k[1] == origin.uid]
+            self._cleanup_workpiece(origin.uid)
         elif isinstance(origin, (Group, Layer)):
             # Find all workpieces that were inside the removed container
-            removed_wp_uids = {
-                wp.uid for wp in origin.get_descendants(of_type=WorkPiece)
-            }
+            for wp in origin.get_descendants(of_type=WorkPiece):
+                self._cleanup_workpiece(wp.uid)
             if isinstance(origin, Layer) and origin.workflow:
                 # If a whole layer is removed, also clean up its steps
-                step_uids = {s.uid for s in origin.workflow}
-                keys_to_clean = [
-                    k
-                    for k in self._ops_cache
-                    if k[0] in step_uids or k[1] in removed_wp_uids
-                ]
-            else:
-                keys_to_clean = [
-                    k for k in self._ops_cache if k[1] in removed_wp_uids
-                ]
-        else:
-            return
-
-        for key in keys_to_clean:
-            self._cleanup_key(key)
+                for step in origin.workflow:
+                    self._cleanup_step(step.uid)
 
     def _on_descendant_updated(self, sender, *, origin):
         """
@@ -405,7 +399,9 @@ class OpsGenerator:
                 if key in self._active_tasks:
                     continue
 
-                handle = self._ops_cache.get(key)
+                handle = self._artifact_cache.get_workpiece_handle(
+                    step.uid, wp.uid
+                )
 
                 # Determine if the base artifact is valid
                 is_valid = False
@@ -444,6 +440,47 @@ class OpsGenerator:
                     )
                     self._trigger_ops_generation(step, wp)
 
+    def _on_job_assembly_invalidated(self, sender):
+        """
+        Handles the job_assembly_invalidated signal, which is sent when
+        per-step transformers change (e.g., multipass settings).
+
+        This triggers re-assembly of all steps in the document since the
+        per-step transformers affect the final assembled output.
+        """
+        logger.debug(
+            f"{self.__class__.__name__}._on_job_assembly_invalidated called"
+        )
+        if self.is_paused:
+            return
+
+        logger.debug(
+            "OpsGenerator: Job assembly invalidated, re-assembling all steps"
+        )
+        # Trigger re-assembly for all steps in the document
+        for layer in self.doc.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    # Only invalidate step artifact, not workpiece artifacts
+                    # (workpieces valid when only per-step transformers change)
+                    step_handle = self._artifact_cache._step_handles.pop(
+                        step.uid, None
+                    )
+                    if step_handle:
+                        from .artifact.store import ArtifactStore
+
+                        ArtifactStore.release(step_handle)
+
+                    # Invalidate the downstream job artifact
+                    self._artifact_cache.invalidate_for_job()
+
+                    # Clean up any active step task
+                    if step.uid in self._active_step_tasks:
+                        self._task_manager.cancel_task(step.uid)
+                        self._active_step_tasks.pop(step.uid, None)
+                    # Trigger new step assembly
+                    self._trigger_step_assembly(step)
+
     def _cleanup_time_key(self, key: Tuple[str, str, float, float]):
         """Removes a time cache entry and cancels its task."""
         logger.debug(f"OpsGenerator: Cleaning up time key {key}.")
@@ -465,29 +502,53 @@ class OpsGenerator:
         for key in keys_to_clean:
             self._cleanup_time_key(key)
 
-    def _cleanup_key(self, key: Tuple[str, str]):
+    def _cleanup_workpiece_artifact(self, step_uid: str, workpiece_uid: str):
         """
-        Removes a cache entry, releases its shared memory, and cancels any
-        associated task.
+        Removes a workpiece cache entry, releases its resources, and cancels
+        its task.
         """
-        logger.debug(f"{self.__class__.__name__}._cleanup_key called")
-        logger.debug(f"OpsGenerator: Cleaning up key {key}.")
+        key = (step_uid, workpiece_uid)
+        logger.debug(f"OpsGenerator: Cleaning up workpiece artifact {key}.")
 
-        # Also clean up any associated time cache entries
-        step_uid, wp_uid = key
+        # Clean up associated time cache entries
         time_keys_to_clean = [
-            k for k in self._time_cache if k[0] == step_uid and k[1] == wp_uid
+            k
+            for k in self._time_cache
+            if k[0] == step_uid and k[1] == workpiece_uid
         ]
         for tkey in time_keys_to_clean:
             self._cleanup_time_key(tkey)
 
-        handle = self._ops_cache.pop(key, None)
-        if handle:
-            ArtifactStore.release(handle)
+        # Let the cache handle resource release and dependency invalidation
+        self._artifact_cache.invalidate_for_workpiece(step_uid, workpiece_uid)
+
         self._generation_id_map.pop(key, None)
         if key in self._active_tasks:
             self._task_manager.cancel_task(key)
             self._active_tasks.pop(key, None)
+
+    def _cleanup_step(self, step_uid: str):
+        """Cleans up all artifacts and tasks associated with a step."""
+        logger.debug(f"OpsGenerator: Cleaning up step {step_uid}.")
+        step = self._find_step_by_uid(step_uid)
+        if step and step.layer:
+            for wp in step.layer.all_workpieces:
+                self._cleanup_workpiece_artifact(step_uid, wp.uid)
+        else:
+            # If step is gone, use cache's more direct invalidation
+            self._artifact_cache.invalidate_for_step(step_uid)
+
+        if step_uid in self._active_step_tasks:
+            self._task_manager.cancel_task(step_uid)
+            self._active_step_tasks.pop(step_uid, None)
+
+    def _cleanup_workpiece(self, workpiece_uid: str):
+        """Cleans up all artifacts and tasks associated with a workpiece."""
+        logger.debug(f"OpsGenerator: Cleaning up workpiece {workpiece_uid}.")
+        wp = self._find_workpiece_by_uid(workpiece_uid)
+        if wp and wp.layer and wp.layer.workflow:
+            for step in wp.layer.workflow:
+                self._cleanup_workpiece_artifact(step.uid, workpiece_uid)
 
     def reconcile_all(self):
         """
@@ -507,11 +568,11 @@ class OpsGenerator:
             for step in layer.workflow.steps
             for workpiece in layer.all_workpieces
         }
-        cached_pairs = set(self._ops_cache.keys())
+        cached_pairs = set(self._artifact_cache._workpiece_handles.keys())
 
         # Clean up obsolete items
         for s_uid, w_uid in cached_pairs - all_current_pairs:
-            self._cleanup_key((s_uid, w_uid))
+            self._cleanup_workpiece_artifact(s_uid, w_uid)
 
         # Trigger generation for new or invalidated items.
         for layer in self.doc.layers:
@@ -520,9 +581,10 @@ class OpsGenerator:
             for step in layer.workflow.steps:
                 for workpiece in layer.all_workpieces:
                     # Check base artifact validity
-                    key = (step.uid, workpiece.uid)
+                    handle = self._artifact_cache.get_workpiece_handle(
+                        step.uid, workpiece.uid
+                    )
                     is_valid = False
-                    handle = self._ops_cache.get(key)
                     if isinstance(handle, WorkPieceArtifactHandle):
                         is_valid = (
                             handle.is_scalable
@@ -575,12 +637,13 @@ class OpsGenerator:
         logger.debug(
             f"{self.__class__.__name__}._trigger_ops_generation called"
         )
+        s_uid, w_uid = step.uid, workpiece.uid
+        key = s_uid, w_uid
+
         if any(s <= 0 for s in workpiece.size):
             # Clear cache for invalid size to prevent stale ops from showing.
-            self._cleanup_key((step.uid, workpiece.uid))
+            self._cleanup_workpiece_artifact(s_uid, w_uid)
             return
-
-        key = step.uid, workpiece.uid
 
         # If a task is already running for this key, cancel it before starting
         # a new one.
@@ -596,19 +659,12 @@ class OpsGenerator:
             step, workpiece=workpiece, generation_id=generation_id
         )
 
-        # Before starting a new generation (which will eventually
-        # replace the cached item), we must release the resource for the
-        # artifact that is currently in the cache for this key.
-        old_handle = self._ops_cache.pop(key, None)
-        if old_handle:
-            logger.debug(f"Releasing previously cached artifact for {key}.")
-            ArtifactStore.release(old_handle)
-
-        # Mark the cache entry as pending (None)
-        self._ops_cache[key] = None
+        # Before starting a new generation, we must invalidate the cache for
+        # the artifact that is about to be replaced. The ArtifactCache will
+        # handle releasing the old resource.
+        self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
 
         was_busy = self.is_busy
-        s_uid, w_uid = step.uid, workpiece.uid
 
         # Capture the size we are generating for and pass it to the subprocess.
         generation_size = workpiece.size
@@ -747,9 +803,11 @@ class OpsGenerator:
             task_succeeded = self._handle_completed_task(
                 task, key, step, workpiece
             )
-            # Now that the base artifact exists and is valid, trigger
-            # time estimation.
             if task_succeeded:
+                # Now that the workpiece artifact is ready, trigger the
+                # aggregation process for the parent step.
+                self._trigger_step_assembly(step)
+                # Also trigger time estimation for this workpiece.
                 self._trigger_time_estimation(step, workpiece)
         else:
             # Handle failed or cancelled tasks
@@ -763,10 +821,8 @@ class OpsGenerator:
                 f"'{wp_name}' failed. "
                 f"Status: {task.get_status()}."
             )
-            # The cache entry for this key is already None and its previous
-            # artifact was released in _trigger_ops_generation.
+            # The cache was already invalidated in _trigger_ops_generation.
             # Nothing more to do.
-            self._ops_cache[key] = None
 
             # Still notify the view so it can stop showing a "loading" state
             self.ops_generation_finished.send(
@@ -794,6 +850,7 @@ class OpsGenerator:
         logger.debug(
             f"{self.__class__.__name__}._handle_completed_task called"
         )
+        s_uid, w_uid = key
         wp_name = (
             workpiece.source_file.name
             if workpiece.source_file
@@ -808,7 +865,6 @@ class OpsGenerator:
                     f"Task for {key} returned unexpected format: "
                     f"{type(result)}"
                 )
-                self._ops_cache[key] = None
                 return False
 
             result_handle_dict, result_gen_id = result
@@ -817,7 +873,6 @@ class OpsGenerator:
             # to leak from this run.
             if not result_handle_dict:
                 logger.debug(f"Task for {key} produced no artifact.")
-                self._ops_cache[key] = None
                 # Fall through to send 'finished' signal
             else:
                 # A resource was created. Deserialize the handle.
@@ -852,9 +907,11 @@ class OpsGenerator:
                     self._trigger_ops_generation(step, workpiece)
                     return False
 
-                # The old handle was already released in
-                # _trigger_ops_generation.
-                self._ops_cache[key] = handle
+                if not isinstance(handle, WorkPieceArtifactHandle):
+                    raise TypeError("Expected a WorkPieceArtifactHandle")
+
+                # The old handle was invalidated in _trigger_ops_generation.
+                self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
 
             # Now that the cache is up-to-date, notify the view to re-render.
             self.ops_generation_finished.send(
@@ -867,7 +924,6 @@ class OpsGenerator:
                 f"Error getting result for '{step.name}' on '{wp_name}': {e}",
                 exc_info=True,
             )
-            self._ops_cache[key] = None
 
             # Still notify the view so it knows the task is done
             # (even if failed)
@@ -886,8 +942,9 @@ class OpsGenerator:
             return  # Already have a valid estimate for this exact state
 
         # Check if the base artifact handle is available yet
-        base_key = (step.uid, workpiece.uid)
-        handle = self._ops_cache.get(base_key)
+        handle = self._artifact_cache.get_workpiece_handle(
+            step.uid, workpiece.uid
+        )
         if handle is None:
             # The base artifact isn't ready. Time estimation will be triggered
             # by the _on_generation_complete callback when it's done.
@@ -999,8 +1056,17 @@ class OpsGenerator:
         Returns:
             The cached BaseArtifactHandle, or None if it is not available.
         """
-        key = step_uid, workpiece_uid
-        return self._ops_cache.get(key)
+        return self._artifact_cache.get_workpiece_handle(
+            step_uid, workpiece_uid
+        )
+
+    def get_step_artifact_handle(
+        self, step_uid: str
+    ) -> Optional[StepArtifactHandle]:
+        """
+        Retrieves the handle for a generated step artifact from the cache.
+        """
+        return self._artifact_cache.get_step_handle(step_uid)
 
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix
@@ -1026,16 +1092,18 @@ class OpsGenerator:
             operations are available in the cache.
         """
         logger.debug(f"{self.__class__.__name__}.get_scaled_ops called")
-        key = step_uid, workpiece_uid
         final_size = world_transform.get_abs_scale()
         if any(s <= 0 for s in final_size):
             return None
 
-        handle = self._ops_cache.get(key)
+        handle = self._artifact_cache.get_workpiece_handle(
+            step_uid, workpiece_uid
+        )
 
         if handle is None:
             logger.debug(
-                f"get_scaled_ops for {key}: No artifact found in cache."
+                f"get_scaled_ops for {(step_uid, workpiece_uid)}: "
+                "No artifact found in cache."
             )
             return None
 
@@ -1043,15 +1111,16 @@ class OpsGenerator:
         if isinstance(handle, WorkPieceArtifactHandle):
             if not handle.is_scalable and handle.generation_size != final_size:
                 logger.debug(
-                    f"get_scaled_ops for {key}: Found stale artifact. "
+                    f"get_scaled_ops for {(step_uid, workpiece_uid)}: "
+                    f"Found stale artifact. "
                     f"Cache size: {handle.generation_size}, "
                     f"WP size: {final_size}. Returning None."
                 )
                 return None
 
         logger.debug(
-            f"get_scaled_ops for {key}: Found artifact. "
-            f"Scalable: {handle.is_scalable}."
+            f"get_scaled_ops for {(step_uid, workpiece_uid)}: "
+            f"Found artifact. Scalable: {handle.is_scalable}."
         )
 
         artifact = ArtifactStore.get(handle)
@@ -1064,8 +1133,9 @@ class OpsGenerator:
             1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
         )
         logger.debug(
-            f"OpsGenerator.get_scaled_ops: Returning final ops for key {key} "
-            f"with {scanline_count} ScanLinePowerCommands."
+            f"OpsGenerator.get_scaled_ops: Returning final ops for key "
+            f"{(step_uid, workpiece_uid)} with {scanline_count} "
+            f"ScanLinePowerCommands."
         )
         return ops
 
@@ -1091,11 +1161,13 @@ class OpsGenerator:
             The cached artifact object, or None if no artifact is available.
         """
         logger.debug(f"{self.__class__.__name__}.get_artifact called")
-        key = step.uid, workpiece.uid
+        key = (step.uid, workpiece.uid)
         if any(s <= 0 for s in workpiece.size):
             return None
 
-        handle = self._ops_cache.get(key)
+        handle = self._artifact_cache.get_workpiece_handle(
+            step.uid, workpiece.uid
+        )
 
         if handle is None:
             logger.debug(
@@ -1161,3 +1233,118 @@ class OpsGenerator:
         if not (math.isclose(scale_x, 1.0) and math.isclose(scale_y, 1.0)):
             logger.debug(f"Scaling ops by ({scale_x}, {scale_y})")
             ops.scale(scale_x, scale_y)
+
+    def _trigger_step_assembly(self, step: Step):
+        """
+        Checks if all dependencies for a step artifact are met and, if so,
+        triggers the background assembly task.
+        """
+        if not step.layer:
+            return
+
+        # 1. Check if an assembly is already running for this step
+        if step.uid in self._active_step_tasks:
+            logger.debug(f"Step assembly for '{step.uid}' is already active.")
+            return
+
+        # 2. Gather all required workpiece info for this step
+        assembly_info = []
+        for wp in step.layer.all_workpieces:
+            handle = self._artifact_cache.get_workpiece_handle(
+                step.uid, wp.uid
+            )
+            if handle is None:
+                logger.debug(
+                    f"Dependency for step '{step.uid}' not met: "
+                    f"workpiece '{wp.uid}' artifact is missing. Deferring."
+                )
+                return  # A dependency is not ready; abort.
+            info = {
+                "artifact_handle_dict": handle.to_dict(),
+                "world_transform_list": wp.get_world_transform().to_list(),
+                "workpiece_dict": wp.to_dict(),
+            }
+            assembly_info.append(info)
+
+        if not assembly_info:
+            logger.debug(f"No workpieces for step '{step.uid}'. Skipping.")
+            # If there are no workpieces, ensure any old step artifact is gone
+            self._artifact_cache.invalidate_for_step(step.uid)
+            return
+
+        # 3. All dependencies are met. Start the assembly task.
+        logger.info(f"All dependencies met for '{step.uid}'. Assembling.")
+        generation_id = self._step_generation_id_map.get(step.uid, 0) + 1
+        self._step_generation_id_map[step.uid] = generation_id
+
+        was_busy = self.is_busy
+
+        def when_done_callback(task: "Task"):
+            self._on_step_assembly_complete(task, step.uid, generation_id)
+
+        task = self._task_manager.run_process(
+            run_step_assembly_in_subprocess,
+            assembly_info,
+            step.uid,
+            generation_id,
+            step.per_step_transformers_dicts,
+            key=step.uid,
+            when_done=when_done_callback,
+        )
+        self._active_step_tasks[step.uid] = task
+        if not was_busy and self.is_busy:
+            self.processing_state_changed.send(self, is_processing=True)
+
+    def _on_step_assembly_complete(
+        self, task: "Task", step_uid: str, task_generation_id: int
+    ):
+        """Callback for when a step assembly task finishes."""
+        was_busy = self.is_busy
+        self._active_step_tasks.pop(step_uid, None)
+
+        if self._step_generation_id_map.get(step_uid) != task_generation_id:
+            logger.debug(
+                f"Ignoring stale step assembly callback for {step_uid}."
+            )
+            # Must also check busy state
+            is_busy_now = self.is_busy
+            if was_busy and not is_busy_now:
+                self.processing_state_changed.send(self, is_processing=False)
+            return
+
+        step = self._find_step_by_uid(step_uid)
+        if not step:
+            is_busy_now = self.is_busy
+            if was_busy and not is_busy_now:
+                self.processing_state_changed.send(self, is_processing=False)
+            return
+
+        if task.get_status() == "completed":
+            try:
+                result = task.result()
+                if not result:
+                    raise ValueError("Step assembly returned no result")
+
+                handle_dict, result_gen_id = result
+                if self._step_generation_id_map.get(step_uid) == result_gen_id:
+                    handle = create_handle_from_dict(handle_dict)
+                    if not isinstance(handle, StepArtifactHandle):
+                        raise TypeError("Expected a StepArtifactHandle")
+                    self._artifact_cache.put_step_handle(step_uid, handle)
+                    self.step_generation_finished.send(
+                        step, generation_id=result_gen_id
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Error getting step assembly result for {step_uid}: {e}",
+                    exc_info=True,
+                )
+        else:
+            logger.warning(
+                f"Step assembly for {step_uid} failed. "
+                f"Status: {task.get_status()}"
+            )
+
+        is_busy_now = self.is_busy
+        if was_busy and not is_busy_now:
+            self.processing_state_changed.send(self, is_processing=False)

@@ -1,21 +1,20 @@
 import logging
 import json
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import numpy as np
 
 from ..machine.models.machine import Machine
 from ..shared.tasker.proxy import ExecutionContextProxy
-from ..core.ops import Ops, ScanLinePowerCommand
-from ..core.workpiece import WorkPiece
+from ..core.ops import Ops
 from ..core.doc import Doc
-from ..pipeline.transformer import OpsTransformer, transformer_by_name
 from ..pipeline.encoder.gcode import GcodeEncoder
 from ..pipeline.encoder.vertexencoder import VertexEncoder
 from .artifact import (
     ArtifactStore,
     JobArtifact,
     create_handle_from_dict,
+    StepArtifact,
 )
 from .coord import CoordinateSystem
 
@@ -24,97 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class WorkItemInstruction:
-    """A serializable instruction for processing one workpiece in a job."""
-
-    artifact_handle_dict: Dict[str, Any]
-    world_transform_list: List[List[float]]
-    workpiece_dict: Dict[str, Any]
-
-
-@dataclass
 class JobDescription:
     """A complete, serializable description of a job for the subprocess."""
 
-    work_items_by_step: Dict[str, List[WorkItemInstruction]]
-    per_step_transformers_by_step: Dict[str, List[Dict[str, Any]]]
+    step_artifact_handles_by_uid: Dict[str, Dict[str, Any]]
     machine_dict: Dict[str, Any]
     doc_dict: Dict[str, Any]
-
-
-def _instantiate_transformers_from_step_dict(
-    transformer_dicts: List[Dict[str, Any]],
-) -> List[OpsTransformer]:
-    """Helper to create transformer instances from a step's config dict."""
-    transformers: List[OpsTransformer] = []
-    for t_dict in transformer_dicts:
-        if not t_dict.get("enabled", True):
-            continue
-        cls_name = t_dict.get("name")
-        if cls_name and cls_name in transformer_by_name:
-            cls = transformer_by_name[cls_name]
-            try:
-                transformers.append(cls.from_dict(t_dict))
-            except Exception as e:
-                logger.error(
-                    f"Failed to instantiate transformer '{cls_name}': {e}",
-                    exc_info=True,
-                )
-    return transformers
-
-
-def _transform_and_clip_workpiece_ops(
-    ops: Ops,
-    workpiece_world_transform_list: List[List[float]],
-    workpiece_name: str,
-    machine: Machine,
-    clip_rect: tuple[float, float, float, float],
-) -> Ops:
-    """
-    Applies workpiece-specific transforms using its world matrix,
-    converts to machine coordinates, and clips the result.
-    """
-    from ..core.matrix import Matrix
-
-    pre_transform_scanlines = sum(
-        1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
-    )
-    logger.debug(
-        f"JobRunner: Pre-transform/clip for '{workpiece_name}': "
-        f"{pre_transform_scanlines} ScanLinePowerCommands."
-    )
-
-    world_matrix = Matrix.from_list(workpiece_world_transform_list)
-    (x, y, angle, _, _, _) = world_matrix.decompose()
-
-    transform_4x4 = np.identity(4)
-    rad = np.radians(angle)
-    c, s = np.cos(rad), np.sin(rad)
-    rotation_matrix = np.array([[c, -s], [s, c]])
-    transform_4x4[0:2, 0:2] = rotation_matrix
-    transform_4x4[0:2, 3] = [x, y]
-
-    final_transform = transform_4x4
-    if machine.y_axis_down:
-        machine_height = machine.dimensions[1]
-        y_down_mat = np.identity(4)
-        y_down_mat[1, 1] = -1.0
-        y_down_mat[1, 3] = machine_height
-        final_transform = y_down_mat @ transform_4x4
-
-    ops.transform(final_transform)
-    clipped_ops = ops.clip(clip_rect)
-
-    post_clip_scanlines = sum(
-        1
-        for cmd in clipped_ops.commands
-        if isinstance(cmd, ScanLinePowerCommand)
-    )
-    logger.debug(
-        f"JobRunner: Post-transform/clip for '{workpiece_name}': "
-        f"{post_clip_scanlines} ScanLinePowerCommands."
-    )
-    return clipped_ops
 
 
 def run_job_assembly_in_subprocess(
@@ -123,23 +37,22 @@ def run_job_assembly_in_subprocess(
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
-    Returns a handle to the final comprehensive job artifact.
+
+    This function consumes pre-computed StepArtifacts, combines their Ops,
+    and encodes the result into a final JobArtifact containing G-code and
+    preview data.
     """
-    # When deserialized, the dataclass becomes a dict.
-    job_desc_dict = job_description_dict
-    machine = Machine.from_dict(job_desc_dict["machine_dict"], is_inert=True)
-    doc = Doc.from_dict(job_desc_dict["doc_dict"])
+    job_desc = JobDescription(**job_description_dict)
+    machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
+    doc = Doc.from_dict(job_desc.doc_dict)
+    handles_by_uid = job_desc.step_artifact_handles_by_uid
 
     proxy.set_message(_("Assembling final job..."))
     final_ops = Ops()
     final_ops.job_start()
-    machine_width, machine_height = machine.dimensions
-    clip_rect = 0, 0, machine_width, machine_height
 
-    total_items = sum(
-        len(items) for items in job_desc_dict["work_items_by_step"].values()
-    )
-    processed_items = 0
+    total_steps = len(handles_by_uid)
+    processed_steps = 0
 
     for layer in doc.layers:
         if not layer.workflow:
@@ -147,72 +60,26 @@ def run_job_assembly_in_subprocess(
         final_ops.layer_start(layer_uid=layer.uid)
 
         for step in layer.workflow.steps:
-            step_uid = step.uid
-            if step_uid not in job_desc_dict["work_items_by_step"]:
+            if step.uid not in handles_by_uid:
                 continue
 
-            step_combined_ops = Ops()
-            work_items = job_desc_dict["work_items_by_step"][step_uid]
-
-            for item_dict in work_items:
-                processed_items += 1
-                proxy.set_progress(
-                    processed_items / total_items if total_items > 0 else 0
-                )
-                workpiece = WorkPiece.from_dict(item_dict["workpiece_dict"])
-                proxy.set_message(
-                    _("Processing '{workpiece}' in '{step}'").format(
-                        workpiece=workpiece.name, step=step.name
-                    )
-                )
-
-                handle = create_handle_from_dict(
-                    item_dict["artifact_handle_dict"]
-                )
-                artifact = ArtifactStore.get(handle)
-                if not artifact or artifact.ops.is_empty():
-                    continue
-
-                workpiece_ops = artifact.ops.copy()
-
-                # Scale the ops from their source size to the workpiece's size
-                if artifact.is_scalable and artifact.source_dimensions:
-                    target_w, target_h = workpiece.size
-                    source_w, source_h = artifact.source_dimensions
-                    if source_w > 1e-9 and source_h > 1e-9:
-                        scale_x = target_w / source_w
-                        scale_y = target_h / source_h
-                        workpiece_ops.scale(scale_x, scale_y)
-
-                ops_with_markers = Ops()
-                ops_with_markers.workpiece_start(workpiece_uid=workpiece.uid)
-                ops_with_markers.extend(workpiece_ops)
-                ops_with_markers.workpiece_end(workpiece_uid=workpiece.uid)
-
-                clipped_ops = _transform_and_clip_workpiece_ops(
-                    ops_with_markers,
-                    item_dict["world_transform_list"],
-                    workpiece.name,
-                    machine,
-                    clip_rect,
-                )
-                step_combined_ops.extend(clipped_ops)
-
-            transformer_dicts = job_desc_dict[
-                "per_step_transformers_by_step"
-            ].get(step_uid, [])
-            per_step_transformers = _instantiate_transformers_from_step_dict(
-                transformer_dicts
+            processed_steps += 1
+            proxy.set_progress(
+                processed_steps / total_steps if total_steps > 0 else 0
             )
-            for transformer in per_step_transformers:
-                proxy.set_message(
-                    _("Applying '{transformer}' to '{step}'").format(
-                        transformer=transformer.label, step=step.name
-                    )
-                )
-                transformer.run(step_combined_ops, context=proxy)
+            proxy.set_message(
+                _("Processing final ops for '{step}'").format(step=step.name)
+            )
 
-            final_ops.extend(step_combined_ops)
+            handle_dict = handles_by_uid[step.uid]
+            handle = create_handle_from_dict(handle_dict)
+            artifact = ArtifactStore.get(handle)
+
+            if (
+                isinstance(artifact, StepArtifact)
+                and not artifact.ops.is_empty()
+            ):
+                final_ops.extend(artifact.ops)
 
         final_ops.layer_end(layer_uid=layer.uid)
 

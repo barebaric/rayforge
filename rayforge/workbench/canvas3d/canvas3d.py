@@ -4,9 +4,6 @@ from typing import Optional, Tuple, List
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
-from ...core.matrix import Matrix
-from ...core.step import Step
-from ...core.workpiece import WorkPiece
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
@@ -15,6 +12,7 @@ from ...pipeline.scene_assembler import (
     generate_scene_description,
 )
 from ...pipeline.generator import OpsGenerator
+from ...pipeline.artifact import ArtifactStore, StepArtifact
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
@@ -38,15 +36,14 @@ def prepare_scene_vertices_async(
     scene_description: SceneDescription,
     color_set: ColorSet,
     scene_model_matrix: np.ndarray,
-    ops_generator: OpsGenerator,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
 
-    It iterates through a lightweight SceneDescription, loads the required
-    artifact data, generates vertices in local space, applies the final
-    world transformation, and aggregates the results into VBO-ready numpy
-    arrays.
+    It iterates through a lightweight SceneDescription of StepArtifacts,
+    loads the pre-computed vertex data, applies the global scene transform
+    (e.g., for Y-down view), and aggregates the results into VBO-ready
+    numpy arrays.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -57,49 +54,30 @@ def prepare_scene_vertices_async(
     zero_power_rgba = np.array(
         color_set.get_rgba("zero_power"), dtype=np.float32
     )
-    # For now, use a single LUT for all powered moves in 3D
     power_lut = color_set.get_lut("cut")
 
-    logger.debug("Starting scene vertex preparation")
+    logger.debug("Starting scene vertex preparation from StepArtifacts")
 
     for i, item in enumerate(scene_description.render_items):
-        logger.debug(
-            f"Processing RenderItem {i} (WP UID: {item.workpiece_uid})"
-        )
+        logger.debug(f"Processing RenderItem {i} (Step UID: {item.step_uid})")
 
-        step = ops_generator.doc.find_descendant_by_uid(item.step_uid)
-        workpiece = ops_generator.doc.find_descendant_by_uid(
-            item.workpiece_uid
-        )
-
-        if not isinstance(step, Step) or not isinstance(workpiece, WorkPiece):
-            logger.warning(
-                "Could not find valid step/workpiece for UIDs. Skipping."
-            )
+        if not item.artifact_handle:
             continue
 
-        artifact = ops_generator.get_artifact(step, workpiece)
+        artifact = ArtifactStore.get(item.artifact_handle)
 
-        if not artifact or not artifact.vertex_data:
+        if not isinstance(artifact, StepArtifact) or not artifact.vertex_data:
             logger.debug(
-                "Artifact is missing or has no vertex data. "
-                "Skipping vector processing."
+                "Artifact is not a StepArtifact or has no vertex data."
             )
             continue
 
-        # 1. Get pre-computed, local-space vertices from the artifact.
+        # 1. Get pre-computed, world-space vertices from the artifact.
         vertex_data = artifact.vertex_data
         p_verts = vertex_data.powered_vertices
         p_colors_std = vertex_data.powered_colors
         t_verts = vertex_data.travel_vertices
         zp_verts = vertex_data.zero_power_vertices
-
-        # If the artifact has texture data, its powered moves are visualized
-        # by the TextureArtifactRenderer. We only process its non-powered
-        # moves here to avoid double-drawing.
-        if artifact.texture_data:
-            p_verts = np.array([], dtype=np.float32)
-            p_colors_std = np.array([], dtype=np.float32)
 
         # 2. Recolor the vertices using the current theme's ColorSet.
         if p_verts.size > 0:
@@ -109,28 +87,13 @@ def prepare_scene_vertices_async(
         else:
             p_colors = np.array([], dtype=np.float32)
 
-        if t_verts.size > 0:
-            pass  # Travel moves are colored uniformly in the shader
         if zp_verts.size > 0:
             num_zp_verts = zp_verts.shape[0]
             zp_colors = np.tile(zero_power_rgba, (num_zp_verts, 1))
         else:
             zp_colors = np.array([], dtype=np.float32)
 
-        # 3. Apply placement transform (no scale) from the world matrix.
-        world_matrix_obj = Matrix(item.world_transform)
-        (tx, ty, angle_deg, _, sy, skew_deg) = world_matrix_obj.decompose()
-
-        # Recompose a matrix with scale forced to 1.0, preserving flips
-        # (sy sign).
-        placement_matrix_obj = Matrix.compose(
-            tx, ty, angle_deg, 1.0, math.copysign(1.0, sy), skew_deg
-        )
-        placement_matrix_4x4 = placement_matrix_obj.to_4x4_numpy()
-
-        # 4. Apply the final transformation (scene flip + item placement)
-        final_transform = scene_model_matrix @ placement_matrix_4x4
-
+        # 3. Apply final scene transformation (e.g., Y-down flip)
         def _transform_vertices(verts: np.ndarray, transform: np.ndarray):
             if verts.size == 0:
                 return verts
@@ -143,20 +106,20 @@ def prepare_scene_vertices_async(
 
         if p_verts.size > 0:
             all_powered_verts.append(
-                _transform_vertices(p_verts, final_transform)
+                _transform_vertices(p_verts, scene_model_matrix)
             )
             all_powered_colors.append(p_colors)
         if t_verts.size > 0:
             all_travel_verts.append(
-                _transform_vertices(t_verts, final_transform)
+                _transform_vertices(t_verts, scene_model_matrix)
             )
         if zp_verts.size > 0:
             all_zero_power_verts.append(
-                _transform_vertices(zp_verts, final_transform)
+                _transform_vertices(zp_verts, scene_model_matrix)
             )
             all_zero_power_colors.append(zp_colors)
 
-    # 5. Concatenate all results into single arrays
+    # 4. Concatenate all results into single arrays
     final_powered_verts = (
         np.concatenate(all_powered_verts).flatten()
         if all_powered_verts
@@ -888,29 +851,18 @@ class Canvas3D(Gtk.GLArea):
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
         for item in scene_description.render_items:
-            if item.texture_data:
-                world_transform_matrix = Matrix(item.world_transform)
-
-                # Decompose the full world transform to separate placement from
-                # scale.
-                (tx, ty, angle_deg, _, sy, skew_deg) = (
-                    world_transform_matrix.decompose()
-                )
-
-                # Recompose a new matrix containing ONLY placement
-                # (translation, rotation, flip, skew). The scale is stripped
-                # out by using 1.0 for sx and only the sign of sy to preserve
-                # reflections.
-                placement_transform = Matrix.compose(
-                    tx, ty, angle_deg, 1.0, math.copysign(1.0, sy), skew_deg
-                )
-
-                # The TextureArtifactRenderer will internally apply its own
-                # scale based on the texture's dimensions_mm. We only provide
-                # it with the pure placement matrix.
-                self.texture_renderer.add_instance(
-                    item.texture_data, placement_transform.to_4x4_numpy()
-                )
+            if item.artifact_handle:
+                artifact = ArtifactStore.get(item.artifact_handle)
+                if (
+                    isinstance(artifact, StepArtifact)
+                    and artifact.texture_data
+                ):
+                    # StepArtifact geometry is already in world space, so its
+                    # transform is identity.
+                    placement_transform = np.identity(4, dtype=np.float32)
+                    self.texture_renderer.add_instance(
+                        artifact.texture_data, placement_transform
+                    )
 
         # 3. Schedule the expensive vector preparation for a background thread
         self._schedule_scene_preparation(scene_description)
@@ -932,7 +884,6 @@ class Canvas3D(Gtk.GLArea):
                 scene_description,
                 self._color_set,
                 self._model_matrix,
-                self.ops_generator,  # Pass the generator proxy
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

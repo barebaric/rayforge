@@ -4,21 +4,15 @@ from unittest.mock import MagicMock
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
-from rayforge.core.matrix import Matrix
 from rayforge.pipeline.scene_assembler import (
     RenderItem,
     SceneDescription,
     generate_scene_description,
 )
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifactHandle,
-    WorkPieceArtifact,
-    TextureData,
+    StepArtifactHandle,
 )
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.core.ops import Ops
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +39,7 @@ def setup_real_config(mocker):
 
 
 @pytest.fixture
-def mock_doc():
+def mock_doc() -> Doc:
     """Create a mock document with layers."""
     doc = MagicMock(spec=Doc)
     doc.layers = []
@@ -54,157 +48,88 @@ def mock_doc():
 
 @pytest.fixture
 def mock_ops_generator():
-    """Create a mock ops generator with cache."""
+    """Create a mock ops generator."""
     generator = MagicMock()
-    generator.get_artifact_handle = MagicMock()
-    generator.get_artifact = MagicMock()
+    generator.get_step_artifact_handle = MagicMock()
     return generator
 
 
 @pytest.fixture
-def mock_layer():
-    """Create a mock layer with renderable items."""
+def mock_layer() -> Layer:
+    """Create a mock layer with a workflow."""
     layer = MagicMock(spec=Layer)
     layer.name = "test_layer"
     layer.visible = True
-    layer.get_renderable_items = MagicMock(return_value=[])
+    layer.workflow = MagicMock()
+    layer.workflow.steps = []
     return layer
 
 
 @pytest.fixture
-def mock_step():
+def mock_step() -> Step:
     """Create a mock step."""
     step = MagicMock(spec=Step)
     step.uid = "test_step_uid"
-    step.visible = True
     return step
 
 
 @pytest.fixture
-def mock_workpiece():
-    """Create a mock workpiece."""
-    workpiece = MagicMock(spec=WorkPiece)
-    workpiece.uid = "test_workpiece_uid"
-    workpiece.size = (10.0, 20.0)
-
-    # Mock the get_world_transform method
-    transform_matrix = MagicMock(spec=Matrix)
-    transform_matrix.to_4x4_numpy.return_value = np.eye(4)
-    workpiece.get_world_transform.return_value = transform_matrix
-
-    return workpiece
-
-
-@pytest.fixture
-def mock_artifact_handle():
-    """Create a mock artifact handle."""
-    return WorkPieceArtifactHandle(
-        shm_name="test_shm",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_coordinate_system_name="source",
-        source_dimensions=(10.0, 20.0),
-        time_estimate=12.34,
-        generation_size=(10.0, 20.0),
-    )
-
-
-@pytest.fixture
-def mock_hybrid_artifact():
-    """Create a mock hybrid artifact."""
-    texture_data = TextureData(
-        power_texture_data=np.zeros((10, 10)),
-        dimensions_mm=(10.0, 10.0),
-        position_mm=(0.0, 0.0),
-    )
-    return WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        texture_data=texture_data,
-    )
-
-
-@pytest.fixture
-def mock_vector_artifact():
-    """Create a mock vector artifact."""
-    return WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+def mock_step_artifact_handle() -> StepArtifactHandle:
+    """Create a mock StepArtifact handle."""
+    return StepArtifactHandle(
+        shm_name="test_step_shm",
+        handle_class_name="StepArtifactHandle",
+        artifact_type_name="StepArtifact",
+        is_scalable=False,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=None,
+        time_estimate=45.67,
     )
 
 
 class TestRenderItem:
-    """Test the RenderItem dataclass."""
+    """Test the RenderItem dataclass for the new Step-based structure."""
 
-    def test_render_item_creation(
-        self, mock_artifact_handle, mock_hybrid_artifact
-    ):
-        """Test creating a RenderItem with all parameters."""
+    def test_render_item_creation(self, mock_step_artifact_handle):
+        """Test creating a RenderItem for a StepArtifact."""
         world_transform = np.eye(4)
         item = RenderItem(
-            artifact_handle=mock_artifact_handle,
-            texture_data=mock_hybrid_artifact.texture_data,
+            artifact_handle=mock_step_artifact_handle,
+            texture_data=None,  # Texture is loaded later
             world_transform=world_transform,
-            workpiece_size=(10.0, 20.0),
+            workpiece_size=(0.0, 0.0),  # Not applicable
             step_uid="step_1",
-            workpiece_uid="workpiece_1",
+            workpiece_uid="",  # Not applicable
         )
 
-        assert item.artifact_handle == mock_artifact_handle
-        assert item.texture_data == mock_hybrid_artifact.texture_data
-        assert np.array_equal(item.world_transform, world_transform)
-        assert item.workpiece_size == (10.0, 20.0)
-        assert item.step_uid == "step_1"
-        assert item.workpiece_uid == "workpiece_1"
-
-    def test_render_item_without_texture(self, mock_artifact_handle):
-        """Test creating a RenderItem without texture data."""
-        world_transform = np.eye(4)
-        item = RenderItem(
-            artifact_handle=mock_artifact_handle,
-            texture_data=None,
-            world_transform=world_transform,
-            workpiece_size=(10.0, 20.0),
-            step_uid="step_1",
-            workpiece_uid="workpiece_1",
-        )
-
-        assert item.artifact_handle == mock_artifact_handle
+        assert item.artifact_handle == mock_step_artifact_handle
         assert item.texture_data is None
+        assert np.array_equal(item.world_transform, world_transform)
+        assert item.workpiece_size == (0.0, 0.0)
+        assert item.step_uid == "step_1"
+        assert item.workpiece_uid == ""
 
 
 class TestSceneDescription:
     """Test the SceneDescription dataclass."""
 
-    def test_scene_description_creation(self, mock_artifact_handle):
+    def test_scene_description_creation(self, mock_step_artifact_handle):
         """Test creating a SceneDescription with render items."""
         world_transform = np.eye(4)
         items = [
             RenderItem(
-                artifact_handle=mock_artifact_handle,
+                artifact_handle=mock_step_artifact_handle,
                 texture_data=None,
                 world_transform=world_transform,
-                workpiece_size=(10.0, 20.0),
+                workpiece_size=(0.0, 0.0),
                 step_uid="step_1",
-                workpiece_uid="workpiece_1",
-            ),
-            RenderItem(
-                artifact_handle=None,
-                texture_data=None,
-                world_transform=world_transform,
-                workpiece_size=(15.0, 25.0),
-                step_uid="step_2",
-                workpiece_uid="workpiece_2",
+                workpiece_uid="",
             ),
         ]
 
         scene = SceneDescription(render_items=items)
-        assert len(scene.render_items) == 2
+        assert len(scene.render_items) == 1
         assert scene.render_items[0].step_uid == "step_1"
-        assert scene.render_items[1].step_uid == "step_2"
 
     def test_scene_description_empty(self):
         """Test creating an empty SceneDescription."""
@@ -218,46 +143,36 @@ class TestGenerateSceneDescription:
     def test_empty_document(self, mock_doc, mock_ops_generator):
         """Test with an empty document."""
         mock_doc.layers = []
-
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-
         assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 0
 
-    def test_layer_without_renderable_items(
-        self, mock_doc, mock_ops_generator, mock_layer
+    def test_invisible_layer(
+        self, mock_doc, mock_ops_generator, mock_layer, mock_step
     ):
-        """Test with a layer that has no renderable items."""
-        mock_layer.get_renderable_items.return_value = []
+        """Test that items from an invisible layer are ignored."""
+        mock_layer.visible = False
+        mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
-
-        assert isinstance(scene, SceneDescription)
         assert len(scene.render_items) == 0
-        mock_layer.get_renderable_items.assert_called_once()
+        mock_ops_generator.get_step_artifact_handle.assert_not_called()
 
-    def test_layer_with_renderable_items(
+    def test_step_with_cached_artifact(
         self,
         mock_doc,
         mock_ops_generator,
         mock_layer,
         mock_step,
-        mock_workpiece,
-        mock_artifact_handle,
-        mock_vector_artifact,
+        mock_step_artifact_handle,
     ):
-        """Test with a layer that has renderable items."""
-        # Setup renderable items
-        renderable_items = [(mock_step, mock_workpiece)]
-        mock_layer.get_renderable_items.return_value = renderable_items
+        """Test that a visible step with an artifact creates a RenderItem."""
+        mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-
-        # Setup artifact cache and generator
-        mock_ops_generator.get_artifact_handle.return_value = (
-            mock_artifact_handle
+        mock_ops_generator.get_step_artifact_handle.return_value = (
+            mock_step_artifact_handle
         )
-        mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
 
@@ -265,177 +180,70 @@ class TestGenerateSceneDescription:
         assert len(scene.render_items) == 1
 
         item = scene.render_items[0]
-        assert item.artifact_handle == mock_artifact_handle
+        assert item.artifact_handle == mock_step_artifact_handle
         assert item.texture_data is None
         assert item.step_uid == mock_step.uid
-        assert item.workpiece_uid == mock_workpiece.uid
-        assert item.workpiece_size == mock_workpiece.size
+        assert item.workpiece_uid == ""
+        assert item.workpiece_size == (0.0, 0.0)
         assert np.array_equal(item.world_transform, np.eye(4))
 
-        mock_ops_generator.get_artifact_handle.assert_called_once_with(
-            mock_step.uid, mock_workpiece.uid
-        )
-        mock_ops_generator.get_artifact.assert_called_once_with(
-            mock_step, mock_workpiece
+        mock_ops_generator.get_step_artifact_handle.assert_called_once_with(
+            mock_step.uid
         )
 
-    def test_layer_with_hybrid_artifact(
-        self,
-        mock_doc,
-        mock_ops_generator,
-        mock_layer,
-        mock_step,
-        mock_workpiece,
-        mock_artifact_handle,
-        mock_hybrid_artifact,
+    def test_step_without_cached_artifact(
+        self, mock_doc, mock_ops_generator, mock_layer, mock_step
     ):
-        """Test with a layer that has a hybrid raster artifact."""
-        # Setup renderable items
-        renderable_items = [(mock_step, mock_workpiece)]
-        mock_layer.get_renderable_items.return_value = renderable_items
+        """Test that a step without a cached artifact is ignored."""
+        mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-
-        # Setup artifact cache and generator
-        mock_ops_generator.get_artifact_handle.return_value = (
-            mock_artifact_handle
-        )
-        mock_ops_generator.get_artifact.return_value = mock_hybrid_artifact
+        mock_ops_generator.get_step_artifact_handle.return_value = None
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
 
-        assert isinstance(scene, SceneDescription)
-        assert len(scene.render_items) == 1
+        assert len(scene.render_items) == 0
+        mock_ops_generator.get_step_artifact_handle.assert_called_once_with(
+            mock_step.uid
+        )
 
-        item = scene.render_items[0]
-        assert item.artifact_handle == mock_artifact_handle
-        assert item.texture_data == mock_hybrid_artifact.texture_data
-        assert item.step_uid == mock_step.uid
-        assert item.workpiece_uid == mock_workpiece.uid
-
-    def test_multiple_layers_with_items(
-        self,
-        mock_doc,
-        mock_ops_generator,
-        mock_step,
-        mock_workpiece,
-        mock_artifact_handle,
-        mock_vector_artifact,
+    def test_multiple_steps_and_layers(
+        self, mock_doc, mock_ops_generator, mock_step_artifact_handle
     ):
-        """Test with multiple layers containing renderable items."""
-        # Create two mock layers
-        layer1 = MagicMock(spec=Layer)
-        layer1.name = "layer1"
-        layer1.get_renderable_items.return_value = [
-            (mock_step, mock_workpiece)
-        ]
+        """Test with a complex document structure."""
+        # Layer 1: Visible, 2 steps, one with artifact, one without
+        step1a = MagicMock(spec=Step, uid="s1a")
+        step1b = MagicMock(spec=Step, uid="s1b")
+        layer1 = MagicMock(spec=Layer, visible=True)
+        layer1.workflow = MagicMock(steps=[step1a, step1b])
 
-        # Create second step and workpiece for layer2
-        step2 = MagicMock(spec=Step)
-        step2.uid = "step2_uid"
-        workpiece2 = MagicMock(spec=WorkPiece)
-        workpiece2.uid = "workpiece2_uid"
-        workpiece2.size = (30.0, 40.0)
-        transform_matrix = MagicMock(spec=Matrix)
-        transform_matrix.to_4x4_numpy.return_value = np.eye(4)
-        workpiece2.get_world_transform.return_value = transform_matrix
+        # Layer 2: Invisible, should be ignored
+        step2 = MagicMock(spec=Step, uid="s2")
+        layer2 = MagicMock(spec=Layer, visible=False)
+        layer2.workflow = MagicMock(steps=[step2])
 
-        layer2 = MagicMock(spec=Layer)
-        layer2.name = "layer2"
-        layer2.get_renderable_items.return_value = [(step2, workpiece2)]
+        # Layer 3: Visible, 1 step with artifact
+        step3 = MagicMock(spec=Step, uid="s3")
+        layer3 = MagicMock(spec=Layer, visible=True)
+        layer3.workflow = MagicMock(steps=[step3])
 
-        mock_doc.layers = [layer1, layer2]
+        mock_doc.layers = [layer1, layer2, layer3]
 
-        # Setup artifact cache and generator
-        mock_ops_generator.get_artifact_handle.return_value = (
-            mock_artifact_handle
+        # Mock cache returns
+        def mock_get_handle(step_uid):
+            if step_uid in ["s1a", "s3"]:
+                return mock_step_artifact_handle
+            return None
+
+        mock_ops_generator.get_step_artifact_handle.side_effect = (
+            mock_get_handle
         )
-        mock_ops_generator.get_artifact.return_value = mock_vector_artifact
 
         scene = generate_scene_description(mock_doc, mock_ops_generator)
 
-        assert isinstance(scene, SceneDescription)
+        # Should get 2 items: s1a and s3.
+        # s1b is skipped (no artifact), s2 is skipped (invisible layer).
         assert len(scene.render_items) == 2
+        uids = {item.step_uid for item in scene.render_items}
+        assert uids == {"s1a", "s3"}
 
-        # Check first item
-        item1 = scene.render_items[0]
-        assert item1.step_uid == mock_step.uid
-        assert item1.workpiece_uid == mock_workpiece.uid
-
-        # Check second item
-        item2 = scene.render_items[1]
-        assert item2.step_uid == step2.uid
-        assert item2.workpiece_uid == workpiece2.uid
-        assert item2.workpiece_size == (30.0, 40.0)
-
-    def test_missing_artifact_in_cache(
-        self,
-        mock_doc,
-        mock_ops_generator,
-        mock_layer,
-        mock_step,
-        mock_workpiece,
-        mock_vector_artifact,
-    ):
-        """Test when artifact is not in cache."""
-        # Setup renderable items
-        renderable_items = [(mock_step, mock_workpiece)]
-        mock_layer.get_renderable_items.return_value = renderable_items
-        mock_doc.layers = [mock_layer]
-
-        # Set mocks to return None as if cache is empty
-        mock_ops_generator.get_artifact_handle.return_value = None
-        mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
-
-        assert isinstance(scene, SceneDescription)
-        assert len(scene.render_items) == 1
-
-        item = scene.render_items[0]
-        assert item.artifact_handle is None  # Should be None when not in cache
-        assert item.texture_data is None  # Not a hybrid artifact
-        assert item.step_uid == mock_step.uid
-        assert item.workpiece_uid == mock_workpiece.uid
-
-    def test_world_transform_conversion(
-        self,
-        mock_doc,
-        mock_ops_generator,
-        mock_layer,
-        mock_step,
-        mock_workpiece,
-        mock_artifact_handle,
-        mock_vector_artifact,
-    ):
-        """Test that world transform is properly converted to numpy array."""
-        # Setup renderable items
-        renderable_items = [(mock_step, mock_workpiece)]
-        mock_layer.get_renderable_items.return_value = renderable_items
-        mock_doc.layers = [mock_layer]
-
-        # Setup artifact cache and generator
-        mock_ops_generator.get_artifact_handle.return_value = (
-            mock_artifact_handle
-        )
-        mock_ops_generator.get_artifact.return_value = mock_vector_artifact
-
-        # Create a custom transformation matrix
-        custom_transform = np.array(
-            [
-                [1.0, 0.0, 0.0, 10.0],
-                [0.0, 1.0, 0.0, 20.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        )
-        func = mock_workpiece.get_world_transform.return_value.to_4x4_numpy
-        func.return_value = custom_transform
-
-        scene = generate_scene_description(mock_doc, mock_ops_generator)
-
-        assert isinstance(scene, SceneDescription)
-        assert len(scene.render_items) == 1
-
-        item = scene.render_items[0]
-        assert np.array_equal(item.world_transform, custom_transform)
-        func.assert_called_once()
+        assert mock_ops_generator.get_step_artifact_handle.call_count == 3

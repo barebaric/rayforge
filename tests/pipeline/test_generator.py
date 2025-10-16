@@ -19,6 +19,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.steprunner import run_step_in_subprocess
+from rayforge.pipeline.step_assembler import run_step_assembly_in_subprocess
 from rayforge.pipeline.timerunner import run_time_estimation_in_subprocess
 
 
@@ -232,8 +233,9 @@ class TestOpsGenerator:
 
         try:
             initial_task.when_done(mock_finished_task)
-            # This completion will trigger a time estimation task. We reset
-            # the mock to ignore this and focus on the next action.
+            # This completion will trigger a time estimation task & step
+            # assembly. We reset the mock to ignore this and focus on the
+            # next action.
             mock_task_mgr.run_process.reset_mock()
 
             # Act
@@ -273,12 +275,13 @@ class TestOpsGenerator:
 
         try:
             initial_task.when_done(mock_finished_task)
-            # The completion of the ops task triggers a time estimation task.
-            assert mock_task_mgr.run_process.call_count == 2
-            assert (
-                mock_task_mgr.created_tasks[1].target
-                is run_time_estimation_in_subprocess
-            )
+            # The completion of the ops task triggers a step assembly task and
+            # a time estimation task.
+            assert mock_task_mgr.run_process.call_count == 3
+            targets = [t.target for t in mock_task_mgr.created_tasks]
+            assert run_step_assembly_in_subprocess in targets
+            assert run_time_estimation_in_subprocess in targets
+
             mock_task_mgr.run_process.reset_mock()
 
             # Act
@@ -318,12 +321,12 @@ class TestOpsGenerator:
         mock_finished_task.result.return_value = (handle.to_dict(), 1)
         try:
             initial_task.when_done(mock_finished_task)
-            # The completion of the ops task triggers a time estimation task.
-            assert mock_task_mgr.run_process.call_count == 2
-            assert (
-                mock_task_mgr.created_tasks[1].target
-                is run_time_estimation_in_subprocess
-            )
+            # The completion of the ops task triggers a step assembly task and
+            # a time estimation task.
+            assert mock_task_mgr.run_process.call_count == 3
+            targets = [t.target for t in mock_task_mgr.created_tasks]
+            assert run_step_assembly_in_subprocess in targets
+            assert run_time_estimation_in_subprocess in targets
             mock_task_mgr.run_process.reset_mock()
 
             # Act

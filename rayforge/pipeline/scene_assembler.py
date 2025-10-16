@@ -7,19 +7,14 @@ the UI.
 from __future__ import annotations
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, TYPE_CHECKING, Dict
+from typing import List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
-
-from ..core.layer import Layer
 from .artifact.base import TextureData
-from .artifact.workpiece import WorkPieceArtifact
 from .artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
     from .generator import OpsGenerator
     from ..core.doc import Doc
-    from ..core.workpiece import WorkPiece
-    from ..core.step import Step
 
 
 logger = logging.getLogger(__name__)
@@ -48,49 +43,38 @@ def generate_scene_description(
     doc: "Doc", ops_generator: "OpsGenerator"
 ) -> SceneDescription:
     """
-    Assembles a lightweight description of the scene for rendering.
+    Assembles a lightweight description of the scene for 3D rendering.
 
-    This function iterates through all visible items, calculates their final
-    world transformation matrix, and pairs it with a handle to the cached,
-    untransformed artifact data. This avoids processing or concatenating large
-    Ops objects on the main thread.
+    This function iterates through all visible steps, and for each one, it
+    retrieves a handle to its cached `StepArtifact`. This artifact contains
+    the final, aggregated, and transformed geometry for the entire step,
+    ready for rendering.
 
     Args:
         doc: The document containing all layers, workflows, and workpieces.
         ops_generator: The generator instance holding the artifact cache.
 
     Returns:
-        A SceneDescription object.
+        A SceneDescription object containing render items for each step.
     """
     render_items: List[RenderItem] = []
+    visible_steps = set()
 
-    # This logic is similar to the start of the old `generate_job_ops`, but
-    # it only gathers instructions, it does not process data.
-    work_items_by_layer: Dict[Layer, List[tuple[Step, WorkPiece]]] = {}
     for layer in doc.layers:
-        renderable_items = layer.get_renderable_items()
-        if renderable_items:
-            work_items_by_layer[layer] = renderable_items
+        if layer.visible and layer.workflow:
+            for step in layer.workflow.steps:
+                visible_steps.add(step)
 
-    for layer, items in work_items_by_layer.items():
-        for step, workpiece in items:
-            # Fetch both the handle and the full artifact. The handle is for
-            # the vector part, while the full artifact is needed if it's a
-            # raster type. `get_artifact` is a cached lookup, so it's fast.
-            handle = ops_generator.get_artifact_handle(step.uid, workpiece.uid)
-            artifact = ops_generator.get_artifact(step, workpiece)
-
-            texture_data = None
-            if isinstance(artifact, WorkPieceArtifact):
-                texture_data = artifact.texture_data
-
+    for step in visible_steps:
+        handle = ops_generator.get_step_artifact_handle(step.uid)
+        if handle:
             item = RenderItem(
                 artifact_handle=handle,
-                texture_data=texture_data,
-                world_transform=workpiece.get_world_transform().to_4x4_numpy(),
-                workpiece_size=workpiece.size,
+                texture_data=None,  # Loaded from artifact in the render thread
+                world_transform=np.identity(4, dtype=np.float32),
+                workpiece_size=(0.0, 0.0),  # Not applicable at step level
                 step_uid=step.uid,
-                workpiece_uid=workpiece.uid,
+                workpiece_uid="",  # Not applicable at step level
             )
             render_items.append(item)
 
