@@ -51,7 +51,7 @@ quote-style = "double"
 [tool.pyright]
 stubPath = "typings"
 reportMissingModuleSource = false
-include = ["rayforge", "tests/pipeline/**/test_*.py"]
+include = ["rayforge", "tests/**/test_*.py"]
 
 [tool.mypy]
 mypy_path = "stubs"
