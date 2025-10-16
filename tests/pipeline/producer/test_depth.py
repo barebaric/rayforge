@@ -10,7 +10,8 @@ from rayforge.core.ops import (
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import Laser
-from rayforge.pipeline import CoordinateSystem, Artifact
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.producer.depth import DepthEngraver, DepthMode
 
@@ -119,7 +120,7 @@ def test_run_returns_hybrid_artifact_with_correct_metadata(
         laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
 
-    assert isinstance(artifact, Artifact)
+    assert isinstance(artifact, WorkPieceArtifact)
     assert artifact.is_scalable is False
     assert artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
     assert artifact.source_dimensions == (10, 10)
@@ -198,7 +199,7 @@ def test_power_modulation_generates_correct_ops_and_texture(
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
     # Add type check to satisfy Pylance
-    assert isinstance(artifact, Artifact)
+    assert isinstance(artifact, WorkPieceArtifact)
 
     # Expected values calculation:
     # final_byte = (min_frac + gray_factor * (max_frac-min_frac)) * 255
@@ -255,7 +256,7 @@ def test_multi_pass_generates_correct_ops_and_texture(
     )
 
     # Add type check to satisfy Pylance
-    assert isinstance(artifact, Artifact)
+    assert isinstance(artifact, WorkPieceArtifact)
 
     # -- Assert Ops Data (Z-stepping) --
     lines_by_z = {}

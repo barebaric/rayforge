@@ -1,8 +1,9 @@
-from .artifact import Artifact, ArtifactHandle
+from .artifact import BaseArtifactHandle, JobArtifact, WorkPieceArtifact
 from .coord import CoordinateSystem
 
 __all__ = [
-    "Artifact",
-    "ArtifactHandle",
+    "BaseArtifactHandle",
     "CoordinateSystem",
+    "JobArtifact",
+    "WorkPieceArtifact",
 ]

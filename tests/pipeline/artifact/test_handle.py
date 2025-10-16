@@ -1,5 +1,8 @@
 import unittest
-from rayforge.pipeline.artifact import ArtifactHandle
+from rayforge.pipeline.artifact import (
+    WorkPieceArtifactHandle,
+    create_handle_from_dict,
+)
 
 
 class TestArtifactHandle(unittest.TestCase):
@@ -7,9 +10,10 @@ class TestArtifactHandle(unittest.TestCase):
 
     def test_serialization_round_trip(self):
         """Tests that an ArtifactHandle can be converted to a dict and back."""
-        handle = ArtifactHandle(
+        handle = WorkPieceArtifactHandle(
             shm_name="test_shm_123",
-            artifact_type="hybrid_raster",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
             is_scalable=False,
             source_coordinate_system_name="PIXEL_SPACE",
             source_dimensions=(1024, 768),
@@ -28,9 +32,10 @@ class TestArtifactHandle(unittest.TestCase):
         )
 
         handle_dict = handle.to_dict()
-        reconstructed_handle = ArtifactHandle.from_dict(handle_dict)
+        reconstructed_handle = create_handle_from_dict(handle_dict)
 
         self.assertEqual(handle, reconstructed_handle)
+        self.assertIsInstance(reconstructed_handle, WorkPieceArtifactHandle)
         self.assertEqual(
             reconstructed_handle.array_metadata["power_texture"]["shape"],
             (768, 1024),

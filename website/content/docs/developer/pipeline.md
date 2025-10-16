@@ -10,8 +10,8 @@ graph TD
         Input("Input<br/>Document")
     end
 
-    subgraph "2. Generator Pipeline"
-        subgraph "2a. StepRunner"
+    subgraph "2. Pipeline"
+        subgraph "2a. WorkpieceGenerator"
             direction LR
             A(Single WorkPiece + Step Config);
             A --> B(Modifiers<br/><i>e.g., ToGrayscale</i>);
@@ -19,43 +19,46 @@ graph TD
             C -- "Creates Artifact" --> D("Toolpaths<br/><i>Ops + Metadata</i>");
             D --> E(Transformers<br/><i>e.g., Tabs,<br/>Smooth</i>);
             E -- "Modifies Ops in-place" --> F(Vertex Encoder);
-            F -- "Creates render data" --> G("Final Cached Artifact<br/><i>e.g. Ops, Vertices, Textures</i>");
+            F -- "Creates render data" --> G("WorkPieceArtifact<br/><i>Local Ops, Vertices, Textures</i>");
         end
 
-        subgraph "2c. Scene Assembler"
+        subgraph "2b. StepGenerator"
             direction LR
-            H("Multiple cached Artifacts<br/><i>(from StepRunner)</i>");
-            H --> I(SceneDescription<br/><i>Lightweight rendering instructions</i>);
-            I --> J("RenderItems<br/><i>Transform + Artifact Handle</i>");
+            H("Multiple WorkPieceArtifacts");
+            H --> I(Assemble & Transform<br/><i>Applies position, rotation</i>);
+            I --> J(Per-Step Transformers<br/><i>e.g., Multi-Pass, Optimize</i>);
+            J -- "Creates render bundle" --> K("StepArtifact<br/><i>World-space Vertices & Textures</i>")
         end
 
-        subgraph "2b. JobRunner (Assembles the final job)"
+        subgraph "2c. JobGenerator"
             direction LR
-            K("Multiple cached Artifacts<br/><i>(from StepRunner)</i>");
-            K --> L(Assemble & Transform<br/><i>Applies position, scale, rotation</i>);
-            L --> M(Per-Step Transformers<br/><i>e.g., Multi-Pass, Optimize</i>);
-            M --> N(G-code Encoder);
-            N --> O(<b>Final G-code</b>);
+            L("Multiple StepArtifacts");
+            L --> M(Assemble Ops & Encode);
+            M --> N("JobArtifact<br/><i>Final Ops, Vertices, G-code, Time</i>");
         end
     end
 
     subgraph "3. Consumers"
-        Vis("Canvas Visualization (UI)")
+        Vis2D("2D Canvas (UI)")
+        Vis3D("3D Canvas (UI)")
+        Simulator("Simulator (UI)")
         File("G-code File (for Machine)")
     end
 
     Input --> A;
     G --> H;
-    G -.-> K;
-    J --> Vis;
-    O --> File;
+    G --> Vis2D;
+    K --> L;
+    K --> Vis3D;
+    N --> Simulator;
+    N --> File;
 
     classDef io fill:#f9f,stroke:#333,stroke-width:2px;
     classDef output fill:#bbf,stroke:#333,stroke-width:2px,max-width:500px;
     classDef highlight fill:#dfd,stroke:#333,stroke-width:2px;
-    class Input,Vis,File io;
-    class A,D,G,H,J,K,O output;
-    class I highlight
+    class Input,Vis2D,Vis3D,Simulator,File io;
+    class A,D,G,H,K,L,N output;
+    class I,J,M highlight
 ```
 
 # **Detailed Breakdown of the Sequence**
@@ -71,122 +74,84 @@ complete representation of the user's project, containing:
   (e.g., a "Contour" cut or a "Raster" engrave), including settings like
   power and speed.
 
-## **2. The Generator**
+## **2. The Pipeline**
 
-The `Generator` is the core processing engine that runs in the background.
-It takes the `Doc Model` as its input and orchestrates two distinct but
-related processes: the `StepRunner` and the `JobRunner`.
+The `Pipeline` is the core processing engine that runs in the background.
+It takes the `Doc Model` as its input and orchestrates a series of distinct
+`PipelineStage`s.
 
-### **2a. StepRunner: Per-Item Processing**
+### **2a. WorkpieceGeneratorStage: Per-Item Processing**
 
-The `StepRunner` processes each `(WorkPiece, Step)` combination individually
-to create a cached, reusable result. This allows for fast updates when only
-a single item changes. Its internal sequence is:
+This stage processes each `(WorkPiece, Step)` combination individually to
+create a cached `WorkPieceArtifact`. This artifact contains toolpaths in the
+**local coordinate system** of the workpiece. Its internal sequence is:
 
 1.  **Modifiers:** (Optional) If the input is a raster image, modifiers
     perform initial image conditioning, such as converting it to grayscale.
-2.  **Producer:** This is the primary generation step. A `Producer` (like
-    `EdgeTracer` or `Rasterizer`) analyzes the input and creates an
-    `Artifact`. This initial artifact contains the raw toolpaths (`Ops`)
-    and metadata describing the result (e.g., if it's scalable).
+2.  **Producer:** A `Producer` (like `EdgeTracer` or `Rasterizer`) analyzes
+    the input and creates the raw toolpaths (`Ops`) and metadata.
 3.  **Per-Workpiece Transformers:** The newly generated `Ops` are passed
-    through transformers that are specific to that individual workpiece,
-    such as adding holding `Tabs` or `Smooth`ing the geometry.
-4.  **Vertex Encoder:** Finally, the processed `Ops` are encoded into
-    GPU-friendly formats for display. This generates `Vertex Data` (for
-    lines and paths) and `Texture Data` (for raster fills).
+    through transformers specific to that workpiece, such as adding
+    holding `Tabs` or `Smooth`ing the geometry.
+4.  **Vertex Encoder:** The processed `Ops` are encoded into GPU-friendly
+    `Vertex Data` (for lines) and `Texture Data` (for raster fills).
 
-The final output is a **Cached Artifact** stored in shared memory. This
-artifact contains everything needed for both visualization and final
-job assembly. The artifact system uses NumPy arrays for efficient
-data transfer between processes and includes vertex data for GPU rendering
-and command data for G-code generation.
+The output is a **WorkPieceArtifact** stored in shared memory. This contains
+un-positioned, un-rotated data ready for the next stage and for direct
+consumption by the 2D canvas.
 
-### **2c. Scene Assembler: Efficient Rendering Instructions**
+### **2b. StepGeneratorStage: Step-Level Assembly**
 
-The `Scene Assembler` creates a lightweight description of the scene for
-rendering, avoiding the creation of monolithic Ops objects for the UI.
-This component bridges the gap between cached artifacts and efficient
-UI rendering.
+This stage is responsible for assembling a final **render bundle** for an
+entire step. It consumes the `WorkPieceArtifacts` for all workpieces that
+are part of a given step.
 
-**Key Components:**
+1.  **Assemble & Transform:** The stage retrieves all required
+    `WorkPieceArtifacts` from the cache. It then applies the final world
+    transformations to each one—placing them at their correct X/Y position
+    and applying rotation. All these individual toolpaths and textures are
+    combined.
+2.  **Per-Step Transformers:** The unified `Ops` are then processed
+    by transformers that operate on the step as a whole, such as path
+    `Optimize`ation or `Multi-Pass` operations.
 
-1. **RenderItem:** A lightweight instruction for rendering one artifact,
-   containing:
-   - `artifact_handle`: Reference to cached artifact data
-   - `texture_data`: Texture data for raster-type artifacts
-   - `world_transform`: 4x4 numpy transformation matrix
-   - `workpiece_size`: The final rendered dimensions
-   - `step_uid`: Unique identifier for the processing step
-   - `workpiece_uid`: Unique identifier for the workpiece
+The output is a **StepArtifact**. This is a self-contained bundle for the
+3D canvas, containing all vertex and texture data for the entire step, now in
+final **world-space** coordinates.
 
-2. **SceneDescription:** A complete, lightweight description of a scene
-   for rendering, containing a list of all RenderItem instances.
+### **2c. JobGeneratorStage: Final Job Assembly**
 
-**Process Flow:**
+This stage is invoked when the user wants to generate the final G-code. It
+consumes the `StepArtifacts` created by the `StepGeneratorStage`.
 
-1. **Scene Analysis:** The SceneAssembler iterates through all visible
-   items in the document, identifying renderable (Step, WorkPiece) pairs.
-2. **Artifact Retrieval:** For each pair, it fetches both the handle and
-   the full artifact from the OpsGenerator's cache.
-3. **Transform Calculation:** It calculates the final world transformation
-   matrix for each workpiece using `workpiece.get_world_transform()`.
-4. **Lightweight Assembly:** It creates RenderItem instances containing
-   only the transformation data and references to cached artifacts,
-   avoiding heavy data processing on the main thread.
+1.  **Assemble Ops & Encode:** The `JobGeneratorStage` retrieves all required
+    `StepArtifacts` from the cache and combines their `Ops` into a single,
+    large sequence. It then encodes this sequence into G-code and generates
+    a final set of vertices for simulation, along with a high-fidelity
+    time estimate for the entire job.
 
-**Benefits:**
-- **Performance:** Only lightweight transformation data is processed on
-  the main thread, keeping the UI responsive.
-- **Memory Efficiency:** Avoids creating large monolithic Ops objects
-  for visualization.
-- **Scalability:** Supports efficient rendering of complex scenes with
-  many elements.
-- **Caching:** Leverages the existing artifact cache system for maximum
-  efficiency.
-
-### **2b. JobRunner: Final Assembly**
-
-The `JobRunner` is invoked when the user wants to generate the final G-code
-for the entire project. It consumes the artifacts created by the
-`StepRunner`.
-
-1.  **Assemble & Transform:** The `JobRunner` retrieves all the required
-    `Artifacts` from the cache. It then applies the final world
-    transformations to each one—placing them at their correct X/Y position,
-    applying rotation, and scaling them to their final size. All these
-    individual toolpaths are combined into a single, large `Ops` object.
-2.  **Per-Step Transformers:** This unified `Ops` object is then processed
-    by transformers that operate on the job as a whole. This is where final
-    path `Optimize`ation (to reduce travel moves) and `Multi-Pass`
-    operations are applied.
-3.  **G-code Encoder:** The final, optimized `Ops` object is fed into the
-    `G-code Encoder`, which translates the machine-agnostic commands
-    into the specific G-code dialect required by the user's machine.
-    The encoder handles machine-specific formatting, coordinate systems,
-    and command syntax.
-
-The final output is the complete **G-code** text.
+The final output is a **JobArtifact**, which contains the complete G-code,
+final vertex data, the OpMap, and the total time estimate.
 
 ## **3. Consumers**
 
-The data generated by the pipeline is consumed by two primary clients:
+The data generated by the pipeline is consumed by several clients, each
+using the artifact best suited for its needs:
 
-1.  **Canvas Visualization (UI):** The UI uses the **SceneDescription** from
-    the Scene Assembler for efficient rendering. Each RenderItem contains
-    transformation data and references to cached artifacts, allowing the
-    rendering system to:
-    - Apply world transformations on the GPU
-    - Use pre-computed vertex and texture data from artifacts
-    - Maintain responsiveness by avoiding heavy data processing on the main thread
-    - Support progressive updates as individual artifacts become available
-    
-    The rendering system uses OpenGL buffers populated directly from the
-    NumPy arrays in the artifacts, combined with the transformation matrices
-    from the RenderItems. This separation of concerns allows the UI to remain
-    fast and responsive even with complex scenes.
+1.  **2D Canvas (UI):** Uses **WorkPieceArtifacts** directly. This allows it
+    to render the local geometry of each workpiece without needing to wait
+    for step-level assembly, providing fast feedback during design.
 
-2.  **G-code File (for Machine):** The final **G-code** from the `JobRunner`
+2.  **3D Canvas (UI):** Uses **StepArtifacts**. These are perfect "render
+    bundles" containing all the geometry for an entire step, already in
+    world-space coordinates. This simplifies rendering and ensures an
+    accurate preview of the final assembled output.
+
+3.  **Simulator (UI):** Uses the **JobArtifact**. The final vertex data
+    within this artifact represents the exact path the machine will take,
+    allowing for an accurate, real-time simulation of the entire job from
+    start to finish. It also uses the final time estimate.
+
+4.  **G-code File (for Machine):** The **G-code** from the `JobArtifact`
     is saved to a file, which can then be sent to the laser cutter or CNC
-    machine for manufacturing. The G-code includes proper header/footer,
-    coordinate setup, and machine-specific optimizations.
+    machine for manufacturing.

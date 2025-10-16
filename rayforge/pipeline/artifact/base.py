@@ -1,11 +1,11 @@
 from __future__ import annotations
-import json
 import numpy as np
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, Type
 from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
-from ..encoder.gcode import GcodeOpMap
+from .handle import BaseArtifactHandle
 
 
 @dataclass
@@ -77,12 +77,14 @@ class TextureData:
         )
 
 
-class Artifact:
+class BaseArtifact(ABC):
     """
-    A self-describing output of an OpsProducer.
-    This class uses composition to hold different types of data (vector,
-    vertex, texture) instead of a complex inheritance hierarchy.
+    Abstract base class for all artifact types in the pipeline.
+    Contains common fields shared by all artifact types and manages a registry
+    of all its subclasses for dynamic instantiation.
     """
+
+    _registry: Dict[str, Type[BaseArtifact]] = {}
 
     def __init__(
         self,
@@ -90,126 +92,76 @@ class Artifact:
         is_scalable: bool,
         source_coordinate_system: CoordinateSystem,
         source_dimensions: Optional[Tuple[float, float]] = None,
-        generation_size: Optional[Tuple[float, float]] = None,
-        vertex_data: Optional[VertexData] = None,
-        texture_data: Optional[TextureData] = None,
-        gcode_bytes: Optional[np.ndarray] = None,
-        op_map_bytes: Optional[np.ndarray] = None,
         time_estimate: Optional[float] = None,
     ):
         self.ops = ops
         self.is_scalable = is_scalable
         self.source_coordinate_system = source_coordinate_system
         self.source_dimensions = source_dimensions
-        self.generation_size = generation_size
-        self.vertex_data = vertex_data
-        self.texture_data = texture_data
-        self.gcode_bytes = gcode_bytes
-        self.op_map_bytes = op_map_bytes
         self.time_estimate = time_estimate
 
-        # Caching properties for deserialized data
-        self._gcode_str: Optional[str] = None
-        self._op_map_obj: Optional[GcodeOpMap] = None
+    def __init_subclass__(cls, **kwargs):
+        """
+        This special method is called whenever a class inherits from
+        BaseArtifact. It automatically registers the new artifact type.
+        """
+        super().__init_subclass__(**kwargs)
+        cls._registry[cls.__name__] = cls
+
+    @classmethod
+    def get_registered_class(cls, name: str) -> Type[BaseArtifact]:
+        """Looks up an artifact class in the registry by its name."""
+        try:
+            return cls._registry[name]
+        except KeyError:
+            raise TypeError(
+                f"Unknown artifact type '{name}'. Was its module imported?"
+            )
 
     @property
     def artifact_type(self) -> str:
-        """Determines the artifact type based on its data components."""
-        if self.gcode_bytes is not None or self.op_map_bytes is not None:
-            return "final_job"
-        if self.texture_data:
-            return "hybrid_raster"
-        if self.vertex_data:
-            return "vertex"
-        return "vector"
-
-    @property
-    def gcode(self) -> Optional[str]:
-        """
-        Lazily decodes and caches the G-code string from its byte array.
-        """
-        if self._gcode_str is None and self.gcode_bytes is not None:
-            self._gcode_str = self.gcode_bytes.tobytes().decode("utf-8")
-        return self._gcode_str
-
-    @property
-    def op_map(self) -> Optional[GcodeOpMap]:
-        """
-        Lazily decodes and caches the GcodeOpMap from its byte array.
-        """
-        if self._op_map_obj is None and self.op_map_bytes is not None:
-            map_str = self.op_map_bytes.tobytes().decode("utf-8")
-            map_dict = json.loads(map_str)
-            self._op_map_obj = GcodeOpMap(
-                op_to_gcode={
-                    int(k): v for k, v in map_dict["op_to_gcode"].items()
-                },
-                gcode_to_op={
-                    int(k): v for k, v in map_dict["gcode_to_op"].items()
-                },
-            )
-        return self._op_map_obj
+        """Returns the type of the artifact."""
+        return self.__class__.__name__
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes the artifact properties to a dictionary."""
-        data = {
-            "artifact_type": self.artifact_type,
+        """Converts the artifact to a dictionary for serialization."""
+        return {
             "ops": self.ops.to_dict(),
             "is_scalable": self.is_scalable,
             "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
-            "generation_size": self.generation_size,
             "time_estimate": self.time_estimate,
         }
-        if self.vertex_data:
-            data["vertex_data"] = self.vertex_data.to_dict()
-        if self.texture_data:
-            data["texture_data"] = self.texture_data.to_dict()
-        if self.gcode_bytes is not None:
-            data["gcode_bytes"] = self.gcode_bytes.tolist()
-        if self.op_map_bytes is not None:
-            data["op_map_bytes"] = self.op_map_bytes.tolist()
-        return data
+
+    @abstractmethod
+    def create_handle(
+        self,
+        shm_name: str,
+        array_metadata: Dict[str, Dict[str, Any]],
+    ) -> BaseArtifactHandle:
+        """
+        Creates the appropriate, typed handle for this artifact.
+        Each subclass must implement this to return its specific handle type.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
+        """
+        Gets a dictionary of all NumPy arrays that need to be stored in
+        shared memory for this artifact.
+        """
+        raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Artifact":
-        """Deserializes a dictionary into an Artifact instance."""
-        vertex_data = (
-            VertexData.from_dict(data["vertex_data"])
-            if "vertex_data" in data and data["vertex_data"]
-            else None
-        )
-        texture_data = (
-            TextureData.from_dict(data["texture_data"])
-            if "texture_data" in data and data["texture_data"]
-            else None
-        )
-        gcode_bytes = (
-            np.array(data["gcode_bytes"], dtype=np.uint8)
-            if "gcode_bytes" in data and data["gcode_bytes"] is not None
-            else None
-        )
-        op_map_bytes = (
-            np.array(data["op_map_bytes"], dtype=np.uint8)
-            if "op_map_bytes" in data and data["op_map_bytes"] is not None
-            else None
-        )
-
-        return cls(
-            ops=Ops.from_dict(data["ops"]),
-            is_scalable=data["is_scalable"],
-            source_coordinate_system=CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
-            source_dimensions=tuple(data["source_dimensions"])
-            if data.get("source_dimensions")
-            else None,
-            generation_size=tuple(data["generation_size"])
-            if data.get("generation_size")
-            else None,
-            vertex_data=vertex_data,
-            texture_data=texture_data,
-            gcode_bytes=gcode_bytes,
-            op_map_bytes=op_map_bytes,
-            time_estimate=data.get("time_estimate"),
-        )
+    @abstractmethod
+    def from_storage(
+        cls: Type[BaseArtifact],
+        handle: BaseArtifactHandle,
+        arrays: Dict[str, np.ndarray],
+    ) -> BaseArtifact:
+        """
+        Reconstructs an artifact instance from its handle and a dictionary of
+        NumPy array views from shared memory.
+        """
+        raise NotImplementedError

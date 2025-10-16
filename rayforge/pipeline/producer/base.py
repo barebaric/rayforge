@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from enum import Enum, auto
-from ..artifact.base import Artifact
+from ..artifact import WorkPieceArtifact
 
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class OpsProducer(ABC):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         pass
 
     def is_vector_producer(self) -> bool:

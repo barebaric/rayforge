@@ -1,9 +1,12 @@
 # AGENTS.md
 
-## Setup commands
+## General commands
 
-- No setup needed.
-- Run tests: `pixi run test`. Do not run "cd", assume you are in the correct path by default.
+- No setup needed. Do not run "cd", assume you are in the correct path by default.
+- Use these commands:
+   o `pixi run format`. Apply automatic code formatting.
+   o `pixi run test`.
+   o `pixi run lint`. Performs linting and static code analysis.
 
 ## Code style
 
@@ -11,10 +14,10 @@
 - Keep cyclomatic complexity low. Write small, testable functions
 - Never mark your changes with inline comments. Code is for clean, final implementation only
 - Retain exiting formatting, docstrings, and comments
-- Do not put file start markers into code blocks
 
 ## Other rules
 
+- File start markers do not belong INTO code blocks. Putting them OUTSIDE is ok.
 - Do not make changes unrelated to the current task
 - Never remove logging or debugging unless asked by the user
 - Do not repeat files unless they have changes

@@ -8,6 +8,7 @@ from .item import DocItem
 from .matrix import Matrix
 
 if TYPE_CHECKING:
+    from .layer import Layer
     from .workflow import Workflow
     from ..machine.models.machine import Machine
     from ..machine.models.laser import Laser
@@ -133,6 +134,19 @@ class Step(DocItem, ABC):
             "kerf_mm": self.kerf_mm,
             "generated_workpiece_uid": self.generated_workpiece_uid,
         }
+
+    @property
+    def layer(self) -> Optional["Layer"]:
+        """Returns the parent layer, if it exists."""
+        # Local import to prevent circular dependency at module load time
+        from .layer import Layer
+
+        workflow = self.workflow
+        if not workflow:
+            return None
+
+        layer = workflow.parent
+        return layer if isinstance(layer, Layer) else None
 
     @property
     def workflow(self) -> Optional["Workflow"]:

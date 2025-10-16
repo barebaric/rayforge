@@ -2,7 +2,9 @@ import unittest
 import json
 import numpy as np
 from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact.base import Artifact, VertexData, TextureData
+from rayforge.pipeline.artifact import WorkPieceArtifact
+from rayforge.pipeline.artifact import JobArtifact
+from rayforge.pipeline.artifact import VertexData, TextureData
 from rayforge.pipeline import CoordinateSystem
 
 
@@ -10,52 +12,31 @@ class TestArtifact(unittest.TestCase):
     """Test suite for the composable Artifact class."""
 
     def test_artifact_type_property(self):
-        """Tests that the artifact_type property is correctly determined."""
-        # Vector type (only ops)
-        vector_artifact = Artifact(
+        """Tests that specific artifact types are correctly identified."""
+        # Test WorkPieceArtifact
+        workpiece_artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
-        self.assertEqual(vector_artifact.artifact_type, "vector")
+        self.assertIsInstance(workpiece_artifact, WorkPieceArtifact)
+        self.assertEqual(workpiece_artifact.artifact_type, "WorkPieceArtifact")
 
-        # Vertex type (ops + vertex_data)
-        vertex_artifact = Artifact(
-            ops=Ops(),
-            is_scalable=True,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            vertex_data=VertexData(),
-        )
-        self.assertEqual(vertex_artifact.artifact_type, "vertex")
-
-        # Hybrid type (ops + vertex_data + texture_data)
-        hybrid_artifact = Artifact(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-            vertex_data=VertexData(),
-            texture_data=TextureData(
-                power_texture_data=np.empty((1, 1)),
-                dimensions_mm=(1, 1),
-                position_mm=(0, 0),
-            ),
-        )
-        self.assertEqual(hybrid_artifact.artifact_type, "hybrid_raster")
-
-        # Final job type (has gcode_bytes)
-        final_job_artifact = Artifact(
+        # Test JobArtifact
+        job_artifact = JobArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
         )
-        self.assertEqual(final_job_artifact.artifact_type, "final_job")
+        self.assertIsInstance(job_artifact, JobArtifact)
+        self.assertEqual(job_artifact.artifact_type, "JobArtifact")
 
     def test_vector_serialization_round_trip(self):
         """Tests serialization for a vector-like artifact."""
         ops = Ops()
         ops.move_to(1, 2, 3)
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
@@ -64,9 +45,9 @@ class TestArtifact(unittest.TestCase):
         )
 
         artifact_dict = artifact.to_dict()
-        reconstructed = Artifact.from_dict(artifact_dict)
+        reconstructed = WorkPieceArtifact.from_dict(artifact_dict)
 
-        self.assertEqual(reconstructed.artifact_type, "vector")
+        self.assertEqual(reconstructed.artifact_type, "WorkPieceArtifact")
         self.assertDictEqual(reconstructed.ops.to_dict(), ops.to_dict())
         self.assertFalse(reconstructed.is_scalable)
         self.assertEqual(
@@ -77,8 +58,6 @@ class TestArtifact(unittest.TestCase):
         self.assertEqual(reconstructed.generation_size, (50, 100))
         self.assertIsNone(reconstructed.vertex_data)
         self.assertIsNone(reconstructed.texture_data)
-        self.assertIsNone(reconstructed.gcode_bytes)
-        self.assertIsNone(reconstructed.op_map_bytes)
         self.assertIsNone(reconstructed.time_estimate)
 
     def test_vertex_serialization_round_trip(self):
@@ -88,7 +67,7 @@ class TestArtifact(unittest.TestCase):
             powered_colors=np.array([[0, 0, 0, 1]], dtype=np.float32),
             travel_vertices=np.array([[4, 5, 6]], dtype=np.float32),
         )
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -96,9 +75,8 @@ class TestArtifact(unittest.TestCase):
         )
 
         artifact_dict = artifact.to_dict()
-        reconstructed = Artifact.from_dict(artifact_dict)
+        reconstructed = WorkPieceArtifact.from_dict(artifact_dict)
 
-        self.assertEqual(reconstructed.artifact_type, "vertex")
         self.assertIsNotNone(reconstructed.vertex_data)
         self.assertIsNone(reconstructed.texture_data)
 
@@ -129,7 +107,7 @@ class TestArtifact(unittest.TestCase):
             dimensions_mm=(10, 20),
             position_mm=(1, 2),
         )
-        artifact = Artifact(
+        artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
@@ -138,9 +116,8 @@ class TestArtifact(unittest.TestCase):
         )
 
         artifact_dict = artifact.to_dict()
-        reconstructed = Artifact.from_dict(artifact_dict)
+        reconstructed = WorkPieceArtifact.from_dict(artifact_dict)
 
-        self.assertEqual(reconstructed.artifact_type, "hybrid_raster")
         self.assertIsNotNone(reconstructed.vertex_data)
         self.assertIsNotNone(reconstructed.texture_data)
 
@@ -157,7 +134,7 @@ class TestArtifact(unittest.TestCase):
         gcode_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
         op_map_bytes = np.frombuffer(json.dumps({0: 0}).encode(), np.uint8)
 
-        artifact = Artifact(
+        artifact = JobArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -166,9 +143,8 @@ class TestArtifact(unittest.TestCase):
             time_estimate=123.45,
         )
 
-        reconstructed = Artifact.from_dict(artifact.to_dict())
+        reconstructed = JobArtifact.from_dict(artifact.to_dict())
 
-        self.assertEqual(reconstructed.artifact_type, "final_job")
         self.assertIsNotNone(reconstructed.gcode_bytes)
         self.assertIsNotNone(reconstructed.op_map_bytes)
         self.assertEqual(reconstructed.time_estimate, 123.45)

@@ -9,12 +9,17 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.step import Step
 from rayforge.machine.models.machine import Laser, Machine
-from rayforge.pipeline import Artifact, ArtifactHandle
-from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.artifact import (
+    create_handle_from_dict,
+    ArtifactStore,
+    WorkPieceArtifact,
+)
 from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
 from rayforge.pipeline.producer.edge import EdgeTracer
 from rayforge.pipeline.producer.depth import DepthEngraver
-from rayforge.pipeline.steprunner import run_step_in_subprocess
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
@@ -97,7 +102,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -111,10 +116,10 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
@@ -142,7 +147,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
     generation_size = (50.0, 30.0)
     handle = None
 
-    # Hydrate the workpiece dictionary like OpsGenerator does
+    # Hydrate the workpiece dictionary like Pipeline does
     workpiece_dict = rasterable_workpiece.to_dict()
     workpiece_dict["data"] = rasterable_workpiece.data
     workpiece_dict["renderer_name"] = (
@@ -151,7 +156,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             workpiece_dict,
             step.opsproducer_dict,
@@ -165,10 +170,10 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.texture_data is not None
         assert reconstructed_artifact.vertex_data is not None
 
@@ -200,7 +205,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     generation_size = (10.0, 10.0)
 
     # Act
-    result, result_gen_id = run_step_in_subprocess(
+    result, result_gen_id = make_workpiece_artifact_in_subprocess(
         mock_proxy,
         empty_workpiece.to_dict(),
         step.opsproducer_dict,
@@ -234,7 +239,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
     try:
         # Act
-        result_dict, result_gen_id = run_step_in_subprocess(
+        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -248,10 +253,10 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
         # Assert
         assert result_dict is not None
-        handle = ArtifactHandle.from_dict(result_dict)
+        handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = ArtifactStore.get(handle)
 
-        assert isinstance(reconstructed_artifact, Artifact)
+        assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.vertex_data is not None
         assert len(reconstructed_artifact.ops.commands) == 24
     finally:

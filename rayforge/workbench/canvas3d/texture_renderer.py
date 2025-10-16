@@ -150,7 +150,7 @@ class TextureArtifactRenderer(BaseRenderer):
         self.instances.clear()
 
     def add_instance(
-        self, texture_data: TextureData, transform_matrix: np.ndarray
+        self, texture_data: TextureData, final_model_matrix: np.ndarray
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -188,18 +188,6 @@ class TextureArtifactRenderer(BaseRenderer):
         # Restore the default alignment.
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-
-        # This local model matrix scales the unit quad to the artifact's
-        # physical size and positions it within its local workpiece space.
-        local_model_matrix = np.identity(4, dtype=np.float32)
-        local_model_matrix[0, 3] = texture_data.position_mm[0]
-        local_model_matrix[1, 3] = texture_data.position_mm[1]
-        local_model_matrix[0, 0] = texture_data.dimensions_mm[0]
-        local_model_matrix[1, 1] = texture_data.dimensions_mm[1]
-
-        # The final model matrix combines the local geometry with the
-        # workpiece's world transform.
-        final_model_matrix = transform_matrix @ local_model_matrix
 
         self.instances.append(
             {"texture_id": texture_id, "model_matrix": final_model_matrix}

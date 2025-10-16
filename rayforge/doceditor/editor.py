@@ -8,10 +8,9 @@ from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
-from ..pipeline.generator import OpsGenerator
+from ..pipeline.pipeline import Pipeline
 from ..machine.cmd import MachineCmd
-from ..pipeline.artifact.handle import ArtifactHandle
-from ..pipeline.artifact.store import ArtifactStore
+from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
@@ -38,7 +37,7 @@ class DocEditor:
     """
     The central, non-UI controller for document state and operations.
 
-    This class owns the core data models (Doc, OpsGenerator) and provides a
+    This class owns the core data models (Doc, Pipeline) and provides a
     structured API for all document manipulations, which are organized into
     namespaced command handlers. It is instantiated with its dependencies
     (task_manager, config_manager) to be a self-contained unit.
@@ -62,18 +61,18 @@ class DocEditor:
         self.task_manager = task_manager
         self._config_manager = config_manager
         self.doc = doc or Doc()
-        self.ops_generator = OpsGenerator(self.doc, self.task_manager)
+        self.pipeline = Pipeline(self.doc, self.task_manager)
         self.history_manager: "HistoryManager" = self.doc.history_manager
 
         # A set to track temporary artifacts (e.g., for job previews)
-        # that don't live in the OpsGenerator cache.
-        self._transient_artifact_handles: set[ArtifactHandle] = set()
+        # that don't live in the Pipeline cache.
+        self._transient_artifact_handles: set[JobArtifactHandle] = set()
 
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
         self.notification_requested = Signal()  # For UI feedback
-        self.ops_generator.processing_state_changed.connect(
+        self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
 
@@ -92,7 +91,7 @@ class DocEditor:
 
     def cleanup(self):
         """
-        Shuts down owned long-running services, like the OpsGenerator, to
+        Shuts down owned long-running services, like the Pipeline, to
         ensure cleanup of resources (e.g., shared memory).
         """
         # This is the safety net for any transient job artifacts that were
@@ -105,7 +104,7 @@ class DocEditor:
             ArtifactStore.release(handle)
         self._transient_artifact_handles.clear()
 
-        self.ops_generator.shutdown()
+        self.pipeline.shutdown()
 
     def add_tab_from_context(self, context: Dict[str, Any]):
         """
@@ -148,7 +147,7 @@ class DocEditor:
 
     async def wait_until_settled(self, timeout: float = 10.0) -> None:
         """
-        Waits until the internal OpsGenerator has finished all background
+        Waits until the internal Pipeline has finished all background
         processing and the document state is stable.
         """
         if not self.is_processing:
@@ -190,7 +189,7 @@ class DocEditor:
         export_future = asyncio.get_running_loop().create_future()
 
         def _on_export_assembly_done(
-            handle: Optional[ArtifactHandle], error: Optional[Exception]
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
         ):
             try:
                 if error:
@@ -202,6 +201,7 @@ class DocEditor:
                     return
 
                 artifact = ArtifactStore.get(handle)
+                assert isinstance(artifact, JobArtifact)
                 if artifact.gcode_bytes is None:
                     exc = ValueError("Final artifact is missing G-code data.")
                     export_future.set_exception(exc)
@@ -229,29 +229,29 @@ class DocEditor:
     def set_doc(self, new_doc: Doc):
         """
         Assigns a new document to the editor, re-initializing the core
-        components like the OpsGenerator.
+        components like the Pipeline.
         """
-        self.ops_generator.processing_state_changed.disconnect(
+        self.pipeline.processing_state_changed.disconnect(
             self._on_processing_state_changed
         )
 
         logger.debug("DocEditor is setting a new document.")
         self.doc = new_doc
         self.history_manager = self.doc.history_manager
-        # The OpsGenerator's setter handles cleanup and reconnection
-        self.ops_generator.doc = new_doc
+        # The Pipeline's setter handles cleanup and reconnection
+        self.pipeline.doc = new_doc
 
-        self.ops_generator.processing_state_changed.connect(
+        self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
 
     @property
     def is_processing(self) -> bool:
         """Returns True if the document is currently generating operations."""
-        return self.ops_generator.is_busy
+        return self.pipeline.is_busy
 
     def _on_processing_state_changed(self, sender, is_processing: bool):
-        """Proxies the signal from the OpsGenerator."""
+        """Proxies the signal from the Pipeline."""
         self.processing_state_changed.send(self, is_processing=is_processing)
         if not is_processing:
             self.document_settled.send(self)
