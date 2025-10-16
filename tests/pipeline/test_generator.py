@@ -291,7 +291,7 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        _pipeline = Pipeline(doc, mock_task_mgr)  # noqa: F841
+        _ = Pipeline(doc, mock_task_mgr)
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -360,7 +360,7 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step()
         layer.workflow.add_step(step)
-        _pipeline = Pipeline(doc, mock_task_mgr)  # noqa: F841
+        _ = Pipeline(doc, mock_task_mgr)
 
         initial_artifact = WorkPieceArtifact(
             ops=Ops(),
