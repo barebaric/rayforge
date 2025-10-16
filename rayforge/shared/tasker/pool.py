@@ -11,7 +11,7 @@ import builtins
 from multiprocessing import get_context
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Set
 from blinker import Signal
 from .proxy import ExecutionContextProxy
 
@@ -135,8 +135,9 @@ class WorkerPoolManager:
         mp_context = get_context("spawn")
         self._task_queue: MpQueue = mp_context.Queue()
         self._result_queue: MpQueue = mp_context.Queue()
-        # Use a static type hint that the linter can understand.
         self._workers: List[BaseProcess] = []
+        self._cancelled_task_ids: Set[int] = set()
+        self._lock = threading.Lock()
 
         # Signals for the TaskManager to subscribe to
         self.task_event_received = Signal()
@@ -179,9 +180,25 @@ class WorkerPoolManager:
             *args: Positional arguments for the target function.
             **kwargs: Keyword arguments for the target function.
         """
-        logger.debug(f"Submitting task '{key}' to worker pool.")
+        logger.debug(
+            f"Submitting task '{key}' (id: {task_id}) to worker pool."
+        )
+        with self._lock:
+            # Before submitting, remove the ID from the cancelled set in case
+            # it's a retry of a previously cancelled task ID. This is unlikely
+            # with UUIDs but good practice.
+            self._cancelled_task_ids.discard(task_id)
         job = (key, task_id, target, args, kwargs)
         self._task_queue.put(job)
+
+    def cancel(self, key: Any, task_id: int):
+        """
+        Registers a task ID as cancelled. The listener thread will ignore
+        any subsequent messages from this task ID.
+        """
+        logger.debug(f"Registering task '{key}' (id: {task_id}) as cancelled.")
+        with self._lock:
+            self._cancelled_task_ids.add(task_id)
 
     def _result_listener_loop(self):
         """
@@ -209,6 +226,19 @@ class WorkerPoolManager:
                 break
 
             key, task_id, msg_type, value = message
+
+            with self._lock:
+                if task_id in self._cancelled_task_ids:
+                    logger.debug(
+                        f"Ignoring message '{msg_type}' from cancelled task "
+                        f"'{key}' (id: {task_id})."
+                    )
+                    # If it's the final message, remove from the set to
+                    # prevent memory leaks.
+                    if msg_type in ("done", "error"):
+                        self._cancelled_task_ids.remove(task_id)
+                    continue
+
             if msg_type == "done":
                 self.task_completed.send(
                     self, key=key, task_id=task_id, result=value

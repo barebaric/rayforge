@@ -3,6 +3,7 @@ from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from concurrent.futures import Future
 import numpy as np
+from gi.repository import GLib
 from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
@@ -334,7 +335,22 @@ class WorkPieceView(CanvasElement):
     def _on_ops_generation_finished(
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
     ):
-        """Handler for when ops generation for a step finishes."""
+        """
+        Signal handler for when ops generation finishes.
+        This runs on a background thread, so it schedules the actual work
+        on the main thread to prevent UI deadlocks.
+        """
+        GLib.idle_add(
+            self._on_ops_generation_finished_main_thread,
+            sender,
+            workpiece,
+            generation_id,
+        )
+
+    def _on_ops_generation_finished_main_thread(
+        self, sender: Step, workpiece: WorkPiece, generation_id: int
+    ):
+        """The thread-safe part of the ops generation finished handler."""
         if workpiece is not self.data:
             return
         step = sender
@@ -461,7 +477,14 @@ class WorkPieceView(CanvasElement):
         return step.uid, surface, generation_id
 
     def _on_ops_drawing_recorded(self, future: Future):
-        """Callback executed when the async ops recording is done."""
+        """
+        Callback executed when the async ops recording is done.
+        Schedules the main logic to run on the GTK thread.
+        """
+        GLib.idle_add(self._on_ops_drawing_recorded_main_thread, future)
+
+    def _on_ops_drawing_recorded_main_thread(self, future: Future):
+        """The thread-safe part of the drawing recorded callback."""
         if future.cancelled():
             return
         if exc := future.exception():
@@ -486,6 +509,7 @@ class WorkPieceView(CanvasElement):
         if self.data.layer and self.data.layer.workflow:
             for step_obj in self.data.layer.workflow.steps:
                 if step_obj.uid == step_uid:
+                    # This call is now safe because we are on the main thread.
                     self._trigger_ops_rasterization(step_obj, received_gen_id)
                     return
         logger.warning(
@@ -636,6 +660,8 @@ class WorkPieceView(CanvasElement):
     ):
         """
         Handler for when a chunk of ops is ready for progressive rendering.
+        This is called from a background thread. It schedules the expensive
+        encoding work to happen in another background task.
         """
         if workpiece is not self.data:
             return
@@ -645,17 +671,37 @@ class WorkPieceView(CanvasElement):
         if generation_id != self._ops_generation_ids.get(step_uid):
             return
 
-        # For chunks, we want to create OR reuse the surface.
-        prepared = self._prepare_ops_surface_and_context(sender)
-        if not prepared:
+        # Offload the CPU-intensive encoding to the thread pool
+        future = self._executor.submit(self._encode_chunk_async, sender, chunk)
+        future.add_done_callback(self._on_chunk_encoded)
+
+    def _encode_chunk_async(self, step: Step, chunk: Ops) -> str:
+        """
+        Does the heavy lifting of preparing a surface and encoding an ops
+        chunk onto it. This is designed to be run in a thread pool.
+        """
+        # This function runs entirely in a background thread.
+        prepared = self._prepare_ops_surface_and_context(step)
+        if prepared:
+            _surface, ctx, ppms, content_h_px = prepared
+            self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
+        return step.uid
+
+    def _on_chunk_encoded(self, future: Future):
+        """
+        Callback for when a chunk has been encoded. Schedules the final
+        UI update on the main thread.
+        """
+        GLib.idle_add(self._on_chunk_encoded_main_thread, future)
+
+    def _on_chunk_encoded_main_thread(self, future: Future):
+        """
+        Thread-safe callback that triggers a redraw after a chunk is ready.
+        """
+        if future.cancelled() or future.exception():
             return
-
-        _surface, ctx, ppms, content_h_px = prepared
-
-        # Encode just the chunk onto the existing surface
-        self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
-
-        # Trigger a redraw to show the progress
+        # The result is just the step_uid, we don't need it, but we know
+        # the surface has been updated.
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -722,7 +768,15 @@ class WorkPieceView(CanvasElement):
         return surface, ctx, ppms, content_height_px
 
     def _on_ops_surface_rendered(self, future: Future):
-        """Callback executed when the async ops rendering is done."""
+        """
+        Callback executed when the async ops rendering is done.
+        Schedules the main logic to run on the GTK thread.
+        """
+        # Schedule the actual handler on the main thread
+        GLib.idle_add(self._on_ops_surface_rendered_main_thread, future)
+
+    def _on_ops_surface_rendered_main_thread(self, future: Future):
+        """The thread-safe part of the surface rendered callback."""
         if future.cancelled():
             logger.debug("Ops surface render future was cancelled.")
             return
@@ -754,6 +808,7 @@ class WorkPieceView(CanvasElement):
         self._ops_surfaces[step_uid] = (new_surface, bbox_mm)
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
+            # This call is now safe because we are on the main thread.
             self.canvas.queue_draw()
 
     def _start_update(self) -> bool:

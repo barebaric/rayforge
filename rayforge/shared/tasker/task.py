@@ -137,6 +137,10 @@ class Task:
         """Get the current user-facing message for the task."""
         return self._message
 
+    def is_final(self) -> bool:
+        """Returns True if the task is in a terminal state."""
+        return self._status in ("completed", "failed", "canceled")
+
     def result(self) -> Any:
         if self._task:  # It's an asyncio-managed task
             if not self._task.done():
