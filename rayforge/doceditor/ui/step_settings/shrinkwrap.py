@@ -76,8 +76,8 @@ class ShrinkWrapProducerSettingsWidget(
         self.offset_row = Adw.SpinRow(
             title=_("Path Offset (mm)"),
             subtitle=_(
-                "Absolute distance from original path. Direction is "
-                "controlled by Cut Side."
+                "Absolute distance from original path, direction is "
+                "controlled by Cut Side"
             ),
             adjustment=offset_adj,
             digits=2,

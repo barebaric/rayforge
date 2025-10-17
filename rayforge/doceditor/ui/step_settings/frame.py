@@ -54,7 +54,7 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.offset_row = Adw.SpinRow(
             title=_("Path Offset (mm)"),
-            subtitle=_("Absolute distance from content boundary."),
+            subtitle=_("Absolute distance from content boundary"),
             adjustment=offset_adj,
             digits=2,
         )

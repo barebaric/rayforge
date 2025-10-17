@@ -416,7 +416,6 @@ class Canvas3D(Gtk.GLArea):
             self.make_current()
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glDepthFunc(GL.GL_LEQUAL)
-            GL.glEnable(GL.GL_MULTISAMPLE)
             GL.glEnable(GL.GL_BLEND)
             GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 

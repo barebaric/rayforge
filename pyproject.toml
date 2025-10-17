@@ -77,3 +77,12 @@ filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
 ]
+testpaths = ["tests"]
+norecursedirs = [
+    "builddir",
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".pixi",
+    "__pycache__",
+]

@@ -38,10 +38,46 @@ class OverscanTransformer(OpsTransformer):
     lead-out moves at zero power.
     """
 
-    def __init__(self, enabled: bool = True, distance_mm: float = 2.0):
+    def __init__(
+        self, enabled: bool = True, distance_mm: float = 2.0, auto: bool = True
+    ):
         super().__init__(enabled=enabled)
         self._distance_mm: float = 0.0
         self.distance_mm = distance_mm
+        self._auto: bool = auto
+
+    @staticmethod
+    def calculate_auto_distance(
+        step_speed: int, max_acceleration: int
+    ) -> float:
+        """
+        Calculate the optimal overscan distance based on step speed and machine
+        acceleration with a safety factor of 2.
+
+        Formula: distance = (speed²) / (2 * acceleration * safety_factor)
+        Where safety_factor = 2 for additional safety margin
+
+        Args:
+            step_speed: The cutting speed in mm/min
+            max_acceleration: The maximum machine acceleration in mm/s²
+
+        Returns:
+            The calculated overscan distance in millimeters
+        """
+        # Convert speed from mm/min to mm/s for the calculation
+        speed_mm_per_sec = step_speed / 60.0
+
+        # Safety factor of 2 as specified in requirements
+        safety_factor = 2.0
+
+        # Calculate distance using physics formula with safety factor
+        # d = v² / (2 * a * safety_factor)
+        distance_mm = (speed_mm_per_sec**2) / (
+            2 * max_acceleration * safety_factor
+        )
+
+        # Ensure minimum distance for practical purposes
+        return max(0.5, distance_mm)
 
     @property
     def execution_phase(self) -> ExecutionPhase:
@@ -60,6 +96,16 @@ class OverscanTransformer(OpsTransformer):
         new_value = max(0.0, float(value))
         if not math.isclose(self._distance_mm, new_value):
             self._distance_mm = new_value
+            self.changed.send(self)
+
+    @property
+    def auto(self) -> bool:
+        return self._auto
+
+    @auto.setter
+    def auto(self, value: bool):
+        if self._auto != bool(value):
+            self._auto = bool(value)
             self.changed.send(self)
 
     @property
@@ -222,11 +268,16 @@ class OverscanTransformer(OpsTransformer):
             return rewritten_commands
 
     def to_dict(self) -> Dict[str, Any]:
-        return {**super().to_dict(), "distance_mm": self.distance_mm}
+        return {
+            **super().to_dict(),
+            "distance_mm": self.distance_mm,
+            "auto": self.auto,
+        }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "OverscanTransformer":
         return cls(
             enabled=data.get("enabled", True),
             distance_mm=data.get("distance_mm", 2.0),
+            auto=data.get("auto", True),
         )
