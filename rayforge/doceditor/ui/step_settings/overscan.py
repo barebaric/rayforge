@@ -41,15 +41,15 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(switch_row)
 
         # Auto mode toggle
-        auto_row = Adw.SwitchRow(
+        self.auto_row = Adw.SwitchRow(
             title=_("Automatic Distance"),
             subtitle=_(
                 "Calculate distance based on speed and acceleration with "
-                "safety factor."
+                "safety factor"
             ),
         )
-        auto_row.set_active(transformer.auto)
-        self.add(auto_row)
+        self.auto_row.set_active(transformer.auto)
+        self.add(self.auto_row)
 
         # Distance setting with unit support
         distance_adj = Gtk.Adjustment(
@@ -72,7 +72,7 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # Connect signals
         switch_row.connect("notify::active", self._on_enable_toggled)
-        auto_row.connect("notify::active", self._on_auto_toggled)
+        self.auto_row.connect("notify::active", self._on_auto_toggled)
         distance_row.connect(
             "changed",
             lambda r: self._debounce(self._on_distance_changed, r),
@@ -85,7 +85,7 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             "notify::active",
             lambda w, _: self._update_sensitivity(),
         )
-        auto_row.connect(
+        self.auto_row.connect(
             "notify::active",
             lambda w, _: self._update_sensitivity(),
         )
@@ -95,8 +95,9 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         enabled = self.target_dict.get("enabled", True)
         auto = self.target_dict.get("auto", True)
 
-        # Use the stored reference to the distance row
+        # Use the stored references to the rows
         self.distance_row.set_sensitive(enabled and not auto)
+        self.auto_row.set_sensitive(enabled)
 
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()

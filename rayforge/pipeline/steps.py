@@ -61,9 +61,8 @@ def create_raster_step(name: Optional[str] = None) -> Step:
 
     # Calculate auto overscan distance based on machine capabilities
     # Use a reasonable default cut speed for calculation if not specified
-    default_cut_speed = 500
     auto_distance = OverscanTransformer.calculate_auto_distance(
-        default_cut_speed, machine.acceleration
+        machine.max_cut_speed, machine.acceleration
     )
 
     step = Step(

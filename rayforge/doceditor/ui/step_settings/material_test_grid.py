@@ -124,7 +124,7 @@ class MaterialTestGridSettingsWidget(
         group = Adw.PreferencesGroup(
             title=_("Speed &amp; Power"),
             description=_(
-                "Define the range of speeds and powers for the test grid."
+                "Define the range of speeds and powers for the test grid"
             ),
         )
         self.page.add(group)

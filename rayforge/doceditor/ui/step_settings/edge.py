@@ -37,7 +37,7 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         # Remove inner paths toggle
         switch_row = Adw.SwitchRow(
             title=_("Remove Inner Paths"),
-            subtitle=_("If enabled, only trace the outer outline of shapes."),
+            subtitle=_("If enabled, only trace the outer outline of shapes"),
         )
         switch_row.set_active(producer.remove_inner_paths)
         self.add(switch_row)
@@ -62,8 +62,8 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.offset_row = Adw.SpinRow(
             title=_("Path Offset (mm)"),
             subtitle=_(
-                "Absolute distance from original path. Direction is "
-                "controlled by Cut Side."
+                "Absolute distance from original path, direction is "
+                "controlled by Cut Side"
             ),
             adjustment=offset_adj,
             digits=2,
