@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
-from rayforge.core.ops import Ops
+
+# Removed unused import: from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact import (
     StepRenderArtifact,
     TextureData,
@@ -44,9 +45,8 @@ class TestStepRenderArtifact(unittest.TestCase):
             reconstructed.vertex_data.travel_vertices,
             vertex_data.travel_vertices,
         )
-        # Should be a default empty Ops
-        self.assertIsInstance(reconstructed.ops, Ops)
-        self.assertTrue(reconstructed.ops.is_empty())
+        # Ops attribute should no longer exist on StepRenderArtifact
+        self.assertFalse(hasattr(reconstructed, "ops"))
 
     def test_hybrid_serialization_round_trip(self):
         """Tests serialization for an artifact with texture instances."""

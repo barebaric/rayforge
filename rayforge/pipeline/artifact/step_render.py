@@ -1,14 +1,10 @@
 from __future__ import annotations
 import numpy as np
-from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Type
-from ...core.ops import Ops
-from ..coord import CoordinateSystem
 from .base import BaseArtifact, VertexData, TextureInstance, TextureData
 from .handle import BaseArtifactHandle
 
 
-@dataclass
 class StepRenderArtifactHandle(BaseArtifactHandle):
     """A handle for a StepRenderArtifact."""
 
@@ -27,13 +23,6 @@ class StepRenderArtifact(BaseArtifact):
         vertex_data: Optional[VertexData] = None,
         texture_instances: Optional[List[TextureInstance]] = None,
     ):
-        # Pass dummy values to the base class as this artifact doesn't
-        # conceptually have ops.
-        super().__init__(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        )
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_instances: List[TextureInstance] = (
             texture_instances if texture_instances is not None else []
@@ -41,14 +30,12 @@ class StepRenderArtifact(BaseArtifact):
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
-        result = super().to_dict()
+        result: Dict[str, Any] = {}
         if self.vertex_data:
             result["vertex_data"] = self.vertex_data.to_dict()
         result["texture_instances"] = [
             ti.to_dict() for ti in self.texture_instances
         ]
-        # We don't want the dummy ops in the serialization
-        result.pop("ops", None)
         return result
 
     @classmethod
@@ -71,15 +58,10 @@ class StepRenderArtifact(BaseArtifact):
         array_metadata: Dict[str, Dict[str, Any]],
     ) -> StepRenderArtifactHandle:
         """Creates the appropriate, typed handle for this artifact."""
-        coord = CoordinateSystem.MILLIMETER_SPACE.name
         return StepRenderArtifactHandle(
             shm_name=shm_name,
             handle_class_name=StepRenderArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
-            is_scalable=False,
-            source_coordinate_system_name=coord,
-            source_dimensions=None,
-            time_estimate=None,
             array_metadata=array_metadata,
         )
 

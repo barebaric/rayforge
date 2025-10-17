@@ -1,18 +1,30 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Optional, Dict, Any, Type
 import numpy as np
 from ...core.ops import Ops
-from ..coord import CoordinateSystem
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 
-@dataclass
 class StepOpsArtifactHandle(BaseArtifactHandle):
     """A handle for a StepOpsArtifact."""
 
-    pass
+    def __init__(
+        self,
+        time_estimate: Optional[float],
+        shm_name: str,
+        handle_class_name: str,
+        artifact_type_name: str,
+        array_metadata: Optional[Dict[str, Any]] = None,
+        **_kwargs,
+    ):
+        super().__init__(
+            shm_name=shm_name,
+            handle_class_name=handle_class_name,
+            artifact_type_name=artifact_type_name,
+            array_metadata=array_metadata,
+        )
+        self.time_estimate = time_estimate
 
 
 class StepOpsArtifact(BaseArtifact):
@@ -26,18 +38,16 @@ class StepOpsArtifact(BaseArtifact):
         ops: Ops,
         time_estimate: Optional[float] = None,
     ):
-        # is_scalable is always false for a step artifact because workpiece
-        # scaling has already been applied.
-        super().__init__(
-            ops=ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            time_estimate=time_estimate,
-        )
+        super().__init__()
+        self.ops = ops
+        self.time_estimate = time_estimate
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
-        return super().to_dict()
+        return {
+            "ops": self.ops.to_dict(),
+            "time_estimate": self.time_estimate,
+        }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StepOpsArtifact":
@@ -58,9 +68,6 @@ class StepOpsArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=StepOpsArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
-            is_scalable=self.is_scalable,
-            source_coordinate_system_name=self.source_coordinate_system.name,
-            source_dimensions=self.source_dimensions,
             time_estimate=self.time_estimate,
             array_metadata=array_metadata,
         )
@@ -82,6 +89,9 @@ class StepOpsArtifact(BaseArtifact):
         Reconstructs an artifact instance from its handle and a dictionary of
         NumPy array views from shared memory.
         """
+        if not isinstance(handle, StepOpsArtifactHandle):
+            raise TypeError("StepOpsArtifact requires a StepOpsArtifactHandle")
+
         ops = Ops.from_numpy_arrays(arrays)
         return cls(
             ops=ops,

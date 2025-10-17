@@ -3,7 +3,6 @@ import json
 import numpy as np
 from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact.job import JobArtifact
-from rayforge.pipeline import CoordinateSystem
 
 
 class TestJobArtifact(unittest.TestCase):
@@ -13,8 +12,6 @@ class TestJobArtifact(unittest.TestCase):
         """Tests that the artifact type is correctly identified."""
         job_artifact = JobArtifact(
             ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
         )
         self.assertEqual(job_artifact.artifact_type, "JobArtifact")
@@ -26,8 +23,6 @@ class TestJobArtifact(unittest.TestCase):
 
         artifact = JobArtifact(
             ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
             time_estimate=123.45,

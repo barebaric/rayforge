@@ -161,10 +161,6 @@ class TestPipeline:
                             shm_name="dummy_render",
                             handle_class_name="StepRenderArtifactHandle",
                             artifact_type_name="StepRenderArtifact",
-                            is_scalable=False,
-                            source_coordinate_system_name="MILLIMETER_SPACE",
-                            source_dimensions=None,
-                            time_estimate=None,
                         )
                         render_event = {
                             "handle_dict": render_handle.to_dict(),
@@ -181,10 +177,7 @@ class TestPipeline:
                             shm_name="dummy_ops",
                             handle_class_name="StepOpsArtifactHandle",
                             artifact_type_name="StepOpsArtifact",
-                            is_scalable=False,
-                            source_coordinate_system_name="MILLIMETER_SPACE",
-                            source_dimensions=None,
-                            time_estimate=None,
+                            time_estimate=step_time,
                         )
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
@@ -305,6 +298,7 @@ class TestPipeline:
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
         )
         handle = ArtifactStore.put(artifact)
         try:
@@ -344,6 +338,7 @@ class TestPipeline:
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
         )
         handle = ArtifactStore.put(artifact)
         try:
@@ -381,6 +376,7 @@ class TestPipeline:
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
         )
         handle = ArtifactStore.put(artifact)
         try:
@@ -416,6 +412,7 @@ class TestPipeline:
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
         handle = ArtifactStore.put(initial_artifact)
@@ -455,6 +452,7 @@ class TestPipeline:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
         handle = ArtifactStore.put(artifact)
@@ -642,6 +640,7 @@ class TestPipeline:
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
         )
         wp_handle = ArtifactStore.put(wp_artifact)
 
@@ -682,6 +681,7 @@ class TestPipeline:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
         handle = ArtifactStore.put(artifact)

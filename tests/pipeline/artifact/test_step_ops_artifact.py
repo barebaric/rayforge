@@ -1,7 +1,7 @@
 import unittest
 from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact import StepOpsArtifact
-from rayforge.pipeline import CoordinateSystem
+# Removed unused import: from rayforge.pipeline import CoordinateSystem
 
 
 class TestStepOpsArtifact(unittest.TestCase):
@@ -29,12 +29,11 @@ class TestStepOpsArtifact(unittest.TestCase):
 
         # Check properties
         self.assertEqual(reconstructed.artifact_type, "StepOpsArtifact")
-        self.assertFalse(reconstructed.is_scalable)
         self.assertEqual(reconstructed.time_estimate, 42.5)
-        self.assertEqual(
-            reconstructed.source_coordinate_system,
-            CoordinateSystem.MILLIMETER_SPACE,
-        )
+
+        # These attributes no longer exist on StepOpsArtifact
+        self.assertFalse(hasattr(reconstructed, "is_scalable"))
+        self.assertFalse(hasattr(reconstructed, "source_coordinate_system"))
 
         # Check Ops content
         self.assertDictEqual(reconstructed.ops.to_dict(), ops.to_dict())

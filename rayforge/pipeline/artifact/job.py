@@ -1,20 +1,32 @@
 from __future__ import annotations
 import json
 import numpy as np
-from dataclasses import dataclass
-from typing import Optional, Tuple, Dict, Any, Type
+from typing import Optional, Dict, Any, Type
 from ...core.ops import Ops
-from ..coord import CoordinateSystem
 from ..encoder.gcode import GcodeOpMap
 from .base import BaseArtifact, VertexData
 from .handle import BaseArtifactHandle
 
 
-@dataclass
 class JobArtifactHandle(BaseArtifactHandle):
-    """A handle for a JobArtifact. Currently has no extra metadata."""
+    """A handle for a JobArtifact."""
 
-    pass
+    def __init__(
+        self,
+        time_estimate: Optional[float],
+        shm_name: str,
+        handle_class_name: str,
+        artifact_type_name: str,
+        array_metadata: Optional[Dict[str, Any]] = None,
+        **_kwargs,
+    ):
+        super().__init__(
+            shm_name=shm_name,
+            handle_class_name=handle_class_name,
+            artifact_type_name=artifact_type_name,
+            array_metadata=array_metadata,
+        )
+        self.time_estimate = time_estimate
 
 
 class JobArtifact(BaseArtifact):
@@ -26,21 +38,14 @@ class JobArtifact(BaseArtifact):
     def __init__(
         self,
         ops: Ops,
-        is_scalable: bool,
-        source_coordinate_system: CoordinateSystem,
-        source_dimensions: Optional[Tuple[float, float]] = None,
         time_estimate: Optional[float] = None,
         gcode_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
         vertex_data: Optional[VertexData] = None,
     ):
-        super().__init__(
-            ops=ops,
-            is_scalable=is_scalable,
-            source_coordinate_system=source_coordinate_system,
-            source_dimensions=source_dimensions,
-            time_estimate=time_estimate,
-        )
+        super().__init__()
+        self.ops = ops
+        self.time_estimate = time_estimate
         self.gcode_bytes: Optional[np.ndarray] = gcode_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
         self.vertex_data: Optional[VertexData] = vertex_data
@@ -78,7 +83,10 @@ class JobArtifact(BaseArtifact):
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
-        result = super().to_dict()
+        result = {
+            "ops": self.ops.to_dict(),
+            "time_estimate": self.time_estimate,
+        }
         if self.vertex_data is not None:
             result["vertex_data"] = self.vertex_data.to_dict()
         if self.gcode_bytes is not None:
@@ -93,11 +101,6 @@ class JobArtifact(BaseArtifact):
         ops = Ops.from_dict(data["ops"])
         common_args = {
             "ops": ops,
-            "is_scalable": data["is_scalable"],
-            "source_coordinate_system": CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
-            "source_dimensions": data.get("source_dimensions"),
             "time_estimate": data.get("time_estimate"),
         }
         if "vertex_data" in data:
@@ -123,9 +126,6 @@ class JobArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=JobArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
-            is_scalable=self.is_scalable,
-            source_coordinate_system_name=self.source_coordinate_system.name,
-            source_dimensions=self.source_dimensions,
             time_estimate=self.time_estimate,
             array_metadata=array_metadata,
         )
@@ -151,6 +151,9 @@ class JobArtifact(BaseArtifact):
         handle: BaseArtifactHandle,
         arrays: Dict[str, np.ndarray],
     ) -> JobArtifact:
+        if not isinstance(handle, JobArtifactHandle):
+            raise TypeError("JobArtifact requires a JobArtifactHandle")
+
         ops = Ops.from_numpy_arrays(arrays)
         vertex_data = None
         if all(
@@ -170,11 +173,6 @@ class JobArtifact(BaseArtifact):
             )
         return cls(
             ops=ops,
-            is_scalable=handle.is_scalable,
-            source_coordinate_system=CoordinateSystem[
-                handle.source_coordinate_system_name
-            ],
-            source_dimensions=handle.source_dimensions,
             time_estimate=handle.time_estimate,
             gcode_bytes=arrays.get(
                 "gcode_bytes", np.empty(0, dtype=np.uint8)

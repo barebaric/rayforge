@@ -1,10 +1,8 @@
 from __future__ import annotations
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Type
+from typing import Tuple, Dict, Any, Type
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from ...core.ops import Ops
-from ..coord import CoordinateSystem
 from .handle import BaseArtifactHandle
 
 
@@ -109,20 +107,6 @@ class BaseArtifact(ABC):
 
     _registry: Dict[str, Type[BaseArtifact]] = {}
 
-    def __init__(
-        self,
-        ops: Ops,
-        is_scalable: bool,
-        source_coordinate_system: CoordinateSystem,
-        source_dimensions: Optional[Tuple[float, float]] = None,
-        time_estimate: Optional[float] = None,
-    ):
-        self.ops = ops
-        self.is_scalable = is_scalable
-        self.source_coordinate_system = source_coordinate_system
-        self.source_dimensions = source_dimensions
-        self.time_estimate = time_estimate
-
     def __init_subclass__(cls, **kwargs):
         """
         This special method is called whenever a class inherits from
@@ -145,16 +129,6 @@ class BaseArtifact(ABC):
     def artifact_type(self) -> str:
         """Returns the type of the artifact."""
         return self.__class__.__name__
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts the artifact to a dictionary for serialization."""
-        return {
-            "ops": self.ops.to_dict(),
-            "is_scalable": self.is_scalable,
-            "source_coordinate_system": self.source_coordinate_system.name,
-            "source_dimensions": self.source_dimensions,
-            "time_estimate": self.time_estimate,
-        }
 
     @abstractmethod
     def create_handle(

@@ -126,10 +126,6 @@ class TestStepGeneratorStage:
             shm_name="render_shm",
             handle_class_name="StepRenderArtifactHandle",
             artifact_type_name="StepRenderArtifact",
-            is_scalable=False,
-            source_coordinate_system_name="MILLIMETER_SPACE",
-            source_dimensions=None,
-            time_estimate=None,
         )
         render_event_data = {
             "handle_dict": render_handle.to_dict(),
@@ -143,9 +139,6 @@ class TestStepGeneratorStage:
             shm_name="ops_shm",
             handle_class_name="StepOpsArtifactHandle",
             artifact_type_name="StepOpsArtifact",
-            is_scalable=False,
-            source_coordinate_system_name="MILLIMETER_SPACE",
-            source_dimensions=None,
             time_estimate=None,
         )
         ops_event_data = {
