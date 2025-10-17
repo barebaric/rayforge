@@ -196,12 +196,12 @@ def import_multiple_rasters_at_position(
     dialog = Adw.MessageDialog(
         transient_for=win,
         modal=True,
-        heading=_("Batch Import {count} Images").format(count=file_count),
+        heading=_(f"Batch Import {file_count} Images"),
         body=_(
-            "Import {count} raster images:\n{names}\n\n"
-            "All images will be traced using the default tracing settings "
-            "and positioned at the drop location."
-        ).format(count=file_count, names=file_names),
+            f"Import {file_count} raster images:\n{file_names}\n\n"
+            f"All images will be traced using the default tracing settings "
+            f"and positioned at the drop location."
+        ),
     )
     dialog.add_response("cancel", _("Cancel"))
     dialog.add_response("import", _("Import All"))

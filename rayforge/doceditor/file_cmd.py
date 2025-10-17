@@ -67,14 +67,14 @@ class FileCmd:
                 # Provide more specific error message based on file type
                 if mime_type and mime_type.startswith("image/"):
                     msg = _(
-                        "Failed to import {filename}. The image file may be "
-                        "corrupted or in an unsupported format."
-                    ).format(filename=filename.name)
+                        f"Failed to import {filename.name}. The image file "
+                        f"may be corrupted or in an unsupported format."
+                    )
                 else:
                     msg = _(
-                        "Import failed: No items were created "
-                        "from {filename}"
-                    ).format(filename=filename.name)
+                        f"Import failed: No items were created "
+                        f"from {filename.name}"
+                    )
                 logger.warning(
                     f"Importer created no items for '{filename.name}' "
                     f"(MIME: {mime_type})"
@@ -96,7 +96,7 @@ class FileCmd:
                 self._fit_and_center_imported_items(imported_items)
 
             target_layer = cast(Layer, self._editor.default_workpiece_layer)
-            cmd_name = _("Import {name}").format(name=filename.name)
+            cmd_name = _(f"Import {filename.name}")
 
             with self._editor.history_manager.transaction(cmd_name) as t:
                 for item in imported_items:
