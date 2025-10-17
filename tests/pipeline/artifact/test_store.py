@@ -84,6 +84,7 @@ class TestArtifactStore(unittest.TestCase):
         )
         return JobArtifact(
             ops=Ops(),
+            distance=15.0,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
             vertex_data=VertexData(),  # Final jobs have vertex data

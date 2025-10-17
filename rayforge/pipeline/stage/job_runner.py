@@ -85,12 +85,13 @@ def make_job_artifact_in_subprocess(
 
     final_ops.job_end()
 
-    proxy.set_message(_("Calculating final time estimate..."))
+    proxy.set_message(_("Calculating final time and distance estimates..."))
     final_time = final_ops.estimate_time(
         default_cut_speed=machine.max_cut_speed,
         default_travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
     )
+    final_distance = final_ops.distance()
 
     proxy.set_message(_("Generating G-code..."))
     encoder = GcodeEncoder.for_machine(machine)
@@ -109,6 +110,7 @@ def make_job_artifact_in_subprocess(
     proxy.set_message(_("Storing final job artifact..."))
     final_artifact = JobArtifact(
         ops=final_ops,
+        distance=final_distance,
         vertex_data=vertex_data,
         gcode_bytes=gcode_bytes,
         op_map_bytes=op_map_bytes,

@@ -12,6 +12,7 @@ class TestJobArtifact(unittest.TestCase):
         """Tests that the artifact type is correctly identified."""
         job_artifact = JobArtifact(
             ops=Ops(),
+            distance=0.0,
             gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
         )
         self.assertEqual(job_artifact.artifact_type, "JobArtifact")
@@ -23,6 +24,7 @@ class TestJobArtifact(unittest.TestCase):
 
         artifact = JobArtifact(
             ops=Ops(),
+            distance=42.5,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
             time_estimate=123.45,
@@ -33,6 +35,7 @@ class TestJobArtifact(unittest.TestCase):
         self.assertIsNotNone(reconstructed.gcode_bytes)
         self.assertIsNotNone(reconstructed.op_map_bytes)
         self.assertEqual(reconstructed.time_estimate, 123.45)
+        self.assertEqual(reconstructed.distance, 42.5)
 
         # Add assertions to satisfy the type checker
         assert reconstructed.gcode_bytes is not None

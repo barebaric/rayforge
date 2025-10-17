@@ -14,6 +14,7 @@ class JobArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
         time_estimate: Optional[float],
+        distance: float,
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
@@ -27,6 +28,7 @@ class JobArtifactHandle(BaseArtifactHandle):
             array_metadata=array_metadata,
         )
         self.time_estimate = time_estimate
+        self.distance = distance
 
 
 class JobArtifact(BaseArtifact):
@@ -38,6 +40,7 @@ class JobArtifact(BaseArtifact):
     def __init__(
         self,
         ops: Ops,
+        distance: float,
         time_estimate: Optional[float] = None,
         gcode_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
@@ -45,6 +48,7 @@ class JobArtifact(BaseArtifact):
     ):
         super().__init__()
         self.ops = ops
+        self.distance = distance
         self.time_estimate = time_estimate
         self.gcode_bytes: Optional[np.ndarray] = gcode_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
@@ -86,6 +90,7 @@ class JobArtifact(BaseArtifact):
         result = {
             "ops": self.ops.to_dict(),
             "time_estimate": self.time_estimate,
+            "distance": self.distance,
         }
         if self.vertex_data is not None:
             result["vertex_data"] = self.vertex_data.to_dict()
@@ -102,6 +107,7 @@ class JobArtifact(BaseArtifact):
         common_args = {
             "ops": ops,
             "time_estimate": data.get("time_estimate"),
+            "distance": data.get("distance", 0.0),
         }
         if "vertex_data" in data:
             common_args["vertex_data"] = VertexData.from_dict(
@@ -127,6 +133,7 @@ class JobArtifact(BaseArtifact):
             handle_class_name=JobArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
             time_estimate=self.time_estimate,
+            distance=self.distance,
             array_metadata=array_metadata,
         )
 
@@ -174,6 +181,7 @@ class JobArtifact(BaseArtifact):
         return cls(
             ops=ops,
             time_estimate=handle.time_estimate,
+            distance=handle.distance,
             gcode_bytes=arrays.get(
                 "gcode_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
