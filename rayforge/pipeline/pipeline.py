@@ -104,6 +104,7 @@ class Pipeline:
         self.step_generation_finished = Signal()
         self.processing_state_changed = Signal()
         self.time_estimation_updated = Signal()
+        self.preview_time_updated = Signal()
         self.job_generation_finished = Signal()
 
         # Connect signals from stages
@@ -405,9 +406,45 @@ class Pipeline:
     def _on_time_estimation_updated(self, sender):
         """Relays the signal from the time estimator stage."""
         self.time_estimation_updated.send(self)
+        # Schedule the preview time update on the main thread to avoid
+        # UI updates from subprocess callbacks
+        self._task_manager.schedule_on_main_thread(
+            self._update_and_emit_preview_time
+        )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
+
+    def _update_and_emit_preview_time(self):
+        """
+        Calculates the total estimated preview time by summing all valid
+        (step, workpiece) pairs and emits the preview_time_updated signal.
+        """
+        if not self.doc:
+            return
+
+        total_time = 0.0
+        is_calculating = False
+
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                for workpiece in layer.workpieces:
+                    estimate = self._time_estimator_stage.get_estimate(
+                        step, workpiece
+                    )
+                    if estimate is None:
+                        # A value of None means it's pending calculation
+                        is_calculating = True
+                    elif estimate > 0:  # -1 indicates an error, 0 is valid
+                        total_time += estimate
+
+        if is_calculating:
+            # Send a special signal to indicate calculation is in progress
+            self.preview_time_updated.send(self, total_seconds=None)
+        else:
+            self.preview_time_updated.send(self, total_seconds=total_time)
 
     def _on_job_generation_finished(self, sender, *, handle):
         """Relays signal from the job stage."""
@@ -425,6 +462,7 @@ class Pipeline:
         self._step_stage.reconcile(self.doc)
         self._time_estimator_stage.reconcile(self.doc)
         self._job_stage.reconcile(self.doc)
+        self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )

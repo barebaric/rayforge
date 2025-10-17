@@ -248,15 +248,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.document_settled.connect(self._on_document_settled)
 
         # Connect to Pipeline signals
-        self.doc_editor.pipeline.ops_generation_finished.connect(
-            self._on_ops_generation_finished
-        )
-        self.doc_editor.pipeline.processing_state_changed.connect(
-            self._on_ops_processing_state_changed
-        )
-        # Connect to the new time estimation signal
-        self.doc_editor.pipeline.time_estimation_updated.connect(
-            self._update_estimated_time
+        self.doc_editor.pipeline.preview_time_updated.connect(
+            self._on_preview_time_updated
         )
 
         # Create the view stack for 2D and 3D views
@@ -674,9 +667,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Sync the selectability of stock items based on active layer
         self._sync_element_selectability()
 
-        # Update estimated machining time when document changes
-        self._update_estimated_time()
-
         # Update button sensitivity and other state
         self._update_actions_and_ui()
 
@@ -796,7 +786,6 @@ class MainWindow(Adw.ApplicationWindow):
         hook for refreshing previews that depend on the final assembled job.
         """
         self.refresh_previews()
-        self._update_estimated_time()
 
     def _on_selection_changed(
         self,
@@ -1277,59 +1266,18 @@ class MainWindow(Adw.ApplicationWindow):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
-    def _update_estimated_time(self, sender=None):
+    def _on_preview_time_updated(self, sender, total_seconds):
         """
-        Updates the estimated machining time display by synchronously summing
-        pre-calculated values from the Pipeline's time cache.
+        Handles the preview_time_updated signal from the pipeline.
+        Updates the status bar with the total estimated time.
         """
-        logger.debug("_update_estimated_time called")
-
-        if self.doc_editor.pipeline.is_busy:
-            self.status_monitor.estimated_time_label.set_text(
-                _("Calculating...")
-            )
-            return
-
-        total_time = 0.0
-        is_calculating = False
-        doc = self.doc_editor.doc
-        ops_gen = self.doc_editor.pipeline
-
-        for layer in doc.layers:
-            for step, workpiece in layer.get_renderable_items():
-                time_val = ops_gen.get_estimated_time(step, workpiece)
-                if time_val is None:
-                    # A value of None means it's pending calculation
-                    is_calculating = True
-                    break
-                elif time_val > 0:  # -1 indicates an error, 0 is valid
-                    total_time += time_val
-            if is_calculating:
-                break
-
-        if is_calculating:
+        if total_seconds is None:
+            # Show "Calculating..." when estimates are pending
             self.status_monitor.estimated_time_label.set_text(
                 _("Calculating...")
             )
         else:
-            self.status_monitor.set_estimated_time(total_time)
-
-    def _on_ops_generation_finished(self, step, workpiece, generation_id):
-        """
-        Called when ops generation is finished for a step/workpiece pair.
-        """
-        logger.debug(
-            f"Ops generation finished for {step.name} on {workpiece.name}"
-        )
-        self._update_estimated_time()
-
-    def _on_ops_processing_state_changed(self, sender, is_processing):
-        """
-        Called when the Pipeline processing state changes.
-        Updates the estimated time when all processing is complete.
-        """
-        logger.debug(f"Ops processing state changed: {is_processing}")
-        self._update_estimated_time()
+            self.status_monitor.set_estimated_time(total_seconds)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events, ESC to exit simulation mode."""
