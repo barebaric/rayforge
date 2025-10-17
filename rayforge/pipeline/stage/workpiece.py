@@ -11,7 +11,6 @@ from ...core.ops import Ops, ScanLinePowerCommand
 from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
-    BaseArtifact,
     ArtifactStore,
     create_handle_from_dict,
 )
@@ -403,7 +402,7 @@ class WorkpieceGeneratorStage(PipelineStage):
     def _scale_ops_to_final_size(
         self,
         ops: Ops,
-        artifact: BaseArtifact,
+        artifact: WorkPieceArtifact,
         final_size_mm: Tuple[float, float],
     ):
         """

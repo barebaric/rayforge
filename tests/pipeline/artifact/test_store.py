@@ -84,8 +84,6 @@ class TestArtifactStore(unittest.TestCase):
         )
         return JobArtifact(
             ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
             vertex_data=VertexData(),  # Final jobs have vertex data

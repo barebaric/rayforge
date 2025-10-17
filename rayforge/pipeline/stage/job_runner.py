@@ -17,7 +17,6 @@ from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
 )
-from ..coord import CoordinateSystem
 
 
 logger = logging.getLogger(__name__)
@@ -110,8 +109,6 @@ def make_job_artifact_in_subprocess(
     proxy.set_message(_("Storing final job artifact..."))
     final_artifact = JobArtifact(
         ops=final_ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         vertex_data=vertex_data,
         gcode_bytes=gcode_bytes,
         op_map_bytes=op_map_bytes,

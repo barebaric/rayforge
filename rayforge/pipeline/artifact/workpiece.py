@@ -1,6 +1,5 @@
 from __future__ import annotations
 import numpy as np
-from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, Any, Type
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
@@ -8,13 +7,39 @@ from .base import BaseArtifact, VertexData, TextureData
 from .handle import BaseArtifactHandle
 
 
-@dataclass
 class WorkPieceArtifactHandle(BaseArtifactHandle):
     """A handle for a WorkPieceArtifact, with specific metadata."""
 
-    generation_size: Optional[Tuple[float, float]] = None
-    dimensions_mm: Optional[Tuple[float, float]] = None
-    position_mm: Optional[Tuple[float, float]] = None
+    def __init__(
+        self,
+        # Required arguments
+        is_scalable: bool,
+        source_coordinate_system_name: str,
+        source_dimensions: Optional[Tuple[float, float]],
+        time_estimate: Optional[float],
+        shm_name: str,
+        handle_class_name: str,
+        artifact_type_name: str,
+        # Optional arguments
+        array_metadata: Optional[Dict[str, Any]] = None,
+        generation_size: Optional[Tuple[float, float]] = None,
+        dimensions_mm: Optional[Tuple[float, float]] = None,
+        position_mm: Optional[Tuple[float, float]] = None,
+        **_kwargs,
+    ):
+        super().__init__(
+            shm_name=shm_name,
+            handle_class_name=handle_class_name,
+            artifact_type_name=artifact_type_name,
+            array_metadata=array_metadata,
+        )
+        self.is_scalable = is_scalable
+        self.source_coordinate_system_name = source_coordinate_system_name
+        self.source_dimensions = source_dimensions
+        self.time_estimate = time_estimate
+        self.generation_size = generation_size
+        self.dimensions_mm = dimensions_mm
+        self.position_mm = position_mm
 
 
 class WorkPieceArtifact(BaseArtifact):
@@ -34,20 +59,25 @@ class WorkPieceArtifact(BaseArtifact):
         texture_data: Optional[TextureData] = None,
         generation_size: Optional[Tuple[float, float]] = None,
     ):
-        super().__init__(
-            ops=ops,
-            is_scalable=is_scalable,
-            source_coordinate_system=source_coordinate_system,
-            source_dimensions=source_dimensions,
-            time_estimate=time_estimate,
-        )
+        super().__init__()
+        self.ops = ops
+        self.is_scalable = is_scalable
+        self.source_coordinate_system = source_coordinate_system
+        self.source_dimensions = source_dimensions
+        self.time_estimate = time_estimate
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_data: Optional[TextureData] = texture_data
         self.generation_size: Optional[Tuple[float, float]] = generation_size
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
-        result = super().to_dict()
+        result = {
+            "ops": self.ops.to_dict(),
+            "is_scalable": self.is_scalable,
+            "source_coordinate_system": self.source_coordinate_system.name,
+            "source_dimensions": self.source_dimensions,
+            "time_estimate": self.time_estimate,
+        }
         if self.generation_size:
             result["generation_size"] = self.generation_size
         if self.vertex_data:
@@ -125,7 +155,6 @@ class WorkPieceArtifact(BaseArtifact):
         handle: BaseArtifactHandle,
         arrays: Dict[str, np.ndarray],
     ) -> WorkPieceArtifact:
-        # The consumer must ensure the correct handle type is passed.
         if not isinstance(handle, WorkPieceArtifactHandle):
             raise TypeError(
                 "WorkPieceArtifact requires a WorkPieceArtifactHandle"
