@@ -58,7 +58,8 @@ def generate_scene_description(
                 visible_steps.add(step)
 
     for step in visible_steps:
-        handle = pipeline.get_step_artifact_handle(step.uid)
+        # Use the new lightweight render artifact for UI consumption
+        handle = pipeline.get_step_render_artifact_handle(step.uid)
         if handle:
             item = RenderItem(
                 artifact_handle=handle,

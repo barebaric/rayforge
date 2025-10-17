@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Dict, Optional
 from blinker import Signal
 
 from .base import PipelineStage
-from ..artifact import StepArtifactHandle, create_handle_from_dict
+from ..artifact import (
+    StepRenderArtifactHandle,
+    StepOpsArtifactHandle,
+    create_handle_from_dict,
+)
 from ..artifact.store import ArtifactStore
 from ... import config
 
@@ -68,23 +72,31 @@ class StepGeneratorStage(PipelineStage):
             if layer.workflow
             for step in layer.workflow.steps
         }
-        cached_steps = set(self._artifact_cache._step_handles.keys())
+        # The source of truth is now the render handle cache.
+        cached_steps = set(self._artifact_cache._step_render_handles.keys())
         for step_uid in cached_steps - all_current_steps:
-            self._cleanup_entry(step_uid)
+            self._cleanup_entry(step_uid, full_invalidation=True)
 
         for layer in doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
-                    if step.uid not in self._artifact_cache._step_handles:
+                    # Trigger assembly if the render artifact is missing.
+                    if (
+                        step.uid
+                        not in self._artifact_cache._step_render_handles
+                    ):
                         self._trigger_assembly(step)
 
     def invalidate(self, key: StepKey):
         """Invalidates a step artifact, ensuring it will be regenerated."""
-        self._cleanup_entry(key)
+        self._cleanup_entry(key, full_invalidation=True)
 
     def mark_stale_and_trigger(self, step: "Step"):
         """Marks a step as stale and immediately tries to trigger assembly."""
-        self._cleanup_entry(step.uid)
+        # When marking as stale, we do NOT do a full invalidation, to
+        # prevent UI flicker. The old render artifact will be replaced
+        # atomically when the new one is ready.
+        self._cleanup_entry(step.uid, full_invalidation=False)
         self._trigger_assembly(step)
 
     def _cleanup_task(self, key: StepKey):
@@ -95,15 +107,27 @@ class StepGeneratorStage(PipelineStage):
                 logger.debug(f"Cancelling active step task for {key}")
                 self._task_manager.cancel_task(task.key)
 
-    def _cleanup_entry(self, key: StepKey):
+    def _cleanup_entry(self, key: StepKey, full_invalidation: bool):
         """Removes a step artifact, clears time cache, and cancels its task."""
         logger.debug(f"StepGeneratorStage: Cleaning up entry {key}.")
         self._generation_id_map.pop(key, None)
         self._time_cache.pop(key, None)  # Clear the time cache
         self._cleanup_task(key)
-        handle = self._artifact_cache._step_handles.pop(key, None)
-        if handle:
-            ArtifactStore.release(handle)
+
+        # The ops artifact is always stale and can be removed.
+        ops_handle = self._artifact_cache._step_ops_handles.pop(key, None)
+        if ops_handle:
+            ArtifactStore.release(ops_handle)
+
+        # Only remove the render artifact if this is a full invalidation
+        # (e.g., the step was deleted), not a simple regeneration.
+        if full_invalidation:
+            render_handle = self._artifact_cache._step_render_handles.pop(
+                key, None
+            )
+            if render_handle:
+                ArtifactStore.release(render_handle)
+
         self._artifact_cache.invalidate_for_job()
 
     def _trigger_assembly(self, step: "Step"):
@@ -134,7 +158,7 @@ class StepGeneratorStage(PipelineStage):
             assembly_info.append(info)
 
         if not assembly_info:
-            self._artifact_cache.invalidate_for_step(step.uid)
+            self._cleanup_entry(step.uid, full_invalidation=True)
             return
 
         generation_id = self._generation_id_map.get(step.uid, 0) + 1
@@ -182,12 +206,21 @@ class StepGeneratorStage(PipelineStage):
                 # The visual artifact is ready. Store handle and notify.
                 handle_dict = data["handle_dict"]
                 handle = create_handle_from_dict(handle_dict)
-                if not isinstance(handle, StepArtifactHandle):
-                    raise TypeError("Expected a StepArtifactHandle")
-                self._artifact_cache.put_step_handle(step_uid, handle)
+                if not isinstance(handle, StepRenderArtifactHandle):
+                    raise TypeError("Expected a StepRenderArtifactHandle")
+                self._artifact_cache.put_step_render_handle(step_uid, handle)
                 self.render_artifact_ready.send(self, step=step)
             except Exception as e:
                 logger.error(f"Error handling render_artifact_ready: {e}")
+        elif event_name == "ops_artifact_ready":
+            try:
+                handle_dict = data["handle_dict"]
+                handle = create_handle_from_dict(handle_dict)
+                if not isinstance(handle, StepOpsArtifactHandle):
+                    raise TypeError("Expected a StepOpsArtifactHandle")
+                self._artifact_cache.put_step_ops_handle(step_uid, handle)
+            except Exception as e:
+                logger.error(f"Error handling ops_artifact_ready: {e}")
 
     def _on_assembly_complete(
         self, task: "Task", step: "Step", task_generation_id: int

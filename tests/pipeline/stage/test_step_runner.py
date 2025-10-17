@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 import numpy as np
 
 from rayforge.core.doc import Doc
@@ -8,7 +8,8 @@ from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepArtifact,
+    StepRenderArtifact,
+    StepOpsArtifact,
     ArtifactStore,
     create_handle_from_dict,
     TextureData,
@@ -82,19 +83,23 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     assert isinstance(final_time, float)
     assert gen_id == 1
 
-    # Assert: Event was sent with the visual artifact handle
-    mock_proxy.send_event.assert_called_once_with(
-        "render_artifact_ready",
-        {
-            "handle_dict": ANY,
-            "generation_id": 1,
-        },
-    )
-    handle_dict = mock_proxy.send_event.call_args[0][1]["handle_dict"]
-    final_handle = create_handle_from_dict(handle_dict)
-    final_artifact = ArtifactStore.get(final_handle)
+    # Assert: Both render and ops events were sent
+    assert mock_proxy.send_event.call_count == 2
+    calls = mock_proxy.send_event.call_args_list
 
-    assert isinstance(final_artifact, StepArtifact)
+    # Find and validate the render artifact
+    render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
+    render_handle_dict = render_call[0][1]["handle_dict"]
+    render_handle = create_handle_from_dict(render_handle_dict)
+    render_artifact = ArtifactStore.get(render_handle)
+    assert isinstance(render_artifact, StepRenderArtifact)
+
+    # Find and validate the ops artifact
+    ops_call = next(c for c in calls if c[0][0] == "ops_artifact_ready")
+    ops_handle_dict = ops_call[0][1]["handle_dict"]
+    ops_handle = create_handle_from_dict(ops_handle_dict)
+    ops_artifact = ArtifactStore.get(ops_handle)
+    assert isinstance(ops_artifact, StepOpsArtifact)
 
     # 1. Ops are scaled from 100 units to the workpiece width of 20mm.
     #    The line is now from (0,0) to (20,0) in local mm.
@@ -102,12 +107,13 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     #    The final line is from (50,60) to (70,60) in world mm.
     expected_end = (70.0, 60.0, 0.0)
     line_cmd = next(
-        c for c in final_artifact.ops if isinstance(c, LineToCommand)
+        c for c in ops_artifact.ops if isinstance(c, LineToCommand)
     )
     assert line_cmd.end == pytest.approx(expected_end)
 
     ArtifactStore.release(base_handle)
-    ArtifactStore.release(final_handle)
+    ArtifactStore.release(render_handle)
+    ArtifactStore.release(ops_handle)
 
 
 def test_step_runner_handles_texture_data(machine):
@@ -158,14 +164,19 @@ def test_step_runner_handles_texture_data(machine):
     )
     assert result is not None
 
-    mock_proxy.send_event.assert_called_once()
-    handle_dict = mock_proxy.send_event.call_args[0][1]["handle_dict"]
-    final_handle = create_handle_from_dict(handle_dict)
-    final_artifact = ArtifactStore.get(final_handle)
+    assert mock_proxy.send_event.call_count == 2
+    render_call = next(
+        c
+        for c in mock_proxy.send_event.call_args_list
+        if c[0][0] == "render_artifact_ready"
+    )
+    render_handle_dict = render_call[0][1]["handle_dict"]
+    render_handle = create_handle_from_dict(render_handle_dict)
+    render_artifact = ArtifactStore.get(render_handle)
 
-    assert isinstance(final_artifact, StepArtifact)
-    assert len(final_artifact.texture_instances) == 1
-    instance = final_artifact.texture_instances[0]
+    assert isinstance(render_artifact, StepRenderArtifact)
+    assert len(render_artifact.texture_instances) == 1
+    instance = render_artifact.texture_instances[0]
 
     # The final transform should be:
     # WorldPlacement @ LocalTranslation @ LocalScale
@@ -196,4 +207,4 @@ def test_step_runner_handles_texture_data(machine):
     )
 
     ArtifactStore.release(base_handle)
-    ArtifactStore.release(final_handle)
+    ArtifactStore.release(render_handle)

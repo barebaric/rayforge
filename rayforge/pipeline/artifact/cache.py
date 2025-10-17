@@ -3,7 +3,8 @@ import logging
 from typing import Dict, Tuple, Optional
 from .handle import BaseArtifactHandle
 from .workpiece import WorkPieceArtifactHandle
-from .step import StepArtifactHandle
+from .step_ops import StepOpsArtifactHandle
+from .step_render import StepRenderArtifactHandle
 from .job import JobArtifactHandle
 from .store import ArtifactStore
 
@@ -31,7 +32,8 @@ class ArtifactCache:
         self._workpiece_handles: Dict[
             WorkPieceKey, WorkPieceArtifactHandle
         ] = {}
-        self._step_handles: Dict[StepKey, StepArtifactHandle] = {}
+        self._step_render_handles: Dict[StepKey, StepRenderArtifactHandle] = {}
+        self._step_ops_handles: Dict[StepKey, StepOpsArtifactHandle] = {}
         self._job_handle: Optional[JobArtifactHandle] = None
 
     def get_workpiece_handle(
@@ -53,24 +55,43 @@ class ArtifactCache:
 
         self._workpiece_handles[key] = handle
 
-        # Invalidate parent step
-        step_handle = self._step_handles.pop(step_uid, None)
-        self._release_handle(step_handle)
+        # Invalidate parent step artifacts. We don't need a full invalidation
+        # that removes render handles, just ops handles.
+        ops_handle = self._step_ops_handles.pop(step_uid, None)
+        self._release_handle(ops_handle)
 
         # Invalidate grandparent job
         self.invalidate_for_job()
 
-    def get_step_handle(self, step_uid: str) -> Optional[StepArtifactHandle]:
-        """Retrieves a handle for a StepArtifact."""
-        return self._step_handles.get(step_uid)
+    def get_step_render_handle(
+        self, step_uid: str
+    ) -> Optional[StepRenderArtifactHandle]:
+        """Retrieves a handle for a StepRenderArtifact."""
+        return self._step_render_handles.get(step_uid)
 
-    def put_step_handle(self, step_uid: str, handle: StepArtifactHandle):
-        """Stores a handle for a StepArtifact and invalidates deps."""
-        old_handle = self._step_handles.pop(step_uid, None)
+    def put_step_render_handle(
+        self, step_uid: str, handle: StepRenderArtifactHandle
+    ):
+        """Stores a handle for a StepRenderArtifact."""
+        old_handle = self._step_render_handles.pop(step_uid, None)
         self._release_handle(old_handle)
+        self._step_render_handles[step_uid] = handle
 
-        self._step_handles[step_uid] = handle
-        # A new step always invalidates the final job.
+    def get_step_ops_handle(
+        self, step_uid: str
+    ) -> Optional[StepOpsArtifactHandle]:
+        """Retrieves a handle for a StepOpsArtifact."""
+        return self._step_ops_handles.get(step_uid)
+
+    def put_step_ops_handle(
+        self, step_uid: str, handle: StepOpsArtifactHandle
+    ):
+        """
+        Stores a handle for a StepOpsArtifact and invalidates the final job.
+        """
+        old_handle = self._step_ops_handles.pop(step_uid, None)
+        self._release_handle(old_handle)
+        self._step_ops_handles[step_uid] = handle
         self.invalidate_for_job()
 
     def get_job_handle(self) -> Optional[JobArtifactHandle]:
@@ -97,16 +118,16 @@ class ArtifactCache:
         handle = self._workpiece_handles.pop(key, None)
         self._release_handle(handle)
 
-        # Invalidate parent step
-        step_handle = self._step_handles.pop(step_uid, None)
-        self._release_handle(step_handle)
+        # Invalidate parent step artifacts
+        ops_handle = self._step_ops_handles.pop(step_uid, None)
+        self._release_handle(ops_handle)
 
         # Invalidate grandparent job
         self.invalidate_for_job()
 
     def invalidate_for_step(self, step_uid: str):
         """
-        Invalidates a step, all workpieces belonging to it, and the final job.
+        Invalidates a step's artifacts and the final job.
         """
         # 1. Invalidate all associated WorkPieceArtifacts first
         keys_to_remove = [
@@ -116,9 +137,11 @@ class ArtifactCache:
             handle = self._workpiece_handles.pop(key, None)
             self._release_handle(handle)
 
-        # 2. Invalidate the StepArtifact itself
-        step_handle = self._step_handles.pop(step_uid, None)
-        self._release_handle(step_handle)
+        # 2. Invalidate the StepArtifacts themselves
+        step_render_handle = self._step_render_handles.pop(step_uid, None)
+        self._release_handle(step_render_handle)
+        step_ops_handle = self._step_ops_handles.pop(step_uid, None)
+        self._release_handle(step_ops_handle)
 
         # 3. Invalidate the downstream JobArtifact
         self.invalidate_for_job()
@@ -139,9 +162,13 @@ class ArtifactCache:
             self._release_handle(handle)
         self._workpiece_handles.clear()
 
-        for handle in self._step_handles.values():
+        for handle in self._step_render_handles.values():
             self._release_handle(handle)
-        self._step_handles.clear()
+        self._step_render_handles.clear()
+
+        for handle in self._step_ops_handles.values():
+            self._release_handle(handle)
+        self._step_ops_handles.clear()
 
         self._release_handle(self._job_handle)
         self._job_handle = None

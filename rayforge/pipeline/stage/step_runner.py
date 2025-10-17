@@ -10,12 +10,12 @@ from ..encoder.vertexencoder import VertexEncoder
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
     ArtifactStore,
-    StepArtifact,
+    StepRenderArtifact,
+    StepOpsArtifact,
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from ..artifact.step import TextureInstance
-from ..coord import CoordinateSystem
+from ..artifact.base import TextureInstance
 
 logger = logging.getLogger(__name__)
 
@@ -146,22 +146,31 @@ def make_step_artifact_in_subprocess(
     vertex_data = encoder.encode(combined_ops)
     proxy.set_progress(0.95)
 
-    # 6. Create, store, and IMMEDIATELY EMIT the visual artifact
-    proxy.set_message(_("Storing visual step data..."))
-    final_artifact = StepArtifact(
-        ops=combined_ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        vertex_data=vertex_data,
-        texture_instances=texture_instances,
-    )
-    final_handle = ArtifactStore.put(final_artifact)
+    # 6. Create, store, and emit the new, separated artifacts
+    proxy.set_message(_("Storing step data..."))
 
-    # Send handle back via event for instant UI update
+    # New, lightweight render artifact
+    render_artifact = StepRenderArtifact(
+        vertex_data=vertex_data, texture_instances=texture_instances
+    )
+    render_handle = ArtifactStore.put(render_artifact)
+
+    # Send render handle back via event for instant UI update
     proxy.send_event(
         "render_artifact_ready",
         {
-            "handle_dict": final_handle.to_dict(),
+            "handle_dict": render_handle.to_dict(),
+            "generation_id": generation_id,
+        },
+    )
+
+    # Send ops handle back via a separate event
+    ops_artifact = StepOpsArtifact(ops=combined_ops)
+    ops_handle = ArtifactStore.put(ops_artifact)
+    proxy.send_event(
+        "ops_artifact_ready",
+        {
+            "handle_dict": ops_handle.to_dict(),
             "generation_id": generation_id,
         },
     )

@@ -27,14 +27,15 @@ graph TD
             H("Multiple WorkPieceArtifacts");
             H --> I(Assemble & Transform<br/><i>Applies position, rotation</i>);
             I --> J(Per-Step Transformers<br/><i>e.g., Multi-Pass, Optimize</i>);
-            J -- "Creates render bundle" --> K("StepArtifact<br/><i>World-space Vertices & Textures</i>")
+            J -- "Creates render bundle" --> K("StepRenderArtifact<br/><i>World-space Vertices & Textures</i>")
+            J -- "Creates ops bundle" --> L("StepOpsArtifact<br/><i>World-space Ops</i>")
         end
 
         subgraph "2c. JobGenerator"
             direction LR
-            L("Multiple StepArtifacts");
-            L --> M(Assemble Ops & Encode);
-            M --> N("JobArtifact<br/><i>Final Ops, Vertices, G-code, Time</i>");
+            M("Multiple StepOpsArtifacts");
+            M --> N(Assemble Ops & Encode);
+            N --> O("JobArtifact<br/><i>Final Ops, Vertices, G-code, Time</i>");
         end
     end
 
@@ -48,17 +49,15 @@ graph TD
     Input --> A;
     G --> H;
     G --> Vis2D;
-    K --> L;
     K --> Vis3D;
-    N --> Simulator;
-    N --> File;
+    L --> M;
+    O --> Simulator;
+    O --> File;
 
     classDef io fill:#f9f,stroke:#333,stroke-width:2px;
     classDef output fill:#bbf,stroke:#333,stroke-width:2px,max-width:500px;
-    classDef highlight fill:#dfd,stroke:#333,stroke-width:2px;
     class Input,Vis2D,Vis3D,Simulator,File io;
-    class A,D,G,H,K,L,N output;
-    class I,J,M highlight
+    class A,D,G,H,K,L,M,O output;
 ```
 
 # **Detailed Breakdown of the Sequence**
@@ -102,9 +101,9 @@ consumption by the 2D canvas.
 
 ### **2b. StepGeneratorStage: Step-Level Assembly**
 
-This stage is responsible for assembling a final **render bundle** for an
-entire step. It consumes the `WorkPieceArtifacts` for all workpieces that
-are part of a given step.
+This stage is responsible for assembling final artifacts for an entire step. It
+consumes the `WorkPieceArtifacts` for all workpieces that are part of a given
+step.
 
 1.  **Assemble & Transform:** The stage retrieves all required
     `WorkPieceArtifacts` from the cache. It then applies the final world
@@ -115,17 +114,21 @@ are part of a given step.
     by transformers that operate on the step as a whole, such as path
     `Optimize`ation or `Multi-Pass` operations.
 
-The output is a **StepArtifact**. This is a self-contained bundle for the
-3D canvas, containing all vertex and texture data for the entire step, now in
-final **world-space** coordinates.
+The `StepGeneratorStage` produces two distinct outputs:
+
+- A **StepRenderArtifact**: A lightweight "render bundle" for the 3D canvas,
+  containing all vertex and texture data for the entire step in final
+  **world-space** coordinates. This is delivered as quickly as possible.
+- A **StepOpsArtifact**: An artifact containing only the final, transformed
+  `Ops` for the entire step. This is consumed later by the job generator.
 
 ### **2c. JobGeneratorStage: Final Job Assembly**
 
 This stage is invoked when the user wants to generate the final G-code. It
-consumes the `StepArtifacts` created by the `StepGeneratorStage`.
+consumes the `StepOpsArtifacts` created by the `StepGeneratorStage`.
 
 1.  **Assemble Ops & Encode:** The `JobGeneratorStage` retrieves all required
-    `StepArtifacts` from the cache and combines their `Ops` into a single,
+    `StepOpsArtifacts` from the cache and combines their `Ops` into a single,
     large sequence. It then encodes this sequence into G-code and generates
     a final set of vertices for simulation, along with a high-fidelity
     time estimate for the entire job.
@@ -142,7 +145,7 @@ using the artifact best suited for its needs:
     to render the local geometry of each workpiece without needing to wait
     for step-level assembly, providing fast feedback during design.
 
-2.  **3D Canvas (UI):** Uses **StepArtifacts**. These are perfect "render
+2.  **3D Canvas (UI):** Uses **StepRenderArtifacts**. These are perfect "render
     bundles" containing all the geometry for an entire step, already in
     world-space coordinates. This simplifies rendering and ensures an
     accurate preview of the final assembled output.

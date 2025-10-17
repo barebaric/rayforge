@@ -24,7 +24,8 @@ from ..core.matrix import Matrix
 from .artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
-    StepArtifactHandle,
+    StepRenderArtifactHandle,
+    StepOpsArtifactHandle,
     ArtifactCache,
 )
 from .stage import (
@@ -310,9 +311,13 @@ class Pipeline:
         if self.is_paused:
             return
         if isinstance(origin, Step):
-            self._artifact_cache.invalidate_for_step(origin.uid)
+            # A fundamental property of a Step has changed. This invalidates
+            # all artifacts that depend on it, starting from the bottom.
+            self._workpiece_stage.invalidate_for_step(origin.uid)
+            self._step_stage.invalidate(origin.uid)
             self.reconcile_all()
         elif isinstance(origin, WorkPiece):
+            self._workpiece_stage.invalidate_for_workpiece(origin.uid)
             self.reconcile_all()
 
     def _on_descendant_transform_changed(self, sender, *, origin):
@@ -332,7 +337,7 @@ class Pipeline:
             self._workpiece_stage.on_workpiece_transform_changed(wp)
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
-                    self._step_stage.invalidate(step.uid)
+                    self._step_stage.mark_stale_and_trigger(step)
 
         self.reconcile_all()
 
@@ -349,7 +354,7 @@ class Pipeline:
             for layer in self.doc.layers:
                 if layer.workflow:
                     for step in layer.workflow.steps:
-                        self._step_stage.invalidate(step.uid)
+                        self._step_stage.mark_stale_and_trigger(step)
         self.reconcile_all()
 
     def _on_workpiece_generation_starting(
@@ -497,13 +502,23 @@ class Pipeline:
             step_uid, workpiece_uid
         )
 
-    def get_step_artifact_handle(
+    def get_step_render_artifact_handle(
         self, step_uid: str
-    ) -> Optional[StepArtifactHandle]:
+    ) -> Optional[StepRenderArtifactHandle]:
         """
-        Retrieves the handle for a generated step artifact from the cache.
+        Retrieves the handle for a generated step render artifact. This is
+        the lightweight artifact intended for UI consumption.
         """
-        return self._artifact_cache.get_step_handle(step_uid)
+        return self._artifact_cache.get_step_render_handle(step_uid)
+
+    def get_step_ops_artifact_handle(
+        self, step_uid: str
+    ) -> Optional[StepOpsArtifactHandle]:
+        """
+        Retrieves the handle for a generated step ops artifact. This is
+        intended for the job assembly process.
+        """
+        return self._artifact_cache.get_step_ops_handle(step_uid)
 
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix

@@ -240,7 +240,7 @@ class FileCmd:
             if not layer.workflow:
                 continue
             for step in layer.workflow.steps:
-                handle = pipeline.get_step_artifact_handle(step.uid)
+                handle = pipeline.get_step_ops_artifact_handle(step.uid)
                 if handle:
                     step_handles[step.uid] = handle.to_dict()
 
