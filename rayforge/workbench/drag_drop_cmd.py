@@ -91,8 +91,8 @@ class DragDropCmd:
         Called when drag leaves the canvas.
         Uses delayed removal to handle spurious leave events from GTK4.
         """
-        # Don't immediately hide - GTK4 sometimes fires spurious leave events
-        # during active drags. Delay gives time for motion/drop events to occur.
+        # Don't immediately hide - GTK4 sometimes fires spurious leave
+        # events during active drags. Delay allows motion/drop to occur.
         logger.debug("Drag leave signal received, scheduling delayed hide")
         GLib.timeout_add(100, self._delayed_hide_overlay)
 
