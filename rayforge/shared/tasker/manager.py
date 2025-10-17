@@ -209,7 +209,7 @@ class TaskManager:
         task = Task(_noop_coro, func, *args, key=key, **kwargs)
 
         if when_event:
-            task.event_received.connect(when_event)
+            task.event_received.connect(when_event, weak=False)
 
         with self._lock:
             # If the manager was idle, this is a new batch of work.

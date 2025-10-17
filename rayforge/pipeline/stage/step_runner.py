@@ -47,10 +47,13 @@ def make_step_artifact_in_subprocess(
     step_uid: str,
     generation_id: int,
     per_step_transformers_dicts: List[Dict[str, Any]],
-) -> Optional[tuple[Dict[str, Any], int]]:
+    cut_speed: float,
+    travel_speed: float,
+    acceleration: float,
+) -> Optional[tuple[float, int]]:
     """
-    Aggregates WorkPieceArtifacts into a final StepArtifact in a background
-    process.
+    Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
+    back via an event, and then returns the final time estimate.
     """
     proxy.set_message(_("Assembling step..."))
     logger.debug(f"Starting step assembly for step_uid: {step_uid}")
@@ -99,20 +102,16 @@ def make_step_artifact_in_subprocess(
         # place it locally, and then place it in the world.
         if artifact.texture_data:
             chunk_w_mm, chunk_h_mm = artifact.texture_data.dimensions_mm
-            chunk_x_off, chunk_y_off_from_top = (
-                artifact.texture_data.position_mm
-            )
-            __, workpiece_h_mm = workpiece.size
+            chunk_x_off, chunk_y_off = artifact.texture_data.position_mm
 
             # a) Create a matrix to scale the 1x1 unit quad to the chunk's
             # physical size in millimeters.
             chunk_scale_matrix = Matrix.scale(chunk_w_mm, chunk_h_mm)
 
             # b) Create a matrix to translate the correctly-sized chunk
-            # to its position within the workpiece's local Y-up frame.
-            y_pos_local = workpiece_h_mm - chunk_y_off_from_top - chunk_h_mm
+            # to its position within the workpiece's local frame.
             local_translation_matrix = Matrix.translation(
-                chunk_x_off, y_pos_local
+                chunk_x_off, chunk_y_off
             )
 
             # c) The final transform combines these steps in order:
@@ -147,8 +146,8 @@ def make_step_artifact_in_subprocess(
     vertex_data = encoder.encode(combined_ops)
     proxy.set_progress(0.95)
 
-    # 6. Create and store the final StepArtifact "render bundle".
-    proxy.set_message(_("Storing final step data..."))
+    # 6. Create, store, and IMMEDIATELY EMIT the visual artifact
+    proxy.set_message(_("Storing visual step data..."))
     final_artifact = StepArtifact(
         ops=combined_ops,
         is_scalable=False,
@@ -157,7 +156,26 @@ def make_step_artifact_in_subprocess(
         texture_instances=texture_instances,
     )
     final_handle = ArtifactStore.put(final_artifact)
+
+    # Send handle back via event for instant UI update
+    proxy.send_event(
+        "render_artifact_ready",
+        {
+            "handle_dict": final_handle.to_dict(),
+            "generation_id": generation_id,
+        },
+    )
+
+    # 7. NOW perform the expensive time calculation
+    proxy.set_message(_("Calculating time estimate..."))
+    final_time = combined_ops.estimate_time(
+        default_cut_speed=cut_speed,
+        default_travel_speed=travel_speed,
+        acceleration=acceleration,
+    )
+
     proxy.set_progress(1.0)
     logger.debug(f"Step assembly for {step_uid} complete.")
 
-    return final_handle.to_dict(), generation_id
+    # 8. Return the final time estimate
+    return final_time, generation_id

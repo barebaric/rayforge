@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from pathlib import Path
 from rayforge.shared.tasker.task import Task
 from rayforge.image import SVG_RENDERER
@@ -45,10 +45,10 @@ def setup_real_config(mocker):
     test_config = TestConfig()
     # Patch config where it is imported and used by all relevant modules.
     mocker.patch("rayforge.config.config", test_config)
-    mocker.patch("rayforge.pipeline.stage.time.config.config", test_config)
     mocker.patch(
         "rayforge.pipeline.stage.workpiece.config.config", test_config
     )
+    mocker.patch("rayforge.pipeline.stage.step.config.config", test_config)
     mocker.patch("builtins._", lambda s: s, create=True)
     return test_config
 
@@ -56,8 +56,8 @@ def setup_real_config(mocker):
 @pytest.fixture
 def mock_task_mgr():
     """
-    Creates a MagicMock for the TaskManager.
-    It no longer patches any modules.
+    Creates a MagicMock for the TaskManager that executes scheduled calls
+    synchronously for predictable testing.
     """
     mock_mgr = MagicMock()
     created_tasks_info = []
@@ -68,6 +68,7 @@ def mock_task_mgr():
             self.args = args
             self.kwargs = kwargs
             self.when_done = kwargs.get("when_done")
+            self.when_event = kwargs.get("when_event")
             self.key = kwargs.get("key")
 
     def run_process_mock(target_func, *args, **kwargs):
@@ -75,7 +76,12 @@ def mock_task_mgr():
         created_tasks_info.append(task)
         return task
 
+    # Make scheduled calls run immediately
+    def schedule_sync(callback, *args, **kwargs):
+        callback(*args, **kwargs)
+
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
+    mock_mgr.schedule_on_main_thread = MagicMock(side_effect=schedule_sync)
     mock_mgr.created_tasks = created_tasks_info
     return mock_mgr
 
@@ -120,10 +126,12 @@ class TestPipeline:
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
-    def _complete_all_tasks(self, mock_task_mgr, handle):
+    def _complete_all_tasks(
+        self, mock_task_mgr, workpiece_handle, step_time=42.0
+    ):
         """
         Helper to find and complete all outstanding tasks to bring the
-        pipeline to an idle state.
+        pipeline to an idle state. Simulates the new event-driven flow.
         """
         processed_keys = set()
         while True:
@@ -135,35 +143,43 @@ class TestPipeline:
             if not tasks_to_process:
                 break
 
-            for task_to_complete in tasks_to_process:
-                mock_finished_task = MagicMock(spec=Task)
-                mock_finished_task.key = task_to_complete.key
-                mock_finished_task.get_status.return_value = "completed"
+            for task in tasks_to_process:
+                mock_task_obj = MagicMock(spec=Task)
+                mock_task_obj.key = task.key
+                mock_task_obj.get_status.return_value = "completed"
 
-                result = (None, 1)  # Default result
-                if (
-                    task_to_complete.target
-                    is make_workpiece_artifact_in_subprocess
-                ):
-                    result = (handle.to_dict(), 1)
-                elif (
-                    task_to_complete.target is make_step_artifact_in_subprocess
-                ):
-                    dummy_handle = StepArtifactHandle(
-                        shm_name="dummy",
-                        handle_class_name="StepArtifactHandle",
-                        artifact_type_name="StepArtifact",
-                        is_scalable=False,
-                        source_coordinate_system_name="MILLIMETER_SPACE",
-                        source_dimensions=None,
-                        time_estimate=None,
-                    )
-                    result = (dummy_handle.to_dict(), 1)
+                if task.target is make_workpiece_artifact_in_subprocess:
+                    result = (workpiece_handle.to_dict(), 1)
+                    mock_task_obj.result.return_value = result
+                    if task.when_done:
+                        task.when_done(mock_task_obj)
+                elif task.target is make_step_artifact_in_subprocess:
+                    # 1. Simulate the event for the render artifact
+                    if task.when_event:
+                        dummy_handle = StepArtifactHandle(
+                            shm_name="dummy_step",
+                            handle_class_name="StepArtifactHandle",
+                            artifact_type_name="StepArtifact",
+                            is_scalable=False,
+                            source_coordinate_system_name="MILLIMETER_SPACE",
+                            source_dimensions=None,
+                            time_estimate=None,
+                            array_metadata={},
+                        )
+                        event_data = {
+                            "handle_dict": dummy_handle.to_dict(),
+                            "generation_id": 1,
+                        }
+                        task.when_event(
+                            mock_task_obj, "render_artifact_ready", event_data
+                        )
+                    # 2. Simulate the final result for the time estimate
+                    result = (step_time, 1)
+                    mock_task_obj.result.return_value = result
+                    if task.when_done:
+                        task.when_done(mock_task_obj)
 
-                mock_finished_task.result.return_value = result
-                if task_to_complete.when_done:
-                    task_to_complete.when_done(mock_finished_task)
-                processed_keys.add(task_to_complete.key)
+                processed_keys.add(task.key)
 
         mock_task_mgr.created_tasks.clear()
 
@@ -564,7 +580,13 @@ class TestPipeline:
         pipeline.resume()
         assert pipeline.is_paused is False
 
-    def test_get_estimated_time(self, doc, real_workpiece, mock_task_mgr):
+    def test_get_estimated_time_returns_none(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        """
+        Tests that the refactored get_estimated_time now correctly
+        returns None as it's no longer per-workpiece.
+        """
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
@@ -572,18 +594,52 @@ class TestPipeline:
         layer.workflow.add_step(step)
         pipeline = Pipeline(doc, mock_task_mgr)
 
-        # Patch the method on the specific instance to test delegation
-        with patch.object(
-            pipeline._time_estimator_stage, "get_estimate"
-        ) as mock_get_estimate:
-            mock_get_estimate.return_value = 42.5
+        # Act
+        result = pipeline.get_estimated_time(step, real_workpiece)
 
-            # Act
-            result = pipeline.get_estimated_time(step, real_workpiece)
+        # Assert
+        assert result is None
 
-            # Assert - Should return the mocked value from the stage
-            assert result == 42.5
-            mock_get_estimate.assert_called_once_with(step, real_workpiece)
+    def test_preview_time_updated_signal_is_correct(
+        self, doc, real_workpiece, mock_task_mgr
+    ):
+        """
+        Tests the new end-to-end time estimation by checking the final
+        signal received by the UI.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step()
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        # Create a dummy workpiece artifact to allow the pipeline to proceed
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        )
+        wp_handle = ArtifactStore.put(wp_artifact)
+
+        mock_handler = MagicMock()
+        pipeline.preview_time_updated.connect(mock_handler)
+
+        # Act
+        try:
+            # Complete all tasks, simulating a time of 55.5s for the step
+            self._complete_all_tasks(mock_task_mgr, wp_handle, step_time=55.5)
+
+            # Assert
+            # The handler is called multiple times (e.g., initially with None)
+            # We check the final call to see if it received the correct value.
+            mock_handler.assert_called()
+            last_call_args, last_call_kwargs = mock_handler.call_args_list[-1]
+            assert last_call_kwargs.get("total_seconds") == 55.5
+        finally:
+            ArtifactStore.release(wp_handle)
 
     def test_get_artifact_handle(self, doc, real_workpiece, mock_task_mgr):
         # Arrange

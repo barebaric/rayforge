@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 import numpy as np
 
 from rayforge.core.doc import Doc
@@ -23,13 +23,16 @@ from rayforge.pipeline.stage.step_runner import (
 @pytest.fixture
 def machine():
     m = Machine()
+    m.max_cut_speed = 5000
+    m.max_travel_speed = 10000
+    m.acceleration = 1000
     m.add_head(Laser())
     return m
 
 
-def test_step_assembler_correctly_scales_and_places_ops(machine):
+def test_step_runner_correctly_scales_and_places_ops(machine):
     """
-    Test that the assembler correctly scales a scalable artifact and then
+    Test that the runner correctly scales a scalable artifact and then
     applies a placement-only transform.
     """
     # Arrange
@@ -37,7 +40,8 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
     layer = doc.active_layer
     wp = WorkPiece(name="wp1")
     # Final state: 20x10mm size, translated to (50, 60)
-    wp.matrix = Matrix.translation(50, 60) @ Matrix.scale(20, 10)
+    wp.set_size(20, 10)
+    wp.pos = 50, 60
     layer.add_workpiece(wp)
 
     # Source artifact is scalable (e.g., from SVG) with 100x50 unit dimensions
@@ -55,7 +59,7 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
         {
             "artifact_handle_dict": base_handle.to_dict(),
             "world_transform_list": wp.get_world_transform().to_list(),
-            "workpiece_dict": wp.to_dict(),
+            "workpiece_dict": wp.in_world().to_dict(),
         }
     ]
     mock_proxy = MagicMock()
@@ -67,13 +71,29 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
         step_uid="step1",
         generation_id=1,
         per_step_transformers_dicts=[],
+        cut_speed=machine.max_cut_speed,
+        travel_speed=machine.max_travel_speed,
+        acceleration=machine.acceleration,
     )
-    assert result is not None
-    final_handle_dict, _ = result
 
-    # Assert
-    final_handle = create_handle_from_dict(final_handle_dict)
+    # Assert: Return value is (time, generation_id)
+    assert result is not None
+    final_time, gen_id = result
+    assert isinstance(final_time, float)
+    assert gen_id == 1
+
+    # Assert: Event was sent with the visual artifact handle
+    mock_proxy.send_event.assert_called_once_with(
+        "render_artifact_ready",
+        {
+            "handle_dict": ANY,
+            "generation_id": 1,
+        },
+    )
+    handle_dict = mock_proxy.send_event.call_args[0][1]["handle_dict"]
+    final_handle = create_handle_from_dict(handle_dict)
     final_artifact = ArtifactStore.get(final_handle)
+
     assert isinstance(final_artifact, StepArtifact)
 
     # 1. Ops are scaled from 100 units to the workpiece width of 20mm.
@@ -90,7 +110,7 @@ def test_step_assembler_correctly_scales_and_places_ops(machine):
     ArtifactStore.release(final_handle)
 
 
-def test_step_assembler_handles_texture_data(machine):
+def test_step_runner_handles_texture_data(machine):
     """
     Tests that texture data is correctly packaged into a TextureInstance
     with the correct final transformation matrix.
@@ -98,17 +118,17 @@ def test_step_assembler_handles_texture_data(machine):
     doc = Doc()
     layer = doc.active_layer
     wp = WorkPiece(name="wp1")
-    wp_transform = (
-        Matrix.translation(50, 60) @ Matrix.rotation(90) @ Matrix.scale(20, 10)
-    )
-    wp.matrix = wp_transform
+    wp.set_size(20, 10)
+    # Final placement: translate to (50, 60) and rotate 90 degrees.
+    wp.pos = 50, 60
+    wp.angle = 90
     layer.add_workpiece(wp)
 
     # This texture chunk covers the whole workpiece.
     texture = TextureData(
         power_texture_data=np.array([[255]], dtype=np.uint8),
-        dimensions_mm=(20, 10),
-        position_mm=(0, 0),
+        dimensions_mm=(20, 10),  # Texture's physical size
+        position_mm=(0, 0),  # Texture's position within workpiece
     )
     base_artifact = WorkPieceArtifact(
         ops=Ops(),
@@ -121,7 +141,7 @@ def test_step_assembler_handles_texture_data(machine):
         {
             "artifact_handle_dict": base_handle.to_dict(),
             "world_transform_list": wp.get_world_transform().to_list(),
-            "workpiece_dict": wp.to_dict(),
+            "workpiece_dict": wp.in_world().to_dict(),
         }
     ]
     mock_proxy = MagicMock()
@@ -132,18 +152,36 @@ def test_step_assembler_handles_texture_data(machine):
         step_uid="step1",
         generation_id=1,
         per_step_transformers_dicts=[],
+        cut_speed=machine.max_cut_speed,
+        travel_speed=machine.max_travel_speed,
+        acceleration=machine.acceleration,
     )
     assert result is not None
-    final_handle_dict, _ = result
-    final_handle = create_handle_from_dict(final_handle_dict)
+
+    mock_proxy.send_event.assert_called_once()
+    handle_dict = mock_proxy.send_event.call_args[0][1]["handle_dict"]
+    final_handle = create_handle_from_dict(handle_dict)
     final_artifact = ArtifactStore.get(final_handle)
 
     assert isinstance(final_artifact, StepArtifact)
     assert len(final_artifact.texture_instances) == 1
     instance = final_artifact.texture_instances[0]
 
-    # Re-calculate the expected transform to verify the assembler's logic
-    expected_transform_matrix = wp_transform
+    # The final transform should be:
+    # WorldPlacement @ LocalTranslation @ LocalScale
+    # The runner correctly extracts placement (pos/rot) and discards scale
+    # from the workpiece's full world transform. The test must replicate this.
+    full_world_transform = wp.get_world_transform()
+    (tx, ty, angle, sx, sy, skew) = full_world_transform.decompose()
+    world_placement_matrix = Matrix.compose(
+        tx, ty, angle, 1.0, np.copysign(1.0, sy), skew
+    )
+
+    local_translation_matrix = Matrix.translation(0, 0)
+    local_scale_matrix = Matrix.scale(20, 10)
+    expected_transform_matrix = (
+        world_placement_matrix @ local_translation_matrix @ local_scale_matrix
+    )
 
     np.testing.assert_allclose(
         instance.world_transform,

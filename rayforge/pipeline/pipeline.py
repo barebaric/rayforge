@@ -28,7 +28,6 @@ from .artifact import (
     ArtifactCache,
 )
 from .stage import (
-    TimeEstimatorStage,
     WorkpieceGeneratorStage,
     StepGeneratorStage,
     JobGeneratorStage,
@@ -58,8 +57,9 @@ class Pipeline:
             from a background process.
         ops_generation_finished (Signal): Fired when generation is complete
             for a (Step, WorkPiece) pair.
-        step_generation_finished (Signal): Fired when a step artifact is
-            fully assembled.
+        step_generation_finished (Signal): Fired when a step's visual artifact
+            is fully assembled and ready for rendering. This fires before
+            the full task (e.g., time estimation) is complete.
         job_generation_finished (Signal): Fired when the final job artifact
             is ready.
         time_estimation_updated (Signal): Fired when a time estimate is
@@ -90,9 +90,6 @@ class Pipeline:
         self._step_stage = StepGeneratorStage(
             self._task_manager, self._artifact_cache
         )
-        self._time_estimator_stage = TimeEstimatorStage(
-            self._task_manager, self._artifact_cache
-        )
         self._job_stage = JobGeneratorStage(
             self._task_manager, self._artifact_cache
         )
@@ -118,10 +115,13 @@ class Pipeline:
             self._on_workpiece_generation_finished
         )
         self._step_stage.generation_finished.connect(
-            self._on_step_generation_finished
+            self._on_step_task_completed
         )
-        self._time_estimator_stage.estimation_updated.connect(
-            self._on_time_estimation_updated
+        self._step_stage.render_artifact_ready.connect(
+            self._on_step_render_artifact_ready
+        )
+        self._step_stage.time_estimate_ready.connect(
+            self._on_step_time_estimate_ready
         )
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
@@ -138,7 +138,6 @@ class Pipeline:
         self._artifact_cache.shutdown()
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
-        self._time_estimator_stage.shutdown()
         self._job_stage.shutdown()
         logger.info("All pipeline resources released.")
 
@@ -168,9 +167,6 @@ class Pipeline:
         self._step_stage = StepGeneratorStage(
             self._task_manager, self._artifact_cache
         )
-        self._time_estimator_stage = TimeEstimatorStage(
-            self._task_manager, self._artifact_cache
-        )
         self._job_stage = JobGeneratorStage(
             self._task_manager, self._artifact_cache
         )
@@ -184,10 +180,13 @@ class Pipeline:
             self._on_workpiece_generation_finished
         )
         self._step_stage.generation_finished.connect(
-            self._on_step_generation_finished
+            self._on_step_task_completed
         )
-        self._time_estimator_stage.estimation_updated.connect(
-            self._on_time_estimation_updated
+        self._step_stage.render_artifact_ready.connect(
+            self._on_step_render_artifact_ready
+        )
+        self._step_stage.time_estimate_ready.connect(
+            self._on_step_time_estimate_ready
         )
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
@@ -203,7 +202,6 @@ class Pipeline:
         return (
             self._workpiece_stage.is_busy
             or self._step_stage.is_busy
-            or self._time_estimator_stage.is_busy
             or self._job_stage.is_busy
         )
 
@@ -384,30 +382,37 @@ class Pipeline:
         self, sender, *, step, workpiece, generation_id
     ):
         """
-        Relays signal and triggers downstream step assembly and time
-        estimation.
+        Relays signal and triggers downstream step assembly.
         """
         self.ops_generation_finished.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
         self._step_stage.mark_stale_and_trigger(step)
-        self._time_estimator_stage.generate_estimate(step, workpiece)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
-    def _on_step_generation_finished(self, sender, *, step, generation_id):
-        """Relays signal from the step stage."""
-        self.step_generation_finished.send(step, generation_id=generation_id)
+    def _on_step_render_artifact_ready(self, sender, *, step):
+        """
+        Handles the signal that a step's visual data is ready.
+        This now fires the public `step_generation_finished` signal,
+        triggering fast UI updates.
+        """
+        self.step_generation_finished.send(self, step=step, generation_id=0)
+
+    def _on_step_task_completed(self, sender, *, step, generation_id):
+        """
+        Handles the signal that the entire step task (including time) is done.
+        This is now only used for internal state updates, like checking the
+        pipeline's busy state.
+        """
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
-    def _on_time_estimation_updated(self, sender):
-        """Relays the signal from the time estimator stage."""
+    def _on_step_time_estimate_ready(self, sender, *, step, time):
+        """Handles the new, accurate time estimate from the step stage."""
         self.time_estimation_updated.send(self)
-        # Schedule the preview time update on the main thread to avoid
-        # UI updates from subprocess callbacks
         self._task_manager.schedule_on_main_thread(
             self._update_and_emit_preview_time
         )
@@ -418,7 +423,7 @@ class Pipeline:
     def _update_and_emit_preview_time(self):
         """
         Calculates the total estimated preview time by summing all valid
-        (step, workpiece) pairs and emits the preview_time_updated signal.
+        per-step estimates and emits the preview_time_updated signal.
         """
         if not self.doc:
             return
@@ -430,15 +435,14 @@ class Pipeline:
             if not layer.workflow:
                 continue
             for step in layer.workflow.steps:
-                for workpiece in layer.workpieces:
-                    estimate = self._time_estimator_stage.get_estimate(
-                        step, workpiece
-                    )
-                    if estimate is None:
-                        # A value of None means it's pending calculation
-                        is_calculating = True
-                    elif estimate > 0:  # -1 indicates an error, 0 is valid
-                        total_time += estimate
+                # Use the new, accurate, per-step time source
+                estimate = self._step_stage.get_estimate(step.uid)
+
+                if estimate is None:
+                    # A value of None means it's pending calculation
+                    is_calculating = True
+                elif estimate > 0:  # -1 indicates an error, 0 is valid
+                    total_time += estimate
 
         if is_calculating:
             # Send a special signal to indicate calculation is in progress
@@ -460,7 +464,6 @@ class Pipeline:
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
         self._workpiece_stage.reconcile(self.doc)
         self._step_stage.reconcile(self.doc)
-        self._time_estimator_stage.reconcile(self.doc)
         self._job_stage.reconcile(self.doc)
         self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
@@ -470,8 +473,13 @@ class Pipeline:
     def get_estimated_time(
         self, step: Step, workpiece: WorkPiece
     ) -> Optional[float]:
-        """Retrieves a cached time estimate if available."""
-        return self._time_estimator_stage.get_estimate(step, workpiece)
+        """
+        Retrieves a cached time estimate.
+        NOTE: As part of the time estimation refactor, we no longer
+        provide per-workpiece estimates, only per-step. This method will
+        return None.
+        """
+        return None
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """
