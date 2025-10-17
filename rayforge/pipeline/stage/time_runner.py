@@ -3,10 +3,9 @@ Defines the dedicated subprocess for high-fidelity time estimation.
 """
 
 from typing import Any, Tuple, List, Dict
-from ..shared.tasker.proxy import ExecutionContextProxy
-from .artifact.store import ArtifactStore
-from .artifact.handle import ArtifactHandle
-from ..pipeline.transformer import OpsTransformer, transformer_by_name
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ..artifact import ArtifactStore, create_handle_from_dict
+from ..transformer import OpsTransformer, transformer_by_name
 import logging
 
 logger = logging.getLogger("rayforge.pipeline.timerunner")
@@ -31,11 +30,11 @@ def run_time_estimation_in_subprocess(
 
     Args:
         proxy: The proxy for communicating with the main process.
-        artifact_handle_dict: A dictionary representation of the ArtifactHandle
-                              for the base geometry.
+        artifact_handle_dict: A dictionary representation of the
+          BaseArtifactHandle for the base geometry.
         target_size_mm: The final (width, height) in mm to scale the Ops to.
         per_step_transformers_dicts: A list of dictionaries defining the
-                                      per-step transformers to apply.
+          per-step transformers to apply.
         cut_speed: The machine's maximum cut speed in mm/min.
         travel_speed: The machine's maximum travel speed in mm/min.
         acceleration: The machine's acceleration in mm/s^2.
@@ -47,12 +46,12 @@ def run_time_estimation_in_subprocess(
     """
     logger.setLevel(proxy.parent_log_level)
     logger.debug(
-        f"Starting time estimation for handle "
+        f"Starting time estimation for handle dict "
         f"{artifact_handle_dict.get('shm_name')}"
     )
 
-    # --- 1. Reconstruct lightweight objects from dictionaries ---
-    handle = ArtifactHandle.from_dict(artifact_handle_dict)
+    # 1. Reconstruct lightweight objects from dictionaries
+    handle = create_handle_from_dict(artifact_handle_dict)
     artifact = ArtifactStore.get(handle)
     if not artifact:
         logger.error("Could not retrieve artifact from shared memory.")
@@ -61,7 +60,7 @@ def run_time_estimation_in_subprocess(
     # Make a deep copy to avoid modifying the cached object
     ops = artifact.ops.copy()
 
-    # --- 2. Scale the Ops if necessary ---
+    # 2. Scale the Ops if necessary
     if artifact.is_scalable and artifact.source_dimensions:
         source_w, source_h = artifact.source_dimensions
         target_w, target_h = target_size_mm
@@ -70,7 +69,7 @@ def run_time_estimation_in_subprocess(
             scale_y = target_h / source_h
             ops.scale(scale_x, scale_y)
 
-    # --- 3. Apply per-step transformers ---
+    # 3. Apply per-step transformers
     transformers: List[OpsTransformer] = []
     for t_dict in per_step_transformers_dicts:
         if not t_dict.get("enabled", True):
@@ -85,7 +84,7 @@ def run_time_estimation_in_subprocess(
         # non-cancellable task
         transformer.run(ops)
 
-    # --- 4. Run the final time estimation ---
+    # 4. Run the final time estimation
     estimated_time = ops.estimate_time(
         default_cut_speed=cut_speed,
         default_travel_speed=travel_speed,

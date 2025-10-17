@@ -9,6 +9,7 @@ from ..core.ops import ScanLinePowerCommand
 from ..pipeline.encoder.gcode import GcodeOpMap
 from ..icons import get_icon
 from ..shared.util.gtk import apply_css
+from ..shared.ui.formatter import format_value
 
 
 class PreviewControls(Gtk.Box):
@@ -216,7 +217,7 @@ class PreviewControls(Gtk.Box):
             op_index = self.op_map.gcode_to_op[gcode_line_idx]
             timeline = self.simulation_overlay.timeline
             if timeline.steps and 0 <= op_index < len(timeline.steps):
-                cmd, state, _ = timeline.steps[op_index]
+                cmd, state, __ = timeline.steps[op_index]
                 speed = state.cut_speed or 0.0
                 power_percent = (state.power or 0.0) * 100.0
 
@@ -227,18 +228,19 @@ class PreviewControls(Gtk.Box):
                 else:
                     power_display = f"{power_percent:.0f}%"
 
+                speed_display = format_value(speed, "speed")
                 self.status_label.set_markup(
                     (
-                        f"<small>Line: {gcode_line_idx + 1}/{total} | "
-                        f"Speed: {speed:.0f} mm/min | "
-                        f"Power: {power_display}</small>"
+                        f"<small>{_('Line')}: {gcode_line_idx + 1}/{total} | "
+                        f"{_('Speed')}: {speed_display} | "
+                        f"{_('Power')}: {power_display}</small>"
                     )
                 )
                 return
 
         self.status_label.set_markup(
-            f"<small>Line: {gcode_line_idx + 1}/{total} | "
-            f"Speed: - | Power: -</small>"
+            f"<small>{_('Line')}: {gcode_line_idx + 1}/{total} | "
+            f"{_('Speed')}: - | {_('Power')}: -</small>"
         )
 
     def _on_slider_changed(self, slider):

@@ -102,7 +102,7 @@ class RuidaParser:
         if handler:
             if self.index + length > len(self.data):
                 return  # Avoid reading past the end of the buffer
-            payload = self.data[self.index:self.index + length]
+            payload = self.data[self.index : self.index + length]
             self.index += length
             handler(job, payload)
 

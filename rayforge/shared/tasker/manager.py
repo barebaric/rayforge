@@ -128,6 +128,17 @@ class TaskManager:
             self._run_task(task, when_done), self._loop
         )
 
+    def schedule_on_main_thread(
+        self, callback: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        """
+        Schedules a callable to be executed on the main thread's event loop.
+
+        This is the designated way for background threads or task callbacks to
+        safely interact with the main thread (e.g., for UI updates).
+        """
+        self._main_thread_scheduler(callback, *args, **kwargs)
+
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any
     ) -> Any:
@@ -147,7 +158,7 @@ class TaskManager:
         key: Optional[Any] = None,
         when_done: Optional[Callable[[Task], None]] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Task:
         """
         Creates, configures, and schedules a task to run a synchronous function
         in a background thread.
@@ -172,6 +183,7 @@ class TaskManager:
         asyncio.run_coroutine_threadsafe(
             self._run_task(task, when_done), self._loop
         )
+        return task
 
     def run_process(
         self,
@@ -236,16 +248,39 @@ class TaskManager:
         """
         with self._lock:
             task = self._tasks.get(key)
-            if task:
-                logger.debug(f"TaskManager: Cancelling task with key '{key}'.")
-                # Call the "dumb" cancel first to set the flag and interrupt
-                # asyncio tasks.
-                task.cancel()
+            if not task or task.is_final():
+                return
 
-                # Now, perform the manager's state changes.
-                if task._status in ("pending", "running"):
-                    task._status = "canceled"
-                    task._emit_status_changed()
+            logger.debug(f"TaskManager: Cancelling task with key '{key}'.")
+
+            # Check if this is a pooled task by checking if it has a callback
+            # registered in the pooled task dictionary.
+            is_pooled = key in self._pooled_task_callbacks
+
+            # Set the internal cancelled flag on the Task object.
+            # For asyncio tasks, this will also cancel the underlying future.
+            task.cancel()
+
+            # For pooled tasks, we perform immediate finalization.
+            if is_pooled:
+                # Tell the pool to ignore any future messages from this ID.
+                self._pool.cancel(key, task.id)
+
+                # Immediately finalize the task as 'canceled'.
+                task._status = "canceled"
+                task._emit_status_changed()
+
+                # Get the callback and clean up immediately.
+                when_done = self._pooled_task_callbacks.pop(key, None)
+                self._cleanup_task(task)
+                if when_done:
+                    # Schedule the callback to run on the main thread,
+                    # ensuring consistent behavior with completed tasks.
+                    self._main_thread_scheduler(when_done, task)
+
+            # For non-pooled (asyncio/thread) tasks,
+            # _run_task will handle the cleanup and callback when the
+            # CancelledError is caught.
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -316,6 +351,11 @@ class TaskManager:
             task = self._tasks.get(key)
         if task and task.id == task_id:
             task.update(progress, message)
+        else:
+            logger.debug(
+                f"Ignoring progress/message for stale task instance for key "
+                f"'{key}' (id: {task_id})."
+            )
 
     def _dispatch_pooled_task_event(
         self, key: Any, task_id: int, event_name: str, data: dict
@@ -323,12 +363,18 @@ class TaskManager:
         """Dispatches a task event from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
+
         if task and task.id == task_id:
             logger.debug(
                 f"TaskManager: Dispatching event '{event_name}' for task "
                 f"'{task.key}'."
             )
             task.event_received.send(task, event_name=event_name, data=data)
+        else:
+            logger.debug(
+                f"Ignoring event '{event_name}' for stale task instance for "
+                f"key '{key}' (id: {task_id})."
+            )
 
     def _finalize_pooled_task(
         self,
@@ -343,28 +389,19 @@ class TaskManager:
             task = self._tasks.get(key)
             when_done = self._pooled_task_callbacks.pop(key, None)
 
-        # This is the core fix: If the task currently registered for this key
-        # is not the one that produced the result, ignore the result.
         if not task or task.id != task_id:
             logger.debug(
                 f"Received result for stale/unknown task instance for key "
                 f"'{key}'. Ignoring."
             )
-            # If we're ignoring the result, we also shouldn't call the
-            # when_done callback that was associated with the *new* task.
+            # Re-add the callback for the *new* active task if it exists.
             if task and when_done:
                 self._pooled_task_callbacks[key] = when_done
             return
 
-        # Check if the task was cancelled while it was running
-        if task.is_cancelled():
-            logger.debug(
-                f"Pooled task {key} finished but was cancelled. "
-                "Discarding result."
-            )
-            task._status = "canceled"
-        else:
-            # Manually update the Task object's internal state
+        # If a cancellation happened, the status will already be 'canceled'.
+        # We should not overwrite it.
+        if not task.is_cancelled():
             task._status = status
             if status == "completed":
                 task._progress = 1.0

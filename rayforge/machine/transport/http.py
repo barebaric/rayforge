@@ -34,33 +34,23 @@ class HttpTransport(Transport):
         while self._running:
             try:
                 self.status_changed.send(
-                    self,
-                    status=TransportStatus.CONNECTING
+                    self, status=TransportStatus.CONNECTING
                 )
                 async with aiohttp.ClientSession() as session:
                     await self._receive_loop(session)
             except Exception as e:
                 self.status_changed.send(
-                    self,
-                    status=TransportStatus.ERROR,
-                    message=str(e)
+                    self, status=TransportStatus.ERROR, message=str(e)
                 )
             finally:
                 self.status_changed.send(
-                    self,
-                    status=TransportStatus.DISCONNECTED
+                    self, status=TransportStatus.DISCONNECTED
                 )
 
             if self._running:
-                self.status_changed.send(
-                    self,
-                    status=TransportStatus.SLEEPING
-                )
+                self.status_changed.send(self, status=TransportStatus.SLEEPING)
                 await asyncio.sleep(self._reconnect_interval)
-        self.status_changed.send(
-            self,
-            status=TransportStatus.DISCONNECTED
-        )
+        self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
 
     async def disconnect(self) -> None:
         """

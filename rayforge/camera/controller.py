@@ -1,15 +1,16 @@
 import sys
 import time
 import threading
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, TYPE_CHECKING
 import cv2
 import numpy as np
 import logging
 from blinker import Signal
-from gi.repository import GLib, GdkPixbuf
 from ..shared.util.glib import idle_add
 from .models.camera import Camera, Pos
 
+if TYPE_CHECKING:
+    from gi.repository import GdkPixbuf
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +99,13 @@ class CameraController:
         return self._image_data
 
     @property
-    def pixbuf(self) -> Optional[GdkPixbuf.Pixbuf]:
+    def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
+        # Import the UI library ONLY when this method is actually called.
+        from gi.repository import GLib, GdkPixbuf
+
         if self._image_data is None:
             return None
+
         height, width, channels = self._image_data.shape
         if channels == 3:
             # OpenCV uses BGR, GdkPixbuf expects RGB

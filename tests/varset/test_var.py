@@ -1,4 +1,5 @@
 import unittest
+from typing import cast
 from unittest.mock import patch
 from rayforge.shared.varset.var import Var, ValidationError
 from rayforge.shared.varset.intvar import IntVar
@@ -35,18 +36,18 @@ class TestVar(unittest.TestCase):
     def test_type_coercion_numeric(self):
         # int from string
         v_int = Var(key="test_i", label="Test I", var_type=int)
-        v_int.value = "123"
+        v_int.value = cast(int, "123")
         self.assertEqual(v_int.value, 123)
         self.assertIsInstance(v_int.value, int)
 
         # int from float string
-        v_int.value = "123.9"
+        v_int.value = cast(int, "123.9")
         self.assertEqual(v_int.value, 123)
         self.assertIsInstance(v_int.value, int)
 
         # float from string
         v_float = Var(key="test_f", label="Test F", var_type=float)
-        v_float.value = "123.45"
+        v_float.value = cast(float, "123.45")
         self.assertEqual(v_float.value, 123.45)
         self.assertIsInstance(v_float.value, float)
 
@@ -55,33 +56,33 @@ class TestVar(unittest.TestCase):
 
         # Test true values from string
         for s_true in ("true", "1", "on", "yes", "TRUE"):
-            v_bool.value = s_true
+            v_bool.value = cast(bool, s_true)
             self.assertIs(v_bool.value, True, f"Failed for '{s_true}'")
 
         # Test false values from string
         for s_false in ("false", "0", "off", "no", "FALSE"):
-            v_bool.value = s_false
+            v_bool.value = cast(bool, s_false)
             self.assertIs(v_bool.value, False, f"Failed for '{s_false}'")
 
         # Test from int
-        v_bool.value = 1
+        v_bool.value = cast(bool, 1)
         self.assertIs(v_bool.value, True)
-        v_bool.value = 0
+        v_bool.value = cast(bool, 0)
         self.assertIs(v_bool.value, False)
-        v_bool.value = 5  # any non-zero number is True
+        v_bool.value = cast(bool, 5)  # any non-zero number is True
         self.assertIs(v_bool.value, True)
 
     def test_type_mismatch_error(self):
         v_int = Var(key="test", label="Test", var_type=int)
         with self.assertRaisesRegex(TypeError, "cannot be coerced"):
-            v_int.value = "not a number"
+            v_int.value = cast(int, "not a number")
 
         v_bool = Var(key="test_b", label="Test B", var_type=bool)
 
         with self.assertRaisesRegex(
             TypeError, "cannot be coerced to type bool"
         ):
-            v_bool.value = "maybe"
+            v_bool.value = cast(bool, "maybe")
 
     def test_validation_logic(self):
         """

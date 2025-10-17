@@ -4,7 +4,7 @@ import math
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
-from ..artifact.base import Artifact
+from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
 
@@ -276,7 +276,7 @@ class Rasterizer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-    ) -> Artifact:
+    ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("Rasterizer requires a workpiece context.")
 
@@ -321,7 +321,7 @@ class Rasterizer(OpsProducer):
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
-        return Artifact(
+        return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,

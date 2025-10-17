@@ -4,12 +4,13 @@ import numpy as np
 from multiprocessing import shared_memory
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.artifact import (
-    ArtifactStore,
-    Artifact,
-    VertexData,
-    TextureData,
+from rayforge.pipeline.artifact import ArtifactStore
+from rayforge.pipeline.artifact.workpiece import (
+    WorkPieceArtifact,
+    WorkPieceArtifactHandle,
 )
+from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from rayforge.pipeline.artifact.base import VertexData, TextureData
 
 
 class TestArtifactStore(unittest.TestCase):
@@ -26,7 +27,7 @@ class TestArtifactStore(unittest.TestCase):
         for handle in self.handles_to_release:
             ArtifactStore.release(handle)
 
-    def _create_sample_vertex_artifact(self) -> Artifact:
+    def _create_sample_vertex_artifact(self) -> WorkPieceArtifact:
         """Helper to generate a consistent vertex artifact for tests."""
         ops = Ops()
         ops.move_to(0, 0, 0)
@@ -42,7 +43,7 @@ class TestArtifactStore(unittest.TestCase):
             ),
         )
 
-        return Artifact(
+        return WorkPieceArtifact(
             ops=ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -51,7 +52,7 @@ class TestArtifactStore(unittest.TestCase):
             vertex_data=vertex_data,
         )
 
-    def _create_sample_hybrid_artifact(self) -> Artifact:
+    def _create_sample_hybrid_artifact(self) -> WorkPieceArtifact:
         """Helper to generate a consistent hybrid artifact for tests."""
         ops = Ops()
         ops.move_to(0, 0, 0)
@@ -64,7 +65,7 @@ class TestArtifactStore(unittest.TestCase):
             position_mm=(5.0, 10.0),
         )
         vertex_data = VertexData()
-        return Artifact(
+        return WorkPieceArtifact(
             ops=ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
@@ -74,14 +75,14 @@ class TestArtifactStore(unittest.TestCase):
             texture_data=texture_data,
         )
 
-    def _create_sample_final_job_artifact(self) -> Artifact:
+    def _create_sample_final_job_artifact(self) -> JobArtifact:
         """Helper to generate a final job artifact for tests."""
         gcode_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
         op_map = {0: 0, 1: 1, 2: 2}
         op_map_bytes = np.frombuffer(
             json.dumps(op_map).encode("utf-8"), dtype=np.uint8
         )
-        return Artifact(
+        return JobArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -89,44 +90,6 @@ class TestArtifactStore(unittest.TestCase):
             op_map_bytes=op_map_bytes,
             vertex_data=VertexData(),  # Final jobs have vertex data
         )
-
-    def test_internal_conversion_round_trip(self):
-        """
-        Tests the private conversion methods in isolation without shared
-        memory.
-        This validates the core serialization logic.
-        """
-        for artifact_factory in [
-            self._create_sample_vertex_artifact,
-            self._create_sample_hybrid_artifact,
-            self._create_sample_final_job_artifact,
-        ]:
-            with self.subTest(
-                artifact_type=artifact_factory().__class__.__name__
-            ):
-                original_artifact = artifact_factory()
-
-                # Simulate the `put` process
-                arrays, _ = ArtifactStore._convert_artifact_to_arrays(
-                    original_artifact
-                )
-
-                # Create a dummy handle with the necessary metadata
-                handle = ArtifactStore.put(original_artifact)
-                self.handles_to_release.append(handle)  # Ensure cleanup
-
-                # Simulate the `get` process
-                reconstructed_artifact = (
-                    ArtifactStore._reconstruct_artifact_from_arrays(
-                        handle, arrays
-                    )
-                )
-
-                # Verify equality
-                self.assertDictEqual(
-                    original_artifact.to_dict(),
-                    reconstructed_artifact.to_dict(),
-                )
 
     def test_put_get_release_vertex_artifact(self):
         """
@@ -138,13 +101,14 @@ class TestArtifactStore(unittest.TestCase):
         # 1. Put the artifact into shared memory
         handle = ArtifactStore.put(original_artifact)
         self.handles_to_release.append(handle)
+        self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get the artifact back
         retrieved_artifact = ArtifactStore.get(handle)
 
         # 3. Verify the retrieved data
-        self.assertIsInstance(retrieved_artifact, Artifact)
-        self.assertEqual(retrieved_artifact.artifact_type, "vertex")
+        assert isinstance(retrieved_artifact, WorkPieceArtifact)
+        self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
         self.assertIsNotNone(retrieved_artifact.vertex_data)
         self.assertIsNone(retrieved_artifact.texture_data)
         self.assertEqual(
@@ -173,13 +137,14 @@ class TestArtifactStore(unittest.TestCase):
         # 1. Put
         handle = ArtifactStore.put(original_artifact)
         self.handles_to_release.append(handle)
+        self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get
         retrieved_artifact = ArtifactStore.get(handle)
 
         # 3. Verify hybrid-specific attributes
-        self.assertIsInstance(retrieved_artifact, Artifact)
-        self.assertEqual(retrieved_artifact.artifact_type, "hybrid_raster")
+        assert isinstance(retrieved_artifact, WorkPieceArtifact)
+        self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
         self.assertIsNotNone(retrieved_artifact.texture_data)
         self.assertIsNotNone(original_artifact.texture_data)
         assert retrieved_artifact.texture_data is not None
@@ -215,12 +180,14 @@ class TestArtifactStore(unittest.TestCase):
         # 1. Put
         handle = ArtifactStore.put(original_artifact)
         self.handles_to_release.append(handle)
+        self.assertIsInstance(handle, JobArtifactHandle)
 
         # 2. Get
         retrieved_artifact = ArtifactStore.get(handle)
 
         # 3. Verify
-        self.assertEqual(retrieved_artifact.artifact_type, "final_job")
+        assert isinstance(retrieved_artifact, JobArtifact)
+        self.assertEqual(retrieved_artifact.artifact_type, "JobArtifact")
         self.assertIsNotNone(retrieved_artifact.gcode_bytes)
         self.assertIsNotNone(retrieved_artifact.op_map_bytes)
         self.assertIsNotNone(retrieved_artifact.vertex_data)

@@ -148,7 +148,7 @@ class TextRenderer3D(BaseRenderer):
                 row_end_in = row_start_in + self.atlas_width
                 row_start_out = i * self.atlas_width
                 unpacked_buffer[
-                    row_start_out:row_start_out + self.atlas_width
+                    row_start_out : row_start_out + self.atlas_width
                 ] = buffer[row_start_in:row_end_in]
             self._atlas_buffer = bytes(unpacked_buffer)
         else:

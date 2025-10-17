@@ -232,8 +232,10 @@ class VarSetWidget(Adw.PreferencesGroup):
         if self.explicit_apply:
             self._add_apply_button_if_needed(row, var.key)
         else:
-            row.connect("notify::selected-item",
-                        lambda r, p: self._on_data_changed(var.key))
+            row.connect(
+                "notify::selected-item",
+                lambda r, p: self._on_data_changed(var.key),
+            )
         return row
 
     def _create_port_selection_row(self, var: SerialPortVar):

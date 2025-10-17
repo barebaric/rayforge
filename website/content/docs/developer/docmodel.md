@@ -19,7 +19,7 @@ Key principles of the model include:
 - **Reactivity:** The model uses a signal/slot system (`blinker`). When an
   item is changed, it emits a signal. Parent items listen to their
   children's signals and "bubble them up" the tree. This allows
-  high-level components like the `OpsGenerator` to listen for any
+  high-level components like the `Pipeline` to listen for any
   change in the document by connecting to a single signal on the root
   `Doc` object. The system tracks both content changes and transform
   changes separately for efficient updates.

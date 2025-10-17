@@ -14,9 +14,7 @@ def convert_surface_to_grayscale(surface):
 
     # Convert RGB to grayscale using luminosity method
     gray = (
-        0.299 * data[:, :, 2]
-        + 0.587 * data[:, :, 1]
-        + 0.114 * data[:, :, 0]
+        0.299 * data[:, :, 2] + 0.587 * data[:, :, 1] + 0.114 * data[:, :, 0]
     ).astype(np.uint8)
 
     # Set RGB channels to gray, keep alpha unchanged
@@ -41,13 +39,13 @@ def make_transparent(surface, threshold=250):
 
     # Extract channels
     r = (argb >> 16) & 0xFF  # Red
-    g = (argb >> 8) & 0xFF   # Green
-    b = argb & 0xFF          # Blue
+    g = (argb >> 8) & 0xFF  # Green
+    b = argb & 0xFF  # Blue
 
     # Find "almost white" pixels
-    brightness = (r.astype(np.uint16)
-                  + g.astype(np.uint16)
-                  + b.astype(np.uint16)) // 3
+    brightness = (
+        r.astype(np.uint16) + g.astype(np.uint16) + b.astype(np.uint16)
+    ) // 3
     mask = brightness >= threshold
 
     # Set these pixels to transparent

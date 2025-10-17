@@ -6,5 +6,6 @@ class MakeTransparent(Modifier):
     """
     Makes white pixels transparent.
     """
+
     def run(self, surface):
         make_transparent(surface)

@@ -9,13 +9,11 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
 from ..image import import_file
-from ..pipeline.jobrunner import (
-    run_job_assembly_in_subprocess,
+from ..pipeline.stage.job_runner import (
+    make_job_artifact_in_subprocess,
     JobDescription,
-    WorkItemInstruction,
 )
-from ..pipeline.artifact.handle import ArtifactHandle
-from ..pipeline.artifact.store import ArtifactStore
+from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
 
 if TYPE_CHECKING:
@@ -314,45 +312,22 @@ class FileCmd:
     def _prepare_job_description(self) -> JobDescription:
         """Constructs the JobDescription from the current document state."""
         doc = self._editor.doc
-        ops_generator = self._editor.ops_generator
+        pipeline = self._editor.pipeline
         machine = self._config_manager.config.machine
         if not machine:
             raise ValueError("Cannot prepare job: No machine configured.")
 
-        work_items_by_step: Dict[str, list] = {}
-        per_step_transformers_by_step: Dict[str, list] = {}
-
+        step_handles: Dict[str, Dict] = {}
         for layer in doc.layers:
             if not layer.workflow:
                 continue
             for step in layer.workflow.steps:
-                work_items_for_step = []
-                for item_step, workpiece in layer.get_renderable_items():
-                    if item_step.uid != step.uid:
-                        continue
-
-                    handle = ops_generator.get_artifact_handle(
-                        step.uid, workpiece.uid
-                    )
-                    if handle:
-                        world_transform = workpiece.get_world_transform()
-                        instruction = WorkItemInstruction(
-                            artifact_handle_dict=handle.to_dict(),
-                            world_transform_list=world_transform.to_list(),
-                            workpiece_dict=workpiece.to_dict(),
-                        )
-                        work_items_for_step.append(instruction)
-
-                if work_items_for_step:
-                    work_items_by_step[step.uid] = work_items_for_step
-
-                per_step_transformers_by_step[step.uid] = (
-                    step.per_step_transformers_dicts
-                )
+                handle = pipeline.get_step_artifact_handle(step.uid)
+                if handle:
+                    step_handles[step.uid] = handle.to_dict()
 
         return JobDescription(
-            work_items_by_step=work_items_by_step,
-            per_step_transformers_by_step=per_step_transformers_by_step,
+            step_artifact_handles_by_uid=step_handles,
             machine_dict=machine.to_dict(),
             doc_dict=doc.to_dict(),
         )
@@ -360,7 +335,7 @@ class FileCmd:
     def assemble_job_in_background(
         self,
         when_done: Callable[
-            [Optional[ArtifactHandle], Optional[Exception]], None
+            [Optional[JobArtifactHandle], Optional[Exception]], None
         ],
     ):
         """
@@ -383,16 +358,18 @@ class FileCmd:
                 # Re-raises exceptions from the task
                 handle_dict = task.result()
                 handle = (
-                    ArtifactHandle.from_dict(handle_dict)
+                    JobArtifactHandle.from_dict(handle_dict)
                     if handle_dict
                     else None
                 )
+                if handle:
+                    assert isinstance(handle, JobArtifactHandle)
                 when_done(handle, None)
             except Exception as e:
                 when_done(None, e)
 
         self._task_manager.run_process(
-            run_job_assembly_in_subprocess,
+            make_job_artifact_in_subprocess,
             job_description_dict=asdict(job_desc),
             key="job-assembly",
             when_done=_when_done_wrapper,
@@ -405,7 +382,7 @@ class FileCmd:
         """
 
         def _on_export_assembly_done(
-            handle: Optional[ArtifactHandle], error: Optional[Exception]
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
         ):
             try:
                 if error:
@@ -415,6 +392,8 @@ class FileCmd:
 
                 # Get artifact, decode G-code, and write to file
                 artifact = ArtifactStore.get(handle)
+                if not isinstance(artifact, JobArtifact):
+                    raise ValueError("Expected a JobArtifact for export.")
                 if artifact.gcode_bytes is None:
                     raise ValueError("Final artifact is missing G-code data.")
 

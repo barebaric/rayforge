@@ -3,20 +3,21 @@ from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from concurrent.futures import Future
 import numpy as np
+from gi.repository import GLib
 from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
 from ...core.ops import Ops
-from ..canvas import CanvasElement
+from ...pipeline.artifact import WorkPieceArtifact
 from ...pipeline.encoder.cairoencoder import CairoEncoder
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
+from ..canvas import CanvasElement
 from .tab_handle import TabHandleElement
-from ...pipeline.artifact.base import Artifact
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ...pipeline.generator import OpsGenerator
+    from ...pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -42,18 +43,21 @@ class WorkPieceView(CanvasElement):
     USE_NEW_RENDER_PATH = True
 
     def __init__(
-        self, workpiece: WorkPiece, ops_generator: "OpsGenerator", **kwargs
+        self,
+        workpiece: WorkPiece,
+        pipeline: "Pipeline",
+        **kwargs,
     ):
         """Initializes the WorkPieceView.
 
         Args:
             workpiece: The WorkPiece data model to visualize.
-            ops_generator: The generator responsible for creating ops.
+            pipeline: The generator responsible for creating ops.
             **kwargs: Additional arguments for the CanvasElement.
         """
         logger.debug(f"Initializing WorkPieceView for '{workpiece.name}'")
         self.data: WorkPiece = workpiece
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
@@ -67,8 +71,8 @@ class WorkPieceView(CanvasElement):
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
         self._texture_surfaces: Dict[str, cairo.ImageSurface] = {}
-        # Cached artifacts to avoid re-fetching from generator on every draw.
-        self._artifact_cache: Dict[str, Optional[Artifact]] = {}
+        # Cached artifacts to avoid re-fetching from pipeline on every draw.
+        self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -113,13 +117,11 @@ class WorkPieceView(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
-        self.ops_generator.ops_generation_starting.connect(
+        self.pipeline.ops_generation_starting.connect(
             self._on_ops_generation_starting
         )
-        self.ops_generator.ops_chunk_available.connect(
-            self._on_ops_chunk_available
-        )
-        self.ops_generator.ops_generation_finished.connect(
+        self.pipeline.ops_chunk_available.connect(self._on_ops_chunk_available)
+        self.pipeline.ops_generation_finished.connect(
             self._on_ops_generation_finished
         )
         self._on_transform_changed(self.data)
@@ -209,13 +211,13 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Removing WorkPieceView for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
-        self.ops_generator.ops_generation_starting.disconnect(
+        self.pipeline.ops_generation_starting.disconnect(
             self._on_ops_generation_starting
         )
-        self.ops_generator.ops_chunk_available.disconnect(
+        self.pipeline.ops_chunk_available.disconnect(
             self._on_ops_chunk_available
         )
-        self.ops_generator.ops_generation_finished.disconnect(
+        self.pipeline.ops_generation_finished.disconnect(
             self._on_ops_generation_finished
         )
         super().remove()
@@ -333,7 +335,22 @@ class WorkPieceView(CanvasElement):
     def _on_ops_generation_finished(
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
     ):
-        """Handler for when ops generation for a step finishes."""
+        """
+        Signal handler for when ops generation finishes.
+        This runs on a background thread, so it schedules the actual work
+        on the main thread to prevent UI deadlocks.
+        """
+        GLib.idle_add(
+            self._on_ops_generation_finished_main_thread,
+            sender,
+            workpiece,
+            generation_id,
+        )
+
+    def _on_ops_generation_finished_main_thread(
+        self, sender: Step, workpiece: WorkPiece, generation_id: int
+    ):
+        """The thread-safe part of the ops generation finished handler."""
         if workpiece is not self.data:
             return
         step = sender
@@ -346,7 +363,7 @@ class WorkPieceView(CanvasElement):
         if self.USE_NEW_RENDER_PATH:
             # Fetch and cache the final artifact.
             # This is a one-time fetch after generation completes.
-            artifact = self.ops_generator.get_artifact(step, self.data)
+            artifact = self.pipeline.get_artifact(step, self.data)
             self._artifact_cache[step.uid] = artifact
 
             # Clear intermediate chunk surfaces, as the final artifact is now
@@ -408,7 +425,7 @@ class WorkPieceView(CanvasElement):
             f"Recording vector ops for workpiece "
             f"'{self.data.name}', step '{step.uid}'"
         )
-        ops = self.ops_generator.get_ops(step, self.data)
+        ops = self.pipeline.get_ops(step, self.data)
         if not ops or not self.canvas:
             return None
 
@@ -460,7 +477,14 @@ class WorkPieceView(CanvasElement):
         return step.uid, surface, generation_id
 
     def _on_ops_drawing_recorded(self, future: Future):
-        """Callback executed when the async ops recording is done."""
+        """
+        Callback executed when the async ops recording is done.
+        Schedules the main logic to run on the GTK thread.
+        """
+        GLib.idle_add(self._on_ops_drawing_recorded_main_thread, future)
+
+    def _on_ops_drawing_recorded_main_thread(self, future: Future):
+        """The thread-safe part of the drawing recorded callback."""
         if future.cancelled():
             return
         if exc := future.exception():
@@ -485,6 +509,7 @@ class WorkPieceView(CanvasElement):
         if self.data.layer and self.data.layer.workflow:
             for step_obj in self.data.layer.workflow.steps:
                 if step_obj.uid == step_uid:
+                    # This call is now safe because we are on the main thread.
                     self._trigger_ops_rasterization(step_obj, received_gen_id)
                     return
         logger.warning(
@@ -547,7 +572,7 @@ class WorkPieceView(CanvasElement):
                 return None
         else:
             # Slow fallback calculate bounds from ops.
-            ops = self.ops_generator.get_ops(step, self.data)
+            ops = self.pipeline.get_ops(step, self.data)
             if not ops:
                 return None
             ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(
@@ -602,7 +627,7 @@ class WorkPieceView(CanvasElement):
             ctx.restore()
         else:
             # SLOW FALLBACK: No recording yet, render from Ops directly.
-            ops = self.ops_generator.get_ops(step, self.data)
+            ops = self.pipeline.get_ops(step, self.data)
             if not ops:
                 return None  # Should not happen as we checked above
 
@@ -635,6 +660,8 @@ class WorkPieceView(CanvasElement):
     ):
         """
         Handler for when a chunk of ops is ready for progressive rendering.
+        This is called from a background thread. It schedules the expensive
+        encoding work to happen in another background task.
         """
         if workpiece is not self.data:
             return
@@ -644,17 +671,37 @@ class WorkPieceView(CanvasElement):
         if generation_id != self._ops_generation_ids.get(step_uid):
             return
 
-        # For chunks, we want to create OR reuse the surface.
-        prepared = self._prepare_ops_surface_and_context(sender)
-        if not prepared:
+        # Offload the CPU-intensive encoding to the thread pool
+        future = self._executor.submit(self._encode_chunk_async, sender, chunk)
+        future.add_done_callback(self._on_chunk_encoded)
+
+    def _encode_chunk_async(self, step: Step, chunk: Ops) -> str:
+        """
+        Does the heavy lifting of preparing a surface and encoding an ops
+        chunk onto it. This is designed to be run in a thread pool.
+        """
+        # This function runs entirely in a background thread.
+        prepared = self._prepare_ops_surface_and_context(step)
+        if prepared:
+            _surface, ctx, ppms, content_h_px = prepared
+            self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
+        return step.uid
+
+    def _on_chunk_encoded(self, future: Future):
+        """
+        Callback for when a chunk has been encoded. Schedules the final
+        UI update on the main thread.
+        """
+        GLib.idle_add(self._on_chunk_encoded_main_thread, future)
+
+    def _on_chunk_encoded_main_thread(self, future: Future):
+        """
+        Thread-safe callback that triggers a redraw after a chunk is ready.
+        """
+        if future.cancelled() or future.exception():
             return
-
-        _surface, ctx, ppms, content_h_px = prepared
-
-        # Encode just the chunk onto the existing surface
-        self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
-
-        # Trigger a redraw to show the progress
+        # The result is just the step_uid, we don't need it, but we know
+        # the surface has been updated.
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -721,7 +768,15 @@ class WorkPieceView(CanvasElement):
         return surface, ctx, ppms, content_height_px
 
     def _on_ops_surface_rendered(self, future: Future):
-        """Callback executed when the async ops rendering is done."""
+        """
+        Callback executed when the async ops rendering is done.
+        Schedules the main logic to run on the GTK thread.
+        """
+        # Schedule the actual handler on the main thread
+        GLib.idle_add(self._on_ops_surface_rendered_main_thread, future)
+
+    def _on_ops_surface_rendered_main_thread(self, future: Future):
+        """The thread-safe part of the surface rendered callback."""
         if future.cancelled():
             logger.debug("Ops surface render future was cancelled.")
             return
@@ -753,6 +808,7 @@ class WorkPieceView(CanvasElement):
         self._ops_surfaces[step_uid] = (new_surface, bbox_mm)
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
+            # This call is now safe because we are on the main thread.
             self.canvas.queue_draw()
 
     def _start_update(self) -> bool:
@@ -793,7 +849,7 @@ class WorkPieceView(CanvasElement):
         show_travel = work_surface.show_travel_moves
 
         # --- Aggregate artifacts and draw texture components first ---
-        artifacts_to_draw: List[Artifact] = []
+        artifacts_to_draw: List[WorkPieceArtifact] = []
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
                 if not self._ops_visibility.get(step.uid, True):
@@ -803,7 +859,7 @@ class WorkPieceView(CanvasElement):
                 if step.uid in self._ops_surfaces:
                     continue
 
-                # Use the local cache instead of fetching from the generator.
+                # Use the local cache instead of fetching from the pipeline.
                 artifact = self._artifact_cache.get(step.uid)
                 if artifact:
                     artifacts_to_draw.append(artifact)
@@ -885,7 +941,7 @@ class WorkPieceView(CanvasElement):
         ctx.restore()
 
     def _draw_texture(
-        self, ctx: cairo.Context, step: Step, artifact: Artifact
+        self, ctx: cairo.Context, step: Step, artifact: WorkPieceArtifact
     ):
         """Generates, caches, and draws the themed texture."""
         if not self._color_set or not artifact.texture_data:

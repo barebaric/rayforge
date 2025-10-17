@@ -5,7 +5,7 @@ from ..canvas import CanvasElement
 from .workpiece import WorkPieceView
 
 if TYPE_CHECKING:
-    from ...pipeline.generator import OpsGenerator
+    from ...pipeline.pipeline import Pipeline
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class StepElement(CanvasElement):
     def __init__(
         self,
         step: Step,
-        ops_generator: "OpsGenerator",
+        pipeline: "Pipeline",
         **kwargs,
     ):
         """
@@ -32,7 +32,7 @@ class StepElement(CanvasElement):
 
         Args:
             step: The Step data object.
-            ops_generator: The central generator for pipeline operations.
+            pipeline: The central generator for pipeline operations.
             **kwargs: Additional keyword arguments for CanvasElement.
         """
         super().__init__(
@@ -45,7 +45,7 @@ class StepElement(CanvasElement):
             visible=step.visible,  # Sync initial visibility
             **kwargs,
         )
-        self.ops_generator = ops_generator
+        self.pipeline = pipeline
 
         # Connect to the model signal that drives its behavior
         step.visibility_changed.connect(self._on_visibility_changed)
@@ -73,6 +73,7 @@ class StepElement(CanvasElement):
         """
         if not self.parent:
             return
+        parent = cast("CanvasElement", self.parent)
 
         step_uid = self.data.uid
         is_visible = self.visible
@@ -83,6 +84,6 @@ class StepElement(CanvasElement):
         )
 
         # Iterate through all children of the parent (the LayerElement)
-        for child in self.parent.children:
+        for child in parent.children:
             if isinstance(child, WorkPieceView):
                 child.set_ops_visibility(step_uid, is_visible)

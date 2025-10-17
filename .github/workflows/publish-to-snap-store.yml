@@ -43,7 +43,7 @@ jobs:
           rayforge --help
 
       - name: Publish to Snapcraft
-        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}

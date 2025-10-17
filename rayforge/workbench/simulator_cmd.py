@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Optional
 from gi.repository import GLib
 
 from ..config import config
+from ..pipeline.artifact import JobArtifact
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
-from ..pipeline.artifact.base import Artifact
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
@@ -46,7 +46,7 @@ class SimulatorCmd:
         self.preview_controls.set_playback_position(line_number)
         self._is_syncing = False
 
-    def reload_simulation(self, new_artifact: Optional[Artifact]):
+    def reload_simulation(self, new_artifact: Optional[JobArtifact]):
         """
         Reloads the simulation with a new, final job artifact.
         """
@@ -58,6 +58,8 @@ class SimulatorCmd:
         was_playing = self.preview_controls.playing
 
         if new_artifact:
+            assert isinstance(new_artifact, JobArtifact)
+
             # The overlay gets the Ops for rendering geometry
             self.simulation_overlay.set_ops(new_artifact.ops)
             # The controls get the G-code and map to drive the timeline

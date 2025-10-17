@@ -2,13 +2,12 @@ from __future__ import annotations
 import uuid
 import sys
 import logging
-from typing import Dict, Tuple
+from typing import Dict
 from multiprocessing import shared_memory
 import numpy as np
-from ...core.ops import Ops
-from ..coord import CoordinateSystem
-from .base import Artifact, VertexData, TextureData
-from .handle import ArtifactHandle
+from .base import BaseArtifact
+from .handle import BaseArtifactHandle
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +17,8 @@ class ArtifactStore:
     Manages the storage and retrieval of pipeline artifacts in shared memory
     to avoid costly inter-process communication.
 
-    This class uses only class methods and is stateless, making it safe to
-    use from multiple processes without needing an instance.
+    This class is stateless and uses a dynamic registry owned by BaseArtifact
+    to remain agnostic to concrete artifact types.
     """
 
     # On Windows, shared memory blocks are destroyed when all handles are
@@ -31,12 +30,13 @@ class ArtifactStore:
         _managed_shms: Dict[str, shared_memory.SharedMemory] = {}
 
     @classmethod
-    def put(cls, artifact: Artifact) -> ArtifactHandle:
+    def put(cls, artifact: BaseArtifact) -> BaseArtifactHandle:
         """
         Serializes an artifact into a new shared memory block and returns a
         handle.
         """
-        arrays, total_bytes = cls._convert_artifact_to_arrays(artifact)
+        arrays = artifact.get_arrays_for_storage()
+        total_bytes = sum(arr.nbytes for arr in arrays.values())
 
         # Create the shared memory block
         shm_name = f"rayforge_artifact_{uuid.uuid4()}"
@@ -73,27 +73,12 @@ class ArtifactStore:
         else:
             shm.close()
 
-        # Create the handle with all necessary metadata
-        source_coord_system = artifact.source_coordinate_system
-        handle = ArtifactHandle(
-            shm_name=shm_name,
-            artifact_type=artifact.artifact_type,
-            is_scalable=artifact.is_scalable,
-            source_coordinate_system_name=source_coord_system.name,
-            source_dimensions=artifact.source_dimensions,
-            generation_size=artifact.generation_size,
-            time_estimate=artifact.time_estimate,
-            array_metadata=array_metadata,
-        )
-
-        if artifact.texture_data:
-            handle.dimensions_mm = artifact.texture_data.dimensions_mm
-            handle.position_mm = artifact.texture_data.position_mm
-
+        # Delegate handle creation to the artifact instance
+        handle = artifact.create_handle(shm_name, array_metadata)
         return handle
 
     @classmethod
-    def get(cls, handle: ArtifactHandle) -> Artifact:
+    def get(cls, handle: BaseArtifactHandle) -> BaseArtifact:
         """
         Reconstructs an artifact from a shared memory block using its handle.
         """
@@ -110,15 +95,19 @@ class ArtifactStore:
             )
             arrays[name] = arr_view
 
-        artifact = cls._reconstruct_artifact_from_arrays(handle, arrays)
+        # Look up the correct class from the central registry
+        artifact_class = BaseArtifact.get_registered_class(
+            handle.artifact_type_name
+        )
 
-        # This process is done with its connection to the SHM block.
+        # Delegate reconstruction to the class
+        artifact = artifact_class.from_storage(handle, arrays)
+
         shm.close()
-
         return artifact
 
     @classmethod
-    def release(cls, handle: ArtifactHandle) -> None:
+    def release(cls, handle: BaseArtifactHandle) -> None:
         """
         Closes and unlinks the shared memory block associated with a handle.
         This must be called by the owner of the handle when it's no longer
@@ -143,101 +132,3 @@ class ArtifactStore:
             logger.warning(
                 f"Error releasing shared memory block {handle.shm_name}: {e}"
             )
-
-    @classmethod
-    def _convert_artifact_to_arrays(
-        cls, artifact: Artifact
-    ) -> Tuple[Dict[str, np.ndarray], int]:
-        """
-        Converts an artifact's data into a dictionary of NumPy arrays and
-        calculates total size. This is a pure function, making it easy to test.
-        """
-        arrays = artifact.ops.to_numpy_arrays()
-
-        if artifact.gcode_bytes is not None:
-            arrays["gcode_bytes"] = artifact.gcode_bytes
-        if artifact.op_map_bytes is not None:
-            arrays["op_map_bytes"] = artifact.op_map_bytes
-
-        if artifact.texture_data:
-            arrays["power_texture_data"] = (
-                artifact.texture_data.power_texture_data
-            )
-
-        if artifact.vertex_data:
-            arrays["powered_vertices"] = artifact.vertex_data.powered_vertices
-            arrays["powered_colors"] = artifact.vertex_data.powered_colors
-            arrays["travel_vertices"] = artifact.vertex_data.travel_vertices
-            arrays["zero_power_vertices"] = (
-                artifact.vertex_data.zero_power_vertices
-            )
-
-        total_bytes = sum(arr.nbytes for arr in arrays.values())
-        return arrays, total_bytes
-
-    @classmethod
-    def _reconstruct_artifact_from_arrays(
-        cls, handle: ArtifactHandle, arrays: Dict[str, np.ndarray]
-    ) -> Artifact:
-        """
-        Builds a full artifact object from a handle and a dictionary of
-        NumPy array views. This is a pure function, making it easy to test.
-        """
-        ops = Ops.from_numpy_arrays(arrays)
-
-        common_args = {
-            "ops": ops,
-            "is_scalable": handle.is_scalable,
-            "source_coordinate_system": CoordinateSystem[
-                handle.source_coordinate_system_name
-            ],
-            "source_dimensions": handle.source_dimensions,
-            "generation_size": handle.generation_size,
-            "time_estimate": handle.time_estimate,
-        }
-
-        gcode_bytes = arrays.get("gcode_bytes")
-        op_map_bytes = arrays.get("op_map_bytes")
-
-        vertex_data = None
-        # Reconstruct vertex data if its component arrays are present
-        if all(
-            key in arrays
-            for key in [
-                "powered_vertices",
-                "powered_colors",
-                "travel_vertices",
-                "zero_power_vertices",
-            ]
-        ):
-            vertex_data = VertexData(
-                powered_vertices=arrays["powered_vertices"].copy(),
-                powered_colors=arrays["powered_colors"].copy(),
-                travel_vertices=arrays["travel_vertices"].copy(),
-                zero_power_vertices=arrays["zero_power_vertices"].copy(),
-            )
-
-        texture_data = None
-        if "power_texture_data" in arrays:
-            if handle.dimensions_mm is None or handle.position_mm is None:
-                raise ValueError(
-                    "hybrid_raster handle is missing required "
-                    "dimensions_mm or position_mm metadata."
-                )
-            texture_data = TextureData(
-                power_texture_data=arrays["power_texture_data"].copy(),
-                dimensions_mm=handle.dimensions_mm,
-                position_mm=handle.position_mm,
-            )
-
-        return Artifact(
-            **common_args,
-            vertex_data=vertex_data,
-            texture_data=texture_data,
-            gcode_bytes=gcode_bytes.copy()
-            if gcode_bytes is not None
-            else None,
-            op_map_bytes=op_map_bytes.copy()
-            if op_map_bytes is not None
-            else None,
-        )

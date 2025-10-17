@@ -162,9 +162,7 @@ class StockCmd:
         )
         self._editor.doc.history_manager.execute(command)
 
-    def set_stock_material(
-        self, stock_item: StockItem, new_material_uid: str
-    ):
+    def set_stock_material(self, stock_item: StockItem, new_material_uid: str):
         """
         Sets the material of a StockItem with an undoable command.
 

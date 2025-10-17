@@ -41,12 +41,17 @@ enabled = true
 dependencies = {file = ["requirements.txt"]}
 
 [tool.ruff]
-ignore = ["E203"]
+lint = { ignore = ["E203"] }
 builtins = ["_"]
+line-length = 79
+
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.pyright]
 stubPath = "typings"
 reportMissingModuleSource = false
+include = ["rayforge", "tests/**/test_*.py"]
 
 [tool.mypy]
 mypy_path = "stubs"
