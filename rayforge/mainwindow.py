@@ -1258,7 +1258,9 @@ class MainWindow(Adw.ApplicationWindow):
                             # Get pixbuf from texture and save as PNG
                             pixbuf = Gdk.pixbuf_get_from_texture(texture)
                             if not pixbuf:
-                                logger.warning("Failed to convert texture to pixbuf")
+                                logger.warning(
+                                    "Failed to convert texture to pixbuf"
+                                )
                                 return
                             pixbuf.savev(str(temp_path), "png", [], [])
 
