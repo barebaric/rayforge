@@ -24,6 +24,7 @@ from . import context_menu
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
+    from ..mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 
@@ -1336,7 +1337,11 @@ class WorkSurface(Canvas):
             # Collect file info for all dropped files
             file_infos = []
             for gfile in files:
-                file_path = Path(gfile.get_path())
+                path_str = gfile.get_path()
+                if not path_str:
+                    logger.warning("File has no path, skipping")
+                    continue
+                file_path = Path(path_str)
                 file_info = gfile.query_info(
                     Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
                     Gio.FileQueryInfoFlags.NONE,
@@ -1417,11 +1422,11 @@ class WorkSurface(Canvas):
             logger.exception(f"Error handling dropped file: {e}")
             return False
 
-    def _get_main_window(self):
+    def _get_main_window(self) -> Optional["MainWindow"]:
         """Get the MainWindow instance by traversing widget hierarchy."""
         widget = self
         while widget:
             widget = widget.get_parent()
             if widget and widget.__class__.__name__ == "MainWindow":
-                return widget
+                return cast("MainWindow", widget)
         return None
