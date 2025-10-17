@@ -7,7 +7,10 @@ from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.step import StepGeneratorStage
-from rayforge.pipeline.artifact import StepArtifactHandle
+from rayforge.pipeline.artifact import (
+    StepRenderArtifactHandle,
+    StepOpsArtifactHandle,
+)
 from rayforge.machine.models.machine import Machine, Laser
 
 
@@ -117,29 +120,46 @@ class TestStepGeneratorStage:
         assert len(mock_task_mgr.created_tasks) == 1
         task = mock_task_mgr.created_tasks[0]
 
-        # --- Simulate Phase 1: Render Artifact Ready Event ---
+        # Simulate Phase 1: Render and Ops Artifact Ready Events
         mock_task_obj = MagicMock()
-        render_handle = StepArtifactHandle(
+        render_handle = StepRenderArtifactHandle(
             shm_name="render_shm",
-            handle_class_name="StepArtifactHandle",
-            artifact_type_name="StepArtifact",
+            handle_class_name="StepRenderArtifactHandle",
+            artifact_type_name="StepRenderArtifact",
             is_scalable=False,
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=None,
             time_estimate=None,
-            array_metadata={},
         )
-        event_data = {
+        render_event_data = {
             "handle_dict": render_handle.to_dict(),
             "generation_id": 1,  # Matches the stage's internal ID
         }
-        task.when_event(mock_task_obj, "render_artifact_ready", event_data)
+        task.when_event(
+            mock_task_obj, "render_artifact_ready", render_event_data
+        )
 
-        # Assert render phase worked
-        mock_artifact_cache.put_step_handle.assert_called_once()
+        ops_handle = StepOpsArtifactHandle(
+            shm_name="ops_shm",
+            handle_class_name="StepOpsArtifactHandle",
+            artifact_type_name="StepOpsArtifact",
+            is_scalable=False,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=None,
+            time_estimate=None,
+        )
+        ops_event_data = {
+            "handle_dict": ops_handle.to_dict(),
+            "generation_id": 1,
+        }
+        task.when_event(mock_task_obj, "ops_artifact_ready", ops_event_data)
+
+        # Assert event phase worked
+        mock_artifact_cache.put_step_render_handle.assert_called_once()
+        mock_artifact_cache.put_step_ops_handle.assert_called_once()
         render_signal_handler.assert_called_once_with(stage, step=step)
 
-        # --- Simulate Phase 2: Task Completion with Time Estimate ---
+        # Simulate Phase 2: Task Completion with Time Estimate
         mock_task_obj.get_status.return_value = "completed"
         mock_task_obj.result.return_value = (42.5, 1)  # (time, gen_id)
         task.when_done(mock_task_obj)

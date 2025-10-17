@@ -17,7 +17,8 @@ from rayforge.pipeline.artifact import (
     VertexData,
     ArtifactStore,
     WorkPieceArtifactHandle,
-    StepArtifactHandle,
+    StepRenderArtifactHandle,
+    StepOpsArtifactHandle,
 )
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
@@ -154,26 +155,46 @@ class TestPipeline:
                     if task.when_done:
                         task.when_done(mock_task_obj)
                 elif task.target is make_step_artifact_in_subprocess:
-                    # 1. Simulate the event for the render artifact
                     if task.when_event:
-                        dummy_handle = StepArtifactHandle(
-                            shm_name="dummy_step",
-                            handle_class_name="StepArtifactHandle",
-                            artifact_type_name="StepArtifact",
+                        # 1. Simulate render artifact event
+                        render_handle = StepRenderArtifactHandle(
+                            shm_name="dummy_render",
+                            handle_class_name="StepRenderArtifactHandle",
+                            artifact_type_name="StepRenderArtifact",
                             is_scalable=False,
                             source_coordinate_system_name="MILLIMETER_SPACE",
                             source_dimensions=None,
                             time_estimate=None,
-                            array_metadata={},
                         )
-                        event_data = {
-                            "handle_dict": dummy_handle.to_dict(),
+                        render_event = {
+                            "handle_dict": render_handle.to_dict(),
                             "generation_id": 1,
                         }
                         task.when_event(
-                            mock_task_obj, "render_artifact_ready", event_data
+                            mock_task_obj,
+                            "render_artifact_ready",
+                            render_event,
                         )
-                    # 2. Simulate the final result for the time estimate
+
+                        # 2. Simulate ops artifact event
+                        ops_handle = StepOpsArtifactHandle(
+                            shm_name="dummy_ops",
+                            handle_class_name="StepOpsArtifactHandle",
+                            artifact_type_name="StepOpsArtifact",
+                            is_scalable=False,
+                            source_coordinate_system_name="MILLIMETER_SPACE",
+                            source_dimensions=None,
+                            time_estimate=None,
+                        )
+                        ops_event = {
+                            "handle_dict": ops_handle.to_dict(),
+                            "generation_id": 1,
+                        }
+                        task.when_event(
+                            mock_task_obj, "ops_artifact_ready", ops_event
+                        )
+
+                    # 3. Simulate final result (time estimate)
                     result = (step_time, 1)
                     mock_task_obj.result.return_value = result
                     if task.when_done:
@@ -289,13 +310,13 @@ class TestPipeline:
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
-            # Invalidate cache by changing a property that does not emit
-            # a signal. The signal is simulated by calling reconcile_all.
-            step.power = 0.5
-            pipeline._artifact_cache.invalidate_for_step(step.uid)
 
             # Act
-            pipeline.reconcile_all()
+            # Change a property on the step. This would normally fire a signal.
+            step.power = 0.5
+            # Manually call the signal handler to simulate the pipeline's
+            # correct reaction to a step update.
+            pipeline._on_descendant_updated(sender=step, origin=step)
 
             # Assert
             tasks = mock_task_mgr.created_tasks

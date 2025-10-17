@@ -65,7 +65,7 @@ class JobGeneratorStage(PipelineStage):
             for layer in doc.layers
             if layer.workflow
             for step in layer.workflow.steps
-            if (handle := self._artifact_cache.get_step_handle(step.uid))
+            if (handle := self._artifact_cache.get_step_ops_handle(step.uid))
         }
 
         if not step_handles:

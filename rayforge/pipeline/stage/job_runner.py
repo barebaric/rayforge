@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import json
 from dataclasses import dataclass, asdict
@@ -14,7 +15,7 @@ from ..artifact import (
     ArtifactStore,
     JobArtifact,
     create_handle_from_dict,
-    StepArtifact,
+    StepOpsArtifact,
 )
 from ..coord import CoordinateSystem
 
@@ -76,7 +77,7 @@ def make_job_artifact_in_subprocess(
             artifact = ArtifactStore.get(handle)
 
             if (
-                isinstance(artifact, StepArtifact)
+                isinstance(artifact, StepOpsArtifact)
                 and not artifact.ops.is_empty()
             ):
                 final_ops.extend(artifact.ops)

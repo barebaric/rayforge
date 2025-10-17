@@ -1,68 +1,38 @@
 from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
-from typing import Optional, Tuple, Dict, Any, Type, List
+from typing import Optional, List, Dict, Any, Type
 from ...core.ops import Ops
 from ..coord import CoordinateSystem
-from .base import BaseArtifact, VertexData, TextureData
+from .base import BaseArtifact, VertexData, TextureInstance, TextureData
 from .handle import BaseArtifactHandle
 
 
 @dataclass
-class TextureInstance:
-    """Represents a single texture and its placement in the world."""
+class StepRenderArtifactHandle(BaseArtifactHandle):
+    """A handle for a StepRenderArtifact."""
 
-    texture_data: TextureData
-    world_transform: np.ndarray  # 4x4 matrix
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "texture_data": self.texture_data.to_dict(),
-            "world_transform": self.world_transform.tolist(),
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TextureInstance":
-        return cls(
-            texture_data=TextureData.from_dict(data["texture_data"]),
-            world_transform=np.array(
-                data["world_transform"], dtype=np.float32
-            ),
-        )
-
-
-@dataclass
-class StepArtifactHandle(BaseArtifactHandle):
-    """A handle for a StepArtifact."""
-
-    # We no longer need texture metadata here, as the full instance data
-    # will be stored within the artifact's shared memory.
     pass
 
 
-class StepArtifact(BaseArtifact):
+class StepRenderArtifact(BaseArtifact):
     """
-    Represents an intermediate artifact for an entire Step, after all its
-    WorkPieceArtifacts have been aggregated. This is a "render bundle"
-    consumed by the 3D canvas.
+    Represents a lightweight artifact for rendering a Step.
+    Contains only visual data (vertices, textures) and is designed for
+    fast transfer and consumption by the UI.
     """
 
     def __init__(
         self,
-        ops: Ops,
-        is_scalable: bool,
-        source_coordinate_system: CoordinateSystem,
-        source_dimensions: Optional[Tuple[float, float]] = None,
-        time_estimate: Optional[float] = None,
         vertex_data: Optional[VertexData] = None,
         texture_instances: Optional[List[TextureInstance]] = None,
     ):
+        # Pass dummy values to the base class as this artifact doesn't
+        # conceptually have ops.
         super().__init__(
-            ops=ops,
-            is_scalable=is_scalable,
-            source_coordinate_system=source_coordinate_system,
-            source_dimensions=source_dimensions,
-            time_estimate=time_estimate,
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         )
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_instances: List[TextureInstance] = (
@@ -77,21 +47,14 @@ class StepArtifact(BaseArtifact):
         result["texture_instances"] = [
             ti.to_dict() for ti in self.texture_instances
         ]
+        # We don't want the dummy ops in the serialization
+        result.pop("ops", None)
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StepArtifact":
+    def from_dict(cls, data: Dict[str, Any]) -> "StepRenderArtifact":
         """Creates an artifact from a dictionary."""
-        ops = Ops.from_dict(data["ops"])
-        common_args = {
-            "ops": ops,
-            "is_scalable": data["is_scalable"],
-            "source_coordinate_system": CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
-            "source_dimensions": data.get("source_dimensions"),
-            "time_estimate": data.get("time_estimate"),
-        }
+        common_args = {}
         if "vertex_data" in data:
             common_args["vertex_data"] = VertexData.from_dict(
                 data["vertex_data"]
@@ -106,16 +69,17 @@ class StepArtifact(BaseArtifact):
         self,
         shm_name: str,
         array_metadata: Dict[str, Dict[str, Any]],
-    ) -> StepArtifactHandle:
+    ) -> StepRenderArtifactHandle:
         """Creates the appropriate, typed handle for this artifact."""
-        return StepArtifactHandle(
+        coord = CoordinateSystem.MILLIMETER_SPACE.name
+        return StepRenderArtifactHandle(
             shm_name=shm_name,
-            handle_class_name=StepArtifactHandle.__name__,
+            handle_class_name=StepRenderArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
-            is_scalable=self.is_scalable,
-            source_coordinate_system_name=self.source_coordinate_system.name,
-            source_dimensions=self.source_dimensions,
-            time_estimate=self.time_estimate,
+            is_scalable=False,
+            source_coordinate_system_name=coord,
+            source_dimensions=None,
+            time_estimate=None,
             array_metadata=array_metadata,
         )
 
@@ -124,7 +88,7 @@ class StepArtifact(BaseArtifact):
         Gets a dictionary of all NumPy arrays that need to be stored in
         shared memory for this artifact.
         """
-        arrays = self.ops.to_numpy_arrays()
+        arrays: Dict[str, np.ndarray] = {}  # No ops
         if self.vertex_data is not None:
             arrays["powered_vertices"] = self.vertex_data.powered_vertices
             arrays["powered_colors"] = self.vertex_data.powered_colors
@@ -143,15 +107,14 @@ class StepArtifact(BaseArtifact):
 
     @classmethod
     def from_storage(
-        cls: Type[StepArtifact],
+        cls: Type[StepRenderArtifact],
         handle: BaseArtifactHandle,
         arrays: Dict[str, np.ndarray],
-    ) -> StepArtifact:
+    ) -> StepRenderArtifact:
         """
         Reconstructs an artifact instance from its handle and a dictionary of
         NumPy array views from shared memory.
         """
-        ops = Ops.from_numpy_arrays(arrays)
         vertex_data = None
         if all(
             key in arrays
@@ -171,18 +134,18 @@ class StepArtifact(BaseArtifact):
 
         texture_instances = []
         i = 0
-        while f"texture_data_{i}" in arrays:
+        while (
+            f"texture_data_{i}" in arrays
+            and f"texture_transform_{i}" in arrays
+        ):
             tex_data_arr = arrays[f"texture_data_{i}"]
             transform_arr = arrays[f"texture_transform_{i}"]
-            # Reconstruct dimensions from the texture array shape
             h, w = tex_data_arr.shape
-            # This assumes 1:1 pixel to mm, which may need refinement,
-            # but is a reasonable starting point for reconstruction.
             dims = (float(w), float(h))
             texture_data = TextureData(
                 power_texture_data=tex_data_arr.copy(),
                 dimensions_mm=dims,
-                position_mm=(0, 0),  # Position is now in the transform
+                position_mm=(0, 0),
             )
             instance = TextureInstance(
                 texture_data=texture_data,
@@ -190,15 +153,7 @@ class StepArtifact(BaseArtifact):
             )
             texture_instances.append(instance)
             i += 1
-
         return cls(
-            ops=ops,
-            is_scalable=handle.is_scalable,
-            source_coordinate_system=CoordinateSystem[
-                handle.source_coordinate_system_name
-            ],
-            source_dimensions=handle.source_dimensions,
-            time_estimate=handle.time_estimate,
             vertex_data=vertex_data,
             texture_instances=texture_instances,
         )

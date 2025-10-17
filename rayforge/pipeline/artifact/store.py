@@ -41,8 +41,10 @@ class ArtifactStore:
         # Create the shared memory block
         shm_name = f"rayforge_artifact_{uuid.uuid4()}"
         try:
+            # Prevent creating a zero-size block, which raises a ValueError.
+            # A 1-byte block is a safe, minimal placeholder.
             shm = shared_memory.SharedMemory(
-                name=shm_name, create=True, size=total_bytes
+                name=shm_name, create=True, size=max(1, total_bytes)
             )
         except FileExistsError:
             # Handle rare UUID collision by retrying

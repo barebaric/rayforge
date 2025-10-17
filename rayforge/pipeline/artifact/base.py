@@ -77,6 +77,29 @@ class TextureData:
         )
 
 
+@dataclass
+class TextureInstance:
+    """Represents a single texture and its placement in the world."""
+
+    texture_data: TextureData
+    world_transform: np.ndarray  # 4x4 matrix
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "texture_data": self.texture_data.to_dict(),
+            "world_transform": self.world_transform.tolist(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TextureInstance":
+        return cls(
+            texture_data=TextureData.from_dict(data["texture_data"]),
+            world_transform=np.array(
+                data["world_transform"], dtype=np.float32
+            ),
+        )
+
+
 class BaseArtifact(ABC):
     """
     Abstract base class for all artifact types in the pipeline.
