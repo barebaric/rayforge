@@ -1200,13 +1200,12 @@ class MainWindow(Adw.ApplicationWindow):
     def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal from the WorkSurface.
-        Checks for image data on clipboard first, then falls back to
-        workpiece paste.
+        Checks for image data on system clipboard first, then falls back
+        to workpiece paste. After pasting an image, the clipboard is
+        cleared so subsequent pastes use workpiece data.
         """
-        # Priority 1: Check if clipboard contains image data
+        # Priority 1: Check if system clipboard contains image data
         clipboard = self.get_clipboard()
-
-        # Check for image formats
         formats = clipboard.get_formats()
         has_image = formats.contain_mime_type("image/png") or \
                    formats.contain_mime_type("image/jpeg") or \
@@ -1215,6 +1214,8 @@ class MainWindow(Adw.ApplicationWindow):
         if has_image:
             # Import image from clipboard
             self._import_image_from_clipboard()
+            # Clear the clipboard so next paste uses workpiece data
+            clipboard.set_content(None)
             return
 
         # Priority 2: Standard workpiece paste
