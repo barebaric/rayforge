@@ -1200,11 +1200,149 @@ class MainWindow(Adw.ApplicationWindow):
     def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal from the WorkSurface.
+        Checks for image data on clipboard first, then falls back to
+        workpiece paste.
         """
+        # Priority 1: Check if clipboard contains image data
+        clipboard = self.get_clipboard()
+
+        # Check for image formats
+        formats = clipboard.get_formats()
+        has_image = formats.contain_mime_type("image/png") or \
+                   formats.contain_mime_type("image/jpeg") or \
+                   formats.contain_mime_type("image/bmp")
+
+        if has_image:
+            # Import image from clipboard
+            self._import_image_from_clipboard()
+            return
+
+        # Priority 2: Standard workpiece paste
         newly_pasted = self.doc_editor.edit.paste_items()
         if newly_pasted:
             self.surface.select_items(newly_pasted)
         self._update_actions_and_ui()
+
+    def _import_image_from_clipboard(self):
+        """Import image data from the clipboard."""
+        import tempfile
+        import threading
+        from pathlib import Path
+        from gi.repository import GLib
+
+        clipboard = self.get_clipboard()
+
+        # Callback for when texture is read from clipboard
+        def on_texture_ready(clipboard, result):
+            try:
+                texture = clipboard.read_texture_finish(result)
+                if not texture:
+                    logger.warning("Failed to read texture from clipboard")
+                    return
+
+                # Process image in background thread
+                def save_and_import():
+                    try:
+                        # Save texture to temporary file
+                        with tempfile.NamedTemporaryFile(
+                            delete=False, suffix=".png"
+                        ) as tmp_file:
+                            temp_path = Path(tmp_file.name)
+
+                            # Get pixbuf from texture and save as PNG
+                            pixbuf = Gdk.pixbuf_get_from_texture(texture)
+                            pixbuf.savev(str(temp_path), "png", [], [])
+
+                        logger.info(f"Saved clipboard image to {temp_path}")
+
+                        # Schedule import on main thread
+                        def import_on_main_thread():
+                            try:
+                                # Calculate center position of canvas
+                                # config is already imported at the top
+                                machine = config.machine
+                                if machine:
+                                    center_x = machine.dimensions[0] / 2
+                                    center_y = machine.dimensions[1] / 2
+                                else:
+                                    center_x, center_y = 50.0, 50.0  # Fallback
+
+                                # Import the temporary file
+                                from .doceditor.ui import import_handler
+                                import_handler.import_file_at_position(
+                                    self,
+                                    self.doc_editor,
+                                    temp_path,
+                                    "image/png",
+                                    (center_x, center_y),
+                                )
+
+                                # Schedule cleanup after delay
+                                def cleanup():
+                                    try:
+                                        temp_path.unlink()
+                                        logger.debug(
+                                            f"Cleaned up clipboard temp "
+                                            f"file: {temp_path}"
+                                        )
+                                    except Exception as e:
+                                        logger.warning(
+                                            f"Failed to clean up temp "
+                                            f"file: {e}"
+                                        )
+                                    return False  # Don't repeat
+
+                                GLib.timeout_add_seconds(5, cleanup)
+
+                                # Show success notification
+                                self.toast_overlay.add_toast(
+                                    Adw.Toast.new(
+                                        _("Image imported from clipboard")
+                                    )
+                                )
+
+                            except Exception as e:
+                                logger.exception(
+                                    f"Failed to import from clipboard: {e}"
+                                )
+                                self.toast_overlay.add_toast(
+                                    Adw.Toast.new(
+                                        _("Failed to import image "
+                                          "from clipboard")
+                                    )
+                                )
+
+                            return False  # Don't repeat
+
+                        GLib.idle_add(import_on_main_thread)
+
+                    except Exception as e:
+                        logger.exception(
+                            f"Failed to save clipboard image: {e}"
+                        )
+
+                        def show_error():
+                            self.toast_overlay.add_toast(
+                                Adw.Toast.new(
+                                    _("Failed to import image from clipboard")
+                                )
+                            )
+                            return False
+
+                        GLib.idle_add(show_error)
+
+                # Run save/import in background thread
+                thread = threading.Thread(target=save_and_import, daemon=True)
+                thread.start()
+
+            except Exception as e:
+                logger.exception(f"Failed to read clipboard texture: {e}")
+                self.toast_overlay.add_toast(
+                    Adw.Toast.new(_("Failed to import image from clipboard"))
+                )
+
+        # Start async clipboard read with callback
+        clipboard.read_texture_async(None, on_texture_ready)
 
     def on_select_all(self, action, param):
         """

@@ -42,7 +42,13 @@ class PngImporter(Importer):
             )
         except pyvips.Error as e:
             logger.error(
-                f"pyvips failed to load PNG buffer: {e}", exc_info=True
+                f"pyvips failed to load PNG '{self.source_file.name}': {e}"
+            )
+            return None
+        except Exception as e:
+            logger.error(
+                f"Unexpected error loading PNG '{self.source_file.name}': {e}",
+                exc_info=True
             )
             return None
 

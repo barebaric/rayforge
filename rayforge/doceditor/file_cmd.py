@@ -46,10 +46,18 @@ class FileCmd:
         filename: Path,
         mime_type: Optional[str],
         vector_config: Optional[TraceConfig],
+        position_mm: Optional[Tuple[float, float]] = None,
     ):
         """
         The core awaitable logic for loading a file and committing it to the
         document. This is a pure async method without TaskManager context.
+
+        Args:
+            filename: Path to the file to import
+            mime_type: MIME type of the file
+            vector_config: Configuration for vectorization
+            position_mm: Optional (x, y) tuple in world coordinates (mm)
+                to center the imported item
         """
         try:
             # 1. Run blocking I/O and CPU work in a background thread.
@@ -58,11 +66,21 @@ class FileCmd:
             )
 
             if not payload or not payload.items:
-                msg = _("Import failed: No items were created.")
+                # Provide more specific error message based on file type
+                if mime_type and mime_type.startswith("image/"):
+                    msg = _(
+                        "Failed to import {filename}. The image file may be "
+                        "corrupted or in an unsupported format."
+                    ).format(filename=filename.name)
+                else:
+                    msg = _(
+                        "Import failed: No items were created "
+                        "from {filename}"
+                    ).format(filename=filename.name)
                 logger.warning(
-                    f"Importer created no items for '{filename.name}'."
+                    f"Importer created no items for '{filename.name}' "
+                    f"(MIME: {mime_type})"
                 )
-                # You might want to notify the user here as well
                 self._editor.notification_requested.send(self, message=msg)
                 return
 
@@ -72,7 +90,13 @@ class FileCmd:
                 self._editor.doc.add_import_source(payload.source)
 
             imported_items = payload.items
-            self._fit_and_center_imported_items(imported_items)
+
+            # Position items at specified location or centered on workspace
+            if position_mm:
+                self._position_imported_items_at(imported_items, position_mm)
+            else:
+                self._fit_and_center_imported_items(imported_items)
+
             target_layer = cast(Layer, self._editor.default_workpiece_layer)
             cmd_name = _("Import {name}").format(name=filename.name)
 
@@ -99,20 +123,30 @@ class FileCmd:
         filename: Path,
         mime_type: Optional[str],
         vector_config: Optional[TraceConfig],
+        position_mm: Optional[Tuple[float, float]] = None,
     ):
         """
         Public, synchronous method to launch a file import in the background.
         This is the clean entry point for the UI.
+
+        Args:
+            filename: Path to the file to import
+            mime_type: MIME type of the file
+            vector_config: Configuration for vectorization
+                (None for direct vector import)
+            position_mm: Optional (x, y) tuple in world coordinates (mm)
+                to center the imported item.
+                        If None, items are centered on the workspace.
         """
 
         # This wrapper adapts our clean async method to the TaskManager,
         # which expects a coroutine that accepts a 'ctx' argument.
-        async def wrapper(ctx, fn, mt, vc):
+        async def wrapper(ctx, fn, mt, vc, pos_mm):
             # The 'ctx' from the task manager is ignored.
             try:
                 # Update task message for UI feedback
                 ctx.set_message(_(f"Importing {filename.name}..."))
-                await self._load_file_async(fn, mt, vc)
+                await self._load_file_async(fn, mt, vc, pos_mm)
                 ctx.set_message(_("Import complete!"))
             except Exception:
                 # The async method already logs the full error.
@@ -126,7 +160,8 @@ class FileCmd:
             filename,
             mime_type,
             vector_config,
-            key=f"import-{filename.name}",
+            position_mm,
+            key=f"import-{filename}",
         )
 
     def _calculate_items_bbox(
@@ -154,6 +189,53 @@ class FileCmd:
             max_y = max(max_y, iy + ih)
 
         return min_x, min_y, max_x - min_x, max_y - min_y
+
+    def _position_imported_items_at(
+        self, items: List[DocItem], position_mm: Tuple[float, float]
+    ):
+        """
+        Position imported items so their bounding box center is at the
+        specified location.
+
+        Args:
+            items: List of imported DocItems
+            position_mm: (x, y) tuple in world coordinates (mm)
+                where items should be centered
+        """
+        machine = self._config_manager.config.machine
+        if not machine:
+            logger.warning(
+                "Cannot position imported items: machine dimensions unknown."
+            )
+            return
+
+        # Calculate the bounding box of all imported items
+        bbox = self._calculate_items_bbox(items)
+        if not bbox:
+            return
+
+        bbox_x, bbox_y, bbox_w, bbox_h = bbox
+        target_x, target_y = position_mm
+
+        # Calculate current center of the bounding box
+        current_center_x = bbox_x + bbox_w / 2
+        current_center_y = bbox_y + bbox_h / 2
+
+        # Calculate translation to move center to target position
+        delta_x = target_x - current_center_x
+        delta_y = target_y - current_center_y
+
+        # Apply translation to all items
+        if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:
+            translation_matrix = Matrix.translation(delta_x, delta_y)
+            for item in items:
+                # Pre-multiply to apply translation in world space
+                item.matrix = translation_matrix @ item.matrix
+
+            logger.info(
+                f"Positioned {len(items)} imported item(s) at "
+                f"({target_x:.2f}, {target_y:.2f}) mm"
+            )
 
     def _fit_and_center_imported_items(self, items: List[DocItem]):
         """
