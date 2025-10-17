@@ -32,6 +32,8 @@ class DragDropCmd:
         self.main_window = main_window
         self.surface = surface
         self._drop_overlay_label: Optional[Gtk.Label] = None
+        self._drag_active = False  # Track if drag is currently in progress
+        self._drag_source = None  # Track the drag source for cleanup
         self._apply_drop_overlay_css()
 
     def _apply_drop_overlay_css(self):
@@ -70,7 +72,11 @@ class DragDropCmd:
         # Connect signals
         drop_target.connect("drop", self._on_file_dropped)
         drop_target.connect("enter", self._on_drag_enter)
+        drop_target.connect("motion", self._on_drag_motion)
         drop_target.connect("leave", self._on_drag_leave)
+
+        # Store reference for cleanup
+        self._drag_source = drop_target
 
         # Attach to canvas widget
         self.surface.add_controller(drop_target)
@@ -83,15 +89,35 @@ class DragDropCmd:
         Called when files are dragged over the canvas.
         Shows overlay message to provide visual feedback.
         """
+        self._drag_active = True
         self._show_drop_overlay()
+        logger.debug("Drag entered, overlay shown, drag_active=True")
+        return Gdk.DragAction.COPY
+
+    def _on_drag_motion(
+        self, drop_target, x: float, y: float
+    ) -> Gdk.DragAction:
+        """
+        Called when drag moves over the canvas.
+        Ensures overlay stays visible and drag state is tracked.
+        """
+        # Keep drag active and ensure overlay is shown
+        if not self._drag_active:
+            logger.debug("Motion detected but drag not active, reactivating")
+            self._drag_active = True
+            self._show_drop_overlay()
         return Gdk.DragAction.COPY
 
     def _on_drag_leave(self, drop_target):
         """
         Called when drag leaves the canvas.
-        Removes the overlay message.
+        Only removes overlay if drag is truly ending (defensive check).
         """
-        self._hide_drop_overlay()
+        # Don't immediately hide - GTK4 sometimes fires spurious leave events
+        # We'll rely on drop or a delayed cleanup instead
+        logger.debug("Drag leave signal received (may be spurious)")
+        # Schedule a delayed check to hide overlay only if drag truly ended
+        GLib.timeout_add(100, self._check_and_hide_overlay)
 
     def _show_drop_overlay(self):
         """Display 'Drop files to import' overlay on canvas."""
@@ -115,14 +141,32 @@ class DragDropCmd:
         else:
             logger.warning("Could not find parent overlay for drop message")
 
+    def _check_and_hide_overlay(self) -> bool:
+        """
+        Check if drag is still active before hiding overlay.
+        Returns False to not repeat the timeout.
+        """
+        if not self._drag_active:
+            self._hide_drop_overlay()
+            logger.debug("Delayed hide: drag no longer active, removing overlay")
+        else:
+            logger.debug("Delayed hide: drag still active, keeping overlay")
+        return False  # Don't repeat
+
     def _hide_drop_overlay(self):
-        """Remove the drop overlay from canvas."""
-        if self._drop_overlay_label:
+        """Remove the drop overlay from canvas. Safe to call multiple times."""
+        if not self._drop_overlay_label:
+            return  # Already removed or never created
+
+        try:
             overlay_parent = self._find_parent_overlay()
             if overlay_parent:
                 overlay_parent.remove_overlay(self._drop_overlay_label)
             self._drop_overlay_label = None
             logger.debug("Drop overlay removed")
+        except Exception as e:
+            logger.warning(f"Error removing drop overlay: {e}")
+            self._drop_overlay_label = None  # Clear reference anyway
 
     def _find_parent_overlay(self):
         """Find the Gtk.Overlay parent that contains this canvas."""
@@ -147,6 +191,10 @@ class DragDropCmd:
         Returns:
             True if drop was handled successfully, False otherwise
         """
+        # Mark drag as no longer active
+        self._drag_active = False
+        logger.debug("Drop received, drag_active=False")
+
         # Hide overlay immediately
         self._hide_drop_overlay()
 
@@ -166,8 +214,10 @@ class DragDropCmd:
             # Get file info for all dropped files
             file_infos = self._get_file_infos(files)
 
-            # Categorize and import files
-            self._import_dropped_files(file_infos, (world_x_mm, world_y_mm))
+            # Delay file import slightly to ensure drag operation fully completes
+            # This prevents modal dialogs from interfering with drag cleanup
+            GLib.timeout_add(150, self._import_dropped_files_delayed,
+                           file_infos, (world_x_mm, world_y_mm))
 
             return True
 
@@ -221,6 +271,14 @@ class DragDropCmd:
             file_infos.append((file_path, mime_type))
 
         return file_infos
+
+    def _import_dropped_files_delayed(self, file_infos, position_mm) -> bool:
+        """
+        Delayed wrapper for importing files after drag completes.
+        Returns False to not repeat the timeout.
+        """
+        self._import_dropped_files(file_infos, position_mm)
+        return False  # Don't repeat
 
     def _import_dropped_files(self, file_infos, position_mm):
         """
