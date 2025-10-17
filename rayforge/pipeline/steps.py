@@ -57,6 +57,15 @@ def create_raster_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Rasterize step."""
     assert config.config.machine
     default_head = config.config.machine.get_default_head()
+    machine = config.config.machine
+
+    # Calculate auto overscan distance based on machine capabilities
+    # Use a reasonable default cut speed for calculation if not specified
+    default_cut_speed = 500
+    auto_distance = OverscanTransformer.calculate_auto_distance(
+        default_cut_speed, machine.acceleration
+    )
+
     step = Step(
         typelabel=_("Engrave (Raster)"),
         name=name,
@@ -67,15 +76,17 @@ def create_raster_step(name: Optional[str] = None) -> Step:
         ToGrayscale().to_dict(),
     ]
     step.per_workpiece_transformers_dicts = [
-        OverscanTransformer().to_dict(),
+        OverscanTransformer(
+            enabled=True, distance_mm=auto_distance, auto=True
+        ).to_dict(),
         Optimize().to_dict(),
     ]
     step.per_step_transformers_dicts = [
         MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
     ]
     step.selected_laser_uid = default_head.uid
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
     return step
 
 
@@ -83,6 +94,15 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Depth Engrave step."""
     assert config.config.machine
     default_head = config.config.machine.get_default_head()
+    machine = config.config.machine
+
+    # Calculate auto overscan distance based on machine capabilities
+    # Use a reasonable default cut speed for calculation if not specified
+    default_cut_speed = 500
+    auto_distance = OverscanTransformer.calculate_auto_distance(
+        default_cut_speed, machine.acceleration
+    )
+
     step = Step(
         typelabel=_("Engrave (Depth-Aware)"),
         name=name,
@@ -93,15 +113,17 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
         ToGrayscale().to_dict(),
     ]
     step.per_workpiece_transformers_dicts = [
-        OverscanTransformer().to_dict(),
+        OverscanTransformer(
+            enabled=True, distance_mm=auto_distance, auto=True
+        ).to_dict(),
         Optimize().to_dict(),
     ]
     step.per_step_transformers_dicts = [
         # MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
     ]
     step.selected_laser_uid = default_head.uid
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
     return step
 
 
