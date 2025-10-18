@@ -1,7 +1,8 @@
 from .driver import Driver, Axis
 from ...core.ops import Ops
 from ...shared.varset import VarSet
-from typing import Any, TYPE_CHECKING, List, Optional
+from typing import Any, TYPE_CHECKING, List, Optional, Callable
+import asyncio
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -16,6 +17,7 @@ class NoDeviceDriver(Driver):
     label = _("No driver")
     subtitle = _("No connection")
     supports_settings = False
+    reports_granular_progress = True
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -31,8 +33,35 @@ class NoDeviceDriver(Driver):
     async def connect(self) -> None:
         pass
 
-    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
-        pass
+    async def run(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> None:
+        """
+        Dummy implementation that simulates command execution.
+
+        This implementation creates a GcodeOpMap to track which commands
+        correspond to which Ops, then simulates execution by calling the
+        on_command_done callback for each command with a small delay.
+        """
+        # Get the operation map for tracking
+        _ = self._track_command_execution(ops, machine, doc, on_command_done)
+
+        # Simulate command execution with delays
+        for op_index in range(len(ops)):
+            # Small delay to simulate execution time
+            await asyncio.sleep(0.01)
+
+            # Call the callback if provided
+            if on_command_done is not None:
+                try:
+                    on_command_done(op_index)
+                except Exception:
+                    # Don't let callback exceptions stop execution
+                    pass
 
     async def set_hold(self, hold: bool = True) -> None:
         pass

@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import serial.serialutil
-from typing import Optional, Any, List, cast, TYPE_CHECKING
+from typing import Optional, Any, List, cast, TYPE_CHECKING, Callable
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ...core.ops import Ops
@@ -38,6 +38,7 @@ class GrblSerialDriver(Driver):
     label = _("GRBL (Serial)")
     subtitle = _("GRBL-compatible serial connection")
     supports_settings = True
+    reports_granular_progress = True
 
     def __init__(self):
         super().__init__()
@@ -289,11 +290,17 @@ class GrblSerialDriver(Driver):
                 )
         logger.debug("Leaving _process_command_queue.")
 
-    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
+    async def run(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> None:
         self._is_cancelled = False
         self._job_running = True
         encoder = GcodeEncoder.for_machine(machine)
-        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
+        gcode, op_map = encoder.encode(ops, machine, doc)
 
         for line in gcode.splitlines():
             if self._is_cancelled:

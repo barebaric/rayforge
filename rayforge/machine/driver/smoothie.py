@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional, cast, Any, TYPE_CHECKING
+from typing import List, Optional, cast, Any, TYPE_CHECKING, Callable
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import VarSet, HostnameVar, IntVar
 from ...core.ops import Ops
@@ -28,6 +28,7 @@ class SmoothieDriver(Driver):
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")
     supports_settings = False
+    reports_granular_progress = True
 
     def __init__(self):
         super().__init__()
@@ -150,7 +151,13 @@ class SmoothieDriver(Driver):
                     f"Command '{cmd.decode()}' not confirmed"
                 ) from e
 
-    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
+    async def run(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> None:
         encoder = GcodeEncoder.for_machine(machine)
         gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
 

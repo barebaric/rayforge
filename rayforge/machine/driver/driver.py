@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Any, TYPE_CHECKING, Callable
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto, IntFlag
@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...shared.varset import VarSet
     from ..models.machine import Machine
+    from ...pipeline.encoder.gcode import GcodeOpMap
 
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,9 @@ class Driver(ABC):
     label: str
     subtitle: str
     supports_settings: bool = False
+    # Drivers that send files via the network may not be able to
+    # report granular progress updates during the execution of a job.
+    reports_granular_progress: bool = False
 
     def __init__(self):
         self.log_received = Signal()
@@ -178,10 +182,23 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
+    async def run(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> None:
         """
         Converts the given Ops into commands for the machine, and executes
         them.
+
+        Args:
+            ops: The operations to execute
+            machine: The machine configuration
+            doc: The document context
+            on_command_done: Optional callback called when each command is
+                           done. Called with the op_index as a parameter.
         """
         pass
 
@@ -350,3 +367,33 @@ class Driver(ABC):
             True if the device supports G0 with speed, False otherwise
         """
         return False
+
+    def _track_command_execution(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> "GcodeOpMap":
+        """
+        Creates a GcodeOpMap for tracking command execution.
+
+        This method should be called by driver implementations to get a
+        GcodeOpMap that can be used to track which Ops commands correspond
+        to which G-code lines. Drivers can then use this map to call the
+        on_command_done callback at the appropriate times.
+
+        Args:
+            ops: The operations to execute
+            machine: The machine configuration
+            doc: The document context
+            on_command_done: Optional callback for command completion
+
+        Returns:
+            A GcodeOpMap for tracking command execution
+        """
+        from ...pipeline.encoder.gcode import GcodeEncoder
+
+        encoder = GcodeEncoder.for_machine(machine)
+        _, op_map = encoder.encode(ops, machine, doc)
+        return op_map

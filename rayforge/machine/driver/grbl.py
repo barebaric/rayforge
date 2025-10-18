@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-from typing import Optional, cast, Any, TYPE_CHECKING, List
+from typing import Optional, cast, Any, TYPE_CHECKING, List, Callable
 
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import Var, VarSet, HostnameVar
@@ -43,6 +43,7 @@ class GrblNetworkDriver(Driver):
     label = _("GRBL (Network)")
     subtitle = _("Connect to a GRBL-compatible device over the network")
     supports_settings = True
+    reports_granular_progress = False
 
     def __init__(self):
         super().__init__()
@@ -266,13 +267,26 @@ class GrblNetworkDriver(Driver):
             self._on_connection_status_changed(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
-    async def run(self, ops: Ops, machine: "Machine", doc: "Doc") -> None:
+    async def run(
+        self,
+        ops: Ops,
+        machine: "Machine",
+        doc: "Doc",
+        on_command_done: Optional[Callable[[int], None]] = None,
+    ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
         encoder = GcodeEncoder.for_machine(machine)
-        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
+        gcode, op_map = encoder.encode(ops, machine, doc)
 
         try:
+            # For GRBL driver, we don't track individual commands
+            # since we upload the entire file at once
+            if on_command_done is not None:
+                # Call the callback for each op to indicate completion
+                for op_index in range(len(ops)):
+                    on_command_done(op_index)
+
             await self._upload(gcode, "rayforge.gcode")
             await self._execute("rayforge.gcode")
         except Exception as e:
