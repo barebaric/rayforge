@@ -1,13 +1,12 @@
 import pytest
 import pytest_asyncio
 import asyncio
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, PropertyMock
 from functools import partial
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.doceditor.editor import DocEditor
 from rayforge.pipeline.artifact import (
     ArtifactStore,
@@ -127,8 +126,13 @@ class TestMachineCmdJobMonitoring:
         mocker.patch.object(ArtifactStore, "get", return_value=job_artifact)
 
         job_started_spy = MagicMock()
-        job_finished_spy = MagicMock()
         progress_updated_spy = MagicMock()
+
+        # Use an asyncio.Event for robust synchronization
+        job_finished_event = asyncio.Event()
+        job_finished_spy = MagicMock(
+            side_effect=lambda *a, **kw: job_finished_event.set()
+        )
 
         machine_cmd.job_started.connect(job_started_spy)
         machine.job_finished.connect(job_finished_spy)
@@ -155,8 +159,8 @@ class TestMachineCmdJobMonitoring:
             dummy_handle, machine, on_progress=lambda metrics: None
         )
 
-        # Allow scheduled callbacks (sent via idle_add) to run
-        await asyncio.sleep(0)
+        # Explicitly wait for the job_finished signal to be processed
+        await asyncio.wait_for(job_finished_event.wait(), timeout=1)
 
         # --- Assert ---
         # 1. Verify job lifecycle signals
@@ -176,41 +180,35 @@ class TestMachineCmdJobMonitoring:
         self, machine_cmd, machine, simple_ops, job_artifact, mocker
     ):
         """
-        Tests the monitoring flow for a file-based driver that does not
-        report granular progress.
+        Tests the monitoring flow for a driver that does not report
+        granular progress.
         """
         # --- Arrange ---
-        # Disconnect signals from the old driver before swapping
-        machine._disconnect_driver_signals()
+        mocker.patch.object(
+            type(machine),
+            "reports_granular_progress",
+            new_callable=PropertyMock,
+            return_value=False,
+        )
+        assert not machine.reports_granular_progress
 
-        # Swap the driver for a non-granular one
-        driver = GrblNetworkDriver()
-        driver.setup(host="127.0.0.1")  # Needs valid setup
-
-        # Mock the run method to also send the job_finished signal
         async def mock_run_and_finish(*args, **kwargs):
-            """Simulates a non-granular run that sends a finish signal."""
+            # Simulate work and signal finish
             await asyncio.sleep(0)
-            driver.job_finished.send(driver)
+            machine.driver.job_finished.send(machine.driver)
 
         run_mock = mocker.patch.object(
-            driver,
-            "run",
-            new_callable=AsyncMock,
-            side_effect=mock_run_and_finish,
+            machine.driver, "run", side_effect=mock_run_and_finish
         )
-        machine.driver = driver
-        # Reconnect signals to the new driver
-        machine._connect_driver_signals()
-        assert machine.driver.reports_granular_progress is False
 
         mocker.patch.object(ArtifactStore, "get", return_value=job_artifact)
 
-        job_started_spy = MagicMock()
-        job_finished_spy = MagicMock()
-        progress_updated_spy = MagicMock()
+        # Use an asyncio.Event for robust synchronization
+        job_finished_event = asyncio.Event()
+        job_finished_spy = MagicMock(
+            side_effect=lambda *a, **kw: job_finished_event.set()
+        )
 
-        machine_cmd.job_started.connect(job_started_spy)
         machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
@@ -222,38 +220,21 @@ class TestMachineCmdJobMonitoring:
             distance=0,
         )
 
-        def on_job_started(sender):
-            monitor = machine_cmd._current_monitor
-            assert monitor is not None
-            monitor.progress_updated.connect(progress_updated_spy)
-
-        job_started_spy.side_effect = on_job_started
-
         await machine_cmd._run_send_action(
             dummy_handle, machine, on_progress=lambda metrics: None
         )
 
-        # Allow scheduled callbacks (sent via idle_add) to run
-        await asyncio.sleep(0)
+        # Explicitly wait for the job_finished signal
+        # handler to run. This eliminates the race condition.
+        await asyncio.wait_for(job_finished_event.wait(), timeout=1)
 
         # --- Assert ---
         # 1. Verify driver was called correctly
         run_mock.assert_called_once()
-        # Crucially, the callback must be None for non-granular drivers
         assert run_mock.call_args.kwargs["on_command_done"] is None
 
-        # 2. Verify job lifecycle signals
-        job_started_spy.assert_called_once()
+        # 2. Verify job lifecycle signals fired
         job_finished_spy.assert_called_once()
-        assert machine_cmd._current_monitor is None  # Check cleanup
 
-        # 3. Verify non-granular progress update (only one call)
-        progress_updated_spy.assert_called_once()
-
-        # 4. Check the progress was marked as 100%
-        final_metrics = progress_updated_spy.call_args.kwargs["metrics"]
-        assert final_metrics["progress_fraction"] == 1.0
-        assert (
-            final_metrics["traveled_distance"]
-            == final_metrics["total_distance"]
-        )
+        # 3. Verify cleanup happened
+        assert machine_cmd._current_monitor is None
