@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional, TYPE_CHECKING, Sequence
+from typing import Dict, Optional, TYPE_CHECKING, Sequence, Tuple
 from ...core.matrix import Matrix
 from .base import LayoutStrategy
 
@@ -196,4 +196,44 @@ class BboxAlignBottomStrategy(LayoutStrategy):
             delta_y = target_y - wp_bbox[1]
             if abs(delta_y) > 1e-6:
                 deltas[wp] = Matrix.translation(0, delta_y)
+        return deltas
+
+
+class PositionAtStrategy(LayoutStrategy):
+    """
+    Positions the center of the selection's bounding box at a specific point.
+    """
+
+    def __init__(
+        self,
+        items: Sequence[DocItem],
+        position_mm: Tuple[float, float],
+    ):
+        super().__init__(items)
+        self.position_mm = position_mm
+
+    def calculate_deltas(
+        self, context: Optional[ExecutionContext] = None
+    ) -> Dict[DocItem, Matrix]:
+        bbox = self._get_selection_world_bbox()
+        if not bbox:
+            return {}
+
+        min_x, min_y, max_x, max_y = bbox
+        target_x, target_y = self.position_mm
+
+        # Calculate current center of the bounding box
+        current_center_x = min_x + (max_x - min_x) / 2
+        current_center_y = min_y + (max_y - min_y) / 2
+
+        # Calculate translation to move center to target position
+        delta_x = target_x - current_center_x
+        delta_y = target_y - current_center_y
+
+        deltas = {}
+        if abs(delta_x) > 1e-6 or abs(delta_y) > 1e-6:
+            translation_matrix = Matrix.translation(delta_x, delta_y)
+            # All items get the same matrix to move them as a group
+            for item in self.items:
+                deltas[item] = translation_matrix
         return deltas
