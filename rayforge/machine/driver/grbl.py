@@ -1,6 +1,16 @@
 import aiohttp
 import asyncio
-from typing import Optional, cast, Any, TYPE_CHECKING, List, Callable
+import inspect
+from typing import (
+    Optional,
+    cast,
+    Any,
+    TYPE_CHECKING,
+    List,
+    Callable,
+    Union,
+    Awaitable,
+)
 
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import Var, VarSet, HostnameVar
@@ -272,7 +282,9 @@ class GrblNetworkDriver(Driver):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
@@ -285,7 +297,9 @@ class GrblNetworkDriver(Driver):
             if on_command_done is not None:
                 # Call the callback for each op to indicate completion
                 for op_index in range(len(ops)):
-                    on_command_done(op_index)
+                    result = on_command_done(op_index)
+                    if inspect.isawaitable(result):
+                        await result
 
             await self._upload(gcode, "rayforge.gcode")
             await self._execute("rayforge.gcode")

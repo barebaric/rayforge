@@ -1,5 +1,14 @@
 import asyncio
-from typing import List, Optional, cast, Any, TYPE_CHECKING, Callable
+from typing import (
+    List,
+    Optional,
+    cast,
+    Any,
+    TYPE_CHECKING,
+    Callable,
+    Union,
+    Awaitable,
+)
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import VarSet, HostnameVar, IntVar
 from ...core.ops import Ops
@@ -156,7 +165,9 @@ class SmoothieDriver(Driver):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> None:
         encoder = GcodeEncoder.for_machine(machine)
         gcode, _op_to_line_map = encoder.encode(ops, machine, doc)

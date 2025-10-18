@@ -1,6 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Any, TYPE_CHECKING, Callable
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    Any,
+    TYPE_CHECKING,
+    Callable,
+    Union,
+    Awaitable,
+)
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto, IntFlag
@@ -187,7 +196,9 @@ class Driver(ABC):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> None:
         """
         Converts the given Ops into commands for the machine, and executes
@@ -197,8 +208,8 @@ class Driver(ABC):
             ops: The operations to execute
             machine: The machine configuration
             doc: The document context
-            on_command_done: Optional callback called when each command is
-                           done. Called with the op_index as a parameter.
+            on_command_done: Optional sync or async callback called when each
+                           command is done. Called with the op_index.
         """
         pass
 
@@ -373,7 +384,9 @@ class Driver(ABC):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> "GcodeOpMap":
         """
         Creates a GcodeOpMap for tracking command execution.
