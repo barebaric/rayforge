@@ -289,9 +289,15 @@ class WorkerPoolManager:
                     )
                     worker.terminate()
                     worker.join(timeout=1.0)
-                # Do not call worker.close() here. It makes the process object
-                # unusable for tests that need to check its final state (e.g.,
-                # is_alive()), and daemon processes are cleaned up anyway.
+                # Always close the process object to properly clean up
+                # and prevent zombie processes.
+                try:
+                    worker.close()
+                except ValueError:
+                    # Process might already be closed or in an invalid state
+                    # This can happen if the process was already terminated
+                    # and cleaned up by the OS
+                    pass
 
             # 3. Stop the result listener thread.
             try:
