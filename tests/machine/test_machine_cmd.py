@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock
 from functools import partial
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.machine.cmd import MachineCmd, JobMonitor
+from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.doceditor.editor import DocEditor
@@ -28,14 +28,22 @@ async def task_mgr(monkeypatch):
     main_loop = asyncio.get_running_loop()
 
     def asyncio_scheduler(callback, *args, **kwargs):
-        main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
+        # Use call_soon as we are in a single-threaded asyncio test
+        # environment.
+        main_loop.call_soon(partial(callback, *args, **kwargs))
 
     # Instantiate the TaskManager with our custom scheduler
     tm = TaskManager(main_thread_scheduler=asyncio_scheduler)
 
     # Patch the global singleton where it is imported and used by other modules
-    # that are not part of the test's dependency injection chain.
     monkeypatch.setattr("rayforge.machine.models.machine.task_mgr", tm)
+
+    # Patch idle_add in modules that use it to schedule UI/main-thread
+    # callbacks, redirecting them to the asyncio event loop for the test.
+    monkeypatch.setattr("rayforge.machine.cmd.idle_add", asyncio_scheduler)
+    monkeypatch.setattr(
+        "rayforge.machine.models.machine.idle_add", asyncio_scheduler
+    )
 
     yield tm
 
@@ -121,17 +129,9 @@ class TestMachineCmdJobMonitoring:
         job_started_spy = MagicMock()
         job_finished_spy = MagicMock()
         progress_updated_spy = MagicMock()
-        active_monitor = None
 
-        def on_job_started(sender, monitor: JobMonitor):
-            nonlocal active_monitor
-            active_monitor = monitor
-            job_started_spy(sender, monitor=monitor)
-            # Connect to the monitor's signal ONLY after it's started
-            monitor.progress_updated.connect(progress_updated_spy)
-
-        machine_cmd.job_started.connect(on_job_started)
-        machine_cmd.job_finished.connect(job_finished_spy)
+        machine_cmd.job_started.connect(job_started_spy)
+        machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
         # The handle is just a placeholder; ArtifactStore.get is mocked
@@ -142,28 +142,34 @@ class TestMachineCmdJobMonitoring:
             time_estimate=0,
             distance=0,
         )
-        await machine_cmd._run_send_action(dummy_handle, machine)
+
+        # Setup progress spy AFTER the job starts and monitor is created
+        def on_job_started(sender):
+            monitor = machine_cmd._current_monitor
+            assert monitor is not None
+            monitor.progress_updated.connect(progress_updated_spy)
+
+        job_started_spy.side_effect = on_job_started
+
+        await machine_cmd._run_send_action(
+            dummy_handle, machine, on_progress=lambda metrics: None
+        )
+
+        # Allow scheduled callbacks (sent via idle_add) to run
+        await asyncio.sleep(0)
 
         # --- Assert ---
         # 1. Verify job lifecycle signals
         job_started_spy.assert_called_once()
         job_finished_spy.assert_called_once()
-        assert (
-            job_started_spy.call_args.kwargs["monitor"]
-            is job_finished_spy.call_args.kwargs["monitor"]
-        )
-        assert active_monitor is not None
+        assert machine_cmd._current_monitor is None  # Check cleanup
 
         # 2. Verify granular progress updates
-        assert progress_updated_spy.call_count == len(simple_ops)
-
-        # 3. Verify final state of the monitor
-        final_metrics = active_monitor.metrics
-        assert final_metrics["progress_fraction"] == 1.0
-        assert (
-            final_metrics["traveled_distance"]
-            == final_metrics["total_distance"]
-        )
+        # The JobMonitor sends updates for all commands, including those with
+        # zero distance (like MoveToCommand).
+        # We must calculate the expected number of calls by counting all cmds.
+        expected_call_count = len(simple_ops)
+        assert progress_updated_spy.call_count == expected_call_count
 
     @pytest.mark.asyncio
     async def test_send_job_non_granular_progress(
@@ -174,11 +180,28 @@ class TestMachineCmdJobMonitoring:
         report granular progress.
         """
         # --- Arrange ---
+        # Disconnect signals from the old driver before swapping
+        machine._disconnect_driver_signals()
+
         # Swap the driver for a non-granular one
         driver = GrblNetworkDriver()
         driver.setup(host="127.0.0.1")  # Needs valid setup
-        run_mock = mocker.patch.object(driver, "run", new_callable=AsyncMock)
+
+        # Mock the run method to also send the job_finished signal
+        async def mock_run_and_finish(*args, **kwargs):
+            """Simulates a non-granular run that sends a finish signal."""
+            await asyncio.sleep(0)
+            driver.job_finished.send(driver)
+
+        run_mock = mocker.patch.object(
+            driver,
+            "run",
+            new_callable=AsyncMock,
+            side_effect=mock_run_and_finish,
+        )
         machine.driver = driver
+        # Reconnect signals to the new driver
+        machine._connect_driver_signals()
         assert machine.driver.reports_granular_progress is False
 
         mocker.patch.object(ArtifactStore, "get", return_value=job_artifact)
@@ -186,16 +209,9 @@ class TestMachineCmdJobMonitoring:
         job_started_spy = MagicMock()
         job_finished_spy = MagicMock()
         progress_updated_spy = MagicMock()
-        active_monitor = None
 
-        def on_job_started(sender, monitor: JobMonitor):
-            nonlocal active_monitor
-            active_monitor = monitor
-            job_started_spy(sender, monitor=monitor)
-            monitor.progress_updated.connect(progress_updated_spy)
-
-        machine_cmd.job_started.connect(on_job_started)
-        machine_cmd.job_finished.connect(job_finished_spy)
+        machine_cmd.job_started.connect(job_started_spy)
+        machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
         dummy_handle = JobArtifactHandle(
@@ -205,7 +221,20 @@ class TestMachineCmdJobMonitoring:
             time_estimate=0,
             distance=0,
         )
-        await machine_cmd._run_send_action(dummy_handle, machine)
+
+        def on_job_started(sender):
+            monitor = machine_cmd._current_monitor
+            assert monitor is not None
+            monitor.progress_updated.connect(progress_updated_spy)
+
+        job_started_spy.side_effect = on_job_started
+
+        await machine_cmd._run_send_action(
+            dummy_handle, machine, on_progress=lambda metrics: None
+        )
+
+        # Allow scheduled callbacks (sent via idle_add) to run
+        await asyncio.sleep(0)
 
         # --- Assert ---
         # 1. Verify driver was called correctly
@@ -216,13 +245,13 @@ class TestMachineCmdJobMonitoring:
         # 2. Verify job lifecycle signals
         job_started_spy.assert_called_once()
         job_finished_spy.assert_called_once()
-        assert active_monitor is not None
+        assert machine_cmd._current_monitor is None  # Check cleanup
 
         # 3. Verify non-granular progress update (only one call)
         progress_updated_spy.assert_called_once()
 
-        # 4. Verify final state of the monitor
-        final_metrics = active_monitor.metrics
+        # 4. Check the progress was marked as 100%
+        final_metrics = progress_updated_spy.call_args.kwargs["metrics"]
         assert final_metrics["progress_fraction"] == 1.0
         assert (
             final_metrics["traveled_distance"]

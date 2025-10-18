@@ -193,7 +193,8 @@ Playback duration is scaled to 5 seconds for the full job:
 - If playback jumps rapidly, job has many small segments
 
 !!! tip "Actual Time"
-    For actual job time, check the G-code preview or status bar after generating G-code.
+     For actual job time during execution (non-simulation), check the right
+     section of the status bar after generating G-code.
 
 ### Debugging Material Tests
 

@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 from typing import (
     List,
     Optional,
@@ -170,16 +171,38 @@ class SmoothieDriver(Driver):
         ] = None,
     ) -> None:
         encoder = GcodeEncoder.for_machine(machine)
-        gcode, _op_to_line_map = encoder.encode(ops, machine, doc)
+        gcode, op_map = encoder.encode(ops, machine, doc)
+        gcode_lines = gcode.splitlines()
 
         try:
-            for line in gcode.splitlines():
-                line = line.strip()
-                if line:
-                    await self._send_and_wait(line.encode())
+            for op_index in range(len(ops)):
+                # Find all g-code lines for this specific op_index
+                line_indices = op_map.op_to_gcode.get(op_index, [])
+                if not line_indices:
+                    # If an op generates no g-code, still report it as done.
+                    if on_command_done:
+                        result = on_command_done(op_index)
+                        if inspect.isawaitable(result):
+                            await result
+                    continue
+
+                for line_idx in sorted(line_indices):
+                    line = gcode_lines[line_idx].strip()
+                    if line:
+                        await self._send_and_wait(line.encode())
+
+                # After all lines for this op are sent and confirmed,
+                # fire the callback.
+                if on_command_done:
+                    result = on_command_done(op_index)
+                    if inspect.isawaitable(result):
+                        await result
+
         except Exception as e:
             self._on_connection_status_changed(TransportStatus.ERROR, str(e))
             raise
+        finally:
+            self.job_finished.send(self)
 
     async def set_hold(self, hold: bool = True) -> None:
         if hold:

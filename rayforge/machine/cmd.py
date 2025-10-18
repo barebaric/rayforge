@@ -4,6 +4,7 @@ import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
 from blinker import Signal
 from ..pipeline.artifact import ArtifactStore, JobArtifact, JobArtifactHandle
+from ..shared.util.glib import idle_add
 from .job_monitor import JobMonitor
 
 if TYPE_CHECKING:
@@ -22,7 +23,8 @@ class MachineCmd:
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
         self.job_started = Signal()
-        self.job_finished = Signal()
+        self._current_monitor: Optional[JobMonitor] = None
+        self._on_progress_callback: Optional[Callable[[dict], None]] = None
 
     def home_machine(self, machine: "Machine"):
         """Adds a 'home' task to the task manager for the given machine."""
@@ -45,40 +47,87 @@ class MachineCmd:
             lambda ctx: driver.select_tool(tool_number), key="select-head"
         )
 
-    async def _execute_monitored_job(self, ops: "Ops", machine: "Machine"):
+    def _progress_handler(self, sender, metrics):
+        """Signal handler for job progress updates."""
+        logger.debug(f"JobMonitor progress: {metrics}")
+        if self._on_progress_callback:
+            idle_add(self._on_progress_callback, metrics)
+
+    async def _execute_monitored_job(
+        self,
+        ops: "Ops",
+        machine: "Machine",
+        on_progress: Optional[Callable[[dict], None]] = None,
+    ):
         """
         Internal helper to execute an Ops object on a driver while managing
         a JobMonitor for progress reporting.
         """
+        if self._current_monitor:
+            msg = "Tried to start a job while another is running."
+            logger.warning(msg)
+            # A running job is a failure condition for starting a new one.
+            raise RuntimeError(msg)
+
         if ops.is_empty():
             logger.warning("Job has no operations. Skipping execution.")
+            if machine.driver:
+                machine.driver.job_finished.send(machine.driver)
             return
 
-        monitor = JobMonitor(ops)
-        self.job_started.send(self, monitor=monitor)
+        # Store the callback and create the monitor
+        self._on_progress_callback = on_progress
+        self._current_monitor = JobMonitor(ops)
+
+        if self._on_progress_callback:
+            logger.debug("Connecting progress handler to JobMonitor")
+            self._current_monitor.progress_updated.connect(
+                self._progress_handler
+            )
+
+        def cleanup_monitor(sender, **kwargs):
+            """Cleans up the monitor when the job is done."""
+            logger.debug("Job finished, cleaning up monitor.")
+            if self._current_monitor:
+                self._current_monitor.progress_updated.disconnect(
+                    self._progress_handler
+                )
+                self._current_monitor = None
+            self._on_progress_callback = None
+            # Disconnect self to avoid being called again for this job
+            machine.job_finished.disconnect(cleanup_monitor)
+
+        # Connect to the machine's job_finished signal for cleanup
+        machine.job_finished.connect(cleanup_monitor)
+
+        # Signal that the job has started.
+        idle_add(self.job_started.send, self)
+
         try:
-            if machine.driver.reports_granular_progress:
-                # Granular strategy: Driver calls back for each op.
+            if machine.reports_granular_progress:
                 await machine.driver.run(
                     ops,
                     machine,
                     self._editor.doc,
-                    on_command_done=monitor.update_progress,
+                    on_command_done=self._current_monitor.update_progress,
                 )
             else:
-                # Non-granular strategy: Job is "sent" when run() completes.
                 await machine.driver.run(
                     ops, machine, self._editor.doc, on_command_done=None
                 )
-                # Ensure progress is marked as 100% since the entire job
-                # was sent in one go.
-                monitor.mark_as_complete()
-        finally:
-            # Signal that the job has finished, allowing the UI to clean up.
-            self.job_finished.send(self, monitor=monitor)
+                if self._current_monitor:
+                    self._current_monitor.mark_as_complete()
+        except Exception:
+            # If run() throws an exception, the job_finished signal might not
+            # be sent by the driver. We must clean up here.
+            cleanup_monitor(machine)
+            raise
 
     async def _run_frame_action(
-        self, handle: JobArtifactHandle, machine: "Machine"
+        self,
+        handle: JobArtifactHandle,
+        machine: "Machine",
+        on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a framing job."""
         artifact = ArtifactStore.get(handle)
@@ -102,23 +151,29 @@ class MachineCmd:
         frame_with_laser.set_laser(head.uid)
         frame_with_laser += frame * 20
 
-        await self._execute_monitored_job(frame_with_laser, machine)
+        await self._execute_monitored_job(
+            frame_with_laser, machine, on_progress
+        )
 
     async def _run_send_action(
-        self, handle: JobArtifactHandle, machine: "Machine"
+        self,
+        handle: JobArtifactHandle,
+        machine: "Machine",
+        on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a send job."""
         artifact = ArtifactStore.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_send_action received a non-JobArtifact")
         ops = artifact.ops
-        await self._execute_monitored_job(ops, machine)
+        await self._execute_monitored_job(ops, machine, on_progress)
 
     def _start_job(
         self,
         machine: "Machine",
         job_name: str,
-        final_job_action: Callable[[JobArtifactHandle, "Machine"], Coroutine],
+        final_job_action: Callable[..., Coroutine],
+        on_progress: Optional[Callable[[dict], None]] = None,
     ) -> asyncio.Future:
         """
         Generic, non-blocking job starter that orchestrates assembly
@@ -166,7 +221,7 @@ class MachineCmd:
 
                 async def _run_job_with_cleanup(ctx):
                     try:
-                        await final_job_action(handle, machine)
+                        await final_job_action(handle, machine, on_progress)
                         if not job_future.done():
                             job_future.set_result(True)
                     except Exception as e:
@@ -205,7 +260,11 @@ class MachineCmd:
         self._editor.task_manager.add_coroutine(_run_entire_job)
         return outer_future
 
-    def frame_job(self, machine: "Machine") -> asyncio.Future:
+    def frame_job(
+        self,
+        machine: "Machine",
+        on_progress: Optional[Callable[[dict], None]] = None,
+    ) -> asyncio.Future:
         """
         Asynchronously generates ops and runs a framing job.
         This is a non-blocking call that returns a future for completion.
@@ -214,15 +273,23 @@ class MachineCmd:
             machine,
             job_name="framing",
             final_job_action=self._run_frame_action,
+            on_progress=on_progress,
         )
 
-    def send_job(self, machine: "Machine") -> asyncio.Future:
+    def send_job(
+        self,
+        machine: "Machine",
+        on_progress: Optional[Callable[[dict], None]] = None,
+    ) -> asyncio.Future:
         """
         Asynchronously generates ops and sends the job to the machine.
         This is a non-blocking call that returns a future for completion.
         """
         return self._start_job(
-            machine, job_name="sending", final_job_action=self._run_send_action
+            machine,
+            job_name="sending",
+            final_job_action=self._run_send_action,
+            on_progress=on_progress,
         )
 
     def set_hold(self, machine: "Machine", is_requesting_hold: bool):

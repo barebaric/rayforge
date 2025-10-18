@@ -72,6 +72,7 @@ class Machine:
         self.setting_applied = Signal()
         self.connection_status_changed = Signal()
         self.state_changed = Signal()
+        self.job_finished = Signal()
         self.log_received = Signal()
         self.command_status_changed = Signal()
 
@@ -100,6 +101,7 @@ class Machine:
         self.driver.command_status_changed.connect(
             self._on_driver_command_status_changed
         )
+        self.driver.job_finished.connect(self._on_driver_job_finished)
         self._on_driver_state_changed(self.driver, self.driver.state)
         self._reset_status()
 
@@ -114,6 +116,7 @@ class Machine:
         self.driver.command_status_changed.disconnect(
             self._on_driver_command_status_changed
         )
+        self.driver.job_finished.disconnect(self._on_driver_job_finished)
 
     async def _rebuild_driver_instance(
         self, ctx: Optional["ExecutionContext"] = None
@@ -221,6 +224,10 @@ class Machine:
         if self.device_state != state:
             self.device_state = state
             idle_add(self.state_changed.send, self, state=state)
+
+    def _on_driver_job_finished(self, driver: Driver):
+        """Proxies the job finished signal from the active driver."""
+        idle_add(self.job_finished.send, self)
 
     def _on_driver_log_received(self, driver: Driver, message: str):
         """Proxies the log received signal from the active driver."""
@@ -410,6 +417,13 @@ class Machine:
         if self.driver is None:
             return False
         return self.driver.can_g0_with_speed()
+
+    @property
+    def reports_granular_progress(self) -> bool:
+        """Check if the machine's driver reports granular progress."""
+        if self.driver is None:
+            return False
+        return self.driver.reports_granular_progress
 
     def can_home(self, axis: Optional[Axis] = None) -> bool:
         """Check if the machine's driver supports homing for the given axis."""
