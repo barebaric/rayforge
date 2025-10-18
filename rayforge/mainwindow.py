@@ -256,8 +256,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.document_settled.connect(self._on_document_settled)
 
         # Connect to Pipeline signals
-        self.doc_editor.pipeline.preview_time_updated.connect(
-            self._on_preview_time_updated
+        self.doc_editor.pipeline.job_time_updated.connect(
+            self._on_job_time_updated
         )
 
         # Create the view stack for 2D and 3D views
@@ -490,7 +490,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
         logger.debug("Connecting live 3D view signals.")
         gen = self.doc_editor.pipeline
-        gen.ops_generation_finished.connect(self._on_live_3d_view_update)
+        gen.workpiece_artifact_ready.connect(self._on_live_3d_view_update)
         self._live_3d_view_connected = True
         # Trigger a full update to draw the current state immediately
         self._update_3d_view_content()
@@ -501,7 +501,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
         logger.debug("Disconnecting live 3D view signals.")
         gen = self.doc_editor.pipeline
-        gen.ops_generation_finished.disconnect(self._on_live_3d_view_update)
+        gen.workpiece_artifact_ready.disconnect(self._on_live_3d_view_update)
         self._live_3d_view_connected = False
 
     def _on_live_3d_view_update(
@@ -1323,7 +1323,7 @@ class MainWindow(Adw.ApplicationWindow):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
-    def _on_preview_time_updated(self, sender, *, total_seconds):
+    def _on_job_time_updated(self, sender, *, total_seconds):
         """
         Handles the preview_time_updated signal from the pipeline.
         Updates the status bar with the total estimated time.

@@ -11,7 +11,7 @@ appropriate pipeline stages.
 
 from __future__ import annotations
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Generator, Tuple, Union, Any
 from blinker import Signal
 from contextlib import contextmanager
 from ..core.doc import Doc
@@ -19,6 +19,7 @@ from ..core.layer import Layer
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
 from ..core.group import Group
+from ..core.item import DocItem
 from ..core.ops import Ops
 from ..core.matrix import Matrix
 from .artifact import (
@@ -96,14 +97,14 @@ class Pipeline:
         )
 
         # Signals for notifying the UI of generation progress
-        self.ops_generation_starting = Signal()
-        self.ops_chunk_available = Signal()
-        self.ops_generation_finished = Signal()
-        self.step_generation_finished = Signal()
         self.processing_state_changed = Signal()
-        self.time_estimation_updated = Signal()
-        self.preview_time_updated = Signal()
-        self.job_generation_finished = Signal()
+        self.workpiece_starting = Signal()
+        self.workpiece_chunk_ready = Signal()
+        self.workpiece_artifact_ready = Signal()
+        self.step_render_ready = Signal()
+        self.step_time_updated = Signal()
+        self.job_time_updated = Signal()
+        self.job_ready = Signal()
 
         # Connect signals from stages
         self._workpiece_stage.generation_starting.connect(
@@ -130,7 +131,7 @@ class Pipeline:
 
         self.doc = doc
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Releases all shared memory resources held in the cache. This must be
         called before application exit to prevent memory leaks.
@@ -206,7 +207,7 @@ class Pipeline:
             or self._job_stage.is_busy
         )
 
-    def _check_and_update_processing_state(self):
+    def _check_and_update_processing_state(self) -> None:
         """
         Deferred check of the pipeline's busy state. This is scheduled on
         the main thread to run after the current event chain has completed,
@@ -219,7 +220,7 @@ class Pipeline:
             )
             self._last_known_busy_state = current_busy_state
 
-    def _connect_signals(self):
+    def _connect_signals(self) -> None:
         """Connects to the document's signals."""
         self.doc.descendant_added.connect(self._on_descendant_added)
         self.doc.descendant_removed.connect(self._on_descendant_removed)
@@ -231,7 +232,7 @@ class Pipeline:
             self._on_job_assembly_invalidated
         )
 
-    def _disconnect_signals(self):
+    def _disconnect_signals(self) -> None:
         """Disconnects from the document's signals."""
         self.doc.descendant_added.disconnect(self._on_descendant_added)
         self.doc.descendant_removed.disconnect(self._on_descendant_removed)
@@ -243,7 +244,7 @@ class Pipeline:
             self._on_job_assembly_invalidated
         )
 
-    def pause(self):
+    def pause(self) -> None:
         """
         Increments the pause counter. The pipeline is paused if the
         counter is > 0.
@@ -252,7 +253,7 @@ class Pipeline:
             logger.debug("Pipeline paused.")
         self._pause_count += 1
 
-    def resume(self):
+    def resume(self) -> None:
         """
         Decrements the pause counter. If it reaches 0, the pipeline is
         resumed and reconciles all changes.
@@ -265,7 +266,7 @@ class Pipeline:
             self.reconcile_all()
 
     @contextmanager
-    def paused(self):
+    def paused(self) -> Generator[None, None, None]:
         """A context manager to safely pause and resume the pipeline."""
         self.pause()
         try:
@@ -294,19 +295,21 @@ class Pipeline:
                 return wp
         return None
 
-    def _on_descendant_added(self, sender, *, origin):
+    def _on_descendant_added(self, sender: Any, *, origin: DocItem) -> None:
         """Handles the addition of a new model object."""
         if self.is_paused:
             return
         self.reconcile_all()
 
-    def _on_descendant_removed(self, sender, *, origin):
+    def _on_descendant_removed(self, sender: Any, *, origin: DocItem) -> None:
         """Handles the removal of a model object."""
         if self.is_paused:
             return
         self.reconcile_all()
 
-    def _on_descendant_updated(self, sender, *, origin):
+    def _on_descendant_updated(
+        self, sender: Any, *, origin: Union[Step, WorkPiece]
+    ) -> None:
         """Handles non-transform updates that require regeneration."""
         if self.is_paused:
             return
@@ -320,7 +323,9 @@ class Pipeline:
             self._workpiece_stage.invalidate_for_workpiece(origin.uid)
             self.reconcile_all()
 
-    def _on_descendant_transform_changed(self, sender, *, origin):
+    def _on_descendant_transform_changed(
+        self, sender: Any, *, origin: Union[WorkPiece, Group, Layer]
+    ) -> None:
         """Handles transform changes by invalidating downstream artifacts."""
         if self.is_paused:
             return
@@ -341,7 +346,7 @@ class Pipeline:
 
         self.reconcile_all()
 
-    def _on_job_assembly_invalidated(self, sender):
+    def _on_job_assembly_invalidated(self, sender: Any) -> None:
         """
         Handles the signal sent when per-step transformers change.
         """
@@ -358,10 +363,15 @@ class Pipeline:
         self.reconcile_all()
 
     def _on_workpiece_generation_starting(
-        self, sender, *, step, workpiece, generation_id
-    ):
+        self,
+        sender: WorkpieceGeneratorStage,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        generation_id: int,
+    ) -> None:
         """Relays signal from the workpiece stage."""
-        self.ops_generation_starting.send(
+        self.workpiece_starting.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
         self._task_manager.schedule_on_main_thread(
@@ -369,14 +379,19 @@ class Pipeline:
         )
 
     def _on_workpiece_chunk_available(
-        self, sender, *, key, chunk, generation_id
-    ):
+        self,
+        sender: WorkpieceGeneratorStage,
+        *,
+        key: Tuple[str, str],
+        chunk: Ops,
+        generation_id: int,
+    ) -> None:
         """Relays chunk signal, finding the model objects first."""
         step_uid, workpiece_uid = key
         workpiece = self._find_workpiece_by_uid(workpiece_uid)
         step = self._find_step_by_uid(step_uid)
         if workpiece and step:
-            self.ops_chunk_available.send(
+            self.workpiece_chunk_ready.send(
                 step,
                 workpiece=workpiece,
                 chunk=chunk,
@@ -384,12 +399,17 @@ class Pipeline:
             )
 
     def _on_workpiece_generation_finished(
-        self, sender, *, step, workpiece, generation_id
-    ):
+        self,
+        sender: WorkpieceGeneratorStage,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        generation_id: int,
+    ) -> None:
         """
         Relays signal and triggers downstream step assembly.
         """
-        self.ops_generation_finished.send(
+        self.workpiece_artifact_ready.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
         self._step_stage.mark_stale_and_trigger(step)
@@ -397,15 +417,19 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_step_render_artifact_ready(self, sender, *, step):
+    def _on_step_render_artifact_ready(
+        self, sender: StepGeneratorStage, *, step: Step
+    ) -> None:
         """
         Handles the signal that a step's visual data is ready.
         This now fires the public `step_generation_finished` signal,
         triggering fast UI updates.
         """
-        self.step_generation_finished.send(self, step=step, generation_id=0)
+        self.step_render_ready.send(self, step=step, generation_id=0)
 
-    def _on_step_task_completed(self, sender, *, step, generation_id):
+    def _on_step_task_completed(
+        self, sender: StepGeneratorStage, *, step: Step, generation_id: int
+    ) -> None:
         """
         Handles the signal that the entire step task (including time) is done.
         This is now only used for internal state updates, like checking the
@@ -415,9 +439,11 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_step_time_estimate_ready(self, sender, *, step, time):
+    def _on_step_time_estimate_ready(
+        self, sender: StepGeneratorStage, *, step: Step, time: float
+    ) -> None:
         """Handles the new, accurate time estimate from the step stage."""
-        self.time_estimation_updated.send(self)
+        self.step_time_updated.send(self)
         self._task_manager.schedule_on_main_thread(
             self._update_and_emit_preview_time
         )
@@ -425,7 +451,7 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _update_and_emit_preview_time(self):
+    def _update_and_emit_preview_time(self) -> None:
         """
         Calculates the total estimated preview time by summing all valid
         per-step estimates and emits the preview_time_updated signal.
@@ -451,25 +477,27 @@ class Pipeline:
 
         if is_calculating:
             # Send a special signal to indicate calculation is in progress
-            self.preview_time_updated.send(self, total_seconds=None)
+            self.job_time_updated.send(self, total_seconds=None)
         else:
-            self.preview_time_updated.send(self, total_seconds=total_time)
+            self.job_time_updated.send(self, total_seconds=total_time)
 
-    def _on_job_generation_finished(self, sender, *, handle):
+    def _on_job_generation_finished(
+        self, sender: JobGeneratorStage, *, handle: BaseArtifactHandle
+    ) -> None:
         """Relays signal from the job stage."""
-        self.job_generation_finished.send(self, handle=handle)
+        self.job_ready.send(self, handle=handle)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
-    def reconcile_all(self):
+    def reconcile_all(self) -> None:
         """Synchronizes all stages with the document."""
         if self.is_paused:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
 
         # Immediately notify UI that estimates are now stale and recalculating.
-        self.preview_time_updated.send(self, total_seconds=None)
+        self.job_time_updated.send(self, total_seconds=None)
 
         self._workpiece_stage.reconcile(self.doc)
         self._step_stage.reconcile(self.doc)
@@ -543,7 +571,7 @@ class Pipeline:
             step.uid, workpiece.uid, workpiece.size
         )
 
-    def generate_job(self):
+    def generate_job(self) -> None:
         """Triggers the final job generation process."""
         if self.doc:
             self._job_stage.generate_job(self.doc)

@@ -645,7 +645,7 @@ class TestPipeline:
         wp_handle = ArtifactStore.put(wp_artifact)
 
         mock_handler = MagicMock()
-        pipeline.preview_time_updated.connect(mock_handler)
+        pipeline.job_time_updated.connect(mock_handler)
 
         # Act
         try:
