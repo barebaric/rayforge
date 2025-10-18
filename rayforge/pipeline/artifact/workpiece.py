@@ -92,7 +92,6 @@ class WorkPieceArtifact(BaseArtifact):
                 data["source_coordinate_system"]
             ],
             "source_dimensions": data.get("source_dimensions"),
-            "time_estimate": data.get("time_estimate"),
         }
         if "generation_size" in data:
             common_args["generation_size"] = tuple(data["generation_size"])
