@@ -84,7 +84,7 @@ class WorkpieceGeneratorStage(PipelineStage):
             for step in layer.workflow.steps
             for workpiece in layer.all_workpieces
         }
-        cached_pairs = set(self._artifact_cache._workpiece_handles.keys())
+        cached_pairs = self._artifact_cache.get_all_workpiece_keys()
 
         for s_uid, w_uid in cached_pairs - all_current_pairs:
             self._cleanup_entry((s_uid, w_uid))
@@ -152,7 +152,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         logger.debug(f"Invalidating workpiece artifacts for step '{step_uid}'")
         keys_to_clean = [
             k
-            for k in self._artifact_cache._workpiece_handles
+            for k in self._artifact_cache.get_all_workpiece_keys()
             if k[0] == step_uid
         ]
         for key in keys_to_clean:
@@ -163,7 +163,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         logger.debug(f"Invalidating artifacts for workpiece '{workpiece_uid}'")
         keys_to_clean = [
             k
-            for k in self._artifact_cache._workpiece_handles
+            for k in self._artifact_cache.get_all_workpiece_keys()
             if k[1] == workpiece_uid
         ]
         for key in keys_to_clean:
