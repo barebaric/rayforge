@@ -23,6 +23,7 @@ from .driver import (
     DriverSetupError,
     DeviceStatus,
     DriverPrecheckError,
+    DeviceConnectionError,
     Axis,
 )
 from .grbl_util import (
@@ -37,6 +38,9 @@ if TYPE_CHECKING:
     from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+# GRBL's serial receive buffer is 128 bytes
+GRBL_RX_BUFFER_SIZE = 128
 
 
 class GrblSerialDriver(Driver):
@@ -66,6 +70,14 @@ class GrblSerialDriver(Driver):
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None
         self._last_reported_op_index = -1
+
+        # For GRBL character counting streaming protocol
+        self._rx_buffer_count = 0
+        self._sent_gcode_queue: asyncio.Queue[tuple[int, Optional[int]]] = (
+            asyncio.Queue()
+        )
+        self._buffer_has_space = asyncio.Event()
+        self._job_exception: Optional[Exception] = None
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -134,6 +146,8 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         self._job_running = False
         self._on_command_done = None
+        self._rx_buffer_count = 0
+        self._job_exception = None
         if self._connection_task:
             self._connection_task.cancel()
         if self._command_task:
@@ -168,6 +182,11 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         self._job_running = False
         self._on_command_done = None
+        self._rx_buffer_count = 0
+        self._job_exception = None
+        self._sent_gcode_queue = asyncio.Queue()
+        self._buffer_has_space = asyncio.Event()
+        self._buffer_has_space.set()
         self._connection_task = asyncio.create_task(self._connection_loop())
         self._command_task = asyncio.create_task(self._process_command_queue())
 
@@ -321,28 +340,88 @@ class GrblSerialDriver(Driver):
         self._job_running = True
         self._on_command_done = on_command_done
         self._last_reported_op_index = -1
+        self._rx_buffer_count = 0
+        self._job_exception = None
+        # Clear any old items from the queue
+        while not self._sent_gcode_queue.empty():
+            self._sent_gcode_queue.get_nowait()
+        self._buffer_has_space.set()  # Initially, there is space
 
         encoder = GcodeEncoder.for_machine(machine)
         gcode, op_map = encoder.encode(ops, machine, doc)
         gcode_lines = gcode.splitlines()
 
-        for line_idx, line in enumerate(gcode_lines):
-            if self._is_cancelled:
-                logger.info("Job cancelled, stopping G-code queuing.")
-                break
-            if line.strip():
-                # Find the original op_index for this g-code line
-                op_index = op_map.gcode_to_op.get(line_idx)
-                request = CommandRequest(line.strip(), op_index=op_index)
-                await self._command_queue.put(request)
+        logger.debug(
+            f"Starting GRBL streaming job with {len(gcode_lines)} lines."
+        )
 
-        # If the queue is empty (e.g., empty G-code), clean up immediately.
-        if self._command_queue.empty():
+        try:
+            for line_idx, line in enumerate(gcode_lines):
+                if self._is_cancelled or self._job_exception:
+                    logger.info(
+                        "Job cancelled or errored, stopping G-code sending."
+                    )
+                    break
+
+                line = line.strip()
+                if not line:
+                    continue
+
+                op_index = op_map.gcode_to_op.get(line_idx)
+                # Command is line + newline character
+                command_bytes = (line + "\n").encode("utf-8")
+                command_len = len(command_bytes)
+
+                # Wait until there is enough space in the buffer
+                while (
+                    self._rx_buffer_count + command_len > GRBL_RX_BUFFER_SIZE
+                ):
+                    self._buffer_has_space.clear()
+                    await self._buffer_has_space.wait()
+                    if self._is_cancelled or self._job_exception:
+                        raise asyncio.CancelledError(
+                            "Job cancelled while waiting for buffer space"
+                        )
+
+                async with self._cmd_lock:
+                    if (
+                        not self.serial_transport
+                        or not self.serial_transport.is_connected
+                    ):
+                        raise ConnectionError(
+                            "Serial transport disconnected during job."
+                        )
+
+                    debug_log_manager.add_entry(
+                        self.__class__.__name__, LogType.TX, command_bytes
+                    )
+                    await self.serial_transport.send(command_bytes)
+                    self._rx_buffer_count += command_len
+                    await self._sent_gcode_queue.put((command_len, op_index))
+
+            # Wait for all sent commands to be acknowledged
+            if not self._is_cancelled and not self._job_exception:
+                logger.debug(
+                    "All G-code sent. Waiting for all 'ok' responses."
+                )
+                await self._sent_gcode_queue.join()
+                logger.debug("All 'ok' responses received.")
+
+            if self._job_exception:
+                raise self._job_exception
+
+        except (asyncio.CancelledError, ConnectionError) as e:
+            logger.warning(f"Job interrupted: {e!r}")
+            # If not cancelled explicitly, send a cancel command to be safe
+            if not self._is_cancelled:
+                await self.cancel()
+        finally:
             self._job_running = False
             self._on_command_done = None
-            self.job_finished.send(self)
-
-        logger.debug("All G-code commands queued for execution")
+            # Check if not cancelled, because cancel() already sends this.
+            if not self._is_cancelled:
+                self.job_finished.send(self)
+            logger.debug("G-code streaming finished.")
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")
@@ -350,13 +429,17 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = True
         self._job_running = False
         self._on_command_done = None
+
+        # Unblock the run loop if it's waiting
+        self._buffer_has_space.set()
+
         if self.serial_transport:
             payload = b"\x18"
             debug_log_manager.add_entry(
                 self.__class__.__name__, LogType.TX, payload
             )
             await self.serial_transport.send(payload)
-            # Clear the command queue
+            # Clear the command queue for single commands
             while not self._command_queue.empty():
                 try:
                     request = self._command_queue.get_nowait()
@@ -366,6 +449,17 @@ class GrblSerialDriver(Driver):
                 except asyncio.QueueEmpty:
                     break
             logger.debug("Command queue cleared after cancel.")
+
+            # Clear the streaming queue
+            self._rx_buffer_count = 0
+            while not self._sent_gcode_queue.empty():
+                try:
+                    self._sent_gcode_queue.get_nowait()
+                    self._sent_gcode_queue.task_done()
+                except asyncio.QueueEmpty:
+                    break
+            logger.debug("Streaming queue cleared after cancel.")
+
             if job_was_running:
                 self.job_finished.send(self)
         else:
@@ -564,6 +658,58 @@ class GrblSerialDriver(Driver):
         """
         logger.debug(f"Processing received line: {line}")
         self._log(line)
+
+        # Logic for character-counting streaming protocol during a job
+        if self._job_running:
+            if line == "ok":
+                try:
+                    # Get the length and op_index of the command that finished
+                    (
+                        command_len,
+                        op_index,
+                    ) = self._sent_gcode_queue.get_nowait()
+                    self._rx_buffer_count -= command_len
+                    self._sent_gcode_queue.task_done()
+                    self._buffer_has_space.set()  # Signal new buffer space
+
+                    # If this command was part of a job, update progress.
+                    if self._on_command_done and op_index is not None:
+                        # Fire callbacks for all ops from the last reported
+                        # one up to this one. This ensures ops with no
+                        # G-code are also reported.
+                        for i in range(
+                            self._last_reported_op_index + 1, op_index + 1
+                        ):
+                            try:
+                                logger.debug(
+                                    "GrblSerialDriver: Firing on_command_done"
+                                    f" for op_index {i}"
+                                )
+                                result = self._on_command_done(i)
+                                if inspect.isawaitable(result):
+                                    asyncio.ensure_future(result)
+                            except Exception as e:
+                                logger.error(
+                                    "Error in on_command_done callback",
+                                    exc_info=e,
+                                )
+                        self._last_reported_op_index = op_index
+                except asyncio.QueueEmpty:
+                    logger.warning(
+                        "Received 'ok' during job, but sent gcode queue "
+                        "was empty. Ignoring."
+                    )
+            elif line.startswith("error:"):
+                self._on_command_status_changed(TransportStatus.ERROR, line)
+                logger.error(f"GRBL error during job: {line}. Halting stream.")
+                self._job_exception = DeviceConnectionError(
+                    f"GRBL error: {line}"
+                )
+                self._buffer_has_space.set()  # Unblock run loop to terminate
+                asyncio.create_task(self.cancel())  # Soft-reset the device
+            return  # Do not process further for single commands
+
+        # Logic for single, interactive commands (not during a job)
         request = self._current_request
 
         # Append the line to the response buffer of the current command
@@ -578,28 +724,6 @@ class GrblSerialDriver(Driver):
                     f"Command '{request.command}' completed with 'ok'"
                 )
                 request.finished.set()
-
-                # If this command was part of a job, update progress.
-                if self._on_command_done and request.op_index is not None:
-                    # This G-code line belongs to an op. Fire callbacks for
-                    # all ops from the last reported one up to this one.
-                    # This ensures ops with no G-code are also reported.
-                    for i in range(
-                        self._last_reported_op_index + 1, request.op_index + 1
-                    ):
-                        try:
-                            logger.debug(
-                                f"GrblSerialDriver: Firing on_command_done for"
-                                f" op_index {i}"
-                            )
-                            result = self._on_command_done(i)
-                            if inspect.isawaitable(result):
-                                asyncio.ensure_future(result)
-                        except Exception as e:
-                            logger.error(
-                                "Error in on_command_done callback", exc_info=e
-                            )
-                    self._last_reported_op_index = request.op_index
 
         elif line.startswith("error:"):
             # This is a COMMAND error, not a CONNECTION error.
