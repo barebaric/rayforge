@@ -23,6 +23,7 @@ class PngImporter(Importer):
     label = "PNG files"
     mime_types = ("image/png",)
     extensions = (".png",)
+    is_bitmap = True
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
@@ -42,7 +43,13 @@ class PngImporter(Importer):
             )
         except pyvips.Error as e:
             logger.error(
-                f"pyvips failed to load PNG buffer: {e}", exc_info=True
+                f"pyvips failed to load PNG '{self.source_file.name}': {e}"
+            )
+            return None
+        except Exception as e:
+            logger.error(
+                f"Unexpected error loading PNG '{self.source_file.name}': {e}",
+                exc_info=True
             )
             return None
 

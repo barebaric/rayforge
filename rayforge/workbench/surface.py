@@ -23,6 +23,7 @@ from . import context_menu
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
+    from ..workbench.drag_drop_cmd import DragDropCmd
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +153,10 @@ class WorkSurface(Canvas):
         # --- View State Management ---
         # This property holds the canonical global state for tab visibility.
         self._tabs_globally_visible: bool = True
+
+        # Drag-drop command will be initialized by MainWindow after
+        # construction
+        self.drag_drop_cmd: Optional["DragDropCmd"] = None
 
     @property
     def show_travel_moves(self) -> bool:
