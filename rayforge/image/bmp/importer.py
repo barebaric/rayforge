@@ -27,6 +27,7 @@ class BmpImporter(Importer):
     label = "BMP files"
     mime_types = ("image/bmp",)
     extensions = (".bmp",)
+    is_bitmap = True
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None

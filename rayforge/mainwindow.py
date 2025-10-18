@@ -37,6 +37,7 @@ from .actions import ActionManager
 from .main_menu import MainMenu
 from .workbench.view_mode_cmd import ViewModeCmd
 from .workbench.simulator_cmd import SimulatorCmd
+from .workbench.drag_drop_cmd import DragDropCmd
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.viewer import GcodeViewer
@@ -218,6 +219,11 @@ class MainWindow(Adw.ApplicationWindow):
             cam_visible=True,  # Will be set by action state
         )
         self.surface.set_hexpand(True)
+
+        # Initialize drag-and-drop command for the surface
+        self.drag_drop_cmd = DragDropCmd(self, self.surface)
+        self.surface.drag_drop_cmd = self.drag_drop_cmd
+        self.drag_drop_cmd.setup_file_drop_target()
 
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
@@ -1238,7 +1244,14 @@ class MainWindow(Adw.ApplicationWindow):
     def on_paste_requested(self, sender, *args):
         """
         Handles the 'paste-requested' signal from the WorkSurface.
+        Checks for image data on system clipboard first, then falls back
+        to workpiece paste.
         """
+        # Priority 1: Check if system clipboard contains image data
+        if self.drag_drop_cmd.handle_clipboard_paste():
+            return
+
+        # Priority 2: Standard workpiece paste
         newly_pasted = self.doc_editor.edit.paste_items()
         if newly_pasted:
             self.surface.select_items(newly_pasted)

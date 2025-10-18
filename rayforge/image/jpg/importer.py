@@ -23,6 +23,7 @@ class JpgImporter(Importer):
     label = "JPEG files"
     mime_types = ("image/jpeg",)
     extensions = (".jpg", ".jpeg")
+    is_bitmap = True
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None

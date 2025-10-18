@@ -8,13 +8,15 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
-from ..image import import_file
+from ..image import import_file, ImportPayload
+from ..core.import_source import ImportSource
 from ..pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
 )
 from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
+from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -39,50 +41,121 @@ class FileCmd:
         self._task_manager = task_manager
         self._config_manager = config_manager
 
+    async def _run_importer_async(
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
+    ) -> Optional[ImportPayload]:
+        """Runs the blocking import function in a background thread."""
+        return await asyncio.to_thread(
+            import_file, filename, mime_type, vector_config
+        )
+
+    def _position_newly_imported_items(
+        self,
+        items: List[DocItem],
+        position_mm: Optional[Tuple[float, float]],
+    ):
+        """
+        Applies transformations to newly imported items, either positioning
+        them at a specific point or fitting and centering them.
+        This method modifies the items' matrices in-place.
+        """
+        if position_mm:
+            strategy = PositionAtStrategy(items=items, position_mm=position_mm)
+            deltas = strategy.calculate_deltas()
+            if deltas:
+                # All items get the same delta matrix to move the group
+                delta_matrix = next(iter(deltas.values()))
+                for item in items:
+                    # Pre-multiply to apply translation in world space
+                    item.matrix = delta_matrix @ item.matrix
+
+                target_x, target_y = position_mm
+                logger.info(
+                    f"Positioned {len(items)} imported item(s) at "
+                    f"({target_x:.2f}, {target_y:.2f}) mm"
+                )
+        else:
+            self._fit_and_center_imported_items(items)
+
+    def _commit_items_to_document(
+        self,
+        items: List[DocItem],
+        source: Optional[ImportSource],
+        filename: Path,
+    ):
+        """
+        Adds the imported items and their source to the document model using
+        the history manager.
+        """
+        if source:
+            self._editor.doc.add_import_source(source)
+
+        target_layer = cast(Layer, self._editor.default_workpiece_layer)
+        cmd_name = _(f"Import {filename.name}")
+
+        with self._editor.history_manager.transaction(cmd_name) as t:
+            for item in items:
+                command = ListItemCommand(
+                    owner_obj=target_layer,
+                    item=item,
+                    undo_command="remove_child",
+                    redo_command="add_child",
+                )
+                t.execute(command)
+
     async def _load_file_async(
         self,
         filename: Path,
         mime_type: Optional[str],
         vector_config: Optional[TraceConfig],
+        position_mm: Optional[Tuple[float, float]] = None,
     ):
         """
         The core awaitable logic for loading a file and committing it to the
         document. This is a pure async method without TaskManager context.
+
+        Args:
+            filename: Path to the file to import
+            mime_type: MIME type of the file
+            vector_config: Configuration for vectorization
+            position_mm: Optional (x, y) tuple in world coordinates (mm)
+                to center the imported item
         """
         try:
             # 1. Run blocking I/O and CPU work in a background thread.
-            payload = await asyncio.to_thread(
-                import_file, filename, mime_type, vector_config
+            payload = await self._run_importer_async(
+                filename, mime_type, vector_config
             )
 
+            # 2. Validate the result and notify user on failure.
             if not payload or not payload.items:
-                msg = _("Import failed: No items were created.")
+                if mime_type and mime_type.startswith("image/"):
+                    msg = _(
+                        f"Failed to import {filename.name}. The image file "
+                        f"may be corrupted or in an unsupported format."
+                    )
+                else:
+                    msg = _(
+                        f"Import failed: No items were created "
+                        f"from {filename.name}"
+                    )
                 logger.warning(
-                    f"Importer created no items for '{filename.name}'."
+                    f"Importer created no items for '{filename.name}' "
+                    f"(MIME: {mime_type})"
                 )
-                # You might want to notify the user here as well
                 self._editor.notification_requested.send(self, message=msg)
                 return
 
-            # 2. Perform document modifications (must be on main thread).
-            # In tests, the asyncio loop is the main thread, so this is safe.
-            if payload.source:
-                self._editor.doc.add_import_source(payload.source)
+            # 3. Position the new items before adding them to the document.
+            self._position_newly_imported_items(payload.items, position_mm)
 
-            imported_items = payload.items
-            self._fit_and_center_imported_items(imported_items)
-            target_layer = cast(Layer, self._editor.default_workpiece_layer)
-            cmd_name = _("Import {name}").format(name=filename.name)
-
-            with self._editor.history_manager.transaction(cmd_name) as t:
-                for item in imported_items:
-                    command = ListItemCommand(
-                        owner_obj=target_layer,
-                        item=item,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                    )
-                    t.execute(command)
+            # 4. Add the positioned items to the document model.
+            self._commit_items_to_document(
+                payload.items, payload.source, filename
+            )
 
         except Exception as e:
             logger.error(
@@ -97,20 +170,30 @@ class FileCmd:
         filename: Path,
         mime_type: Optional[str],
         vector_config: Optional[TraceConfig],
+        position_mm: Optional[Tuple[float, float]] = None,
     ):
         """
         Public, synchronous method to launch a file import in the background.
         This is the clean entry point for the UI.
+
+        Args:
+            filename: Path to the file to import
+            mime_type: MIME type of the file
+            vector_config: Configuration for vectorization
+                (None for direct vector import)
+            position_mm: Optional (x, y) tuple in world coordinates (mm)
+                to center the imported item.
+                        If None, items are centered on the workspace.
         """
 
         # This wrapper adapts our clean async method to the TaskManager,
         # which expects a coroutine that accepts a 'ctx' argument.
-        async def wrapper(ctx, fn, mt, vc):
+        async def wrapper(ctx, fn, mt, vc, pos_mm):
             # The 'ctx' from the task manager is ignored.
             try:
                 # Update task message for UI feedback
                 ctx.set_message(_(f"Importing {filename.name}..."))
-                await self._load_file_async(fn, mt, vc)
+                await self._load_file_async(fn, mt, vc, pos_mm)
                 ctx.set_message(_("Import complete!"))
             except Exception:
                 # The async method already logs the full error.
@@ -124,7 +207,8 @@ class FileCmd:
             filename,
             mime_type,
             vector_config,
-            key=f"import-{filename.name}",
+            position_mm,
+            key=f"import-{filename}",
         )
 
     def _calculate_items_bbox(
