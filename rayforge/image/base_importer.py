@@ -56,6 +56,7 @@ class Importer(ABC):
     label: str
     mime_types: Tuple[str, ...]
     extensions: Tuple[str, ...]
+    is_bitmap: bool = False
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         """

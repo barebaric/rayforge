@@ -4,12 +4,14 @@ Command module for handling drag-and-drop and clipboard paste operations.
 This module encapsulates all drag-and-drop import functionality and clipboard
 paste operations, keeping them separate from the core UI components.
 """
+
 import logging
 import tempfile
-import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gi.repository import Gdk, Gtk, Gio, GLib, Adw
+from ..config import config
+from ..image import bitmap_mime_types
 
 if TYPE_CHECKING:
     from ..mainwindow import MainWindow
@@ -150,9 +152,7 @@ class DragDropCmd:
             widget = widget.get_parent()
         return None
 
-    def _on_file_dropped(
-        self, drop_target, value, x: float, y: float
-    ) -> bool:
+    def _on_file_dropped(self, drop_target, value, x: float, y: float) -> bool:
         """
         Handle files dropped onto the canvas.
 
@@ -316,77 +316,65 @@ class DragDropCmd:
         clipboard = self.main_window.get_clipboard()
         formats = clipboard.get_formats()
 
-        # Check for any supported image formats
-        has_image = (
-            formats.contain_mime_type("image/png") or
-            formats.contain_mime_type("image/jpeg") or
-            formats.contain_mime_type("image/bmp")
+        # Check for any supported bitmap image formats
+        has_image = any(
+            formats.contain_mime_type(mime_type)
+            for mime_type in bitmap_mime_types
         )
 
         if has_image:
-            # Import image from clipboard
+            # Import image from clipboard asynchronously
             self._import_image_from_clipboard()
-            # Clear the clipboard so next paste uses workpiece data
-            clipboard.set_content(None)
             return True
 
         return False  # Let caller handle workpiece paste
 
     def _import_image_from_clipboard(self):
-        """Import image data from the clipboard."""
+        """
+        Asynchronously read an image from the clipboard and import it.
+        This entire process is thread-safe.
+        """
         clipboard = self.main_window.get_clipboard()
 
-        # Callback for when texture is read from clipboard
-        def on_texture_ready(clipboard, result):
+        # This callback is guaranteed to run on the main GTK thread.
+        def on_texture_ready(source_obj, result):
             try:
-                texture = clipboard.read_texture_finish(result)
+                texture = source_obj.read_texture_finish(result)
                 if not texture:
                     logger.warning("Failed to read texture from clipboard")
+                    self._show_clipboard_error()
                     return
 
-                # Process image in background thread
-                thread = threading.Thread(
-                    target=self._save_and_import_texture,
-                    args=(texture,),
-                    daemon=True
-                )
-                thread.start()
+                # Safely save the texture to a file from the main thread.
+                temp_path = self._save_texture_to_temp_file(texture)
+                if not temp_path:
+                    self._show_clipboard_error()
+                    return
 
+                logger.info(f"Saved clipboard image to {temp_path}")
+
+                # Import the file and schedule it for future cleanup.
+                self._import_temp_file_and_cleanup(temp_path)
+
+                # Now that the data has been successfully read and saved,
+                # we can safely clear the clipboard content.
+                source_obj.set_content(None)
+
+            except GLib.Error as e:
+                # This can happen if clipboard content changes during read.
+                logger.warning(f"GLib error reading clipboard texture: {e}")
+                self._show_clipboard_error()
             except Exception as e:
-                logger.exception(f"Failed to read clipboard texture: {e}")
+                logger.exception(f"Failed to process clipboard texture: {e}")
                 self._show_clipboard_error()
 
-        # Start async clipboard read with callback
+        # Start the asynchronous clipboard read.
         clipboard.read_texture_async(None, on_texture_ready)
-
-    def _save_and_import_texture(self, texture):
-        """
-        Save texture to temporary file and schedule import on main thread.
-
-        Args:
-            texture: GdkTexture from clipboard
-        """
-        try:
-            # Save texture to temporary file
-            temp_path = self._save_texture_to_temp_file(texture)
-            if not temp_path:
-                return
-
-            logger.info(f"Saved clipboard image to {temp_path}")
-
-            # Schedule import on main thread
-            GLib.idle_add(
-                self._import_temp_file_and_cleanup,
-                temp_path
-            )
-
-        except Exception as e:
-            logger.exception(f"Failed to save clipboard image: {e}")
-            GLib.idle_add(self._show_clipboard_error)
 
     def _save_texture_to_temp_file(self, texture) -> Optional[Path]:
         """
         Save GdkTexture to a temporary PNG file.
+        MUST be called from the main GTK thread.
 
         Args:
             texture: GdkTexture to save
@@ -425,9 +413,6 @@ class DragDropCmd:
             False (to not repeat GLib.idle_add)
         """
         try:
-            # Calculate center position of canvas
-            from ..config import config
-
             machine = config.machine
             if machine:
                 center_x = machine.dimensions[0] / 2
@@ -437,6 +422,7 @@ class DragDropCmd:
 
             # Import the temporary file
             from ..doceditor.ui import import_handler
+
             import_handler.import_file_at_position(
                 self.main_window,
                 self.main_window.doc_editor,

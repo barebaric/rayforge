@@ -50,6 +50,11 @@ for base in importers:
     for extension in base.extensions:
         importer_by_extension[extension] = base
 
+bitmap_mime_types = set()
+for base in importers:
+    if base.is_bitmap:
+        bitmap_mime_types.update(base.mime_types)
+
 
 def import_file(
     source: Union[Path, bytes],
@@ -153,6 +158,7 @@ __all__ = [
     "importer_by_name",
     "importer_by_mime_type",
     "importer_by_extension",
+    "bitmap_mime_types",
     "renderer_by_name",
     "renderer_by_importer_name",
 ]

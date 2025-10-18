@@ -23,6 +23,7 @@ class PngImporter(Importer):
     label = "PNG files"
     mime_types = ("image/png",)
     extensions = (".png",)
+    is_bitmap = True
 
     def get_doc_items(
         self, vector_config: Optional["TraceConfig"] = None
