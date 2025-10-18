@@ -467,6 +467,10 @@ class Pipeline:
         if self.is_paused:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
+
+        # Immediately notify UI that estimates are now stale and recalculating.
+        self.preview_time_updated.send(self, total_seconds=None)
+
         self._workpiece_stage.reconcile(self.doc)
         self._step_stage.reconcile(self.doc)
         self._job_stage.reconcile(self.doc)

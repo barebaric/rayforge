@@ -63,12 +63,12 @@ Configure settings for selected objects or operations:
 
 ### 6. Status Bar
 
-Monitor real-time information:
+Monitor real-time information organized in three sections:
 
-- **Connection Status**: Shows if connected to machine
-- **Job Progress**: Current operation and completion percentage
-- **Coordinates**: Current laser position
-- **Estimated Time**: Remaining time for current job
+- **Left Section**: Connection status and machine status
+- **Middle Section**: Status messages for ongoing tasks
+- **Right Section**: Progress of current job execution and total execution
+  time estimate for current document
 
 ## Window Management
 
@@ -85,8 +85,6 @@ Focus on your work with full screen:
 
 - Enter: ++f11++ or View → Full Screen
 - Exit: ++f11++ or ++esc++
-
-
 
 ## Customization
 

@@ -75,6 +75,7 @@ class NoDeviceDriver(Driver):
                 except Exception:
                     # Don't let callback exceptions stop execution
                     pass
+        self.job_finished.send(self)
 
     async def set_hold(self, hold: bool = True) -> None:
         pass

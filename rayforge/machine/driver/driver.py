@@ -138,6 +138,7 @@ class Driver(ABC):
         self.command_status_changed = Signal()
         self.connection_status_changed = Signal()
         self.settings_read = Signal()
+        self.job_finished = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None

@@ -306,6 +306,8 @@ class GrblNetworkDriver(Driver):
         except Exception as e:
             self._on_connection_status_changed(TransportStatus.ERROR, str(e))
             raise
+        finally:
+            self.job_finished.send(self)
 
     async def _execute_command(self, command: str) -> List[str]:
         """

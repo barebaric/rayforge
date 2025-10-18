@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional, cast
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
+import asyncio
 
 from . import __version__
 from .shared.tasker import task_mgr
@@ -141,6 +142,7 @@ class MainWindow(Adw.ApplicationWindow):
         assert config_mgr is not None
         self.doc_editor = DocEditor(task_mgr, config_mgr)
         self.machine_cmd = MachineCmd(self.doc_editor)
+        self.machine_cmd.job_started.connect(self._on_job_started)
 
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
@@ -401,6 +403,38 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def _on_job_started(self, sender):
+        """Handles the start of a machine job."""
+        logger.debug("Job started")
+
+        # Determine which view to show based on the machine's capability
+        is_granular = False
+        if config.machine:
+            is_granular = config.machine.reports_granular_progress
+        self.status_monitor.start_live_view(is_granular)
+
+    def _on_job_progress_updated(self, metrics: dict):
+        """Callback for when job progress is updated."""
+        logger.debug(f"Job progress updated: {metrics}")
+        self.status_monitor.update_live_progress(metrics)
+
+    def _on_job_finished(self, sender):
+        """Handles the completion of a machine job."""
+        logger.debug("Job finished")
+        self.status_monitor.stop_live_view()
+
+    def _on_job_future_done(self, future: asyncio.Future):
+        """Callback for when the job submission task completes or fails."""
+        try:
+            # Check for exceptions during job assembly or submission.
+            future.result()
+        except Exception as e:
+            logger.error(f"Job submission failed: {e}", exc_info=True)
+            # If the submission failed, the driver's 'job_finished' signal
+            # will never fire, so we must stop the live view here to prevent
+            # the UI from getting stuck.
+            self.status_monitor.stop_live_view()
 
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
@@ -824,6 +858,9 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.connection_status_changed.disconnect(
                 self._on_connection_status_changed
             )
+            self._current_machine.job_finished.disconnect(
+                self._on_job_finished
+            )
 
         self._current_machine = config.machine
 
@@ -835,6 +872,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.connection_status_changed.connect(
                 self._on_connection_status_changed
             )
+            self._current_machine.job_finished.connect(self._on_job_finished)
 
         # Update the 3D canvas to match the new machine.
         if canvas3d_initialized and hasattr(self, "view_stack"):
@@ -1127,12 +1165,18 @@ class MainWindow(Adw.ApplicationWindow):
     def on_frame_clicked(self, action, param):
         if not config.machine:
             return
-        self.machine_cmd.frame_job(config.machine)
+        future = self.machine_cmd.frame_job(
+            config.machine, on_progress=self._on_job_progress_updated
+        )
+        future.add_done_callback(self._on_job_future_done)
 
     def on_send_clicked(self, action, param):
         if not config.machine:
             return
-        self.machine_cmd.send_job(config.machine)
+        future = self.machine_cmd.send_job(
+            config.machine, on_progress=self._on_job_progress_updated
+        )
+        future.add_done_callback(self._on_job_future_done)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -1266,18 +1310,12 @@ class MainWindow(Adw.ApplicationWindow):
         logger.debug("Preferences dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
-    def _on_preview_time_updated(self, sender, total_seconds):
+    def _on_preview_time_updated(self, sender, *, total_seconds):
         """
         Handles the preview_time_updated signal from the pipeline.
         Updates the status bar with the total estimated time.
         """
-        if total_seconds is None:
-            # Show "Calculating..." when estimates are pending
-            self.status_monitor.estimated_time_label.set_text(
-                _("Calculating...")
-            )
-        else:
-            self.status_monitor.set_estimated_time(total_seconds)
+        self.status_monitor.set_estimated_time(total_seconds)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events, ESC to exit simulation mode."""

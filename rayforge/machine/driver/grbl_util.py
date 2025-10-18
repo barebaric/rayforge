@@ -13,6 +13,7 @@ class CommandRequest:
     """A request to send a command and await its full response."""
 
     command: str
+    op_index: Optional[int] = None
     response_lines: List[str] = field(default_factory=list)
     finished: asyncio.Event = field(default_factory=asyncio.Event)
 

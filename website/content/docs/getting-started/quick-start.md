@@ -132,7 +132,7 @@ Before sending to your machine, preview the toolpath in 3D:
 
 ### During the Job
 
-- The status bar shows the current progress and estimated time remaining
+- The right section of the status bar shows the current progress and total execution time estimate
 - You can pause the job with ++ctrl+p++ or click the Pause button
 - Press ++esc++ or click Stop to cancel the job (emergency stop)
 

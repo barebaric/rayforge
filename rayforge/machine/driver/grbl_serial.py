@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import inspect
 import serial.serialutil
 from typing import (
     Optional,
@@ -61,6 +62,10 @@ class GrblSerialDriver(Driver):
         self._status_buffer = ""
         self._is_cancelled = False
         self._job_running = False
+        self._on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None
+        self._last_reported_op_index = -1
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -128,6 +133,7 @@ class GrblSerialDriver(Driver):
         self.keep_running = False
         self._is_cancelled = False
         self._job_running = False
+        self._on_command_done = None
         if self._connection_task:
             self._connection_task.cancel()
         if self._command_task:
@@ -161,6 +167,7 @@ class GrblSerialDriver(Driver):
         self.keep_running = True
         self._is_cancelled = False
         self._job_running = False
+        self._on_command_done = None
         self._connection_task = asyncio.create_task(self._connection_loop())
         self._command_task = asyncio.create_task(self._process_command_queue())
 
@@ -285,6 +292,8 @@ class GrblSerialDriver(Driver):
                                 "Job finished: command queue is empty."
                             )
                             self._job_running = False
+                            self._on_command_done = None
+                            self.job_finished.send(self)
 
                 # Release lock briefly to allow status polling
                 await asyncio.sleep(0.1)
@@ -310,28 +319,37 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._is_cancelled = False
         self._job_running = True
+        self._on_command_done = on_command_done
+        self._last_reported_op_index = -1
+
         encoder = GcodeEncoder.for_machine(machine)
         gcode, op_map = encoder.encode(ops, machine, doc)
+        gcode_lines = gcode.splitlines()
 
-        for line in gcode.splitlines():
+        for line_idx, line in enumerate(gcode_lines):
             if self._is_cancelled:
                 logger.info("Job cancelled, stopping G-code queuing.")
                 break
             if line.strip():
-                request = CommandRequest(line.strip())
+                # Find the original op_index for this g-code line
+                op_index = op_map.gcode_to_op.get(line_idx)
+                request = CommandRequest(line.strip(), op_index=op_index)
                 await self._command_queue.put(request)
 
-        # Check if the queue is empty immediately after adding. This handles
-        # the case of an empty G-code file, ensuring _job_running is reset.
+        # If the queue is empty (e.g., empty G-code), clean up immediately.
         if self._command_queue.empty():
             self._job_running = False
+            self._on_command_done = None
+            self.job_finished.send(self)
 
         logger.debug("All G-code commands queued for execution")
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")
+        job_was_running = self._job_running
         self._is_cancelled = True
         self._job_running = False
+        self._on_command_done = None
         if self.serial_transport:
             payload = b"\x18"
             debug_log_manager.add_entry(
@@ -348,6 +366,8 @@ class GrblSerialDriver(Driver):
                 except asyncio.QueueEmpty:
                     break
             logger.debug("Command queue cleared after cancel.")
+            if job_was_running:
+                self.job_finished.send(self)
         else:
             raise ConnectionError("Serial transport not initialized")
 
@@ -558,6 +578,29 @@ class GrblSerialDriver(Driver):
                     f"Command '{request.command}' completed with 'ok'"
                 )
                 request.finished.set()
+
+                # If this command was part of a job, update progress.
+                if self._on_command_done and request.op_index is not None:
+                    # This G-code line belongs to an op. Fire callbacks for
+                    # all ops from the last reported one up to this one.
+                    # This ensures ops with no G-code are also reported.
+                    for i in range(
+                        self._last_reported_op_index + 1, request.op_index + 1
+                    ):
+                        try:
+                            logger.debug(
+                                f"GrblSerialDriver: Firing on_command_done for"
+                                f" op_index {i}"
+                            )
+                            result = self._on_command_done(i)
+                            if inspect.isawaitable(result):
+                                asyncio.ensure_future(result)
+                        except Exception as e:
+                            logger.error(
+                                "Error in on_command_done callback", exc_info=e
+                            )
+                    self._last_reported_op_index = request.op_index
+
         elif line.startswith("error:"):
             # This is a COMMAND error, not a CONNECTION error.
             self._on_command_status_changed(TransportStatus.ERROR, line)

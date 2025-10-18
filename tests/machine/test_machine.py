@@ -498,3 +498,48 @@ class TestMachine:
         # Test home method
         await machine.home(Axis.Y)
         home_mock.assert_called_once_with(Axis.Y)
+
+    def test_reports_granular_progress_no_device_driver(
+        self, machine: Machine
+    ):
+        """Test reports_granular_progress returns True with NoDeviceDriver."""
+        # NoDeviceDriver is the default driver and should return True
+        assert machine.reports_granular_progress
+
+    def test_reports_granular_progress_grbl_serial(self, machine: Machine):
+        """Test reports_granular_progress returns True for GrblSerialDriver."""
+        from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+
+        # Create driver directly to avoid setup issues
+        driver = GrblSerialDriver()
+        driver.setup(port="/dev/test", baudrate=115200)
+        machine.driver = driver
+
+        # GrblSerialDriver should report granular progress
+        assert machine.reports_granular_progress
+
+    def test_reports_granular_progress_grbl_network(self, machine: Machine):
+        """
+        Test reports_granular_progress returns False for GrblNetworkDriver.
+        """
+        from rayforge.machine.driver.grbl import GrblNetworkDriver
+
+        # Create driver directly to avoid setup issues
+        driver = GrblNetworkDriver()
+        driver.setup(host="test")
+        machine.driver = driver
+
+        # GrblNetworkDriver should not report granular progress
+        assert not machine.reports_granular_progress
+
+    def test_reports_granular_progress_smoothie(self, machine: Machine):
+        """Test reports_granular_progress returns True for SmoothieDriver."""
+        from rayforge.machine.driver.smoothie import SmoothieDriver
+
+        # Create driver directly to avoid setup issues
+        driver = SmoothieDriver()
+        driver.setup(host="test", port=23)
+        machine.driver = driver
+
+        # SmoothieDriver should report granular progress
+        assert machine.reports_granular_progress

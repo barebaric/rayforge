@@ -1,96 +1,42 @@
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk
 from ..util.gtk import apply_css
 
 
-class ProgressBar(Gtk.Box):
+class ProgressBar(Gtk.ProgressBar):
     """
-    A two-row progress widget.
-
-    The top row is a status bar (self.status_box) that contains a message
-    label. Users can append their own widgets to self.status_box.
-
-    The bottom row contains a thin progress bar that shows the overall
-    progress of all running tasks.
+    A simple, self-contained progress bar that automatically reflects the
+    status of a TaskManager. It is a single thin bar that fades in when
+    tasks are running and fades out when idle.
     """
 
     def __init__(self, task_manager):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.task_manager = task_manager
-
-        # --- Top Row: Status Box for Label and other widgets ---
-        # This box is made public so users can add their own widgets to it.
-        self.status_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=3
-        )
-
-        # Create the label for the status message
-        self.label = Gtk.Label(
-            halign=Gtk.Align.START,
-            valign=Gtk.Align.CENTER,
-            hexpand=False,
-            ellipsize=Pango.EllipsizeMode.END,
-        )
-        self.status_box.append(self.label)
-        self.append(self.status_box)
-
-        # A spacer widget that will expand and push all subsequent
-        # widgets to the right, ensuring they are always right-aligned.
-        spacer = Gtk.Box()
-        spacer.set_hexpand(True)
-        self.status_box.append(spacer)
-
-        # --- Bottom Row: Progress Bar ---
-        self.progress_bar = Gtk.ProgressBar(
+        super().__init__(
             hexpand=True,
             halign=Gtk.Align.FILL,
             valign=Gtk.Align.CENTER,
         )
-        self.progress_bar.add_css_class("thin-progress-bar")
-        self.append(self.progress_bar)
+        self.task_manager = task_manager
 
-        """Applies custom CSS to style the widget."""
-        apply_css("""
-        progressbar.thin-progress-bar {
-            min-height: 5px;
-            /* Add a transition for a smooth fade in/out effect */
-            transition: opacity 0.25s;
-        }
-        """)
-        self._connect_signals()
+        self.add_css_class("thin-progress-bar")
+        apply_css(
+            """
+            progressbar.thin-progress-bar {
+                min-height: 5px;
+                transition: opacity 0.25s;
+            }
+            """
+        )
 
-        self.label.set_visible(False)
-        self.progress_bar.set_opacity(0)
-
-    def _connect_signals(self):
-        """Connect to the single, consolidated TaskManager signal."""
         self.task_manager.tasks_updated.connect(self._on_tasks_updated)
+        self.set_opacity(0)  # Start faded out
 
     def _on_tasks_updated(self, sender, tasks, progress):
         """
-        Update the progress bar and status text from a single event.
+        Updates the progress bar's fraction and visibility based on the
+        state of the TaskManager.
         """
         has_tasks = bool(tasks)
+        self.set_opacity(1 if has_tasks else 0)
 
-        # Show/hide the text label
-        self.label.set_visible(has_tasks)
-        # CHANGED: Fade the progress bar in or out by changing its opacity.
-        self.progress_bar.set_opacity(1 if has_tasks else 0)
-
-        if not has_tasks:
-            return
-
-        self.progress_bar.set_fraction(progress)
-
-        # Find the oldest task (first in the list)
-        oldest_task = tasks[0]
-        message = oldest_task.get_message()
-        status_text = message if message is not None else ""
-
-        # Add (+N more) if there are additional tasks
-        if status_text and len(tasks) > 1:
-            status_text += _(" (+{tasks} more)").format(tasks=len(tasks) - 1)
-        elif len(tasks) > 1:
-            status_text = _("{tasks} tasks").format(tasks=len(tasks))
-
-        # Update the label text
-        self.label.set_text(status_text)
+        if has_tasks:
+            self.set_fraction(progress)
