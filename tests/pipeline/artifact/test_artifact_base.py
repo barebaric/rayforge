@@ -137,14 +137,12 @@ class TestArtifact(unittest.TestCase):
             distance=42.5,
             gcode_bytes=gcode_bytes,
             op_map_bytes=op_map_bytes,
-            time_estimate=123.45,
         )
 
         reconstructed = JobArtifact.from_dict(artifact.to_dict())
 
         self.assertIsNotNone(reconstructed.gcode_bytes)
         self.assertIsNotNone(reconstructed.op_map_bytes)
-        self.assertEqual(reconstructed.time_estimate, 123.45)
         self.assertEqual(reconstructed.distance, 42.5)
 
         # Add assertions to satisfy the type checker
