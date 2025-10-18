@@ -1,7 +1,16 @@
 import logging
 import asyncio
 import serial.serialutil
-from typing import Optional, Any, List, cast, TYPE_CHECKING, Callable
+from typing import (
+    Optional,
+    Any,
+    List,
+    cast,
+    TYPE_CHECKING,
+    Callable,
+    Union,
+    Awaitable,
+)
 from ...debug import debug_log_manager, LogType
 from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ...core.ops import Ops
@@ -295,7 +304,9 @@ class GrblSerialDriver(Driver):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> None:
         self._is_cancelled = False
         self._job_running = True

@@ -1,8 +1,17 @@
 from .driver import Driver, Axis
 from ...core.ops import Ops
 from ...shared.varset import VarSet
-from typing import Any, TYPE_CHECKING, List, Optional, Callable
+from typing import (
+    Any,
+    TYPE_CHECKING,
+    List,
+    Optional,
+    Callable,
+    Union,
+    Awaitable,
+)
 import asyncio
+import inspect
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -38,7 +47,9 @@ class NoDeviceDriver(Driver):
         ops: Ops,
         machine: "Machine",
         doc: "Doc",
-        on_command_done: Optional[Callable[[int], None]] = None,
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
     ) -> None:
         """
         Dummy implementation that simulates command execution.
@@ -55,10 +66,12 @@ class NoDeviceDriver(Driver):
             # Small delay to simulate execution time
             await asyncio.sleep(0.01)
 
-            # Call the callback if provided
+            # Call the callback if provided, awaiting it if it's a coroutine
             if on_command_done is not None:
                 try:
-                    on_command_done(op_index)
+                    result = on_command_done(op_index)
+                    if inspect.isawaitable(result):
+                        await result
                 except Exception:
                     # Don't let callback exceptions stop execution
                     pass

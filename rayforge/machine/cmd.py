@@ -2,12 +2,15 @@ from __future__ import annotations
 import logging
 import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
+from blinker import Signal
 from ..pipeline.artifact import ArtifactStore, JobArtifact, JobArtifactHandle
+from .job_monitor import JobMonitor
 
 if TYPE_CHECKING:
     from .models.machine import Machine
     from .driver.driver import Axis
     from ..doceditor.editor import DocEditor
+    from ..core.ops import Ops
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +21,8 @@ class MachineCmd:
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
+        self.job_started = Signal()
+        self.job_finished = Signal()
 
     def home_machine(self, machine: "Machine"):
         """Adds a 'home' task to the task manager for the given machine."""
@@ -40,7 +45,37 @@ class MachineCmd:
             lambda ctx: driver.select_tool(tool_number), key="select-head"
         )
 
-    # --- Refactored Job Execution Logic ---
+    async def _execute_monitored_job(self, ops: "Ops", machine: "Machine"):
+        """
+        Internal helper to execute an Ops object on a driver while managing
+        a JobMonitor for progress reporting.
+        """
+        if ops.is_empty():
+            logger.warning("Job has no operations. Skipping execution.")
+            return
+
+        monitor = JobMonitor(ops)
+        self.job_started.send(self, monitor=monitor)
+        try:
+            if machine.driver.reports_granular_progress:
+                # Granular strategy: Driver calls back for each op.
+                await machine.driver.run(
+                    ops,
+                    machine,
+                    self._editor.doc,
+                    on_command_done=monitor.update_progress,
+                )
+            else:
+                # Non-granular strategy: Job is "sent" when run() completes.
+                await machine.driver.run(
+                    ops, machine, self._editor.doc, on_command_done=None
+                )
+                # Ensure progress is marked as 100% since the entire job
+                # was sent in one go.
+                monitor.mark_as_complete()
+        finally:
+            # Signal that the job has finished, allowing the UI to clean up.
+            self.job_finished.send(self, monitor=monitor)
 
     async def _run_frame_action(
         self, handle: JobArtifactHandle, machine: "Machine"
@@ -67,7 +102,7 @@ class MachineCmd:
         frame_with_laser.set_laser(head.uid)
         frame_with_laser += frame * 20
 
-        await machine.driver.run(frame_with_laser, machine, self._editor.doc)
+        await self._execute_monitored_job(frame_with_laser, machine)
 
     async def _run_send_action(
         self, handle: JobArtifactHandle, machine: "Machine"
@@ -75,9 +110,9 @@ class MachineCmd:
         """The specific machine action for a send job."""
         artifact = ArtifactStore.get(handle)
         if not isinstance(artifact, JobArtifact):
-            raise ValueError("_run_frame_action received a non-JobArtifact")
+            raise ValueError("_run_send_action received a non-JobArtifact")
         ops = artifact.ops
-        await machine.driver.run(ops, machine, self._editor.doc)
+        await self._execute_monitored_job(ops, machine)
 
     def _start_job(
         self,
