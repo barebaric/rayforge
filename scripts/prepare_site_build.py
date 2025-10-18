@@ -62,17 +62,19 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def update_nav_paths(nav_item, version):
-    """Recursively prepends the version to paths starting with 'docs/'."""
+def update_nav_paths(nav_item, version_segment):
+    """
+    Recursively prepends the version_segment to paths starting with 'docs/'.
+    """
     if isinstance(nav_item, dict):
         return {
-            key: update_nav_paths(value, version)
+            key: update_nav_paths(value, version_segment)
             for key, value in nav_item.items()
         }
     if isinstance(nav_item, list):
-        return [update_nav_paths(item, version) for item in nav_item]
+        return [update_nav_paths(item, version_segment) for item in nav_item]
     if isinstance(nav_item, str) and nav_item.startswith("docs/"):
-        return f"docs/{version}/{nav_item[len('docs/') :]}"
+        return f"docs/{version_segment}/{nav_item[len('docs/') :]}"
     return nav_item
 
 
@@ -146,6 +148,11 @@ def main():
     """Main function to orchestrate the build preparation."""
     args = parse_arguments()
 
+    # Determine if this is a tagged release from the CI environment variable
+    is_tagged_release = (
+        os.getenv("IS_TAGGED_RELEASE", "false").lower() == "true"
+    )
+
     # Part 1: Prepare the temporary source directory
     print(f"Preparing temporary source directory at {args.tmp_dir}...")
     if os.path.exists(args.tmp_dir):
@@ -156,25 +163,37 @@ def main():
     docs_content_path = os.path.join(content_dir, "docs")
 
     if os.path.isdir(docs_content_path):
-        versioned_docs_path = os.path.join(
-            docs_content_path, args.current_version
-        )
-
-        temp_renamed_path = os.path.join(
-            content_dir, "docs_renamed_for_versioning"
-        )
-        shutil.move(docs_content_path, temp_renamed_path)
-        os.makedirs(docs_content_path)
-        shutil.move(temp_renamed_path, versioned_docs_path)
-        print(
-            f"Moving documentation content to versioned directory: "
-            f"{versioned_docs_path}"
-        )
-
-        # Create the RECURSIVE symlink structure
-        create_recursive_symlinks(
-            versioned_docs_path, os.path.join(docs_content_path, "latest")
-        )
+        if is_tagged_release:
+            # For tagged releases, create versioned dir and 'latest' symlink
+            versioned_docs_path = os.path.join(
+                docs_content_path, args.current_version
+            )
+            temp_renamed_path = os.path.join(
+                content_dir, "docs_renamed_for_versioning"
+            )
+            shutil.move(docs_content_path, temp_renamed_path)
+            os.makedirs(docs_content_path)
+            shutil.move(temp_renamed_path, versioned_docs_path)
+            print(
+                f"Moving documentation content to versioned directory: "
+                f"{versioned_docs_path}"
+            )
+            create_recursive_symlinks(
+                versioned_docs_path, os.path.join(docs_content_path, "latest")
+            )
+        else:
+            # For non-tagged builds, only create the 'latest' directory
+            temp_renamed_path = os.path.join(
+                content_dir, "docs_renamed_for_versioning"
+            )
+            shutil.move(docs_content_path, temp_renamed_path)
+            os.makedirs(docs_content_path)
+            shutil.move(
+                temp_renamed_path, os.path.join(docs_content_path, "latest")
+            )
+            print(
+                "Moving documentation content directly to 'latest' directory."
+            )
 
     else:
         print(
@@ -214,15 +233,32 @@ def main():
     except (IOError, yaml.YAMLError) as e:
         sys.exit(f"Error reading base config '{base_config_path}': {e}")
 
+    # Determine path segment for nav links (either version or 'latest')
+    nav_path_segment = args.current_version if is_tagged_release else "latest"
     versioned_nav = update_nav_paths(
-        base_config.get("nav", []), args.current_version
+        base_config.get("nav", []), nav_path_segment
     )
 
     base_extra_config = base_config.get("extra", {})
-    deploy_extra = transform_config_paths(base_extra_config)
+
+    # Determine prefix for homepage links (should point to latest release)
+    latest_release_version = None
+    if versions_data:
+        latest_release_version = versions_data[0].get("version")
+
+    if latest_release_version:
+        homepage_docs_prefix = f"docs/{latest_release_version}/"
+    else:
+        homepage_docs_prefix = "docs/latest/"  # Fallback if no versions yet
+
+    deploy_extra = transform_config_paths(
+        base_extra_config, deploy_prefix=homepage_docs_prefix
+    )
 
     deploy_extra["version"] = args.current_version
-    deploy_extra["latest_docs"] = "docs/latest"
+    # Set 'latest_docs' variable for index.md to point to the latest
+    # stable version
+    deploy_extra["latest_docs"] = homepage_docs_prefix.rstrip("/")
     deploy_extra["env"] = "production"
 
     deploy_config = {

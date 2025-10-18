@@ -86,4 +86,13 @@ jobs:
           DEPLOY_BRANCH: main
           IS_TAGGED_RELEASE: ${{ github.ref_type == 'tag' }}
         run: |
+          # If this is a tagged release, update the versions.json file first.
+          if [[ "${{ env.IS_TAGGED_RELEASE }}" == "true" ]]; then
+            echo "Tagged release detected. Updating versions.json with new version: ${{ env.DEPLOY_VERSION }}"
+            pixi run python website/update_site_versions.py "${{ env.DEPLOY_VERSION }}" website/content/versions.json
+          else
+            echo "Non-tag push detected. Building for 'latest' only."
+          fi
+
+          # The prepare script will now read the IS_TAGGED_RELEASE env var to adapt the build.
           pixi run site-deploy

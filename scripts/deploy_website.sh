@@ -77,6 +77,7 @@ fi
 echo "Committing and pushing changes..."
 (
   cd "${DEPLOY_DIR}"
+  echo Changed to folder `pwd`
 
   # Abort if this is not a git repository.
   if [ ! -d ".git" ]; then
@@ -84,7 +85,7 @@ echo "Committing and pushing changes..."
          "repository. Aborting."
     exit 1
   fi
-  if [ ! -d ".github" ]; then
+    if [ ! -d ".github" ]; then
     echo "CRITICAL ERROR: The deployment directory would delete" \
          ".github. Aborting."
     exit 1
