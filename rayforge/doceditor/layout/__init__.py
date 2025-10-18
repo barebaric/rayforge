@@ -5,6 +5,7 @@ from .align import (
     BboxAlignMiddleStrategy,
     BboxAlignRightStrategy,
     BboxAlignTopStrategy,
+    PositionAtStrategy,
 )
 from .auto import PixelPerfectLayoutStrategy
 from .base import LayoutStrategy
@@ -19,6 +20,7 @@ __all__ = [
     "BboxAlignTopStrategy",
     "LayoutStrategy",
     "PixelPerfectLayoutStrategy",
+    "PositionAtStrategy",
     "SpreadHorizontallyStrategy",
     "SpreadVerticallyStrategy",
 ]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Tuple
 from ..shared.util.glib import idle_add
 from ..core.item import DocItem
 from .layout import (
@@ -14,6 +14,7 @@ from .layout import (
     SpreadHorizontallyStrategy,
     SpreadVerticallyStrategy,
     PixelPerfectLayoutStrategy,
+    PositionAtStrategy,
 )
 from ..undo import ChangePropertyCommand
 
@@ -188,6 +189,18 @@ class LayoutCmd:
 
         strategy = SpreadVerticallyStrategy(selected_items)
         self._execute_layout_task(strategy, _("Spread Vertically"))
+
+    def position_at(
+        self, selected_items: List[DocItem], position_mm: Tuple[float, float]
+    ):
+        """Action handler for positioning the selection's center at a point."""
+        if not selected_items:
+            return
+
+        strategy = PositionAtStrategy(
+            items=selected_items, position_mm=position_mm
+        )
+        self._execute_layout_task(strategy, _("Position at Point"))
 
     def layout_pixel_perfect(self, selected_items: List[DocItem]):
         """Action handler for the pixel-perfect packing layout."""

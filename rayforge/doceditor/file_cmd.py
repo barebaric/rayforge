@@ -8,13 +8,15 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
-from ..image import import_file
+from ..image import import_file, ImportPayload
+from ..core.import_source import ImportSource
 from ..pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
 )
 from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
+from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -39,6 +41,71 @@ class FileCmd:
         self._task_manager = task_manager
         self._config_manager = config_manager
 
+    async def _run_importer_async(
+        self,
+        filename: Path,
+        mime_type: Optional[str],
+        vector_config: Optional[TraceConfig],
+    ) -> Optional[ImportPayload]:
+        """Runs the blocking import function in a background thread."""
+        return await asyncio.to_thread(
+            import_file, filename, mime_type, vector_config
+        )
+
+    def _position_newly_imported_items(
+        self,
+        items: List[DocItem],
+        position_mm: Optional[Tuple[float, float]],
+    ):
+        """
+        Applies transformations to newly imported items, either positioning
+        them at a specific point or fitting and centering them.
+        This method modifies the items' matrices in-place.
+        """
+        if position_mm:
+            strategy = PositionAtStrategy(items=items, position_mm=position_mm)
+            deltas = strategy.calculate_deltas()
+            if deltas:
+                # All items get the same delta matrix to move the group
+                delta_matrix = next(iter(deltas.values()))
+                for item in items:
+                    # Pre-multiply to apply translation in world space
+                    item.matrix = delta_matrix @ item.matrix
+
+                target_x, target_y = position_mm
+                logger.info(
+                    f"Positioned {len(items)} imported item(s) at "
+                    f"({target_x:.2f}, {target_y:.2f}) mm"
+                )
+        else:
+            self._fit_and_center_imported_items(items)
+
+    def _commit_items_to_document(
+        self,
+        items: List[DocItem],
+        source: Optional[ImportSource],
+        filename: Path,
+    ):
+        """
+        Adds the imported items and their source to the document model using
+        the history manager.
+        """
+        if source:
+            self._editor.doc.add_import_source(source)
+
+        target_layer = cast(Layer, self._editor.default_workpiece_layer)
+        cmd_name = _(f"Import {filename.name}")
+
+        with self._editor.history_manager.transaction(cmd_name) as t:
+            for item in items:
+                command = ListItemCommand(
+                    owner_obj=target_layer,
+                    item=item,
+                    undo_command="remove_child",
+                    redo_command="add_child",
+                )
+                t.execute(command)
+
     async def _load_file_async(
         self,
         filename: Path,
@@ -59,12 +126,12 @@ class FileCmd:
         """
         try:
             # 1. Run blocking I/O and CPU work in a background thread.
-            payload = await asyncio.to_thread(
-                import_file, filename, mime_type, vector_config
+            payload = await self._run_importer_async(
+                filename, mime_type, vector_config
             )
 
+            # 2. Validate the result and notify user on failure.
             if not payload or not payload.items:
-                # Provide more specific error message based on file type
                 if mime_type and mime_type.startswith("image/"):
                     msg = _(
                         f"Failed to import {filename.name}. The image file "
@@ -82,31 +149,13 @@ class FileCmd:
                 self._editor.notification_requested.send(self, message=msg)
                 return
 
-            # 2. Perform document modifications (must be on main thread).
-            # In tests, the asyncio loop is the main thread, so this is safe.
-            if payload.source:
-                self._editor.doc.add_import_source(payload.source)
+            # 3. Position the new items before adding them to the document.
+            self._position_newly_imported_items(payload.items, position_mm)
 
-            imported_items = payload.items
-
-            # Position items at specified location or centered on workspace
-            if position_mm:
-                self._position_imported_items_at(imported_items, position_mm)
-            else:
-                self._fit_and_center_imported_items(imported_items)
-
-            target_layer = cast(Layer, self._editor.default_workpiece_layer)
-            cmd_name = _(f"Import {filename.name}")
-
-            with self._editor.history_manager.transaction(cmd_name) as t:
-                for item in imported_items:
-                    command = ListItemCommand(
-                        owner_obj=target_layer,
-                        item=item,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                    )
-                    t.execute(command)
+            # 4. Add the positioned items to the document model.
+            self._commit_items_to_document(
+                payload.items, payload.source, filename
+            )
 
         except Exception as e:
             logger.error(
@@ -187,53 +236,6 @@ class FileCmd:
             max_y = max(max_y, iy + ih)
 
         return min_x, min_y, max_x - min_x, max_y - min_y
-
-    def _position_imported_items_at(
-        self, items: List[DocItem], position_mm: Tuple[float, float]
-    ):
-        """
-        Position imported items so their bounding box center is at the
-        specified location.
-
-        Args:
-            items: List of imported DocItems
-            position_mm: (x, y) tuple in world coordinates (mm)
-                where items should be centered
-        """
-        machine = self._config_manager.config.machine
-        if not machine:
-            logger.warning(
-                "Cannot position imported items: machine dimensions unknown."
-            )
-            return
-
-        # Calculate the bounding box of all imported items
-        bbox = self._calculate_items_bbox(items)
-        if not bbox:
-            return
-
-        bbox_x, bbox_y, bbox_w, bbox_h = bbox
-        target_x, target_y = position_mm
-
-        # Calculate current center of the bounding box
-        current_center_x = bbox_x + bbox_w / 2
-        current_center_y = bbox_y + bbox_h / 2
-
-        # Calculate translation to move center to target position
-        delta_x = target_x - current_center_x
-        delta_y = target_y - current_center_y
-
-        # Apply translation to all items
-        if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:
-            translation_matrix = Matrix.translation(delta_x, delta_y)
-            for item in items:
-                # Pre-multiply to apply translation in world space
-                item.matrix = translation_matrix @ item.matrix
-
-            logger.info(
-                f"Positioned {len(items)} imported item(s) at "
-                f"({target_x:.2f}, {target_y:.2f}) mm"
-            )
 
     def _fit_and_center_imported_items(self, items: List[DocItem]):
         """
