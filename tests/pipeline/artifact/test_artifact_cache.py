@@ -176,6 +176,68 @@ class TestArtifactCache(unittest.TestCase):
         self.mock_release.assert_any_call(ops_h)
         self.mock_release.assert_any_call(job_h)
 
+    def test_has_step_render_handle(self):
+        """Tests the has_step_render_handle method."""
+        self.assertFalse(self.cache.has_step_render_handle("step1"))
+        handle = create_mock_handle(StepRenderArtifactHandle, "step1_render")
+        self.cache.put_step_render_handle("step1", handle)
+        self.assertTrue(self.cache.has_step_render_handle("step1"))
+        self.cache.invalidate_for_step("step1")
+        self.assertFalse(self.cache.has_step_render_handle("step1"))
+
+    def test_get_all_step_render_uids(self):
+        """Tests getting all step UIDs with render handles."""
+        self.assertEqual(self.cache.get_all_step_render_uids(), set())
+        h1 = create_mock_handle(StepRenderArtifactHandle, "step1_render")
+        h2 = create_mock_handle(StepRenderArtifactHandle, "step2_render")
+        self.cache.put_step_render_handle("step1", h1)
+        self.cache.put_step_render_handle("step2", h2)
+        self.assertEqual(
+            self.cache.get_all_step_render_uids(), {"step1", "step2"}
+        )
+
+    def test_get_all_workpiece_keys(self):
+        """Tests getting all workpiece keys."""
+        self.assertEqual(self.cache.get_all_workpiece_keys(), set())
+        h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        h2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
+        self.cache.put_workpiece_handle("step1", "wp1", h1)
+        self.cache.put_workpiece_handle("step2", "wp2", h2)
+        expected_keys = {("step1", "wp1"), ("step2", "wp2")}
+        self.assertEqual(self.cache.get_all_workpiece_keys(), expected_keys)
+
+    def test_pop_step_ops_handle(self):
+        """Tests popping a step ops handle from the cache."""
+        handle = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
+        self.cache.put_step_ops_handle("step1", handle)
+
+        # Pop should return the handle and remove it
+        popped_handle = self.cache.pop_step_ops_handle("step1")
+        self.assertIs(popped_handle, handle)
+        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
+
+        # Popping again should return None
+        self.assertIsNone(self.cache.pop_step_ops_handle("step1"))
+
+        # Pop should not trigger a release
+        self.mock_release.assert_not_called()
+
+    def test_pop_step_render_handle(self):
+        """Tests popping a step render handle from the cache."""
+        handle = create_mock_handle(StepRenderArtifactHandle, "step1_render")
+        self.cache.put_step_render_handle("step1", handle)
+
+        # Pop should return the handle and remove it
+        popped_handle = self.cache.pop_step_render_handle("step1")
+        self.assertIs(popped_handle, handle)
+        self.assertIsNone(self.cache.get_step_render_handle("step1"))
+
+        # Popping again should return None
+        self.assertIsNone(self.cache.pop_step_render_handle("step1"))
+
+        # Pop should not trigger a release
+        self.mock_release.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

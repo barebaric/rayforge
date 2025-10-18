@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Set
 from .handle import BaseArtifactHandle
 from .workpiece import WorkPieceArtifactHandle
 from .step_ops import StepOpsArtifactHandle
@@ -108,6 +108,30 @@ class ArtifactCache:
         """Safely releases a handle's shared memory resources."""
         if handle:
             ArtifactStore.release(handle)
+
+    def has_step_render_handle(self, step_uid: str) -> bool:
+        """Checks if a StepRenderArtifact handle exists for a step UID."""
+        return step_uid in self._step_render_handles
+
+    def get_all_step_render_uids(self) -> Set[str]:
+        """Returns a set of all step UIDs that have a render handle."""
+        return set(self._step_render_handles.keys())
+
+    def get_all_workpiece_keys(self) -> Set[WorkPieceKey]:
+        """Returns a set of all (step_uid, workpiece_uid) keys."""
+        return set(self._workpiece_handles.keys())
+
+    def pop_step_ops_handle(
+        self, step_uid: str
+    ) -> Optional[StepOpsArtifactHandle]:
+        """Removes and returns a StepOpsArtifact handle, if it exists."""
+        return self._step_ops_handles.pop(step_uid, None)
+
+    def pop_step_render_handle(
+        self, step_uid: str
+    ) -> Optional[StepRenderArtifactHandle]:
+        """Removes and returns a StepRenderArtifact handle, if it exists."""
+        return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, step_uid: str, workpiece_uid: str):
         """

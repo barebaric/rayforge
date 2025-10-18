@@ -73,7 +73,7 @@ class StepGeneratorStage(PipelineStage):
             for step in layer.workflow.steps
         }
         # The source of truth is now the render handle cache.
-        cached_steps = set(self._artifact_cache._step_render_handles.keys())
+        cached_steps = self._artifact_cache.get_all_step_render_uids()
         for step_uid in cached_steps - all_current_steps:
             self._cleanup_entry(step_uid, full_invalidation=True)
 
@@ -81,9 +81,8 @@ class StepGeneratorStage(PipelineStage):
             if layer.workflow:
                 for step in layer.workflow.steps:
                     # Trigger assembly if the render artifact is missing.
-                    if (
+                    if not self._artifact_cache.has_step_render_handle(
                         step.uid
-                        not in self._artifact_cache._step_render_handles
                     ):
                         self._trigger_assembly(step)
 
@@ -115,16 +114,14 @@ class StepGeneratorStage(PipelineStage):
         self._cleanup_task(key)
 
         # The ops artifact is always stale and can be removed.
-        ops_handle = self._artifact_cache._step_ops_handles.pop(key, None)
+        ops_handle = self._artifact_cache.pop_step_ops_handle(key)
         if ops_handle:
             ArtifactStore.release(ops_handle)
 
         # Only remove the render artifact if this is a full invalidation
         # (e.g., the step was deleted), not a simple regeneration.
         if full_invalidation:
-            render_handle = self._artifact_cache._step_render_handles.pop(
-                key, None
-            )
+            render_handle = self._artifact_cache.pop_step_render_handle(key)
             if render_handle:
                 ArtifactStore.release(render_handle)
 
