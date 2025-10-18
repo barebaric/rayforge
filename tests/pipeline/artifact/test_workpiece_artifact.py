@@ -44,7 +44,6 @@ class TestWorkPieceArtifact(unittest.TestCase):
         self.assertEqual(reconstructed.generation_size, (50, 100))
         self.assertIsNone(reconstructed.vertex_data)
         self.assertIsNone(reconstructed.texture_data)
-        self.assertIsNone(reconstructed.time_estimate)
 
     def test_vertex_serialization_round_trip(self):
         """Tests serialization for a vertex-like artifact."""

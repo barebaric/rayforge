@@ -16,7 +16,6 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
         is_scalable: bool,
         source_coordinate_system_name: str,
         source_dimensions: Optional[Tuple[float, float]],
-        time_estimate: Optional[float],
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
@@ -36,7 +35,6 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
         self.is_scalable = is_scalable
         self.source_coordinate_system_name = source_coordinate_system_name
         self.source_dimensions = source_dimensions
-        self.time_estimate = time_estimate
         self.generation_size = generation_size
         self.dimensions_mm = dimensions_mm
         self.position_mm = position_mm
@@ -54,7 +52,6 @@ class WorkPieceArtifact(BaseArtifact):
         is_scalable: bool,
         source_coordinate_system: CoordinateSystem,
         source_dimensions: Optional[Tuple[float, float]] = None,
-        time_estimate: Optional[float] = None,
         vertex_data: Optional[VertexData] = None,
         texture_data: Optional[TextureData] = None,
         generation_size: Optional[Tuple[float, float]] = None,
@@ -64,7 +61,6 @@ class WorkPieceArtifact(BaseArtifact):
         self.is_scalable = is_scalable
         self.source_coordinate_system = source_coordinate_system
         self.source_dimensions = source_dimensions
-        self.time_estimate = time_estimate
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_data: Optional[TextureData] = texture_data
         self.generation_size: Optional[Tuple[float, float]] = generation_size
@@ -76,7 +72,6 @@ class WorkPieceArtifact(BaseArtifact):
             "is_scalable": self.is_scalable,
             "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
-            "time_estimate": self.time_estimate,
         }
         if self.generation_size:
             result["generation_size"] = self.generation_size
@@ -129,7 +124,6 @@ class WorkPieceArtifact(BaseArtifact):
             is_scalable=self.is_scalable,
             source_coordinate_system_name=self.source_coordinate_system.name,
             source_dimensions=self.source_dimensions,
-            time_estimate=self.time_estimate,
             array_metadata=array_metadata,
             generation_size=self.generation_size,
             dimensions_mm=texture_dims,
@@ -196,7 +190,6 @@ class WorkPieceArtifact(BaseArtifact):
                 handle.source_coordinate_system_name
             ],
             source_dimensions=handle.source_dimensions,
-            time_estimate=handle.time_estimate,
             generation_size=handle.generation_size,
             vertex_data=vertex_data,
             texture_data=texture_data,
