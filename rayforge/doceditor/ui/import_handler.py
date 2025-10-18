@@ -66,8 +66,13 @@ def _show_svg_import_dialog(
     dialog.set_close_response("cancel")
 
     dialog.connect(
-        "response", _on_svg_options_response, editor, file_path,
-        mime_type, win, position_mm
+        "response",
+        _on_svg_options_response,
+        editor,
+        file_path,
+        mime_type,
+        win,
+        position_mm,
     )
     dialog.present()
 

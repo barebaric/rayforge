@@ -117,11 +117,13 @@ class WorkPieceView(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
-        self.pipeline.ops_generation_starting.connect(
+        self.pipeline.workpiece_starting.connect(
             self._on_ops_generation_starting
         )
-        self.pipeline.ops_chunk_available.connect(self._on_ops_chunk_available)
-        self.pipeline.ops_generation_finished.connect(
+        self.pipeline.workpiece_chunk_ready.connect(
+            self._on_ops_chunk_available
+        )
+        self.pipeline.workpiece_artifact_ready.connect(
             self._on_ops_generation_finished
         )
         self._on_transform_changed(self.data)
@@ -211,13 +213,13 @@ class WorkPieceView(CanvasElement):
         logger.debug(f"Removing WorkPieceView for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
-        self.pipeline.ops_generation_starting.disconnect(
+        self.pipeline.workpiece_starting.disconnect(
             self._on_ops_generation_starting
         )
-        self.pipeline.ops_chunk_available.disconnect(
+        self.pipeline.workpiece_chunk_ready.disconnect(
             self._on_ops_chunk_available
         )
-        self.pipeline.ops_generation_finished.disconnect(
+        self.pipeline.workpiece_artifact_ready.disconnect(
             self._on_ops_generation_finished
         )
         super().remove()

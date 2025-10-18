@@ -49,7 +49,7 @@ class PngImporter(Importer):
         except Exception as e:
             logger.error(
                 f"Unexpected error loading PNG '{self.source_file.name}': {e}",
-                exc_info=True
+                exc_info=True,
             )
             return None
 
