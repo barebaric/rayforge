@@ -22,11 +22,11 @@ graph TB
     I -->|No| G
     I -->|Yes| J[Generate G-code]
 
-    style C fill:#e3f2fd
-    style D fill:#fff3e0
-    style E fill:#f3e5f5
-    style F fill:#e8f5e9
-    style J fill:#c8e6c9
+    style C fill:#2b6cb0,stroke:#3182ce,color:#fff
+    style D fill:#c05621,stroke:#dd6b20,color:#fff
+    style E fill:#6b46c1,stroke:#805ad5,color:#fff
+    style F fill:#276749,stroke:#38a169,color:#fff
+    style J fill:#276749,stroke:#38a169,color:#fff
 ```
 
 ## Operation Types

@@ -134,6 +134,56 @@ body, html {
     margin-bottom: 2rem;
 }
 
+/* --- Hero CTA Buttons --- */
+.hero-cta-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    justify-content: left; /* Align with left-aligned text on desktop */
+}
+
+/* Base style for both buttons */
+.button {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    border: 2px solid transparent; /* Prevents size jump on hover for secondary button */
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Primary Button Style (Download) */
+.button-primary {
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+    background-size: 200% auto;
+    background-position: center; /* This is the fix */
+    color: white;
+    box-shadow: 0 4px 20px rgba(138, 66, 245, 0.3);
+}
+
+.button-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 25px rgba(27, 137, 255, 0.4);
+    filter: brightness(1.1);
+}
+
+/* Secondary Button Style (GitHub) */
+.button-secondary {
+    background-color: transparent;
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.button-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    transform: translateY(-3px);
+}
+
 .hero-image-wrapper {
     perspective: 1500px;
     z-index: 1;
@@ -447,6 +497,9 @@ h2 {
     }
     .hero-content {
         text-align: center;
+    }
+    .hero-cta-buttons {
+        justify-content: center;
     }
     .hero-image-wrapper { margin-top: 2rem; }
     .hero-image { transform: rotateY(0) rotateX(0); }

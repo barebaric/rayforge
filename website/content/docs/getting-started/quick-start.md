@@ -5,7 +5,7 @@ Now that Rayforge is installed and your machine is configured, let's run your fi
 ## Workflow Overview
 
 ```mermaid
-flowchart LR
+flowchart TB
     A[Import Design] --> B[Position & Scale]
     B --> C[Assign Operation]
     C --> D[Preview G-code]
@@ -13,10 +13,10 @@ flowchart LR
     E --> F[Frame Job]
     F --> G[Start Job]
 
-    style A fill:#e1f5ff
-    style C fill:#fff3e0
-    style D fill:#f3e5f5
-    style G fill:#e8f5e9
+    style A fill:#2c5282,stroke:#3182ce,color:#fff
+    style C fill:#c05621,stroke:#dd6b20,color:#fff
+    style D fill:#6b46c1,stroke:#805ad5,color:#fff
+    style G fill:#276749,stroke:#38a169,color:#fff
 ```
 
 ## Step 1: Import a Design
