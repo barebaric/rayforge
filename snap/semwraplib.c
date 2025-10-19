@@ -20,9 +20,15 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <sys/mman.h>
 
+// For semaphores
 static sem_t *(*original_sem_open) (const char *, int, ...);
 static int (*original_sem_unlink) (const char *);
+
+// For shared memory
+static int (*original_shm_open) (const char *, int, mode_t);
+static int (*original_shm_unlink) (const char *);
 
 // Format is: 'sem.snap.SNAP_NAME.<something>'. So: 'sem.snap.' + '.' = 10
 #define MAX_NAME_SIZE NAME_MAX - 10
@@ -275,4 +281,74 @@ int sem_unlink(const char *name)
 	debug("rewritten name: %s", rewritten);
 
 	return original_sem_unlink(rewritten);
+}
+
+// shm_open
+int shm_open(const char *name, int oflag, mode_t mode)
+{
+	debug("shm_open()");
+	debug("requested name: %s", name);
+
+	if (!original_shm_open) {
+		dlerror();
+		original_shm_open = dlsym(RTLD_NEXT, "shm_open");
+		if (!original_shm_open) {
+			debug("could not find shm_open in libc");
+			errno = ENOSYS;
+			return -1;
+		}
+		dlerror();
+	}
+
+	const char *snapname = get_snap_name();
+
+	if (!snapname) {
+		return original_shm_open(name, oflag, mode);
+	}
+
+	char rewritten_base[MAX_NAME_SIZE+1];
+	if (rewrite(snapname, name, rewritten_base, MAX_NAME_SIZE + 1) != 0) {
+		return -1;
+	}
+
+	char rewritten_final[MAX_NAME_SIZE+2];
+	snprintf(rewritten_final, sizeof(rewritten_final), "/%s", rewritten_base);
+	debug("rewritten name: %s", rewritten_final);
+
+	return original_shm_open(rewritten_final, oflag, mode);
+}
+
+// shm_unlink
+int shm_unlink(const char *name)
+{
+	debug("shm_unlink()");
+	debug("requested name: %s", name);
+
+	if (!original_shm_unlink) {
+		dlerror();
+		original_shm_unlink = dlsym(RTLD_NEXT, "shm_unlink");
+		if (!original_shm_unlink) {
+			debug("could not find shm_unlink in libc");
+			errno = ENOSYS;
+			return -1;
+		}
+		dlerror();
+	}
+
+	const char *snapname = get_snap_name();
+
+	if (!snapname) {
+		return original_shm_unlink(name);
+	}
+
+	char rewritten_base[MAX_NAME_SIZE+1];
+	if (rewrite(snapname, name, rewritten_base, MAX_NAME_SIZE + 1) != 0) {
+		return -1;
+	}
+
+	char rewritten_final[MAX_NAME_SIZE+2];
+	snprintf(rewritten_final, sizeof(rewritten_final), "/%s", rewritten_base);
+	debug("rewritten name: %s", rewritten_final);
+
+	return original_shm_unlink(rewritten_final);
 }
