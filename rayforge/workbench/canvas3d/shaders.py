@@ -3,7 +3,6 @@ Shader sources for the 3D workbench.
 """
 
 SIMPLE_VERTEX_SHADER = """
-#version 300 es
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
 uniform mat4 uMVP;
@@ -15,8 +14,6 @@ void main() {
 """
 
 SIMPLE_FRAGMENT_SHADER = """
-#version 300 es
-precision mediump float;
 out vec4 FragColor;
 in vec4 vColor;
 uniform vec4 uColor;
@@ -31,8 +28,6 @@ void main() {
 """
 
 TEXT_FRAGMENT_SHADER = """
-#version 300 es
-precision mediump float;
 in vec2 vTexCoord;
 out vec4 FragColor;
 
@@ -51,7 +46,6 @@ void main() {
 # This shader calculates vertex positions relative to a single string anchor,
 # ensuring the whole label billboards as one unit.
 TEXT_VERTEX_SHADER = """
-#version 300 es
 layout (location = 0) in vec4 aVertex; // In: x, y ([-0.5, 0.5]), u, v
 
 // Uniforms
@@ -89,7 +83,6 @@ void main() {
 """
 
 TEXTURE_VERTEX_SHADER = """
-#version 300 es
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoord;
 
@@ -104,8 +97,6 @@ void main() {
 """
 
 TEXTURE_FRAGMENT_SHADER = """
-#version 300 es
-precision mediump float;
 in vec2 vTexCoord;
 out vec4 FragColor;
 

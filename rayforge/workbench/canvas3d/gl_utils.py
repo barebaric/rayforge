@@ -27,6 +27,21 @@ class Shader:
         Raises:
             Exception: If shader compilation or linking fails.
         """
+        # Determine the correct GLSL header for the current context.
+        version_str = GL.glGetString(GL.GL_VERSION)
+        is_es = version_str is not None and b"OpenGL ES" in version_str
+        if is_es:
+            vert_header = "#version 300 es\n"
+            frag_header = "#version 300 es\nprecision mediump float;\n"
+            logger.debug("Using OpenGL ES shader headers.")
+        else:
+            vert_header = "#version 330 core\n"
+            frag_header = "#version 330 core\n"
+            logger.debug("Using OpenGL desktop shader headers.")
+
+        vertex_source = vert_header + vertex_source
+        fragment_source = frag_header + fragment_source
+
         try:
             self.program = shaders.compileProgram(
                 shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
