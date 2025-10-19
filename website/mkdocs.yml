@@ -80,7 +80,7 @@ nav:
           - Shortcuts: docs/reference/shortcuts.md
           - G-code Dialects: docs/reference/gcode-dialects.md
           - Firmware: docs/reference/firmware.md
-  - Developer Documentation:
+  - For Developers:
       - Getting Started:
           - Getting the code: docs/developer/getting-started/index.md
           - Setup: docs/developer/getting-started/setup.md
@@ -101,17 +101,15 @@ theme:
   name: material
   custom_dir: overrides
   language: en
-  logo: assets/rf-logo-01.svg
-  favicon: assets/rf-01.png
+  logo: assets/icon-mono.png
+  favicon: assets/icon-mono.png
   font:
     text: Ubuntu Sans
     code: Ubuntu Sans Mono
   palette:
-    # Light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: blue
-      accent: blue
+    - scheme: slate
+      primary: deep-purple
+      accent: orange
   features:
     - announce.dismiss
     - content.action.edit
@@ -155,11 +153,10 @@ extra:
     property: !ENV GOOGLE_ANALYTICS_KEY
 
   # Coverpage configuration
-  home_cover_image: assets/rf-logo-white-01.svg
+  home_cover_image: assets/screenshot.png
   home_tagline: Rayforge
   home_description: |
     Modern G-code sender and control software for GRBL-based laser cutters and engravers
-  home_gradient_hsla: hsla(231deg, 48%, 48%, 1)
   home_button1_name: Features
   home_button1_url: ./#key-features
   home_button1_theme: md-button

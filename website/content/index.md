@@ -5,42 +5,12 @@ hide:
   - title
 ---
 
-
 Rayforge transforms your laser cutter or engraver into a powerful creative tool. Whether you're a hobbyist working on personal projects or a professional running a business, Rayforge provides the features and reliability you need.
 
-
-# Quick Links
-
-<div class="grid cards" markdown>
-
--   :material-rocket-launch:{ .lg .middle } __[Getting Started]({{ latest_docs }}/getting-started/index.md)__
-
-    ---
-
-    New to Rayforge? Start here for installation instructions and your first project.
-
--   :material-view-dashboard:{ .lg .middle } __[User Interface]({{ latest_docs }}/ui/index.md)__
-
-    ---
-
-    Learn about the main window, canvas tools, and interface elements.
-
--   :material-feature-search:{ .lg .middle } __[Features]({{ latest_docs }}/features/index.md)__
-
-    ---
-
-    Explore all the operations and capabilities Rayforge offers.
-
--   :material-wrench:{ .lg .middle } __[Machine Setup]({{ latest_docs }}/machine/index.md)__
-
-    ---
-
-    Configure your laser cutter or engraver to work with Rayforge.
-
-</div>
-
-
 # Key Features
+
+<img src="assets/screenshot-3d.png" alt="3D Previewer Screenshot" style="width:600px;"/>
+
 
 | Feature                      | Description                                                                                        |
 | :--------------------------- | :------------------------------------------------------------------------------------------------- |
