@@ -54,8 +54,8 @@ graph TD
     O --> Simulator;
     O --> File;
 
-    classDef io fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef output fill:#bbf,stroke:#333,stroke-width:2px,max-width:500px;
+    classDef io fill:#a020f0,stroke:#333,stroke-width:2px;
+    classDef output fill:#1e3a8a,stroke:#333,stroke-width:2px,max-width:500px;
     class Input,Vis2D,Vis3D,Simulator,File io;
     class A,D,G,H,K,L,M,O output;
 ```

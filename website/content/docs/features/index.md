@@ -71,10 +71,10 @@ flowchart TD
     F --> G[Material stays in place<br/>during engraving]
     G --> H[Cut free at end]
 
-    style C fill:#e3f2fd
-    style D fill:#fff3e0
-    style E fill:#ffebee
-    style H fill:#e8f5e9
+    style C fill:#2b6cb0,stroke:#3182ce,color:#fff
+    style D fill:#c05621,stroke:#dd6b20,color:#fff
+    style E fill:#c53030,stroke:#e53e3e,color:#fff
+    style H fill:#276749,stroke:#38a169,color:#fff
 ```
 
 !!! tip "Why this order?"
