@@ -101,8 +101,8 @@ theme:
   name: material
   custom_dir: overrides
   language: en
-  logo: assets/icon-mono.png
-  favicon: assets/icon-mono.png
+  logo: assets/icon-mono.svg
+  favicon: assets/favicon.png
   font:
     text: Ubuntu Sans
     code: Ubuntu Sans Mono

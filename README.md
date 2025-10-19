@@ -10,6 +10,8 @@
 
 Rayforge is a modern, cross-platform G-code sender and control software for GRBL-based laser cutters and engravers. Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux and Windows, offering a full suite of tools for both hobbyists and professionals.
 
+![Logo](website/content/assets/icon.svg)
+
 ![Screenshot](website/content/docs/images/ss-main.png)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).
