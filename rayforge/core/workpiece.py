@@ -354,6 +354,34 @@ class WorkPiece(DocItem):
             max_memory_size=max_memory_size,
         )
 
+    def get_geometry_world_bbox(
+        self,
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """
+        Calculates the bounding box of the workpiece's geometry in world
+        coordinates.
+
+        This is achieved by creating a temporary copy of the geometry,
+        transforming it by the workpiece's world matrix, and then calculating
+        the bounding box of the transformed shape.
+
+        Returns:
+            A tuple (min_x, min_y, max_x, max_y) representing the bounding
+            box, or None if the workpiece has no vector geometry.
+        """
+        if self.vectors is None or self.vectors.is_empty():
+            return None
+
+        # Create a copy to avoid modifying the original normalized vectors
+        world_geometry = self.vectors.copy()
+
+        # Apply the full world transformation
+        world_matrix = self.get_world_transform()
+        world_geometry.transform(world_matrix.to_4x4_numpy())
+
+        # Return the bounding box of the transformed geometry
+        return world_geometry.rect()
+
     def get_tab_direction(self, tab: Tab) -> Optional[Tuple[float, float]]:
         """
         Calculates the "outside" direction vector for a given tab in world

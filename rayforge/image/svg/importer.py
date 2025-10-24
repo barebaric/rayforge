@@ -1,5 +1,5 @@
 import io
-from typing import Optional, List
+from typing import Optional, List, Tuple, Union
 import logging
 from xml.etree import ElementTree as ET
 from svgelements import (
@@ -152,195 +152,241 @@ class SvgImporter(Importer):
         self, source: ImportSource
     ) -> Optional[List[DocItem]]:
         """
-        Parses trimmed SVG vector data directly, handling viewBox and unit
-        conversions to ensure the vector geometry matches the final size.
+        Orchestrates the direct parsing of SVG data into DocItems.
         """
         if not source.working_data:
-            logger.error("source has no data to trace")
+            logger.error("source has no data to process for direct import")
             return None
 
+        # 1. Establish authoritative dimensions in millimeters.
+        final_dims_mm = self._get_final_dimensions(source)
+        if not final_dims_mm:
+            msg = (
+                "SVG is missing width or height attributes; "
+                "falling back to trace method for direct import."
+            )
+            logger.warning(msg)
+            return self._get_doc_items_from_trace(source, TraceConfig())
+        final_width_mm, final_height_mm = final_dims_mm
+
+        # 2. Parse SVG data into an object model.
+        svg = self._parse_svg_data(source)
+        if svg is None:
+            return None
+
+        # 3. Convert SVG shapes to internal geometry (in pixel coordinates).
+        geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+
+        # 4. Get pixel dimensions for normalization.
+        pixel_dims = self._get_pixel_dimensions(svg)
+        if not pixel_dims:
+            msg = (
+                "Could not determine valid pixel dimensions from SVG; "
+                "falling back to trace method."
+            )
+            logger.warning(msg)
+            return self._get_doc_items_from_trace(source, TraceConfig())
+        width_px, height_px = pixel_dims
+
+        # 5. Normalize geometry to a 0-1 unit square and flip Y-axis.
+        self._normalize_and_flip_geometry(geo, width_px, height_px)
+
+        # 6. Create the final workpiece.
+        wp = self._create_workpiece(
+            geo, source, final_width_mm, final_height_mm
+        )
+        return [wp]
+
+    def _get_final_dimensions(
+        self, source: ImportSource
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Extracts the final width and height in millimeters from source
+        metadata.
+        """
+        width = source.metadata.get("trimmed_width_mm")
+        height = source.metadata.get("trimmed_height_mm")
+        if width and height:
+            return width, height
+        return None
+
+    def _parse_svg_data(self, source: ImportSource) -> Optional[SVG]:
+        """Parses SVG byte data into an svgelements.SVG object."""
+        if not source.working_data:
+            logger.error("Source has no working_data to parse.")
+            return None
         try:
-            # Correctly wrap the trimmed byte data in an in-memory stream.
             svg_stream = io.BytesIO(source.working_data)
-            svg = SVG.parse(svg_stream, ppi=PPI)
+            return SVG.parse(svg_stream, ppi=PPI)
         except Exception as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
             return None
 
-        # --- Establish Authoritative Dimensions and Transformation ---
-        # The key to matching the rendered output is to honor the `viewBox`.
-        # The `width` and `height` attributes define the final rendered size.
-        if (
-            not source.metadata.get("viewbox")
-            or not source.metadata.get("trimmed_width_mm")
-            or not source.metadata.get("trimmed_height_mm")
-        ):
-            logger.warning(
-                "SVG is missing viewBox, width, or height attributes; "
-                "falling back to trace method for direct import."
-            )
-            # Fallback to tracing if essential attributes for direct import
-            # are missing.
-            return self._get_doc_items_from_trace(source, TraceConfig())
+    def _get_pixel_dimensions(self, svg: SVG) -> Optional[Tuple[float, float]]:
+        """
+        Extracts the pixel width and height from a parsed SVG object.
+        """
+        if svg.width is None or svg.height is None:
+            return None
 
-        logger.info(f"SVG raw width/height: {svg.width}, {svg.height}")
-        logger.info(f"SVG viewBox: {svg.viewbox}")
-
-        # Get final dimensions in millimeters from the trimmed SVG metadata.
-        final_width_mm = source.metadata.get("trimmed_width_mm", 0.0)
-        final_height_mm = source.metadata.get("trimmed_height_mm", 0.0)
-
-        logger.info(
-            f"Final dimensions: {final_width_mm:.3f}mm x "
-            f"{final_height_mm:.3f}mm"
+        width_px = (
+            svg.width.px if hasattr(svg.width, "px") else float(svg.width)
+        )
+        height_px = (
+            svg.height.px if hasattr(svg.height, "px") else float(svg.height)
         )
 
-        # Get the bounding box of the SVG content from svgelements.
-        try:
-            bbox = svg.bbox(with_stroke=True)
-            if bbox is None:
-                # This can happen if the SVG contains no visible geometry.
-                logger.warning(
-                    "svgelements could not determine SVG bounds"
-                    " (no visible content); "
-                    "falling back to trace method."
-                )
-                return self._get_doc_items_from_trace(source, TraceConfig())
-            min_x, min_y, max_x, max_y = bbox
-        except Exception as e:
-            logger.warning(
-                f"Error calculating SVG bounds with svgelements ({e}); "
-                "falling back to trace method."
-            )
-            return self._get_doc_items_from_trace(source, TraceConfig())
+        if width_px <= 1e-9 or height_px <= 1e-9:
+            return None
 
+        msg = (
+            "Normalizing vectors using final pixel dimensions from "
+            "svgelements: {width_px:.3f}px x {height_px:.3f}px"
+        )
+        logger.debug(msg)
+        return width_px, height_px
+
+    def _convert_svg_to_geometry(
+        self, svg: SVG, final_dims_mm: Tuple[float, float]
+    ) -> Geometry:
+        """
+        Converts an SVG object into a Geometry object in pixel coordinates.
+        """
         geo = Geometry()
-        # Average scale for tolerance adjustment
-        # Use max to avoid division by zero if one dimension is zero
+        final_width_mm, final_height_mm = final_dims_mm
+
+        # Calculate tolerance for curve flattening.
         avg_dim = max(final_width_mm, final_height_mm, 1.0)
         avg_scale = avg_dim / 960  # Assuming typical viewBox size
         tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
-        logger.debug(
-            f"Average scale estimate: {avg_scale:.6f}, "
-            f"tolerance: {tolerance:.6f}"
-        )
 
         for shape in svg.elements():
-            # svgelements provides a unified way to handle all shapes by
-            # converting them to a Path object.
             try:
                 path = Path(shape)
                 path.reify()  # Apply transforms
+                self._add_path_to_geometry(path, geo, tolerance)
             except (AttributeError, TypeError):
                 continue  # Skip non-shape elements like <defs>
+        return geo
 
-            for seg in path:
-                # Add checks to ensure segment points are not None
-                if seg.end is None or seg.end.x is None or seg.end.y is None:
-                    continue
+    def _add_path_to_geometry(
+        self, path: Path, geo: Geometry, tolerance: float
+    ) -> None:
+        """Converts a single Path object's segments to Geometry commands."""
+        for seg in path:
+            # Use a local variable to help strict type checkers.
+            end = seg.end
+            if end is None or end.x is None or end.y is None:
+                continue
 
-                end_x, end_y = float(seg.end.x), float(seg.end.y)
+            if isinstance(seg, Move):
+                geo.move_to(float(end.x), float(end.y))
+            elif isinstance(seg, Line):
+                geo.line_to(float(end.x), float(end.y))
+            elif isinstance(seg, Close):
+                geo.close_path()
+            elif isinstance(seg, Arc):
+                self._add_arc_to_geometry(seg, geo)
+            elif isinstance(seg, (CubicBezier, QuadraticBezier)):
+                self._flatten_bezier_to_geometry(seg, geo, tolerance)
 
-                if isinstance(seg, Move):
-                    geo.move_to(end_x, end_y)
-                elif isinstance(seg, Line):
-                    geo.line_to(end_x, end_y)
-                elif isinstance(seg, Close):
-                    geo.close_path()
-                elif isinstance(seg, Arc):
-                    # Ensure all points for arc calculation are valid.
-                    if (
-                        seg.start is None
-                        or seg.start.x is None
-                        or seg.start.y is None
-                        or seg.center is None
-                        or seg.center.x is None
-                        or seg.center.y is None
-                    ):
-                        continue
+    def _add_arc_to_geometry(self, seg: Arc, geo: Geometry) -> None:
+        """Adds an Arc segment to the Geometry."""
+        # Local variables help type checkers confirm non-None status.
+        start = seg.start
+        center = seg.center
+        end = seg.end
 
-                    start_x, start_y = float(seg.start.x), float(seg.start.y)
-                    center_x, center_y = (
-                        float(seg.center.x),
-                        float(seg.center.y),
-                    )
+        if (
+            start is None
+            or start.x is None
+            or start.y is None
+            or center is None
+            or center.x is None
+            or center.y is None
+            or end is None
+            or end.x is None
+            or end.y is None
+        ):
+            return
 
-                    center_offset_x = center_x - start_x
-                    center_offset_y = center_y - start_y
-                    # SVG sweep_flag=1 is CCW, 0 is CW.
-                    is_clockwise = seg.sweep == 0
-                    geo.arc_to(
-                        end_x,
-                        end_y,
-                        center_offset_x,
-                        center_offset_y,
-                        clockwise=is_clockwise,
-                    )
-                elif isinstance(seg, (CubicBezier, QuadraticBezier)):
-                    # Linearize the curve into a series of line segments.
-                    length = seg.length()
-                    if length is None or length <= 1e-9:
-                        # Just draw a line to the end if curve is invalid
-                        geo.line_to(end_x, end_y)
-                        continue
+        start_x, start_y = float(start.x), float(start.y)
+        center_x, center_y = float(center.x), float(center.y)
 
-                    # Use a tolerance adjusted for estimated scale
-                    num_steps = max(2, int(length / tolerance))
-
-                    # Iterate from t=0 to t=1 to get points along the curve.
-                    for i in range(1, num_steps + 1):
-                        t = i / num_steps
-                        p = seg.point(t)
-                        if (
-                            p is not None
-                            and p.x is not None
-                            and p.y is not None
-                        ):
-                            px, py = float(p.x), float(p.y)
-                            geo.line_to(px, py)
-
-        logger.info(
-            f"Pre-transform bounds: x=[{min_x:.3f}, {max_x:.3f}], "
-            f"y=[{min_y:.3f}, {max_y:.3f}]"
-        )
-        content_width = max_x - min_x
-        content_height = max_y - min_y
-        logger.info(
-            f"Content size: {content_width:.3f} x {content_height:.3f}"
+        center_offset_x = center_x - start_x
+        center_offset_y = center_y - start_y
+        is_clockwise = seg.sweep == 0
+        geo.arc_to(
+            float(end.x),
+            float(end.y),
+            center_offset_x,
+            center_offset_y,
+            clockwise=is_clockwise,
         )
 
-        if content_width <= 0 or content_height <= 0:
-            logger.warning(
-                "Invalid content bounds; falling back to trace method."
-            )
-            return self._get_doc_items_from_trace(source, TraceConfig())
+    def _flatten_bezier_to_geometry(
+        self,
+        seg: Union[CubicBezier, QuadraticBezier],
+        geo: Geometry,
+        tolerance: float,
+    ) -> None:
+        """Flattens a Bezier curve into a series of lines in the Geometry."""
+        # Use a local variable to help Pylance avoid 'Unbound' issues.
+        end = seg.end
 
-        # First, translate the Y-down geometry to its own origin.
-        translation_matrix = Matrix.translation(-min_x, -min_y)
-        geo.transform(translation_matrix.to_4x4_numpy())
+        if end is None:
+            return
+        if end.x is None or end.y is None:
+            return
 
-        # Second, scale the translated geometry to a 1x1 unit box.
-        norm_matrix = Matrix.scale(1.0 / content_width, 1.0 / content_height)
+        length = seg.length()
+        end_x, end_y = float(end.x), float(end.y)
+
+        # If the curve is very short, treat it as a straight line.
+        if length is None or length <= 1e-9:
+            geo.line_to(end_x, end_y)
+            return
+
+        num_steps = max(2, int(length / tolerance))
+
+        for i in range(1, num_steps + 1):
+            t = i / num_steps
+            p = seg.point(t)
+            if p is not None and p.x is not None and p.y is not None:
+                # Assertions help type checkers confirm state in complex loops.
+                assert p and p.x is not None and p.y is not None
+                geo.line_to(float(p.x), float(p.y))
+
+    def _normalize_and_flip_geometry(
+        self, geo: Geometry, width_px: float, height_px: float
+    ) -> None:
+        """
+        Normalizes geometry to a 0-1 unit box and flips the Y-axis.
+        """
+        # Normalize from pixel space to a (0,0)-(1,1) unit box.
+        norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
         geo.transform(norm_matrix.to_4x4_numpy())
 
-        # Third, flip the now-normalized Y-down geometry to be Y-up.
-        # This is a scale of -1 on Y, followed by a translation of +1 on Y
-        # to move it back into the positive quadrant.
-        flip_matrix = Matrix.scale(1.0, -1.0)
-        flip_matrix = flip_matrix.post_translate(0, -1.0)
-        geo.transform(flip_matrix.to_4x4_numpy())
+        # Flip the Y-down SVG coordinate system to be Y-up.
+        # This is a scale by -1 on Y, then a translation by +1 on Y.
+        scale_flip_matrix = Matrix.scale(1.0, -1.0)
+        translate_flip_matrix = Matrix.translation(0, 1.0)
+        geo.transform(scale_flip_matrix.to_4x4_numpy())
+        geo.transform(translate_flip_matrix.to_4x4_numpy())
 
-        # Create the final workpiece with the now-normalized, Y-up vectors.
+    def _create_workpiece(
+        self,
+        geo: Geometry,
+        source: ImportSource,
+        width_mm: float,
+        height_mm: float,
+    ) -> WorkPiece:
+        """Creates and configures the final WorkPiece."""
         wp = WorkPiece(name=self.source_file.stem, vectors=geo)
         wp.import_source_uid = source.uid
-
-        # Set the size to the final millimeter dimensions.
-        wp.set_size(final_width_mm, final_height_mm)
+        wp.set_size(width_mm, height_mm)
         wp.pos = (0, 0)
-
         logger.info(
-            f"Workpiece set size: {final_width_mm:.3f}mm x "
-            f"{final_height_mm:.3f}mm"
+            f"Workpiece set size: {width_mm:.3f}mm x {height_mm:.3f}mm"
         )
-
-        return [wp]
+        return wp

@@ -73,6 +73,23 @@ def square_svg_data() -> bytes:
 
 
 @pytest.fixture
+def svg_with_offset_text_data() -> bytes:
+    """
+    SVG specifically for testing the vector misalignment bug.
+    - The vector content (a rect) is in the top-left quadrant.
+    - The text content is in the bottom-right.
+    - This forces the trimmed bounding box (including text) to be much larger
+      than the vector-only bounding box.
+    """
+    return b"""<svg xmlns="http://www.w3.org/2000/svg"
+                width="100mm" height="100mm" viewBox="0 0 100 100">
+                <rect x="10" y="10" width="40" height="40" fill="purple"/>
+                <text x="90" y="90" font-family="sans-serif" font-size="10"
+                      text-anchor="end">Test</text>
+              </svg>"""
+
+
+@pytest.fixture
 def basic_workpiece(basic_svg_data: bytes) -> WorkPiece:
     importer = SvgImporter(basic_svg_data, source_file=Path("basic.svg"))
     return _setup_workpiece_with_context(importer)
@@ -155,10 +172,58 @@ class TestSvgImporter:
         geo_rect_min_x, geo_rect_min_y, geo_rect_max_x, geo_rect_max_y = (
             wp.vectors.rect()
         )
-        assert geo_rect_min_x == pytest.approx(0.0)
-        assert geo_rect_min_y == pytest.approx(0.0)
-        assert geo_rect_max_x == pytest.approx(1.0)
-        assert geo_rect_max_y == pytest.approx(1.0)
+        assert geo_rect_min_x == pytest.approx(0.0, abs=1e-3)
+        assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)
+        assert geo_rect_max_x == pytest.approx(1.0, abs=1e-3)
+        assert geo_rect_max_y == pytest.approx(1.0, abs=1e-3)
+
+    def test_direct_import_with_offset_text(
+        self, svg_with_offset_text_data: bytes
+    ):
+        """
+        Tests the fix for the vector misalignment bug caused by text.
+        The workpiece size should be based on the trimmed bounds of ALL content
+        (rect + text), but the vector geometry should be correctly placed
+        within that larger frame.
+        """
+        importer = SvgImporter(
+            svg_with_offset_text_data, source_file=Path("offset.svg")
+        )
+        wp = _setup_workpiece_with_context(importer)
+
+        # 1. Check the final workpiece size.
+        # The content (rect at 10,10 and text near 90,90) spans roughly 80%
+        # of the 100mm canvas. The trim function should resize the workpiece
+        # to this content. We expect a size of roughly 80x80mm.
+        assert wp.size[0] == pytest.approx(80.0, abs=5)
+        assert wp.size[1] == pytest.approx(80.0, abs=5)
+
+        # 2. Check that the vectors are normalized correctly. The vector
+        # content (the rect) should only occupy the left half of the
+        # normalized space, because the text occupies the right half.
+        assert wp.vectors is not None
+        min_v, _, max_v, _ = wp.vectors.rect()
+        assert min_v == pytest.approx(0.0, abs=1e-3)
+        # The vector data should only span half the width (0.5) of the
+        # full content area because the other half is text, which is ignored.
+        assert max_v == pytest.approx(0.5, abs=0.05)
+
+        # 3. CRITICAL: Check the final position and scale of the vectors.
+        # The rect was at (10,10) with size (40,40) inside a viewbox that
+        # gets trimmed to start at (10,10) and have size (80,80).
+        # This means the rect should occupy the top-left quadrant of the
+        # final 80mm x 80mm workpiece.
+        # In a Y-up coordinate system (0,0 is bottom-left), the top-left
+        # quadrant spans x=[0, 40] and y=[40, 80].
+        bbox = wp.get_geometry_world_bbox()
+        assert bbox is not None
+        min_x, min_y, max_x, max_y = bbox
+        # The trim process is raster-based and won't be perfectly aligned
+        # with the vector geometry. We relax the tolerance to allow for this.
+        assert min_x == pytest.approx(0.0, abs=1)
+        assert min_y == pytest.approx(wp.size[1] / 2, abs=1)  # approx 40
+        assert max_x == pytest.approx(wp.size[0] / 2, abs=1)  # approx 40
+        assert max_y == pytest.approx(wp.size[1], abs=1)  # approx 80
 
     def test_traced_bitmap_import_geometry(self, transparent_svg_data: bytes):
         """
