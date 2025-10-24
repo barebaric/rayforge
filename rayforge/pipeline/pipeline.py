@@ -99,7 +99,7 @@ class Pipeline:
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
-        self.workpiece_chunk_ready = Signal()
+        self.workpiece_visual_chunk_ready = Signal()
         self.workpiece_artifact_ready = Signal()
         self.step_render_ready = Signal()
         self.step_time_updated = Signal()
@@ -110,8 +110,8 @@ class Pipeline:
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
-        self._workpiece_stage.chunk_available.connect(
-            self._on_workpiece_chunk_available
+        self._workpiece_stage.visual_chunk_available.connect(
+            self._on_workpiece_visual_chunk_available
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -175,8 +175,8 @@ class Pipeline:
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
-        self._workpiece_stage.chunk_available.connect(
-            self._on_workpiece_chunk_available
+        self._workpiece_stage.visual_chunk_available.connect(
+            self._on_workpiece_visual_chunk_available
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -378,12 +378,12 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_chunk_available(
+    def _on_workpiece_visual_chunk_available(
         self,
         sender: WorkpieceGeneratorStage,
         *,
         key: Tuple[str, str],
-        chunk: Ops,
+        chunk_handle: BaseArtifactHandle,
         generation_id: int,
     ) -> None:
         """Relays chunk signal, finding the model objects first."""
@@ -391,10 +391,10 @@ class Pipeline:
         workpiece = self._find_workpiece_by_uid(workpiece_uid)
         step = self._find_step_by_uid(step_uid)
         if workpiece and step:
-            self.workpiece_chunk_ready.send(
+            self.workpiece_visual_chunk_ready.send(
                 step,
                 workpiece=workpiece,
-                chunk=chunk,
+                chunk_handle=chunk_handle,
                 generation_id=generation_id,
             )
 
