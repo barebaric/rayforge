@@ -288,6 +288,7 @@ def make_workpiece_artifact_in_subprocess(
     full_power_texture: Optional[np.ndarray] = None
 
     is_vector = opsproducer.is_vector_producer()
+    encoder = VertexEncoder()
 
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight
@@ -356,12 +357,19 @@ def make_workpiece_artifact_in_subprocess(
 
         # Send intermediate chunks for raster operations
         if not is_vector:
+            # For progressive rendering, we need to encode vertices for
+            # the current chunk and send them back via a handle.
             ops_for_chunk_render = initial_ops.copy()
             ops_for_chunk_render.extend(chunk_artifact.ops)
+            chunk_artifact.vertex_data = encoder.encode(ops_for_chunk_render)
+
+            # Store in shared memory and get a handle
+            chunk_handle = ArtifactStore.put(chunk_artifact)
+
             proxy.send_event(
-                "ops_chunk",
+                "visual_chunk_ready",
                 {
-                    "chunk": ops_for_chunk_render,
+                    "handle_dict": chunk_handle.to_dict(),
                     "generation_id": generation_id,
                 },
             )
@@ -439,7 +447,6 @@ def make_workpiece_artifact_in_subprocess(
     # After all transformations, encode the final Ops into vertex data and
     # create the final artifact for storage.
     logger.debug("Encoding final ops into vertex data for rendering.")
-    encoder = VertexEncoder()
     vertex_data = encoder.encode(final_artifact.ops)
 
     final_artifact_to_store = WorkPieceArtifact(

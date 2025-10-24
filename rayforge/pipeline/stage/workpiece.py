@@ -44,7 +44,7 @@ class WorkpieceGeneratorStage(PipelineStage):
 
         # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
-        self.chunk_available = Signal()
+        self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
 
     def _sizes_are_close(
@@ -251,19 +251,26 @@ class WorkpieceGeneratorStage(PipelineStage):
     def _on_task_event_received(
         self, task: "Task", event_name: str, data: dict
     ):
-        """Handles `ops_chunk` events from a background task."""
-        if event_name != "ops_chunk":
+        """Handles events from a background task."""
+        if event_name != "visual_chunk_ready":
             return
 
         key = task.key
-        chunk = data.get("chunk")
+        handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
-        if not chunk or generation_id is None:
+        if not handle_dict or generation_id is None:
             return
 
-        self.chunk_available.send(
-            self, key=key, chunk=chunk, generation_id=generation_id
-        )
+        try:
+            chunk_handle = create_handle_from_dict(handle_dict)
+            self.visual_chunk_available.send(
+                self,
+                key=key,
+                chunk_handle=chunk_handle,
+                generation_id=generation_id,
+            )
+        except Exception as e:
+            logger.error(f"Failed to process visual chunk: {e}", exc_info=True)
 
     def _on_task_complete(
         self,

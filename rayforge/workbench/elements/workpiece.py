@@ -7,9 +7,8 @@ from gi.repository import GLib
 from ...core.workpiece import WorkPiece
 from ...core.step import Step
 from ...core.matrix import Matrix
-from ...core.ops import Ops
-from ...pipeline.artifact import WorkPieceArtifact
-from ...pipeline.encoder.cairoencoder import CairoEncoder
+from ...pipeline.artifact import WorkPieceArtifact, BaseArtifactHandle
+from ...pipeline.artifact.store import ArtifactStore
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ..canvas import CanvasElement
@@ -18,6 +17,7 @@ from .tab_handle import TabHandleElement
 if TYPE_CHECKING:
     from ..surface import WorkSurface
     from ...pipeline.pipeline import Pipeline
+    from ...pipeline.artifact.base import VertexData
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class WorkPieceView(CanvasElement):
         self.pipeline.workpiece_starting.connect(
             self._on_ops_generation_starting
         )
-        self.pipeline.workpiece_chunk_ready.connect(
+        self.pipeline.workpiece_visual_chunk_ready.connect(
             self._on_ops_chunk_available
         )
         self.pipeline.workpiece_artifact_ready.connect(
@@ -216,7 +216,7 @@ class WorkPieceView(CanvasElement):
         self.pipeline.workpiece_starting.disconnect(
             self._on_ops_generation_starting
         )
-        self.pipeline.workpiece_chunk_ready.disconnect(
+        self.pipeline.workpiece_visual_chunk_ready.disconnect(
             self._on_ops_chunk_available
         )
         self.pipeline.workpiece_artifact_ready.disconnect(
@@ -362,12 +362,11 @@ class WorkPieceView(CanvasElement):
         )
         self._ops_generation_ids[step.uid] = generation_id
 
-        if self.USE_NEW_RENDER_PATH:
-            # Fetch and cache the final artifact.
-            # This is a one-time fetch after generation completes.
-            artifact = self.pipeline.get_artifact(step, self.data)
-            self._artifact_cache[step.uid] = artifact
+        # Fetch and cache the final artifact, making it available to all paths.
+        artifact = self.pipeline.get_artifact(step, self.data)
+        self._artifact_cache[step.uid] = artifact
 
+        if self.USE_NEW_RENDER_PATH:
             # Clear intermediate chunk surfaces, as the final artifact is now
             # ready to be drawn in the next paint cycle.
             self._ops_surfaces.pop(step.uid, None)
@@ -386,49 +385,98 @@ class WorkPieceView(CanvasElement):
         self._ops_render_futures[step.uid] = future
         future.add_done_callback(self._on_ops_drawing_recorded)
 
-    def _encode_ops_to_context(
+    def _draw_vertices_to_context(
         self,
-        ops: Ops,
+        vertex_data: "VertexData",
         ctx: cairo.Context,
         scale: Tuple[float, float],
         drawable_height: float,
     ):
         """
-        Helper method to centralize encoding Ops to a Cairo context with
-        consistent colors and visibility settings.
+        Draws vertex data to a Cairo context, handling scaling, theming,
+        and Y-coordinate inversion.
         """
         if not self.canvas or not self._color_set:
             return
 
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
+        scale_x, scale_y = scale
 
-        encoder = CairoEncoder()
-        encoder.encode(
-            ops,
-            ctx,
-            scale,
-            colors=self._color_set,
-            show_cut_moves=True,
-            show_engrave_moves=True,
-            show_travel_moves=show_travel,
-            show_zero_power_moves=show_travel,  # As per request
-            drawable_height=drawable_height,
-        )
+        ctx.save()
+        ctx.set_hairline(True)
+        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
+
+        # --- Draw Travel & Zero-Power Moves ---
+        if show_travel:
+            if vertex_data.travel_vertices.size > 0:
+                travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
+                ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
+                for start, end in travel_v:
+                    ctx.move_to(
+                        start[0] * scale_x,
+                        drawable_height - start[1] * scale_y,
+                    )
+                    ctx.line_to(
+                        end[0] * scale_x, drawable_height - end[1] * scale_y
+                    )
+                ctx.stroke()
+
+            if vertex_data.zero_power_vertices.size > 0:
+                zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
+                ctx.set_source_rgba(*self._color_set.get_rgba("zero_power"))
+                for start, end in zero_v:
+                    ctx.move_to(
+                        start[0] * scale_x,
+                        drawable_height - start[1] * scale_y,
+                    )
+                    ctx.line_to(
+                        end[0] * scale_x, drawable_height - end[1] * scale_y
+                    )
+                ctx.stroke()
+
+        # --- Draw Powered Moves (Grouped by Color for performance) ---
+        if vertex_data.powered_vertices.size > 0:
+            powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
+            powered_c = vertex_data.powered_colors
+            cut_lut = self._color_set.get_lut("cut")
+
+            # Use power from the first vertex of each segment for color.
+            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+            themed_colors_per_segment = cut_lut[power_indices]
+
+            unique_colors, inverse_indices = np.unique(
+                themed_colors_per_segment, axis=0, return_inverse=True
+            )
+
+            for i, color in enumerate(unique_colors):
+                ctx.set_source_rgba(*color)
+                segment_indices = np.where(inverse_indices == i)[0]
+                for seg_idx in segment_indices:
+                    start, end = powered_v[seg_idx]
+                    ctx.move_to(
+                        start[0] * scale_x,
+                        drawable_height - start[1] * scale_y,
+                    )
+                    ctx.line_to(
+                        end[0] * scale_x, drawable_height - end[1] * scale_y
+                    )
+                ctx.stroke()
+        ctx.restore()
 
     def _record_ops_drawing_async(
         self, step: Step, generation_id: int
     ) -> Optional[Tuple[str, cairo.RecordingSurface, int]]:
         """
-        "Draws" the ops to a RecordingSurface. This captures all vector
-        commands and is done only when ops data changes.
+        "Draws" the vector data to a RecordingSurface. This captures all vector
+        commands and is done only when the data changes.
         """
         logger.debug(
-            f"Recording vector ops for workpiece "
+            f"Recording vector data for workpiece "
             f"'{self.data.name}', step '{step.uid}'"
         )
-        ops = self.pipeline.get_ops(step, self.data)
-        if not ops or not self.canvas:
+        artifact = self._artifact_cache.get(step.uid)
+        if not artifact or not artifact.vertex_data or not self.canvas:
             return None
 
         self._resolve_colors_if_needed()
@@ -436,13 +484,25 @@ class WorkPieceView(CanvasElement):
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
 
-        # Calculate the union of the workpiece bounds and the ops bounds to
+        # Calculate the union of the workpiece bounds and the vertex bounds to
         # ensure the recording surface is large enough.
-        ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(include_travel=show_travel)
-        union_x1 = min(0.0, ops_x1)
-        union_y1 = min(0.0, ops_y1)
-        union_x2 = max(world_w, ops_x2)
-        union_y2 = max(world_h, ops_y2)
+        all_v = [artifact.vertex_data.powered_vertices]
+        if show_travel:
+            all_v.append(artifact.vertex_data.travel_vertices)
+            all_v.append(artifact.vertex_data.zero_power_vertices)
+
+        all_v_filtered = [v for v in all_v if v.size > 0]
+        if not all_v_filtered:
+            return None
+
+        v_stack = np.vstack(all_v_filtered)
+        v_x1, v_y1, _ = np.min(v_stack, axis=0)
+        v_x2, v_y2, _ = np.max(v_stack, axis=0)
+
+        union_x1 = min(0.0, v_x1)
+        union_y1 = min(0.0, v_y1)
+        union_x2 = max(world_w, v_x2)
+        union_y2 = max(world_h, v_y2)
 
         union_w = union_x2 - union_x1
         union_h = union_y2 - union_y1
@@ -468,13 +528,14 @@ class WorkPieceView(CanvasElement):
         )
         ctx = cairo.Context(surface)
 
-        # We are drawing 1:1 in mm space, so scale is 1.0.
-        encoder_ppms = (1.0, 1.0)
-
-        # Pass the workpiece height to the encoder. Ops coordinates are
-        # relative to the workpiece's Y-up coordinate system, so the flip
-        # must be relative to the workpiece height.
-        self._encode_ops_to_context(ops, ctx, encoder_ppms, world_h)
+        # We are drawing 1:1 in mm space, so scale is 1.0. The vertex data
+        # is Y-up, and so is the recording surface's coordinate system.
+        # So we just pass a height that allows the y-flip to work correctly
+        # relative to the content we are drawing.
+        drawable_height_mm = union_y2 + union_y1
+        self._draw_vertices_to_context(
+            artifact.vertex_data, ctx, (1.0, 1.0), drawable_height_mm
+        )
 
         return step.uid, surface, generation_id
 
@@ -527,7 +588,7 @@ class WorkPieceView(CanvasElement):
         step_uid = step.uid
         if future := self._ops_render_futures.get(step_uid):
             if not future.done():
-                return  # A rasterization is already in progress.
+                future.cancel()  # Cancel obsolete render.
 
         future = self._executor.submit(
             self._rasterize_ops_surface_async, step, generation_id
@@ -573,17 +634,29 @@ class WorkPieceView(CanvasElement):
                 logger.warning(f"Could not get extents for '{step_uid}'")
                 return None
         else:
-            # Slow fallback calculate bounds from ops.
-            ops = self.pipeline.get_ops(step, self.data)
-            if not ops:
+            # Slow fallback: calculate bounds from vertex data.
+            artifact = self._artifact_cache.get(step.uid)
+            if not artifact or not artifact.vertex_data:
                 return None
-            ops_x1, ops_y1, ops_x2, ops_y2 = ops.rect(
-                include_travel=show_travel
-            )
-            union_x1 = min(0.0, ops_x1)
-            union_y1 = min(0.0, ops_y1)
-            union_x2 = max(world_w, ops_x2)
-            union_y2 = max(world_h, ops_y2)
+
+            all_v = [artifact.vertex_data.powered_vertices]
+            if show_travel:
+                all_v.append(artifact.vertex_data.travel_vertices)
+                all_v.append(artifact.vertex_data.zero_power_vertices)
+
+            all_v_filtered = [v for v in all_v if v.size > 0]
+            if not all_v_filtered:
+                return None
+
+            v_stack = np.vstack(all_v_filtered)
+            v_x1, v_y1, _ = np.min(v_stack, axis=0)
+            v_x2, v_y2, _ = np.max(v_stack, axis=0)
+
+            union_x1 = min(0.0, v_x1)
+            union_y1 = min(0.0, v_y1)
+            union_x2 = max(world_w, v_x2)
+            union_y2 = max(world_h, v_y2)
+
             content_x_mm = union_x1
             content_y_mm = union_y1
             content_w_mm = union_x2 - union_x1
@@ -628,9 +701,9 @@ class WorkPieceView(CanvasElement):
             ctx.paint()
             ctx.restore()
         else:
-            # SLOW FALLBACK: No recording yet, render from Ops directly.
-            ops = self.pipeline.get_ops(step, self.data)
-            if not ops:
+            # SLOW FALLBACK: No recording yet, render from vertex data.
+            artifact = self._artifact_cache.get(step.uid)
+            if not artifact or not artifact.vertex_data:
                 return None  # Should not happen as we checked above
 
             encoder_ppm_x = (
@@ -648,7 +721,9 @@ class WorkPieceView(CanvasElement):
 
             # Y-flip height must be workpiece height in pixels.
             drawable_h_px = world_h * encoder_ppm_y
-            self._encode_ops_to_context(ops, ctx, ppms, drawable_h_px)
+            self._draw_vertices_to_context(
+                artifact.vertex_data, ctx, ppms, drawable_h_px
+            )
 
         return step_uid, surface, generation_id, bbox_mm
 
@@ -656,7 +731,7 @@ class WorkPieceView(CanvasElement):
         self,
         sender: Step,
         workpiece: WorkPiece,
-        chunk: "Ops",
+        chunk_handle: "BaseArtifactHandle",
         generation_id: int,
         **kwargs,
     ):
@@ -671,22 +746,102 @@ class WorkPieceView(CanvasElement):
         # STALE CHECK: Ignore chunks from a previous generation request.
         step_uid = sender.uid
         if generation_id != self._ops_generation_ids.get(step_uid):
+            ArtifactStore.release(chunk_handle)
             return
 
         # Offload the CPU-intensive encoding to the thread pool
-        future = self._executor.submit(self._encode_chunk_async, sender, chunk)
+        future = self._executor.submit(
+            self._encode_chunk_async, sender, chunk_handle
+        )
         future.add_done_callback(self._on_chunk_encoded)
 
-    def _encode_chunk_async(self, step: Step, chunk: Ops) -> str:
+    def _encode_chunk_async(
+        self, step: Step, chunk_handle: BaseArtifactHandle
+    ):
         """
         Does the heavy lifting of preparing a surface and encoding an ops
         chunk onto it. This is designed to be run in a thread pool.
         """
         # This function runs entirely in a background thread.
-        prepared = self._prepare_ops_surface_and_context(step)
-        if prepared:
-            _surface, ctx, ppms, content_h_px = prepared
-            self._encode_ops_to_context(chunk, ctx, ppms, content_h_px)
+        chunk_artifact = None
+        try:
+            prepared = self._prepare_ops_surface_and_context(step)
+            if prepared:
+                chunk_artifact = cast(
+                    WorkPieceArtifact, ArtifactStore.get(chunk_handle)
+                )
+                if not chunk_artifact:
+                    return step.uid
+
+                _surface, ctx, ppms, content_h_px = prepared
+
+                # --- Draw texture data from the chunk if it exists ---
+                if self._color_set and chunk_artifact.texture_data:
+                    power_data = chunk_artifact.texture_data.power_texture_data
+                    if power_data.size > 0:
+                        engrave_lut = self._color_set.get_lut("engrave")
+                        rgba_texture = engrave_lut[power_data]
+
+                        # Manually set alpha for transparency
+                        zero_power_mask = power_data == 0
+                        rgba_texture[zero_power_mask, 3] = 0.0
+
+                        h, w = rgba_texture.shape[:2]
+                        # Create pre-multiplied BGRA data for Cairo
+                        alpha_ch = rgba_texture[..., 3, np.newaxis]
+                        rgb_ch = rgba_texture[..., :3]
+                        bgra_texture = np.empty((h, w, 4), dtype=np.uint8)
+                        premultiplied_rgb = rgb_ch * alpha_ch * 255
+                        bgra_texture[..., 0] = premultiplied_rgb[..., 2]  # B
+                        bgra_texture[..., 1] = premultiplied_rgb[..., 1]  # G
+                        bgra_texture[..., 2] = premultiplied_rgb[..., 0]  # R
+                        bgra_texture[..., 3] = alpha_ch.squeeze() * 255  # A
+
+                        texture_surface = cairo.ImageSurface.create_for_data(
+                            memoryview(np.ascontiguousarray(bgra_texture)),
+                            cairo.FORMAT_ARGB32,
+                            w,
+                            h,
+                        )
+
+                        # Draw the themed texture to the pixel context
+                        _world_w, world_h = self.data.size
+                        pos_mm = chunk_artifact.texture_data.position_mm
+                        dim_mm = chunk_artifact.texture_data.dimensions_mm
+                        encoder_ppm_x, encoder_ppm_y = ppms
+
+                        dest_x_px = pos_mm[0] * encoder_ppm_x
+                        dest_w_px = dim_mm[0] * encoder_ppm_x
+                        dest_h_px = dim_mm[1] * encoder_ppm_y
+                        dest_y_px = pos_mm[1] * encoder_ppm_y
+
+                        tex_w_px = texture_surface.get_width()
+                        tex_h_px = texture_surface.get_height()
+
+                        if tex_w_px > 0 and tex_h_px > 0:
+                            ctx.save()
+                            ctx.translate(dest_x_px, dest_y_px)
+                            # Add half-pixel offset for raster grid alignment
+                            ctx.translate(0.5, 0.5)
+                            ctx.scale(
+                                dest_w_px / tex_w_px, dest_h_px / tex_h_px
+                            )
+                            ctx.set_source_surface(texture_surface, 0, 0)
+                            ctx.get_source().set_filter(cairo.FILTER_GOOD)
+                            ctx.paint()
+                            ctx.restore()
+
+                # --- Draw vertex data from the chunk if it exists ---
+                if chunk_artifact.vertex_data:
+                    self._draw_vertices_to_context(
+                        chunk_artifact.vertex_data,
+                        ctx,
+                        ppms,
+                        content_h_px,
+                    )
+        finally:
+            # IMPORTANT: Release the handle in the subprocess to free memory
+            ArtifactStore.release(chunk_handle)
         return step.uid
 
     def _on_chunk_encoded(self, future: Future):
@@ -1117,17 +1272,40 @@ class WorkPieceView(CanvasElement):
 
     def on_travel_visibility_changed(self):
         """
-        Invalidates cached ops recordings to reflect the new travel move
-        visibility state. This should be called by the parent WorkSurface.
+        Handles changes in travel move visibility.
+
+        For the new rendering path, this simply clears any old-style raster
+        caches and triggers a redraw, as the drawing logic is dynamic. For the
+        old path, it invalidates cached recordings to force regeneration.
         """
-        logger.debug(
-            "Travel visibility changed, invalidating ops vector recordings."
-        )
-        # Clearing the recordings is the key step. The next
-        # `trigger_ops_rerender`
-        # will see they are missing and schedule a re-recording.
-        self._ops_recordings.clear()
-        self.trigger_ops_rerender()
+        if self.USE_NEW_RENDER_PATH:
+            logger.debug(
+                "Travel visibility changed. "
+                "Clearing raster caches and redrawing."
+            )
+            # The new render path draws dynamically from vertex data,
+            # respecting the visibility flag at draw time. We must clear any
+            # lingering raster surfaces from the old path (which might exist
+            # from chunk rendering) as they would block the new path. Then,
+            # simply trigger a redraw.
+            self._ops_surfaces.clear()
+            self._ops_recordings.clear()
+
+            # Cancel any in-progress renders that might repopulate the caches.
+            for future in list(self._ops_render_futures.values()):
+                future.cancel()
+            self._ops_render_futures.clear()
+
+            if self.canvas:
+                self.canvas.queue_draw()
+        else:
+            logger.debug(
+                "Travel visibility changed, "
+                "invalidating ops vector recordings."
+            )
+            # Clearing recordings forces re-recording and re-rasterizing.
+            self._ops_recordings.clear()
+            self.trigger_ops_rerender()
 
     def trigger_ops_rerender(self):
         """Triggers a re-render of all applicable ops for this workpiece."""
