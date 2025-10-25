@@ -8,7 +8,7 @@ Rayforge offers several installation methods for Linux users. Choose the one tha
 
 ### Ubuntu & Derivatives (Recommended)
 
-For Ubuntu 24.04 LTS and newer, as well as derivatives like Linux Mint and Pop!_OS, we recommend using our official PPA. This method provides automatic updates through your system's package manager.
+For Ubuntu 24.04 LTS and newer, as well as derivatives like Linux Mint and Pop!\_OS, we recommend using our official PPA. This method provides automatic updates through your system's package manager.
 
 ```bash
 sudo add-apt-repository ppa:knipknap/rayforge
@@ -17,6 +17,14 @@ sudo apt install rayforge
 ```
 
 Once installed, launch Rayforge from your application menu or by running `rayforge` in a terminal.
+
+### Flathub Package
+
+The Flathub package is the easiest way to get started with Rayforge on Linux.
+
+<a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="../images/flathub-badge.svg" height="55"/></a>
+
+Just click the badge and click install - you are ready to go!
 
 ### Snap Package (Cross-Distribution)
 
@@ -31,16 +39,18 @@ sudo snap install rayforge
 ```
 
 !!! warning "Permissions Required"
-    The Snap version runs in a sandbox and requires manual permission grants for hardware access.
+     The Snap version runs in a sandbox and requires manual permission grants for hardware access.
 
 #### Granting Permissions
 
 **For Camera Access:**
+
 ```bash
 sudo snap connect rayforge:camera
 ```
 
 **For USB Serial Port Access:**
+
 ```bash
 # Enable experimental hotplug support (one-time setup)
 sudo snap set system experimental.hotplug=true
@@ -74,7 +84,7 @@ pip3 install rayforge
 ```
 
 !!! note
-    Package names may differ on other distributions. Refer to your distribution's documentation.
+     Package names may differ on other distributions. Refer to your distribution's documentation.
 
 ---
 

@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
+<a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/content/docs/images/flathub-badge.svg" height="55"/></a>
 
 # Rayforge
 
