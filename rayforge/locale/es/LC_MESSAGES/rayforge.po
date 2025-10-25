@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-25 16:53+0200\n"
+"POT-Creation-Date: 2025-10-25 18:31+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -1405,6 +1405,14 @@ msgstr "Longitud"
 #: rayforge/shared/ui/general_preferences_page.py:88
 msgid "Speed"
 msgstr "Velocidad"
+
+#: rayforge/shared/gcodeedit/viewer.py:54
+msgid "G-code too large to preview."
+msgstr "G-code demasiado grande para la previsualización."
+
+#: rayforge/shared/gcodeedit/viewer.py:56
+msgid "({line_count:,} lines > 20,000 line limit)"
+msgstr "({line_count:,} líneas > límite de 20.000 líneas)"
 
 #: rayforge/workbench/view_mode_cmd.py:50
 msgid "3D view is not available due to missing dependencies."

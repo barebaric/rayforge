@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-25 16:53+0200\n"
+"POT-Creation-Date: 2025-10-25 18:31+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -1353,6 +1353,14 @@ msgstr ""
 
 #: rayforge/shared/ui/general_preferences_page.py:88
 msgid "Speed"
+msgstr ""
+
+#: rayforge/shared/gcodeedit/viewer.py:54
+msgid "G-code too large to preview."
+msgstr ""
+
+#: rayforge/shared/gcodeedit/viewer.py:56
+msgid "({line_count:,} lines > 20,000 line limit)"
 msgstr ""
 
 #: rayforge/workbench/view_mode_cmd.py:50

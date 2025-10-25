@@ -47,7 +47,16 @@ class GcodeViewer(Gtk.Box):
         Args:
             gcode: The G-code to display, as a single string.
         """
-        self.editor.set_text(gcode)
+        # Check if gcode exceeds the line limit
+        line_count = gcode.count("\n") + 1 if gcode else 0
+        if line_count > 20000:
+            self.editor.set_text(
+                _("G-code too large to preview.")
+                + "\n"
+                + _(f"({line_count:,} lines > 20,000 line limit)")
+            )
+        else:
+            self.editor.set_text(gcode)
 
     def clear(self):
         """Clears the content of the previewer."""
