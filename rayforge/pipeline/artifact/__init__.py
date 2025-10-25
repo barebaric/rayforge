@@ -6,6 +6,11 @@ from .store import ArtifactStore
 from .step_ops import StepOpsArtifact, StepOpsArtifactHandle
 from .step_render import StepRenderArtifact, StepRenderArtifactHandle
 from .workpiece import WorkPieceArtifact, WorkPieceArtifactHandle
+from .workpiece_view import (
+    RenderContext,
+    WorkPieceViewArtifact,
+    WorkPieceViewArtifactHandle,
+)
 
 
 __all__ = [
@@ -16,6 +21,7 @@ __all__ = [
     "create_handle_from_dict",
     "JobArtifact",
     "JobArtifactHandle",
+    "RenderContext",
     "StepOpsArtifact",
     "StepOpsArtifactHandle",
     "StepRenderArtifact",
@@ -25,4 +31,6 @@ __all__ = [
     "VertexData",
     "WorkPieceArtifact",
     "WorkPieceArtifactHandle",
+    "WorkPieceViewArtifact",
+    "WorkPieceViewArtifactHandle",
 ]

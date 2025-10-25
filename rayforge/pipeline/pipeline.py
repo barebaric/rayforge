@@ -28,11 +28,13 @@ from .artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     ArtifactCache,
+    RenderContext,
 )
 from .stage import (
     WorkpieceGeneratorStage,
     StepGeneratorStage,
     JobGeneratorStage,
+    WorkPieceViewGeneratorStage,
 )
 
 
@@ -95,6 +97,9 @@ class Pipeline:
         self._job_stage = JobGeneratorStage(
             self._task_manager, self._artifact_cache
         )
+        self._workpiece_view_stage = WorkPieceViewGeneratorStage(
+            self._task_manager, self._artifact_cache
+        )
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -105,6 +110,9 @@ class Pipeline:
         self.step_time_updated = Signal()
         self.job_time_updated = Signal()
         self.job_ready = Signal()
+        self.workpiece_view_ready = Signal()
+        self.workpiece_view_created = Signal()
+        self.workpiece_view_updated = Signal()
 
         # Connect signals from stages
         self._workpiece_stage.generation_starting.connect(
@@ -128,6 +136,18 @@ class Pipeline:
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
         )
+        self._workpiece_view_stage.view_artifact_ready.connect(
+            self._on_workpiece_view_ready
+        )
+        self._workpiece_view_stage.view_artifact_created.connect(
+            self._on_workpiece_view_created
+        )
+        self._workpiece_view_stage.view_artifact_updated.connect(
+            self._on_workpiece_view_updated
+        )
+        self._workpiece_view_stage.generation_finished.connect(
+            self._on_workpiece_view_generation_finished
+        )
 
         self.doc = doc
 
@@ -141,6 +161,7 @@ class Pipeline:
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
+        self._workpiece_view_stage.shutdown()
         logger.info("All pipeline resources released.")
 
     @property
@@ -172,6 +193,9 @@ class Pipeline:
         self._job_stage = JobGeneratorStage(
             self._task_manager, self._artifact_cache
         )
+        self._workpiece_view_stage = WorkPieceViewGeneratorStage(
+            self._task_manager, self._artifact_cache
+        )
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
@@ -193,6 +217,18 @@ class Pipeline:
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
         )
+        self._workpiece_view_stage.view_artifact_ready.connect(
+            self._on_workpiece_view_ready
+        )
+        self._workpiece_view_stage.view_artifact_created.connect(
+            self._on_workpiece_view_created
+        )
+        self._workpiece_view_stage.view_artifact_updated.connect(
+            self._on_workpiece_view_updated
+        )
+        self._workpiece_view_stage.generation_finished.connect(
+            self._on_workpiece_view_generation_finished
+        )
 
         if self._doc:
             self._connect_signals()
@@ -205,6 +241,7 @@ class Pipeline:
             self._workpiece_stage.is_busy
             or self._step_stage.is_busy
             or self._job_stage.is_busy
+            or self._workpiece_view_stage.is_busy
         )
 
     def _check_and_update_processing_state(self) -> None:
@@ -490,6 +527,63 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
+    def _on_workpiece_view_created(
+        self,
+        sender: WorkPieceViewGeneratorStage,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+        handle: BaseArtifactHandle,
+    ):
+        """Relays signal that a new view bitmap artifact has been created."""
+        self.workpiece_view_created.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
+
+    def _on_workpiece_view_updated(
+        self,
+        sender: WorkPieceViewGeneratorStage,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+    ):
+        """Relays signal that a view artifact has been updated."""
+        self.workpiece_view_updated.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+        )
+
+    def _on_workpiece_view_ready(
+        self,
+        sender: WorkPieceViewGeneratorStage,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+        handle: BaseArtifactHandle,
+    ):
+        """Relays signal that a new view bitmap artifact is ready."""
+        self.workpiece_view_ready.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
+
+    def _on_workpiece_view_generation_finished(
+        self, sender, *, key: Tuple[str, str]
+    ):
+        """
+        Handles completion of a view render task to update the overall busy
+        state.
+        """
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
+
     def reconcile_all(self) -> None:
         """Synchronizes all stages with the document."""
         if self.is_paused:
@@ -575,3 +669,17 @@ class Pipeline:
         """Triggers the final job generation process."""
         if self.doc:
             self._job_stage.generate_job(self.doc)
+
+    def request_view_render(
+        self,
+        step_uid: str,
+        workpiece_uid: str,
+        context: RenderContext,
+    ):
+        """
+        Forwards a request to the view generator stage to render a new
+        bitmap for a workpiece view.
+        """
+        self._workpiece_view_stage.request_view_render(
+            step_uid, workpiece_uid, context
+        )
