@@ -7,6 +7,7 @@ import re
 from typing import Tuple, List
 import logging
 from ..core.geo import Geometry
+from ..core.matrix import Matrix
 from .hull import get_enclosing_hull, get_hulls_from_image
 from .denoise import denoise_boolean_image
 
@@ -17,6 +18,9 @@ BORDER_SIZE = 2
 # A safety limit to prevent processing pathologically complex images.
 # If the generates more paths than this, we fall back to convex hulls.
 MAX_VECTORS_LIMIT = 25000
+# A pixel count limit to prevent integer overflows in the underlying vtracer
+# native library.
+VTRACER_PIXEL_LIMIT = 2_020_000
 
 
 def _get_image_from_surface(
@@ -500,6 +504,114 @@ def _fallback_to_hulls_from_image(
     )
 
 
+def _handle_oversized_image(
+    image: np.ndarray, original_width: int, original_height: int
+) -> Tuple[np.ndarray, float, float, int]:
+    """
+    Checks if an image exceeds the pixel limit and, if so, downscales it,
+    returning the new image, upscaling factors, and new content height.
+    """
+    h_bordered, w_bordered = image.shape
+    if h_bordered * w_bordered <= VTRACER_PIXEL_LIMIT:
+        return image, 1.0, 1.0, original_height
+
+    scale = (VTRACER_PIXEL_LIMIT / (h_bordered * w_bordered)) ** 0.5
+    new_w = max(1, int(w_bordered * scale))
+    new_h = max(1, int(h_bordered * scale))
+    logger.warning(
+        f"Image is too large for vtracer ({w_bordered}x{h_bordered}px). "
+        f"Downscaling to {new_w}x{new_h}px to prevent overflow."
+    )
+
+    img_uint8 = image.astype(np.uint8) * 255
+    resized_img = cv2.resize(
+        img_uint8, (new_w, new_h), interpolation=cv2.INTER_NEAREST
+    )
+    image_to_trace = resized_img > 127
+
+    upscale_x, upscale_y = 1.0, 1.0
+    new_content_w = new_w - (2 * BORDER_SIZE)
+    new_content_h = new_h - (2 * BORDER_SIZE)
+    if new_content_w > 0 and new_content_h > 0:
+        upscale_x = original_width / new_content_w
+        upscale_y = original_height / new_content_h
+
+    return image_to_trace, upscale_x, upscale_y, new_content_h
+
+
+def _get_geometries_from_image(
+    image_to_trace: np.ndarray, processing_surface_height: int
+) -> List[Geometry]:
+    """
+    Performs the core vectorization of a boolean image using vtracer,
+    including complexity checks and fallbacks to hull generation.
+    """
+    success, png_bytes = _encode_image_to_png(image_to_trace)
+    if not success:
+        return _fallback_to_enclosing_hull(
+            image_to_trace,
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
+            processing_surface_height,
+        )
+
+    try:
+        raw_output = _convert_png_to_svg_with_vtracer(png_bytes)
+        svg_str = _extract_svg_from_raw_output(raw_output)
+    except Exception as e:
+        logger.error(f"vtracer failed: {e}")
+        return _fallback_to_enclosing_hull(
+            image_to_trace,
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
+            processing_surface_height,
+        )
+
+    try:
+        total_sub_paths = _count_svg_subpaths(svg_str)
+        if total_sub_paths == 0:
+            logger.warning(
+                "vtracer produced 0 sub-paths, falling back to hulls."
+            )
+            return _fallback_to_hulls_from_image(
+                image_to_trace,
+                processing_surface_height,
+            )
+        if total_sub_paths >= MAX_VECTORS_LIMIT:
+            logger.warning(
+                f"vtracer produced {total_sub_paths} sub-paths, "
+                f"exceeding limit of {MAX_VECTORS_LIMIT}. "
+                "Falling back to convex hulls."
+            )
+            return _fallback_to_hulls_from_image(
+                image_to_trace,
+                processing_surface_height,
+            )
+        return _svg_string_to_geometries(
+            svg_str, 1.0, 1.0, processing_surface_height
+        )
+    except ET.ParseError:
+        logger.error("Failed to parse SVG from vtracer, falling back.")
+        return _fallback_to_enclosing_hull(
+            image_to_trace,
+            1.0,  # scale_x = 1 (pixel units)
+            1.0,  # scale_y = 1 (pixel units)
+            processing_surface_height,
+        )
+
+
+def _apply_upscaling(
+    geometries: List[Geometry], upscale_x: float, upscale_y: float
+) -> List[Geometry]:
+    """Applies an upscaling transform to a list of geometries if needed."""
+    if upscale_x != 1.0 or upscale_y != 1.0:
+        logger.debug(f"Upscaling traced geometry by {upscale_x}, {upscale_y}")
+        upscale_matrix = Matrix.scale(upscale_x, upscale_y)
+        for geo in geometries:
+            geo.transform(upscale_matrix.to_4x4_numpy())
+    return geometries
+
+
 def trace_surface(
     surface: cairo.ImageSurface,
 ) -> List[Geometry]:
@@ -516,53 +628,17 @@ def trace_surface(
         logger.debug("No shapes found in the cleaned image, returning empty.")
         return []
 
-    success, png_bytes = _encode_image_to_png(cleaned_boolean_image)
-    if not success:
-        return _fallback_to_enclosing_hull(
-            cleaned_boolean_image,
-            1.0,  # scale_x = 1 (pixel units)
-            1.0,  # scale_y = 1 (pixel units)
-            surface.get_height(),
-        )
+    (
+        image_to_trace,
+        upscale_x,
+        upscale_y,
+        processing_surface_height,
+    ) = _handle_oversized_image(
+        cleaned_boolean_image, surface.get_width(), surface.get_height()
+    )
 
-    try:
-        raw_output = _convert_png_to_svg_with_vtracer(png_bytes)
-        svg_str = _extract_svg_from_raw_output(raw_output)
-    except Exception as e:
-        logger.error(f"vtracer failed: {e}")
-        return _fallback_to_enclosing_hull(
-            cleaned_boolean_image,
-            1.0,  # scale_x = 1 (pixel units)
-            1.0,  # scale_y = 1 (pixel units)
-            surface.get_height(),
-        )
+    geometries = _get_geometries_from_image(
+        image_to_trace, processing_surface_height
+    )
 
-    try:
-        total_sub_paths = _count_svg_subpaths(svg_str)
-        if total_sub_paths == 0:
-            logger.warning(
-                "vtracer produced 0 sub-paths, falling back to hulls."
-            )
-            return _fallback_to_hulls_from_image(
-                cleaned_boolean_image,
-                surface.get_height(),
-            )
-        if total_sub_paths >= MAX_VECTORS_LIMIT:
-            logger.warning(
-                f"vtracer produced {total_sub_paths} sub-paths, exceeding "
-                f"limit of {MAX_VECTORS_LIMIT}. Falling back to convex hulls."
-            )
-            return _fallback_to_hulls_from_image(
-                cleaned_boolean_image,
-                surface.get_height(),
-            )
-    except ET.ParseError:
-        logger.error("Failed to parse SVG from vtracer, falling back.")
-        return _fallback_to_enclosing_hull(
-            cleaned_boolean_image,
-            1.0,  # scale_x = 1 (pixel units)
-            1.0,  # scale_y = 1 (pixel units)
-            surface.get_height(),
-        )
-
-    return _svg_string_to_geometries(svg_str, 1.0, 1.0, surface.get_height())
+    return _apply_upscaling(geometries, upscale_x, upscale_y)
