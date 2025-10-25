@@ -110,12 +110,15 @@ def _worker_main_loop(
 
         try:
             result = user_func(proxy, *user_args, **user_kwargs)
+            proxy.flush()  # Ensure the final progress is sent before "done"
             result_queue.put_nowait((key, task_id, "done", result))
         except Exception:
             error_info = traceback.format_exc()
             worker_logger.error(
                 f"Worker {os.getpid()} task '{key}' failed:\n{error_info}"
             )
+            # Also flush on error to send any last-known state
+            proxy.flush()
             result_queue.put_nowait((key, task_id, "error", error_info))
         worker_logger.debug(f"Worker {os.getpid()} finished task '{key}'.")
 
