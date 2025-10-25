@@ -50,3 +50,34 @@ class ColorSet:
     def __repr__(self) -> str:
         keys = sorted(self._data.keys())
         return f"ColorSet(keys={keys})"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the ColorSet to a dictionary."""
+        serialized_data: Dict[str, Any] = {}
+        for key, value in self._data.items():
+            if isinstance(value, np.ndarray):
+                serialized_data[key] = {
+                    "__type__": "numpy",
+                    "data": value.tolist(),
+                    "dtype": str(value.dtype),
+                }
+            else:
+                serialized_data[key] = {"__type__": "tuple", "data": value}
+        return {"_data": serialized_data}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ColorSet":
+        """Deserializes a ColorSet from a dictionary."""
+        deserialized_data: Dict[str, Any] = {}
+        source_data = data.get("_data", data)  # Handle both formats
+        for key, value in source_data.items():
+            if isinstance(value, dict) and "__type__" in value:
+                if value["__type__"] == "numpy":
+                    deserialized_data[key] = np.array(
+                        value["data"], dtype=value["dtype"]
+                    )
+                else:
+                    deserialized_data[key] = tuple(value["data"])
+            else:
+                deserialized_data[key] = value  # Assume raw data for test
+        return cls(_data=deserialized_data)
