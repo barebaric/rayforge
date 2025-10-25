@@ -67,7 +67,7 @@ jobs:
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
-      - name: Build All Packages (Source and Binary)
+      - name: Build Binary Package for Testing & Artifacts
         id: build_packages
         env:
           TARGET_DISTRIBUTION: ${{ matrix.distro.codename }}
@@ -104,14 +104,20 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
 
+      - name: Build Source-Only Package for PPA
+        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        run: debuild -S -us -uc
+
       - name: Sign source package
-        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
+          # Note: debuild places the source package in the parent directory (../)
+          CHANGES_FILE=$(ls ../*_source.changes)
           echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
-          debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" dist/*.changes
+          debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" "$CHANGES_FILE"
           rm /tmp/passphrase.txt
 
       - name: Upload Build Artifacts
@@ -122,4 +128,4 @@ jobs:
 
       - name: Upload to PPA
         if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
-        run: dput ppa:knipknap/rayforge dist/*.changes
+        run: dput ppa:knipknap/rayforge ../*_source.changes
