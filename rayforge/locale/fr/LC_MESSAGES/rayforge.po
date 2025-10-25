@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-19 17:30+0200\n"
+"POT-Creation-Date: 2025-10-25 16:53+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1911,6 +1911,11 @@ msgstr "Contour du cadre"
 msgid "Material Test Grid"
 msgstr "Grille de test du matériau"
 
+#: rayforge/pipeline/stage/workpiece_view_runner.py:180
+#, fuzzy
+msgid "Preparing 2D preview..."
+msgstr "Encodage pour l'aperçu 3D..."
+
 #: rayforge/pipeline/stage/step_runner.py:58
 msgid "Assembling step..."
 msgstr "Assemblage de l'étape..."
@@ -1966,12 +1971,12 @@ msgstr "Finalisation du travail terminée"
 msgid "Generating path for '{name}'"
 msgstr "Génération du chemin pour « {name} »"
 
-#: rayforge/pipeline/stage/workpiece_runner.py:414
+#: rayforge/pipeline/stage/workpiece_runner.py:422
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "Application de « {transformer} » sur « {workpiece} »"
 
-#: rayforge/pipeline/stage/workpiece_runner.py:456
+#: rayforge/pipeline/stage/workpiece_runner.py:463
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "Finalisation de « {workpiece} »"

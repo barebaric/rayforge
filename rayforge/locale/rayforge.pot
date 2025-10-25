@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-19 17:37+0200\n"
+"POT-Creation-Date: 2025-10-25 16:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1847,6 +1847,10 @@ msgstr ""
 msgid "Material Test Grid"
 msgstr ""
 
+#: rayforge/pipeline/stage/workpiece_view_runner.py:180
+msgid "Preparing 2D preview..."
+msgstr ""
+
 #: rayforge/pipeline/stage/step_runner.py:58
 msgid "Assembling step..."
 msgstr ""
@@ -1902,12 +1906,12 @@ msgstr ""
 msgid "Generating path for '{name}'"
 msgstr ""
 
-#: rayforge/pipeline/stage/workpiece_runner.py:414
+#: rayforge/pipeline/stage/workpiece_runner.py:422
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr ""
 
-#: rayforge/pipeline/stage/workpiece_runner.py:456
+#: rayforge/pipeline/stage/workpiece_runner.py:463
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr ""
