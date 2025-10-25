@@ -55,10 +55,6 @@ You can also check the [official Rayforge homepage](https://rayforge.org).
 
 For installation instructions [refer to our homepage](https://rayforge.org/docs/0.22/getting-started/installation.html).
 
-> [!NOTE]
-> We are actively seeking help to create and maintain a **[Flatpak](flatpak/)** package.
-> If you have experience with Flatpak, your contribution would be highly valuable!
-
 ## Development
 
 For detailed information about developing for Rayforge, including setup instructions,
