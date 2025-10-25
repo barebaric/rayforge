@@ -80,31 +80,59 @@ class TaskManager:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
+    def _add_or_replace_task_unsafe(
+        self,
+        task: Task,
+        when_done_pooled: Optional[Callable[[Task], None]] = None,
+    ):
+        """
+        Atomically adds a task, replacing any existing task with the same key.
+        MUST be called with the lock held.
+        """
+        # If the manager was idle, this is a new batch of work.
+        if not self._tasks:
+            self._progress_map.clear()
+
+        # Check for and purge an existing task with the same key.
+        old_task = self._tasks.get(task.key)
+        if old_task:
+            logger.debug(
+                f"TaskManager: Replacing existing task key '{task.key}'."
+            )
+            # 1. Mark the old task as cancelled internally.
+            old_task.cancel()
+
+            # 2. If it was a pooled task, tell the pool to ignore its
+            #    results and synchronously purge its callback.
+            is_old_task_pooled = old_task.key in self._pooled_task_callbacks
+            if is_old_task_pooled:
+                self._pool.cancel(old_task.key, old_task.id)
+                # The dangling `when_done` callback for the old
+                # task is synchronously removed here, preventing it from ever
+                # firing.
+                self._pooled_task_callbacks.pop(old_task.key, None)
+
+        # Add the new task.
+        logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
+        self._tasks[task.key] = task
+        self._progress_map[task.key] = 0.0
+        if when_done_pooled:
+            self._pooled_task_callbacks[task.key] = when_done_pooled
+
+        task.status_changed.connect(self._on_task_updated)
+        self._emit_tasks_updated_unsafe()
+
     def add_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]] = None
     ) -> None:
         """Add an asyncio-based task to the manager."""
         with self._lock:
-            # If the manager was idle, this is a new batch of work.
-            if not self._tasks:
-                self._progress_map.clear()
+            self._add_or_replace_task_unsafe(task)
 
-            old_task = self._tasks.get(task.key)
-            if old_task:
-                logger.debug(
-                    f"TaskManager: Found existing task key '{task.key}'. "
-                    f"Attempting cancellation."
-                )
-                self.cancel_task(old_task.key)
-            else:
-                logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
-
-            self._tasks[task.key] = task
-            self._progress_map[task.key] = 0.0
-            task.status_changed.connect(self._on_task_updated)
-
-            # Emit signal immediately when a new task is added
-            self._emit_tasks_updated_unsafe()
+        # Coroutines use the asyncio event loop
+        asyncio.run_coroutine_threadsafe(
+            self._run_task(task, when_done), self._loop
+        )
 
     def add_coroutine(
         self,
@@ -122,11 +150,6 @@ class TaskManager:
         """
         task = Task(coro, *args, key=key, **kwargs)
         self.add_task(task, when_done)
-
-        # Coroutines use the asyncio event loop
-        asyncio.run_coroutine_threadsafe(
-            self._run_task(task, when_done), self._loop
-        )
 
     def schedule_on_main_thread(
         self, callback: Callable[..., Any], *args: Any, **kwargs: Any
@@ -178,11 +201,6 @@ class TaskManager:
         # The original sync function's args/kwargs are passed through.
         task = Task(thread_wrapper, *args, key=key, **kwargs)
         self.add_task(task, when_done)
-
-        # Schedule the async wrapper to be run.
-        asyncio.run_coroutine_threadsafe(
-            self._run_task(task, when_done), self._loop
-        )
         return task
 
     def run_process(
@@ -212,25 +230,7 @@ class TaskManager:
             task.event_received.connect(when_event, weak=False)
 
         with self._lock:
-            # If the manager was idle, this is a new batch of work.
-            if not self._tasks:
-                self._progress_map.clear()
-
-            old_task = self._tasks.get(task.key)
-            if old_task:
-                logger.debug(
-                    f"TaskManager: Found existing task key '{task.key}'. "
-                    f"Attempting cancellation."
-                )
-                self.cancel_task(old_task.key)
-
-            self._tasks[task.key] = task
-            self._progress_map[task.key] = 0.0
-            if when_done:
-                self._pooled_task_callbacks[task.key] = when_done
-
-            task.status_changed.connect(self._on_task_updated)
-            self._emit_tasks_updated_unsafe()
+            self._add_or_replace_task_unsafe(task, when_done_pooled=when_done)
 
         # Manually set status to running and notify
         task._status = "running"
@@ -253,15 +253,13 @@ class TaskManager:
 
             logger.debug(f"TaskManager: Cancelling task with key '{key}'.")
 
-            # Check if this is a pooled task by checking if it has a callback
-            # registered in the pooled task dictionary.
-            is_pooled = key in self._pooled_task_callbacks
-
             # Set the internal cancelled flag on the Task object.
             # For asyncio tasks, this will also cancel the underlying future.
             task.cancel()
 
-            # For pooled tasks, we perform immediate finalization.
+            # For pooled tasks, we perform immediate finalization to prevent
+            # race conditions.
+            is_pooled = key in self._pooled_task_callbacks
             if is_pooled:
                 # Tell the pool to ignore any future messages from this ID.
                 self._pool.cancel(key, task.id)
@@ -387,16 +385,17 @@ class TaskManager:
         """Finalizes a pooled task from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
+            # Pop the callback. If the task is stale, `when_done` will be None.
             when_done = self._pooled_task_callbacks.pop(key, None)
 
+        # This check is critical. It ensures we only process results for the
+        # currently active task instance, discarding results from tasks that
+        # were already replaced.
         if not task or task.id != task_id:
             logger.debug(
                 f"Received result for stale/unknown task instance for key "
                 f"'{key}'. Ignoring."
             )
-            # Re-add the callback for the *new* active task if it exists.
-            if task and when_done:
-                self._pooled_task_callbacks[key] = when_done
             return
 
         # If a cancellation happened, the status will already be 'canceled'.
@@ -426,13 +425,17 @@ class TaskManager:
         """
         with self._lock:
             current_task_in_dict = self._tasks.get(task.key)
+            # Only remove the task from the dictionary if it's the one we
+            # expect. This prevents a stale task's cleanup from removing a
+            # newer, active task.
             if current_task_in_dict is task:
                 logger.debug(
                     f"TaskManager: Cleaning up task '{task.key}' "
                     f"(status: {task.get_status()})."
                 )
                 del self._tasks[task.key]
-                # Ensure callback is removed if it exists
+                # Ensure callback is removed if it exists (might have already
+                # been popped)
                 self._pooled_task_callbacks.pop(task.key, None)
 
                 # DO NOT delete from _progress_map. The final progress

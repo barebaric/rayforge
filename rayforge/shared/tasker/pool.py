@@ -8,6 +8,7 @@ import os
 import threading
 import traceback
 import builtins
+from queue import Empty
 from multiprocessing import get_context
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
@@ -209,7 +210,7 @@ class WorkerPoolManager:
         logger.debug("Result listener thread started.")
         while True:
             try:
-                message = self._result_queue.get()
+                message = self._result_queue.get(timeout=0.1)
             except (EOFError, OSError):
                 logger.warning(
                     "Result queue connection lost. Exiting listener."
@@ -218,6 +219,8 @@ class WorkerPoolManager:
             except KeyboardInterrupt:
                 # Gracefully exit if the listener is interrupted while waiting
                 break
+            except Empty:
+                continue
 
             # Use '==' for value comparison, as 'is' fails for objects
             # passed through a queue.
