@@ -16,6 +16,7 @@ In other words, we cannot use GLib.idle_add or similar.
 
 import abc
 import logging
+import time
 from queue import Full
 from multiprocessing.queues import Queue
 from typing import Optional
@@ -139,6 +140,9 @@ class ExecutionContextProxy(BaseExecutionContext):
     A pickleable proxy for reporting progress from a subprocess via a queue.
     """
 
+    # Report progress at most ~10 times per second to prevent flooding the UI.
+    PROGRESS_REPORT_INTERVAL_S = 0.1
+
     def __init__(
         self,
         progress_queue: Queue,
@@ -149,15 +153,27 @@ class ExecutionContextProxy(BaseExecutionContext):
         super().__init__(base_progress, progress_range, total=1.0)
         self._queue = progress_queue
         self.parent_log_level = parent_log_level
+        self._last_progress_report_time = 0.0
+        self._last_reported_progress: Optional[float] = None
 
     def _report_normalized_progress(self, progress: float):
         """
         Reports a 0.0-1.0 progress value, scaled to the proxy's
-        range.
+        range. This is throttled to prevent flooding the IPC queue.
         """
         # Clamp to a valid range before scaling
         progress = max(0.0, min(1.0, progress))
         scaled_progress = self._base + (progress * self._range)
+        self._last_reported_progress = scaled_progress
+
+        current_time = time.monotonic()
+        if (
+            current_time - self._last_progress_report_time
+            < self.PROGRESS_REPORT_INTERVAL_S
+        ):
+            return  # Not enough time has passed, skip sending the update.
+        self._last_progress_report_time = current_time
+
         try:
             self._queue.put_nowait(("progress", scaled_progress))
         except Full:
@@ -204,7 +220,15 @@ class ExecutionContextProxy(BaseExecutionContext):
 
     def flush(self):
         """
-        Provides a compatible API with ExecutionContext. In the proxy,
-        messages are sent immediately, so there is nothing to flush.
+        Immediately sends any pending updates. This ensures the final
+        progress value is always sent, bypassing the throttle.
         """
-        pass
+        if self._last_reported_progress is None:
+            return
+
+        try:
+            self._queue.put_nowait(("progress", self._last_reported_progress))
+            # Reset to avoid duplicate flushes if called multiple times.
+            self._last_reported_progress = None
+        except Full:
+            pass

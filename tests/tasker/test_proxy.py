@@ -10,46 +10,6 @@ def mock_queue():
     return Queue()
 
 
-class ControllableTimer:
-    """A mock Timer class that can be manually controlled."""
-
-    def __init__(self, interval, function, args=None, kwargs=None):
-        self.interval = interval
-        self.function = function
-        self.args = args or []
-        self.kwargs = kwargs or {}
-        self.is_started = False
-        self.is_cancelled = False
-
-    def start(self):
-        self.is_started = True
-
-    def cancel(self):
-        self.is_cancelled = True
-
-    def fire(self):
-        """Manually trigger the timer's function."""
-        if self.is_started and not self.is_cancelled:
-            self.function(*self.args, **self.kwargs)
-
-
-@pytest.fixture
-def mock_timer_factory(mocker):
-    """
-    Mocks threading.Timer with a controllable version and returns a list
-    of all created timer instances.
-    """
-    timers = []
-
-    def factory(*args, **kwargs):
-        timer = ControllableTimer(*args, **kwargs)
-        timers.append(timer)
-        return timer
-
-    mocker.patch("threading.Timer", factory)
-    return timers
-
-
 class TestExecutionContextProxy:
     def test_initialization(self, mock_queue):
         proxy = ExecutionContextProxy(
@@ -81,7 +41,10 @@ class TestExecutionContextProxy:
         proxy.set_total(50)
         proxy.set_progress(-10)
         assert mock_queue.get_nowait() == ("progress", 0.0)
+        # The next update might be throttled because it's called immediately.
+        # We call flush() to ensure the final value is sent for this test.
         proxy.set_progress(100)
+        proxy.flush()
         assert mock_queue.get_nowait() == ("progress", 1.0)
 
     def test_set_progress_with_scaling(self, mock_queue):
@@ -164,8 +127,35 @@ class TestExecutionContextProxy:
         child.set_message("Sub-task update")
         assert mock_queue.get_nowait() == ("message", "Sub-task update")
 
-    def test_is_cancelled_and_flush(self, mock_queue):
+    def test_is_cancelled_always_false(self, mock_queue):
+        """The proxy cannot know about cancellation; it is a one-way street."""
         proxy = ExecutionContextProxy(mock_queue)
         assert not proxy.is_cancelled()
-        proxy.flush()  # Should be a no-op
+
+    def test_flush_behavior(self, mock_queue):
+        """
+        Verify flush() sends throttled progress and is a no-op otherwise.
+        """
+        proxy = ExecutionContextProxy(mock_queue)
+        # Set a long interval to guarantee throttling for the test
+        proxy.PROGRESS_REPORT_INTERVAL_S = 10.0
+
+        # 1. An initial flush should do nothing.
+        proxy.flush()
+        assert mock_queue.empty()
+
+        # 2. First update goes through.
+        proxy.set_progress(0.2)
+        assert mock_queue.get_nowait() == ("progress", 0.2)
+
+        # 3. Second update should be stored but throttled (not sent).
+        proxy.set_progress(0.8)
+        assert mock_queue.empty()
+
+        # 4. Flush sends the stored value and resets the pending state.
+        proxy.flush()
+        assert mock_queue.get_nowait() == ("progress", 0.8)
+
+        # 5. A second flush now does nothing.
+        proxy.flush()
         assert mock_queue.empty()
