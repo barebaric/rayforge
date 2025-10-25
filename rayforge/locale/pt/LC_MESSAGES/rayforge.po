@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-19 16:54+0200\n"
+"POT-Creation-Date: 2025-10-25 16:53+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -1893,6 +1893,10 @@ msgstr "Contorno de Enquadramento"
 msgid "Material Test Grid"
 msgstr "Grade de Teste de Material"
 
+#: rayforge/pipeline/stage/workpiece_view_runner.py:180
+msgid "Preparing 2D preview..."
+msgstr "Codificando para pré-visualização 3D..."
+
 #: rayforge/pipeline/stage/step_runner.py:58
 msgid "Assembling step..."
 msgstr "Montando etapa..."
@@ -1948,12 +1952,12 @@ msgstr "Finalização do trabalho completa"
 msgid "Generating path for '{name}'"
 msgstr "Gerando caminho para '{name}'"
 
-#: rayforge/pipeline/stage/workpiece_runner.py:414
+#: rayforge/pipeline/stage/workpiece_runner.py:422
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "Aplicando '{transformer}' em '{workpiece}'"
 
-#: rayforge/pipeline/stage/workpiece_runner.py:456
+#: rayforge/pipeline/stage/workpiece_runner.py:463
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "Finalizando '{workpiece}'"
@@ -1964,7 +1968,8 @@ msgstr "Overscan"
 
 #: rayforge/pipeline/transformer/overscan.py:117
 msgid "Extends raster lines to ensure constant engraving speed."
-msgstr "Extende as linhas de raster para garantir velocidade de gravação constante."
+msgstr ""
+"Extende as linhas de raster para garantir velocidade de gravação constante."
 
 #: rayforge/pipeline/transformer/optimize.py:523
 msgid "Optimize Path"
@@ -2223,7 +2228,9 @@ msgstr "Bibliotecas de Material"
 
 #: rayforge/doceditor/ui/material_manager.py:31
 msgid "Manage your material libraries. Select a library to view its materials."
-msgstr "Gerencie suas bibliotecas de material. Selecione uma biblioteca para visualizar seus materiais."
+msgstr ""
+"Gerencie suas bibliotecas de material. Selecione uma biblioteca para "
+"visualizar seus materiais."
 
 #: rayforge/doceditor/ui/material_manager.py:39
 msgid "Materials in the selected library."
@@ -2239,7 +2246,8 @@ msgstr "Distância Automática"
 
 #: rayforge/doceditor/ui/step_settings/overscan.py:47
 msgid "Calculate distance based on speed and acceleration with safety factor"
-msgstr "Calcular distância com base na velocidade e aceleração com fator de segurança"
+msgstr ""
+"Calcular distância com base na velocidade e aceleração com fator de segurança"
 
 #: rayforge/doceditor/ui/step_settings/overscan.py:59
 msgid "Overscan Distance"
@@ -2529,8 +2537,7 @@ msgstr "Potência Mín. (Branco)"
 #, python-format
 msgid "Power for lightest areas, as a % of the step's main power"
 msgstr ""
-"Potência para as áreas mais claras, como uma % da potência principal da "
-"etapa"
+"Potência para as áreas mais claras, como uma % da potência principal da etapa"
 
 #: rayforge/doceditor/ui/step_settings/depth_engraver.py:82
 msgid "Max Power (Black)"
