@@ -44,8 +44,6 @@ class WorkPieceView(CanvasElement):
     This allows the ops margin to be drawn correctly.
     """
 
-    USE_NEW_RENDER_PATH = True
-
     def __init__(
         self,
         workpiece: WorkPiece,
@@ -558,28 +556,11 @@ class WorkPieceView(CanvasElement):
                 f"POST-submit _prepare_texture_surface_async for '{step.uid}'"
             )
 
-        if self.USE_NEW_RENDER_PATH:
-            if self.canvas:
-                self.canvas.queue_draw()
-            logger.debug(
-                f"END _on_ops_generation_finished_main_thread for "
-                f"step '{sender.uid}' (new render path)"
-            )
-            return
-
-        # This is part of the old render path, kept for compatibility
-        if future := self._ops_render_futures.pop(step.uid, None):
-            future.cancel()
-        logger.debug(f"PRE-submit _record_ops_drawing_async for '{step.uid}'")
-        future = self._executor.submit(
-            self._record_ops_drawing_async, step, generation_id
-        )
-        self._ops_render_futures[step.uid] = future
-        future.add_done_callback(self._on_ops_drawing_recorded)
-        logger.debug(f"POST-submit _record_ops_drawing_async for '{step.uid}'")
+        if self.canvas:
+            self.canvas.queue_draw()
         logger.debug(
             f"END _on_ops_generation_finished_main_thread for "
-            f"step '{sender.uid}' (old render path)"
+            f"step '{sender.uid}'"
         )
 
     def _prepare_texture_surface_async(
@@ -1236,11 +1217,6 @@ class WorkPieceView(CanvasElement):
         # This will return False for the GLib timer.
         res = super()._start_update()
 
-        # Trigger the ops re-render. This will happen inside the same
-        # debounced call as the base surface update.
-        if not self.USE_NEW_RENDER_PATH:
-            self.trigger_ops_rerender()
-
         return res
 
     def render_to_surface(
@@ -1430,58 +1406,21 @@ class WorkPieceView(CanvasElement):
         if not worksurface or worksurface.is_simulation_mode():
             return
 
-        # Iterate through all steps associated with this workpiece
         if self.data.layer and self.data.layer.workflow:
-            for step in self.data.layer.workflow.steps:
-                if not self._ops_visibility.get(step.uid, True):
-                    continue
+            # The direct-rendering path has been unified. The redundant outer
+            # loop has been removed as the methods below handle iteration
+            # internally.
 
-                view_artifact_tuple = self._view_artifact_surfaces.get(
-                    step.uid
-                )
-                if view_artifact_tuple:
-                    surface, bbox_mm = view_artifact_tuple
-                    ops_x, ops_y, ops_w, ops_h = cast(
-                        Tuple[float, ...], bbox_mm
-                    )
-                    world_w, world_h = self.data.size
-                    if (
-                        world_w < 1e-9
-                        or world_h < 1e-9
-                        or ops_w < 1e-9
-                        or ops_h < 1e-9
-                    ):
-                        continue
+            # The hook for the new WorkPieceViewArtifact rendering path
+            # will be re-introduced here in a later step.
 
-                    ctx.save()
-                    # Transform to the ops bounding box in normalized coords
-                    ctx.translate(ops_x / world_w, ops_y / world_h)
-                    ctx.scale(ops_w / world_w, ops_h / world_h)
-                    # Flip Y to draw the Y-down pixel surface
-                    ctx.translate(0, 1)
-                    ctx.scale(1, -1)
-                    # Scale to surface pixel dimensions
-                    ctx.scale(
-                        1.0 / surface.get_width(), 1.0 / surface.get_height()
-                    )
-                    # Paint the final bitmap
-                    ctx.set_source_surface(surface, 0, 0)
-                    ctx.get_source().set_filter(cairo.FILTER_GOOD)
-                    ctx.paint()
-                    ctx.restore()
-                    # This step is done, move to the next
-                    continue
+            # This call renders all visible steps that have a final artifact,
+            # drawing their vertices directly.
+            self._draw_from_artifact(ctx)
 
-                if self.USE_NEW_RENDER_PATH:
-                    # Note: this call will check for _ops_surfaces and skip
-                    # if they exist, so we only need to call it once.
-                    self._draw_from_artifact(ctx)
-
-                self._draw_intermediate_chunks(ctx)
-                # Break after one loop if using the old path, as it draws all
-                # steps at once.
-                if self.USE_NEW_RENDER_PATH:
-                    break
+            # This call renders any progressive chunks for steps where the
+            # final artifact is not yet ready.
+            self._draw_intermediate_chunks(ctx)
 
     def _draw_intermediate_chunks(self, ctx: cairo.Context):
         """Draws the old-style rasterized chunk surfaces."""
@@ -1554,34 +1493,24 @@ class WorkPieceView(CanvasElement):
         caches and triggers a redraw, as the drawing logic is dynamic. For the
         old path, it invalidates cached recordings to force regeneration.
         """
-        if self.USE_NEW_RENDER_PATH:
-            logger.debug(
-                "Travel visibility changed. "
-                "Clearing raster caches and redrawing."
-            )
-            # The new render path draws dynamically from vertex data,
-            # respecting the visibility flag at draw time. We must clear any
-            # lingering raster surfaces from the old path (which might exist
-            # from chunk rendering) as they would block the new path. Then,
-            # simply trigger a redraw.
-            self._ops_surfaces.clear()
-            self._ops_recordings.clear()
+        logger.debug(
+            "Travel visibility changed. Clearing raster caches and redrawing."
+        )
+        # The new render path draws dynamically from vertex data,
+        # respecting the visibility flag at draw time. We must clear any
+        # lingering raster surfaces from the old path (which might exist
+        # from chunk rendering) as they would block the new path. Then,
+        # simply trigger a redraw.
+        self._ops_surfaces.clear()
+        self._ops_recordings.clear()
 
-            # Cancel any in-progress renders that might repopulate the caches.
-            for future in list(self._ops_render_futures.values()):
-                future.cancel()
-            self._ops_render_futures.clear()
+        # Cancel any in-progress renders that might repopulate the caches.
+        for future in list(self._ops_render_futures.values()):
+            future.cancel()
+        self._ops_render_futures.clear()
 
-            if self.canvas:
-                self.canvas.queue_draw()
-        else:
-            logger.debug(
-                "Travel visibility changed, "
-                "invalidating ops vector recordings."
-            )
-            # Clearing recordings forces re-recording and re-rasterizing.
-            self._ops_recordings.clear()
-            self.trigger_ops_rerender()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def trigger_ops_rerender(self):
         """Triggers a re-render of all applicable ops for this workpiece."""
