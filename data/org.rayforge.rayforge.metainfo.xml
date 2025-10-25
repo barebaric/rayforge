@@ -39,7 +39,7 @@
     <display_length compare="ge">768</display_length>
   </recommends>
 
-  <icon type="remote">https://raw.githubusercontent.com/barebaric/rayforge/refs/heads/main/data/org.rayforge.rayforge.svg</icon>
+  <icon type="remote">https://raw.githubusercontent.com/barebaric/rayforge/refs/heads/main/rayforge/resources/icons/org.rayforge.rayforge.svg</icon>
 
   <branding>
     <color type="primary" scheme_preference="light">#efb0a1</color>

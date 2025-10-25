@@ -192,7 +192,7 @@ modules:
     build-commands:
       - pip3 install --prefix=/app --no-deps --no-build-isolation .
     post-install:
-      - install -Dm644 data/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
+      - install -Dm644 rayforge/resources/icons/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
       - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
     sources:
       - type: git 
