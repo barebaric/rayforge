@@ -18,6 +18,7 @@ import abc
 import logging
 from queue import Full
 from multiprocessing.queues import Queue
+from typing import Optional
 
 
 class BaseExecutionContext(abc.ABC):
@@ -168,10 +169,12 @@ class ExecutionContextProxy(BaseExecutionContext):
         except Full:
             pass
 
-    def send_event(self, name: str, data: dict):
+    def send_event(self, name: str, data: Optional[dict] = None):
         """Sends a named event with a data payload to the parent."""
         try:
-            self._queue.put_nowait(("event", (name, data)))
+            self._queue.put_nowait(
+                ("event", (name, data if data is not None else {}))
+            )
         except Full:
             pass
 
