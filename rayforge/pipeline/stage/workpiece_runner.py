@@ -2,8 +2,8 @@ from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..encoder.vertexencoder import VertexEncoder
+from ...context import get_context
 from ..artifact import WorkPieceArtifact
-from ..artifact.store import artifact_store
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -51,6 +51,7 @@ def make_workpiece_artifact_in_subprocess(
 
     logger.debug("Imports completed")
 
+    artifact_store = get_context().artifact_store
     modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [

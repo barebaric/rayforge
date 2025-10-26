@@ -3,7 +3,7 @@ import json
 from unittest.mock import MagicMock
 from dataclasses import asdict
 
-from rayforge.pipeline.artifact.store import artifact_store
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Machine, Laser
@@ -57,7 +57,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(machine):
 
     # 2. Create and store the StepOpsArtifact
     step_artifact = StepOpsArtifact(ops=final_ops_for_step)
-    step_handle = artifact_store.put(step_artifact)
+    step_handle = get_context().artifact_store.put(step_artifact)
 
     # 3. Create the JobDescription pointing to the StepOpsArtifact handle
     job_desc = JobDescription(
@@ -76,7 +76,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(machine):
     # Assert
     assert final_handle_dict is not None
     final_handle = create_handle_from_dict(final_handle_dict)
-    final_artifact = artifact_store.get(final_handle)
+    final_artifact = get_context().artifact_store.get(final_handle)
     assert isinstance(final_artifact, JobArtifact)
 
     final_ops = final_artifact.ops
@@ -101,5 +101,5 @@ def test_jobrunner_assembles_step_artifacts_correctly(machine):
     assert isinstance(op_map, dict) and len(op_map) > 0
 
     # Cleanup
-    artifact_store.release(step_handle)
-    artifact_store.release(final_handle)
+    get_context().artifact_store.release(step_handle)
+    get_context().artifact_store.release(final_handle)

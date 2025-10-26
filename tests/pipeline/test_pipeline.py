@@ -19,7 +19,7 @@ from rayforge.pipeline.artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
 )
-from rayforge.pipeline.artifact.store import artifact_store
+from rayforge.context import get_context
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
@@ -245,7 +245,7 @@ class TestPipeline:
             generation_size=real_workpiece.size,
             vertex_data=vertex_data,
         )
-        handle = artifact_store.put(expected_artifact)
+        handle = get_context().artifact_store.put(expected_artifact)
         expected_result_tuple = (handle.to_dict(), 1)
 
         mock_finished_task = MagicMock(spec=Task)
@@ -259,7 +259,7 @@ class TestPipeline:
             assert cached_ops is not None
             assert len(cached_ops) == 2
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_generation_cancellation_is_handled(
         self, doc, real_workpiece, mock_task_mgr
@@ -300,7 +300,7 @@ class TestPipeline:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
@@ -321,7 +321,7 @@ class TestPipeline:
             ]
             assert len(workpiece_tasks) == 1
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_workpiece_transform_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr
@@ -340,7 +340,7 @@ class TestPipeline:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
@@ -359,7 +359,7 @@ class TestPipeline:
             ]
             assert len(assembly_tasks) == 1
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_multipass_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr
@@ -378,7 +378,7 @@ class TestPipeline:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
@@ -396,7 +396,7 @@ class TestPipeline:
             ]
             assert len(assembly_tasks) == 1
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_workpiece_size_change_triggers_regeneration(
         self, doc, real_workpiece, mock_task_mgr
@@ -415,7 +415,7 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        handle = artifact_store.put(initial_artifact)
+        handle = get_context().artifact_store.put(initial_artifact)
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
@@ -433,7 +433,7 @@ class TestPipeline:
             ]
             assert len(workpiece_tasks) == 1
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_shutdown_releases_all_artifacts(
         self, doc, real_workpiece, mock_task_mgr
@@ -455,7 +455,7 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -642,7 +642,7 @@ class TestPipeline:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
         )
-        wp_handle = artifact_store.put(wp_artifact)
+        wp_handle = get_context().artifact_store.put(wp_artifact)
 
         mock_handler = MagicMock()
         pipeline.job_time_updated.connect(mock_handler)
@@ -659,7 +659,7 @@ class TestPipeline:
             last_call_args, last_call_kwargs = mock_handler.call_args_list[-1]
             assert last_call_kwargs.get("total_seconds") == 55.5
         finally:
-            artifact_store.release(wp_handle)
+            get_context().artifact_store.release(wp_handle)
 
     def test_get_artifact_handle(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -684,7 +684,7 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -701,7 +701,7 @@ class TestPipeline:
             assert isinstance(retrieved_handle, WorkPieceArtifactHandle)
             assert retrieved_handle.generation_size == real_workpiece.size
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_get_scaled_ops(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -734,7 +734,7 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -752,7 +752,7 @@ class TestPipeline:
             assert scaled_ops is not None
             assert len(scaled_ops) == 2  # MoveTo + LineTo
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_get_scaled_ops_with_stale_non_scalable_artifact(
         self, doc, real_workpiece, mock_task_mgr
@@ -776,7 +776,7 @@ class TestPipeline:
             source_dimensions=original_size,
             generation_size=original_size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -794,7 +794,7 @@ class TestPipeline:
             # Assert - Should return None for stale non-scalable artifact
             assert scaled_ops is None
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_get_artifact(self, doc, real_workpiece, mock_task_mgr):
         # Arrange
@@ -821,7 +821,7 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -839,7 +839,7 @@ class TestPipeline:
             assert len(retrieved_artifact.ops) == 2  # MoveTo + LineTo
             assert retrieved_artifact.source_dimensions == real_workpiece.size
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def test_get_artifact_with_stale_non_scalable_artifact(
         self, doc, real_workpiece, mock_task_mgr
@@ -863,7 +863,7 @@ class TestPipeline:
             source_dimensions=original_size,
             generation_size=original_size,
         )
-        handle = artifact_store.put(artifact)
+        handle = get_context().artifact_store.put(artifact)
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
@@ -878,4 +878,4 @@ class TestPipeline:
             # Assert - Should return None for stale non-scalable artifact
             assert retrieved_artifact is None
         finally:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)

@@ -4,20 +4,20 @@ from typing import TYPE_CHECKING, Dict, Optional
 from blinker import Signal
 
 from ... import config
+from ...context import get_context
 from ..artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     create_handle_from_dict,
 )
-from ..artifact.store import artifact_store
 from .base import PipelineStage
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.step import Step
+    from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.cache import ArtifactCache
-    from ...shared.tasker.manager import TaskManager
 
 
 logger = logging.getLogger(__name__)
@@ -116,14 +116,14 @@ class StepGeneratorStage(PipelineStage):
         # The ops artifact is always stale and can be removed.
         ops_handle = self._artifact_cache.pop_step_ops_handle(key)
         if ops_handle:
-            artifact_store.release(ops_handle)
+            get_context().artifact_store.release(ops_handle)
 
         # Only remove the render artifact if this is a full invalidation
         # (e.g., the step was deleted), not a simple regeneration.
         if full_invalidation:
             render_handle = self._artifact_cache.pop_step_render_handle(key)
             if render_handle:
-                artifact_store.release(render_handle)
+                get_context().artifact_store.release(render_handle)
 
         self._artifact_cache.invalidate_for_job()
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
 from blinker import Signal
-from ..pipeline.artifact.store import artifact_store
+from ..context import get_context
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
@@ -101,6 +101,7 @@ class DocEditor:
             f"Releasing {len(self._transient_artifact_handles)} "
             "transient job artifacts..."
         )
+        artifact_store = get_context().artifact_store
         for handle in list(self._transient_artifact_handles):
             artifact_store.release(handle)
         self._transient_artifact_handles.clear()
@@ -188,6 +189,7 @@ class DocEditor:
         useful for tests.
         """
         export_future = asyncio.get_running_loop().create_future()
+        artifact_store = get_context().artifact_store
 
         def _on_export_assembly_done(
             handle: Optional[JobArtifactHandle], error: Optional[Exception]

@@ -146,6 +146,3 @@ class ArtifactStore:
         needed to prevent memory leaks.
         """
         self._release_by_name(handle.shm_name)
-
-
-artifact_store = ArtifactStore()

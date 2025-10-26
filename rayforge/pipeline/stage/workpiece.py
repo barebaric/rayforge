@@ -8,12 +8,12 @@ from copy import deepcopy
 from .base import PipelineStage
 from ... import config
 from ...core.ops import Ops, ScanLinePowerCommand
+from ...context import get_context
 from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
     create_handle_from_dict,
 )
-from ..artifact.store import artifact_store
 from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
 if TYPE_CHECKING:
@@ -311,6 +311,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         workpiece: "WorkPiece",
     ):
         s_uid, w_uid = key
+        artifact_store = get_context().artifact_store
         try:
             result = task.result()
             if not isinstance(result, tuple) or len(result) != 2:
@@ -375,7 +376,7 @@ class WorkpieceGeneratorStage(PipelineStage):
                 ):
                     return None
 
-        artifact = artifact_store.get(handle)
+        artifact = get_context().artifact_store.get(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
 
     def get_scaled_ops(

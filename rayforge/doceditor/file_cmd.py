@@ -10,7 +10,7 @@ from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
 from ..image import import_file, ImportPayload
 from ..core.import_source import ImportSource
-from ..pipeline.artifact.store import artifact_store
+from ..context import get_context
 from ..pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
@@ -383,6 +383,7 @@ class FileCmd:
         Asynchronously generates and exports G-code to a specific path.
         This is a non-blocking, fire-and-forget method for the UI.
         """
+        artifact_store = get_context().artifact_store
 
         def _on_export_assembly_done(
             handle: Optional[JobArtifactHandle], error: Optional[Exception]

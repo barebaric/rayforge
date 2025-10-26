@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import Dict, Tuple, Optional, Set
-from ..artifact.store import artifact_store
+from ...context import get_context
 from .handle import BaseArtifactHandle
 from .job import JobArtifactHandle
 from .step_ops import StepOpsArtifactHandle
@@ -107,7 +107,7 @@ class ArtifactCache:
     def _release_handle(self, handle: Optional[BaseArtifactHandle]):
         """Safely releases a handle's shared memory resources."""
         if handle:
-            artifact_store.release(handle)
+            get_context().artifact_store.release(handle)
 
     def has_step_render_handle(self, step_uid: str) -> bool:
         """Checks if a StepRenderArtifact handle exists for a step UID."""
