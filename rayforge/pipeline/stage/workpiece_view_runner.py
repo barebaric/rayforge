@@ -7,10 +7,10 @@ from typing import Optional, Tuple, Dict, Any, List
 from multiprocessing import shared_memory
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
-    ArtifactStore,
     WorkPieceArtifact,
     create_handle_from_dict,
 )
+from ..artifact.store import artifact_store
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
@@ -180,7 +180,7 @@ def make_workpiece_view_artifact_in_subprocess(
     proxy.set_message(_("Preparing 2D preview..."))
     context = RenderContext.from_dict(render_context_dict)
     handle = create_handle_from_dict(workpiece_artifact_handle_dict)
-    artifact = ArtifactStore.get(handle)
+    artifact = artifact_store.get(handle)
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")
         return None
@@ -200,7 +200,7 @@ def make_workpiece_view_artifact_in_subprocess(
     # --- Phase 1: Create and emit the shared artifact upfront ---
     bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
-    view_handle = ArtifactStore.put(view_artifact)
+    view_handle = artifact_store.put(view_artifact)
 
     proxy.send_event(
         "view_artifact_created",

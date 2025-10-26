@@ -2,12 +2,13 @@ import unittest
 import numpy as np
 from typing import cast
 from multiprocessing import shared_memory
+from rayforge.pipeline.artifact.store import artifact_store
 from rayforge.pipeline.artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
-from rayforge.pipeline.artifact import ArtifactStore, create_handle_from_dict
+from rayforge.pipeline.artifact import create_handle_from_dict
 
 
 class TestWorkPieceViewArtifact(unittest.TestCase):
@@ -20,7 +21,7 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
     def tearDown(self):
         """Ensures all SHM blocks are released after tests."""
         for handle in self.handles_to_release:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
     def test_render_context_serialization(self):
         """Tests that RenderContext can be serialized and deserialized."""
@@ -76,7 +77,7 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
         )
 
         # 2. Put the artifact into shared memory
-        handle_base = ArtifactStore.put(original_artifact)
+        handle_base = artifact_store.put(original_artifact)
         self.handles_to_release.append(handle_base)
 
         # Cast for type checker
@@ -87,7 +88,7 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
         self.assertEqual(handle.bbox_mm, bbox_mm)
 
         # 4. Get the artifact back
-        retrieved_base = ArtifactStore.get(handle)
+        retrieved_base = artifact_store.get(handle)
 
         # Cast for type checker
         retrieved_artifact = cast(WorkPieceViewArtifact, retrieved_base)
@@ -100,7 +101,7 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
         )
 
         # 6. Release the memory
-        ArtifactStore.release(handle)
+        artifact_store.release(handle)
 
         # 7. Verify that the memory is no longer accessible
         with self.assertRaises(FileNotFoundError):

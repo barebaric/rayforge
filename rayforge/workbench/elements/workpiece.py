@@ -12,7 +12,7 @@ from ...pipeline.artifact import (
     BaseArtifactHandle,
     WorkPieceViewArtifact,
 )
-from ...pipeline.artifact.store import ArtifactStore
+from ...pipeline.artifact.store import artifact_store
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ..canvas import CanvasElement
@@ -168,12 +168,12 @@ class WorkPieceView(CanvasElement):
         # Clear any old progressive surface and release its handle
         if old_tuple := self._progressive_view_surfaces.pop(step_uid, None):
             _, _, old_handle = old_tuple
-            ArtifactStore.release(old_handle)
+            artifact_store.release(old_handle)
 
         try:
-            artifact = cast(WorkPieceViewArtifact, ArtifactStore.get(handle))
+            artifact = cast(WorkPieceViewArtifact, artifact_store.get(handle))
             if not artifact:
-                ArtifactStore.release(handle)  # Release unreadable artifact
+                artifact_store.release(handle)  # Release unreadable
                 return
 
             h, w, _ = artifact.bitmap_data.shape
@@ -200,7 +200,7 @@ class WorkPieceView(CanvasElement):
                 f"Failed to process progressive view artifact "
                 f"for '{step_uid}': {e}"
             )
-            ArtifactStore.release(handle)  # Ensure release on error
+            artifact_store.release(handle)  # Ensure release on error
 
     def _on_view_artifact_updated(
         self,
@@ -236,7 +236,7 @@ class WorkPieceView(CanvasElement):
             return
 
         try:
-            artifact = cast(WorkPieceViewArtifact, ArtifactStore.get(handle))
+            artifact = cast(WorkPieceViewArtifact, artifact_store.get(handle))
             if not artifact:
                 return
 
@@ -266,7 +266,7 @@ class WorkPieceView(CanvasElement):
             )
         finally:
             # The view now owns the artifact's lifecycle
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
@@ -372,7 +372,7 @@ class WorkPieceView(CanvasElement):
         super().remove()
 
         for _, _, handle in self._progressive_view_surfaces.values():
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
         self._progressive_view_surfaces.clear()
 
     def set_base_image_visible(self, visible: bool):
@@ -414,7 +414,7 @@ class WorkPieceView(CanvasElement):
         self._view_artifact_surfaces.pop(step_uid, None)
         if old_tuple := self._progressive_view_surfaces.pop(step_uid, None):
             _, _, old_handle = old_tuple
-            ArtifactStore.release(old_handle)
+            artifact_store.release(old_handle)
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -984,7 +984,7 @@ class WorkPieceView(CanvasElement):
         # STALE CHECK: Ignore chunks from a previous generation request.
         step_uid = sender.uid
         if generation_id != self._ops_generation_ids.get(step_uid):
-            ArtifactStore.release(chunk_handle)
+            artifact_store.release(chunk_handle)
             return
 
         # Offload the CPU-intensive encoding to the thread pool
@@ -1006,7 +1006,7 @@ class WorkPieceView(CanvasElement):
             prepared = self._prepare_ops_surface_and_context(step)
             if prepared:
                 chunk_artifact = cast(
-                    WorkPieceArtifact, ArtifactStore.get(chunk_handle)
+                    WorkPieceArtifact, artifact_store.get(chunk_handle)
                 )
                 if not chunk_artifact:
                     return step.uid
@@ -1079,7 +1079,7 @@ class WorkPieceView(CanvasElement):
                     )
         finally:
             # IMPORTANT: Release the handle in the subprocess to free memory
-            ArtifactStore.release(chunk_handle)
+            artifact_store.release(chunk_handle)
         return step.uid
 
     def _on_chunk_encoded(self, future: Future):

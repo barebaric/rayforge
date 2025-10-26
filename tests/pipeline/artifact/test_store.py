@@ -4,7 +4,7 @@ import numpy as np
 from multiprocessing import shared_memory
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.artifact import ArtifactStore
+from rayforge.pipeline.artifact.store import artifact_store
 from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -25,7 +25,7 @@ class TestArtifactStore(unittest.TestCase):
         Ensures all shared memory blocks created during tests are released.
         """
         for handle in self.handles_to_release:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
     def _create_sample_vertex_artifact(self) -> WorkPieceArtifact:
         """Helper to generate a consistent vertex artifact for tests."""
@@ -98,12 +98,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_vertex_artifact()
 
         # 1. Put the artifact into shared memory
-        handle = ArtifactStore.put(original_artifact)
+        handle = artifact_store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get the artifact back
-        retrieved_artifact = ArtifactStore.get(handle)
+        retrieved_artifact = artifact_store.get(handle)
 
         # 3. Verify the retrieved data
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
@@ -120,7 +120,7 @@ class TestArtifactStore(unittest.TestCase):
         )
 
         # 4. Release the memory
-        ArtifactStore.release(handle)
+        artifact_store.release(handle)
 
         # 5. Verify that the memory is no longer accessible
         with self.assertRaises(FileNotFoundError):
@@ -134,12 +134,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_hybrid_artifact()
 
         # 1. Put
-        handle = ArtifactStore.put(original_artifact)
+        handle = artifact_store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get
-        retrieved_artifact = ArtifactStore.get(handle)
+        retrieved_artifact = artifact_store.get(handle)
 
         # 3. Verify hybrid-specific attributes
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
@@ -163,7 +163,7 @@ class TestArtifactStore(unittest.TestCase):
         )
 
         # 4. Release
-        ArtifactStore.release(handle)
+        artifact_store.release(handle)
 
         # 5. Verify release
         with self.assertRaises(FileNotFoundError):
@@ -177,12 +177,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_final_job_artifact()
 
         # 1. Put
-        handle = ArtifactStore.put(original_artifact)
+        handle = artifact_store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, JobArtifactHandle)
 
         # 2. Get
-        retrieved_artifact = ArtifactStore.get(handle)
+        retrieved_artifact = artifact_store.get(handle)
 
         # 3. Verify
         assert isinstance(retrieved_artifact, JobArtifact)
@@ -204,7 +204,7 @@ class TestArtifactStore(unittest.TestCase):
         self.assertDictEqual(op_map, {0: 0, 1: 1, 2: 2})
 
         # 4. Release
-        ArtifactStore.release(handle)
+        artifact_store.release(handle)
 
         # 5. Verify release
         with self.assertRaises(FileNotFoundError):

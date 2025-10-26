@@ -3,7 +3,8 @@ import logging
 import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
 from blinker import Signal
-from ..pipeline.artifact import ArtifactStore, JobArtifact, JobArtifactHandle
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.artifact.store import artifact_store
 from ..shared.util.glib import idle_add
 from .job_monitor import JobMonitor
 
@@ -130,7 +131,7 @@ class MachineCmd:
         on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a framing job."""
-        artifact = ArtifactStore.get(handle)
+        artifact = artifact_store.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
@@ -162,7 +163,7 @@ class MachineCmd:
         on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a send job."""
-        artifact = ArtifactStore.get(handle)
+        artifact = artifact_store.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_send_action received a non-JobArtifact")
         ops = artifact.ops
@@ -208,7 +209,7 @@ class MachineCmd:
                         message=_(f"{job_name.capitalize()} failed: {error}"),
                     )
                     if handle:
-                        ArtifactStore.release(handle)
+                        artifact_store.release(handle)
                     return
 
                 if not handle:
@@ -235,7 +236,7 @@ class MachineCmd:
                             message=_(f"{job_name.capitalize()} failed: {e}"),
                         )
                     finally:
-                        ArtifactStore.release(handle)
+                        artifact_store.release(handle)
 
                 self._editor.task_manager.add_coroutine(_run_job_with_cleanup)
 

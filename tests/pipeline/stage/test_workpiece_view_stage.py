@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, ANY
 import numpy as np
 from typing import cast
 
+from rayforge.pipeline.artifact.store import artifact_store
 from rayforge.pipeline.stage.workpiece_view import (
     WorkPieceViewGeneratorStage,
 )
 from rayforge.pipeline.artifact import (
-    ArtifactStore,
     RenderContext,
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -56,11 +56,11 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
     def tearDown(self):
         for handle in self.handles_to_release:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
     def _store_artifact(self, artifact) -> WorkPieceArtifactHandle:
         """Helper to store an artifact and track its handle for cleanup."""
-        handle = ArtifactStore.put(artifact)
+        handle = artifact_store.put(artifact)
         self.handles_to_release.append(handle)
         return cast(WorkPieceArtifactHandle, handle)
 
@@ -259,7 +259,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
         self.handles_to_release.append(handle)
 
-        artifact = cast(WorkPieceViewArtifact, ArtifactStore.get(handle))
+        artifact = cast(WorkPieceViewArtifact, artifact_store.get(handle))
         self.assertEqual(artifact.bbox_mm, (5.0, 5.0, 10.0, 10.0))
         self.assertEqual(artifact.bitmap_data.shape, (12, 12, 4))
 
@@ -304,7 +304,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         self.assertIsNotNone(handle_dict)
         handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
         self.handles_to_release.append(handle)
-        artifact = cast(WorkPieceViewArtifact, ArtifactStore.get(handle))
+        artifact = cast(WorkPieceViewArtifact, artifact_store.get(handle))
 
         self.assertEqual(artifact.bbox_mm, (0.0, 0.0, 50.0, 50.0))
         self.assertEqual(artifact.bitmap_data.shape, (50, 50, 4))

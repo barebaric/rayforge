@@ -11,9 +11,9 @@ from rayforge.core.step import Step
 from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.artifact import (
     create_handle_from_dict,
-    ArtifactStore,
     WorkPieceArtifact,
 )
+from rayforge.pipeline.artifact.store import artifact_store
 from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
 from rayforge.pipeline.producer.edge import EdgeTracer
 from rayforge.pipeline.producer.depth import DepthEngraver
@@ -117,7 +117,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         # Assert
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
-        reconstructed_artifact = ArtifactStore.get(handle)
+        reconstructed_artifact = artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert not reconstructed_artifact.ops.is_empty()
@@ -131,7 +131,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
     finally:
         # Cleanup
         if handle:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
 
 def test_raster_producer_returns_artifact_with_raster_data(
@@ -171,7 +171,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
         # Assert
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
-        reconstructed_artifact = ArtifactStore.get(handle)
+        reconstructed_artifact = artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.texture_data is not None
@@ -189,7 +189,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
     finally:
         # Cleanup
         if handle:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
 
 
 def test_empty_producer_result_returns_none(mock_proxy):
@@ -254,7 +254,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         # Assert
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
-        reconstructed_artifact = ArtifactStore.get(handle)
+        reconstructed_artifact = artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.vertex_data is not None
@@ -262,4 +262,4 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
     finally:
         # Cleanup
         if handle:
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
-from rayforge.pipeline.artifact import ArtifactCache
 from rayforge.pipeline.artifact import (
+    ArtifactCache,
     WorkPieceArtifactHandle,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
@@ -23,7 +23,7 @@ class TestArtifactCache(unittest.TestCase):
         """Set up a fresh cache and mock for ArtifactStore for each test."""
         # The patch creates a mock for the entire test method's duration
         self.mock_release_patch = patch(
-            "rayforge.pipeline.artifact.cache.ArtifactStore.release"
+            "rayforge.pipeline.artifact.store.artifact_store.release"
         )
         self.mock_release = self.mock_release_patch.start()
         self.cache = ArtifactCache()

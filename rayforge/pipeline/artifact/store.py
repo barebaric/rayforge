@@ -17,20 +17,26 @@ class ArtifactStore:
     Manages the storage and retrieval of pipeline artifacts in shared memory
     to avoid costly inter-process communication.
 
-    This class is stateless and uses a dynamic registry owned by BaseArtifact
-    to remain agnostic to concrete artifact types.
+    This class uses a multiprocessing.Manager to coordinate access to
+    shared memory blocks across processes.
     """
 
-    # On Windows, shared memory blocks are destroyed when all handles are
-    # closed. To prevent a block from being destroyed immediately after
-    # creation in `put()`, the creating process must keep a handle open.
-    # This dictionary stores these handles. They are closed and removed
-    # by `release()`. This is not needed on POSIX systems.
-    if sys.platform == "win32":
-        _managed_shms: Dict[str, shared_memory.SharedMemory] = {}
+    def __init__(self):
+        """
+        Initialize the ArtifactStore with a multiprocessing Manager.
+        """
+        # On Windows, shared memory blocks are destroyed when all handles are
+        # closed. To prevent a block from being destroyed immediately after
+        # creation in `put()`, the creating process must keep a handle open.
+        # This dictionary stores these handles. They are closed and removed
+        # by `release()`. This is not needed on POSIX systems.
+        self._managed_shms: Dict[str, shared_memory.SharedMemory] = {}
 
-    @classmethod
-    def put(cls, artifact: BaseArtifact) -> BaseArtifactHandle:
+    def shutdown(self):
+        for shm_name in list(self._managed_shms.keys()):
+            self._release_by_name(shm_name)
+
+    def put(self, artifact: BaseArtifact) -> BaseArtifactHandle:
         """
         Serializes an artifact into a new shared memory block and returns a
         handle.
@@ -48,7 +54,7 @@ class ArtifactStore:
             )
         except FileExistsError:
             # Handle rare UUID collision by retrying
-            return cls.put(artifact)
+            return self.put(artifact)
 
         # Write data and collect metadata for the handle
         offset = 0
@@ -71,7 +77,7 @@ class ArtifactStore:
         # unlinked. On Windows, the block is destroyed when the last handle
         # is closed, so we must keep this handle open in the creating process.
         if sys.platform == "win32":
-            cls._managed_shms[shm_name] = shm
+            self._managed_shms[shm_name] = shm
         else:
             shm.close()
 
@@ -79,8 +85,7 @@ class ArtifactStore:
         handle = artifact.create_handle(shm_name, array_metadata)
         return handle
 
-    @classmethod
-    def get(cls, handle: BaseArtifactHandle) -> BaseArtifact:
+    def get(self, handle: BaseArtifactHandle) -> BaseArtifact:
         """
         Reconstructs an artifact from a shared memory block using its handle.
         """
@@ -108,29 +113,39 @@ class ArtifactStore:
         shm.close()
         return artifact
 
-    @classmethod
-    def release(cls, handle: BaseArtifactHandle) -> None:
+    def _release_by_name(self, shm_name: str) -> None:
         """
-        Closes and unlinks the shared memory block associated with a handle.
-        This must be called by the owner of the handle when it's no longer
+        Closes and unlinks the shared memory block with the given name.
+        This must be called by the owner of the block when it's no longer
         needed to prevent memory leaks.
         """
         if sys.platform == "win32":
             # If we are in the process that created the block, close the
             # handle we kept open to ensure the block's survival.
-            if handle.shm_name in cls._managed_shms:
-                shm_obj = cls._managed_shms.pop(handle.shm_name)
+            if shm_name in self._managed_shms:
+                shm_obj = self._managed_shms.pop(shm_name)
                 shm_obj.close()
 
         try:
-            shm = shared_memory.SharedMemory(name=handle.shm_name)
+            shm = shared_memory.SharedMemory(name=shm_name)
             shm.close()
             shm.unlink()  # This actually frees the memory
-            logger.debug(f"Released shared memory block: {handle.shm_name}")
+            logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
             # The block was already released, which is fine.
             pass
         except Exception as e:
             logger.warning(
-                f"Error releasing shared memory block {handle.shm_name}: {e}"
+                f"Error releasing shared memory block {shm_name}: {e}"
             )
+
+    def release(self, handle: BaseArtifactHandle) -> None:
+        """
+        Closes and unlinks the shared memory block associated with a handle.
+        This must be called by the owner of the handle when it's no longer
+        needed to prevent memory leaks.
+        """
+        self._release_by_name(handle.shm_name)
+
+
+artifact_store = ArtifactStore()

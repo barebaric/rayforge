@@ -11,8 +11,9 @@ from .scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )
+from ...pipeline.artifact import StepRenderArtifact
+from ...pipeline.artifact.store import artifact_store
 from ...pipeline.pipeline import Pipeline
-from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
@@ -62,7 +63,7 @@ def prepare_scene_vertices_async(
         if not item.artifact_handle:
             continue
 
-        artifact = ArtifactStore.get(item.artifact_handle)
+        artifact = artifact_store.get(item.artifact_handle)
 
         if not isinstance(artifact, StepRenderArtifact):
             logger.error("Artifact is not a renderable step artifact.")
@@ -869,7 +870,7 @@ class Canvas3D(Gtk.GLArea):
             if not item.artifact_handle:
                 continue
 
-            artifact = ArtifactStore.get(item.artifact_handle)
+            artifact = artifact_store.get(item.artifact_handle)
             # Textures are part of the StepArtifact "render bundle"
             if isinstance(artifact, StepRenderArtifact):
                 for tex_instance in artifact.texture_instances:

@@ -6,6 +6,8 @@ from functools import partial
 import pytest
 import pytest_asyncio
 import re
+from rayforge import config
+from rayforge.worker_init import initialize_worker
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.pipeline import steps
 from rayforge.doceditor.editor import DocEditor
@@ -35,8 +37,6 @@ def parse_gcode_line(line: str) -> dict:
 @pytest.fixture
 def test_config_manager(tmp_path):
     """Provides a test-isolated ConfigManager."""
-    from rayforge import config
-
     # We still need to set up the config globals for modules that might
     # use them (like WorkPiece), but the DocEditor itself will get an
     # explicit instance.
@@ -47,6 +47,7 @@ def test_config_manager(tmp_path):
 
     config.initialize_managers()
     yield config.config_mgr
+
     # Reset globals after test
     config.config = None
     config.config_mgr = None
@@ -66,7 +67,10 @@ async def task_mgr():
 
     # Instantiate the TaskManager with our custom scheduler, eliminating the
     # need for any monkeypatching.
-    tm = TaskManager(main_thread_scheduler=asyncio_scheduler)
+    tm = TaskManager(
+        main_thread_scheduler=asyncio_scheduler,
+        worker_initializer=initialize_worker,
+    )
 
     yield tm
 

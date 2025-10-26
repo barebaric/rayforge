@@ -10,11 +10,12 @@ from ..core.matrix import Matrix
 from ..core.vectorization_config import TraceConfig
 from ..image import import_file, ImportPayload
 from ..core.import_source import ImportSource
+from ..pipeline.artifact.store import artifact_store
 from ..pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
 )
-from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
+from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
 from .layout.align import PositionAtStrategy
 
@@ -393,7 +394,7 @@ class FileCmd:
                     raise ValueError("Assembly process returned no artifact.")
 
                 # Get artifact, decode G-code, and write to file
-                artifact = ArtifactStore.get(handle)
+                artifact = artifact_store.get(handle)
                 if not isinstance(artifact, JobArtifact):
                     raise ValueError("Expected a JobArtifact for export.")
                 if artifact.gcode_bytes is None:
@@ -417,6 +418,6 @@ class FileCmd:
                 )
             finally:
                 if handle:
-                    ArtifactStore.release(handle)
+                    artifact_store.release(handle)
 
         self.assemble_job_in_background(when_done=_on_export_assembly_done)
