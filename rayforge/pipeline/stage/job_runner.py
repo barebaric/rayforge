@@ -9,14 +9,14 @@ from ...machine.models.machine import Machine
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...core.ops import Ops
 from ...core.doc import Doc
-from ..encoder.gcode import GcodeEncoder
-from ..encoder.vertexencoder import VertexEncoder
+from ..artifact.store import artifact_store
 from ..artifact import (
-    ArtifactStore,
     JobArtifact,
     create_handle_from_dict,
     StepOpsArtifact,
 )
+from ..encoder.gcode import GcodeEncoder
+from ..encoder.vertexencoder import VertexEncoder
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ def make_job_artifact_in_subprocess(
 
             handle_dict = handles_by_uid[step.uid]
             handle = create_handle_from_dict(handle_dict)
-            artifact = ArtifactStore.get(handle)
+            artifact = artifact_store.get(handle)
 
             if (
                 isinstance(artifact, StepOpsArtifact)
@@ -116,7 +116,7 @@ def make_job_artifact_in_subprocess(
         op_map_bytes=op_map_bytes,
         time_estimate=final_time,
     )
-    final_handle = ArtifactStore.put(final_artifact)
+    final_handle = artifact_store.put(final_artifact)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

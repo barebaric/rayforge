@@ -9,13 +9,13 @@ from ..transformer import OpsTransformer, transformer_by_name
 from ..encoder.vertexencoder import VertexEncoder
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
-    ArtifactStore,
     StepRenderArtifact,
     StepOpsArtifact,
     create_handle_from_dict,
     WorkPieceArtifact,
 )
 from ..artifact.base import TextureInstance
+from ..artifact.store import artifact_store
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def make_step_artifact_in_subprocess(
         proxy.set_progress(i / num_items * 0.5)
 
         handle = create_handle_from_dict(info["artifact_handle_dict"])
-        artifact = ArtifactStore.get(handle)
+        artifact = artifact_store.get(handle)
         if not isinstance(artifact, WorkPieceArtifact):
             continue
 
@@ -153,7 +153,7 @@ def make_step_artifact_in_subprocess(
     render_artifact = StepRenderArtifact(
         vertex_data=vertex_data, texture_instances=texture_instances
     )
-    render_handle = ArtifactStore.put(render_artifact)
+    render_handle = artifact_store.put(render_artifact)
 
     # Send render handle back via event for instant UI update
     proxy.send_event(
@@ -166,7 +166,7 @@ def make_step_artifact_in_subprocess(
 
     # Send ops handle back via a separate event
     ops_artifact = StepOpsArtifact(ops=combined_ops)
-    ops_handle = ArtifactStore.put(ops_artifact)
+    ops_handle = artifact_store.put(ops_artifact)
     proxy.send_event(
         "ops_artifact_ready",
         {

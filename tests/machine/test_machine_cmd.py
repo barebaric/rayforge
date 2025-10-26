@@ -138,7 +138,7 @@ class TestMachineCmdJobMonitoring:
         machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
-        # The handle is just a placeholder; ArtifactStore.get is mocked
+        # The handle is just a placeholder; artifact_store.get is mocked
         dummy_handle = JobArtifactHandle(
             shm_name="dummy",
             handle_class_name="JobArtifactHandle",

@@ -11,9 +11,9 @@ from ...core.ops import Ops, ScanLinePowerCommand
 from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
-    ArtifactStore,
     create_handle_from_dict,
 )
+from ..artifact.store import artifact_store
 from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
 if TYPE_CHECKING:
@@ -325,7 +325,7 @@ class WorkpieceGeneratorStage(PipelineStage):
             handle = create_handle_from_dict(handle_dict)
             if self._generation_id_map.get(key) != result_gen_id:
                 logger.warning(f"Stale result for {key}. Releasing.")
-                ArtifactStore.release(handle)
+                artifact_store.release(handle)
                 return
 
             if isinstance(handle, WorkPieceArtifactHandle):
@@ -339,7 +339,7 @@ class WorkpieceGeneratorStage(PipelineStage):
                             f"Result for {key} is stale due to size "
                             "change during generation. Regenerating."
                         )
-                        ArtifactStore.release(handle)
+                        artifact_store.release(handle)
                         self._launch_task(step, workpiece)
                         return
 
@@ -375,7 +375,7 @@ class WorkpieceGeneratorStage(PipelineStage):
                 ):
                     return None
 
-        artifact = ArtifactStore.get(handle)
+        artifact = artifact_store.get(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
 
     def get_scaled_ops(

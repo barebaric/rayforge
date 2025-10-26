@@ -2,7 +2,8 @@ from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..encoder.vertexencoder import VertexEncoder
-from ..artifact import ArtifactStore, WorkPieceArtifact
+from ..artifact import WorkPieceArtifact
+from ..artifact.store import artifact_store
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -364,7 +365,7 @@ def make_workpiece_artifact_in_subprocess(
             chunk_artifact.vertex_data = encoder.encode(ops_for_chunk_render)
 
             # Store in shared memory and get a handle
-            chunk_handle = ArtifactStore.put(chunk_artifact)
+            chunk_handle = artifact_store.put(chunk_artifact)
 
             proxy.send_event(
                 "visual_chunk_ready",
@@ -464,5 +465,5 @@ def make_workpiece_artifact_in_subprocess(
     )
     proxy.set_progress(1.0)
 
-    handle = ArtifactStore.put(final_artifact_to_store)
+    handle = artifact_store.put(final_artifact_to_store)
     return handle.to_dict(), generation_id

@@ -14,6 +14,7 @@ from .machine.ui.jog_dialog import JogDialog
 from .core.group import Group
 from .core.item import DocItem
 from .core.workpiece import WorkPiece
+from .pipeline.artifact.store import artifact_store
 from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .pipeline.encoder.gcode import GcodeOpMap
 from .undo import HistoryManager, Command
@@ -42,7 +43,7 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor.ui import file_dialogs, import_handler
 from .shared.gcodeedit.viewer import GcodeViewer
 from .core.step import Step
-from .pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
+from .pipeline.artifact import JobArtifactHandle, JobArtifact
 
 
 logger = logging.getLogger(__name__)
@@ -757,7 +758,7 @@ class MainWindow(Adw.ApplicationWindow):
                 exc_info=error,
             )
             if handle:
-                ArtifactStore.release(handle)
+                artifact_store.release(handle)
             handle = None
 
         # Schedule the UI update on the main thread, passing the handle.
@@ -772,7 +773,7 @@ class MainWindow(Adw.ApplicationWindow):
         final_artifact = None
         try:
             if handle:
-                final_artifact = ArtifactStore.get(handle)
+                final_artifact = artifact_store.get(handle)
                 assert isinstance(final_artifact, JobArtifact)
 
             # 1. Update Simulation
@@ -794,7 +795,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         finally:
             if handle:
-                ArtifactStore.release(handle)
+                artifact_store.release(handle)
 
         return GLib.SOURCE_REMOVE
 

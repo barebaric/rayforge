@@ -5,22 +5,23 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
 from blinker import Signal
+from ..pipeline.artifact.store import artifact_store
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
 from ..pipeline.pipeline import Pipeline
 from ..machine.cmd import MachineCmd
-from ..pipeline.artifact import ArtifactStore, JobArtifactHandle, JobArtifact
+from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .material_test_cmd import MaterialTestCmd
-from .transform_cmd import TransformCmd
 from .stock_cmd import StockCmd
 from .step_cmd import StepCmd
 from .tab_cmd import TabCmd
+from .transform_cmd import TransformCmd
 
 if TYPE_CHECKING:
     from ..undo import HistoryManager
@@ -101,7 +102,7 @@ class DocEditor:
             "transient job artifacts..."
         )
         for handle in list(self._transient_artifact_handles):
-            ArtifactStore.release(handle)
+            artifact_store.release(handle)
         self._transient_artifact_handles.clear()
 
         self.pipeline.shutdown()
@@ -200,7 +201,7 @@ class DocEditor:
                     export_future.set_exception(exc)
                     return
 
-                artifact = ArtifactStore.get(handle)
+                artifact = artifact_store.get(handle)
                 assert isinstance(artifact, JobArtifact)
                 if artifact.gcode_bytes is None:
                     exc = ValueError("Final artifact is missing G-code data.")
@@ -218,7 +219,7 @@ class DocEditor:
                     export_future.set_exception(e)
             finally:
                 if handle:
-                    ArtifactStore.release(handle)
+                    artifact_store.release(handle)
 
         # Call the non-blocking method and provide our callback to bridge it
         self.file.assemble_job_in_background(

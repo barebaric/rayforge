@@ -4,8 +4,8 @@ from typing import Optional
 from platformdirs import user_config_dir
 from .camera.manager import CameraManager
 from .core.config import ConfigManager
-from .machine.models.machine import MachineManager
 from .core.library_manager import LibraryManager
+from .machine.models.machine import MachineManager
 import logging
 
 
@@ -41,8 +41,8 @@ material_mgr = None  # Will be initialized in initialize_managers()
 
 def initialize_managers():
     """
-    Initializes the machine, config, and material managers. This function
-    is designed to be called once from the main application process.
+    Initializes the machine, config, material, and artifact managers.
+    This function is designed to be called once from the main process.
     It is safe to call multiple times (idempotent).
 
     This prevents expensive I/O and state setup from running automatically
@@ -50,7 +50,7 @@ def initialize_managers():
     """
     global machine_mgr, config_mgr, config, camera_mgr, material_mgr
 
-    # Idempotency check: If already initialized, do nothing.
+    # Idempotency check: If already initialized, do nothing more.
     if config_mgr is not None:
         return
 
@@ -91,3 +91,5 @@ def initialize_managers():
     logger.info(
         f"Material manager initialized with {len(material_mgr)} materials"
     )
+
+    logger.info("Core managers initialized")

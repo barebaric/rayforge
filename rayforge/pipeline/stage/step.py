@@ -3,14 +3,14 @@ import logging
 from typing import TYPE_CHECKING, Dict, Optional
 from blinker import Signal
 
-from .base import PipelineStage
+from ... import config
 from ..artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     create_handle_from_dict,
 )
-from ..artifact.store import ArtifactStore
-from ... import config
+from ..artifact.store import artifact_store
+from .base import PipelineStage
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -116,14 +116,14 @@ class StepGeneratorStage(PipelineStage):
         # The ops artifact is always stale and can be removed.
         ops_handle = self._artifact_cache.pop_step_ops_handle(key)
         if ops_handle:
-            ArtifactStore.release(ops_handle)
+            artifact_store.release(ops_handle)
 
         # Only remove the render artifact if this is a full invalidation
         # (e.g., the step was deleted), not a simple regeneration.
         if full_invalidation:
             render_handle = self._artifact_cache.pop_step_render_handle(key)
             if render_handle:
-                ArtifactStore.release(render_handle)
+                artifact_store.release(render_handle)
 
         self._artifact_cache.invalidate_for_job()
 
