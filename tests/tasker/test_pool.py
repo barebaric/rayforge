@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 import pytest
+from pathlib import Path
 from rayforge.shared.tasker.pool import WorkerPoolManager
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
@@ -31,6 +32,16 @@ def event_sending_func(proxy: ExecutionContextProxy):
     """A worker function that sends a custom event."""
     proxy.send_event("custom_event", {"payload": 42})
     return "event_sent"
+
+
+def worker_init(filepath: Path):
+    """Initializer function that writes its PID to a file."""
+    # This function runs in the worker process.
+    # We use a file-based side effect for the test to observe.
+    import os
+
+    with open(filepath, "a") as f:
+        f.write(f"{os.getpid()}\n")
 
 
 # --- Fixtures ---
@@ -205,3 +216,39 @@ class TestWorkerPoolManager:
         assert not listener_thread.is_alive()
         assert "Shutting down worker pool." in caplog.text
         assert "Worker pool shutdown complete." in caplog.text
+
+    def test_worker_initializer(self, tmp_path):
+        """Verify that the initializer is called in each worker process."""
+        init_file = tmp_path / "init.log"
+        num_workers = 3
+
+        # Create the pool with the initializer
+        pool = WorkerPoolManager(
+            num_workers=num_workers,
+            initializer=worker_init,
+            initargs=(init_file,),
+        )
+        # Give workers time to start and run their initializer
+        time.sleep(0.5)
+
+        # To ensure all workers have started and are idle, we can submit a
+        # dummy task. This isn't strictly necessary but adds robustness.
+        completion_event = threading.Event()
+
+        def on_complete(sender, key, task_id, result):
+            completion_event.set()
+
+        pool.task_completed.connect(on_complete)
+        pool.submit("dummy_task", 1, simple_add_func, 1, 1)
+        completion_event.wait(timeout=2)
+
+        # Shut down the pool to ensure all processes are finished
+        pool.shutdown()
+
+        # Check the side effect of the initializer
+        assert init_file.exists()
+        lines = init_file.read_text().strip().split("\n")
+        # There should be one line per worker process
+        assert len(lines) == num_workers
+        # All PIDs should be unique
+        assert len(set(lines)) == num_workers

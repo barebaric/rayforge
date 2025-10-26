@@ -26,7 +26,10 @@ logger = logging.getLogger(__name__)
 
 class TaskManager:
     def __init__(
-        self, main_thread_scheduler: Optional[Callable] = None
+        self,
+        main_thread_scheduler: Optional[Callable] = None,
+        worker_initializer: Optional[Callable[..., None]] = None,
+        worker_initargs: tuple = (),
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
@@ -46,7 +49,9 @@ class TaskManager:
         self._thread.start()
 
         # Initialize the worker pool
-        self._pool = WorkerPoolManager()
+        self._pool = WorkerPoolManager(
+            initializer=worker_initializer, initargs=worker_initargs
+        )
         self._connect_pool_signals()
 
     def _connect_pool_signals(self):
@@ -524,11 +529,34 @@ class TaskManagerProxy:
     TaskManager instance (with its threads and processes) is only created
     when one of its methods is accessed for the first time. This avoids
     the multiprocessing `RuntimeError` on systems that use 'spawn'.
+
+    To provide worker initialization arguments, call the `initialize` method
+    once at application startup before using the task manager.
     """
 
     def __init__(self):
         self._instance: Optional[TaskManager] = None
         self._lock = threading.Lock()
+        self._init_kwargs: Dict[str, Any] = {}
+
+    def initialize(self, **kwargs: Any) -> None:
+        """
+        Provides configuration for the TaskManager before it is created.
+        This must be called before any other TaskManager methods are used.
+
+        Example:
+            task_mgr.initialize(
+                worker_initializer=some_func,
+                worker_initargs=(arg1, arg2)
+            )
+
+        Raises:
+            RuntimeError: If called after the TaskManager has been created.
+        """
+        with self._lock:
+            if self._instance is not None:
+                raise RuntimeError("TaskManager has already been initialized.")
+            self._init_kwargs = kwargs
 
     def _get_instance(self) -> TaskManager:
         """
@@ -542,7 +570,7 @@ class TaskManagerProxy:
                         "First use of TaskManager detected. "
                         "Initializing the real instance."
                     )
-                    self._instance = TaskManager()
+                    self._instance = TaskManager(**self._init_kwargs)
         return self._instance
 
     def __getattr__(self, name: str) -> Any:

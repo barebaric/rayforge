@@ -12,7 +12,7 @@ from queue import Empty
 from multiprocessing import get_context
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
-from typing import Any, Callable, List, Set
+from typing import Any, Callable, List, Set, Optional, Tuple
 from blinker import Signal
 from .proxy import ExecutionContextProxy
 
@@ -52,14 +52,17 @@ class _TaggedQueue:
 
 
 def _worker_main_loop(
-    task_queue: MpQueue, result_queue: MpQueue, log_level: int
+    task_queue: MpQueue,
+    result_queue: MpQueue,
+    log_level: int,
+    initializer: Optional[Callable[..., None]],
+    initargs: Tuple[Any, ...],
 ):
     """
     The main function for a worker process.
 
     It continuously fetches tasks from the task_queue, executes them, and
     reports results, progress, and events back to the main process via the
-
     result_queue.
     """
     # Set up a null translator for gettext in the subprocess.
@@ -76,7 +79,22 @@ def _worker_main_loop(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     worker_logger = logging.getLogger(__name__)
-    worker_logger.info(f"Worker process {os.getpid()} started.")
+
+    if initializer is not None:
+        try:
+            initializer(*initargs)
+        except Exception:
+            # If initialization fails, report it and exit immediately.
+            error_info = traceback.format_exc()
+            worker_logger.critical(
+                f"Worker {os.getpid()} failed during initialization:\n"
+                f"{error_info}"
+            )
+            # We can't easily report this back via normal channels since
+            # we don't have a task ID yet, so we log critical and die.
+            return
+
+    worker_logger.info(f"Worker process {os.getpid()} started and ready.")
 
     while True:
         try:
@@ -129,7 +147,12 @@ class WorkerPoolManager:
     spawning a new process for every task.
     """
 
-    def __init__(self, num_workers: int | None = None):
+    def __init__(
+        self,
+        num_workers: int | None = None,
+        initializer: Optional[Callable[..., None]] = None,
+        initargs: Tuple[Any, ...] = (),
+    ):
         if num_workers is None:
             num_workers = os.cpu_count() or 1
         logger.info(
@@ -155,7 +178,14 @@ class WorkerPoolManager:
         for _ in range(num_workers):
             process = mp_context.Process(
                 target=_worker_main_loop,
-                args=(self._task_queue, self._result_queue, log_level),
+                # Pass initializer and initargs to the target function
+                args=(
+                    self._task_queue,
+                    self._result_queue,
+                    log_level,
+                    initializer,
+                    initargs,
+                ),
                 daemon=True,
             )
             self._workers.append(process)

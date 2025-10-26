@@ -3,7 +3,9 @@ import threading
 import time
 from unittest.mock import Mock
 import pytest
-from rayforge.shared.tasker.manager import TaskManager
+from pathlib import Path
+import os
+from rayforge.shared.tasker.manager import TaskManager, TaskManagerProxy
 from rayforge.shared.tasker.task import Task, CancelledError
 from rayforge.shared.tasker.context import ExecutionContext
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
@@ -31,6 +33,14 @@ def long_running_process_func(context: ExecutionContextProxy):
     """A long-running process function to test cancellation behavior."""
     time.sleep(0.5)
     return "should_be_discarded"
+
+
+def worker_init(filepath: Path):
+    """Initializer function that writes its PID to a file."""
+    # This function runs in the worker process.
+    # We use a file-based side effect for the test to observe.
+    with open(filepath, "a") as f:
+        f.write(f"{os.getpid()}\n")
 
 
 async def simple_coro(
@@ -378,6 +388,36 @@ class TestProcessTasks:
         with pytest.raises(CancelledError):
             final_task.result()
         assert not manager._tasks
+
+    def test_process_with_worker_initializer(self, tmp_path):
+        """
+        Verify the full end-to-end path for worker initialization, from the
+        proxy, through the manager, to the worker process.
+        """
+        init_file = tmp_path / "init.log"
+        proxy = TaskManagerProxy()
+
+        # 1. Configure the proxy BEFORE it is used for the first time.
+        proxy.initialize(
+            worker_initializer=worker_init, worker_initargs=(init_file,)
+        )
+
+        # 2. Run a task, which will create the real manager and pool.
+        completion_event = threading.Event()
+        proxy.run_process(
+            simple_process_func, when_done=lambda t: completion_event.set()
+        )
+        assert completion_event.wait(timeout=3), "Process task did not run"
+
+        # 3. Shut down to ensure all workers are finished.
+        proxy.shutdown()
+
+        # 4. Assert that the initializer's side effect occurred.
+        assert init_file.exists()
+        lines = init_file.read_text().strip().split("\n")
+        # There should be at least one line with a PID.
+        assert len(lines) >= 1
+        assert lines[0].isdigit()
 
 
 class TestTaskManagerGlobals:
