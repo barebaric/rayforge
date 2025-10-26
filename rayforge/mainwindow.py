@@ -7,6 +7,7 @@ import asyncio
 from . import __version__
 from .shared.tasker import task_mgr
 from .config import config, config_mgr
+from .context import get_context
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
 from .machine.models.machine import Machine
@@ -14,7 +15,6 @@ from .machine.ui.jog_dialog import JogDialog
 from .core.group import Group
 from .core.item import DocItem
 from .core.workpiece import WorkPiece
-from .pipeline.artifact.store import artifact_store
 from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .pipeline.encoder.gcode import GcodeOpMap
 from .undo import HistoryManager, Command
@@ -758,7 +758,7 @@ class MainWindow(Adw.ApplicationWindow):
                 exc_info=error,
             )
             if handle:
-                artifact_store.release(handle)
+                get_context().artifact_store.release(handle)
             handle = None
 
         # Schedule the UI update on the main thread, passing the handle.
@@ -771,6 +771,7 @@ class MainWindow(Adw.ApplicationWindow):
         This method is responsible for releasing the artifact handle.
         """
         final_artifact = None
+        artifact_store = get_context().artifact_store
         try:
             if handle:
                 final_artifact = artifact_store.get(handle)

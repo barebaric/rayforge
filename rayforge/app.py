@@ -201,7 +201,7 @@ def main():
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
     import rayforge.config
-    import rayforge.pipeline.artifact.store
+    from .context import get_context
 
     # Explicitly initialize the configuration managers. This ensures that
     # this expensive, stateful setup only runs in the main process, not
@@ -248,9 +248,8 @@ def main():
     # 4. As the final step, clean up the document editor,
     # shut down the artifact store, and shut down the task manager itself.
     app.win.doc_editor.cleanup()
-    if rayforge.pipeline.artifact.store.artifact_store:
-        rayforge.pipeline.artifact.store.artifact_store.shutdown()
-        logger.info("Artifact store shut down.")
+    get_context().shutdown()
+    logger.info("Context shut down.")
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
 

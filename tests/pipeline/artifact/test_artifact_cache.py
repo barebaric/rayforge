@@ -20,17 +20,27 @@ class TestArtifactCache(unittest.TestCase):
     """Test suite for the ArtifactCache."""
 
     def setUp(self):
-        """Set up a fresh cache and mock for ArtifactStore for each test."""
-        # The patch creates a mock for the entire test method's duration
-        self.mock_release_patch = patch(
-            "rayforge.pipeline.artifact.store.artifact_store.release"
+        """Set up a fresh cache and mock the new context-based dependency."""
+        # Patch the `get_context` function in the module where it is used
+        # (i.e., cache.py).
+        self.mock_get_context_patch = patch(
+            "rayforge.pipeline.artifact.cache.get_context"
         )
-        self.mock_release = self.mock_release_patch.start()
+        mock_get_context = self.mock_get_context_patch.start()
+
+        # Configure the mock context to return a mock artifact_store that has
+        # our mock release method.
+        mock_context = Mock()
+        mock_artifact_store = Mock()
+        self.mock_release = mock_artifact_store.release
+        mock_context.artifact_store = mock_artifact_store
+        mock_get_context.return_value = mock_context
+
         self.cache = ArtifactCache()
 
     def tearDown(self):
         """Stop the patcher after each test."""
-        self.mock_release_patch.stop()
+        self.mock_get_context_patch.stop()
 
     def test_put_and_get_workpiece(self):
         """Tests basic storage and retrieval of a workpiece handle."""

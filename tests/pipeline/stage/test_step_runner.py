@@ -13,7 +13,7 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
     TextureData,
 )
-from rayforge.pipeline.artifact.store import artifact_store
+from rayforge.context import get_context
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.core.matrix import Matrix
 from rayforge.pipeline.stage.step_runner import (
@@ -54,7 +54,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(100, 50),
     )
-    base_handle = artifact_store.put(base_artifact)
+    base_handle = get_context().artifact_store.put(base_artifact)
 
     assembly_info = [
         {
@@ -91,14 +91,14 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
     render_handle_dict = render_call[0][1]["handle_dict"]
     render_handle = create_handle_from_dict(render_handle_dict)
-    render_artifact = artifact_store.get(render_handle)
+    render_artifact = get_context().artifact_store.get(render_handle)
     assert isinstance(render_artifact, StepRenderArtifact)
 
     # Find and validate the ops artifact
     ops_call = next(c for c in calls if c[0][0] == "ops_artifact_ready")
     ops_handle_dict = ops_call[0][1]["handle_dict"]
     ops_handle = create_handle_from_dict(ops_handle_dict)
-    ops_artifact = artifact_store.get(ops_handle)
+    ops_artifact = get_context().artifact_store.get(ops_handle)
     assert isinstance(ops_artifact, StepOpsArtifact)
 
     # 1. Ops are scaled from 100 units to the workpiece width of 20mm.
@@ -111,9 +111,9 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     )
     assert line_cmd.end == pytest.approx(expected_end)
 
-    artifact_store.release(base_handle)
-    artifact_store.release(render_handle)
-    artifact_store.release(ops_handle)
+    get_context().artifact_store.release(base_handle)
+    get_context().artifact_store.release(render_handle)
+    get_context().artifact_store.release(ops_handle)
 
 
 def test_step_runner_handles_texture_data(machine):
@@ -142,7 +142,7 @@ def test_step_runner_handles_texture_data(machine):
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         texture_data=texture,
     )
-    base_handle = artifact_store.put(base_artifact)
+    base_handle = get_context().artifact_store.put(base_artifact)
     assembly_info = [
         {
             "artifact_handle_dict": base_handle.to_dict(),
@@ -172,7 +172,7 @@ def test_step_runner_handles_texture_data(machine):
     )
     render_handle_dict = render_call[0][1]["handle_dict"]
     render_handle = create_handle_from_dict(render_handle_dict)
-    render_artifact = artifact_store.get(render_handle)
+    render_artifact = get_context().artifact_store.get(render_handle)
 
     assert isinstance(render_artifact, StepRenderArtifact)
     assert len(render_artifact.texture_instances) == 1
@@ -206,5 +206,5 @@ def test_step_runner_handles_texture_data(machine):
         texture.power_texture_data,
     )
 
-    artifact_store.release(base_handle)
-    artifact_store.release(render_handle)
+    get_context().artifact_store.release(base_handle)
+    get_context().artifact_store.release(render_handle)

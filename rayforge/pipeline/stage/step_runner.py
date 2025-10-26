@@ -2,11 +2,10 @@ from __future__ import annotations
 import logging
 import math
 from typing import List, Dict, Any, Optional
+from ...context import get_context
 from ...core.ops import Ops
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
-from ..transformer import OpsTransformer, transformer_by_name
-from ..encoder.vertexencoder import VertexEncoder
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
     StepRenderArtifact,
@@ -15,7 +14,8 @@ from ..artifact import (
     WorkPieceArtifact,
 )
 from ..artifact.base import TextureInstance
-from ..artifact.store import artifact_store
+from ..encoder.vertexencoder import VertexEncoder
+from ..transformer import OpsTransformer, transformer_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,7 @@ def make_step_artifact_in_subprocess(
         logger.warning("No workpiece info provided for step assembly.")
         return None
 
+    artifact_store = get_context().artifact_store
     combined_ops = Ops()
     texture_instances = []
     num_items = len(workpiece_assembly_info)

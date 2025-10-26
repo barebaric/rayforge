@@ -6,11 +6,11 @@ import cairo
 from typing import Optional, Tuple, Dict, Any, List
 from multiprocessing import shared_memory
 from ...shared.tasker.proxy import ExecutionContextProxy
+from ...context import get_context
 from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
 )
-from ..artifact.store import artifact_store
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
@@ -180,6 +180,7 @@ def make_workpiece_view_artifact_in_subprocess(
     proxy.set_message(_("Preparing 2D preview..."))
     context = RenderContext.from_dict(render_context_dict)
     handle = create_handle_from_dict(workpiece_artifact_handle_dict)
+    artifact_store = get_context().artifact_store
     artifact = artifact_store.get(handle)
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")

@@ -4,21 +4,20 @@ from typing import Optional, Tuple, List
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
+from ...context import get_context
+from ...pipeline.artifact import StepRenderArtifact
+from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
-from .scene_assembler import (
-    SceneDescription,
-    generate_scene_description,
-)
-from ...pipeline.artifact import StepRenderArtifact
-from ...pipeline.artifact.store import artifact_store
-from ...pipeline.pipeline import Pipeline
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .gl_utils import Shader
 from .ops_renderer import OpsRenderer
-from .texture_renderer import TextureArtifactRenderer
+from .scene_assembler import (
+    SceneDescription,
+    generate_scene_description,
+)
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
@@ -28,6 +27,7 @@ from .shaders import (
     TEXTURE_VERTEX_SHADER,
 )
 from .sphere_renderer import SphereRenderer
+from .texture_renderer import TextureArtifactRenderer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def prepare_scene_vertices_async(
         if not item.artifact_handle:
             continue
 
-        artifact = artifact_store.get(item.artifact_handle)
+        artifact = get_context().artifact_store.get(item.artifact_handle)
 
         if not isinstance(artifact, StepRenderArtifact):
             logger.error("Artifact is not a renderable step artifact.")
@@ -870,7 +870,7 @@ class Canvas3D(Gtk.GLArea):
             if not item.artifact_handle:
                 continue
 
-            artifact = artifact_store.get(item.artifact_handle)
+            artifact = get_context().artifact_store.get(item.artifact_handle)
             # Textures are part of the StepArtifact "render bundle"
             if isinstance(artifact, StepRenderArtifact):
                 for tex_instance in artifact.texture_instances:
