@@ -72,9 +72,28 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     await context.shutdown()
     context_module._context_instance = None
 
-    # Reset globals from the compatibility shim
-    config.config = None
-    config.config_mgr = None
-    config.machine_mgr = None
-    config.camera_mgr = None
-    config.material_mgr = None
+
+@pytest.fixture
+def test_machine_and_config(context_initializer):
+    """
+    Sets up a well-defined test machine and sets it as the active config
+    using the real application mechanisms. This replaces manual mocking.
+    """
+    from rayforge.machine.models.machine import Laser, Machine
+
+    context = context_initializer
+    test_laser = Laser()
+    test_laser.max_power = 1000
+    test_machine = Machine(context_initializer)
+    test_machine.dimensions = (200, 150)
+    test_machine.max_cut_speed = 5000
+    test_machine.max_travel_speed = 10000
+    test_machine.heads.clear()
+    test_machine.add_head(test_laser)
+
+    # Use the real managers from the context to set up the state
+    context.machine_mgr.machines.clear()
+    context.machine_mgr.add_machine(test_machine)
+    context.config.set_machine(test_machine)
+
+    yield test_machine, context.config

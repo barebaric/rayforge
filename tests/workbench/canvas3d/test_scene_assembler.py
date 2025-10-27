@@ -15,29 +15,6 @@ from rayforge.pipeline.artifact import (
 )
 
 
-@pytest.fixture(autouse=True)
-def setup_real_config(mocker, context_initializer):
-    """Setup test configuration for machine and laser."""
-    from rayforge.machine.models.machine import Laser, Machine
-
-    test_laser = Laser()
-    test_laser.max_power = 1000
-    test_machine = Machine(context_initializer)
-    test_machine.dimensions = (200, 150)
-    test_machine.max_cut_speed = 5000
-    test_machine.max_travel_speed = 10000
-    test_machine.heads.clear()
-    test_machine.add_head(test_laser)
-
-    class TestConfig:
-        machine = test_machine
-
-    test_config = TestConfig()
-    mocker.patch("rayforge.config.config", test_config)
-    mocker.patch("builtins._", lambda s: s, create=True)
-    return test_config
-
-
 @pytest.fixture
 def mock_doc() -> Doc:
     """Create a mock document with layers."""
@@ -83,6 +60,7 @@ def mock_step_artifact_handle() -> StepRenderArtifactHandle:
     )
 
 
+@pytest.mark.usefixtures("test_machine_and_config")
 class TestRenderItem:
     """Test the RenderItem dataclass for the new Step-based structure."""
 
@@ -106,6 +84,7 @@ class TestRenderItem:
         assert item.workpiece_uid == ""
 
 
+@pytest.mark.usefixtures("test_machine_and_config")
 class TestSceneDescription:
     """Test the SceneDescription dataclass."""
 
@@ -133,6 +112,7 @@ class TestSceneDescription:
         assert len(scene.render_items) == 0
 
 
+@pytest.mark.usefixtures("test_machine_and_config")
 class TestGenerateSceneDescription:
     """Test the generate_scene_description function."""
 
