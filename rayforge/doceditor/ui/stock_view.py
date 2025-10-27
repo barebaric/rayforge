@@ -5,7 +5,7 @@ from ...core.doc import Doc
 from ...core.stock import StockItem
 from ...shared.util.gtk import apply_css
 from ...shared.ui.formatter import format_value
-from ...config import config
+from ...context import get_context
 from ...icons import get_icon
 from .stock_properties_dialog import StockPropertiesDialog
 
@@ -126,7 +126,7 @@ class StockItemView(Gtk.Box):
         self.stock_item.updated.connect(self.on_stock_item_changed)
 
         # Connect to config changes to update when unit preferences change
-        self._config_handler_id = config.changed.connect(
+        self._config_handler_id = get_context().config.changed.connect(
             self.on_config_changed
         )
 
@@ -137,7 +137,7 @@ class StockItemView(Gtk.Box):
         """Overrides GObject.Object.do_destroy to disconnect signals."""
         self.stock_item.updated.disconnect(self.on_stock_item_changed)
         if hasattr(self, "_config_handler_id"):
-            config.changed.disconnect(self._config_handler_id)
+            get_context().config.changed.disconnect(self._config_handler_id)
 
     def on_name_escape_pressed(self, controller, keyval, keycode, state):
         """Handler for the 'key-pressed' signal to catch Escape."""

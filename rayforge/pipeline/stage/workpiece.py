@@ -6,9 +6,8 @@ from blinker import Signal
 from copy import deepcopy
 
 from .base import PipelineStage
-from ... import config
-from ...core.ops import Ops, ScanLinePowerCommand
 from ...context import get_context
+from ...core.ops import Ops, ScanLinePowerCommand
 from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -214,13 +213,13 @@ class WorkpieceGeneratorStage(PipelineStage):
 
         settings = step.get_settings()
 
-        machine = config.config.machine
-        if not machine:
+        config = get_context().config
+        if not config or not config.machine:
             logger.error("Cannot generate ops: No machine is configured.")
             return
 
         try:
-            selected_laser = step.get_selected_laser(machine)
+            selected_laser = step.get_selected_laser(config.machine)
         except ValueError as e:
             logger.error(f"Cannot select laser for step '{step.name}': {e}")
             return

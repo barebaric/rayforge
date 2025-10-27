@@ -1,9 +1,7 @@
 from typing import Tuple
 import pytest
-import pytest_asyncio
 import asyncio
 from pathlib import Path
-from functools import partial
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
@@ -17,66 +15,25 @@ from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.config import initialize_managers
 from rayforge.core.matrix import Matrix
 
 
+# Define the test-specific driver in the test file where it is used.
 class OtherDriver(NoDeviceDriver):
     """A second dummy driver class for testing purposes."""
 
     pass
 
 
+# Register the driver at the module level to ensure it's available
+# as soon as this test file is imported by pytest.
 driver_module.register_driver(OtherDriver)
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def task_mgr(monkeypatch):
-    """
-    Provides a test-isolated TaskManager, configured to bridge its main-thread
-    callbacks to the asyncio event loop. This instance replaces the global
-    task_mgr for the duration of the tests in this module.
-    """
-    main_loop = asyncio.get_running_loop()
-
-    def asyncio_scheduler(callback, *args, **kwargs):
-        main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
-
-    # Instantiate the TaskManager with our custom scheduler
-    tm = TaskManager(main_thread_scheduler=asyncio_scheduler)
-
-    # Patch the global singleton ONLY where it is defined.
-    # This ensures any app code that imports it directly gets our instance.
-    monkeypatch.setattr("rayforge.machine.models.machine.task_mgr", tm)
-
-    yield tm
-
-    # Properly shut down the manager and its thread after tests are done
-    tm.shutdown()
 
 
 @pytest.fixture
 def doc() -> Doc:
     """Provides a fresh Doc instance for each test."""
     return Doc()
-
-
-@pytest.fixture(autouse=True)
-def test_config_manager(tmp_path):
-    """Provides a test-isolated ConfigManager."""
-    from rayforge import config
-
-    temp_config_dir = tmp_path / "config"
-    temp_machine_dir = temp_config_dir / "machines"
-    config.CONFIG_DIR = temp_config_dir
-    config.MACHINE_DIR = temp_machine_dir
-
-    initialize_managers()
-    yield config.config_mgr
-    # Reset globals after test
-    config.config = None
-    config.config_mgr = None
-    config.machine_mgr = None
 
 
 @pytest.fixture
@@ -87,13 +44,19 @@ def machine() -> Machine:
 
 @pytest.fixture
 def doc_editor(
-    doc: Doc, test_config_manager, task_mgr: TaskManager
+    doc: Doc, context_initializer, task_mgr: TaskManager
 ) -> DocEditor:
     """
     Provides a DocEditor instance with real dependencies, configured
     to use the test's `doc` and `task_mgr` instances.
     """
-    return DocEditor(task_mgr, test_config_manager, doc)
+    from rayforge.context import get_context
+
+    config_manager = get_context().config_mgr
+    assert config_manager is not None, (
+        "ConfigManager was not initialized in context"
+    )
+    return DocEditor(task_mgr, config_manager, doc)
 
 
 def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
@@ -132,7 +95,11 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_set_driver(
-        self, machine: Machine, mocker, task_mgr: TaskManager
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        context_initializer,
     ):
         """Test that changing the driver triggers a rebuild and cleanup."""
         assert isinstance(machine.driver, NoDeviceDriver)

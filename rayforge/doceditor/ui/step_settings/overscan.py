@@ -4,7 +4,7 @@ from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import OverscanTransformer
 from ....shared.util.glib import DebounceMixin
 from ....shared.ui.unit_spin_row import UnitSpinRowHelper
-from .... import config as app_config
+from ....context import get_context
 
 if TYPE_CHECKING:
     from ....core.step import Step
@@ -128,7 +128,7 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _recalculate_distance(self):
         """Recalculate the overscan distance based on current step settings."""
-        machine = app_config.config.machine
+        machine = get_context().machine
         if not machine:
             return
 

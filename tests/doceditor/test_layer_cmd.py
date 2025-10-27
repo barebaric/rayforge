@@ -6,7 +6,7 @@ from rayforge.core.layer import Layer
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.layer_cmd import LayerCmd, AddLayerAndSetActiveCommand
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.config import ConfigManager
+from rayforge.core.config import ConfigManager
 
 
 @pytest.fixture

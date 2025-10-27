@@ -6,33 +6,11 @@ from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
-from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
-@pytest.fixture(autouse=True)
-def setup_real_config(mocker):
-    """Provides a mock machine config for all tests in this file."""
-    test_laser = Laser()
-    test_laser.max_power = 1000
-    test_machine = Machine()
-    test_machine.dimensions = (200, 150)
-    test_machine.max_cut_speed = 5000
-    test_machine.max_travel_speed = 10000
-    test_machine.acceleration = 1000
-    test_machine.heads.clear()
-    test_machine.add_head(test_laser)
-
-    class TestConfig:
-        machine = test_machine
-
-    test_config = TestConfig()
-    mocker.patch("rayforge.config.config", test_config)
-    return test_config
-
-
-@pytest.mark.usefixtures("setup_real_config")
+@pytest.mark.usefixtures("context_initializer")
 class TestMultipassRegeneration:
     """Test that changes to multipass transformer trigger re-generation."""
 

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 from gi.repository import GLib
 
-from ..config import config
+from ..context import get_context
 from ..pipeline.artifact import JobArtifact
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
@@ -90,8 +90,9 @@ class SimulatorCmd:
                 action.set_state(GLib.Variant.new_boolean(False))
 
         # Get work area size
-        if config.machine:
-            work_area_size = config.machine.dimensions
+        machine = get_context().machine
+        if machine:
+            work_area_size = machine.dimensions
         else:
             work_area_size = (100.0, 100.0)
 

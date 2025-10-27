@@ -1,7 +1,7 @@
 import logging
 from gi.repository import Gtk, Adw, Gio
 from typing import Optional, Tuple, List, cast, TYPE_CHECKING
-from ...config import config
+from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.stock import StockItem
@@ -471,8 +471,8 @@ class DocItemPropertiesWidget(Expander):
     def _on_reset_dimension_clicked(self, button, dimension_to_reset: str):
         if not self.items:
             return
-
-        bounds = config.machine.dimensions if config.machine else default_dim
+        machine = get_context().machine
+        bounds = machine.dimensions if machine else default_dim
 
         sizes_to_set = []
         items_to_resize = []
@@ -541,8 +541,9 @@ class DocItemPropertiesWidget(Expander):
     def _on_reset_y_clicked(self, button):
         if not self.items:
             return
-        bounds = config.machine.dimensions if config.machine else default_dim
-        y_axis_down = config.machine.y_axis_down if config.machine else False
+        machine = get_context().machine
+        bounds = machine.dimensions if machine else default_dim
+        y_axis_down = machine.y_axis_down if machine else False
 
         items_to_reset = []
         target_y_machine = 0.0
@@ -615,8 +616,9 @@ class DocItemPropertiesWidget(Expander):
             self.set_title(_("Item Properties"))
 
     def _update_main_properties(self, item: DocItem):
-        bounds = config.machine.dimensions if config.machine else default_dim
-        y_axis_down = config.machine.y_axis_down if config.machine else False
+        machine = get_context().machine
+        bounds = machine.dimensions if machine else default_dim
+        y_axis_down = machine.y_axis_down if machine else False
 
         size_world = item.size
         pos_world = item.pos
@@ -657,9 +659,8 @@ class DocItemPropertiesWidget(Expander):
 
         if is_single_item_with_size:
             assert isinstance(item, (WorkPiece, StockItem))
-            bounds = (
-                config.machine.dimensions if config.machine else default_dim
-            )
+            machine = get_context().machine
+            bounds = machine.dimensions if machine else default_dim
             natural_width, natural_height = item.get_default_size(*bounds)
             self.width_row.set_subtitle(
                 _("Natural: {val:.2f}").format(val=natural_width)

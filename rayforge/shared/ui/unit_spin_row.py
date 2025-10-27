@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from gi.repository import Adw, Gtk
 from blinker import Signal
-from ...config import config
+from ...context import get_context
 from ..units.definitions import Unit, get_unit, get_units_for_quantity
 from ..util.adwfix import get_spinrow_float
 from .formatter import format_value
@@ -41,7 +41,7 @@ class UnitSpinRowHelper:
         self._adj_handler_id = adjustment.connect(
             "value-changed", self._on_value_changed
         )
-        self._config_handler_id = config.changed.connect(
+        self._config_handler_id = get_context().config.changed.connect(
             self._on_config_changed
         )
         self._destroy_handler_id = self.spin_row.connect(
@@ -55,7 +55,7 @@ class UnitSpinRowHelper:
         if adj and self._adj_handler_id:
             adj.disconnect(self._adj_handler_id)
         if self._config_handler_id:
-            config.changed.disconnect(self._config_handler_id)
+            get_context().config.changed.disconnect(self._config_handler_id)
         self._adj_handler_id = None
         self._config_handler_id = None
         self._destroy_handler_id = None
@@ -86,6 +86,7 @@ class UnitSpinRowHelper:
         Sets the widget's unit, subtitle, and adjustment bounds based on
         config.
         """
+        config = get_context().config
         unit_name = config.unit_preferences.get(self.quantity)
         self._unit = get_unit(unit_name) if unit_name else None
         if not self._unit:
@@ -231,6 +232,7 @@ class UnitSelectorSpinRow:
 
         self.unit_dropdown.set_model(string_list)
 
+        config = get_context().config
         current_unit_name = config.unit_preferences.get(self.quantity)
 
         for i, unit in enumerate(units):
@@ -250,6 +252,7 @@ class UnitSelectorSpinRow:
         if selected_index < len(units):
             unit = units[selected_index]
 
+            config = get_context().config
             config.unit_preferences[self.quantity] = unit.name
             config.changed.send(config)
 

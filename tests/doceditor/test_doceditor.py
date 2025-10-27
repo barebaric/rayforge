@@ -1,16 +1,10 @@
 # flake8: noqa: E402
-import asyncio
 import logging
 from pathlib import Path
-from functools import partial
 import pytest
-import pytest_asyncio
 import re
-from rayforge import config
-from rayforge.worker_init import initialize_worker
-from rayforge.shared.tasker.manager import TaskManager
-from rayforge.pipeline import steps
 from rayforge.doceditor.editor import DocEditor
+from rayforge.pipeline import steps
 from rayforge.core.vectorization_config import TraceConfig
 
 logging.basicConfig(level=logging.INFO)
@@ -35,57 +29,6 @@ def parse_gcode_line(line: str) -> dict:
 
 
 @pytest.fixture
-def test_config_manager(tmp_path):
-    """Provides a test-isolated ConfigManager."""
-    # We still need to set up the config globals for modules that might
-    # use them (like WorkPiece), but the DocEditor itself will get an
-    # explicit instance.
-    temp_config_dir = tmp_path / "config"
-    temp_machine_dir = temp_config_dir / "machines"
-    config.CONFIG_DIR = temp_config_dir
-    config.MACHINE_DIR = temp_machine_dir
-
-    config.initialize_managers()
-    yield config.config_mgr
-
-    # Reset globals after test
-    config.config = None
-    config.config_mgr = None
-    config.machine_mgr = None
-
-
-@pytest_asyncio.fixture
-async def task_mgr():
-    """
-    Provides a test-isolated TaskManager, configured to bridge its main-thread
-    callbacks to the asyncio event loop.
-    """
-    main_loop = asyncio.get_running_loop()
-
-    def asyncio_scheduler(callback, *args, **kwargs):
-        main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
-
-    # Instantiate the TaskManager with our custom scheduler, eliminating the
-    # need for any monkeypatching.
-    tm = TaskManager(
-        main_thread_scheduler=asyncio_scheduler,
-        worker_initializer=initialize_worker,
-    )
-
-    yield tm
-
-    tm.shutdown()
-
-
-@pytest_asyncio.fixture
-async def editor(task_mgr, test_config_manager):
-    """
-    Provides a fully configured DocEditor.
-    """
-    return DocEditor(task_manager=task_mgr, config_manager=test_config_manager)
-
-
-@pytest.fixture
 def assets_path() -> Path:
     """
     Fixture providing the path to this test's assets directory.
@@ -94,6 +37,23 @@ def assets_path() -> Path:
     if not path.exists():
         pytest.fail(f"Asset directory not found. Please create it at: {path}")
     return path
+
+
+@pytest.fixture
+def editor(task_mgr, context_initializer):
+    """
+    Provides a fully configured DocEditor, using the initialized context.
+    """
+    from rayforge.context import get_context
+
+    # The context_initializer fixture ensures that get_context() returns
+    # a fully configured context.
+    context = get_context()
+    # Ensure config_mgr is not None
+    assert context.config_mgr is not None, (
+        "ConfigManager was not initialized by context_initializer"
+    )
+    return DocEditor(task_manager=task_mgr, config_manager=context.config_mgr)
 
 
 @pytest.mark.asyncio

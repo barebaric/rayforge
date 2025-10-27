@@ -7,7 +7,7 @@ from rayforge.core.layer import Layer
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.transform_cmd import TransformCmd
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.config import ConfigManager
+from rayforge.core.config import ConfigManager
 
 
 @pytest.fixture
@@ -43,8 +43,10 @@ def sample_items(mock_editor):
 
 def test_set_position(transform_cmd, sample_items):
     """Test setting the position of items."""
-    with patch("rayforge.doceditor.transform_cmd.config") as mock_config:
-        mock_config.machine = None
+    with patch(
+        "rayforge.doceditor.transform_cmd.get_context"
+    ) as mock_get_context:
+        mock_get_context.return_value.machine = None
         hm = transform_cmd._editor.history_manager
         initial_history_len = len(hm.undo_stack)
 
@@ -59,9 +61,13 @@ def test_set_position(transform_cmd, sample_items):
 
 def test_set_position_with_y_axis_down(transform_cmd, sample_items):
     """Test setting position when Y-axis is down."""
-    with patch("rayforge.doceditor.transform_cmd.config") as mock_config:
-        mock_config.machine.y_axis_down = True
-        mock_config.machine.dimensions = (100, 100)
+    with patch(
+        "rayforge.doceditor.transform_cmd.get_context"
+    ) as mock_get_context:
+        mock_machine = MagicMock()
+        mock_machine.y_axis_down = True
+        mock_machine.dimensions = (100, 100)
+        mock_get_context.return_value.machine = mock_machine
         hm = transform_cmd._editor.history_manager
         initial_history_len = len(hm.undo_stack)
 

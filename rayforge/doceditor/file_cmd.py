@@ -21,7 +21,6 @@ from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
-    from ..config import ConfigManager
     from ..shared.tasker.manager import TaskManager
     from ..shared.tasker.task import Task
 
@@ -36,11 +35,9 @@ class FileCmd:
         self,
         editor: "DocEditor",
         task_manager: "TaskManager",
-        config_manager: "ConfigManager",
     ):
         self._editor = editor
         self._task_manager = task_manager
-        self._config_manager = config_manager
 
     async def _run_importer_async(
         self,
@@ -244,7 +241,10 @@ class FileCmd:
         large, preserving aspect ratio. Then, it centers the items in the
         workspace.
         """
-        machine = self._config_manager.config.machine
+        config = get_context().config
+        if not config:
+            return
+        machine = config.machine
         if not machine:
             # Cannot scale or center if machine dimensions are unknown
             logger.warning(
@@ -316,7 +316,12 @@ class FileCmd:
         """Constructs the JobDescription from the current document state."""
         doc = self._editor.doc
         pipeline = self._editor.pipeline
-        machine = self._config_manager.config.machine
+        config = get_context().config
+        if not config:
+            raise ValueError(
+                "Cannot prepare job: Config not found in context."
+            )
+        machine = config.machine
         if not machine:
             raise ValueError("Cannot prepare job: No machine configured.")
 

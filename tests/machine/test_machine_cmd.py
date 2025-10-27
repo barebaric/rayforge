@@ -14,7 +14,6 @@ from rayforge.pipeline.artifact import (
     JobArtifactHandle,
 )
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.config import initialize_managers
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -51,21 +50,18 @@ async def task_mgr(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def test_config_manager(tmp_path):
+def test_config_manager(tmp_path, monkeypatch):
     """Provides a test-isolated ConfigManager."""
-    from rayforge import config
+    from rayforge.core.config import ConfigManager
 
-    temp_config_dir = tmp_path / "config"
-    temp_machine_dir = temp_config_dir / "machines"
-    config.CONFIG_DIR = temp_config_dir
-    config.MACHINE_DIR = temp_machine_dir
-
-    initialize_managers()
-    yield config.config_mgr
-    # Reset globals after test
-    config.config = None
-    config.config_mgr = None
-    config.machine_mgr = None
+    # We need to patch get_context to return a mock config manager for the
+    # editor
+    mock_config_mgr = MagicMock(spec=ConfigManager)
+    monkeypatch.setattr(
+        "rayforge.doceditor.editor.get_context",
+        lambda: MagicMock(config_mgr=mock_config_mgr),
+    )
+    yield mock_config_mgr
 
 
 @pytest.fixture

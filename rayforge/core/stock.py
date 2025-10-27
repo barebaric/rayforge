@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
+from ..context import get_context
 from .item import DocItem
 from .geo import Geometry
 from .matrix import Matrix
@@ -91,9 +92,8 @@ class StockItem(DocItem):
         if not self.material_uid:
             return None
 
-        # Import here to avoid circular imports
-        from ..config import material_mgr
-
+        context = get_context()
+        material_mgr = context.material_mgr
         return material_mgr.get_material_or_none(self.material_uid)
 
     def set_material(self, material_uid: str):

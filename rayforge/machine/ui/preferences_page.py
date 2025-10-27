@@ -1,6 +1,6 @@
 from typing import cast, Optional
 from gi.repository import Adw, Gtk
-from ...config import machine_mgr, config
+from ...context import get_context
 from ..models.machine import Machine
 from ..models.profile import MachineProfile
 from .settings_dialog import MachineSettingsDialog
@@ -39,14 +39,25 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         self.machines_group.add(add_button_box)
 
         # Signals
+        context = get_context()
         add_button.connect("clicked", self._on_add_machine_clicked)
-        machine_mgr.machine_added.connect(self._on_machine_list_changed)
-        machine_mgr.machine_removed.connect(self._on_machine_list_changed)
-        machine_mgr.machine_updated.connect(self._on_machine_list_changed)
-        config.changed.connect(self._on_machine_list_changed)
+        context.machine_mgr.machine_added.connect(
+            self._on_machine_list_changed
+        )
+        context.machine_mgr.machine_removed.connect(
+            self._on_machine_list_changed
+        )
+        context.machine_mgr.machine_updated.connect(
+            self._on_machine_list_changed
+        )
+        context.config.changed.connect(self._on_machine_list_changed)
 
     def _populate_machines_list(self):
         """Clears and rebuilds the rows within the ListBox."""
+        context = get_context()
+        machine_mgr = context.machine_mgr
+        config = context.config
+
         while child := self.machine_list_box.get_row_at_index(0):
             self.machine_list_box.remove(child)
 
@@ -144,7 +155,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
     ):
         """Handles the response from the delete confirmation dialog."""
         if response_id == "delete":
-            machine_mgr.remove_machine(machine.id)
+            get_context().machine_mgr.remove_machine(machine.id)
         dialog.close()
 
     def _on_add_machine_clicked(self, button):
@@ -159,6 +170,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
 
     def _on_profile_selected_for_add(self, sender, *, profile: MachineProfile):
         """Creates a machine and opens its settings editor."""
+        machine_mgr = get_context().machine_mgr
         new_machine = profile.create_machine()
         machine_mgr.add_machine(new_machine)
 

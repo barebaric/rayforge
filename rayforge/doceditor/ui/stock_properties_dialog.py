@@ -1,7 +1,7 @@
 import logging
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING, Tuple, Optional
-from ...config import material_mgr
+from ...context import get_context
 from ...core.stock import StockItem
 from ...shared.ui.unit_spin_row import UnitSelectorSpinRow
 from .material_selector import MaterialSelectorDialog
@@ -206,6 +206,7 @@ class StockPropertiesDialog(Adw.Window):
         self, material: "Material"
     ) -> Optional[str]:
         """Get the display name of the library that contains this material."""
+        material_mgr = get_context().material_mgr
         # Search through all libraries to find which one contains this material
         for library in material_mgr.get_libraries():
             if library.get_material(material.uid):

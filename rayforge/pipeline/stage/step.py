@@ -3,7 +3,6 @@ import logging
 from typing import TYPE_CHECKING, Dict, Optional
 from blinker import Signal
 
-from ... import config
 from ...context import get_context
 from ..artifact import (
     StepRenderArtifactHandle,
@@ -132,7 +131,10 @@ class StepGeneratorStage(PipelineStage):
         if not step.layer or step.uid in self._active_tasks:
             return
 
-        machine = config.config.machine
+        config = get_context().config
+        if not config:
+            return
+        machine = config.machine
         if not machine:
             logger.warning(
                 f"Cannot assemble step {step.uid}, no machine configured."

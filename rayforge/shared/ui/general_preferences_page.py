@@ -1,5 +1,5 @@
 from gi.repository import Adw, Gtk
-from ...config import config
+from ...context import get_context
 from ...shared.units.definitions import (
     get_units_for_quantity,
     get_base_unit_for_quantity,
@@ -33,6 +33,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         self.theme_row.set_title(_("Theme"))
 
+        config = get_context().config
         try:
             selected_index = self.THEME_MAP.index(config.theme)
         except ValueError:
@@ -144,25 +145,31 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         """Called when the user selects a new theme."""
         selected_index = combo_row.get_selected()
         theme_string = self.THEME_MAP[selected_index]
-        config.set_theme(theme_string)
+        get_context().config.set_theme(theme_string)
 
     def on_length_unit_changed(self, combo_row, _):
         """Called when the user selects a new length unit."""
         selected_index = combo_row.get_selected()
         if selected_index >= 0:
             selected_unit = self.length_units[selected_index]
-            config.set_unit_preference("length", selected_unit.name)
+            get_context().config.set_unit_preference(
+                "length", selected_unit.name
+            )
 
     def on_speed_unit_changed(self, combo_row, _):
         """Called when the user selects a new speed unit."""
         selected_index = combo_row.get_selected()
         if selected_index >= 0:
             selected_unit = self.speed_units[selected_index]
-            config.set_unit_preference("speed", selected_unit.name)
+            get_context().config.set_unit_preference(
+                "speed", selected_unit.name
+            )
 
     def on_acceleration_unit_changed(self, combo_row, _):
         """Called when the user selects a new acceleration unit."""
         selected_index = combo_row.get_selected()
         if selected_index >= 0:
             selected_unit = self.acceleration_units[selected_index]
-            config.set_unit_preference("acceleration", selected_unit.name)
+            get_context().config.set_unit_preference(
+                "acceleration", selected_unit.name
+            )
