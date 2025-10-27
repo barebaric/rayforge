@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Optional
 from gi.repository import Gtk, Adw, GLib, Gio
 from blinker import Signal
+from ...context import get_context
+from ...debug import LogEntry, LogType
 from ..driver.driver import TransportStatus
 from ..models.machine import Machine
-from ...debug import debug_log_manager, LogEntry, LogType
 
 
 css = """
@@ -75,7 +76,7 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         self.set_follows_content_size(True)
 
     def _populate_history(self):
-        log_snapshot = debug_log_manager._get_log_snapshot()
+        log_snapshot = get_context().debug_log_manager._get_log_snapshot()
         text_buffer = self.terminal.get_buffer()
         formatted_lines = [
             self._format_log_entry_for_terminal(entry)
@@ -166,7 +167,7 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
     def _on_save_log_clicked(self, button: Gtk.Button):
         self.save_log_button.set_sensitive(False)
 
-        archive_path = debug_log_manager.create_dump_archive()
+        archive_path = get_context().debug_log_manager.create_dump_archive()
 
         if not archive_path:
             self.notification_requested.send(

@@ -5,6 +5,7 @@ import asyncio
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
+from ...context import get_context
 from ...shared.util.glib import idle_add
 from ...shared.tasker import task_mgr
 from ...shared.varset import ValidationError
@@ -45,7 +46,7 @@ class Machine:
         self.driver_args: Dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
 
-        self.driver: Driver = NoDeviceDriver()
+        self.driver: Driver = NoDeviceDriver(get_context())
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
@@ -148,7 +149,7 @@ class Machine:
             )
             self.precheck_error = str(e)
 
-        new_driver = driver_cls()
+        new_driver = driver_cls(get_context())
 
         # Run setup. A setup error is considered fatal and prevents connection.
         try:

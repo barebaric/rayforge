@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
     from .machine.models.machine import Machine, MachineManager
+    from .debug import DebugLogManager
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class RayforgeContext:
         for subprocess initialization.
         """
         from .pipeline.artifact.store import ArtifactStore
+        from .debug import DebugLogManager
 
         self.artifact_store = ArtifactStore()
         # These managers are initialized to None. The main application thread
@@ -39,6 +41,7 @@ class RayforgeContext:
         self._config: Optional["Config"] = None
         self._camera_mgr: Optional["CameraManager"] = None
         self._material_mgr: Optional["LibraryManager"] = None
+        self._debug_log_manager = DebugLogManager()
 
     @property
     def machine(self) -> Optional["Machine"]:
@@ -82,6 +85,11 @@ class RayforgeContext:
         if self._material_mgr is None:
             raise RuntimeError("Material manager is not initialized.")
         return self._material_mgr
+
+    @property
+    def debug_log_manager(self) -> "DebugLogManager":
+        """Returns the debug log manager."""
+        return self._debug_log_manager
 
     def initialize_full_context(self):
         """
