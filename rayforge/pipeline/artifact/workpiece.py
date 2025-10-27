@@ -1,10 +1,12 @@
 from __future__ import annotations
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Type
-from ...core.ops import Ops
+from typing import Optional, Tuple, Dict, Any, Type, TYPE_CHECKING
 from ..coord import CoordinateSystem
 from .base import BaseArtifact, VertexData, TextureData
 from .handle import BaseArtifactHandle
+
+if TYPE_CHECKING:
+    from ...core.ops import Ops
 
 
 class WorkPieceArtifactHandle(BaseArtifactHandle):
@@ -48,7 +50,7 @@ class WorkPieceArtifact(BaseArtifact):
 
     def __init__(
         self,
-        ops: Ops,
+        ops: "Ops",
         is_scalable: bool,
         source_coordinate_system: CoordinateSystem,
         source_dimensions: Optional[Tuple[float, float]] = None,
@@ -84,6 +86,8 @@ class WorkPieceArtifact(BaseArtifact):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WorkPieceArtifact":
         """Creates an artifact from a dictionary."""
+        from ...core.ops import Ops
+
         ops = Ops.from_dict(data["ops"])
         common_args = {
             "ops": ops,
@@ -152,6 +156,7 @@ class WorkPieceArtifact(BaseArtifact):
             raise TypeError(
                 "WorkPieceArtifact requires a WorkPieceArtifactHandle"
             )
+        from ...core.ops import Ops
 
         ops = Ops.from_numpy_arrays(arrays)
         vertex_data = None

@@ -1,9 +1,11 @@
 from __future__ import annotations
-from typing import Optional, Dict, Any, Type
+from typing import Optional, Dict, Any, Type, TYPE_CHECKING
 import numpy as np
-from ...core.ops import Ops
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
+
+if TYPE_CHECKING:
+    from ...core.ops import Ops
 
 
 class StepOpsArtifactHandle(BaseArtifactHandle):
@@ -35,7 +37,7 @@ class StepOpsArtifact(BaseArtifact):
 
     def __init__(
         self,
-        ops: Ops,
+        ops: "Ops",
         time_estimate: Optional[float] = None,
     ):
         super().__init__()
@@ -52,6 +54,8 @@ class StepOpsArtifact(BaseArtifact):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StepOpsArtifact":
         """Creates an artifact from a dictionary."""
+        from ...core.ops import Ops
+
         ops = Ops.from_dict(data["ops"])
         return cls(
             ops=ops,
@@ -91,6 +95,7 @@ class StepOpsArtifact(BaseArtifact):
         """
         if not isinstance(handle, StepOpsArtifactHandle):
             raise TypeError("StepOpsArtifact requires a StepOpsArtifactHandle")
+        from ...core.ops import Ops
 
         ops = Ops.from_numpy_arrays(arrays)
         return cls(
