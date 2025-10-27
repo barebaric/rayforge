@@ -37,9 +37,9 @@ def doc() -> Doc:
 
 
 @pytest.fixture
-def machine() -> Machine:
+def machine(context_initializer) -> Machine:
     """Provides a default Machine instance which uses NoDeviceDriver."""
-    return Machine()
+    return Machine(context_initializer)
 
 
 @pytest.fixture
