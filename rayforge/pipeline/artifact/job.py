@@ -1,11 +1,13 @@
 from __future__ import annotations
 import json
 import numpy as np
-from typing import Optional, Dict, Any, Type
+from typing import Optional, Dict, Any, Type, TYPE_CHECKING
 from ...core.ops import Ops
-from ..encoder.gcode import GcodeOpMap
 from .base import BaseArtifact, VertexData
 from .handle import BaseArtifactHandle
+
+if TYPE_CHECKING:
+    from ..encoder.gcode import GcodeOpMap
 
 
 class JobArtifactHandle(BaseArtifactHandle):
@@ -56,7 +58,7 @@ class JobArtifact(BaseArtifact):
 
         # Caching properties for deserialized data
         self._gcode_str: Optional[str] = None
-        self._op_map_obj: Optional[GcodeOpMap] = None
+        self._op_map_obj: Optional["GcodeOpMap"] = None
 
     @property
     def gcode(self) -> Optional[str]:
@@ -68,10 +70,12 @@ class JobArtifact(BaseArtifact):
         return self._gcode_str
 
     @property
-    def op_map(self) -> Optional[GcodeOpMap]:
+    def op_map(self) -> Optional["GcodeOpMap"]:
         """
         Lazily decodes and caches the GcodeOpMap from its byte array.
         """
+        from ..encoder.gcode import GcodeOpMap
+
         if self._op_map_obj is None and self.op_map_bytes is not None:
             map_str = self.op_map_bytes.tobytes().decode("utf-8")
             map_dict = json.loads(map_str)
