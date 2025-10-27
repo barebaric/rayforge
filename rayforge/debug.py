@@ -115,12 +115,16 @@ class DebugLogManager:
             The Path to the created ZIP archive, or None on failure.
         """
         # Perform imports locally to avoid circular dependencies at startup
-        from .config import config, machine_mgr
+        from .context import get_context
         from .shared.ui.about import get_dependency_info
         from . import __version__
 
         logger.info("Creating debug dump archive...")
         try:
+            context = get_context()
+            config = context.config
+            machine_mgr = context.machine_mgr
+
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
 

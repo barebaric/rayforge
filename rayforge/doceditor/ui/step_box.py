@@ -5,7 +5,7 @@ from ...core.step import Step
 from ...icons import get_icon
 from ...undo.models.property_cmd import ChangePropertyCommand
 from ...shared.ui.formatter import format_value
-from ...config import config
+from ...context import get_context
 from .step_settings_dialog import StepSettingsDialog
 
 if TYPE_CHECKING:
@@ -50,14 +50,14 @@ class StepBox(Adw.ActionRow):
         # Connect to the model's signals to keep the UI in sync
         self.step.updated.connect(self.on_step_changed)
         self.step.visibility_changed.connect(self.on_step_changed)
-        config.changed.connect(self.on_step_changed)
+        get_context().config.changed.connect(self.on_step_changed)
         self.on_step_changed(self.step)  # trigger initial UI update
 
     def do_destroy(self):
         """Overrides GObject.Object.do_destroy to disconnect signals."""
         self.step.updated.disconnect(self.on_step_changed)
         self.step.visibility_changed.disconnect(self.on_step_changed)
-        config.changed.disconnect(self.on_step_changed)
+        get_context().config.changed.disconnect(self.on_step_changed)
 
     def set_prefix(self, prefix):
         self.prefix = prefix

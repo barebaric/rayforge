@@ -11,29 +11,6 @@ from rayforge.pipeline.artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
 )
-from rayforge.machine.models.machine import Machine, Laser
-
-
-@pytest.fixture(autouse=True)
-def setup_real_config(mocker):
-    """
-    This fixture is now autouse=True for this module, ensuring config is
-    always patched correctly.
-    """
-    test_laser = Laser()
-    test_machine = Machine()
-    test_machine.max_cut_speed = 5000
-    test_machine.max_travel_speed = 10000
-    test_machine.acceleration = 1000
-    test_machine.add_head(test_laser)
-
-    class TestConfig:
-        machine = test_machine
-
-    test_config = TestConfig()
-    mocker.patch("rayforge.pipeline.stage.step.config.config", test_config)
-    mocker.patch("builtins._", lambda s: s, create=True)
-    return test_config
 
 
 @pytest.fixture
@@ -89,6 +66,7 @@ def mock_doc_and_step():
     return doc, step
 
 
+@pytest.mark.usefixtures("context_initializer")
 class TestStepGeneratorStage:
     def test_instantiation(self, mock_task_mgr, mock_artifact_cache):
         """Test that StepGeneratorStage can be created."""

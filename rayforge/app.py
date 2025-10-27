@@ -200,13 +200,11 @@ def main():
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
-    import rayforge.config
     from .context import get_context
 
-    # Explicitly initialize the configuration managers. This ensures that
-    # this expensive, stateful setup only runs in the main process, not
-    # in any subprocesses spawned by the TaskManager.
-    rayforge.config.initialize_managers()
+    # Initialize the full application context. This creates all managers
+    # and sets up the backward-compatibility shim for old code.
+    get_context().initialize_full_context()
 
     # Run application
     app = App(args)
@@ -218,12 +216,14 @@ def main():
     # ===================================================================
 
     logger.info("Application exiting.")
+    context = get_context()
 
     # 1. Define an async function to shut down high-level components.
     async def shutdown_async():
         logger.info("Starting graceful async shutdown...")
-        if rayforge.config.machine_mgr:
-            await rayforge.config.machine_mgr.shutdown()
+        # The context now handles shutting down all its owned managers
+        # (machine_mgr, camera_mgr, artifact_store) in the correct order.
+        await context.shutdown()
         logger.info("Async shutdown complete.")
 
     # 2. Run the async shutdown on the TaskManager's event loop and wait for it.
@@ -241,15 +241,16 @@ def main():
         )
 
     # 3. Save configuration. This happens AFTER async tasks are done.
-    if rayforge.config.config_mgr:
-        rayforge.config.config_mgr.save()
-    logger.info("Saved config.")
+    if context.config_mgr:
+        context.config_mgr.save()
+        logger.info("Saved config.")
 
     # 4. As the final step, clean up the document editor,
-    # shut down the artifact store, and shut down the task manager itself.
+    # and shut down the task manager itself.
+    # The context shutdown (including artifact store) now happens in the async
+    # part above, so we only need to clean up the editor here.
     app.win.doc_editor.cleanup()
-    get_context().shutdown()
-    logger.info("Context shut down.")
+    logger.info("DocEditor cleaned up.")
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
 

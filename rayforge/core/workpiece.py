@@ -25,6 +25,7 @@ from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
 from .tab import Tab
+from ..context import get_context
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -444,16 +445,16 @@ class WorkPiece(DocItem):
         if current_pos is None or current_size is None:
             return None
 
-        from ..config import config
-
-        if config.machine is None:
+        context = get_context()
+        if not context.config or not context.machine:
             return None
 
+        machine = context.machine
         model_x, model_y = current_pos  # Canonical: Y-up, bottom-left
 
-        if config.machine.y_axis_down:
+        if machine.y_axis_down:
             # Convert to machine: Y-down, top-left
-            machine_height = config.machine.dimensions[1]
+            machine_height = machine.dimensions[1]
             machine_y = machine_height - model_y - current_size[1]
             return model_x, machine_y
         else:
@@ -470,18 +471,18 @@ class WorkPiece(DocItem):
         if pos is None or current_size is None:
             return
 
-        from ..config import config
+        context = get_context()
+        if not context.config or not context.machine:
+            return
 
-        if config.machine is None:
-            return None
-
+        machine = context.machine
         machine_x, machine_y = pos
         model_pos = (0.0, 0.0)
 
-        if config.machine.y_axis_down:
+        if machine.y_axis_down:
             # Convert from machine (Y-down, top-left) to
             # model (Y-up, bottom-left)
-            machine_height = config.machine.dimensions[1]
+            machine_height = machine.dimensions[1]
             model_y = machine_height - machine_y - current_size[1]
             model_pos = machine_x, model_y
         else:

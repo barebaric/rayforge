@@ -1,9 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Optional
-
 from gi.repository import GLib, Adw
-
-from .. import config
+from ..context import get_context
 
 if TYPE_CHECKING:
     from gi.repository import Gio
@@ -52,7 +50,7 @@ class ViewModeCmd:
                 win.toast_overlay.add_toast(toast)
                 return
 
-            if not config.config.machine:
+            if not get_context().machine:
                 logger.warning(
                     "Cannot show 3D view without an active machine."
                 )

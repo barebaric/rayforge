@@ -6,7 +6,7 @@ from blinker import Signal
 from .base import PipelineStage
 from ..artifact import JobArtifactHandle, create_handle_from_dict
 from .job_runner import JobDescription
-from ... import config
+from ...context import get_context
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -56,7 +56,8 @@ class JobGeneratorStage(PipelineStage):
             logger.warning("Job generation is already in progress.")
             return
 
-        if not config.config.machine:
+        machine = get_context().machine
+        if not machine:
             logger.error("Cannot generate job: No machine is configured.")
             return
 
@@ -78,7 +79,7 @@ class JobGeneratorStage(PipelineStage):
 
         job_desc = JobDescription(
             step_artifact_handles_by_uid=step_handles,
-            machine_dict=config.config.machine.to_dict(),
+            machine_dict=machine.to_dict(),
             doc_dict=doc.to_dict(),
         )
 

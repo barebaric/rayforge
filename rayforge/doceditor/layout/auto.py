@@ -21,6 +21,7 @@ from ...core.item import DocItem
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from .base import LayoutStrategy
+from ...context import get_context
 
 if TYPE_CHECKING:
     from ...shared.tasker.context import ExecutionContext
@@ -145,11 +146,10 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 context.set_message("Using whole surface as boundary...")
 
             # Get machine dimensions
-            from ...config import config
-
             machine_w, machine_h = 200.0, 200.0  # Fallback
-            if config and config.machine:
-                machine_w, machine_h = config.machine.dimensions
+            machine = get_context().machine
+            if machine:
+                machine_w, machine_h = machine.dimensions
 
             canvas_origin_world = (0.0, 0.0)
             canvas_w_mm, canvas_h_mm = machine_w, machine_h

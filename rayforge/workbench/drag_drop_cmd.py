@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gi.repository import Gdk, Gtk, Gio, GLib, Adw
-from ..config import config
+from ..context import get_context
 from ..image import bitmap_mime_types
 
 if TYPE_CHECKING:
@@ -413,7 +413,7 @@ class DragDropCmd:
             False (to not repeat GLib.idle_add)
         """
         try:
-            machine = config.machine
+            machine = get_context().machine
             if machine:
                 center_x = machine.dimensions[0] / 2
                 center_y = machine.dimensions[1] / 2

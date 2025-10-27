@@ -4,7 +4,7 @@ import logging
 from typing import Optional, cast, List
 from gi.repository import Gtk, Adw
 from blinker import Signal
-from ...config import material_mgr
+from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ...shared.util.adw import PreferencesGroupWithButton
 from ...icons import get_icon
@@ -145,6 +145,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
             select_name: The name (ID) of the library to select. If None,
                          selects the first library in the list.
         """
+        material_mgr = get_context().material_mgr
         material_mgr.reload_libraries()
         libraries = sorted(
             material_mgr.get_libraries(),
@@ -193,6 +194,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
 
     def _on_delete_library(self, library: MaterialLibrary):
         """Handle library deletion with confirmation dialog."""
+        material_mgr = get_context().material_mgr
         root = self.get_root()
         dialog = Adw.MessageDialog(
             transient_for=cast(Gtk.Window, root) if root else None,
@@ -223,6 +225,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
 
     def _on_edit_library(self, library: MaterialLibrary):
         """Handle library editing."""
+        material_mgr = get_context().material_mgr
         root = self.get_root()
         dialog = Adw.MessageDialog(
             transient_for=cast(Gtk.Window, root) if root else None,
@@ -275,6 +278,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
 
     def _on_add_clicked(self, button: Gtk.Button):
         """Handle add library button click."""
+        material_mgr = get_context().material_mgr
         root = self.get_root()
         dialog = Adw.MessageDialog(
             transient_for=cast(Gtk.Window, root) if root else None,

@@ -8,7 +8,6 @@ from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops
-from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.steps import create_contour_step
@@ -26,32 +25,6 @@ from rayforge.pipeline.stage.workpiece_runner import (
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
-
-
-@pytest.fixture(autouse=True)
-def setup_real_config(mocker):
-    test_laser = Laser()
-    test_laser.max_power = 1000
-    test_machine = Machine()
-    test_machine.dimensions = (200, 150)
-    test_machine.max_cut_speed = 5000
-    test_machine.max_travel_speed = 10000
-    test_machine.acceleration = 1000  # Add acceleration for tests
-    test_machine.heads.clear()
-    test_machine.add_head(test_laser)
-
-    class TestConfig:
-        machine = test_machine
-
-    test_config = TestConfig()
-    # Patch config where it is imported and used by all relevant modules.
-    mocker.patch("rayforge.config.config", test_config)
-    mocker.patch(
-        "rayforge.pipeline.stage.workpiece.config.config", test_config
-    )
-    mocker.patch("rayforge.pipeline.stage.step.config.config", test_config)
-    mocker.patch("builtins._", lambda s: s, create=True)
-    return test_config
 
 
 @pytest.fixture
@@ -105,6 +78,7 @@ def doc():
     return d
 
 
+@pytest.mark.usefixtures("context_initializer")
 class TestPipeline:
     # This data is used by multiple tests to create the ImportSource.
     svg_data = b"""

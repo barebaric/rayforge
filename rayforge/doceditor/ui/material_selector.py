@@ -3,7 +3,7 @@
 import logging
 from typing import Optional, List
 from gi.repository import Gtk, Adw, GObject
-from ...config import material_mgr
+from ...context import get_context
 from ...core.material import Material
 from ...core.material_library import MaterialLibrary
 
@@ -136,6 +136,7 @@ class MaterialSelectorDialog(Adw.Window):
 
     def _populate_libraries(self):
         """Populates the library dropdown."""
+        material_mgr = get_context().material_mgr
         model = Gtk.StringList()
         self.libraries = sorted(
             material_mgr.get_libraries(), key=lambda lib: lib.display_name

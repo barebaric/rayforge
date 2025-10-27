@@ -20,6 +20,7 @@ from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
 from .elements.tab_handle import TabHandleElement
 from . import context_menu
+from ..context import get_context
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -890,8 +891,7 @@ class WorkSurface(Canvas):
         Synchronizes the camera elements on the canvas with the cameras
         defined in the current machine model.
         """
-        from ..config import camera_mgr
-
+        camera_mgr = get_context().camera_mgr
         if not self.machine:
             self.set_camera_controllers([])
             return

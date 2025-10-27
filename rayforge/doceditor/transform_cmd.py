@@ -6,7 +6,7 @@ from ..core.workpiece import WorkPiece
 from ..core.stock import StockItem
 from ..core.matrix import Matrix
 from ..undo import ChangePropertyCommand
-from ..config import config
+from ..context import get_context
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -169,8 +169,9 @@ class TransformCmd:
                 size_world = item.size
                 x_world = x
 
-                if config.machine and config.machine.y_axis_down:
-                    machine_height = config.machine.dimensions[1]
+                machine = get_context().machine
+                if machine and machine.y_axis_down:
+                    machine_height = machine.dimensions[1]
                     y_world = machine_height - y - size_world[1]
                 else:
                     y_world = y

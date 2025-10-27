@@ -2,7 +2,7 @@ import logging
 from typing import List, cast
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
-from ...config import config
+from ...context import get_context
 from ...shared.varset.varsetwidget import VarSetWidget, VarSet
 from ...icons import get_icon
 
@@ -120,7 +120,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
 
         # Signal Connections & Initial State
         self.machine.changed.connect(self._on_machine_config_changed)
-        config.changed.connect(self._on_machine_config_changed)
+        get_context().config.changed.connect(self._on_machine_config_changed)
         self.machine.connection_status_changed.connect(
             self._on_connection_status_changed
         )
@@ -135,7 +135,9 @@ class DeviceSettingsPage(Adw.PreferencesPage):
     def on_destroy(self, _widget):
         logger.debug("on_destroy: Disconnecting signals.")
         self.machine.changed.disconnect(self._on_machine_config_changed)
-        config.changed.disconnect(self._on_machine_config_changed)
+        get_context().config.changed.disconnect(
+            self._on_machine_config_changed
+        )
         self.machine.connection_status_changed.disconnect(
             self._on_connection_status_changed
         )
@@ -348,7 +350,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
     def _on_activate_clicked(self, _banner):
         """Handler for the 'Activate Machine' button."""
         logger.debug(f"Activating machine: {self.machine.name}")
-        config.set_machine(self.machine)
+        get_context().config.set_machine(self.machine)
         self.show_toast.send(self, message=_("Machine activated."))
 
     def _on_error_timeout(self):

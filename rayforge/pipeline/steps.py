@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, List, Callable
-from .. import config
+from ..context import get_context
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
@@ -24,8 +24,9 @@ def create_contour_step(
     name: Optional[str] = None, optimize: bool = True
 ) -> Step:
     """Factory to create and configure a Contour step."""
-    assert config.config.machine
-    default_head = config.config.machine.get_default_head()
+    machine = get_context().machine
+    assert machine is not None
+    default_head = machine.get_default_head()
     step = Step(
         typelabel=_("Contour"),
         name=name,
@@ -48,16 +49,16 @@ def create_contour_step(
     ]
     step.selected_laser_uid = default_head.uid
     step.kerf_mm = default_head.spot_size_mm[0]
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
     return step
 
 
 def create_raster_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Rasterize step."""
-    assert config.config.machine
-    default_head = config.config.machine.get_default_head()
-    machine = config.config.machine
+    machine = get_context().machine
+    assert machine is not None
+    default_head = machine.get_default_head()
 
     # Calculate auto overscan distance based on machine capabilities
     # Use a reasonable default cut speed for calculation if not specified
@@ -91,9 +92,9 @@ def create_raster_step(name: Optional[str] = None) -> Step:
 
 def create_depth_engrave_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Depth Engrave step."""
-    assert config.config.machine
-    default_head = config.config.machine.get_default_head()
-    machine = config.config.machine
+    machine = get_context().machine
+    assert machine is not None
+    default_head = machine.get_default_head()
 
     # Calculate auto overscan distance based on machine capabilities
     # Use a reasonable default cut speed for calculation if not specified
@@ -128,8 +129,9 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
 
 def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Shrinkwrap (concave hull) step."""
-    assert config.config.machine
-    default_head = config.config.machine.get_default_head()
+    machine = get_context().machine
+    assert machine is not None
+    default_head = machine.get_default_head()
     step = Step(
         typelabel=_("Shrink Wrap"),
         name=name,
@@ -149,15 +151,16 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     ]
     step.selected_laser_uid = default_head.uid
     step.kerf_mm = default_head.spot_size_mm[0]
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
     return step
 
 
 def create_frame_step(name: Optional[str] = None) -> Step:
     """Factory to create and configure a Frame step."""
-    assert config.config.machine
-    default_head = config.config.machine.get_default_head()
+    machine = get_context().machine
+    assert machine is not None
+    default_head = machine.get_default_head()
     step = Step(
         typelabel=_("Frame Outline"),
         name=name,
@@ -174,14 +177,15 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     ]
     step.selected_laser_uid = default_head.uid
     step.kerf_mm = default_head.spot_size_mm[0]
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
     return step
 
 
 def create_material_test_step(name: Optional[str] = None) -> Step:
     """Factory to create a Material Test step."""
-    assert config.config.machine
+    machine = get_context().machine
+    assert machine is not None
     step = Step(
         typelabel=_("Material Test Grid"),
         name=name,
@@ -193,9 +197,9 @@ def create_material_test_step(name: Optional[str] = None) -> Step:
     step.per_workpiece_transformers_dicts = []
     # No post-step transformers - we don't want path optimization
     step.per_step_transformers_dicts = []
-    step.selected_laser_uid = config.config.machine.get_default_head().uid
-    step.max_cut_speed = config.config.machine.max_cut_speed
-    step.max_travel_speed = config.config.machine.max_travel_speed
+    step.selected_laser_uid = machine.get_default_head().uid
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
 
     return step
 

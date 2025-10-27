@@ -8,7 +8,7 @@ from rayforge.core.tab import Tab
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.tab_cmd import TabCmd
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.config import ConfigManager
+from rayforge.core.config import ConfigManager
 
 
 @pytest.fixture

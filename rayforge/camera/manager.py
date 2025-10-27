@@ -1,9 +1,10 @@
 import logging
 from typing import Dict, List, Optional
 from blinker import Signal
-from .models.camera import Camera
-from .controller import CameraController
+from ..context import get_context
 from ..machine.models.machine import Machine
+from .controller import CameraController
+from .models.camera import Camera
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,12 @@ class CameraManager:
         Performs initial setup after all managers are available.
         This is where signal connections are made to avoid circular imports.
         """
-        from ..config import config
+        config = get_context().config
+        if not config:
+            logger.error(
+                "Cannot initialize CameraManager: Config not found in context."
+            )
+            return
 
         config.changed.connect(self._on_config_changed)
         # Manually trigger the first check to set up the initial machine
@@ -42,9 +48,10 @@ class CameraManager:
     def shutdown(self):
         """Shuts down all active camera controllers."""
         logger.info("Shutting down all camera controllers.")
-        from ..config import config
+        config = get_context().config
+        if config:
+            config.changed.disconnect(self._on_config_changed)
 
-        config.changed.disconnect(self._on_config_changed)
         # Disconnect from the last active machine
         if self._active_machine:
             self._active_machine.changed.disconnect(
@@ -71,7 +78,9 @@ class CameraManager:
         responsible for tracking the active machine and connecting/
         disconnecting from its `changed` signal.
         """
-        from ..config import config
+        config = get_context().config
+        if not config:
+            return
 
         if self._active_machine is not config.machine:
             logger.debug(
@@ -117,7 +126,9 @@ class CameraManager:
         Synchronizes the set of active CameraControllers with the cameras
         defined in the currently active machine model.
         """
-        from ..config import config
+        config = get_context().config
+        if not config:
+            return
 
         active_machine = config.machine
         camera_configs_in_model: Dict[str, Camera] = {}

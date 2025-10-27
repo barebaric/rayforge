@@ -1,7 +1,7 @@
 from typing import Tuple, TYPE_CHECKING
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
-from ...config import config
+from ...context import get_context
 from ...undo import HistoryManager, ChangePropertyCommand
 from ...core.step import Step
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
@@ -35,9 +35,10 @@ class StepSettingsDialog(Adw.Window):
         self._debounced_args: Tuple = ()
 
         # Safely get machine properties with sensible fallbacks
-        if config.machine:
-            max_cut_speed = config.machine.max_cut_speed
-            max_travel_speed = config.machine.max_travel_speed
+        machine = get_context().machine
+        if machine:
+            max_cut_speed = machine.max_cut_speed
+            max_travel_speed = machine.max_travel_speed
         else:
             # Provide sensible defaults if no machine is configured
             max_cut_speed = 3000  # mm/min
@@ -99,8 +100,8 @@ class StepSettingsDialog(Adw.Window):
         page.add(general_group)
 
         # Laser Head Selector
-        if config.machine and config.machine.heads:
-            laser_names = [head.name for head in config.machine.heads]
+        if machine and machine.heads:
+            laser_names = [head.name for head in machine.heads]
             string_list = Gtk.StringList.new(laser_names)
             laser_row = Adw.ComboRow(title=_("Laser Head"), model=string_list)
 
@@ -110,7 +111,7 @@ class StepSettingsDialog(Adw.Window):
                 try:
                     initial_index = next(
                         i
-                        for i, head in enumerate(config.machine.heads)
+                        for i, head in enumerate(machine.heads)
                         if head.uid == step.selected_laser_uid
                     )
                 except StopIteration:
@@ -259,11 +260,12 @@ class StepSettingsDialog(Adw.Window):
 
     def on_laser_selected(self, combo_row, pspec):
         """Handles changes in the laser head selection."""
-        if not config.machine or not config.machine.heads:
+        machine = get_context().machine
+        if not machine or not machine.heads:
             return
 
         selected_index = combo_row.get_selected()
-        selected_laser = config.machine.heads[selected_index]
+        selected_laser = machine.heads[selected_index]
         new_uid = selected_laser.uid
 
         if self.step.selected_laser_uid == new_uid:

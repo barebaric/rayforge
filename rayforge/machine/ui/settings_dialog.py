@@ -1,6 +1,6 @@
 from gi.repository import Adw
 from ...camera.models import Camera
-from ...config import camera_mgr
+from ...context import get_context
 from ..models.machine import Machine
 from .general_preferences_page import GeneralPreferencesPage
 from .device_settings_page import DeviceSettingsPage
@@ -43,6 +43,7 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
         self.add(self.camera_page)
 
         # Sync UI with CameraManager signals
+        camera_mgr = get_context().camera_mgr
         camera_mgr.controller_added.connect(self._sync_camera_page)
         camera_mgr.controller_removed.connect(self._sync_camera_page)
         self.connect("destroy", self._on_destroy)
@@ -77,6 +78,7 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
 
     def _sync_camera_page(self, sender=None, **kwargs):
         """Updates child pages that depend on the list of live controllers."""
+        camera_mgr = get_context().camera_mgr
         # Get all live controllers and filter them for this specific
         # machine
         all_controllers = camera_mgr.controllers
@@ -90,5 +92,6 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
+        camera_mgr = get_context().camera_mgr
         camera_mgr.controller_added.disconnect(self._sync_camera_page)
         camera_mgr.controller_removed.disconnect(self._sync_camera_page)

@@ -2,7 +2,7 @@ import logging
 from typing import Optional, cast
 from gi.repository import Gtk, Gio, GObject
 from blinker import Signal
-from ...config import config, machine_mgr
+from ...context import get_context
 from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,17 @@ class MachineSelector(Gtk.DropDown):
         )
 
         # Listen to signals to keep the widget's state up-to-date.
-        machine_mgr.machine_added.connect(self.update_model_and_selection)
-        machine_mgr.machine_removed.connect(self.update_model_and_selection)
-        machine_mgr.machine_updated.connect(self.update_model_and_selection)
-        config.changed.connect(self.update_model_and_selection)
+        context = get_context()
+        context.machine_mgr.machine_added.connect(
+            self.update_model_and_selection
+        )
+        context.machine_mgr.machine_removed.connect(
+            self.update_model_and_selection
+        )
+        context.machine_mgr.machine_updated.connect(
+            self.update_model_and_selection
+        )
+        context.config.changed.connect(self.update_model_and_selection)
 
         # Initial population and selection sync.
         self.update_model_and_selection()
@@ -88,7 +95,10 @@ class MachineSelector(Gtk.DropDown):
         ensuring the widget's state is correct.
         """
         logger.debug("Syncing machine selector model and selection.")
-        machines = sorted(machine_mgr.machines.values(), key=lambda m: m.name)
+        context = get_context()
+        machines = sorted(
+            context.machine_mgr.machines.values(), key=lambda m: m.name
+        )
 
         # Block the GTK signal while we modify the list and selection
         # to prevent an infinite loop of signals.
@@ -101,7 +111,7 @@ class MachineSelector(Gtk.DropDown):
             selected_index = -1
             for i, machine in enumerate(machines):
                 self._model.append(MachineListItem(machine))
-                if config.machine and machine.id == config.machine.id:
+                if context.machine and machine.id == context.machine.id:
                     selected_index = i
 
             # Only set selected if it's a valid index (>= 0)

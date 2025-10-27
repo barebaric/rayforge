@@ -6,7 +6,6 @@ import asyncio
 
 from . import __version__
 from .shared.tasker import task_mgr
-from .config import config, config_mgr
 from .context import get_context
 from .machine.driver.driver import DeviceStatus, DeviceState
 from .machine.driver.dummy import NoDeviceDriver
@@ -141,6 +140,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the central document editor. This now owns the Doc and
         # Pipeline.
+        config_mgr = get_context().config_mgr
         assert config_mgr is not None
         self.doc_editor = DocEditor(task_mgr, config_mgr)
         self.machine_cmd = MachineCmd(self.doc_editor)
@@ -206,6 +206,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Determine initial machine dimensions for the 3D canvas and surface
+        config = get_context().config
         if config.machine:
             width_mm, height_mm = config.machine.dimensions
             y_down = getattr(config.machine, "y_axis_down", False)
@@ -417,6 +418,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Determine which view to show based on the machine's capability
         is_granular = False
+        config = get_context().config
         if config.machine:
             is_granular = config.machine.reports_granular_progress
         self.status_monitor.start_live_view(is_granular)
@@ -656,6 +658,7 @@ class MainWindow(Adw.ApplicationWindow):
         Handles the 'machine_selected' signal from the MachineSelector widget.
         The signature is compatible with the blinker library.
         """
+        config = get_context().config
         # The widget's signal is the source of truth for user-driven changes.
         # We just need to update the global config.
         if config.machine is None or config.machine.id != machine.id:
@@ -665,6 +668,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""
+        config = get_context().config
         if self.needs_homing and config.machine and config.machine.driver:
             if state.status == DeviceStatus.IDLE:
                 self.needs_homing = False
@@ -813,6 +817,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not is_sim_active and not is_gcode_visible:
             return
 
+        config = get_context().config
         if not config.machine:
             # Pass None to clear previews if no machine is configured
             self._on_previews_ready(None)
@@ -870,6 +875,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self._on_job_finished
             )
 
+        config = get_context().config
         self._current_machine = config.machine
 
         # Connect to the new active machine's signals
@@ -926,6 +932,7 @@ class MainWindow(Adw.ApplicationWindow):
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
         style_manager = Adw.StyleManager.get_default()
+        config = get_context().config
         if config.theme == "light":
             style_manager.set_color_scheme(Adw.ColorScheme.FORCE_LIGHT)
         elif config.theme == "dark":
@@ -937,6 +944,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def _update_actions_and_ui(self):
+        config = get_context().config
         active_machine = config.machine
         am = self.action_manager
         doc = self.doc_editor.doc
@@ -1121,12 +1129,14 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
+        config = get_context().config
         if not config.machine:
             return
         dialog = MachineSettingsDialog(machine=config.machine)
         dialog.present(self)
 
     def on_status_bar_clicked(self, sender):
+        config = get_context().config
         dialog = MachineLogDialog(self, config.machine)
         dialog.notification_requested.connect(self._on_dialog_notification)
         dialog.present(self)
@@ -1166,11 +1176,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.file.export_gcode_to_path(file_path)
 
     def on_home_clicked(self, action, param):
+        config = get_context().config
         if not config.machine:
             return
         self.machine_cmd.home_machine(config.machine)
 
     def on_frame_clicked(self, action, param):
+        config = get_context().config
         if not config.machine:
             return
         future = self.machine_cmd.frame_job(
@@ -1179,6 +1191,7 @@ class MainWindow(Adw.ApplicationWindow):
         future.add_done_callback(self._on_job_future_done)
 
     def on_send_clicked(self, action, param):
+        config = get_context().config
         if not config.machine:
             return
         future = self.machine_cmd.send_job(
@@ -1193,6 +1206,7 @@ class MainWindow(Adw.ApplicationWindow):
         Handles the 'change-state' signal for the 'hold' action.
         This is the correct handler for a stateful action.
         """
+        config = get_context().config
         if not config.machine:
             return
         is_requesting_hold = value.get_boolean()
@@ -1200,17 +1214,20 @@ class MainWindow(Adw.ApplicationWindow):
         action.set_state(value)
 
     def on_cancel_clicked(self, action, param):
+        config = get_context().config
         if not config.machine:
             return
         self.machine_cmd.cancel_job(config.machine)
 
     def on_clear_alarm_clicked(self, action, param):
+        config = get_context().config
         if not config.machine:
             return
         self.machine_cmd.clear_alarm(config.machine)
 
     def on_jog_clicked(self, action, param):
         """Show the jog control dialog."""
+        config = get_context().config
         if not config.machine:
             return
 
@@ -1312,6 +1329,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def show_machine_settings(self, action, param):
         """Opens the machine settings dialog for the current machine."""
+        config = get_context().config
         if not config.machine:
             return
         dialog = MachineSettingsDialog(machine=config.machine)

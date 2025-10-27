@@ -79,7 +79,7 @@ class DocEditor:
 
         # Instantiate and link command handlers, passing dependencies.
         self.edit = EditCmd(self)
-        self.file = FileCmd(self, self.task_manager, self._config_manager)
+        self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
@@ -135,9 +135,9 @@ class DocEditor:
     @property
     def machine_dimensions(self) -> Optional[Tuple[float, float]]:
         """Returns the configured machine's dimensions, or None."""
-        machine = self._config_manager.config.machine
-        if machine:
-            return machine.dimensions
+        config = get_context().config
+        if config and config.machine:
+            return config.machine.dimensions
         return None
 
     @property
