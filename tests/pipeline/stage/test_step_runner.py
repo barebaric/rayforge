@@ -22,8 +22,8 @@ from rayforge.pipeline.stage.step_runner import (
 
 
 @pytest.fixture
-def machine():
-    m = Machine()
+def machine(context_initializer):
+    m = Machine(context_initializer)
     m.max_cut_speed = 5000
     m.max_travel_speed = 10000
     m.acceleration = 1000

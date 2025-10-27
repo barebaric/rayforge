@@ -24,11 +24,11 @@ from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
 @pytest.fixture(autouse=True)
-def setup_real_config(mocker):
+def setup_real_config(mocker, context_initializer):
     """Provides a realistic machine configuration for tests."""
     test_laser = Laser()
     test_laser.max_power = 1000
-    test_machine = Machine()
+    test_machine = Machine(context_initializer)
     test_machine.dimensions = (200, 150)
     test_machine.max_cut_speed = 5000
     test_machine.max_travel_speed = 10000

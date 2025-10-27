@@ -65,9 +65,9 @@ def test_config_manager(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def machine():
+def machine(context_initializer):
     """Provides a default Machine instance with NoDeviceDriver."""
-    return Machine()
+    return Machine(context_initializer)
 
 
 @pytest.fixture

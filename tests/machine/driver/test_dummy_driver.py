@@ -16,9 +16,9 @@ class TestDummyDriverCallback:
         return NoDeviceDriver(context_initializer)
 
     @pytest.fixture
-    def machine(self):
+    def machine(self, context_initializer):
         """Provides a default Machine instance."""
-        return Machine()
+        return Machine(context_initializer)
 
     @pytest.fixture
     def doc(self):

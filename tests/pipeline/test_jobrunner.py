@@ -20,10 +20,13 @@ from rayforge.pipeline.stage.job_runner import (
 
 
 @pytest.fixture
-def machine():
-    m = Machine()
+def machine(context_initializer):
+    m = Machine(context_initializer)
     m.dimensions = (200, 150)
     m.add_head(Laser())
+    # This fixture uses the context to create the machine, but the test also
+    # needs to configure the active machine on the context.
+    context_initializer.config.set_machine(m)
     return m
 
 

@@ -5,7 +5,7 @@ import asyncio
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
-from ...context import get_context
+from ...context import get_context, RayforgeContext
 from ...shared.util.glib import idle_add
 from ...shared.tasker import task_mgr
 from ...shared.varset import ValidationError
@@ -34,10 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 class Machine:
-    def __init__(self):
+    def __init__(self, context: RayforgeContext):
         logger.debug("Machine.__init__")
         self.id = str(uuid.uuid4())
         self.name: str = _("Default Machine")
+        self.context = context
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
@@ -46,7 +47,7 @@ class Machine:
         self.driver_args: Dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
 
-        self.driver: Driver = NoDeviceDriver(get_context())
+        self.driver: Driver = NoDeviceDriver(context)
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
@@ -149,7 +150,7 @@ class Machine:
             )
             self.precheck_error = str(e)
 
-        new_driver = driver_cls(get_context())
+        new_driver = driver_cls(self.context)
 
         # Run setup. A setup error is considered fatal and prevents connection.
         try:
@@ -668,7 +669,8 @@ class Machine:
     def from_dict(
         cls, data: Dict[str, Any], is_inert: bool = False
     ) -> "Machine":
-        ma = cls()
+        context = get_context()
+        ma = cls(context)
         ma_data = data.get("machine", {})
         ma.id = ma_data.get("id", ma.id)
         ma.name = ma_data.get("name", ma.name)
@@ -777,7 +779,7 @@ class MachineManager:
         return self.machines.get(machine_id)
 
     def create_default_machine(self):
-        machine = Machine()
+        machine = Machine(get_context())
         self.add_machine(machine)
         return machine
 
