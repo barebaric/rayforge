@@ -83,6 +83,7 @@ async def wait_for_tasks_to_finish(task_mgr: TaskManager):
     pytest.fail("Task manager did not become idle in time.")
 
 
+@pytest.mark.usefixtures("context_initializer")
 class TestMachine:
     """Test suite for the Machine model and its command handlers."""
 
@@ -352,12 +353,14 @@ class TestMachine:
         assert machine.can_jog(Axis.Y)
         assert machine.can_jog(Axis.Z)
 
-    def test_new_driver_methods_grbl_network(self, machine):
+    def test_new_driver_methods_grbl_network(
+        self, machine, context_initializer
+    ):
         """Test new driver methods for GrblNetworkDriver."""
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblNetworkDriver()
+        driver = GrblNetworkDriver(context_initializer)
         driver.setup(host="test")
         machine.driver = driver
 
@@ -376,12 +379,14 @@ class TestMachine:
         assert machine.can_jog(Axis.Y)
         assert machine.can_jog(Axis.Z)
 
-    def test_new_driver_methods_grbl_serial(self, machine):
+    def test_new_driver_methods_grbl_serial(
+        self, machine, context_initializer
+    ):
         """Test new driver methods for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblSerialDriver()
+        driver = GrblSerialDriver(context_initializer)
         driver.setup(port="/dev/test", baudrate=115200)
         machine.driver = driver
 
@@ -401,7 +406,9 @@ class TestMachine:
         assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
-    async def test_home_method_with_multiple_axes(self, machine, mocker):
+    async def test_home_method_with_multiple_axes(
+        self, machine, mocker, context_initializer
+    ):
         """
         Test that home method accepts multiple axes using binary operators.
         """
@@ -411,7 +418,7 @@ class TestMachine:
         mock_send_and_wait = mocker.AsyncMock()
 
         # Create driver directly to avoid setup issues
-        driver = SmoothieDriver()
+        driver = SmoothieDriver(context_initializer)
         driver._send_and_wait = mock_send_and_wait
         machine.driver = driver
 
@@ -473,38 +480,44 @@ class TestMachine:
         # NoDeviceDriver is the default driver and should return True
         assert machine.reports_granular_progress
 
-    def test_reports_granular_progress_grbl_serial(self, machine: Machine):
+    def test_reports_granular_progress_grbl_serial(
+        self, machine: Machine, context_initializer
+    ):
         """Test reports_granular_progress returns True for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblSerialDriver()
+        driver = GrblSerialDriver(context_initializer)
         driver.setup(port="/dev/test", baudrate=115200)
         machine.driver = driver
 
         # GrblSerialDriver should report granular progress
         assert machine.reports_granular_progress
 
-    def test_reports_granular_progress_grbl_network(self, machine: Machine):
+    def test_reports_granular_progress_grbl_network(
+        self, machine: Machine, context_initializer
+    ):
         """
         Test reports_granular_progress returns False for GrblNetworkDriver.
         """
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblNetworkDriver()
+        driver = GrblNetworkDriver(context_initializer)
         driver.setup(host="test")
         machine.driver = driver
 
         # GrblNetworkDriver should not report granular progress
         assert not machine.reports_granular_progress
 
-    def test_reports_granular_progress_smoothie(self, machine: Machine):
+    def test_reports_granular_progress_smoothie(
+        self, machine: Machine, context_initializer
+    ):
         """Test reports_granular_progress returns True for SmoothieDriver."""
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
         # Create driver directly to avoid setup issues
-        driver = SmoothieDriver()
+        driver = SmoothieDriver(context_initializer)
         driver.setup(host="test", port=23)
         machine.driver = driver
 

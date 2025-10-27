@@ -1,6 +1,5 @@
-from .driver import Driver, Axis
-from ...core.ops import Ops
-from ...shared.varset import VarSet
+import asyncio
+import inspect
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -10,8 +9,10 @@ from typing import (
     Union,
     Awaitable,
 )
-import asyncio
-import inspect
+from ...context import RayforgeContext
+from ...core.ops import Ops
+from ...shared.varset import VarSet
+from .driver import Driver, Axis
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -27,6 +28,9 @@ class NoDeviceDriver(Driver):
     subtitle = _("No connection")
     supports_settings = False
     reports_granular_progress = True
+
+    def __init__(self, context: RayforgeContext):
+        super().__init__(context)
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:

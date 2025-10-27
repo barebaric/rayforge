@@ -12,10 +12,11 @@ from typing import (
     Union,
     Awaitable,
 )
-from ...debug import debug_log_manager, LogType
-from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
+from ...context import RayforgeContext
 from ...core.ops import Ops
+from ...debug import LogType
 from ...pipeline.encoder.gcode import GcodeEncoder
+from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
 from .driver import (
@@ -54,8 +55,8 @@ class GrblSerialDriver(Driver):
     supports_settings = True
     reports_granular_progress = True
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, context: RayforgeContext):
+        super().__init__(context)
         self.serial_transport: Optional[SerialTransport] = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -167,7 +168,7 @@ class GrblSerialDriver(Driver):
         if not self.serial_transport or not self.serial_transport.is_connected:
             raise ConnectionError("Serial transport not initialized")
         payload = (command + ("\n" if add_newline else "")).encode("utf-8")
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__, LogType.TX, payload
         )
         await self.serial_transport.send(payload)
@@ -215,7 +216,7 @@ class GrblSerialDriver(Driver):
                         try:
                             logger.debug("Sending status poll")
                             payload = b"?"
-                            debug_log_manager.add_entry(
+                            self._context.debug_log_manager.add_entry(
                                 self.__class__.__name__, LogType.TX, payload
                             )
                             if self.serial_transport:
@@ -282,7 +283,7 @@ class GrblSerialDriver(Driver):
                     self._current_request = request
                     try:
                         logger.debug(f"Executing command: {request.command}")
-                        debug_log_manager.add_entry(
+                        self._context.debug_log_manager.add_entry(
                             self.__class__.__name__,
                             LogType.TX,
                             request.payload,
@@ -392,7 +393,7 @@ class GrblSerialDriver(Driver):
                             "Serial transport disconnected during job."
                         )
 
-                    debug_log_manager.add_entry(
+                    self._context.debug_log_manager.add_entry(
                         self.__class__.__name__, LogType.TX, command_bytes
                     )
                     await self.serial_transport.send(command_bytes)
@@ -435,7 +436,7 @@ class GrblSerialDriver(Driver):
 
         if self.serial_transport:
             payload = b"\x18"
-            debug_log_manager.add_entry(
+            self._context.debug_log_manager.add_entry(
                 self.__class__.__name__, LogType.TX, payload
             )
             await self.serial_transport.send(payload)
@@ -600,7 +601,9 @@ class GrblSerialDriver(Driver):
         Primary handler for incoming serial data. Decodes, buffers, and
         delegates processing of complete messages.
         """
-        debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
+        self._context.debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.RX, data
+        )
         try:
             data_str = data.decode("utf-8")
         except UnicodeDecodeError:

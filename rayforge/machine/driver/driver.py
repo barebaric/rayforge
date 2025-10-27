@@ -14,7 +14,8 @@ from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto, IntFlag
 from ...core.ops import Ops
-from ...debug import debug_log_manager, LogType
+from ...debug import LogType
+from ...context import RayforgeContext
 from ..transport import TransportStatus
 
 if TYPE_CHECKING:
@@ -132,7 +133,8 @@ class Driver(ABC):
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
 
-    def __init__(self):
+    def __init__(self, context: RayforgeContext):
+        self._context = context
         self.log_received = Signal()
         self.state_changed = Signal()
         self.command_status_changed = Signal()
@@ -321,13 +323,13 @@ class Driver(ABC):
         pass
 
     def _log(self, message: str):
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, message
         )
         self.log_received.send(self, message=message)
 
     def _on_state_changed(self):
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__, LogType.STATE_CHANGE, self.state
         )
         self.state_changed.send(self, state=self.state)
@@ -340,7 +342,7 @@ class Driver(ABC):
         for vs in settings:
             all_values.update(vs.get_values())
 
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__,
             LogType.APP_INFO,
             f"Device settings read: {all_values}",
@@ -353,7 +355,7 @@ class Driver(ABC):
         log_data = f"Command status: {status.name}"
         if message:
             log_data += f" - {message}"
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, log_data
         )
         self.command_status_changed.send(self, status=status, message=message)
@@ -364,7 +366,7 @@ class Driver(ABC):
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"
-        debug_log_manager.add_entry(
+        self._context.debug_log_manager.add_entry(
             self.__class__.__name__, LogType.APP_INFO, log_data
         )
         self.connection_status_changed.send(

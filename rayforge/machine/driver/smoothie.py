@@ -10,10 +10,11 @@ from typing import (
     Union,
     Awaitable,
 )
-from ...debug import debug_log_manager, LogType
-from ...shared.varset import VarSet, HostnameVar, IntVar
+from ...context import RayforgeContext
 from ...core.ops import Ops
+from ...debug import LogType
 from ...pipeline.encoder.gcode import GcodeEncoder
+from ...shared.varset import VarSet, HostnameVar, IntVar
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
@@ -40,8 +41,8 @@ class SmoothieDriver(Driver):
     supports_settings = False
     reports_granular_progress = True
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, context: RayforgeContext):
+        super().__init__(context)
         self.telnet = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -149,7 +150,9 @@ class SmoothieDriver(Driver):
         if wait_for_ok:
             self._ok_event.clear()
 
-        debug_log_manager.add_entry(self.__class__.__name__, LogType.TX, cmd)
+        self._context.debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.TX, cmd
+        )
         await self.telnet.send(cmd)
 
         if wait_for_ok:
@@ -270,7 +273,9 @@ class SmoothieDriver(Driver):
         await self._send_and_wait(b"M999")
 
     def on_telnet_data_received(self, sender, data: bytes):
-        debug_log_manager.add_entry(self.__class__.__name__, LogType.RX, data)
+        self._context.debug_log_manager.add_entry(
+            self.__class__.__name__, LogType.RX, data
+        )
         data_str = data.decode("utf-8")
         for line in data_str.splitlines():
             self._log(line)

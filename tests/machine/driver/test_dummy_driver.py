@@ -11,9 +11,9 @@ class TestDummyDriverCallback:
     """Test suite for the dummy driver's on_command_done callback."""
 
     @pytest.fixture
-    def driver(self):
+    def driver(self, context_initializer):
         """Provides a fresh NoDeviceDriver instance for each test."""
-        return NoDeviceDriver()
+        return NoDeviceDriver(context_initializer)
 
     @pytest.fixture
     def machine(self):

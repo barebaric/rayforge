@@ -174,7 +174,3 @@ class DebugLogManager:
         except Exception:
             logger.error("Failed to create debug dump archive", exc_info=True)
             return None
-
-
-# Create a singleton instance for global use
-debug_log_manager = DebugLogManager()
