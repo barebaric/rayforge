@@ -146,6 +146,9 @@ class Pipeline:
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
         )
+        self._job_stage.generation_failed.connect(
+            self._on_job_generation_failed
+        )
         self._workpiece_view_stage.view_artifact_ready.connect(
             self._on_workpiece_view_ready
         )
@@ -226,6 +229,9 @@ class Pipeline:
         )
         self._job_stage.generation_finished.connect(
             self._on_job_generation_finished
+        )
+        self._job_stage.generation_failed.connect(
+            self._on_job_generation_failed
         )
         self._workpiece_view_stage.view_artifact_ready.connect(
             self._on_workpiece_view_ready
@@ -533,9 +539,25 @@ class Pipeline:
         sender: JobGeneratorStage,
         *,
         handle: Optional[BaseArtifactHandle],
+        task_status: str,
     ) -> None:
-        """Relays signal from the job stage."""
+        """Relays signal from the job stage for successful completion."""
         self.job_ready.send(self, handle=handle)
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
+
+    def _on_job_generation_failed(
+        self,
+        sender: JobGeneratorStage,
+        *,
+        error: Optional[Exception],
+        task_status: str,
+    ) -> None:
+        """Relays signal from the job stage for failed completion."""
+        # For now, a failure is treated like a completion with no handle.
+        # Future UI could use the error for notifications.
+        self.job_ready.send(self, handle=None)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -704,24 +726,44 @@ class Pipeline:
             when_done(None, exc)
             return
 
-        def _one_shot_handler(sender, *, handle: Optional[JobArtifactHandle]):
-            """
-            A temporary signal handler that calls the user's callback
-            and then disconnects itself.
-            """
+        def _one_shot_success_handler(
+            sender: Any,
+            *,
+            handle: Optional[JobArtifactHandle],
+            task_status: str,
+        ):
             try:
-                # The `handle` can be None if the task failed or if the
-                # job was empty. The `when_done` callback needs to
-                # handle this case gracefully.
                 when_done(handle, None)
             except Exception as e:
                 when_done(None, e)
             finally:
                 self._job_stage.generation_finished.disconnect(
-                    _one_shot_handler
+                    _one_shot_success_handler
+                )
+                self._job_stage.generation_failed.disconnect(
+                    _one_shot_failure_handler
                 )
 
-        self._job_stage.generation_finished.connect(_one_shot_handler)
+        def _one_shot_failure_handler(
+            sender: Any,
+            *,
+            error: Optional[Exception],
+            task_status: str,
+        ):
+            try:
+                when_done(None, error)
+            except Exception as e:
+                when_done(None, e)
+            finally:
+                self._job_stage.generation_finished.disconnect(
+                    _one_shot_success_handler
+                )
+                self._job_stage.generation_failed.disconnect(
+                    _one_shot_failure_handler
+                )
+
+        self._job_stage.generation_finished.connect(_one_shot_success_handler)
+        self._job_stage.generation_failed.connect(_one_shot_failure_handler)
         self.generate_job()
 
     async def generate_job_artifact_async(

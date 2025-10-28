@@ -30,6 +30,7 @@ class JobGeneratorStage(PipelineStage):
         super().__init__(task_manager, artifact_cache)
         self._active_task: Optional["Task"] = None
         self.generation_finished = Signal()
+        self.generation_failed = Signal()
 
     @property
     def is_busy(self) -> bool:
@@ -71,7 +72,9 @@ class JobGeneratorStage(PipelineStage):
 
         if not step_handles:
             logger.warning("No step artifacts to assemble for the job.")
-            self.generation_finished.send(self, handle=None)
+            self.generation_finished.send(
+                self, handle=None, task_status="completed"
+            )
             return
 
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
@@ -114,22 +117,34 @@ class JobGeneratorStage(PipelineStage):
     def _on_job_assembly_complete(self, task: "Task"):
         """Callback for when the final job assembly task finishes."""
         self._active_task = None
-        final_handle = self._artifact_cache.get_job_handle()
+        task_status = task.get_status()
 
-        if task.get_status() == "completed":
+        if task_status == "completed":
+            final_handle = self._artifact_cache.get_job_handle()
             if final_handle:
                 logger.info("Job generation successful.")
             else:
                 logger.info(
                     "Job generation finished with no artifact produced."
                 )
-        else:
-            logger.error(
-                f"Job generation failed with status: {task.get_status()}"
+            self.generation_finished.send(
+                self, handle=final_handle, task_status=task_status
             )
-            # The artifact put in the cache by the event handler is now
-            # invalid. Invalidate it to ensure it's released.
+        else:
+            logger.error(f"Job generation failed with status: {task_status}")
             self._artifact_cache.invalidate_for_job()
-            final_handle = None
+            error = None
+            try:
+                # This will re-raise the exception from the subprocess
+                task.result()
+            except Exception as e:
+                error = e
 
-        self.generation_finished.send(self, handle=final_handle)
+            if task_status == "failed":
+                self.generation_failed.send(
+                    self, error=error, task_status=task_status
+                )
+            else:  # e.g., "cancelled"
+                self.generation_finished.send(
+                    self, handle=None, task_status=task_status
+                )
