@@ -1,3 +1,4 @@
+from typing import cast
 import unittest
 import json
 import numpy as np
@@ -5,6 +6,7 @@ from multiprocessing import shared_memory
 from rayforge.context import get_context
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -78,7 +80,7 @@ class TestArtifactStore(unittest.TestCase):
     def _create_sample_final_job_artifact(self) -> JobArtifact:
         """Helper to generate a final job artifact for tests."""
         gcode_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
-        op_map = {0: 0, 1: 1, 2: 2}
+        op_map = {"op_to_gcode": {0: [0, 1]}, "gcode_to_op": {0: 0, 1: 0}}
         op_map_bytes = np.frombuffer(
             json.dumps(op_map).encode("utf-8"), dtype=np.uint8
         )
@@ -198,10 +200,22 @@ class TestArtifactStore(unittest.TestCase):
         # Decode and verify content
         gcode_str = retrieved_artifact.gcode_bytes.tobytes().decode("utf-8")
         op_map_str = retrieved_artifact.op_map_bytes.tobytes().decode("utf-8")
-        op_map = {int(k): v for k, v in json.loads(op_map_str).items()}
+        raw_op_map = json.loads(op_map_str)
+
+        # Reconstruct the map with integer keys, just like the app does.
+        op_map = {
+            "op_to_gcode": {
+                int(k): v for k, v in raw_op_map["op_to_gcode"].items()
+            },
+            "gcode_to_op": {
+                int(k): v for k, v in raw_op_map["gcode_to_op"].items()
+            },
+        }
 
         self.assertEqual(gcode_str, "G1 X10 Y20")
-        self.assertDictEqual(op_map, {0: 0, 1: 1, 2: 2})
+        self.assertDictEqual(
+            op_map, {"op_to_gcode": {0: [0, 1]}, "gcode_to_op": {0: 0, 1: 0}}
+        )
 
         # 4. Release
         get_context().artifact_store.release(handle)
@@ -209,6 +223,50 @@ class TestArtifactStore(unittest.TestCase):
         # 5. Verify release
         with self.assertRaises(FileNotFoundError):
             shared_memory.SharedMemory(name=handle.shm_name)
+
+    def test_adopt_and_release(self):
+        """
+        Tests that `adopt` correctly takes ownership of a shared memory
+        block, simulating a handover from a worker process.
+        """
+        original_artifact = self._create_sample_vertex_artifact()
+        main_store = get_context().artifact_store
+
+        # 1. Simulate a worker creating an artifact in its own store instance.
+        worker_store = ArtifactStore()
+        handle = worker_store.put(original_artifact)
+
+        # The main store should not know about this block yet.
+        self.assertNotIn(handle.shm_name, main_store._managed_shms)
+
+        # 2. The worker task finishes. Its store instance might be garbage
+        # collected, but the memory block persists because the worker *process*
+        # (from the pool) is still alive. We simulate this by simply letting
+        # worker_store go out of scope without calling shutdown().
+
+        # 3. Simulate the main process receiving an event and adopting
+        # the handle.
+        main_store.adopt(handle)
+        self.assertIn(handle.shm_name, main_store._managed_shms)
+
+        # 4. Verify the block is still accessible by getting the artifact.
+        try:
+            retrieved = cast(WorkPieceArtifact, main_store.get(handle))
+            self.assertEqual(
+                original_artifact.generation_size, retrieved.generation_size
+            )
+        except FileNotFoundError:
+            self.fail("Shared memory block was not found after adoption.")
+
+        # 5. Release the memory via the main store's mechanism.
+        main_store.release(handle)
+
+        # 6. Verify that the memory is now gone.
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle.shm_name)
+
+        # 7. Verify the block is no longer tracked by the main store.
+        self.assertNotIn(handle.shm_name, main_store._managed_shms)
 
 
 if __name__ == "__main__":
