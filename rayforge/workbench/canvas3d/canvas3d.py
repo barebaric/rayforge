@@ -1,11 +1,11 @@
 import logging
 import math
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
-from ...context import get_context
-from ...pipeline.artifact import StepRenderArtifact
+from ...context import RayforgeContext
+from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
 from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
@@ -29,11 +29,15 @@ from .shaders import (
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
 
+if TYPE_CHECKING:
+    from ...core.doc import Doc
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def prepare_scene_vertices_async(
+    artifact_store: ArtifactStore,
     scene_description: SceneDescription,
     color_set: ColorSet,
     scene_model_matrix: np.ndarray,
@@ -63,7 +67,7 @@ def prepare_scene_vertices_async(
         if not item.artifact_handle:
             continue
 
-        artifact = get_context().artifact_store.get(item.artifact_handle)
+        artifact = artifact_store.get(item.artifact_handle)
 
         if not isinstance(artifact, StepRenderArtifact):
             logger.error("Artifact is not a renderable step artifact.")
@@ -177,7 +181,8 @@ class Canvas3D(Gtk.GLArea):
 
     def __init__(
         self,
-        doc,
+        context: RayforgeContext,
+        doc: "Doc",
         pipeline: "Pipeline",
         width_mm: float,
         depth_mm: float,
@@ -185,6 +190,7 @@ class Canvas3D(Gtk.GLArea):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self.context = context
         self.doc = doc
         self.pipeline = pipeline
         self.width_mm = width_mm
@@ -870,7 +876,7 @@ class Canvas3D(Gtk.GLArea):
             if not item.artifact_handle:
                 continue
 
-            artifact = get_context().artifact_store.get(item.artifact_handle)
+            artifact = self.context.artifact_store.get(item.artifact_handle)
             # Textures are part of the StepArtifact "render bundle"
             if isinstance(artifact, StepRenderArtifact):
                 for tex_instance in artifact.texture_instances:
@@ -896,6 +902,7 @@ class Canvas3D(Gtk.GLArea):
             logger.debug("[CANVAS3D] Scheduling scene preparation task.")
             self._scene_preparation_task = task_mgr.run_thread(
                 prepare_scene_vertices_async,
+                self.context.artifact_store,
                 scene_description,
                 self._color_set,
                 self._model_matrix,
