@@ -1,6 +1,5 @@
 from __future__ import annotations
 import logging
-import asyncio
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
 from blinker import Signal
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
@@ -169,124 +168,71 @@ class MachineCmd:
         ops = artifact.ops
         await self._execute_monitored_job(ops, machine, on_progress)
 
-    def _start_job(
+    async def _start_job(
         self,
         machine: "Machine",
         job_name: str,
         final_job_action: Callable[..., Coroutine],
         on_progress: Optional[Callable[[dict], None]] = None,
-    ) -> asyncio.Future:
+    ):
         """
-        Generic, non-blocking job starter that orchestrates assembly
-        and execution.
+        Generic, awaitable job starter that orchestrates assembly and
+        execution.
         """
+        handle: Optional[JobArtifactHandle] = None
         try:
-            # Get the future and its loop from the current async context.
-            caller_loop = asyncio.get_running_loop()
-            outer_future = caller_loop.create_future()
-        except RuntimeError:
-            # Fallback for non-async contexts (e.g., UI thread). The new
-            # future gets associated with the main thread's default loop.
-            outer_future = asyncio.Future()
-            caller_loop = outer_future.get_loop()
+            # 1. Await the job artifact generation from the pipeline
+            handle = await self._editor.pipeline.generate_job_artifact_async()
 
-        async def _run_entire_job(ctx):
-            # This inner future is for managing the await inside this coroutine
-            job_future = asyncio.get_running_loop().create_future()
+            if not handle:
+                logger.warning(
+                    f"{job_name.capitalize()} job has no operations."
+                )
+                return
 
-            def _on_assembly_done(
-                handle: Optional[JobArtifactHandle], error: Optional[Exception]
-            ):
-                if error:
-                    logger.error(
-                        f"Failed to assemble job for {job_name}",
-                        exc_info=error,
-                    )
-                    if not job_future.done():
-                        job_future.set_exception(error)
-                    self._editor.notification_requested.send(
-                        self,
-                        message=_(f"{job_name.capitalize()} failed: {error}"),
-                    )
-                    if handle:
-                        get_context().artifact_store.release(handle)
-                    return
+            # 2. Await the machine action (send/frame)
+            await final_job_action(handle, machine, on_progress)
 
-                if not handle:
-                    logger.warning(
-                        f"{job_name.capitalize()} job has no operations."
-                    )
-                    if not job_future.done():
-                        job_future.set_result(None)
-                    return
-
-                async def _run_job_with_cleanup(ctx):
-                    try:
-                        await final_job_action(handle, machine, on_progress)
-                        if not job_future.done():
-                            job_future.set_result(True)
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to execute {job_name} job", exc_info=True
-                        )
-                        if not job_future.done():
-                            job_future.set_exception(e)
-                        self._editor.notification_requested.send(
-                            self,
-                            message=_(f"{job_name.capitalize()} failed: {e}"),
-                        )
-                    finally:
-                        get_context().artifact_store.release(handle)
-
-                self._editor.task_manager.add_coroutine(_run_job_with_cleanup)
-
-            self._editor.pipeline.generate_job_artifact(
-                when_done=_on_assembly_done
+        except Exception as e:
+            logger.error(
+                f"Failed to assemble or execute {job_name} job", exc_info=True
             )
+            self._editor.notification_requested.send(
+                self, message=_(f"{job_name.capitalize()} failed: {e}")
+            )
+            # Re-raise the exception so the awaiting caller fails.
+            raise
+        finally:
+            # 3. Always release the artifact to prevent memory leaks
+            if handle:
+                get_context().artifact_store.release(handle)
 
-            # Wait for the internal job to finish and transfer the result
-            # to the outer future in a thread-safe way.
-            try:
-                result = await job_future
-                if not outer_future.done():
-                    caller_loop.call_soon_threadsafe(
-                        outer_future.set_result, result
-                    )
-            except Exception as e:
-                if not outer_future.done():
-                    caller_loop.call_soon_threadsafe(
-                        outer_future.set_exception, e
-                    )
-
-        self._editor.task_manager.add_coroutine(_run_entire_job)
-        return outer_future
-
-    def frame_job(
+    async def frame_job(
         self,
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]] = None,
-    ) -> asyncio.Future:
+    ):
         """
         Asynchronously generates ops and runs a framing job.
-        This is a non-blocking call that returns a future for completion.
+        This is an awaitable coroutine.
         """
-        return self._start_job(
+        await self._start_job(
             machine,
             job_name="framing",
             final_job_action=self._run_frame_action,
             on_progress=on_progress,
         )
 
-    def send_job(
+    async def send_job(
         self,
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]] = None,
-    ) -> asyncio.Future:
+    ):
         """
         Asynchronously generates ops and sends the job to the machine.
-        This is a non-blocking call that returns a future for completion.
+        This is an awaitable coroutine.
         """
-        return self._start_job(
+        await self._start_job(
             machine,
             job_name="sending",
             final_job_action=self._run_send_action,

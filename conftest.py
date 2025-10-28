@@ -1,9 +1,14 @@
-import pytest  # noqa: F401
+import pytest
 import gettext
 import asyncio
 import logging
 from functools import partial
 import pytest_asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from rayforge.machine.models.machine import Machine
+
 
 # Set up gettext immediately at the module level.
 # This ensures the '_' function is available in builtins before any
@@ -44,7 +49,7 @@ async def task_mgr():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def context_initializer(tmp_path, task_mgr, monkeypatch):
+async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
     """
     A fixture that initializes the application context.
     """
@@ -52,6 +57,15 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     from rayforge.context import get_context
     from rayforge import context as context_module
     from rayforge.shared import tasker as tasker_module
+
+    # We are patching idle_add at its source to
+    # guarantee that ALL calls to it (from Machine, MachineCmd, etc.)
+    # will execute synchronously in the test environment, preventing deadlocks
+    # caused by an un-run GLib main loop.
+    mocker.patch(
+        "rayforge.shared.util.glib.idle_add",
+        side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
+    )
 
     # 1. Isolate test configuration files
     temp_config_dir = tmp_path / "config"
@@ -71,6 +85,20 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     # This is crucial for test isolation.
     await context.shutdown()
     context_module._context_instance = None
+
+
+@pytest.fixture
+def machine(context_initializer) -> "Machine":
+    """
+    Provides a fresh, test-isolated Machine instance.
+    The `context_initializer` fixture is responsible for patching `idle_add`
+    so that this machine's signals work correctly.
+    """
+    from rayforge.machine.models.machine import Machine
+
+    # The patch is already active thanks to context_initializer. We can just
+    # create a new machine for the test to use.
+    return Machine(context_initializer)
 
 
 @pytest.fixture

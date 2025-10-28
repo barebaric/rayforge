@@ -11,6 +11,7 @@ appropriate pipeline stages.
 
 from __future__ import annotations
 import logging
+import asyncio
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -528,7 +529,10 @@ class Pipeline:
             self.job_time_updated.send(self, total_seconds=total_time)
 
     def _on_job_generation_finished(
-        self, sender: JobGeneratorStage, *, handle: BaseArtifactHandle
+        self,
+        sender: JobGeneratorStage,
+        *,
+        handle: Optional[BaseArtifactHandle],
     ) -> None:
         """Relays signal from the job stage."""
         self.job_ready.send(self, handle=handle)
@@ -706,13 +710,12 @@ class Pipeline:
             and then disconnects itself.
             """
             try:
-                if handle:
-                    when_done(handle, None)
-                else:
-                    exc = Exception(
-                        "Job generation failed or produced no artifact."
-                    )
-                    when_done(None, exc)
+                # The `handle` can be None if the task failed or if the
+                # job was empty. The `when_done` callback needs to
+                # handle this case gracefully.
+                when_done(handle, None)
+            except Exception as e:
+                when_done(None, e)
             finally:
                 self._job_stage.generation_finished.disconnect(
                     _one_shot_handler
@@ -720,6 +723,35 @@ class Pipeline:
 
         self._job_stage.generation_finished.connect(_one_shot_handler)
         self.generate_job()
+
+    async def generate_job_artifact_async(
+        self,
+    ) -> Optional[JobArtifactHandle]:
+        """
+        Asynchronously generates and returns the final job artifact.
+        This awaitable method is the preferred way to get a job artifact
+        in an async context.
+
+        Returns:
+            The JobArtifactHandle on success, or None if the job was empty.
+
+        Raises:
+            RuntimeError: If job generation is already in progress.
+            Exception: Propagates exceptions that occur during generation.
+        """
+        future = asyncio.get_running_loop().create_future()
+
+        def _when_done_callback(
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
+        ):
+            if not future.done():
+                if error:
+                    future.set_exception(error)
+                else:
+                    future.set_result(handle)
+
+        self.generate_job_artifact(when_done=_when_done_callback)
+        return await future
 
     def request_view_render(
         self,
