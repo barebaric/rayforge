@@ -1,6 +1,5 @@
 from __future__ import annotations
 import uuid
-import sys
 import logging
 from typing import Dict
 from multiprocessing import shared_memory
@@ -23,18 +22,47 @@ class ArtifactStore:
 
     def __init__(self):
         """
-        Initialize the ArtifactStore with a multiprocessing Manager.
+        Initialize the ArtifactStore.
         """
-        # On Windows, shared memory blocks are destroyed when all handles are
-        # closed. To prevent a block from being destroyed immediately after
-        # creation in `put()`, the creating process must keep a handle open.
-        # This dictionary stores these handles. They are closed and removed
-        # by `release()`. This is not needed on POSIX systems.
+        # This dictionary is the single source of truth for all shared memory
+        # blocks for which this ArtifactStore instance has ownership. An open
+        # handle is stored for each block this instance creates or adopts.
         self._managed_shms: Dict[str, shared_memory.SharedMemory] = {}
 
     def shutdown(self):
         for shm_name in list(self._managed_shms.keys()):
             self._release_by_name(shm_name)
+
+    def adopt(self, handle: BaseArtifactHandle) -> None:
+        """
+        Takes ownership of a shared memory block created by another process.
+
+        This method is called by the main process upon receiving an event that
+        an artifact has been created in a worker. It opens its own handle to
+        the shared memory block, ensuring it persists even if the creating
+        worker process exits. This `ArtifactStore` instance now becomes
+        responsible for the block's eventual release.
+
+        Args:
+            handle: The handle of the artifact whose shared memory block is
+                    to be adopted.
+        """
+        shm_name = handle.shm_name
+        if shm_name in self._managed_shms:
+            logger.debug(f"Shared memory block {shm_name} is already managed.")
+            return
+
+        try:
+            shm_obj = shared_memory.SharedMemory(name=shm_name)
+            self._managed_shms[shm_name] = shm_obj
+            logger.debug(f"Adopted shared memory block: {shm_name}")
+        except FileNotFoundError:
+            logger.error(
+                f"Failed to adopt shared memory block {shm_name}: "
+                f"not found. It may have been released prematurely."
+            )
+        except Exception as e:
+            logger.error(f"Error adopting shared memory block {shm_name}: {e}")
 
     def put(self, artifact: BaseArtifact) -> BaseArtifactHandle:
         """
@@ -73,13 +101,10 @@ class ArtifactStore:
             }
             offset += arr.nbytes
 
-        # On POSIX, we can close our local handle; the block persists until
-        # unlinked. On Windows, the block is destroyed when the last handle
-        # is closed, so we must keep this handle open in the creating process.
-        if sys.platform == "win32":
-            self._managed_shms[shm_name] = shm
-        else:
-            shm.close()
+        # The creating store is the owner of this block and must keep the
+        # handle open to manage its lifecycle. This unified approach works
+        # on all platforms and is required for the adoption model.
+        self._managed_shms[shm_name] = shm
 
         # Delegate handle creation to the artifact instance
         handle = artifact.create_handle(shm_name, array_metadata)
@@ -115,25 +140,19 @@ class ArtifactStore:
 
     def _release_by_name(self, shm_name: str) -> None:
         """
-        Closes and unlinks the shared memory block with the given name.
-        This must be called by the owner of the block when it's no longer
-        needed to prevent memory leaks.
+        Closes and unlinks a managed shared memory block by its name.
         """
-        if sys.platform == "win32":
-            # If we are in the process that created the block, close the
-            # handle we kept open to ensure the block's survival.
-            if shm_name in self._managed_shms:
-                shm_obj = self._managed_shms.pop(shm_name)
-                shm_obj.close()
+        shm_obj = self._managed_shms.pop(shm_name, None)
+        if not shm_obj:
+            return
 
         try:
-            shm = shared_memory.SharedMemory(name=shm_name)
-            shm.close()
-            shm.unlink()  # This actually frees the memory
+            shm_obj.close()
+            shm_obj.unlink()  # This actually frees the memory
             logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
-            # The block was already released, which is fine.
-            pass
+            # The block was already released externally, which is fine.
+            logger.debug(f"SHM block {shm_name} was already unlinked.")
         except Exception as e:
             logger.warning(
                 f"Error releasing shared memory block {shm_name}: {e}"
