@@ -163,7 +163,7 @@ jobs:
         shell: msys2 {0}
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/python -m pytest
+          $MSYS2_PATH/mingw64/bin/python -m pytest -v -ra
 
       - name: Configure GTK Theme
         shell: msys2 {0}
