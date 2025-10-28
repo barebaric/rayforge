@@ -548,3 +548,137 @@ class TestTaskManagerGlobals:
         last_call_args, last_call_kwargs = signal_receiver.call_args
         assert not last_call_kwargs["tasks"]
         assert last_call_kwargs["progress"] == 1.0
+
+
+class TestWaitUntilSettled:
+    """Tests for the wait_until_settled method."""
+
+    def test_wait_until_settled_no_tasks(self, manager: TaskManager):
+        """Test wait_until_settled returns immediately when no tasks exist."""
+        # Should return True immediately when no tasks
+        result = manager.wait_until_settled(1000)  # 1 second timeout
+        assert result is True
+
+    def test_wait_until_settled_completed_tasks(self, manager: TaskManager):
+        """Test wait_until_settled returns True when all tasks complete."""
+        # Add a short task
+        completion_event = threading.Event()
+
+        def on_done(task: Task):
+            completion_event.set()
+
+        manager.add_coroutine(
+            simple_coro, duration=0.1, key="short_task", when_done=on_done
+        )
+
+        # Wait for task to complete
+        assert completion_event.wait(timeout=2)
+
+        # Now wait_until_settled should return True immediately
+        result = manager.wait_until_settled(1000)
+        assert result is True
+
+    def test_wait_until_settled_with_running_tasks(self, manager: TaskManager):
+        """Test that wait_until_settled waits for tasks to complete."""
+        # Add a longer task
+        completion_event = threading.Event()
+
+        def on_done(task: Task):
+            completion_event.set()
+
+        manager.add_coroutine(
+            simple_coro, duration=0.3, key="longer_task", when_done=on_done
+        )
+
+        # wait_until_settled should wait and return True
+        start_time = time.time()
+        result = manager.wait_until_settled(1000)  # 1 second timeout
+        elapsed = time.time() - start_time
+
+        assert result is True
+        assert elapsed >= 0.3  # Should have waited at least the task duration
+        assert elapsed < 1.0  # But less than the timeout
+
+        # Task should be completed
+        assert completion_event.is_set()
+
+    def test_wait_until_settled_timeout(self, manager: TaskManager):
+        """Test wait_until_settled returns False when timeout is reached."""
+        # Add a very long task
+        manager.add_coroutine(simple_coro, duration=2.0, key="very_long_task")
+
+        # wait_until_settled should timeout and return False
+        start_time = time.time()
+        result = manager.wait_until_settled(500)  # 0.5 second timeout
+        elapsed = time.time() - start_time
+
+        assert result is False
+        assert (
+            elapsed >= 0.5
+        )  # Should have waited at least the timeout duration
+        assert elapsed < 2.0  # But less than the task duration
+
+        # Clean up
+        manager.cancel_task("very_long_task")
+
+    def test_wait_until_settled_multiple_tasks(self, manager: TaskManager):
+        """
+        Test wait_until_settled with multiple tasks of different durations.
+        """
+        completion_events = []
+        tasks = []
+
+        for i in range(3):
+            event = threading.Event()
+            completion_events.append(event)
+
+            def create_on_done(idx):
+                def on_done(task: Task):
+                    completion_events[idx].set()
+
+                return on_done
+
+            # Tasks with different durations: 0.1s, 0.2s, 0.3s
+            duration = 0.1 * (i + 1)
+            task_key = f"multi_task_{i}"
+            tasks.append(task_key)
+
+            manager.add_coroutine(
+                simple_coro,
+                duration=duration,
+                key=task_key,
+                when_done=create_on_done(i),
+            )
+
+        # wait_until_settled should wait for the longest task
+        start_time = time.time()
+        result = manager.wait_until_settled(1000)  # 1 second timeout
+        elapsed = time.time() - start_time
+
+        assert result is True
+        assert (
+            elapsed >= 0.3
+        )  # Should have waited at least the longest task duration
+        assert elapsed < 1.0  # But less than the timeout
+
+        # All tasks should be completed
+        for event in completion_events:
+            assert event.is_set()
+
+    def test_wait_until_settled_zero_timeout(self, manager: TaskManager):
+        """Test wait_until_settled with zero timeout."""
+        # Add a task
+        manager.add_coroutine(
+            simple_coro, duration=0.5, key="zero_timeout_task"
+        )
+
+        # With zero timeout, should return False immediately
+        start_time = time.time()
+        result = manager.wait_until_settled(0)
+        elapsed = time.time() - start_time
+
+        assert result is False
+        assert elapsed < 0.1  # Should return very quickly
+
+        # Clean up
+        manager.cancel_task("zero_timeout_task")

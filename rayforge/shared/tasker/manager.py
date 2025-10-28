@@ -512,6 +512,8 @@ class TaskManager:
             if self._loop.is_running():
                 self._loop.call_soon_threadsafe(self._loop.stop)
             self._thread.join(timeout=1.0)
+            if self._thread.is_alive():
+                logger.warning("thread shutdown timed out, ignoring")
             logger.debug("TaskManager shutdown complete.")
         except KeyboardInterrupt:
             logger.debug(
@@ -519,6 +521,35 @@ class TaskManager:
                 "Suppressing traceback."
             )
             pass
+
+    def wait_until_settled(self, timeout: int) -> bool:
+        """
+        Wait until all tasks have completed or until timeout is reached.
+
+        Args:
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if all tasks completed before timeout, False if timeout was
+              reached
+        """
+        import time
+
+        start_time = time.time()
+        timeout_seconds = timeout / 1000.0
+
+        # Poll for task completion
+        while True:
+            with self._lock:
+                if not self._tasks:
+                    return True
+
+            # Check if timeout exceeded
+            if time.time() - start_time > timeout_seconds:
+                return False
+
+            # Sleep for a short time before checking again
+            time.sleep(0.01)
 
 
 class TaskManagerProxy:
