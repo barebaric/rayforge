@@ -11,7 +11,15 @@ appropriate pipeline stages.
 
 from __future__ import annotations
 import logging
-from typing import Optional, TYPE_CHECKING, Generator, Tuple, Union, Any
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Generator,
+    Tuple,
+    Union,
+    Any,
+    Callable,
+)
 from blinker import Signal
 from contextlib import contextmanager
 from ..core.doc import Doc
@@ -27,6 +35,7 @@ from .artifact import (
     BaseArtifactHandle,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
+    JobArtifactHandle,
     ArtifactCache,
     RenderContext,
 )
@@ -669,6 +678,48 @@ class Pipeline:
         """Triggers the final job generation process."""
         if self.doc:
             self._job_stage.generate_job(self.doc)
+
+    def generate_job_artifact(
+        self,
+        when_done: Callable[
+            [Optional[JobArtifactHandle], Optional[Exception]], None
+        ],
+    ):
+        """
+        Asynchronously generates the final job artifact and calls a
+        callback with the result. This is the correct public API for
+        requesting a job artifact, abstracting away the underlying stages.
+
+        Args:
+            when_done: A callback executed upon completion. It receives
+                       an ArtifactHandle on success, or (None, error) on
+                       failure.
+        """
+        if self._job_stage.is_busy:
+            exc = RuntimeError("Job generation is already in progress.")
+            when_done(None, exc)
+            return
+
+        def _one_shot_handler(sender, *, handle: Optional[JobArtifactHandle]):
+            """
+            A temporary signal handler that calls the user's callback
+            and then disconnects itself.
+            """
+            try:
+                if handle:
+                    when_done(handle, None)
+                else:
+                    exc = Exception(
+                        "Job generation failed or produced no artifact."
+                    )
+                    when_done(None, exc)
+            finally:
+                self._job_stage.generation_finished.disconnect(
+                    _one_shot_handler
+                )
+
+        self._job_stage.generation_finished.connect(_one_shot_handler)
+        self.generate_job()
 
     def request_view_render(
         self,

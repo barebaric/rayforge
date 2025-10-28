@@ -195,31 +195,40 @@ class StepGeneratorStage(PipelineStage):
     ):
         """Handles events broadcast from the subprocess."""
         step_uid = step.uid
+        generation_id = data.get("generation_id")
         # Ignore events from stale tasks
-        if self._generation_id_map.get(step_uid) != data.get("generation_id"):
-            logger.debug(f"Ignoring stale time event for {step_uid}")
+        if self._generation_id_map.get(step_uid) != generation_id:
+            logger.debug(f"Ignoring stale event '{event_name}' for {step_uid}")
             return
 
-        if event_name == "render_artifact_ready":
-            try:
-                # The visual artifact is ready. Store handle and notify.
+        try:
+            if event_name == "render_artifact_ready":
                 handle_dict = data["handle_dict"]
                 handle = create_handle_from_dict(handle_dict)
                 if not isinstance(handle, StepRenderArtifactHandle):
                     raise TypeError("Expected a StepRenderArtifactHandle")
+
+                get_context().artifact_store.adopt(handle)
                 self._artifact_cache.put_step_render_handle(step_uid, handle)
                 self.render_artifact_ready.send(self, step=step)
-            except Exception as e:
-                logger.error(f"Error handling render_artifact_ready: {e}")
-        elif event_name == "ops_artifact_ready":
-            try:
+
+            elif event_name == "ops_artifact_ready":
                 handle_dict = data["handle_dict"]
                 handle = create_handle_from_dict(handle_dict)
                 if not isinstance(handle, StepOpsArtifactHandle):
                     raise TypeError("Expected a StepOpsArtifactHandle")
+
+                get_context().artifact_store.adopt(handle)
                 self._artifact_cache.put_step_ops_handle(step_uid, handle)
-            except Exception as e:
-                logger.error(f"Error handling ops_artifact_ready: {e}")
+
+            elif event_name == "time_estimate_ready":
+                time_estimate = data["time_estimate"]
+                self._time_cache[step_uid] = time_estimate
+                self.time_estimate_ready.send(
+                    self, step=step, time=time_estimate
+                )
+        except Exception as e:
+            logger.error(f"Error handling task event '{event_name}': {e}")
 
     def _on_assembly_complete(
         self, task: "Task", step: "Step", task_generation_id: int
@@ -233,20 +242,15 @@ class StepGeneratorStage(PipelineStage):
 
         if task.get_status() == "completed":
             try:
-                # The task returns the time estimate
-                result = task.result()
-                if not result:
-                    raise ValueError("Step assembly returned no result")
-                time_estimate, result_gen_id = result
-
-                if self._generation_id_map.get(step_uid) == result_gen_id:
-                    # Cache the time and notify
-                    self._time_cache[step_uid] = time_estimate
-                    self.time_estimate_ready.send(
-                        self, step=step, time=time_estimate
+                # The task now only returns the generation ID for validation
+                result_gen_id = task.result()
+                if self._generation_id_map.get(step_uid) != result_gen_id:
+                    logger.warning(
+                        f"Step assembly for {step_uid} finished with stale "
+                        f"generation ID."
                     )
             except Exception as e:
-                logger.error(f"Error on step assembly result (time): {e}")
+                logger.error(f"Error on step assembly result: {e}")
                 self._time_cache[step_uid] = -1.0  # Mark error
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")

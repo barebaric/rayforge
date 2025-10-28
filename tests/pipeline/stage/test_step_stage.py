@@ -112,8 +112,10 @@ def _complete_step_task(task, time=42.0, gen_id=1):
         }
         task.when_event(mock_task_obj, "ops_artifact_ready", ops_event)
 
-    result = (time, gen_id)
-    mock_task_obj.result.return_value = result
+        time_event = {"time_estimate": time, "generation_id": gen_id}
+        task.when_event(mock_task_obj, "time_estimate_ready", time_event)
+
+    mock_task_obj.result.return_value = gen_id
     if task.when_done:
         task.when_done(mock_task_obj)
 
@@ -183,20 +185,19 @@ class TestStepGeneratorStage:
         assert len(mock_task_mgr.created_tasks) == 1
         task = mock_task_mgr.created_tasks[0]
 
-        # Simulate Phase 1: Render and Ops Artifact Ready Events
+        # Simulate Phase 1: Artifact and Time Events
         mock_task_obj = MagicMock()
         mock_task_obj.id = task.id
+        gen_id = 1
         render_handle = StepRenderArtifactHandle(
             shm_name="render_shm",
             handle_class_name="StepRenderArtifactHandle",
             artifact_type_name="StepRenderArtifact",
         )
-        render_event_data = {
-            "handle_dict": render_handle.to_dict(),
-            "generation_id": 1,
-        }
         task.when_event(
-            mock_task_obj, "render_artifact_ready", render_event_data
+            mock_task_obj,
+            "render_artifact_ready",
+            {"handle_dict": render_handle.to_dict(), "generation_id": gen_id},
         )
 
         ops_handle = StepOpsArtifactHandle(
@@ -205,11 +206,17 @@ class TestStepGeneratorStage:
             artifact_type_name="StepOpsArtifact",
             time_estimate=None,
         )
-        ops_event_data = {
-            "handle_dict": ops_handle.to_dict(),
-            "generation_id": 1,
-        }
-        task.when_event(mock_task_obj, "ops_artifact_ready", ops_event_data)
+        task.when_event(
+            mock_task_obj,
+            "ops_artifact_ready",
+            {"handle_dict": ops_handle.to_dict(), "generation_id": gen_id},
+        )
+
+        task.when_event(
+            mock_task_obj,
+            "time_estimate_ready",
+            {"time_estimate": 42.5, "generation_id": gen_id},
+        )
 
         # Assert event phase worked
         mock_artifact_cache.put_step_render_handle.assert_called_once_with(
@@ -219,17 +226,18 @@ class TestStepGeneratorStage:
             step.uid, ops_handle
         )
         render_signal_handler.assert_called_once_with(stage, step=step)
-
-        # Simulate Phase 2: Task Completion with Time Estimate
-        mock_task_obj.get_status.return_value = "completed"
-        mock_task_obj.result.return_value = (42.5, 1)  # (time, gen_id)
-        task.when_done(mock_task_obj)
-
-        # Assert time phase worked
         time_signal_handler.assert_called_once_with(
             stage, step=step, time=42.5
         )
         assert stage.get_estimate(step.uid) == 42.5
+
+        # Simulate Phase 2: Task Completion
+        mock_task_obj.get_status.return_value = "completed"
+        mock_task_obj.result.return_value = gen_id
+        task.when_done(mock_task_obj)
+
+        # No new signals should fire, just cleanup
+        time_signal_handler.assert_called_once()
 
     def test_invalidate_cleans_up_and_invalidates_job(
         self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step

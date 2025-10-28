@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import math
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from ...context import get_context
 from ...core.ops import Ops
 from ...core.matrix import Matrix
@@ -50,17 +50,17 @@ def make_step_artifact_in_subprocess(
     cut_speed: float,
     travel_speed: float,
     acceleration: float,
-) -> Optional[tuple[float, int]]:
+) -> int:
     """
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
-    back via an event, and then returns the final time estimate.
+    back via an event, and then returns the final generation ID.
     """
     proxy.set_message(_("Assembling step..."))
     logger.debug(f"Starting step assembly for step_uid: {step_uid}")
 
     if not workpiece_assembly_info:
         logger.warning("No workpiece info provided for step assembly.")
-        return None
+        return generation_id
 
     artifact_store = get_context().artifact_store
     combined_ops = Ops()
@@ -183,9 +183,13 @@ def make_step_artifact_in_subprocess(
         default_travel_speed=travel_speed,
         acceleration=acceleration,
     )
+    proxy.send_event(
+        "time_estimate_ready",
+        {"time_estimate": final_time, "generation_id": generation_id},
+    )
 
     proxy.set_progress(1.0)
     logger.debug(f"Step assembly for {step_uid} complete.")
 
-    # 8. Return the final time estimate
-    return final_time, generation_id
+    # 8. Return the generation ID to signal completion
+    return generation_id

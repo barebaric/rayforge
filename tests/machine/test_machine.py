@@ -16,6 +16,7 @@ from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.core.matrix import Matrix
+from rayforge.pipeline import steps
 
 
 # Define the test-specific driver in the test file where it is used.
@@ -132,12 +133,19 @@ class TestMachine:
         machine: Machine,
         doc_editor: DocEditor,
         mocker,
+        context_initializer,
     ):
         """
         Verify that sending a job correctly calls the driver's run method
         with the expected arguments, including the `doc`.
         """
         # --- Arrange ---
+        # Add a step to the workflow, which is required for job assembly.
+        step = steps.create_contour_step(context_initializer)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
         # Add a workpiece to the document, which will trigger ops generation.
         workpiece, source = create_test_workpiece_and_source()
         doc.add_import_source(source)
@@ -168,6 +176,7 @@ class TestMachine:
         machine: Machine,
         doc_editor: DocEditor,
         mocker,
+        context_initializer,
     ):
         """Verify that framing a job calls the driver's run method."""
         # --- Arrange ---
@@ -175,6 +184,12 @@ class TestMachine:
         head = machine.get_default_head()
         head.frame_power = 1
         assert machine.can_frame() is True
+
+        # Add a step to the workflow, which is required for job assembly.
+        step = steps.create_contour_step(context_initializer)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
 
         # Add a workpiece to the document.
         workpiece, source = create_test_workpiece_and_source()

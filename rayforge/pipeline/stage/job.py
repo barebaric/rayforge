@@ -93,29 +93,43 @@ class JobGeneratorStage(PipelineStage):
             job_description_dict=job_desc.__dict__,
             key=JobKey,
             when_done=when_done_callback,
+            when_event=self._on_job_task_event,
         )
         self._active_task = task
+
+    def _on_job_task_event(self, task: "Task", event_name: str, data: dict):
+        """Handles events broadcast from the job runner subprocess."""
+        if event_name == "artifact_created":
+            try:
+                handle_dict = data["handle_dict"]
+                handle = create_handle_from_dict(handle_dict)
+                if not isinstance(handle, JobArtifactHandle):
+                    raise TypeError("Expected a JobArtifactHandle")
+
+                get_context().artifact_store.adopt(handle)
+                self._artifact_cache.put_job_handle(handle)
+            except Exception as e:
+                logger.error(f"Error handling job artifact event: {e}")
 
     def _on_job_assembly_complete(self, task: "Task"):
         """Callback for when the final job assembly task finishes."""
         self._active_task = None
-        final_handle = None
+        final_handle = self._artifact_cache.get_job_handle()
 
         if task.get_status() == "completed":
-            try:
-                handle_dict = task.result()
-                if handle_dict:
-                    handle = create_handle_from_dict(handle_dict)
-                    if not isinstance(handle, JobArtifactHandle):
-                        raise TypeError("Expected a JobArtifactHandle")
-                    self._artifact_cache.put_job_handle(handle)
-                    final_handle = handle
-                    logger.info("Job generation successful.")
-            except Exception as e:
-                logger.error(f"Error processing job assembly result: {e}")
+            if final_handle:
+                logger.info("Job generation successful.")
+            else:
+                logger.info(
+                    "Job generation finished with no artifact produced."
+                )
         else:
             logger.error(
                 f"Job generation failed with status: {task.get_status()}"
             )
+            # The artifact put in the cache by the event handler is now
+            # invalid. Invalidate it to ensure it's released.
+            self._artifact_cache.invalidate_for_job()
+            final_handle = None
 
         self.generation_finished.send(self, handle=final_handle)

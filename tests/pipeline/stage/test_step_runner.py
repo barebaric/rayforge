@@ -77,15 +77,17 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         acceleration=machine.acceleration,
     )
 
-    # Assert: Return value is (time, generation_id)
-    assert result is not None
-    final_time, gen_id = result
-    assert isinstance(final_time, float)
-    assert gen_id == 1
+    # Assert: Return value is generation_id
+    assert result == 1
 
-    # Assert: Both render and ops events were sent
-    assert mock_proxy.send_event.call_count == 2
+    # Assert: All three events were sent
+    assert mock_proxy.send_event.call_count == 3
     calls = mock_proxy.send_event.call_args_list
+
+    # Find and validate the time estimate event
+    time_call = next(c for c in calls if c[0][0] == "time_estimate_ready")
+    assert "time_estimate" in time_call[0][1]
+    assert isinstance(time_call[0][1]["time_estimate"], float)
 
     # Find and validate the render artifact
     render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
@@ -162,9 +164,9 @@ def test_step_runner_handles_texture_data(machine):
         travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
     )
-    assert result is not None
+    assert result == 1
 
-    assert mock_proxy.send_event.call_count == 2
+    assert mock_proxy.send_event.call_count == 3
     render_call = next(
         c
         for c in mock_proxy.send_event.call_args_list

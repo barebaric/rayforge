@@ -71,11 +71,15 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     mock_proxy = MagicMock()
 
     # Act
-    final_handle_dict = make_job_artifact_in_subprocess(
-        mock_proxy, asdict(job_desc)
-    )
+    result = make_job_artifact_in_subprocess(mock_proxy, asdict(job_desc))
 
     # Assert
+    assert result is None  # Runner returns None now
+    mock_proxy.send_event.assert_called_once()
+    event_name, event_data = mock_proxy.send_event.call_args[0]
+    assert event_name == "artifact_created"
+
+    final_handle_dict = event_data["handle_dict"]
     assert final_handle_dict is not None
     final_handle = create_handle_from_dict(final_handle_dict)
     final_artifact = get_context().artifact_store.get(final_handle)

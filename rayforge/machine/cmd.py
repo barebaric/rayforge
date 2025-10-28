@@ -240,7 +240,7 @@ class MachineCmd:
 
                 self._editor.task_manager.add_coroutine(_run_job_with_cleanup)
 
-            self._editor.file.assemble_job_in_background(
+            self._editor.pipeline.generate_job_artifact(
                 when_done=_on_assembly_done
             )
 

@@ -98,7 +98,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
             (
                 c
                 for c in mock_proxy.send_event.call_args_list
-                if c[0][0] == "__internal_artifact_created"
+                if c[0][0] == "artifact_created"
             ),
             None,
         )
@@ -165,7 +165,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
             (
                 c
                 for c in mock_proxy.send_event.call_args_list
-                if c[0][0] == "__internal_artifact_created"
+                if c[0][0] == "artifact_created"
             ),
             None,
         )
@@ -226,7 +226,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     assert result_gen_id == generation_id
     # No event should be sent if no artifact was created.
     was_called = any(
-        c.args[0] == "__internal_artifact_created"
+        c.args[0] == "artifact_created"
         for c in mock_proxy.send_event.call_args_list
     )
     assert not was_called
@@ -266,7 +266,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
             (
                 c
                 for c in mock_proxy.send_event.call_args_list
-                if c[0][0] == "__internal_artifact_created"
+                if c[0][0] == "artifact_created"
             ),
             None,
         )
