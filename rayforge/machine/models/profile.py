@@ -1,9 +1,12 @@
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from .machine import Machine, Laser
 from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
+
+if TYPE_CHECKING:
+    from ...context import RayforgeContext
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +32,7 @@ class MachineProfile:
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
 
-    def create_machine(self) -> Machine:
+    def create_machine(self, context: RayforgeContext) -> Machine:
         """
         Creates a Machine instance from this profile.
 
@@ -37,7 +40,7 @@ class MachineProfile:
         to the new Machine instance, allowing the Machine's own defaults to
         be used for any unspecified profile values.
         """
-        m = Machine()
+        m = Machine(context)
         m.name = self.name
 
         if self.driver_class_name:

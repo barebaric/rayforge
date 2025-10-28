@@ -24,10 +24,6 @@ def get_driver_cls(classname: str, default=NoDeviceDriver):
     return driver_by_classname.get(classname, default)
 
 
-def get_driver(classname: str, default=NoDeviceDriver):
-    return get_driver_cls(classname, default)()
-
-
 def register_driver(driver: Type[Driver]):
     driver_by_classname[driver.__name__] = driver
     drivers.append(driver)
