@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional
 from blinker import Signal
-from ..context import get_context
+from ..context import RayforgeContext
 from ..machine.models.machine import Machine
 from .controller import CameraController
 from .models.camera import Camera
@@ -21,7 +21,8 @@ class CameraManager:
     controllers changes.
     """
 
-    def __init__(self):
+    def __init__(self, context: RayforgeContext):
+        self._context = context
         self._controllers: Dict[str, CameraController] = {}
         self._active_machine: Optional[Machine] = None
 
@@ -34,7 +35,7 @@ class CameraManager:
         Performs initial setup after all managers are available.
         This is where signal connections are made to avoid circular imports.
         """
-        config = get_context().config
+        config = self._context.config
         if not config:
             logger.error(
                 "Cannot initialize CameraManager: Config not found in context."
@@ -48,7 +49,7 @@ class CameraManager:
     def shutdown(self):
         """Shuts down all active camera controllers."""
         logger.info("Shutting down all camera controllers.")
-        config = get_context().config
+        config = self._context.config
         if config:
             config.changed.disconnect(self._on_config_changed)
 
@@ -78,7 +79,7 @@ class CameraManager:
         responsible for tracking the active machine and connecting/
         disconnecting from its `changed` signal.
         """
-        config = get_context().config
+        config = self._context.config
         if not config:
             return
 
@@ -126,7 +127,7 @@ class CameraManager:
         Synchronizes the set of active CameraControllers with the cameras
         defined in the currently active machine model.
         """
-        config = get_context().config
+        config = self._context.config
         if not config:
             return
 

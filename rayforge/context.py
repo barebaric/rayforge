@@ -138,7 +138,7 @@ class RayforgeContext:
 
         # Initialize the camera manager AFTER config is loaded and active
         # machine is set
-        self._camera_mgr = CameraManager()
+        self._camera_mgr = CameraManager(self)
         self._camera_mgr.initialize()
         logger.info(
             f"Camera manager initialized with "
