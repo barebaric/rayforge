@@ -309,6 +309,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
+                get_context(),
                 self.doc_editor.doc,
                 self.doc_editor.pipeline,
                 width_mm=width_mm,
@@ -910,6 +911,7 @@ class MainWindow(Adw.ApplicationWindow):
                 y_down = False
 
             self.canvas3d = Canvas3D(
+                get_context(),
                 self.doc_editor.doc,
                 self.doc_editor.pipeline,
                 width_mm=width_mm,
