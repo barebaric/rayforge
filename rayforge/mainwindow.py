@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional, cast, Coroutine
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 import asyncio
 
@@ -1182,23 +1182,37 @@ class MainWindow(Adw.ApplicationWindow):
             return
         self.machine_cmd.home_machine(config.machine)
 
+    def _run_machine_job(self, job_coroutine: Coroutine):
+        """
+        Wraps a machine job coroutine in an asyncio.Task and handles
+        its completion or failure.
+        """
+        # Create a task to run the job coroutine in the background
+        task = asyncio.create_task(job_coroutine)
+        # Add a callback to handle the result (or exception) of the task
+        task.add_done_callback(self._on_job_future_done)
+
     def on_frame_clicked(self, action, param):
         config = get_context().config
         if not config.machine:
             return
-        future = self.machine_cmd.frame_job(
+        # Get the coroutine object for the framing job
+        job_coro = self.machine_cmd.frame_job(
             config.machine, on_progress=self._on_job_progress_updated
         )
-        future.add_done_callback(self._on_job_future_done)
+        # Run the job using the helper
+        self._run_machine_job(job_coro)
 
     def on_send_clicked(self, action, param):
         config = get_context().config
         if not config.machine:
             return
-        future = self.machine_cmd.send_job(
+        # Get the coroutine object for the send job
+        job_coro = self.machine_cmd.send_job(
             config.machine, on_progress=self._on_job_progress_updated
         )
-        future.add_done_callback(self._on_job_future_done)
+        # Run the job using the helper
+        self._run_machine_job(job_coro)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from unittest.mock import MagicMock
 from pathlib import Path
+import asyncio
 from rayforge.shared.tasker.task import Task
 from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
@@ -15,8 +16,9 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     VertexData,
     WorkPieceArtifactHandle,
-    StepRenderArtifactHandle,
-    StepOpsArtifactHandle,
+    JobArtifactHandle,
+    StepRenderArtifact,
+    StepOpsArtifact,
 )
 from rayforge.context import get_context
 from rayforge.pipeline.stage.workpiece_runner import (
@@ -25,6 +27,7 @@ from rayforge.pipeline.stage.workpiece_runner import (
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
 
 
 @pytest.fixture
@@ -143,12 +146,17 @@ class TestPipeline:
                 elif task.target is make_step_artifact_in_subprocess:
                     gen_id = task.args[2]  # 3rd argument is generation_id
                     if task.when_event:
-                        # 1. Simulate render artifact event
-                        render_handle = StepRenderArtifactHandle(
-                            shm_name="dummy_render",
-                            handle_class_name="StepRenderArtifactHandle",
-                            artifact_type_name="StepRenderArtifact",
+                        # Create real artifacts and handles so the SHM blocks
+                        # exist and can be adopted by the main process store.
+                        store = get_context().artifact_store
+                        render_artifact = StepRenderArtifact()
+                        render_handle = store.put(render_artifact)
+                        ops_artifact = StepOpsArtifact(
+                            ops=Ops(), time_estimate=step_time
                         )
+                        ops_handle = store.put(ops_artifact)
+
+                        # 1. Simulate render artifact event
                         render_event = {
                             "handle_dict": render_handle.to_dict(),
                             "generation_id": gen_id,
@@ -160,12 +168,6 @@ class TestPipeline:
                         )
 
                         # 2. Simulate ops artifact event
-                        ops_handle = StepOpsArtifactHandle(
-                            shm_name="dummy_ops",
-                            handle_class_name="StepOpsArtifactHandle",
-                            artifact_type_name="StepOpsArtifact",
-                            time_estimate=step_time,
-                        )
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
                             "generation_id": gen_id,
@@ -923,3 +925,266 @@ class TestPipeline:
             assert retrieved_artifact is None
         finally:
             get_context().artifact_store.release(handle)
+
+    def test_generate_job_artifact_callback_success(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        # Arrange: Setup a complete pipeline state
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        # First, complete the prerequisite workpiece and step generation
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+        try:
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+            mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
+
+            callback_mock = MagicMock()
+            expected_job_handle = JobArtifactHandle(
+                time_estimate=123.45,
+                distance=678.9,
+                shm_name="dummy_job_shm",
+                handle_class_name="JobArtifactHandle",
+                artifact_type_name="JobArtifact",
+            )
+
+            # Act
+            pipeline.generate_job_artifact(when_done=callback_mock)
+
+            # Assert a job task was created
+            mock_task_mgr.run_process.assert_called_once()
+            job_task = mock_task_mgr.created_tasks[0]
+            assert job_task.target is make_job_artifact_in_subprocess
+
+            # Simulate the job task completing successfully
+            mock_finished_task = MagicMock(spec=Task)
+            mock_finished_task.key = job_task.key
+            mock_finished_task.get_status.return_value = "completed"
+            mock_finished_task.result.return_value = None
+
+            # 1. Simulate the event that puts the handle in the cache
+            job_task.when_event(
+                mock_finished_task,
+                "artifact_created",
+                {"handle_dict": expected_job_handle.to_dict()},
+            )
+            # 2. Simulate the final completion callback
+            job_task.when_done(mock_finished_task)
+
+            # Assert
+            callback_mock.assert_called_once_with(expected_job_handle, None)
+        finally:
+            get_context().artifact_store.release(wp_handle)
+
+    def test_generate_job_artifact_callback_failure(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+        try:
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+            mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
+
+            callback_mock = MagicMock()
+
+            # Act
+            pipeline.generate_job_artifact(when_done=callback_mock)
+            mock_task_mgr.run_process.assert_called_once()
+            job_task = mock_task_mgr.created_tasks[0]
+
+            # Simulate the job task failing
+            mock_failed_task = MagicMock(spec=Task)
+            mock_failed_task.key = job_task.key
+            mock_failed_task.get_status.return_value = "failed"
+            job_task.when_done(mock_failed_task)
+
+            # Assert the callback receives (None, None) as errors are handled
+            callback_mock.assert_called_once_with(None, None)
+        finally:
+            get_context().artifact_store.release(wp_handle)
+
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_async_success(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+        try:
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+            mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
+
+            expected_job_handle = JobArtifactHandle(
+                time_estimate=123.45,
+                distance=678.9,
+                shm_name="dummy_job_shm_async",
+                handle_class_name="JobArtifactHandle",
+                artifact_type_name="JobArtifact",
+            )
+
+            # Act
+            future = asyncio.create_task(
+                pipeline.generate_job_artifact_async()
+            )
+            await asyncio.sleep(0)  # Allow the event loop to run
+
+            # The task should have been created
+            mock_task_mgr.run_process.assert_called_once()
+            job_task = mock_task_mgr.created_tasks[0]
+
+            # Simulate completion
+            mock_finished_task = MagicMock(spec=Task)
+            mock_finished_task.key = job_task.key
+            mock_finished_task.get_status.return_value = "completed"
+            mock_finished_task.result.return_value = None
+
+            job_task.when_event(
+                mock_finished_task,
+                "artifact_created",
+                {"handle_dict": expected_job_handle.to_dict()},
+            )
+            job_task.when_done(mock_finished_task)
+
+            # Now await the result
+            result_handle = await future
+
+            # Assert
+            assert result_handle == expected_job_handle
+        finally:
+            get_context().artifact_store.release(wp_handle)
+
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_async_failure(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+        try:
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+            mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
+
+            # Act
+            future = asyncio.create_task(
+                pipeline.generate_job_artifact_async()
+            )
+            await asyncio.sleep(0)  # Allow the event loop to run
+
+            mock_task_mgr.run_process.assert_called_once()
+            job_task = mock_task_mgr.created_tasks[0]
+
+            # Simulate task failure
+            mock_failed_task = MagicMock(spec=Task)
+            mock_failed_task.key = job_task.key
+            mock_failed_task.get_status.return_value = "failed"
+            job_task.when_done(mock_failed_task)
+
+            result = await future
+
+            # Assert that the future resolves to None on failure, as the
+            # current implementation does not propagate the exception.
+            assert result is None
+        finally:
+            get_context().artifact_store.release(wp_handle)
+
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_async_already_running(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        wp_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+        try:
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+            mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
+
+            # Act
+            # Start the first generation, but don't complete it
+            future1 = asyncio.create_task(
+                pipeline.generate_job_artifact_async()
+            )
+            await asyncio.sleep(0)  # Allow the event loop to run
+
+            mock_task_mgr.run_process.assert_called_once()
+
+            # Try to start a second one while the first is 'running'
+            with pytest.raises(
+                RuntimeError, match="Job generation is already in progress."
+            ):
+                await pipeline.generate_job_artifact_async()
+
+            # Cleanup: complete the first task to avoid leaving it hanging
+            job_task = mock_task_mgr.created_tasks[0]
+            mock_finished_task = MagicMock(spec=Task)
+            mock_finished_task.key = job_task.key
+            mock_finished_task.get_status.return_value = "completed"
+            # Simulate an empty job result for cleanup
+            job_task.when_done(mock_finished_task)
+            await future1  # consume the result
+        finally:
+            get_context().artifact_store.release(wp_handle)
