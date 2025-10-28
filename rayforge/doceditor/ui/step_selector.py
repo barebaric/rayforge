@@ -1,5 +1,8 @@
-from typing import List, Callable
+from typing import List, Callable, TYPE_CHECKING
 from gi.repository import Gtk, Gdk
+
+if TYPE_CHECKING:
+    from ...context import RayforgeContext
 
 
 css = """
@@ -12,10 +15,16 @@ css = """
 
 
 class StepSelector(Gtk.Popover):
-    def __init__(self, step_factories: List[Callable], **kwargs):
+    def __init__(
+        self,
+        step_factories: List[Callable],
+        context: "RayforgeContext",
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.set_autohide(True)
         self.selected_factory: Callable | None = None
+        self.context = context
 
         # Create a ListBox inside the Popover
         self.listbox = Gtk.ListBox()
@@ -36,7 +45,7 @@ class StepSelector(Gtk.Popover):
         for factory_func in step_factories:
             # Create a temporary, parentless step to get its default label.
             # This is a bit of a hack but keeps the UI decoupled.
-            temp_step = factory_func()
+            temp_step = factory_func(self.context)
             label = Gtk.Label(label=temp_step.typelabel)
             label.set_xalign(0)
             label.add_css_class("step-selector-label")

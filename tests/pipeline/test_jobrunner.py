@@ -1,6 +1,6 @@
 import pytest
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from dataclasses import asdict
 
 from rayforge.context import get_context
@@ -30,7 +30,9 @@ def machine(context_initializer):
     return m
 
 
-def test_jobrunner_assembles_step_artifacts_correctly(machine):
+def test_jobrunner_assembles_step_artifacts_correctly(
+    context_initializer, machine
+):
     """
     Test that the jobrunner subprocess correctly assembles pre-computed
     StepOpsArtifacts into a final JobArtifact.
@@ -42,9 +44,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(machine):
 
     # This test simulates that step-level transformers have already run.
     # We create a StepOpsArtifact that contains the *result* of those.
-    with patch("rayforge.pipeline.steps.get_context") as mock_get_context:
-        mock_get_context.return_value.machine = machine
-        step = create_contour_step()
+    step = create_contour_step(context_initializer)
 
     layer.workflow.add_step(step)
 

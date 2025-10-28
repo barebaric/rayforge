@@ -57,10 +57,6 @@ def test_config_manager(tmp_path, monkeypatch):
     # We need to patch get_context to return a mock config manager for the
     # editor
     mock_config_mgr = MagicMock(spec=ConfigManager)
-    monkeypatch.setattr(
-        "rayforge.doceditor.editor.get_context",
-        lambda: MagicMock(config_mgr=mock_config_mgr),
-    )
     yield mock_config_mgr
 
 
@@ -77,9 +73,9 @@ def doc():
 
 
 @pytest.fixture
-def doc_editor(doc, task_mgr, test_config_manager):
+def doc_editor(doc, task_mgr, context_initializer):
     """Provides a DocEditor instance."""
-    return DocEditor(task_mgr, test_config_manager, doc)
+    return DocEditor(task_mgr, context_initializer, doc)
 
 
 @pytest.fixture

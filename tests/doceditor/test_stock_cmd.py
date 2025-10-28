@@ -10,15 +10,11 @@ from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor():
+def mock_editor(context_initializer):
     """Provides a DocEditor instance with mocked dependencies."""
     task_manager = MagicMock(spec=TaskManager)
-    config_manager = MagicMock()
-    config_manager.config = MagicMock()
-    config_manager.config.machine = MagicMock()
-    config_manager.config.machine.dimensions = (200.0, 200.0)
     doc = Doc()
-    return DocEditor(task_manager, config_manager, doc)
+    return DocEditor(task_manager, context_initializer, doc)
 
 
 @pytest.fixture

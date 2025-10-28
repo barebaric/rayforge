@@ -53,14 +53,18 @@ def editor(task_mgr, context_initializer):
     assert context.config_mgr is not None, (
         "ConfigManager was not initialized by context_initializer"
     )
-    return DocEditor(task_manager=task_mgr, config_manager=context.config_mgr)
+    return DocEditor(task_mgr, context_initializer)
 
 
 @pytest.mark.asyncio
-async def test_import_svg_export_gcode(editor, tmp_path, assets_path):
+async def test_import_svg_export_gcode(
+    context_initializer, editor, tmp_path, assets_path
+):
     """Full end-to-end test using a real subprocess for ops generation."""
     # --- 1. ARRANGE ---
-    step = steps.create_contour_step(name="Vectorize", optimize=False)
+    step = steps.create_contour_step(
+        context_initializer, name="Vectorize", optimize=False
+    )
     step.set_power(0.5)
     step.set_cut_speed(3000)
 

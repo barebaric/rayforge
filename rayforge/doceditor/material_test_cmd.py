@@ -42,7 +42,7 @@ class MaterialTestCmd:
             name = _("Material Test Grid")
 
             # Instantiate a new Step, then assign its producer dictionary.
-            step = create_material_test_step()
+            step = create_material_test_step(self._editor.context)
             step.name = name
             step.opsproducer_dict = opsproducer_dict
 

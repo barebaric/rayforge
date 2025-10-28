@@ -26,7 +26,7 @@ class StockCmd:
         doc = self._editor.doc
 
         # Get machine dimensions, with a fallback
-        machine = self._editor._config_manager.config.machine
+        machine = self._editor.context.config.machine
         machine_w, machine_h = (200.0, 200.0)  # A sensible fallback
         if machine:
             machine_w, machine_h = machine.dimensions

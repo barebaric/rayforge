@@ -56,7 +56,7 @@ def doc_editor(
     assert config_manager is not None, (
         "ConfigManager was not initialized in context"
     )
-    return DocEditor(task_mgr, config_manager, doc)
+    return DocEditor(task_mgr, context_initializer, doc)
 
 
 def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
