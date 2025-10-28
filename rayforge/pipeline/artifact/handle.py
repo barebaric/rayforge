@@ -1,12 +1,13 @@
 from __future__ import annotations
 from typing import Dict, Any, Type, Optional
+from abc import ABC
 
 
 # A central registry for handle classes, populated automatically.
 _handle_registry: Dict[str, Type["BaseArtifactHandle"]] = {}
 
 
-class BaseArtifactHandle:
+class BaseArtifactHandle(ABC):
     """
     A lightweight, serializable handle to artifact data stored in shared
     memory. This object is small and can be passed efficiently between
