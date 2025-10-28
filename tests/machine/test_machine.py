@@ -279,7 +279,10 @@ class TestMachine:
         machine.set_acceleration(1500)
         changed_spy.assert_called_once_with(machine)
 
-    def test_machine_serialization_with_acceleration(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_machine_serialization_with_acceleration(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
         """Test that acceleration is properly serialized and deserialized."""
         # Set a specific acceleration value
         machine.set_acceleration(2500)
@@ -293,6 +296,9 @@ class TestMachine:
 
         # Deserialize from dict
         new_machine = Machine.from_dict(machine_dict)
+
+        # Wait for the async driver rebuild scheduled by from_dict to finish
+        task_mgr.wait_until_settled(2000)
 
         # Check that acceleration is preserved
         assert new_machine.acceleration == 2500

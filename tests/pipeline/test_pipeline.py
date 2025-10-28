@@ -965,8 +965,11 @@ class TestPipeline:
 
             # Assert a job task was created
             mock_task_mgr.run_process.assert_called_once()
-            job_task = mock_task_mgr.created_tasks[0]
-            assert job_task.target is make_job_artifact_in_subprocess
+            job_task = next(
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.target is make_job_artifact_in_subprocess
+            )
 
             # Simulate the job task completing successfully
             mock_finished_task = MagicMock(spec=Task)
@@ -1016,7 +1019,11 @@ class TestPipeline:
             # Act
             pipeline.generate_job_artifact(when_done=callback_mock)
             mock_task_mgr.run_process.assert_called_once()
-            job_task = mock_task_mgr.created_tasks[0]
+            job_task = next(
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.target is make_job_artifact_in_subprocess
+            )
 
             # Simulate the job task failing
             mock_failed_task = MagicMock(spec=Task)
@@ -1069,7 +1076,11 @@ class TestPipeline:
 
             # The task should have been created
             mock_task_mgr.run_process.assert_called_once()
-            job_task = mock_task_mgr.created_tasks[0]
+            job_task = next(
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.target is make_job_artifact_in_subprocess
+            )
 
             # Simulate completion
             mock_finished_task = MagicMock(spec=Task)
@@ -1123,7 +1134,11 @@ class TestPipeline:
             await asyncio.sleep(0)  # Allow the event loop to run
 
             mock_task_mgr.run_process.assert_called_once()
-            job_task = mock_task_mgr.created_tasks[0]
+            job_task = next(
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.target is make_job_artifact_in_subprocess
+            )
 
             # Simulate task failure
             mock_failed_task = MagicMock(spec=Task)
@@ -1179,7 +1194,11 @@ class TestPipeline:
                 await pipeline.generate_job_artifact_async()
 
             # Cleanup: complete the first task to avoid leaving it hanging
-            job_task = mock_task_mgr.created_tasks[0]
+            job_task = next(
+                t
+                for t in mock_task_mgr.created_tasks
+                if t.target is make_job_artifact_in_subprocess
+            )
             mock_finished_task = MagicMock(spec=Task)
             mock_finished_task.key = job_task.key
             mock_finished_task.get_status.return_value = "completed"

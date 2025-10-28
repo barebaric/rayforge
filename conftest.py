@@ -45,6 +45,8 @@ async def task_mgr():
         worker_initializer=initialize_worker,
     )
     yield tm
+    if tm.has_tasks():
+        pytest.fail("Task manager still has tasks at end of test.")
     tm.shutdown()
 
 
@@ -66,6 +68,10 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
         "rayforge.shared.util.glib.idle_add",
         side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
     )
+    mocker.patch(
+        "gi.repository.GLib.idle_add",
+        side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
+    )
 
     # 1. Isolate test configuration files
     temp_config_dir = tmp_path / "config"
@@ -83,6 +89,9 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
 
     # 4. Teardown: shutdown and fully reset the context singleton and globals
     # This is crucial for test isolation.
+    if task_mgr.has_tasks():
+        pytest.fail("Task manager still has tasks at end of test.")
+
     await context.shutdown()
     context_module._context_instance = None
 
