@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, List, Callable
-from ..context import get_context
+from ..context import RayforgeContext
 from ..core.step import Step
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
@@ -21,10 +21,12 @@ from .transformer import (
 
 
 def create_contour_step(
-    name: Optional[str] = None, optimize: bool = True
+    context: RayforgeContext,
+    name: Optional[str] = None,
+    optimize: bool = True
 ) -> Step:
     """Factory to create and configure a Contour step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     default_head = machine.get_default_head()
     step = Step(
@@ -54,9 +56,12 @@ def create_contour_step(
     return step
 
 
-def create_raster_step(name: Optional[str] = None) -> Step:
+def create_raster_step(
+    context: RayforgeContext,
+    name: Optional[str] = None
+) -> Step:
     """Factory to create and configure a Rasterize step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     default_head = machine.get_default_head()
 
@@ -90,9 +95,12 @@ def create_raster_step(name: Optional[str] = None) -> Step:
     return step
 
 
-def create_depth_engrave_step(name: Optional[str] = None) -> Step:
+def create_depth_engrave_step(
+    context: RayforgeContext,
+    name: Optional[str] = None
+) -> Step:
     """Factory to create and configure a Depth Engrave step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     default_head = machine.get_default_head()
 
@@ -127,9 +135,12 @@ def create_depth_engrave_step(name: Optional[str] = None) -> Step:
     return step
 
 
-def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
+def create_shrinkwrap_step(
+    context: RayforgeContext,
+    name: Optional[str] = None
+) -> Step:
     """Factory to create and configure a Shrinkwrap (concave hull) step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     default_head = machine.get_default_head()
     step = Step(
@@ -156,9 +167,12 @@ def create_shrinkwrap_step(name: Optional[str] = None) -> Step:
     return step
 
 
-def create_frame_step(name: Optional[str] = None) -> Step:
+def create_frame_step(
+    context: RayforgeContext,
+    name: Optional[str] = None
+) -> Step:
     """Factory to create and configure a Frame step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     default_head = machine.get_default_head()
     step = Step(
@@ -182,9 +196,12 @@ def create_frame_step(name: Optional[str] = None) -> Step:
     return step
 
 
-def create_material_test_step(name: Optional[str] = None) -> Step:
+def create_material_test_step(
+    context: RayforgeContext,
+    name: Optional[str] = None
+) -> Step:
     """Factory to create a Material Test step."""
-    machine = get_context().machine
+    machine = context.machine
     assert machine is not None
     step = Step(
         typelabel=_("Material Test Grid"),
@@ -204,7 +221,7 @@ def create_material_test_step(name: Optional[str] = None) -> Step:
     return step
 
 
-STEP_FACTORIES: List[Callable[[Optional[str]], Step]] = [
+STEP_FACTORIES: List[Callable[[RayforgeContext, Optional[str]], Step]] = [
     create_contour_step,
     create_raster_step,
     create_depth_engrave_step,

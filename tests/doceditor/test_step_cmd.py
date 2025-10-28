@@ -4,16 +4,13 @@ from unittest.mock import MagicMock
 from rayforge.doceditor.step_cmd import StepCmd
 from rayforge.doceditor.editor import DocEditor
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.core.config import ConfigManager
 
 
 @pytest.fixture
-def mock_editor():
+def mock_editor(context_initializer):
     """Provides a DocEditor instance with mocked dependencies."""
     task_manager = MagicMock(spec=TaskManager)
-    config_manager = MagicMock(spec=ConfigManager)
-    editor = DocEditor(task_manager, config_manager)
-    return editor
+    return DocEditor(task_manager, context_initializer)
 
 
 @pytest.fixture

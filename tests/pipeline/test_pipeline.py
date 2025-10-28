@@ -172,12 +172,12 @@ class TestPipeline:
         mock_task_mgr.created_tasks.clear()
 
     def test_reconcile_all_triggers_ops_generation(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         # Act
@@ -189,12 +189,12 @@ class TestPipeline:
         assert called_func is make_workpiece_artifact_in_subprocess
 
     def test_generation_success_emits_signals_and_caches_result(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -236,12 +236,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_generation_cancellation_is_handled(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -258,12 +258,12 @@ class TestPipeline:
         assert pipeline.get_ops(step, real_workpiece) is None
 
     def test_step_change_triggers_full_regeneration(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(doc, mock_task_mgr)
 
@@ -298,12 +298,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_workpiece_transform_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
         _ = Pipeline(doc, mock_task_mgr)
 
@@ -336,12 +336,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_multipass_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(doc, mock_task_mgr)
 
@@ -373,12 +373,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_workpiece_size_change_triggers_regeneration(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
         _ = Pipeline(doc, mock_task_mgr)
 
@@ -410,12 +410,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_shutdown_releases_all_artifacts(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -484,11 +484,13 @@ class TestPipeline:
         # Assert
         assert pipeline.doc is new_doc
 
-    def test_is_busy_property(self, doc, real_workpiece, mock_task_mgr):
+    def test_is_busy_property(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -510,12 +512,12 @@ class TestPipeline:
         assert pipeline.is_busy is False
 
     def test_pause_resume_functionality(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -536,11 +538,13 @@ class TestPipeline:
         # Assert - reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
-    def test_paused_context_manager(self, doc, real_workpiece, mock_task_mgr):
+    def test_paused_context_manager(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -574,7 +578,7 @@ class TestPipeline:
         assert pipeline.is_paused is False
 
     def test_get_estimated_time_returns_none(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         """
         Tests that the refactored get_estimated_time now correctly
@@ -583,7 +587,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(doc, mock_task_mgr)
 
@@ -594,7 +598,7 @@ class TestPipeline:
         assert result is None
 
     def test_preview_time_updated_signal_is_correct(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         """
         Tests the new end-to-end time estimation by checking the final
@@ -603,7 +607,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -635,11 +639,13 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(wp_handle)
 
-    def test_get_artifact_handle(self, doc, real_workpiece, mock_task_mgr):
+    def test_get_artifact_handle(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -677,11 +683,13 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_get_scaled_ops(self, doc, real_workpiece, mock_task_mgr):
+    def test_get_scaled_ops(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -729,12 +737,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_get_scaled_ops_with_stale_non_scalable_artifact(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -770,11 +778,13 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_get_artifact(self, doc, real_workpiece, mock_task_mgr):
+    def test_get_artifact(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)
@@ -816,12 +826,12 @@ class TestPipeline:
             get_context().artifact_store.release(handle)
 
     def test_get_artifact_with_stale_non_scalable_artifact(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step()
+        step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(doc, mock_task_mgr)

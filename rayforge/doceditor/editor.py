@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
 from blinker import Signal
-from ..context import get_context
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_config import TraceConfig
@@ -26,7 +25,7 @@ from .transform_cmd import TransformCmd
 if TYPE_CHECKING:
     from ..undo import HistoryManager
     from ..shared.tasker.manager import TaskManager
-    from ..config import ConfigManager
+    from ..context import RayforgeContext
     from ..core.workpiece import WorkPiece
     from ..core.tab import Tab
 
@@ -47,7 +46,7 @@ class DocEditor:
     def __init__(
         self,
         task_manager: "TaskManager",
-        config_manager: "ConfigManager",
+        context: "RayforgeContext",
         doc: Doc | None = None,
     ):
         """
@@ -59,8 +58,9 @@ class DocEditor:
             doc: An optional existing Doc object. If None, a new one is
                  created.
         """
+        self.context = context
         self.task_manager = task_manager
-        self._config_manager = config_manager
+        self._config_manager = context.config_mgr
         self.doc = doc or Doc()
         self.pipeline = Pipeline(self.doc, self.task_manager)
         self.history_manager: "HistoryManager" = self.doc.history_manager
@@ -101,7 +101,7 @@ class DocEditor:
             f"Releasing {len(self._transient_artifact_handles)} "
             "transient job artifacts..."
         )
-        artifact_store = get_context().artifact_store
+        artifact_store = self.context.artifact_store
         for handle in list(self._transient_artifact_handles):
             artifact_store.release(handle)
         self._transient_artifact_handles.clear()
@@ -135,7 +135,7 @@ class DocEditor:
     @property
     def machine_dimensions(self) -> Optional[Tuple[float, float]]:
         """Returns the configured machine's dimensions, or None."""
-        config = get_context().config
+        config = self.context.config
         if config and config.machine:
             return config.machine.dimensions
         return None
@@ -189,7 +189,7 @@ class DocEditor:
         useful for tests.
         """
         export_future = asyncio.get_running_loop().create_future()
-        artifact_store = get_context().artifact_store
+        artifact_store = self.context.artifact_store
 
         def _on_export_assembly_done(
             handle: Optional[JobArtifactHandle], error: Optional[Exception]

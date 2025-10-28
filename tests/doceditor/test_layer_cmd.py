@@ -6,16 +6,14 @@ from rayforge.core.layer import Layer
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.layer_cmd import LayerCmd, AddLayerAndSetActiveCommand
 from rayforge.shared.tasker.manager import TaskManager
-from rayforge.core.config import ConfigManager
 
 
 @pytest.fixture
-def mock_editor():
+def mock_editor(context_initializer):
     """Provides a DocEditor instance with mocked dependencies."""
     task_manager = MagicMock(spec=TaskManager)
-    config_manager = MagicMock(spec=ConfigManager)
     doc = Doc()
-    return DocEditor(task_manager, config_manager, doc)
+    return DocEditor(task_manager, context_initializer, doc)
 
 
 @pytest.fixture

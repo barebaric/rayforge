@@ -140,9 +140,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the central document editor. This now owns the Doc and
         # Pipeline.
-        config_mgr = get_context().config_mgr
-        assert config_mgr is not None
-        self.doc_editor = DocEditor(task_mgr, config_mgr)
+        context = get_context()
+        self.doc_editor = DocEditor(task_mgr, context)
         self.machine_cmd = MachineCmd(self.doc_editor)
         self.machine_cmd.job_started.connect(self._on_job_started)
 
@@ -309,7 +308,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
-                get_context(),
+                context,
                 self.doc_editor.doc,
                 self.doc_editor.pipeline,
                 width_mm=width_mm,
@@ -629,7 +628,7 @@ class MainWindow(Adw.ApplicationWindow):
         ):
             workflow = first_workpiece_layer.workflow
             # The first factory in the list is the default step type
-            default_step = create_contour_step()
+            default_step = create_contour_step(get_context())
             workflow.add_step(default_step)
             logger.info(
                 f"Added default '{default_step.typelabel}' step to "

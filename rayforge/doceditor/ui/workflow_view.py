@@ -159,7 +159,7 @@ class WorkflowView(Expander):
         if not self.workflow or not self.workflow.doc:
             return
 
-        popup = StepSelector(self.step_factories)
+        popup = StepSelector(self.step_factories, self.editor.context)
         popup.set_parent(button)
         popup.popup()
         popup.connect("closed", self.on_add_dialog_response)
@@ -170,7 +170,7 @@ class WorkflowView(Expander):
             return
         if popup.selected_factory:
             step_factory = popup.selected_factory
-            new_step = step_factory()
+            new_step = step_factory(self.editor.context)
             command = ListItemCommand(
                 owner_obj=self.workflow,
                 item=new_step,
