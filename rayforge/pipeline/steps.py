@@ -21,9 +21,7 @@ from .transformer import (
 
 
 def create_contour_step(
-    context: RayforgeContext,
-    name: Optional[str] = None,
-    optimize: bool = True
+    context: RayforgeContext, name: Optional[str] = None, optimize: bool = True
 ) -> Step:
     """Factory to create and configure a Contour step."""
     machine = context.machine
@@ -57,8 +55,7 @@ def create_contour_step(
 
 
 def create_raster_step(
-    context: RayforgeContext,
-    name: Optional[str] = None
+    context: RayforgeContext, name: Optional[str] = None
 ) -> Step:
     """Factory to create and configure a Rasterize step."""
     machine = context.machine
@@ -96,8 +93,7 @@ def create_raster_step(
 
 
 def create_depth_engrave_step(
-    context: RayforgeContext,
-    name: Optional[str] = None
+    context: RayforgeContext, name: Optional[str] = None
 ) -> Step:
     """Factory to create and configure a Depth Engrave step."""
     machine = context.machine
@@ -136,8 +132,7 @@ def create_depth_engrave_step(
 
 
 def create_shrinkwrap_step(
-    context: RayforgeContext,
-    name: Optional[str] = None
+    context: RayforgeContext, name: Optional[str] = None
 ) -> Step:
     """Factory to create and configure a Shrinkwrap (concave hull) step."""
     machine = context.machine
@@ -168,8 +163,7 @@ def create_shrinkwrap_step(
 
 
 def create_frame_step(
-    context: RayforgeContext,
-    name: Optional[str] = None
+    context: RayforgeContext, name: Optional[str] = None
 ) -> Step:
     """Factory to create and configure a Frame step."""
     machine = context.machine
@@ -197,8 +191,7 @@ def create_frame_step(
 
 
 def create_material_test_step(
-    context: RayforgeContext,
-    name: Optional[str] = None
+    context: RayforgeContext, name: Optional[str] = None
 ) -> Step:
     """Factory to create a Material Test step."""
     machine = context.machine

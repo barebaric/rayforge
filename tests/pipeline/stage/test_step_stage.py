@@ -1,15 +1,19 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.base import PipelineStage
-from rayforge.pipeline.stage.step import StepGeneratorStage
 from rayforge.pipeline.artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
+    WorkPieceArtifactHandle,
+)
+from rayforge.pipeline.stage.base import PipelineStage
+from rayforge.pipeline.stage.step import StepGeneratorStage
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
 )
 
 
@@ -42,7 +46,15 @@ def mock_task_mgr():
 def mock_artifact_cache():
     """Provides a mock ArtifactCache."""
     cache = MagicMock()
-    cache.get_workpiece_handle.return_value = MagicMock()  # Dependency is met
+    cache.get_workpiece_handle.return_value = WorkPieceArtifactHandle(
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        shm_name="dummy_wp_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+    )
+    cache.has_step_render_handle.return_value = False
     return cache
 
 
@@ -51,19 +63,59 @@ def mock_doc_and_step():
     """Provides a mock Doc object with some structure."""
     doc = MagicMock(spec=Doc)
     layer = MagicMock(spec=Layer)
+    # Use MagicMock for Step to allow mocking the read-only 'layer' property
     step = MagicMock(spec=Step)
     step.uid = "step1"
-    step.layer = layer
-    step.per_step_transformers_dicts = []  # Add the missing attribute
+    step.per_step_transformers_dicts = []
 
-    # Give the mock workpiece a UID
-    wp_mock = MagicMock(spec=WorkPiece)
+    # Mock the read-only 'layer' property to return our mock layer
+    type(step).layer = PropertyMock(return_value=layer)
+
+    wp_mock = WorkPiece(name="wp1")
     wp_mock.uid = "wp1"
+    wp_mock.set_size(10, 10)
 
     layer.workflow.steps = [step]
     layer.all_workpieces = [wp_mock]
     doc.layers = [layer]
     return doc, step
+
+
+def _complete_step_task(task, time=42.0, gen_id=1):
+    """Helper to simulate the completion of a step assembly task."""
+    mock_task_obj = MagicMock()
+    mock_task_obj.key = task.key
+    mock_task_obj.id = task.id
+    mock_task_obj.get_status.return_value = "completed"
+
+    if task.when_event:
+        render_handle = StepRenderArtifactHandle(
+            shm_name="dummy_render",
+            handle_class_name="StepRenderArtifactHandle",
+            artifact_type_name="StepRenderArtifact",
+        )
+        render_event = {
+            "handle_dict": render_handle.to_dict(),
+            "generation_id": gen_id,
+        }
+        task.when_event(mock_task_obj, "render_artifact_ready", render_event)
+
+        ops_handle = StepOpsArtifactHandle(
+            shm_name="dummy_ops",
+            handle_class_name="StepOpsArtifactHandle",
+            artifact_type_name="StepOpsArtifact",
+            time_estimate=time,
+        )
+        ops_event = {
+            "handle_dict": ops_handle.to_dict(),
+            "generation_id": gen_id,
+        }
+        task.when_event(mock_task_obj, "ops_artifact_ready", ops_event)
+
+    result = (time, gen_id)
+    mock_task_obj.result.return_value = result
+    if task.when_done:
+        task.when_done(mock_task_obj)
 
 
 @pytest.mark.usefixtures("context_initializer")
@@ -74,6 +126,39 @@ class TestStepGeneratorStage:
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_cache is mock_artifact_cache
+
+    def test_reconcile_triggers_assembly_for_missing_artifact(
+        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+    ):
+        """
+        Tests that reconcile() starts a task if a step artifact is missing.
+        """
+        # Arrange
+        doc, step = mock_doc_and_step
+        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+
+        # Act
+        stage.reconcile(doc)
+
+        # Assert
+        mock_task_mgr.run_process.assert_called_once()
+        called_func = mock_task_mgr.run_process.call_args[0][0]
+        assert called_func is make_step_artifact_in_subprocess
+
+    def test_mark_stale_and_trigger_starts_assembly(
+        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+    ):
+        """Tests that explicitly marking a step as stale triggers assembly."""
+        # Arrange
+        doc, step = mock_doc_and_step
+        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+
+        # Act
+        stage.mark_stale_and_trigger(step)
+
+        # Assert
+        mock_task_mgr.run_process.assert_called_once()
+        assert len(mock_task_mgr.created_tasks) == 1
 
     def test_assembly_flow_success(
         self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
@@ -100,6 +185,7 @@ class TestStepGeneratorStage:
 
         # Simulate Phase 1: Render and Ops Artifact Ready Events
         mock_task_obj = MagicMock()
+        mock_task_obj.id = task.id
         render_handle = StepRenderArtifactHandle(
             shm_name="render_shm",
             handle_class_name="StepRenderArtifactHandle",
@@ -107,7 +193,7 @@ class TestStepGeneratorStage:
         )
         render_event_data = {
             "handle_dict": render_handle.to_dict(),
-            "generation_id": 1,  # Matches the stage's internal ID
+            "generation_id": 1,
         }
         task.when_event(
             mock_task_obj, "render_artifact_ready", render_event_data
@@ -126,8 +212,12 @@ class TestStepGeneratorStage:
         task.when_event(mock_task_obj, "ops_artifact_ready", ops_event_data)
 
         # Assert event phase worked
-        mock_artifact_cache.put_step_render_handle.assert_called_once()
-        mock_artifact_cache.put_step_ops_handle.assert_called_once()
+        mock_artifact_cache.put_step_render_handle.assert_called_once_with(
+            step.uid, render_handle
+        )
+        mock_artifact_cache.put_step_ops_handle.assert_called_once_with(
+            step.uid, ops_handle
+        )
         render_signal_handler.assert_called_once_with(stage, step=step)
 
         # Simulate Phase 2: Task Completion with Time Estimate
@@ -140,3 +230,22 @@ class TestStepGeneratorStage:
             stage, step=step, time=42.5
         )
         assert stage.get_estimate(step.uid) == 42.5
+
+    def test_invalidate_cleans_up_and_invalidates_job(
+        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+    ):
+        """Tests that invalidating a step cleans up all its artifacts."""
+        # Arrange
+        doc, step = mock_doc_and_step
+        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage.mark_stale_and_trigger(step)
+        _complete_step_task(mock_task_mgr.created_tasks[0])
+        mock_task_mgr.created_tasks.clear()
+
+        # Act
+        stage.invalidate(step.uid)
+
+        # Assert
+        mock_artifact_cache.pop_step_ops_handle.assert_called_with(step.uid)
+        mock_artifact_cache.pop_step_render_handle.assert_called_with(step.uid)
+        mock_artifact_cache.invalidate_for_job.assert_called()

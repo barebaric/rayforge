@@ -380,9 +380,9 @@ def make_workpiece_artifact_in_subprocess(
     execute_ctx.set_progress(1.0)
 
     if final_artifact is None:
-        # If no artifact was produced (e.g., empty image), return a tuple
-        # with None to match the success return type.
-        return None, generation_id
+        # If no artifact was produced (e.g., empty image), we still need
+        # to return the generation_id to signal completion.
+        return generation_id
 
     # If we aggregated a hybrid, update the final artifact with the complete
     # data
@@ -467,4 +467,8 @@ def make_workpiece_artifact_in_subprocess(
     proxy.set_progress(1.0)
 
     handle = artifact_store.put(final_artifact_to_store)
-    return handle.to_dict(), generation_id
+    proxy.send_event(
+        "__internal_artifact_created",
+        {"handle_dict": handle.to_dict(), "generation_id": generation_id},
+    )
+    return generation_id

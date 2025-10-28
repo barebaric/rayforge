@@ -40,6 +40,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         super().__init__(task_manager, artifact_cache)
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
+        self._pending_handles: Dict[WorkpieceKey, WorkPieceArtifactHandle] = {}
 
         # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
@@ -184,6 +185,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         logger.debug(f"WorkpieceGeneratorStage: Cleaning up entry {key}.")
         s_uid, w_uid = key
         self._generation_id_map.pop(key, None)
+        self._pending_handles.pop(key, None)
         self._cleanup_task(key)
         self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
 
@@ -251,9 +253,6 @@ class WorkpieceGeneratorStage(PipelineStage):
         self, task: "Task", event_name: str, data: dict
     ):
         """Handles events from a background task."""
-        if event_name != "visual_chunk_ready":
-            return
-
         key = task.key
         handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
@@ -261,15 +260,28 @@ class WorkpieceGeneratorStage(PipelineStage):
             return
 
         try:
-            chunk_handle = create_handle_from_dict(handle_dict)
-            self.visual_chunk_available.send(
-                self,
-                key=key,
-                chunk_handle=chunk_handle,
-                generation_id=generation_id,
-            )
+            handle = create_handle_from_dict(handle_dict)
+            if not isinstance(handle, WorkPieceArtifactHandle):
+                raise TypeError("Expected a WorkPieceArtifactHandle")
+
+            # Adopt the memory block as soon as we know about it.
+            get_context().artifact_store.adopt(handle)
+
+            if event_name == "__internal_artifact_created":
+                self._pending_handles[key] = handle
+                return
+
+            if event_name == "visual_chunk_ready":
+                self.visual_chunk_available.send(
+                    self,
+                    key=key,
+                    chunk_handle=handle,
+                    generation_id=generation_id,
+                )
         except Exception as e:
-            logger.error(f"Failed to process visual chunk: {e}", exc_info=True)
+            logger.error(
+                f"Failed to process event '{event_name}': {e}", exc_info=True
+            )
 
     def _on_task_complete(
         self,
@@ -289,6 +301,8 @@ class WorkpieceGeneratorStage(PipelineStage):
         if task.get_status() == "completed":
             self._handle_completed_task_result(task, key, step, workpiece)
         else:
+            # Cleanup pending handle if task failed or was cancelled
+            self._pending_handles.pop(key, None)
             wp_name = workpiece.name
             logger.warning(
                 f"Ops generation for '{step.name}' on '{wp_name}' failed "
@@ -312,43 +326,41 @@ class WorkpieceGeneratorStage(PipelineStage):
         s_uid, w_uid = key
         artifact_store = get_context().artifact_store
         try:
-            result = task.result()
-            if not isinstance(result, tuple) or len(result) != 2:
-                logger.error(f"Task for {key} returned unexpected format.")
+            result_gen_id = task.result()
+            handle = self._pending_handles.pop(key, None)
+
+            # This case handles empty workpieces that correctly finish
+            # without producing an artifact.
+            if handle is None:
+                logger.debug(
+                    f"Task for {key} completed but produced no artifact "
+                    f"handle via event."
+                )
                 return
 
-            handle_dict, result_gen_id = result
-            if not handle_dict:
-                logger.debug(f"Task for {key} produced no artifact.")
-                return
-
-            handle = create_handle_from_dict(handle_dict)
             if self._generation_id_map.get(key) != result_gen_id:
                 logger.warning(f"Stale result for {key}. Releasing.")
                 artifact_store.release(handle)
                 return
 
-            if isinstance(handle, WorkPieceArtifactHandle):
-                if not handle.is_scalable:
-                    # After a task completes, check if its result is now
-                    # stale because the workpiece was resized while it ran.
-                    if not self._sizes_are_close(
-                        handle.generation_size, workpiece.size
-                    ):
-                        logger.info(
-                            f"Result for {key} is stale due to size "
-                            "change during generation. Regenerating."
-                        )
-                        artifact_store.release(handle)
-                        self._launch_task(step, workpiece)
-                        return
-
-            if not isinstance(handle, WorkPieceArtifactHandle):
-                raise TypeError("Expected a WorkPieceArtifactHandle")
+            if not handle.is_scalable:
+                # After a task completes, check if its result is now
+                # stale because the workpiece was resized while it ran.
+                if not self._sizes_are_close(
+                    handle.generation_size, workpiece.size
+                ):
+                    logger.info(
+                        f"Result for {key} is stale due to size "
+                        "change during generation. Regenerating."
+                    )
+                    artifact_store.release(handle)
+                    self._launch_task(step, workpiece)
+                    return
 
             self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
 
         except Exception as e:
+            self._pending_handles.pop(key, None)
             logger.error(
                 f"Error processing result for {key}: {e}", exc_info=True
             )
