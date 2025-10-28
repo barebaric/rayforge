@@ -144,6 +144,10 @@ class ArtifactStore:
         """
         shm_obj = self._managed_shms.pop(shm_name, None)
         if not shm_obj:
+            logger.warning(
+                f"Attempted to release block {shm_name}, which is not "
+                f"managed or has already been released."
+            )
             return
 
         try:

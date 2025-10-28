@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import json
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import numpy as np
 
 from ...context import get_context
@@ -33,7 +33,7 @@ class JobDescription:
 
 def make_job_artifact_in_subprocess(
     proxy: ExecutionContextProxy, job_description_dict: Dict[str, Any]
-) -> Optional[Dict[str, Any]]:
+) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
@@ -86,6 +86,12 @@ def make_job_artifact_in_subprocess(
 
     final_ops.job_end()
 
+    if final_ops.is_empty():
+        logger.info("Final ops are empty. No job artifact will be created.")
+        proxy.set_progress(1.0)
+        proxy.set_message(_("Job finalization complete"))
+        return
+
     proxy.set_message(_("Calculating final time and distance estimates..."))
     final_time = final_ops.estimate_time(
         default_cut_speed=machine.max_cut_speed,
@@ -119,6 +125,10 @@ def make_job_artifact_in_subprocess(
     )
     final_handle = artifact_store.put(final_artifact)
 
+    proxy.send_event(
+        "artifact_created", {"handle_dict": final_handle.to_dict()}
+    )
+
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))
-    return final_handle.to_dict()
+    return

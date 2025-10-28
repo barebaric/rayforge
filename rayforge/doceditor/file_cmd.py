@@ -1,8 +1,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Dict, Callable
-from dataclasses import asdict
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Callable
 
 from ..core.item import DocItem
 from ..core.layer import Layer
@@ -11,10 +10,6 @@ from ..core.vectorization_config import TraceConfig
 from ..image import import_file, ImportPayload
 from ..core.import_source import ImportSource
 from ..context import get_context
-from ..pipeline.stage.job_runner import (
-    make_job_artifact_in_subprocess,
-    JobDescription,
-)
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
 from .layout.align import PositionAtStrategy
@@ -22,7 +17,6 @@ from .layout.align import PositionAtStrategy
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
     from ..shared.tasker.manager import TaskManager
-    from ..shared.tasker.task import Task
 
 
 logger = logging.getLogger(__name__)
@@ -312,34 +306,6 @@ class FileCmd:
                 # Pre-multiply to apply translation in world space
                 item.matrix = translation_matrix @ item.matrix
 
-    def _prepare_job_description(self) -> JobDescription:
-        """Constructs the JobDescription from the current document state."""
-        doc = self._editor.doc
-        pipeline = self._editor.pipeline
-        config = get_context().config
-        if not config:
-            raise ValueError(
-                "Cannot prepare job: Config not found in context."
-            )
-        machine = config.machine
-        if not machine:
-            raise ValueError("Cannot prepare job: No machine configured.")
-
-        step_handles: Dict[str, Dict] = {}
-        for layer in doc.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                handle = pipeline.get_step_ops_artifact_handle(step.uid)
-                if handle:
-                    step_handles[step.uid] = handle.to_dict()
-
-        return JobDescription(
-            step_artifact_handles_by_uid=step_handles,
-            machine_dict=machine.to_dict(),
-            doc_dict=doc.to_dict(),
-        )
-
     def assemble_job_in_background(
         self,
         when_done: Callable[
@@ -355,33 +321,7 @@ class FileCmd:
                        an ArtifactHandle on success, or (None, error) on
                        failure.
         """
-        try:
-            job_desc = self._prepare_job_description()
-        except Exception as e:
-            when_done(None, e)
-            return
-
-        def _when_done_wrapper(task: "Task"):
-            try:
-                # Re-raises exceptions from the task
-                handle_dict = task.result()
-                handle = (
-                    JobArtifactHandle.from_dict(handle_dict)
-                    if handle_dict
-                    else None
-                )
-                if handle:
-                    assert isinstance(handle, JobArtifactHandle)
-                when_done(handle, None)
-            except Exception as e:
-                when_done(None, e)
-
-        self._task_manager.run_process(
-            make_job_artifact_in_subprocess,
-            job_description_dict=asdict(job_desc),
-            key="job-assembly",
-            when_done=_when_done_wrapper,
-        )
+        self._editor.pipeline.generate_job_artifact(when_done=when_done)
 
     def export_gcode_to_path(self, file_path: Path):
         """

@@ -133,7 +133,7 @@ class TestPipeline:
                         }
                         task.when_event(
                             mock_task_obj,
-                            "__internal_artifact_created",
+                            "artifact_created",
                             event_data,
                         )
                     # 2. Simulate completion
@@ -174,9 +174,17 @@ class TestPipeline:
                             mock_task_obj, "ops_artifact_ready", ops_event
                         )
 
-                    # 3. Simulate final result (time estimate)
-                    result = (step_time, gen_id)
-                    mock_task_obj.result.return_value = result
+                        # 3. Simulate time estimate event
+                        time_event = {
+                            "time_estimate": step_time,
+                            "generation_id": gen_id,
+                        }
+                        task.when_event(
+                            mock_task_obj, "time_estimate_ready", time_event
+                        )
+
+                    # 4. Simulate final result (generation_id)
+                    mock_task_obj.result.return_value = gen_id
                     if task.when_done:
                         task.when_done(mock_task_obj)
 
@@ -247,7 +255,7 @@ class TestPipeline:
                 "generation_id": gen_id,
             }
             task_to_complete.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
+                mock_finished_task, "artifact_created", event_data
             )
             task_to_complete.when_done(mock_finished_task)
 
@@ -462,9 +470,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Verify handle is in cache
@@ -704,9 +710,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Act & Assert - Should return the handle
@@ -763,9 +767,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Act
@@ -812,9 +814,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Act - Try to get scaled ops for different size
@@ -866,9 +866,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Act
@@ -915,9 +913,7 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(
-                mock_finished_task, "__internal_artifact_created", event_data
-            )
+            task.when_event(mock_finished_task, "artifact_created", event_data)
             task.when_done(mock_finished_task)
 
             # Act - Try to get artifact for different size

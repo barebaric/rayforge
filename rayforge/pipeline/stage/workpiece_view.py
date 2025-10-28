@@ -11,6 +11,7 @@ from ..artifact.workpiece_view import (
 )
 from ..artifact import create_handle_from_dict
 from .workpiece_view_runner import make_workpiece_view_artifact_in_subprocess
+from ...context import get_context
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -119,6 +120,8 @@ class WorkPieceViewGeneratorStage(PipelineStage):
                 handle = create_handle_from_dict(handle_dict)
                 if not isinstance(handle, WorkPieceViewArtifactHandle):
                     raise TypeError("Expected WorkPieceViewArtifactHandle")
+
+                get_context().artifact_store.adopt(handle)
 
                 self.view_artifact_created.send(
                     self,

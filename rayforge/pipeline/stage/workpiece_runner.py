@@ -20,7 +20,7 @@ def make_workpiece_artifact_in_subprocess(
     settings: dict,
     generation_id: int,
     generation_size: Tuple[float, float],
-):
+) -> int:
     """
     The main entry point for generating operations for a single (Step,
     WorkPiece) pair in a background process.
@@ -30,10 +30,7 @@ def make_workpiece_artifact_in_subprocess(
 
     The final generated artifact (containing Ops and metadata) is serialized
     into a shared memory block using the `ArtifactStore`. This function then
-    returns a lightweight, serializable `ArtifactHandle` dictionary, which
-    contains the metadata and shared memory name needed to reconstruct the
-    artifact in the main process. This avoids transferring large data volumes
-    over IPC.
+    returns the generation_id to signal completion.
     """
     import logging
 
@@ -468,7 +465,7 @@ def make_workpiece_artifact_in_subprocess(
 
     handle = artifact_store.put(final_artifact_to_store)
     proxy.send_event(
-        "__internal_artifact_created",
+        "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
     )
     return generation_id
