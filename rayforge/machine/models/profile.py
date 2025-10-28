@@ -32,7 +32,7 @@ class MachineProfile:
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
 
-    def create_machine(self, context: RayforgeContext) -> Machine:
+    def create_machine(self, context: "RayforgeContext") -> Machine:
         """
         Creates a Machine instance from this profile.
 

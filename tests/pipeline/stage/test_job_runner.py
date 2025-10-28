@@ -7,12 +7,12 @@ from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Machine, Laser
-from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.artifact import (
     StepOpsArtifact,
     JobArtifact,
     create_handle_from_dict,
 )
+from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,

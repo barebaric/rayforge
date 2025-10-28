@@ -124,11 +124,24 @@ class TestPipeline:
                 mock_task_obj.get_status.return_value = "completed"
 
                 if task.target is make_workpiece_artifact_in_subprocess:
-                    result = (workpiece_handle.to_dict(), 1)
-                    mock_task_obj.result.return_value = result
+                    gen_id = task.args[6]  # 7th argument is generation_id
+                    # 1. Simulate event
+                    if task.when_event:
+                        event_data = {
+                            "handle_dict": workpiece_handle.to_dict(),
+                            "generation_id": gen_id,
+                        }
+                        task.when_event(
+                            mock_task_obj,
+                            "__internal_artifact_created",
+                            event_data,
+                        )
+                    # 2. Simulate completion
+                    mock_task_obj.result.return_value = gen_id
                     if task.when_done:
                         task.when_done(mock_task_obj)
                 elif task.target is make_step_artifact_in_subprocess:
+                    gen_id = task.args[2]  # 3rd argument is generation_id
                     if task.when_event:
                         # 1. Simulate render artifact event
                         render_handle = StepRenderArtifactHandle(
@@ -138,7 +151,7 @@ class TestPipeline:
                         )
                         render_event = {
                             "handle_dict": render_handle.to_dict(),
-                            "generation_id": 1,
+                            "generation_id": gen_id,
                         }
                         task.when_event(
                             mock_task_obj,
@@ -155,14 +168,14 @@ class TestPipeline:
                         )
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
-                            "generation_id": 1,
+                            "generation_id": gen_id,
                         }
                         task.when_event(
                             mock_task_obj, "ops_artifact_ready", ops_event
                         )
 
                     # 3. Simulate final result (time estimate)
-                    result = (step_time, 1)
+                    result = (step_time, gen_id)
                     mock_task_obj.result.return_value = result
                     if task.when_done:
                         task.when_done(mock_task_obj)
@@ -220,15 +233,24 @@ class TestPipeline:
             vertex_data=vertex_data,
         )
         handle = get_context().artifact_store.put(expected_artifact)
-        expected_result_tuple = (handle.to_dict(), 1)
+        gen_id = 1
 
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task_to_complete.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = expected_result_tuple
+        mock_finished_task.result.return_value = gen_id
 
         try:
+            # Simulate the new two-step flow: event first, then completion
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": gen_id,
+            }
+            task_to_complete.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task_to_complete.when_done(mock_finished_task)
+
             cached_ops = pipeline.get_ops(step, real_workpiece)
             assert cached_ops is not None
             assert len(cached_ops) == 2
@@ -433,9 +455,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Verify handle is in cache
@@ -503,7 +532,7 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (None, 1)
+        mock_finished_task.result.return_value = 1
 
         # Act
         task.when_done(mock_finished_task)
@@ -668,9 +697,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Act & Assert - Should return the handle
@@ -720,9 +756,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Act
@@ -762,9 +805,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Act - Try to get scaled ops for different size
@@ -809,9 +859,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Act
@@ -851,9 +908,16 @@ class TestPipeline:
         mock_finished_task = MagicMock(spec=Task)
         mock_finished_task.key = task.key
         mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = (handle.to_dict(), 1)
+        mock_finished_task.result.return_value = 1
 
         try:
+            event_data = {
+                "handle_dict": handle.to_dict(),
+                "generation_id": 1,
+            }
+            task.when_event(
+                mock_finished_task, "__internal_artifact_created", event_data
+            )
             task.when_done(mock_finished_task)
 
             # Act - Try to get artifact for different size

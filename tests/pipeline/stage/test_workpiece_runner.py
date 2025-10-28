@@ -4,9 +4,9 @@ import numpy as np
 import logging
 
 from rayforge.context import get_context
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.step import Step
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import (
@@ -80,7 +80,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
     try:
         # Act
-        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
+        result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -93,6 +93,20 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         )
 
         # Assert
+        # 1. Check for the event and extract the handle
+        event_call = next(
+            (
+                c
+                for c in mock_proxy.send_event.call_args_list
+                if c[0][0] == "__internal_artifact_created"
+            ),
+            None,
+        )
+        assert event_call is not None
+        _, event_data = event_call[0]
+        result_dict = event_data["handle_dict"]
+
+        # 2. Continue with original assertions
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = get_context().artifact_store.get(handle)
@@ -134,7 +148,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
     try:
         # Act
-        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
+        result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             workpiece_dict,
             step.opsproducer_dict,
@@ -147,6 +161,18 @@ def test_raster_producer_returns_artifact_with_raster_data(
         )
 
         # Assert
+        event_call = next(
+            (
+                c
+                for c in mock_proxy.send_event.call_args_list
+                if c[0][0] == "__internal_artifact_created"
+            ),
+            None,
+        )
+        assert event_call is not None
+        _, event_data = event_call[0]
+        result_dict = event_data["handle_dict"]
+
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = get_context().artifact_store.get(handle)
@@ -183,7 +209,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     generation_size = (10.0, 10.0)
 
     # Act
-    result, result_gen_id = make_workpiece_artifact_in_subprocess(
+    result_gen_id = make_workpiece_artifact_in_subprocess(
         mock_proxy,
         empty_workpiece.to_dict(),
         step.opsproducer_dict,
@@ -196,8 +222,14 @@ def test_empty_producer_result_returns_none(mock_proxy):
     )
 
     # Assert
-    assert result is None
+    # The runner returns the generation_id to signal completion.
     assert result_gen_id == generation_id
+    # No event should be sent if no artifact was created.
+    was_called = any(
+        c.args[0] == "__internal_artifact_created"
+        for c in mock_proxy.send_event.call_args_list
+    )
+    assert not was_called
 
 
 def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
@@ -217,7 +249,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
     try:
         # Act
-        result_dict, result_gen_id = make_workpiece_artifact_in_subprocess(
+        _ = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
@@ -230,6 +262,18 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         )
 
         # Assert
+        event_call = next(
+            (
+                c
+                for c in mock_proxy.send_event.call_args_list
+                if c[0][0] == "__internal_artifact_created"
+            ),
+            None,
+        )
+        assert event_call is not None
+        _, event_data = event_call[0]
+        result_dict = event_data["handle_dict"]
+
         assert result_dict is not None
         handle = create_handle_from_dict(result_dict)
         reconstructed_artifact = get_context().artifact_store.get(handle)
