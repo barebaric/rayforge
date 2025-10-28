@@ -171,7 +171,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
     def _on_profile_selected_for_add(self, sender, *, profile: MachineProfile):
         """Creates a machine and opens its settings editor."""
         machine_mgr = get_context().machine_mgr
-        new_machine = profile.create_machine()
+        new_machine = profile.create_machine(get_context())
         machine_mgr.add_machine(new_machine)
 
         editor_dialog = MachineSettingsDialog(machine=new_machine)
