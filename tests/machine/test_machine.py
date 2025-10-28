@@ -1,5 +1,6 @@
 from typing import Tuple
 import pytest
+import asyncio
 from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
@@ -68,6 +69,18 @@ def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
     return workpiece, source
 
 
+async def wait_for_tasks_to_finish(task_mgr: TaskManager):
+    """
+    Asynchronously waits for the task manager to become idle.
+    This is the correct way to wait inside an `async def` test.
+    It will fail the test on timeout.
+    """
+    # Use the now-correct, thread-safe wait_until_settled in a non-blocking way
+    if await asyncio.to_thread(task_mgr.wait_until_settled, 2000):
+        return
+    pytest.fail("Task manager did not become idle in time.")
+
+
 @pytest.mark.usefixtures("context_initializer")
 class TestMachine:
     """Test suite for the Machine model and its command handlers."""
@@ -101,7 +114,7 @@ class TestMachine:
         # set_driver schedules the rebuild asynchronously.
         # Use distinct args to ensure it's not a no-op compared to the fixture.
         machine.set_driver(OtherDriver, {"port": "/dev/null"})
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         # Verify the correct new driver is in place.
         assert isinstance(machine.driver, OtherDriver)
@@ -138,7 +151,7 @@ class TestMachine:
 
         # Wait for the background processing to finish.
         await doc_editor.wait_until_settled()
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         run_spy = mocker.spy(machine.driver, "run")
         machine_cmd = MachineCmd(doc_editor)
@@ -146,7 +159,7 @@ class TestMachine:
         # --- Act ---
         # Run the full job assembly pipeline and send it to the driver.
         await machine_cmd.send_job(machine)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         # --- Assert ---
         run_spy.assert_called_once()
@@ -186,14 +199,14 @@ class TestMachine:
 
         # Wait for background processing to complete.
         await doc_editor.wait_until_settled()
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         run_spy = mocker.spy(machine.driver, "run")
         machine_cmd = MachineCmd(doc_editor)
 
         # --- Act ---
         await machine_cmd.frame_job(machine)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         # --- Assert ---
         run_spy.assert_called_once()
@@ -226,28 +239,28 @@ class TestMachine:
 
         # Home
         machine_cmd.home_machine(machine)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         home_spy.assert_called_once()
 
         # Cancel
         machine_cmd.cancel_job(machine)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         cancel_spy.assert_called_once()
 
         # Hold
         machine_cmd.set_hold(machine, True)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         set_hold_spy.assert_called_once_with(True)
 
         # Resume
         machine_cmd.set_hold(machine, False)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         assert set_hold_spy.call_count == 2
         set_hold_spy.assert_called_with(False)
 
         # Clear Alarm
         machine_cmd.clear_alarm(machine)
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         clear_alarm_spy.assert_called_once()
 
         # Select Tool
@@ -257,7 +270,7 @@ class TestMachine:
         assert len(machine.heads) == 2
 
         machine_cmd.select_tool(machine, 1)  # Select head at index 1
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
         # Assert that the driver was called with the correct tool number (5)
         select_tool_spy.assert_called_once_with(5)
 
@@ -298,7 +311,7 @@ class TestMachine:
         new_machine = Machine.from_dict(machine_dict)
 
         # Wait for the async driver rebuild scheduled by from_dict to finish
-        task_mgr.wait_until_settled(2000)
+        await wait_for_tasks_to_finish(task_mgr)
 
         # Check that acceleration is preserved
         assert new_machine.acceleration == 2500
@@ -353,7 +366,7 @@ class TestMachine:
         try:
             machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
             # Wait for the async set_driver operation to complete
-            task_mgr.wait_until_settled(2000)
+            await wait_for_tasks_to_finish(task_mgr)
         finally:
             # Ensure the driver is cleaned up to stop any pending tasks
             await machine.shutdown()

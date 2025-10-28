@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
 from rayforge.core.doc import Doc
 from rayforge.pipeline.stage.base import PipelineStage
@@ -144,7 +144,9 @@ class TestJobGeneratorStage:
         task.when_done(mock_task_obj)
 
         # Assert completion was processed
-        mock_finished_signal.assert_called_once_with(stage, handle=handle)
+        mock_finished_signal.assert_called_once_with(
+            stage, handle=handle, task_status="completed"
+        )
 
     def test_completion_with_failure(
         self,
@@ -168,15 +170,15 @@ class TestJobGeneratorStage:
         artifact_cache.put_step_ops_handle(step.uid, step_ops_handle)
 
         stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
-        mock_finished_signal = MagicMock()
-        stage.generation_finished.connect(mock_finished_signal)
+        mock_failed_signal = MagicMock()
+        stage.generation_failed.connect(mock_failed_signal)
         stage.generate_job(real_doc_with_step)
 
         task = mock_task_mgr.created_tasks[0]
         mock_task_obj = MagicMock()
         mock_task_obj.key = task.key
         mock_task_obj.get_status.return_value = "failed"
-        mock_task_obj.result.return_value = None
+        mock_task_obj.result.side_effect = RuntimeError("Task failed")
 
         # Simulate event, which places a handle in the cache
         handle = JobArtifactHandle(
@@ -200,4 +202,6 @@ class TestJobGeneratorStage:
 
         # Assert cleanup
         assert artifact_cache.get_job_handle() is None
-        mock_finished_signal.assert_called_once_with(stage, handle=None)
+        mock_failed_signal.assert_called_once_with(
+            stage, task_status="failed", error=ANY
+        )

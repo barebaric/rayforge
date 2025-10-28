@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
 from rayforge.shared.tasker.task import Task
@@ -125,6 +125,14 @@ class TestPipeline:
                 mock_task_obj = MagicMock(spec=Task)
                 mock_task_obj.key = task.key
                 mock_task_obj.get_status.return_value = "completed"
+                # The runner process returns the generation_id on success
+                # This detail is important for some stages.
+                if task.target is make_workpiece_artifact_in_subprocess:
+                    mock_task_obj.result.return_value = task.args[6]
+                elif task.target is make_step_artifact_in_subprocess:
+                    mock_task_obj.result.return_value = task.args[2]
+                else:
+                    mock_task_obj.result.return_value = None
 
                 if task.target is make_workpiece_artifact_in_subprocess:
                     gen_id = task.args[6]  # 7th argument is generation_id
@@ -140,7 +148,6 @@ class TestPipeline:
                             event_data,
                         )
                     # 2. Simulate completion
-                    mock_task_obj.result.return_value = gen_id
                     if task.when_done:
                         task.when_done(mock_task_obj)
                 elif task.target is make_step_artifact_in_subprocess:
@@ -185,8 +192,7 @@ class TestPipeline:
                             mock_task_obj, "time_estimate_ready", time_event
                         )
 
-                    # 4. Simulate final result (generation_id)
-                    mock_task_obj.result.return_value = gen_id
+                    # 4. Simulate final result
                     if task.when_done:
                         task.when_done(mock_task_obj)
 
@@ -1019,20 +1025,33 @@ class TestPipeline:
             # Act
             pipeline.generate_job_artifact(when_done=callback_mock)
             mock_task_mgr.run_process.assert_called_once()
-            job_task = next(
+
+            # Find the when_done callback captured by the mock task manager
+            job_task_info = next(
                 t
                 for t in mock_task_mgr.created_tasks
                 if t.target is make_job_artifact_in_subprocess
             )
+            when_done_callback = job_task_info.when_done
 
-            # Simulate the job task failing
+            # Create a realistic mock of a failed task object
             mock_failed_task = MagicMock(spec=Task)
-            mock_failed_task.key = job_task.key
             mock_failed_task.get_status.return_value = "failed"
-            job_task.when_done(mock_failed_task)
+            # When result() is called on a failed task, it should raise.
+            mock_failed_task.result.side_effect = RuntimeError(
+                "Job generation failed."
+            )
 
-            # Assert the callback receives (None, None) as errors are handled
-            callback_mock.assert_called_once_with(None, None)
+            # Directly invoke the captured callback with the mock failed task
+            when_done_callback(mock_failed_task)
+
+            # Assert the user's callback receives (None, <Error>)
+            callback_mock.assert_called_once_with(None, ANY)
+            # Further inspect the error argument
+            args, kwargs = callback_mock.call_args
+            error_arg = args[1]
+            assert isinstance(error_arg, RuntimeError)
+            assert "Job generation failed" in str(error_arg)
         finally:
             get_context().artifact_store.release(wp_handle)
 
@@ -1127,30 +1146,30 @@ class TestPipeline:
             mock_task_mgr.run_process.reset_mock()
             mock_task_mgr.created_tasks.clear()
 
-            # Act
-            future = asyncio.create_task(
-                pipeline.generate_job_artifact_async()
-            )
-            await asyncio.sleep(0)  # Allow the event loop to run
+            # Act & Assert
+            with pytest.raises(RuntimeError, match="Job generation failed"):
+                future = asyncio.create_task(
+                    pipeline.generate_job_artifact_async()
+                )
+                await asyncio.sleep(0)  # Allow the event loop to run
 
-            mock_task_mgr.run_process.assert_called_once()
-            job_task = next(
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.target is make_job_artifact_in_subprocess
-            )
+                mock_task_mgr.run_process.assert_called_once()
+                job_task_info = next(
+                    t
+                    for t in mock_task_mgr.created_tasks
+                    if t.target is make_job_artifact_in_subprocess
+                )
+                when_done_callback = job_task_info.when_done
 
-            # Simulate task failure
-            mock_failed_task = MagicMock(spec=Task)
-            mock_failed_task.key = job_task.key
-            mock_failed_task.get_status.return_value = "failed"
-            job_task.when_done(mock_failed_task)
+                # Simulate task failure by directly invoking the callback
+                mock_failed_task = MagicMock(spec=Task)
+                mock_failed_task.get_status.return_value = "failed"
+                mock_failed_task.result.side_effect = RuntimeError(
+                    "Job generation failed."
+                )
+                when_done_callback(mock_failed_task)
 
-            result = await future
-
-            # Assert that the future resolves to None on failure, as the
-            # current implementation does not propagate the exception.
-            assert result is None
+                await future
         finally:
             get_context().artifact_store.release(wp_handle)
 

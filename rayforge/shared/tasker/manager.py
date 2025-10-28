@@ -526,30 +526,46 @@ class TaskManager:
         """
         Wait until all tasks have completed or until timeout is reached.
 
+        This is a thread-safe, non-blocking-loop implementation.
+
         Args:
-            timeout: Maximum time to wait in milliseconds
+            timeout: Maximum time to wait in milliseconds.
 
         Returns:
             True if all tasks completed before timeout, False if timeout was
-              reached
+            reached.
         """
-        import time
+        # If already settled, return immediately.
+        if not self.has_tasks():
+            return True
 
-        start_time = time.time()
+        settled_event = threading.Event()
         timeout_seconds = timeout / 1000.0
 
-        # Poll for task completion
-        while True:
-            with self._lock:
-                if not self._tasks:
-                    return True
+        def on_update(sender, tasks, **kwargs):
+            """Signal handler that checks if the manager is idle."""
+            if not tasks:
+                # The manager is now idle. Set the event and disconnect.
+                settled_event.set()
+                self.tasks_updated.disconnect(on_update)
 
-            # Check if timeout exceeded
-            if time.time() - start_time > timeout_seconds:
-                return False
+        # Connect the handler. We don't use a weak reference because we
+        # need to guarantee disconnection.
+        self.tasks_updated.connect(on_update, weak=False)
 
-            # Sleep for a short time before checking again
-            time.sleep(0.01)
+        # Wait for the event to be set by the callback. This is a blocking
+        # call, but it does NOT block the main_thread_scheduler's event loop,
+        # allowing the cleanup callbacks to run and trigger our on_update.
+        event_was_set = settled_event.wait(timeout=timeout_seconds)
+
+        # Always try to disconnect in case of a timeout to prevent leaks.
+        try:
+            self.tasks_updated.disconnect(on_update)
+        except Exception:
+            # It might have already been disconnected, which is fine.
+            pass
+
+        return event_was_set
 
 
 class TaskManagerProxy:
