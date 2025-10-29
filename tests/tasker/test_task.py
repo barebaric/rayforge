@@ -6,19 +6,6 @@ from rayforge.shared.tasker.task import Task
 from rayforge.shared.tasker.context import ExecutionContext
 
 
-@pytest.fixture
-def mock_idle_add(mocker):
-    """Mocks glib.idle_add to execute callbacks immediately."""
-
-    def idle_add_immediate(callback, *args, **kwargs):
-        callback(*args, **kwargs)
-        return 0
-
-    return mocker.patch(
-        "rayforge.shared.tasker.context.idle_add", idle_add_immediate
-    )
-
-
 class ControllableTimer:
     """A mock Timer class that can be manually controlled."""
 
@@ -67,8 +54,14 @@ class MockExecutionContext(ExecutionContext):
     """
 
     def __init__(self, task: Task):
+        # A scheduler that calls the callback immediately.
+        def immediate_scheduler(callback, *args, **kwargs):
+            return callback(*args, **kwargs)
+
         super().__init__(
-            update_callback=task.update, check_cancelled=task.is_cancelled
+            update_callback=task.update,
+            check_cancelled=task.is_cancelled,
+            scheduler=immediate_scheduler,
         )
         self.task = task
 
@@ -182,9 +175,7 @@ class TestTaskUpdate:
 class TestTaskExecution:
     """Tests for the complete lifecycle of a Task via the run() method."""
 
-    async def test_run_successful(
-        self, signal_tracker, mock_idle_add, mock_timer_factory
-    ):
+    async def test_run_successful(self, signal_tracker, mock_timer_factory):
         """Test a task that runs to completion successfully."""
         task = Task(successful_coro)
         context = MockExecutionContext(task)
@@ -212,9 +203,7 @@ class TestTaskExecution:
         assert signal_tracker.received[2]["status"] == "completed"
         assert signal_tracker.received[2]["progress"] == 1.0
 
-    async def test_run_failure(
-        self, signal_tracker, mock_idle_add, mock_timer_factory
-    ):
+    async def test_run_failure(self, signal_tracker, mock_timer_factory):
         """Test a task that fails with an exception."""
         task = Task(failing_coro)
         context = MockExecutionContext(task)
@@ -232,9 +221,7 @@ class TestTaskExecution:
         assert signal_tracker.received[0]["status"] == "running"
         assert signal_tracker.received[1]["status"] == "failed"
 
-    async def test_run_and_cancel(
-        self, signal_tracker, mock_idle_add, mock_timer_factory
-    ):
+    async def test_run_and_cancel(self, signal_tracker, mock_timer_factory):
         """Test cancelling a task while it is running."""
         started_event = asyncio.Event()
         task = Task(long_running_coro, started_event)
@@ -284,7 +271,7 @@ class TestTaskExecution:
         )
 
     async def test_run_after_early_cancel(
-        self, signal_tracker, mock_idle_add, mock_timer_factory
+        self, signal_tracker, mock_timer_factory
     ):
         """Test running a task that was cancelled before it started."""
         mock_coro = AsyncMock()
@@ -327,7 +314,7 @@ class TestTaskCancellationMethod:
         mock_internal_task.cancel.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_cancel_after_run(self, mock_idle_add, mock_timer_factory):
+    async def test_cancel_after_run(self, mock_timer_factory):
         """Test calling cancel() on a completed task."""
         task = Task(successful_coro)
         await task.run(MockExecutionContext(task))
@@ -363,9 +350,7 @@ class TestTaskGettersAndResult:
             task.result()
 
     @pytest.mark.asyncio
-    async def test_result_after_success(
-        self, mock_idle_add, mock_timer_factory
-    ):
+    async def test_result_after_success(self, mock_timer_factory):
         """Test result() after successful completion."""
         task = Task(successful_coro)
         await task.run(MockExecutionContext(task))

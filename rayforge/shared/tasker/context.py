@@ -4,8 +4,7 @@ ExecutionContext module for managing task execution context.
 
 import logging
 import threading
-from typing import Optional, Callable, TYPE_CHECKING
-from ..util.glib import idle_add
+from typing import Any, Optional, Callable, TYPE_CHECKING
 from .proxy import BaseExecutionContext
 
 if TYPE_CHECKING:
@@ -21,6 +20,7 @@ class ExecutionContext(BaseExecutionContext):
             Callable[[Optional[float], Optional[str]], None]
         ] = None,
         check_cancelled: Optional[Callable[[], bool]] = None,
+        scheduler: Optional[Callable[..., Any]] = None,
         debounce_interval_ms: int = 100,
         # Internal args for sub-contexting
         _parent_context: Optional["ExecutionContext"] = None,
@@ -40,6 +40,7 @@ class ExecutionContext(BaseExecutionContext):
             )
             # These are only used by the root context
             self._update_callback = None
+            self._scheduler = None
             self._debounce_interval_sec = 0
             self._update_timer = None
             self._pending_progress = None
@@ -49,6 +50,7 @@ class ExecutionContext(BaseExecutionContext):
             # This is a root context. Initialize resources.
             self._root_context = self
             self._update_callback = update_callback
+            self._scheduler = scheduler
             self._check_cancelled = check_cancelled or (lambda: False)
             self._debounce_interval_sec = debounce_interval_ms / 1000.0
             self._update_timer: Optional[threading.Timer] = None
@@ -74,8 +76,12 @@ class ExecutionContext(BaseExecutionContext):
             self._pending_message = None
             self._update_timer = None
 
-        if self._update_callback and not self.is_cancelled():
-            idle_add(self._update_callback, progress, message)
+        if (
+            self._scheduler
+            and self._update_callback
+            and not self.is_cancelled()
+        ):
+            self._scheduler(self._update_callback, progress, message)
 
     def _schedule_update(self):
         """(Re)schedules the update timer for the root context."""
@@ -138,10 +144,12 @@ class ExecutionContext(BaseExecutionContext):
             self._pending_progress = None
             self._pending_message = None
 
-        if self._update_callback and (
-            progress is not None or message is not None
+        if (
+            self._scheduler
+            and self._update_callback
+            and (progress is not None or message is not None)
         ):
-            idle_add(self._update_callback, progress, message)
+            self._scheduler(self._update_callback, progress, message)
 
     def _create_sub_context(
         self,
