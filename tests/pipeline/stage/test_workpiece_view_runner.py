@@ -115,6 +115,7 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
         mock_proxy,
         vector_artifact_handle.to_dict(),
         context.to_dict(),
+        "test_view",
     )
     assert result is None
 
@@ -164,6 +165,7 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         mock_proxy,
         texture_artifact_handle.to_dict(),
         context.to_dict(),
+        "test_view",
     )
     assert result is None
 
