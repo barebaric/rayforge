@@ -36,13 +36,6 @@ async def task_mgr(monkeypatch):
     # Patch the global singleton where it is imported and used by other modules
     monkeypatch.setattr("rayforge.machine.models.machine.task_mgr", tm)
 
-    # Patch idle_add in modules that use it to schedule UI/main-thread
-    # callbacks, redirecting them to the asyncio event loop for the test.
-    monkeypatch.setattr("rayforge.machine.cmd.idle_add", asyncio_scheduler)
-    monkeypatch.setattr(
-        "rayforge.machine.models.machine.idle_add", asyncio_scheduler
-    )
-
     yield tm
 
     # Properly shut down the manager and its thread after tests are done

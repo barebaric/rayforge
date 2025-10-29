@@ -5,6 +5,8 @@ import logging
 from functools import partial
 import pytest_asyncio
 from typing import TYPE_CHECKING
+from unittest.mock import patch
+from rayforge.worker_init import initialize_worker
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
@@ -18,12 +20,71 @@ gettext.install("rayforge")
 logger = logging.getLogger(__name__)
 
 
+def _test_worker_initializer():
+    """
+    A top-level, picklable worker initializer for the test environment.
+    This patches GLib.idle_add inside the worker process to prevent deadlocks.
+    """
+    fail_msg = (
+        "A call to GLib.idle_add() was detected within a worker during tests. "
+        "This is forbidden as it can cause deadlocks. All main-thread "
+        "callbacks should be routed through the test-aware TaskManager "
+        "scheduler."
+    )
+
+    # This patch runs *inside the new worker process*
+    # after it starts, but before the application's real initializer runs.
+    with patch(
+        "gi.repository.GLib.idle_add",
+        side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
+    ):
+        with patch(
+            "rayforge.shared.util.glib.idle_add",
+            side_effect=lambda *args, **kwargs: pytest.fail(
+                "GLib.idle_add called from within a worker process."
+            ),
+        ):
+            # Now call the application's real initializer.
+            initialize_worker()
+
+
 def pytest_configure(config):
     """
     Configure test-only components.
     This hook is called early in the pytest process after initial imports.
     """
     pass
+
+
+@pytest.fixture(scope="session", autouse=True)
+def block_glib_event_loop():
+    """
+    Session-wide, autouse fixture to patch GLib event loop functions
+    BEFORE any application modules are imported by tests. This is critical
+    to prevent tests from deadlocking or interacting with a non-existent
+    GTK main loop.
+
+    This uses unittest.mock.patch directly because the standard `mocker`
+    fixture is function-scoped and cannot be used in a session-scoped fixture.
+    """
+    fail_msg = (
+        "A call to GLib.idle_add() was detected during tests. "
+        "This is forbidden as it can cause deadlocks. All main-thread "
+        "callbacks should be routed through the test-aware TaskManager "
+        "scheduler."
+    )
+
+    # Using `patch` as a context manager. It will be active during the `yield`.
+    with patch(
+        "gi.repository.GLib.idle_add",
+        side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
+    ):
+        with patch(
+            "rayforge.shared.util.glib.idle_add",
+            side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
+        ):
+            # The test session runs here, with the patches active.
+            yield
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -33,7 +94,6 @@ async def task_mgr():
     callbacks to the asyncio event loop.
     """
     from rayforge.shared.tasker.manager import TaskManager
-    from rayforge.worker_init import initialize_worker
 
     main_loop = asyncio.get_running_loop()
 
@@ -42,8 +102,9 @@ async def task_mgr():
 
     tm = TaskManager(
         main_thread_scheduler=asyncio_scheduler,
-        worker_initializer=initialize_worker,
+        worker_initializer=_test_worker_initializer,
     )
+
     yield tm
     if tm.has_tasks():
         pytest.fail("Task manager still has tasks at end of test.")
@@ -51,27 +112,14 @@ async def task_mgr():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
+async def context_initializer(tmp_path, task_mgr, monkeypatch):
     """
     A fixture that initializes the application context.
     """
     from rayforge import config
     from rayforge.context import get_context
     from rayforge import context as context_module
-    from rayforge.shared import tasker as tasker_module
-
-    # We are patching idle_add at its source to
-    # guarantee that ALL calls to it (from Machine, MachineCmd, etc.)
-    # will execute synchronously in the test environment, preventing deadlocks
-    # caused by an un-run GLib main loop.
-    mocker.patch(
-        "rayforge.shared.util.glib.idle_add",
-        side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
-    )
-    mocker.patch(
-        "gi.repository.GLib.idle_add",
-        side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
-    )
+    from rayforge.shared import tasker
 
     # 1. Isolate test configuration files
     temp_config_dir = tmp_path / "config"
@@ -80,7 +128,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
-    monkeypatch.setattr(tasker_module.task_mgr, "_instance", task_mgr)
+    monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
 
     # 3. Get the context and run the full initialization
     context = get_context()
@@ -100,12 +148,10 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch, mocker):
 def machine(context_initializer) -> "Machine":
     """
     Provides a fresh, test-isolated Machine instance.
-    The `context_initializer` fixture is responsible for patching `idle_add`
-    so that this machine's signals work correctly.
     """
     from rayforge.machine.models.machine import Machine
 
-    # The patch is already active thanks to context_initializer. We can just
+    # The patch is already active thanks to the autouse fixture. We can just
     # create a new machine for the test to use.
     return Machine(context_initializer)
 
