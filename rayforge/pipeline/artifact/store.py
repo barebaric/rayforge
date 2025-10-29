@@ -64,7 +64,9 @@ class ArtifactStore:
         except Exception as e:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
 
-    def put(self, artifact: BaseArtifact) -> BaseArtifactHandle:
+    def put(
+        self, artifact: BaseArtifact, creator_tag: str = "unknown"
+    ) -> BaseArtifactHandle:
         """
         Serializes an artifact into a new shared memory block and returns a
         handle.
@@ -73,7 +75,7 @@ class ArtifactStore:
         total_bytes = sum(arr.nbytes for arr in arrays.values())
 
         # Create the shared memory block
-        shm_name = f"rayforge_artifact_{uuid.uuid4()}"
+        shm_name = f"rayforge_artifact_{creator_tag}_{uuid.uuid4()}"
         try:
             # Prevent creating a zero-size block, which raises a ValueError.
             # A 1-byte block is a safe, minimal placeholder.
@@ -82,7 +84,7 @@ class ArtifactStore:
             )
         except FileExistsError:
             # Handle rare UUID collision by retrying
-            return self.put(artifact)
+            return self.put(artifact, creator_tag=creator_tag)
 
         # Write data and collect metadata for the handle
         offset = 0

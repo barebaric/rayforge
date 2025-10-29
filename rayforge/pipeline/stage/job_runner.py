@@ -32,7 +32,9 @@ class JobDescription:
 
 
 def make_job_artifact_in_subprocess(
-    proxy: ExecutionContextProxy, job_description_dict: Dict[str, Any]
+    proxy: ExecutionContextProxy,
+    job_description_dict: Dict[str, Any],
+    creator_tag: str,
 ) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
@@ -123,7 +125,7 @@ def make_job_artifact_in_subprocess(
         op_map_bytes=op_map_bytes,
         time_estimate=final_time,
     )
-    final_handle = artifact_store.put(final_artifact)
+    final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
     proxy.send_event(
         "artifact_created", {"handle_dict": final_handle.to_dict()}

@@ -75,6 +75,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         cut_speed=machine.max_cut_speed,
         travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
+        creator_tag="test_step",
     )
 
     # Assert: Return value is generation_id
@@ -163,6 +164,7 @@ def test_step_runner_handles_texture_data(machine):
         cut_speed=machine.max_cut_speed,
         travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
+        creator_tag="test_step",
     )
     assert result == 1
 

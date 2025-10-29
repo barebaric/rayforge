@@ -90,6 +90,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
             settings,
             generation_id,
             generation_size,
+            "test_workpiece",
         )
 
         # Assert
@@ -158,6 +159,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
             settings,
             generation_id,
             generation_size,
+            "test_workpiece",
         )
 
         # Assert
@@ -219,6 +221,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
         settings,
         generation_id,
         generation_size,
+        "test_workpiece",
     )
 
     # Assert
@@ -259,6 +262,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
             settings,
             generation_id,
             generation_size,
+            "test_workpiece",
         )
 
         # Assert

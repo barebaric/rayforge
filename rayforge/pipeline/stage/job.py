@@ -94,6 +94,7 @@ class JobGeneratorStage(PipelineStage):
         task = self._task_manager.run_process(
             make_job_artifact_in_subprocess,
             job_description_dict=job_desc.__dict__,
+            creator_tag="job",
             key=JobKey,
             when_done=when_done_callback,
             when_event=self._on_job_task_event,
@@ -109,6 +110,8 @@ class JobGeneratorStage(PipelineStage):
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")
 
+                # Attempt to adopt the shared memory. If this fails, do not
+                # add the handle to the cache, as it's invalid.
                 get_context().artifact_store.adopt(handle)
                 self._artifact_cache.put_job_handle(handle)
             except Exception as e:

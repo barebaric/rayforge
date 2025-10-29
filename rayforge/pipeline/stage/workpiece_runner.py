@@ -20,6 +20,7 @@ def make_workpiece_artifact_in_subprocess(
     settings: dict,
     generation_id: int,
     generation_size: Tuple[float, float],
+    creator_tag: str,
 ) -> int:
     """
     The main entry point for generating operations for a single (Step,
@@ -363,7 +364,9 @@ def make_workpiece_artifact_in_subprocess(
             chunk_artifact.vertex_data = encoder.encode(ops_for_chunk_render)
 
             # Store in shared memory and get a handle
-            chunk_handle = artifact_store.put(chunk_artifact)
+            chunk_handle = artifact_store.put(
+                chunk_artifact, creator_tag=f"{creator_tag}_chunk"
+            )
 
             proxy.send_event(
                 "visual_chunk_ready",
@@ -463,7 +466,9 @@ def make_workpiece_artifact_in_subprocess(
     )
     proxy.set_progress(1.0)
 
-    handle = artifact_store.put(final_artifact_to_store)
+    handle = artifact_store.put(
+        final_artifact_to_store, creator_tag=creator_tag
+    )
     proxy.send_event(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},

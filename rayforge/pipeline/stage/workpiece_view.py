@@ -101,6 +101,7 @@ class WorkPieceViewGeneratorStage(PipelineStage):
             make_workpiece_view_artifact_in_subprocess,
             workpiece_artifact_handle_dict=source_handle.to_dict(),
             render_context_dict=context.to_dict(),
+            creator_tag="workpiece_view",
             key=key,
             when_done=when_done_callback,
             when_event=self._on_render_event_received,

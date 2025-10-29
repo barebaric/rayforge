@@ -184,6 +184,7 @@ class StepGeneratorStage(PipelineStage):
             machine.max_cut_speed,
             machine.max_travel_speed,
             machine.acceleration,
+            "step",
             key=step.uid,
             when_done=when_done_callback,
             when_event=when_event_callback,  # Connect event listener

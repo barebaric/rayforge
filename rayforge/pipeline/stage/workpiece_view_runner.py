@@ -173,6 +173,7 @@ def make_workpiece_view_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
+    creator_tag: str,
 ) -> Optional[Dict[str, Any]]:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
@@ -201,7 +202,7 @@ def make_workpiece_view_artifact_in_subprocess(
     # --- Phase 1: Create and emit the shared artifact upfront ---
     bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
-    view_handle = artifact_store.put(view_artifact)
+    view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
 
     proxy.send_event(
         "view_artifact_created",

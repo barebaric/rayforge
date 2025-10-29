@@ -241,6 +241,7 @@ class WorkpieceGeneratorStage(PipelineStage):
             settings,
             generation_id,
             workpiece.size,
+            "workpiece",
             key=key,
             when_done=when_done_callback,
             when_event=self._on_task_event_received,

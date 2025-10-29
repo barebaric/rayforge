@@ -50,6 +50,7 @@ def make_step_artifact_in_subprocess(
     cut_speed: float,
     travel_speed: float,
     acceleration: float,
+    creator_tag: str,
 ) -> int:
     """
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
@@ -154,7 +155,9 @@ def make_step_artifact_in_subprocess(
     render_artifact = StepRenderArtifact(
         vertex_data=vertex_data, texture_instances=texture_instances
     )
-    render_handle = artifact_store.put(render_artifact)
+    render_handle = artifact_store.put(
+        render_artifact, creator_tag=f"{creator_tag}_render"
+    )
 
     # Send render handle back via event for instant UI update
     proxy.send_event(
@@ -167,7 +170,9 @@ def make_step_artifact_in_subprocess(
 
     # Send ops handle back via a separate event
     ops_artifact = StepOpsArtifact(ops=combined_ops)
-    ops_handle = artifact_store.put(ops_artifact)
+    ops_handle = artifact_store.put(
+        ops_artifact, creator_tag=f"{creator_tag}_ops"
+    )
     proxy.send_event(
         "ops_artifact_ready",
         {

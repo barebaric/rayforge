@@ -71,7 +71,9 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     mock_proxy = MagicMock()
 
     # Act
-    result = make_job_artifact_in_subprocess(mock_proxy, asdict(job_desc))
+    result = make_job_artifact_in_subprocess(
+        mock_proxy, asdict(job_desc), "test_job"
+    )
 
     # Assert
     assert result is None  # Runner returns None now
