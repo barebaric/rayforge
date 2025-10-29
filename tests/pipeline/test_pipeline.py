@@ -16,9 +16,9 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     VertexData,
     WorkPieceArtifactHandle,
-    JobArtifactHandle,
     StepRenderArtifact,
     StepOpsArtifact,
+    JobArtifact,
 )
 from rayforge.context import get_context
 from rayforge.pipeline.stage.workpiece_runner import (
@@ -952,19 +952,16 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
+        expected_job_handle = None
         try:
             self._complete_all_tasks(mock_task_mgr, wp_handle)
             mock_task_mgr.run_process.reset_mock()
             mock_task_mgr.created_tasks.clear()
 
             callback_mock = MagicMock()
-            expected_job_handle = JobArtifactHandle(
-                time_estimate=123.45,
-                distance=678.9,
-                shm_name="dummy_job_shm",
-                handle_class_name="JobArtifactHandle",
-                artifact_type_name="JobArtifact",
-            )
+            store = get_context().artifact_store
+            job_artifact = JobArtifact(ops=Ops(), distance=0)
+            expected_job_handle = store.put(job_artifact)
 
             # Act
             pipeline.generate_job_artifact(when_done=callback_mock)
@@ -996,6 +993,8 @@ class TestPipeline:
             callback_mock.assert_called_once_with(expected_job_handle, None)
         finally:
             get_context().artifact_store.release(wp_handle)
+            if expected_job_handle:
+                get_context().artifact_store.release(expected_job_handle)
 
     def test_generate_job_artifact_callback_failure(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
@@ -1074,18 +1073,15 @@ class TestPipeline:
             source_dimensions=real_workpiece.size,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
+        expected_job_handle = None
         try:
             self._complete_all_tasks(mock_task_mgr, wp_handle)
             mock_task_mgr.run_process.reset_mock()
             mock_task_mgr.created_tasks.clear()
 
-            expected_job_handle = JobArtifactHandle(
-                time_estimate=123.45,
-                distance=678.9,
-                shm_name="dummy_job_shm_async",
-                handle_class_name="JobArtifactHandle",
-                artifact_type_name="JobArtifact",
-            )
+            store = get_context().artifact_store
+            job_artifact = JobArtifact(ops=Ops(), distance=0)
+            expected_job_handle = store.put(job_artifact)
 
             # Act
             future = asyncio.create_task(
@@ -1121,6 +1117,8 @@ class TestPipeline:
             assert result_handle == expected_job_handle
         finally:
             get_context().artifact_store.release(wp_handle)
+            if expected_job_handle:
+                get_context().artifact_store.release(expected_job_handle)
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_failure(
