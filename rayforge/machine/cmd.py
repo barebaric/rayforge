@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional, Callable, Coroutine
 from blinker import Signal
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..context import get_context
-from ..shared.util.glib import idle_add
 from .job_monitor import JobMonitor
 
 if TYPE_CHECKING:
@@ -22,6 +21,7 @@ class MachineCmd:
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
+        self._scheduler = editor.task_manager.schedule_on_main_thread
         self.job_started = Signal()
         self._current_monitor: Optional[JobMonitor] = None
         self._on_progress_callback: Optional[Callable[[dict], None]] = None
@@ -51,7 +51,7 @@ class MachineCmd:
         """Signal handler for job progress updates."""
         logger.debug(f"JobMonitor progress: {metrics}")
         if self._on_progress_callback:
-            idle_add(self._on_progress_callback, metrics)
+            self._scheduler(self._on_progress_callback, metrics)
 
     async def _execute_monitored_job(
         self,
@@ -101,7 +101,7 @@ class MachineCmd:
         machine.job_finished.connect(cleanup_monitor)
 
         # Signal that the job has started.
-        idle_add(self.job_started.send, self)
+        self._scheduler(self.job_started.send, self)
 
         try:
             if machine.reports_granular_progress:

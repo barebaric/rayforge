@@ -5,6 +5,7 @@ gi.require_version("GdkPixbuf", "2.0")
 import unittest
 import cv2
 import numpy as np
+from unittest.mock import patch
 from rayforge.camera.models.camera import Camera
 from rayforge.camera.controller import CameraController
 
@@ -17,7 +18,11 @@ class TestCameraController(unittest.TestCase):
         self.assertIs(controller.config, camera_config)
         self.assertIsNone(controller.image_data)
 
-    def test_capture_image(self):
+    @patch(
+        "rayforge.camera.controller.idle_add",
+        side_effect=lambda func, *args, **kwargs: func(*args, **kwargs),
+    )
+    def test_capture_image(self, mock_idle_add):
         original_videocapture = cv2.VideoCapture
 
         try:

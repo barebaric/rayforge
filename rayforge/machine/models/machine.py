@@ -2,11 +2,11 @@ import yaml
 import uuid
 import logging
 import asyncio
+import multiprocessing
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
 from ...context import get_context, RayforgeContext
-from ...shared.util.glib import idle_add
 from ...shared.tasker import task_mgr
 from ...shared.varset import ValidationError
 from ...camera.models.camera import Camera
@@ -33,12 +33,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _raise_error(*args, **kwargs):
+    raise RuntimeError("Cannot schedule from worker process")
+
+
 class Machine:
     def __init__(self, context: RayforgeContext):
         logger.debug("Machine.__init__")
         self.id = str(uuid.uuid4())
         self.name: str = _("Default Machine")
         self.context = context
+
+        if multiprocessing.current_process().daemon:
+            # This is a worker process, do not allow scheduling signals.
+            self._scheduler = _raise_error
+        else:
+            # This is the main process, use the real scheduler.
+            self._scheduler = task_mgr.schedule_on_main_thread
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
@@ -177,7 +188,7 @@ class Machine:
 
         # Notify the UI of the change *after* the new driver is in place.
         # This MUST be done on the main thread to prevent UI corruption.
-        idle_add(self.changed.send, self)
+        self._scheduler(self.changed.send, self)
 
         # Now it is safe to clean up the old driver.
         await old_driver.cleanup()
@@ -195,9 +206,11 @@ class Machine:
         self.connection_status = TransportStatus.DISCONNECTED
 
         if state_actually_changed:
-            idle_add(self.state_changed.send, self, state=self.device_state)
+            self._scheduler(
+                self.state_changed.send, self, state=self.device_state
+            )
         if conn_actually_changed:
-            idle_add(
+            self._scheduler(
                 self.connection_status_changed.send,
                 self,
                 status=self.connection_status,
@@ -213,7 +226,7 @@ class Machine:
         """Proxies the connection status signal from the active driver."""
         if self.connection_status != status:
             self.connection_status = status
-            idle_add(
+            self._scheduler(
                 self.connection_status_changed.send,
                 self,
                 status=status,
@@ -225,15 +238,15 @@ class Machine:
         # Avoid redundant signals if state hasn't changed.
         if self.device_state != state:
             self.device_state = state
-            idle_add(self.state_changed.send, self, state=state)
+            self._scheduler(self.state_changed.send, self, state=state)
 
     def _on_driver_job_finished(self, driver: Driver):
         """Proxies the job finished signal from the active driver."""
-        idle_add(self.job_finished.send, self)
+        self._scheduler(self.job_finished.send, self)
 
     def _on_driver_log_received(self, driver: Driver, message: str):
         """Proxies the log received signal from the active driver."""
-        idle_add(self.log_received.send, self, message=message)
+        self._scheduler(self.log_received.send, self, message=message)
 
     def _on_driver_command_status_changed(
         self,
@@ -242,7 +255,7 @@ class Machine:
         message: Optional[str] = None,
     ):
         """Proxies the command status changed signal from the active driver."""
-        idle_add(
+        self._scheduler(
             self.command_status_changed.send,
             self,
             status=status,
@@ -596,7 +609,9 @@ class Machine:
             def on_settings_read(sender, settings: List["VarSet"]):
                 logger.debug("on_settings_read: Handler called.")
                 sender.settings_read.disconnect(on_settings_read)
-                idle_add(self.settings_updated.send, self, var_sets=settings)
+                self._scheduler(
+                    self.settings_updated.send, self, var_sets=settings
+                )
                 logger.debug("on_settings_read: Handler finished.")
 
             self.driver.settings_read.connect(on_settings_read)
@@ -605,7 +620,7 @@ class Machine:
             except (DeviceConnectionError, ConnectionError) as e:
                 logger.error(f"Failed to read settings from device: {e}")
                 self.driver.settings_read.disconnect(on_settings_read)
-                idle_add(self.settings_error.send, self, error=e)
+                self._scheduler(self.settings_error.send, self, error=e)
             finally:
                 logger.debug("_read_from_device: Read operation finished.")
         logger.debug("_read_from_device: Lock released.")
@@ -627,10 +642,10 @@ class Machine:
                     f"_write_setting_to_device(key={key}): Lock acquired."
                 )
                 await self.driver.write_setting(key, value)
-                idle_add(self.setting_applied.send, self)
+                self._scheduler(self.setting_applied.send, self)
         except (DeviceConnectionError, ConnectionError) as e:
             logger.error(f"Failed to write setting to device: {e}")
-            idle_add(self.settings_error.send, self, error=e)
+            self._scheduler(self.settings_error.send, self, error=e)
         finally:
             logger.debug(f"_write_setting_to_device(key={key}): Done.")
 
