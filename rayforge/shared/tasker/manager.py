@@ -292,6 +292,7 @@ class TaskManager:
         context = ExecutionContext(
             update_callback=task.update,
             check_cancelled=task.is_cancelled,
+            scheduler=self.schedule_on_main_thread,
         )
         context.task = task
         try:

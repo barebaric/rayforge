@@ -125,12 +125,9 @@ def patch_idle_add(monkeypatch):
     def mock_idle_add(callback, *args, **kwargs):
         return callback(*args, **kwargs)
 
-    # Patch in both modules where it is imported
+    # Patch in the manager module where it is used as the default scheduler
     monkeypatch.setattr(
         "rayforge.shared.tasker.manager.idle_add", mock_idle_add
-    )
-    monkeypatch.setattr(
-        "rayforge.shared.tasker.context.idle_add", mock_idle_add
     )
 
 
