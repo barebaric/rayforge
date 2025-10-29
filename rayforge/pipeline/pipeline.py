@@ -90,11 +90,36 @@ class Pipeline:
             doc: The top-level Doc object to monitor for changes.
             task_manager: The TaskManager instance for background jobs.
         """
-        logger.debug(f"{self.__class__.__name__}.__init__ called")
-        self._doc: Doc = Doc()
+        logger.debug(f"{self.__class__.__name__}.__init__[{id(self)}] called")
+        self._doc: Doc = doc
         self._task_manager = task_manager
-        self._artifact_cache = ArtifactCache()
         self._pause_count = 0
+        self._last_known_busy_state = False
+
+        # Signals for notifying the UI of generation progress
+        self.processing_state_changed = Signal()
+        self.workpiece_starting = Signal()
+        self.workpiece_visual_chunk_ready = Signal()
+        self.workpiece_artifact_ready = Signal()
+        self.step_render_ready = Signal()
+        self.step_time_updated = Signal()
+        self.job_time_updated = Signal()
+        self.job_ready = Signal()
+        self.workpiece_view_ready = Signal()
+        self.workpiece_view_created = Signal()
+        self.workpiece_view_updated = Signal()
+
+        # Initialize stages and connect signals ONE time during construction.
+        self._initialize_stages_and_connections()
+
+        if self._doc:
+            self._connect_signals()
+            self.reconcile_all()
+
+    def _initialize_stages_and_connections(self):
+        """A new helper method to contain all stage setup logic."""
+        logger.debug(f"[{id(self)}] Initializing stages and connections.")
+        self._artifact_cache = ArtifactCache()
         self._last_known_busy_state = False
 
         # Stages
@@ -110,19 +135,6 @@ class Pipeline:
         self._workpiece_view_stage = WorkPieceViewGeneratorStage(
             self._task_manager, self._artifact_cache
         )
-
-        # Signals for notifying the UI of generation progress
-        self.processing_state_changed = Signal()
-        self.workpiece_starting = Signal()
-        self.workpiece_visual_chunk_ready = Signal()
-        self.workpiece_artifact_ready = Signal()
-        self.step_render_ready = Signal()
-        self.step_time_updated = Signal()
-        self.job_time_updated = Signal()
-        self.job_ready = Signal()
-        self.workpiece_view_ready = Signal()
-        self.workpiece_view_created = Signal()
-        self.workpiece_view_updated = Signal()
 
         # Connect signals from stages
         self._workpiece_stage.generation_starting.connect(
@@ -162,13 +174,12 @@ class Pipeline:
             self._on_workpiece_view_generation_finished
         )
 
-        self.doc = doc
-
     def shutdown(self) -> None:
         """
         Releases all shared memory resources held in the cache. This must be
         called before application exit to prevent memory leaks.
         """
+        logger.debug(f"[{id(self)}] Pipeline shutdown called")
         logger.info("Pipeline shutting down...")
         self._artifact_cache.shutdown()
         self._workpiece_stage.shutdown()
@@ -176,6 +187,7 @@ class Pipeline:
         self._job_stage.shutdown()
         self._workpiece_view_stage.shutdown()
         logger.info("All pipeline resources released.")
+        logger.debug(f"[{id(self)}] Pipeline shutdown finished")
 
     @property
     def doc(self) -> Doc:
@@ -187,64 +199,20 @@ class Pipeline:
         """Sets the document and manages signal connections."""
         if self._doc is new_doc:
             return
+        logger.debug(f"[{id(self)}] new doc received.")
 
+        # Teardown the old doc and resources cleanly
         if self._doc:
+            logger.debug(f"[{id(self)}] Old doc exists, shutting down.")
             self._disconnect_signals()
-            self.shutdown()
 
+        # Shut down the *stages* before replacing them.
+        self.shutdown()
+
+        # Set the new doc and re-initialize everything from scratch
         self._doc = new_doc
-        self._artifact_cache = ArtifactCache()
-        self._last_known_busy_state = False
-
-        # Re-initialize stages with the new, empty artifact cache
-        self._workpiece_stage = WorkpieceGeneratorStage(
-            self._task_manager, self._artifact_cache
-        )
-        self._step_stage = StepGeneratorStage(
-            self._task_manager, self._artifact_cache
-        )
-        self._job_stage = JobGeneratorStage(
-            self._task_manager, self._artifact_cache
-        )
-        self._workpiece_view_stage = WorkPieceViewGeneratorStage(
-            self._task_manager, self._artifact_cache
-        )
-        self._workpiece_stage.generation_starting.connect(
-            self._on_workpiece_generation_starting
-        )
-        self._workpiece_stage.visual_chunk_available.connect(
-            self._on_workpiece_visual_chunk_available
-        )
-        self._workpiece_stage.generation_finished.connect(
-            self._on_workpiece_generation_finished
-        )
-        self._step_stage.generation_finished.connect(
-            self._on_step_task_completed
-        )
-        self._step_stage.render_artifact_ready.connect(
-            self._on_step_render_artifact_ready
-        )
-        self._step_stage.time_estimate_ready.connect(
-            self._on_step_time_estimate_ready
-        )
-        self._job_stage.generation_finished.connect(
-            self._on_job_generation_finished
-        )
-        self._job_stage.generation_failed.connect(
-            self._on_job_generation_failed
-        )
-        self._workpiece_view_stage.view_artifact_ready.connect(
-            self._on_workpiece_view_ready
-        )
-        self._workpiece_view_stage.view_artifact_created.connect(
-            self._on_workpiece_view_created
-        )
-        self._workpiece_view_stage.view_artifact_updated.connect(
-            self._on_workpiece_view_updated
-        )
-        self._workpiece_view_stage.generation_finished.connect(
-            self._on_workpiece_view_generation_finished
-        )
+        logger.debug(f"[{id(self)}] Re-initializing stages.")
+        self._initialize_stages_and_connections()  # Re-use the helper
 
         if self._doc:
             self._connect_signals()
@@ -703,6 +671,7 @@ class Pipeline:
     def generate_job(self) -> None:
         """Triggers the final job generation process."""
         if self.doc:
+            # This method now just calls the stage's method without a callback
             self._job_stage.generate_job(self.doc)
 
     def generate_job_artifact(
@@ -721,50 +690,11 @@ class Pipeline:
                        an ArtifactHandle on success, or (None, error) on
                        failure.
         """
-        if self._job_stage.is_busy:
-            exc = RuntimeError("Job generation is already in progress.")
-            when_done(None, exc)
-            return
-
-        def _one_shot_success_handler(
-            sender: Any,
-            *,
-            handle: Optional[JobArtifactHandle],
-            task_status: str,
-        ):
-            try:
-                when_done(handle, None)
-            except Exception as e:
-                when_done(None, e)
-            finally:
-                self._job_stage.generation_finished.disconnect(
-                    _one_shot_success_handler
-                )
-                self._job_stage.generation_failed.disconnect(
-                    _one_shot_failure_handler
-                )
-
-        def _one_shot_failure_handler(
-            sender: Any,
-            *,
-            error: Optional[Exception],
-            task_status: str,
-        ):
-            try:
-                when_done(None, error)
-            except Exception as e:
-                when_done(None, e)
-            finally:
-                self._job_stage.generation_finished.disconnect(
-                    _one_shot_success_handler
-                )
-                self._job_stage.generation_failed.disconnect(
-                    _one_shot_failure_handler
-                )
-
-        self._job_stage.generation_finished.connect(_one_shot_success_handler)
-        self._job_stage.generation_failed.connect(_one_shot_failure_handler)
-        self.generate_job()
+        # The logic is now much simpler. We just pass the callback along.
+        if self.doc:
+            self._job_stage.generate_job(self.doc, on_done=when_done)
+        else:
+            when_done(None, RuntimeError("No document is loaded."))
 
     async def generate_job_artifact_async(
         self,
@@ -781,6 +711,9 @@ class Pipeline:
             RuntimeError: If job generation is already in progress.
             Exception: Propagates exceptions that occur during generation.
         """
+        # This method requires no changes, as it builds on top of the
+        # now-corrected generate_job_artifact method.
+        logger.debug(f"[{id(self)}] Starting asynchronous job generation.")
         future = asyncio.get_running_loop().create_future()
 
         def _when_done_callback(
@@ -793,7 +726,9 @@ class Pipeline:
                     future.set_result(handle)
 
         self.generate_job_artifact(when_done=_when_done_callback)
-        return await future
+        result = await future
+        logger.debug(f"[{id(self)}] Await returned with result: {result}.")
+        return result
 
     def request_view_render(
         self,

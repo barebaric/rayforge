@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 
 from .base import PipelineStage
@@ -29,6 +29,8 @@ class JobGeneratorStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_cache)
         self._active_task: Optional["Task"] = None
+        # Add a placeholder for a one-shot callback
+        self._one_shot_callback: Optional[Callable] = None
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
@@ -49,17 +51,36 @@ class JobGeneratorStage(PipelineStage):
             self._task_manager.cancel_task(self._active_task.key)
             self._active_task = None
 
-    def generate_job(self, doc: "Doc"):
+    def generate_job(self, doc: "Doc", on_done: Optional[Callable] = None):
         """
         Starts the asynchronous task to assemble and encode the final job.
+
+        Args:
+            doc: The document to generate the job from.
+            on_done: An optional one-shot callback to execute upon completion.
         """
         if self.is_busy:
             logger.warning("Job generation is already in progress.")
+            # If a callback was provided, immediately call it with an error
+            if on_done:
+                on_done(
+                    None,
+                    RuntimeError("Job generation is already in progress."),
+                )
             return
+
+        # Store the callback for later
+        self._one_shot_callback = on_done
 
         machine = get_context().machine
         if not machine:
             logger.error("Cannot generate job: No machine is configured.")
+            # Fire callback with an error if provided
+            if self._one_shot_callback:
+                self._one_shot_callback(
+                    None, RuntimeError("No machine is configured.")
+                )
+                self._one_shot_callback = None
             return
 
         step_handles = {
@@ -72,9 +93,14 @@ class JobGeneratorStage(PipelineStage):
 
         if not step_handles:
             logger.warning("No step artifacts to assemble for the job.")
+            # Fire general signal for other listeners
             self.generation_finished.send(
                 self, handle=None, task_status="completed"
             )
+            # Fire one-shot callback for the async future
+            if self._one_shot_callback:
+                self._one_shot_callback(None, None)
+                self._one_shot_callback = None
             return
 
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
@@ -119,8 +145,14 @@ class JobGeneratorStage(PipelineStage):
 
     def _on_job_assembly_complete(self, task: "Task"):
         """Callback for when the final job assembly task finishes."""
+        # Retrieve and clear the one-shot callback FIRST
+        callback = self._one_shot_callback
+        self._one_shot_callback = None
+
         self._active_task = None
         task_status = task.get_status()
+        final_handle = None
+        error = None
 
         if task_status == "completed":
             final_handle = self._artifact_cache.get_job_handle()
@@ -130,19 +162,27 @@ class JobGeneratorStage(PipelineStage):
                 logger.info(
                     "Job generation finished with no artifact produced."
                 )
+            # Fire the one-shot callback if it exists
+            if callback:
+                callback(final_handle, None)
+            # Also fire the general-purpose signal for other listeners
             self.generation_finished.send(
                 self, handle=final_handle, task_status=task_status
             )
         else:
             logger.error(f"Job generation failed with status: {task_status}")
             self._artifact_cache.invalidate_for_job()
-            error = None
             try:
                 # This will re-raise the exception from the subprocess
                 task.result()
             except Exception as e:
                 error = e
 
+            # Fire the one-shot callback with the error
+            if callback:
+                callback(None, error)
+
+            # Also fire the general-purpose signal
             if task_status == "failed":
                 self.generation_failed.send(
                     self, error=error, task_status=task_status
