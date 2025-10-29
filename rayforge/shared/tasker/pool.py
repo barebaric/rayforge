@@ -263,17 +263,39 @@ class WorkerPoolManager:
 
             key, task_id, msg_type, value = message
 
+            # The 'event' message type is special because it may carry
+            # resource handles (like shared memory). These must ALWAYS be
+            # forwarded to the TaskManager so the receiving code has a
+            # chance to adopt the resource, even if the task was cancelled
+            # or is stale. This prevents resource leaks.
+            if msg_type == "event":
+                event_name, data = value
+                self.task_event_received.send(
+                    self,
+                    key=key,
+                    task_id=task_id,
+                    event_name=event_name,
+                    data=data,
+                )
+                continue
+
+            # For all other message types, we can safely ignore them if the
+            # task has been cancelled.
             with self._lock:
                 if task_id in self._cancelled_task_ids:
-                    logger.debug(
-                        f"Ignoring message '{msg_type}' from cancelled task "
-                        f"'{key}' (id: {task_id})."
-                    )
-                    # If it's the final message, remove from the set to
-                    # prevent memory leaks.
+                    # For a cancelled task, only process the final 'done' or
+                    # 'error' message for cleanup. Ignore everything else.
                     if msg_type in ("done", "error"):
+                        # It's the final message. Let it pass through for
+                        # cleanup and remove the ID from the cancelled set.
                         self._cancelled_task_ids.remove(task_id)
-                    continue
+                    else:
+                        # It's an intermediate message. Ignore it.
+                        logger.debug(
+                            f"Ignoring message '{msg_type}' from cancelled "
+                            f"task '{key}' (id: {task_id})."
+                        )
+                        continue
 
             if msg_type == "done":
                 self.task_completed.send(
@@ -290,15 +312,6 @@ class WorkerPoolManager:
             elif msg_type == "message":
                 self.task_message_updated.send(
                     self, key=key, task_id=task_id, message=value
-                )
-            elif msg_type == "event":
-                event_name, data = value
-                self.task_event_received.send(
-                    self,
-                    key=key,
-                    task_id=task_id,
-                    event_name=event_name,
-                    data=data,
                 )
         logger.debug("Result listener thread finished.")
 

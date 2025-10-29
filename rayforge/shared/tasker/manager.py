@@ -33,6 +33,9 @@ class TaskManager:
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
+        # A holding area for recently replaced/cancelled tasks to
+        # catch in-flight messages.
+        self._zombie_tasks: Dict[int, Task] = {}
         self._progress_map: Dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
@@ -95,27 +98,16 @@ class TaskManager:
         MUST be called with the lock held.
         """
         # If the manager was idle, this is a new batch of work.
-        if not self._tasks:
+        if not self._tasks and not self._zombie_tasks:
             self._progress_map.clear()
 
-        # Check for and purge an existing task with the same key.
+        # Check for and handle an existing task with the same key.
         old_task = self._tasks.get(task.key)
         if old_task:
             logger.debug(
                 f"TaskManager: Replacing existing task key '{task.key}'."
             )
-            # 1. Mark the old task as cancelled internally.
-            old_task.cancel()
-
-            # 2. If it was a pooled task, tell the pool to ignore its
-            #    results and synchronously purge its callback.
-            is_old_task_pooled = old_task.key in self._pooled_task_callbacks
-            if is_old_task_pooled:
-                self._pool.cancel(old_task.key, old_task.id)
-                # The dangling `when_done` callback for the old
-                # task is synchronously removed here, preventing it from ever
-                # firing.
-                self._pooled_task_callbacks.pop(old_task.key, None)
+            self.cancel_task(old_task.key)
 
         # Add the new task.
         logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
@@ -262,28 +254,25 @@ class TaskManager:
             # For asyncio tasks, this will also cancel the underlying future.
             task.cancel()
 
-            # For pooled tasks, we perform immediate finalization to prevent
-            # race conditions.
+            # For pooled tasks, we just notify the pool. The task will remain
+            # in the manager until its final 'done' or 'error' message arrives,
+            # to catch in-flight events.
             is_pooled = key in self._pooled_task_callbacks
             if is_pooled:
-                # Tell the pool to ignore any future messages from this ID.
                 self._pool.cancel(key, task.id)
+                if task.get_status() != "canceled":
+                    task._status = "canceled"
+                    task._emit_status_changed()
 
-                # Immediately finalize the task as 'canceled'.
-                task._status = "canceled"
-                task._emit_status_changed()
+                # Move the task to the zombie dictionary to await final
+                # message.
+                del self._tasks[key]
+                self._zombie_tasks[task.id] = task
 
-                # Get the callback and clean up immediately.
-                when_done = self._pooled_task_callbacks.pop(key, None)
-                self._cleanup_task(task)
-                if when_done:
-                    # Schedule the callback to run on the main thread,
-                    # ensuring consistent behavior with completed tasks.
-                    self._main_thread_scheduler(when_done, task)
-
-            # For non-pooled (asyncio/thread) tasks,
-            # _run_task will handle the cleanup and callback when the
-            # CancelledError is caught.
+    def get_task(self, key: Any) -> Optional[Task]:
+        """Retrieves a task by its key."""
+        with self._lock:
+            return self._tasks.get(key)
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -353,12 +342,15 @@ class TaskManager:
         """Updates a Task object from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
-        if task and task.id == task_id:
+            if not (task and task.id == task_id):
+                task = self._zombie_tasks.get(task_id)
+
+        if task:
             task.update(progress, message)
         else:
             logger.debug(
-                f"Ignoring progress/message for stale task instance for key "
-                f"'{key}' (id: {task_id})."
+                f"Ignoring progress/message for stale/unknown task instance "
+                f"for key '{key}' (id: {task_id})."
             )
 
     def _dispatch_pooled_task_event(
@@ -366,18 +358,22 @@ class TaskManager:
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:
+            # First, check if the event is for the currently active task.
             task = self._tasks.get(key)
+            if not (task and task.id == task_id):
+                # If not, check if it's for a recently replaced (zombie) task.
+                task = self._zombie_tasks.get(task_id)
 
-        if task and task.id == task_id:
+        if task:
             logger.debug(
                 f"TaskManager: Dispatching event '{event_name}' for task "
-                f"'{task.key}'."
+                f"'{task.key}' (task_id={task_id})."
             )
             task.event_received.send(task, event_name=event_name, data=data)
         else:
-            logger.debug(
-                f"Ignoring event '{event_name}' for stale task instance for "
-                f"key '{key}' (id: {task_id})."
+            logger.warning(
+                f"Received event '{event_name}' for unknown or fully cleaned "
+                f"up task key '{key}' (id: {task_id}). Ignoring."
             )
 
     def _finalize_pooled_task(
@@ -391,18 +387,29 @@ class TaskManager:
         """Finalizes a pooled task from the main thread."""
         with self._lock:
             task = self._tasks.get(key)
-            # Pop the callback. If the task is stale, `when_done` will be None.
-            when_done = self._pooled_task_callbacks.pop(key, None)
+            is_active_task = task and task.id == task_id
 
-        # This check is critical. It ensures we only process results for the
-        # currently active task instance, discarding results from tasks that
-        # were already replaced.
-        if not task or task.id != task_id:
+            if is_active_task:
+                when_done = self._pooled_task_callbacks.get(key)
+            else:
+                task = self._zombie_tasks.pop(task_id, None)
+                when_done = (
+                    self._pooled_task_callbacks.pop(key, None)
+                    if task
+                    else None
+                )
+
+        if not task:
             logger.debug(
-                f"Received result for stale/unknown task instance for key "
-                f"'{key}'. Ignoring."
+                f"Received final message for unknown/cleaned-up task "
+                f"instance for key '{key}' (id: {task_id}). Ignoring."
             )
             return
+
+        if not is_active_task:  # This was a zombie task
+            logger.debug(f"Finalized zombie task '{key}' (id: {task_id}).")
+            if when_done:
+                when_done(task)
 
         # If a cancellation happened, the status will already be 'canceled'.
         # We should not overwrite it.
@@ -461,7 +468,10 @@ class TaskManager:
     def _on_task_updated(self, task: Task) -> None:
         """Handle task status changes. This method is thread-safe."""
         with self._lock:
-            if task.key in self._progress_map:
+            # Only update progress if the task is still the active one for
+            # its key
+            active_task = self._tasks.get(task.key)
+            if active_task is task:
                 self._progress_map[task.key] = task.get_progress()
             self._emit_tasks_updated_unsafe()
 
@@ -489,7 +499,14 @@ class TaskManager:
             # This can happen briefly if tasks are added but the map isn't
             # populated yet.
             return 0.0
-        return sum(self._progress_map.values()) / len(self._progress_map)
+
+        # Ensure progress map only contains keys for active tasks
+        active_keys = self._tasks.keys()
+        total_progress = sum(
+            self._progress_map.get(k, 0.0) for k in active_keys
+        )
+
+        return total_progress / len(active_keys) if active_keys else 1.0
 
     def shutdown(self) -> None:
         """
