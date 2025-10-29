@@ -2,11 +2,14 @@ import pytest
 import gettext
 import asyncio
 import logging
+import gc
 from functools import partial
 import pytest_asyncio
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 from rayforge.worker_init import initialize_worker
+from rayforge import context as rayforge_context
+
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
@@ -85,6 +88,51 @@ def block_glib_event_loop():
         ):
             # The test session runs here, with the patches active.
             yield
+
+
+@pytest.fixture(autouse=True)
+def clean_context_singleton():
+    """
+    Ensures the RayforgeContext singleton is completely shut down and reset
+    after each test.
+
+    This fixture is synchronous to be compatible with both sync and async
+    tests. It intelligently runs the async shutdown() method using the
+    appropriate mechanism.
+    """
+    # Yield control to the test to execute
+    yield
+
+    # Teardown: This code runs after the test has finished
+    instance = rayforge_context._context_instance
+    if not instance:
+        # If no context was created during the test, there's nothing to do.
+        return
+
+    # Now, we need to run an async function (instance.shutdown) from a
+    # synchronous context (the fixture teardown). We must handle two cases:
+    # 1. The test was async: An event loop is already running.
+    # 2. The test was sync: No event loop is running.
+
+    try:
+        loop = asyncio.get_running_loop()
+        # Case 1: An event loop is running (the test was async).
+        # We run our async shutdown within this existing loop.
+        if not loop.is_closed():
+            loop.run_until_complete(instance.shutdown())
+        else:
+            # The loop was closed by the test, so we must start a new one.
+            asyncio.run(instance.shutdown())
+    except RuntimeError:
+        # Case 2: No event loop is running (the test was sync).
+        # We can safely use asyncio.run() to create a new, temporary
+        # event loop just for our shutdown task.
+        asyncio.run(instance.shutdown())
+
+    # Finally, reset the global singleton variable so the next test
+    # starts with a completely fresh context.
+    rayforge_context._context_instance = None
+    gc.collect()
 
 
 @pytest_asyncio.fixture(scope="function")
