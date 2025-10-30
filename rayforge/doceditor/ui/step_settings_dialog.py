@@ -162,7 +162,9 @@ class StepSettingsDialog(Adw.Window):
             max_value_in_base=max_cut_speed,
         )
         self.cut_speed_helper.set_value_in_base_units(step.cut_speed)
-        self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
+        self.cut_speed_helper.changed.connect(
+            self._on_cut_speed_changed_wrapper
+        )
         general_group.add(cut_speed_row)
 
         # Set cut speed row visibility based on producer capability
@@ -188,7 +190,9 @@ class StepSettingsDialog(Adw.Window):
             max_value_in_base=max_travel_speed,
         )
         self.travel_speed_helper.set_value_in_base_units(step.travel_speed)
-        self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
+        self.travel_speed_helper.changed.connect(
+            self._on_travel_speed_changed_wrapper
+        )
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
@@ -367,6 +371,14 @@ class StepSettingsDialog(Adw.Window):
         )
         self.history_manager.execute(command)
         self.changed.send(self)
+
+    def _on_cut_speed_changed_wrapper(self, helper: UnitSpinRowHelper):
+        """Wrapper method that debounces the cut speed change."""
+        self._debounce(self.on_cut_speed_changed, helper)
+
+    def _on_travel_speed_changed_wrapper(self, helper: UnitSpinRowHelper):
+        """Wrapper method that debounces the travel speed change."""
+        self._debounce(self.on_travel_speed_changed, helper)
 
     def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
         new_value = helper.get_value_in_base_units()
