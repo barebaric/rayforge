@@ -39,8 +39,6 @@ class TaskManager:
         self._progress_map: Dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
-        # Stores callbacks for tasks running in the pool
-        self._pooled_task_callbacks: Dict[Any, Callable[[Task], None]] = {}
 
         self._lock = threading.RLock()
         self.tasks_updated: Signal = Signal()
@@ -91,7 +89,6 @@ class TaskManager:
     def _add_or_replace_task_unsafe(
         self,
         task: Task,
-        when_done_pooled: Optional[Callable[[Task], None]] = None,
     ):
         """
         Atomically adds a task, replacing any existing task with the same key.
@@ -113,8 +110,6 @@ class TaskManager:
         logger.debug(f"TaskManager: Adding new task key '{task.key}'.")
         self._tasks[task.key] = task
         self._progress_map[task.key] = 0.0
-        if when_done_pooled:
-            self._pooled_task_callbacks[task.key] = when_done_pooled
 
         task.status_changed.connect(self._on_task_updated)
         self._emit_tasks_updated_unsafe()
@@ -123,12 +118,16 @@ class TaskManager:
         self, task: Task, when_done: Optional[Callable[[Task], None]] = None
     ) -> None:
         """Add an asyncio-based task to the manager."""
+        # For asyncio tasks, the when_done is handled by the _run_task wrapper.
+        # We store it on the task object for consistency.
+        if when_done:
+            task.when_done_callback = when_done
         with self._lock:
             self._add_or_replace_task_unsafe(task)
 
         # Coroutines use the asyncio event loop
         asyncio.run_coroutine_threadsafe(
-            self._run_task(task, when_done), self._loop
+            self._run_task(task, task.when_done_callback), self._loop
         )
 
     def add_coroutine(
@@ -145,8 +144,8 @@ class TaskManager:
         It is expected that the coroutine accepts an ExecutionContext
         as its first argument, followed by any other *args and **kwargs.
         """
-        task = Task(coro, *args, key=key, **kwargs)
-        self.add_task(task, when_done)
+        task = Task(coro, *args, key=key, when_done=when_done, **kwargs)
+        self.add_task(task)
 
     def schedule_on_main_thread(
         self, callback: Callable[..., Any], *args: Any, **kwargs: Any
@@ -196,8 +195,10 @@ class TaskManager:
 
         # We create a task with the async wrapper.
         # The original sync function's args/kwargs are passed through.
-        task = Task(thread_wrapper, *args, key=key, **kwargs)
-        self.add_task(task, when_done)
+        task = Task(
+            thread_wrapper, *args, key=key, when_done=when_done, **kwargs
+        )
+        self.add_task(task)
         return task
 
     def run_process(
@@ -221,13 +222,21 @@ class TaskManager:
 
         # We pass the *real* function and args to the Task object just for
         # bookkeeping, even though the Task object itself won't execute them.
-        task = Task(_noop_coro, func, *args, key=key, **kwargs)
+        task = Task(
+            _noop_coro,
+            func,
+            *args,
+            key=key,
+            when_done=when_done,
+            task_type="process",
+            **kwargs,
+        )
 
         if when_event:
             task.event_received.connect(when_event, weak=False)
 
         with self._lock:
-            self._add_or_replace_task_unsafe(task, when_done_pooled=when_done)
+            self._add_or_replace_task_unsafe(task)
 
         # Manually set status to running and notify
         task._status = "running"
@@ -254,11 +263,8 @@ class TaskManager:
             # For asyncio tasks, this will also cancel the underlying future.
             task.cancel()
 
-            # For pooled tasks, we just notify the pool. The task will remain
-            # in the manager until its final 'done' or 'error' message arrives,
-            # to catch in-flight events.
-            is_pooled = key in self._pooled_task_callbacks
-            if is_pooled:
+            # For pooled tasks, we just notify the pool.
+            if task.task_type == "process":
                 self._pool.cancel(key, task.id)
                 if task.get_status() != "canceled":
                     task._status = "canceled"
@@ -268,6 +274,7 @@ class TaskManager:
                 # message.
                 del self._tasks[key]
                 self._zombie_tasks[task.id] = task
+                self._emit_tasks_updated_unsafe()
 
     def get_task(self, key: Any) -> Optional[Task]:
         """Retrieves a task by its key."""
@@ -384,35 +391,48 @@ class TaskManager:
         result: Any = None,
         error: Optional[str] = None,
     ):
-        """Finalizes a pooled task from the main thread."""
+        """
+        Finalizes a pooled task from the main thread. This is the single
+        source of truth for completing a pooled task's lifecycle.
+        """
+        logger.debug(
+            f"Attempting to finalize pooled task '{key}' "
+            f"(id: {task_id}) with status '{status}'"
+        )
         with self._lock:
-            task = self._tasks.get(key)
-            is_active_task = task and task.id == task_id
+            task = None
+            # Find the task in either the active or zombie dictionaries
+            active_task = self._tasks.get(key)
 
-            if is_active_task:
-                when_done = self._pooled_task_callbacks.get(key)
-            else:
-                task = self._zombie_tasks.pop(task_id, None)
-                when_done = (
-                    self._pooled_task_callbacks.pop(key, None)
-                    if task
-                    else None
+            if active_task and active_task.id == task_id:
+                # This is the currently active task for this key.
+                # It is now finished.
+                logger.debug(
+                    f"Finalizing ACTIVE task '{key}' (id: {task_id})."
                 )
+                task = active_task
+                del self._tasks[key]
+            else:
+                # It's not the active task. See if it's a zombie.
+                zombie_task = self._zombie_tasks.get(task_id)
+                if zombie_task:
+                    logger.debug(
+                        f"Finalizing ZOMBIE task '{key}' (id: {task_id})."
+                    )
+                    task = zombie_task
+                    del self._zombie_tasks[task_id]
 
-        if not task:
-            logger.debug(
-                f"Received final message for unknown/cleaned-up task "
-                f"instance for key '{key}' (id: {task_id}). Ignoring."
-            )
-            return
+            if not task:
+                logger.debug(
+                    f"Received final message for unknown/cleaned-up task "
+                    f"instance for key '{key}' (id: {task_id}). Ignoring."
+                )
+                return
 
-        if not is_active_task:  # This was a zombie task
-            logger.debug(f"Finalized zombie task '{key}' (id: {task_id}).")
-            if when_done:
-                when_done(task)
+        # Now that we have the correct task instance and it has been removed
+        # from tracking, we can process its completion.
 
-        # If a cancellation happened, the status will already be 'canceled'.
-        # We should not overwrite it.
+        # Set the final status, unless it was already cancelled.
         if not task.is_cancelled():
             task._status = status
             if status == "completed":
@@ -426,15 +446,26 @@ class TaskManager:
         # Emit one final, authoritative signal for all outcomes.
         task._emit_status_changed()
 
-        # This block must run for all outcomes: completed, failed,
-        # and cancelled to ensure cleanup and user notification.
-        self._cleanup_task(task)
+        # Call the user's callback if it was stored on the task.
+        when_done = task.when_done_callback
         if when_done:
+            logger.debug(
+                f"Invoking when_done callback for task '{key}' "
+                f"(id: {task.id})."
+            )
             when_done(task)
+        else:
+            logger.debug(
+                f"No when_done callback to invoke for task '{key}' "
+                f"(id: {task.id})."
+            )
+
+        with self._lock:
+            self._emit_tasks_updated_unsafe()
 
     def _cleanup_task(self, task: Task) -> None:
         """
-        Clean up a completed task.
+        Clean up a completed asyncio task. This is NOT used for pooled tasks.
         """
         with self._lock:
             current_task_in_dict = self._tasks.get(task.key)
@@ -443,13 +474,10 @@ class TaskManager:
             # newer, active task.
             if current_task_in_dict is task:
                 logger.debug(
-                    f"TaskManager: Cleaning up task '{task.key}' "
+                    f"Cleaning up (asyncio) task '{task.key}' "
                     f"(status: {task.get_status()})."
                 )
                 del self._tasks[task.key]
-                # Ensure callback is removed if it exists (might have already
-                # been popped)
-                self._pooled_task_callbacks.pop(task.key, None)
 
                 # DO NOT delete from _progress_map. The final progress
                 # value (usually 1.0) must be kept for accurate
@@ -459,7 +487,7 @@ class TaskManager:
                 # This task finished, but it's no longer the active one
                 # for this key in the dictionary (it was replaced).
                 logger.debug(
-                    f"TaskManager: Skipping cleanup for finished task "
+                    f"Skipping cleanup for finished (asyncio) task "
                     f"'{task.key}' (status: {task.get_status()}) as it was "
                     f"already replaced in the manager."
                 )
