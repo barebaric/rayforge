@@ -6,7 +6,7 @@ from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.group import Group
 from ..canvas.element import CanvasElement
-from .workpiece import WorkPieceView
+from .workpiece import WorkPieceElement
 from .step import StepElement
 from .group import GroupElement
 from .stock import StockElement
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _z_order_sort_key(element: CanvasElement):
     """Sort key to ensure StepElements are drawn after visual elements."""
-    if isinstance(element, (WorkPieceView, GroupElement, StockElement)):
+    if isinstance(element, (WorkPieceElement, GroupElement, StockElement)):
         return 0  # Draw visual items first (at the bottom)
     if isinstance(element, StepElement):
         # StepElements are invisible managers, but we keep them in the
@@ -102,7 +102,7 @@ class LayerElement(CanvasElement):
         current_visual_elements = [
             elem
             for elem in self.children
-            if isinstance(elem, (WorkPieceView, GroupElement, StockElement))
+            if isinstance(elem, (WorkPieceElement, GroupElement, StockElement))
         ]
 
         # Remove elements for items no longer in the layer
@@ -117,7 +117,7 @@ class LayerElement(CanvasElement):
         for item_data in items_to_add:
             new_elem = None
             if isinstance(item_data, WorkPiece):
-                new_elem = WorkPieceView(
+                new_elem = WorkPieceElement(
                     workpiece=item_data,
                     pipeline=work_surface.editor.pipeline,
                     canvas=self.canvas,
@@ -152,7 +152,9 @@ class LayerElement(CanvasElement):
             elem for elem in self.children if isinstance(elem, StepElement)
         ]
         workpiece_views = [
-            elem for elem in self.children if isinstance(elem, WorkPieceView)
+            elem
+            for elem in self.children
+            if isinstance(elem, WorkPieceElement)
         ]
         model_steps = set(self.data.workflow.steps)
 
@@ -187,7 +189,7 @@ class LayerElement(CanvasElement):
             self.add(step_elem)
 
         # After all children are added/removed, we ensure every StepElement
-        # broadcasts its current visibility to every WorkPieceView. This
+        # broadcasts its current visibility to every WorkPieceElement. This
         # guarantees that newly created elements get the correct initial state.
         for elem in self.children:
             if isinstance(elem, StepElement):

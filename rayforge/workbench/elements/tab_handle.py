@@ -11,7 +11,7 @@ from ...undo import ChangePropertyCommand
 from ...core.matrix import Matrix
 
 if TYPE_CHECKING:
-    from .workpiece import WorkPieceView
+    from .workpiece import WorkPieceElement
     from ..surface import WorkSurface
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class TabHandleElement(CanvasElement):
     and can be dragged along its parent's vector path.
     """
 
-    def __init__(self, tab_data: Tab, parent: "WorkPieceView"):
+    def __init__(self, tab_data: Tab, parent: "WorkPieceElement"):
         super().__init__(
             x=0,
             y=0,
@@ -66,7 +66,7 @@ class TabHandleElement(CanvasElement):
     ):
         """Called by the canvas when a move operation starts."""
         if drag_target is self:
-            parent_view = cast("WorkPieceView", self.parent)
+            parent_view = cast("WorkPieceElement", self.parent)
             # 1. Store the "before" state for the undo command.
             self._initial_tabs_state = deepcopy(parent_view.data.tabs)
             # 2. Create a transient copy of the tab data to modify during drag.
@@ -85,7 +85,7 @@ class TabHandleElement(CanvasElement):
             and self._initial_tabs_state is not None
             and self._dragged_tab_state is not None
         ):
-            parent_view = cast("WorkPieceView", self.parent)
+            parent_view = cast("WorkPieceElement", self.parent)
             work_surface = cast("WorkSurface", self.canvas)
             doc = work_surface.editor.doc
 
@@ -131,7 +131,7 @@ class TabHandleElement(CanvasElement):
         the handle's local state for a fast preview. The document model is NOT
         modified during this operation.
         """
-        parent_view = cast("WorkPieceView", self.parent)
+        parent_view = cast("WorkPieceElement", self.parent)
         vectors = parent_view.data.vectors
         if not self.canvas or not vectors:
             return world_dx, world_dy
@@ -199,7 +199,7 @@ class TabHandleElement(CanvasElement):
         data model. This is used for initialization and non-performance
         -critical updates.
         """
-        parent_view = cast("WorkPieceView", self.parent)
+        parent_view = cast("WorkPieceElement", self.parent)
         tab = cast(Tab, self.data)
         if not parent_view.data.vectors or tab.segment_index >= len(
             parent_view.data.vectors.commands

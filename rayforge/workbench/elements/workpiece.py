@@ -31,7 +31,7 @@ OPS_MARGIN_PX = 5
 REC_MARGIN_MM = 0.1  # A small "safe area" margin in mm for recordings
 
 
-class WorkPieceView(CanvasElement):
+class WorkPieceElement(CanvasElement):
     """A unified CanvasElement that visualizes a single WorkPiece model.
 
     This class customizes its rendering by overriding the `draw`
@@ -50,14 +50,14 @@ class WorkPieceView(CanvasElement):
         pipeline: "Pipeline",
         **kwargs,
     ):
-        """Initializes the WorkPieceView.
+        """Initializes the WorkPieceElement.
 
         Args:
             workpiece: The WorkPiece data model to visualize.
             pipeline: The generator responsible for creating ops.
             **kwargs: Additional arguments for the CanvasElement.
         """
-        logger.debug(f"Initializing WorkPieceView for '{workpiece.name}'")
+        logger.debug(f"Initializing WorkPieceElement for '{workpiece.name}'")
         self.data: WorkPiece = workpiece
         self.pipeline = pipeline
         self._base_image_visible = True
@@ -356,7 +356,7 @@ class WorkPieceView(CanvasElement):
 
     def remove(self):
         """Disconnects signals and removes the element from the canvas."""
-        logger.debug(f"Removing WorkPieceView for '{self.data.name}'")
+        logger.debug(f"Removing WorkPieceElement for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
         self.pipeline.workpiece_starting.disconnect(
@@ -443,7 +443,7 @@ class WorkPieceView(CanvasElement):
             or current_hash != self._last_style_context_hash
         ):
             logger.debug(
-                "Resolving colors for WorkPieceView due to theme change."
+                "Resolving colors for WorkPieceElement due to theme change."
             )
             resolver = GtkColorResolver(style_context)
             self._color_set = resolver.resolve(self._color_spec)

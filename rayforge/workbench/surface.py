@@ -14,7 +14,7 @@ from .canvas import Canvas, CanvasElement
 from .axis import AxisRenderer
 from .elements.stock import StockElement
 from .elements.dot import DotElement
-from .elements.workpiece import WorkPieceView
+from .elements.workpiece import WorkPieceElement
 from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
 from .elements.layer import LayerElement
@@ -167,21 +167,21 @@ class WorkSurface(Canvas):
     def get_global_tab_visibility(self) -> bool:
         """
         Returns the current global visibility state for tab handles. This is
-        used by new WorkPieceViews to pull the correct initial state.
+        used by new WorkPieceElements to pull the correct initial state.
         """
         return self._tabs_globally_visible
 
     def set_global_tab_visibility(self, visible: bool):
         """
         Sets the global visibility for tab handles and propagates the change
-        to all existing WorkPieceView elements.
+        to all existing WorkPieceElements.
         """
         if self._tabs_globally_visible == visible:
             return  # No change
         self._tabs_globally_visible = visible
         # Propagate the new state to all existing views
-        for wp_elem in self.find_by_type(WorkPieceView):
-            wp_view = cast(WorkPieceView, wp_elem)
+        for wp_elem in self.find_by_type(WorkPieceElement):
+            wp_view = cast(WorkPieceElement, wp_elem)
             wp_view.set_tabs_visible_override(visible)
 
     def on_right_click_pressed(
@@ -200,15 +200,15 @@ class WorkSurface(Canvas):
         # Case 1: Clicked on a TabHandle
         context_type = None
         if isinstance(hit_elem, TabHandleElement):
-            parent_wp_view = cast(WorkPieceView, hit_elem.parent)
+            parent_wp_view = cast(WorkPieceElement, hit_elem.parent)
             self.right_click_context = {
                 "type": "tab",
                 "tab_data": hit_elem.data,
                 "workpiece": parent_wp_view.data,
             }
-        # Case 2: Clicked on a WorkPieceView, check for path proximity
-        elif isinstance(hit_elem, WorkPieceView):
-            wp_view = cast(WorkPieceView, hit_elem)
+        # Case 2: Clicked on a WorkPieceElement, check for path proximity
+        elif isinstance(hit_elem, WorkPieceElement):
+            wp_view = cast(WorkPieceElement, hit_elem)
             location = wp_view.get_closest_point_on_path(
                 world_x, world_y, threshold_px=5.0
             )
@@ -620,8 +620,8 @@ class WorkSurface(Canvas):
             self._last_view_scale_y = new_scale_y
 
             # Propagate the view change to elements that depend on it.
-            for elem in self.find_by_type(WorkPieceView):
-                wp_view = cast(WorkPieceView, elem)
+            for elem in self.find_by_type(WorkPieceElement):
+                wp_view = cast(WorkPieceElement, elem)
                 wp_view.trigger_update()
                 wp_view.update_handle_transforms()
 
@@ -640,8 +640,8 @@ class WorkSurface(Canvas):
         if self._show_travel_moves != show:
             self._show_travel_moves = show
             # Re-render all ops surfaces on all workpiece views
-            for elem in self.find_by_type(WorkPieceView):
-                wp_view = cast(WorkPieceView, elem)
+            for elem in self.find_by_type(WorkPieceElement):
+                wp_view = cast(WorkPieceElement, elem)
                 wp_view.on_travel_visibility_changed()
 
     def _create_and_add_layer_element(self, layer: "Layer"):
@@ -778,9 +778,9 @@ class WorkSurface(Canvas):
         remain visible.
         """
         self._workpieces_visible = visible
-        # Find the WorkPieceView elements and toggle their base image
-        for wp_elem in self.find_by_type(WorkPieceView):
-            cast(WorkPieceView, wp_elem).set_base_image_visible(visible)
+        # Find the WorkPieceElements and toggle their base image
+        for wp_elem in self.find_by_type(WorkPieceElement):
+            cast(WorkPieceElement, wp_elem).set_base_image_visible(visible)
         self.queue_draw()
 
     def set_camera_controllers(self, controllers: List[CameraController]):

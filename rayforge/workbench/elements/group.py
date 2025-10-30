@@ -5,7 +5,7 @@ from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.group import Group
 from ..canvas import ShrinkWrapGroup
-from .workpiece import WorkPieceView
+from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
@@ -118,7 +118,7 @@ class GroupElement(ShrinkWrapGroup):
         self, *args, origin: Optional[DocItem] = None, **kwargs
     ):
         """
-        Reconciles child elements (WorkPieceView, GroupElement) with the
+        Reconciles child elements (WorkPieceElement, GroupElement) with the
         state of the Group model.
         """
         if not self.data or not self.canvas:
@@ -139,7 +139,7 @@ class GroupElement(ShrinkWrapGroup):
         for item_data in items_to_add:
             child_elem = None
             if isinstance(item_data, WorkPiece):
-                child_elem = WorkPieceView(
+                child_elem = WorkPieceElement(
                     workpiece=item_data,
                     pipeline=work_surface.editor.pipeline,
                     canvas=self.canvas,

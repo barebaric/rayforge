@@ -2,7 +2,7 @@ import logging
 from typing import cast, TYPE_CHECKING
 from ...core.workflow import Step
 from ..canvas import CanvasElement
-from .workpiece import WorkPieceView
+from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
     from ...pipeline.pipeline import Pipeline
@@ -17,7 +17,7 @@ class StepElement(CanvasElement):
 
     This element is the "controller" for a Step in the view. Its primary job
     is to listen to its model for visibility changes and then broadcast that
-    state to all sibling WorkPieceView elements within the same layer.
+    state to all sibling WorkPieceElements within the same layer.
     Its lifecycle is automatically managed by its parent LayerElement.
     """
 
@@ -67,7 +67,7 @@ class StepElement(CanvasElement):
 
     def _update_sibling_ops_visibility(self):
         """
-        THE CORE LOGIC: Finds all WorkPieceView siblings in the same parent
+        THE CORE LOGIC: Finds all WorkPieceElement siblings in the same parent
         (LayerElement) and tells them to update the visibility of the ops
         layer corresponding to this step.
         """
@@ -85,5 +85,5 @@ class StepElement(CanvasElement):
 
         # Iterate through all children of the parent (the LayerElement)
         for child in parent.children:
-            if isinstance(child, WorkPieceView):
+            if isinstance(child, WorkPieceElement):
                 child.set_ops_visibility(step_uid, is_visible)
