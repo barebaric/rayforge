@@ -20,6 +20,8 @@ class Task:
         coro: Callable[..., Coroutine[Any, Any, Any]],
         *args: Any,
         key: Optional[Any] = None,
+        when_done: Optional[Callable[["Task"], None]] = None,
+        task_type: str = "asyncio",
         **kwargs: Any,
     ):
         self.coro = coro
@@ -27,6 +29,7 @@ class Task:
         self.kwargs = kwargs
         self.key: Any = key if key is not None else id(self)
         self.id = id(self)
+        self.task_type = task_type
         self._task: Optional[asyncio.Task[Any]] = None
         self._task_result: Any = None
         self._task_exception: Optional[BaseException] = None
@@ -36,6 +39,7 @@ class Task:
         self._cancel_requested: bool = False  # Flag for early cancellation
         self.status_changed: Signal = Signal()
         self.event_received: Signal = Signal()
+        self.when_done_callback: Optional[Callable[["Task"], None]] = when_done
 
     def update(
         self, progress: Optional[float] = None, message: Optional[str] = None
