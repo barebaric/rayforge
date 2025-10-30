@@ -29,8 +29,6 @@ class JobGeneratorStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_cache)
         self._active_task: Optional["Task"] = None
-        # Add a placeholder for a one-shot callback
-        self._one_shot_callback: Optional[Callable] = None
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
@@ -69,18 +67,12 @@ class JobGeneratorStage(PipelineStage):
                 )
             return
 
-        # Store the callback for later
-        self._one_shot_callback = on_done
-
         machine = get_context().machine
         if not machine:
             logger.error("Cannot generate job: No machine is configured.")
             # Fire callback with an error if provided
-            if self._one_shot_callback:
-                self._one_shot_callback(
-                    None, RuntimeError("No machine is configured.")
-                )
-                self._one_shot_callback = None
+            if on_done:
+                on_done(None, RuntimeError("No machine is configured."))
             return
 
         step_handles = {
@@ -98,9 +90,8 @@ class JobGeneratorStage(PipelineStage):
                 self, handle=None, task_status="completed"
             )
             # Fire one-shot callback for the async future
-            if self._one_shot_callback:
-                self._one_shot_callback(None, None)
-                self._one_shot_callback = None
+            if on_done:
+                on_done(None, None)
             return
 
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
@@ -115,8 +106,53 @@ class JobGeneratorStage(PipelineStage):
         from .job_runner import make_job_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
-            self._on_job_assembly_complete(task)
+            """
+            This nested function is a closure. It captures the `on_done`
+            callback specific to this `generate_job` call.
+            """
+            # This is now the ONLY place self._active_task is reset to None
+            self._active_task = None
 
+            task_status = task.get_status()
+            final_handle = None
+            error = None
+
+            if task_status == "completed":
+                final_handle = self._artifact_cache.get_job_handle()
+                if final_handle:
+                    logger.info("Job generation successful.")
+                else:
+                    logger.info(
+                        "Job generation finished with no artifact produced."
+                    )
+                if on_done:
+                    on_done(final_handle, None)
+                self.generation_finished.send(
+                    self, handle=final_handle, task_status=task_status
+                )
+            else:
+                logger.error(
+                    f"Job generation failed with status: {task_status}"
+                )
+                self._artifact_cache.invalidate_for_job()
+                try:
+                    task.result()
+                except Exception as e:
+                    error = e
+
+                if on_done:
+                    on_done(None, error)
+
+                if task_status == "failed":
+                    self.generation_failed.send(
+                        self, error=error, task_status=task_status
+                    )
+                else:
+                    self.generation_finished.send(
+                        self, handle=None, task_status=task_status
+                    )
+
+        # We no longer need _on_job_assembly_complete
         task = self._task_manager.run_process(
             make_job_artifact_in_subprocess,
             job_description_dict=job_desc.__dict__,
@@ -142,52 +178,3 @@ class JobGeneratorStage(PipelineStage):
                 self._artifact_cache.put_job_handle(handle)
             except Exception as e:
                 logger.error(f"Error handling job artifact event: {e}")
-
-    def _on_job_assembly_complete(self, task: "Task"):
-        """Callback for when the final job assembly task finishes."""
-        # Retrieve and clear the one-shot callback FIRST
-        callback = self._one_shot_callback
-        self._one_shot_callback = None
-
-        self._active_task = None
-        task_status = task.get_status()
-        final_handle = None
-        error = None
-
-        if task_status == "completed":
-            final_handle = self._artifact_cache.get_job_handle()
-            if final_handle:
-                logger.info("Job generation successful.")
-            else:
-                logger.info(
-                    "Job generation finished with no artifact produced."
-                )
-            # Fire the one-shot callback if it exists
-            if callback:
-                callback(final_handle, None)
-            # Also fire the general-purpose signal for other listeners
-            self.generation_finished.send(
-                self, handle=final_handle, task_status=task_status
-            )
-        else:
-            logger.error(f"Job generation failed with status: {task_status}")
-            self._artifact_cache.invalidate_for_job()
-            try:
-                # This will re-raise the exception from the subprocess
-                task.result()
-            except Exception as e:
-                error = e
-
-            # Fire the one-shot callback with the error
-            if callback:
-                callback(None, error)
-
-            # Also fire the general-purpose signal
-            if task_status == "failed":
-                self.generation_failed.send(
-                    self, error=error, task_status=task_status
-                )
-            else:  # e.g., "cancelled"
-                self.generation_finished.send(
-                    self, handle=None, task_status=task_status
-                )
