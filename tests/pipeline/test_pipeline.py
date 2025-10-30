@@ -43,18 +43,23 @@ def mock_task_mgr():
     created_tasks_info = []
 
     class MockTask:
-        def __init__(self, target, args, kwargs):
+        def __init__(self, target, args, kwargs, returned_task_obj):
             self.target = target
             self.args = args
             self.kwargs = kwargs
             self.when_done = kwargs.get("when_done")
             self.when_event = kwargs.get("when_event")
             self.key = kwargs.get("key")
+            self.returned_task_obj = returned_task_obj
 
     def run_process_mock(target_func, *args, **kwargs):
-        task = MockTask(target_func, args, kwargs)
+        # Add a mock cancel method to the task object returned to the caller
+        mock_returned_task = MagicMock(spec=Task)
+        mock_returned_task.key = kwargs.get("key")
+
+        task = MockTask(target_func, args, kwargs, mock_returned_task)
         created_tasks_info.append(task)
-        return task
+        return mock_returned_task
 
     # Make scheduled calls run immediately
     def schedule_awarely(callback, *args, **kwargs):
@@ -128,36 +133,35 @@ class TestPipeline:
             if not tasks_to_process:
                 break
 
-            for task in tasks_to_process:
-                mock_task_obj = MagicMock(spec=Task)
-                mock_task_obj.key = task.key
-                mock_task_obj.get_status.return_value = "completed"
-                mock_task_obj.result.return_value = None
+            for task_info in tasks_to_process:
+                # Use the actual task object that the stage is holding
+                task_obj = task_info.returned_task_obj
+                task_obj.key = task_info.key
+                task_obj.get_status.return_value = "completed"
+                task_obj.result.return_value = None
 
-                if task.target is make_job_artifact_in_subprocess:
-                    if task.when_event:
+                if task_info.target is make_job_artifact_in_subprocess:
+                    if task_info.when_event:
                         store = get_context().artifact_store
                         job_artifact = JobArtifact(ops=Ops(), distance=0.0)
                         job_handle = store.put(job_artifact)
                         event_data = {"handle_dict": job_handle.to_dict()}
-                        task.when_event(
-                            mock_task_obj, "artifact_created", event_data
+                        task_info.when_event(
+                            task_obj, "artifact_created", event_data
                         )
-                    if task.when_done:
-                        task.when_done(mock_task_obj)
+                    if task_info.when_done:
+                        task_info.when_done(task_obj)
 
-                elif task.target is make_step_artifact_in_subprocess:
-                    gen_id = task.args[2]
-                    mock_task_obj.result.return_value = gen_id
-                    if task.when_event:
+                elif task_info.target is make_step_artifact_in_subprocess:
+                    gen_id = task_info.args[2]
+                    task_obj.result.return_value = gen_id
+                    if task_info.when_event:
                         # Create real artifacts and handles so the SHM blocks
                         # exist and can be adopted by the main process store.
                         store = get_context().artifact_store
                         render_artifact = StepRenderArtifact()
                         render_handle = store.put(render_artifact)
-                        ops_artifact = StepOpsArtifact(
-                            ops=Ops(), time_estimate=step_time
-                        )
+                        ops_artifact = StepOpsArtifact(ops=Ops())
                         ops_handle = store.put(ops_artifact)
 
                         # 1. Simulate render artifact event
@@ -165,8 +169,8 @@ class TestPipeline:
                             "handle_dict": render_handle.to_dict(),
                             "generation_id": gen_id,
                         }
-                        task.when_event(
-                            mock_task_obj,
+                        task_info.when_event(
+                            task_obj,
                             "render_artifact_ready",
                             render_event,
                         )
@@ -176,8 +180,8 @@ class TestPipeline:
                             "handle_dict": ops_handle.to_dict(),
                             "generation_id": gen_id,
                         }
-                        task.when_event(
-                            mock_task_obj, "ops_artifact_ready", ops_event
+                        task_info.when_event(
+                            task_obj, "ops_artifact_ready", ops_event
                         )
 
                         # 3. Simulate time estimate event
@@ -185,27 +189,27 @@ class TestPipeline:
                             "time_estimate": step_time,
                             "generation_id": gen_id,
                         }
-                        task.when_event(
-                            mock_task_obj, "time_estimate_ready", time_event
+                        task_info.when_event(
+                            task_obj, "time_estimate_ready", time_event
                         )
-                    if task.when_done:
-                        task.when_done(mock_task_obj)
+                    if task_info.when_done:
+                        task_info.when_done(task_obj)
 
-                elif task.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task.args[6]
-                    mock_task_obj.result.return_value = gen_id
-                    if task.when_event:
+                elif task_info.target is make_workpiece_artifact_in_subprocess:
+                    gen_id = task_info.args[6]
+                    task_obj.result.return_value = gen_id
+                    if task_info.when_event:
                         event_data = {
                             "handle_dict": workpiece_handle.to_dict(),
                             "generation_id": gen_id,
                         }
-                        task.when_event(
-                            mock_task_obj, "artifact_created", event_data
+                        task_info.when_event(
+                            task_obj, "artifact_created", event_data
                         )
-                    if task.when_done:
-                        task.when_done(mock_task_obj)
+                    if task_info.when_done:
+                        task_info.when_done(task_obj)
 
-                processed_keys.add(task.key)
+                processed_keys.add(task_info.key)
 
         mock_task_mgr.created_tasks.clear()
 
@@ -237,7 +241,7 @@ class TestPipeline:
 
         pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
-        task_to_complete = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
 
         # Act
         expected_ops = Ops()
@@ -260,10 +264,10 @@ class TestPipeline:
         handle = get_context().artifact_store.put(expected_artifact)
         gen_id = 1
 
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task_to_complete.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = gen_id
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = gen_id
 
         try:
             # Simulate the new two-step flow: event first, then completion
@@ -271,10 +275,10 @@ class TestPipeline:
                 "handle_dict": handle.to_dict(),
                 "generation_id": gen_id,
             }
-            task_to_complete.when_event(
-                mock_finished_task, "artifact_created", event_data
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
             )
-            task_to_complete.when_done(mock_finished_task)
+            task_info.when_done(task_obj_for_stage)
 
             cached_ops = pipeline.get_ops(step, real_workpiece)
             assert cached_ops is not None
@@ -293,13 +297,13 @@ class TestPipeline:
 
         pipeline = Pipeline(doc, mock_task_mgr)
         mock_task_mgr.run_process.assert_called_once()
-        task_to_cancel = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
 
         # Act
-        mock_cancelled_task = MagicMock(spec=Task)
-        mock_cancelled_task.key = task_to_cancel.key
-        mock_cancelled_task.get_status.return_value = "cancelled"
-        task_to_cancel.when_done(mock_cancelled_task)
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "cancelled"
+        task_info.when_done(task_obj_for_stage)
 
         # Assert
         assert pipeline.get_ops(step, real_workpiece) is None
@@ -466,7 +470,7 @@ class TestPipeline:
         pipeline = Pipeline(doc, mock_task_mgr)
 
         # Simulate completion of a task to populate the cache
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -475,18 +479,20 @@ class TestPipeline:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Verify handle is in cache
             assert (
@@ -549,14 +555,14 @@ class TestPipeline:
         assert pipeline.is_busy is True
 
         # Complete the task
-        task = mock_task_mgr.created_tasks[0]
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_info = mock_task_mgr.created_tasks[0]
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         # Act
-        task.when_done(mock_finished_task)
+        task_info.when_done(task_obj_for_stage)
 
         # Assert - should not be busy anymore
         assert pipeline.is_busy is False
@@ -706,7 +712,7 @@ class TestPipeline:
         )
 
         # Simulate a completed task
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -715,18 +721,20 @@ class TestPipeline:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Act & Assert - Should return the handle
             retrieved_handle = pipeline.get_artifact_handle(
@@ -759,7 +767,7 @@ class TestPipeline:
         )
 
         # Simulate a completed task with scalable artifact
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         expected_ops = Ops()
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(10, 10, 0)
@@ -772,18 +780,20 @@ class TestPipeline:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Act
             scaled_ops = pipeline.get_scaled_ops(
@@ -809,7 +819,7 @@ class TestPipeline:
 
         # Simulate a completed task with non-scalable artifact at
         # different size
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         original_size = (25, 15)  # Different from workpiece size
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -819,18 +829,20 @@ class TestPipeline:
             generation_size=original_size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Act - Try to get scaled ops for different size
             world_transform = real_workpiece.get_world_transform()
@@ -858,7 +870,7 @@ class TestPipeline:
         assert pipeline.get_artifact(step, real_workpiece) is None
 
         # Simulate a completed task
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         expected_ops = Ops()
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(10, 10, 0)
@@ -871,18 +883,20 @@ class TestPipeline:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Act
             retrieved_artifact = pipeline.get_artifact(step, real_workpiece)
@@ -908,7 +922,7 @@ class TestPipeline:
 
         # Simulate a completed task with non-scalable artifact at
         # different size
-        task = mock_task_mgr.created_tasks[0]
+        task_info = mock_task_mgr.created_tasks[0]
         original_size = (25, 15)  # Different from workpiece size
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -918,18 +932,20 @@ class TestPipeline:
             generation_size=original_size,
         )
         handle = get_context().artifact_store.put(artifact)
-        mock_finished_task = MagicMock(spec=Task)
-        mock_finished_task.key = task.key
-        mock_finished_task.get_status.return_value = "completed"
-        mock_finished_task.result.return_value = 1
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+        task_obj_for_stage.get_status.return_value = "completed"
+        task_obj_for_stage.result.return_value = 1
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
                 "generation_id": 1,
             }
-            task.when_event(mock_finished_task, "artifact_created", event_data)
-            task.when_done(mock_finished_task)
+            task_info.when_event(
+                task_obj_for_stage, "artifact_created", event_data
+            )
+            task_info.when_done(task_obj_for_stage)
 
             # Act - Try to get artifact for different size
             retrieved_artifact = pipeline.get_artifact(step, real_workpiece)
@@ -975,26 +991,26 @@ class TestPipeline:
 
             # Assert a job task was created
             mock_task_mgr.run_process.assert_called_once()
-            job_task = next(
+            job_task_info = next(
                 t
                 for t in mock_task_mgr.created_tasks
                 if t.target is make_job_artifact_in_subprocess
             )
 
             # Simulate the job task completing successfully
-            mock_finished_task = MagicMock(spec=Task)
-            mock_finished_task.key = job_task.key
-            mock_finished_task.get_status.return_value = "completed"
-            mock_finished_task.result.return_value = None
+            job_task_obj = job_task_info.returned_task_obj
+            job_task_obj.key = job_task_info.key
+            job_task_obj.get_status.return_value = "completed"
+            job_task_obj.result.return_value = None
 
             # 1. Simulate the event that puts the handle in the cache
-            job_task.when_event(
-                mock_finished_task,
+            job_task_info.when_event(
+                job_task_obj,
                 "artifact_created",
                 {"handle_dict": expected_job_handle.to_dict()},
             )
             # 2. Simulate the final completion callback
-            job_task.when_done(mock_finished_task)
+            job_task_info.when_done(job_task_obj)
 
             # Assert
             callback_mock.assert_called_once_with(expected_job_handle, None)
@@ -1041,7 +1057,7 @@ class TestPipeline:
             when_done_callback = job_task_info.when_done
 
             # Create a realistic mock of a failed task object
-            mock_failed_task = MagicMock(spec=Task)
+            mock_failed_task = job_task_info.returned_task_obj
             mock_failed_task.get_status.return_value = "failed"
             # When result() is called on a failed task, it should raise.
             mock_failed_task.result.side_effect = RuntimeError(
@@ -1098,24 +1114,24 @@ class TestPipeline:
 
             # The task should have been created
             mock_task_mgr.run_process.assert_called_once()
-            job_task = next(
+            job_task_info = next(
                 t
                 for t in mock_task_mgr.created_tasks
                 if t.target is make_job_artifact_in_subprocess
             )
 
             # Simulate completion
-            mock_finished_task = MagicMock(spec=Task)
-            mock_finished_task.key = job_task.key
-            mock_finished_task.get_status.return_value = "completed"
-            mock_finished_task.result.return_value = None
+            job_task_obj = job_task_info.returned_task_obj
+            job_task_obj.key = job_task_info.key
+            job_task_obj.get_status.return_value = "completed"
+            job_task_obj.result.return_value = None
 
-            job_task.when_event(
-                mock_finished_task,
+            job_task_info.when_event(
+                job_task_obj,
                 "artifact_created",
                 {"handle_dict": expected_job_handle.to_dict()},
             )
-            job_task.when_done(mock_finished_task)
+            job_task_info.when_done(job_task_obj)
 
             # Now await the result
             result_handle = await future
@@ -1160,7 +1176,7 @@ class TestPipeline:
                     if t.target is make_job_artifact_in_subprocess
                 )
                 # Simulate task failure by directly invoking the callback
-                mock_failed_task = MagicMock(spec=Task)
+                mock_failed_task = job_task_info.returned_task_obj
                 mock_failed_task.get_status.return_value = "failed"
                 mock_failed_task.result.side_effect = RuntimeError(
                     "Job failed."
@@ -1171,8 +1187,10 @@ class TestPipeline:
             # Act & Assert
             with pytest.raises(RuntimeError, match="Job failed."):
                 failure_future = asyncio.create_task(_failure_simulator_task())
+                # This will start the job and the future will be populated
+                # by the _when_done_callback created by the async method.
                 await pipeline.generate_job_artifact_async()
-                await failure_future  # ensure it ran
+                await failure_future  # ensure the simulator ran
         finally:
             get_context().artifact_store.release(wp_handle)
 
@@ -1216,16 +1234,259 @@ class TestPipeline:
                 await pipeline.generate_job_artifact_async()
 
             # Cleanup: complete the first task to avoid leaving it hanging
-            job_task = next(
+            job_task_info = next(
                 t
                 for t in mock_task_mgr.created_tasks
                 if t.target is make_job_artifact_in_subprocess
             )
-            mock_finished_task = MagicMock(spec=Task)
-            mock_finished_task.key = job_task.key
-            mock_finished_task.get_status.return_value = "completed"
+            job_task_obj = job_task_info.returned_task_obj
+            job_task_obj.key = job_task_info.key
+            job_task_obj.get_status.return_value = "completed"
             # Simulate an empty job result for cleanup
-            job_task.when_done(mock_finished_task)
+            job_task_info.when_done(job_task_obj)
             await future1  # consume the result
         finally:
             get_context().artifact_store.release(wp_handle)
+
+    def test_rapid_step_change_emits_correct_final_signal(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Simulates a user changing a step setting twice in quick succession.
+        This test verifies that the pipeline correctly cancels the first task,
+        processes the second task, and emits the `workpiece_artifact_ready`
+        signal exactly once with the correct, final generation ID.
+        """
+        # Arrange: Setup doc, workpiece, step, and pipeline
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        # Mock the final signal handler to intercept the call
+        mock_signal_handler = MagicMock()
+        pipeline.workpiece_artifact_ready.connect(mock_signal_handler)
+
+        # Act 1: The initial pipeline creation starts the first task.
+        mock_task_mgr.run_process.assert_called_once()
+        assert len(mock_task_mgr.created_tasks) == 1
+        task1_info = mock_task_mgr.created_tasks[0]
+        # Generation ID for the first task is 1
+        assert task1_info.args[6] == 1
+        mock_task_mgr.run_process.reset_mock()
+        mock_task_mgr.created_tasks.clear()
+
+        # Act 2: Trigger a second regeneration immediately.
+        # This simulates a rapid UI change, cancelling task1 and
+        # starting task2.
+        step.power = 0.5  # Change a property to trigger invalidation
+        pipeline._on_descendant_updated(sender=step, origin=step)
+
+        # Assert 2: A new task was created, and the old one was cancelled.
+        mock_task_mgr.run_process.assert_called_once()
+        mock_task_mgr.cancel_task.assert_called_once_with(task1_info.key)
+        assert len(mock_task_mgr.created_tasks) == 1
+        task2_info = mock_task_mgr.created_tasks[0]
+        # Generation ID for the second task should be incremented to 2
+        assert task2_info.args[6] == 2
+
+        # Act 3: Simulate the CANCELLED task's callback firing.
+        # This could happen if the task was already running when cancelled.
+        task1_obj = task1_info.returned_task_obj
+        task1_obj.key = task1_info.key
+        task1_obj.get_status.return_value = "canceled"
+        if task1_info.when_done:
+            task1_info.when_done(task1_obj)
+
+        # Assert 3: The signal handler should NOT have been called for the
+        # cancelled task.
+        mock_signal_handler.assert_not_called()
+
+        # Act 4: Simulate the SUCCESSFUL task's (task2) callbacks firing.
+        artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        handle = get_context().artifact_store.put(artifact)
+        try:
+            task2_obj = task2_info.returned_task_obj
+            task2_obj.key = task2_info.key
+            task2_obj.get_status.return_value = "completed"
+            task2_obj.result.return_value = 2  # Gen ID from task2
+
+            # Simulate the 'artifact_created' event from task2
+            if task2_info.when_event:
+                event_data = {
+                    "handle_dict": handle.to_dict(),
+                    "generation_id": 2,
+                }
+                task2_info.when_event(
+                    task2_obj, "artifact_created", event_data
+                )
+
+            # Simulate the final 'when_done' callback for task2
+            if task2_info.when_done:
+                task2_info.when_done(task2_obj)
+
+            # Assert 4: The signal handler was called exactly once with the
+            # correct generation ID from the second, successful task.
+            mock_signal_handler.assert_called_once()
+            call_args, call_kwargs = mock_signal_handler.call_args
+            assert call_args[0] is step
+            assert call_kwargs.get("workpiece") is real_workpiece
+            assert call_kwargs.get("generation_id") == 2
+
+        finally:
+            get_context().artifact_store.release(handle)
+
+    def test_rapid_invalidation_does_not_corrupt_busy_state(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Simulates a rapid invalidation that cancels an in-progress task and
+        starts a new one. This test verifies that the callback from the old,
+        cancelled task does NOT corrupt the stage's internal state by
+        prematurely clearing the 'active_tasks' dict.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        mock_artifact_ready_handler = MagicMock()
+        mock_processing_state_handler = MagicMock()
+
+        # Capture the actual task object returned by the mocked run_process
+        returned_tasks = []
+        original_side_effect = mock_task_mgr.run_process.side_effect
+
+        def side_effect_wrapper(*args, **kwargs):
+            returned_task = original_side_effect(*args, **kwargs)
+            returned_tasks.append(returned_task)
+            return returned_task
+
+        mock_task_mgr.run_process.side_effect = side_effect_wrapper
+
+        # Act 1: Create pipeline with an empty doc, so it's idle.
+        pipeline = Pipeline(doc=Doc(), task_manager=mock_task_mgr)
+        pipeline.workpiece_artifact_ready.connect(mock_artifact_ready_handler)
+        pipeline.processing_state_changed.connect(
+            mock_processing_state_handler
+        )
+
+        assert pipeline.is_busy is False
+        mock_task_mgr.run_process.assert_not_called()
+
+        # Act 2: Set the doc property. This triggers reconcile_all() and starts
+        # task1.
+        pipeline.doc = doc
+
+        # Assert 2: Pipeline is now busy, and the state change signal was
+        # fired.
+        assert pipeline.is_busy is True
+        mock_task_mgr.run_process.assert_called_once()
+        assert len(mock_task_mgr.created_tasks) == 1
+        task1_info = mock_task_mgr.created_tasks[0]
+        # Our side effect should have captured the returned task object
+        assert len(returned_tasks) == 1
+        task1_object_in_stage = returned_tasks[0]
+
+        mock_processing_state_handler.assert_called_with(
+            ANY, is_processing=True
+        )
+
+        # Reset mocks for the next phase
+        mock_task_mgr.run_process.reset_mock()
+        mock_task_mgr.created_tasks.clear()
+        returned_tasks.clear()
+        mock_processing_state_handler.reset_mock()
+
+        # Act 3: Trigger a second regeneration immediately, cancelling task 1
+        # and starting task 2.
+        step.power = 0.5
+        pipeline._on_descendant_updated(sender=step, origin=step)
+
+        # Assert 3: A new task was created and the pipeline remains busy,
+        # without firing redundant state change signals.
+        mock_task_mgr.run_process.assert_called_once()
+        assert len(mock_task_mgr.created_tasks) == 1
+        task2_info = mock_task_mgr.created_tasks[0]
+        assert len(returned_tasks) == 1
+
+        # The state should remain busy, so no new signals should have fired.
+        mock_processing_state_handler.assert_not_called()
+        assert pipeline.is_busy is True
+
+        # Act 4: Simulate the 'when_done' callback of the CANCELLED
+        # task (task1) firing. Use the actual task object that was stored
+        # in the stage.
+        task1_object_in_stage.get_status.return_value = "canceled"
+        if task1_info.when_done:
+            task1_info.when_done(task1_object_in_stage)
+
+        # The pipeline should remain busy because task2 is still active.
+        assert pipeline.is_busy is True, (
+            "Pipeline incorrectly became idle after a cancelled task's "
+            "callback."
+        )
+        mock_artifact_ready_handler.assert_not_called()
+
+        # Act 5: Simulate the SUCCESSFUL task (task2) completing.
+        artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        handle = get_context().artifact_store.put(artifact)
+        try:
+            task2_object_in_stage = returned_tasks[0]
+            # Use the actual task object that the stage is now holding
+            # for task 2
+            task2_object_in_stage.get_status.return_value = "completed"
+            task2_object_in_stage.result.return_value = 2  # Gen ID for task 2
+
+            if task2_info.when_event:
+                task2_info.when_event(
+                    task2_object_in_stage,
+                    "artifact_created",
+                    {"handle_dict": handle.to_dict(), "generation_id": 2},
+                )
+
+            # The workpiece task completion will trigger a step task.
+            # We must simulate that one finishing as well.
+            if task2_info.when_done:
+                task2_info.when_done(task2_object_in_stage)
+
+            # Find the newly created step task and complete it.
+            step_task_info = next(
+                (
+                    t
+                    for t in mock_task_mgr.created_tasks
+                    if t.target is make_step_artifact_in_subprocess
+                ),
+                None,
+            )
+            assert step_task_info is not None, "Step task was not created"
+            step_task_obj = step_task_info.returned_task_obj
+            step_task_obj.get_status.return_value = "completed"
+            if step_task_info.when_done:
+                step_task_info.when_done(step_task_obj)
+
+            # Assert 5: The final signals were emitted correctly.
+            mock_artifact_ready_handler.assert_called_once()
+            assert pipeline.is_busy is False
+
+            # The callback should have triggered the state change signal.
+            mock_processing_state_handler.assert_called_with(
+                ANY, is_processing=False
+            )
+        finally:
+            get_context().artifact_store.release(handle)
