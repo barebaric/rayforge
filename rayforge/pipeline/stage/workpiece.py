@@ -169,17 +169,19 @@ class WorkpieceGeneratorStage(PipelineStage):
             self._cleanup_entry(key)
 
     def _cleanup_task(self, key: WorkpieceKey):
-        """Cancels a task if it's active."""
+        """
+        Requests cancellation of an active task but does NOT remove it from
+        the active_tasks dict. The removal is handled by _on_task_complete.
+        """
         if key in self._active_tasks:
-            task = self._active_tasks.pop(key, None)
-            if task:
-                logger.debug(f"Cancelling active workpiece task for {key}")
-                self._task_manager.cancel_task(task.key)
+            task = self._active_tasks[key]
+            logger.debug(f"Requesting cancellation for active task {key}")
+            self._task_manager.cancel_task(task.key)
 
     def _cleanup_entry(self, key: WorkpieceKey):
         """
         Removes a workpiece cache entry, releases its resources, and
-        cancels its task.
+        requests cancellation of its task.
         """
         logger.debug(f"WorkpieceGeneratorStage: Cleaning up entry {key}.")
         s_uid, w_uid = key
@@ -196,7 +198,9 @@ class WorkpieceGeneratorStage(PipelineStage):
             return
 
         if key in self._active_tasks:
-            logger.debug(f"Cancelling existing task for key {key}.")
+            logger.debug(
+                f"Requesting cancellation of existing task for key {key}."
+            )
             self._cleanup_task(key)
 
         generation_id = self._generation_id_map.get(key, 0) + 1
@@ -205,8 +209,6 @@ class WorkpieceGeneratorStage(PipelineStage):
         self.generation_starting.send(
             self, step=step, workpiece=workpiece, generation_id=generation_id
         )
-
-        self._artifact_cache.invalidate_for_workpiece(step.uid, workpiece.uid)
 
         def when_done_callback(task: "Task"):
             self._on_task_complete(task, key, generation_id, step, workpiece)
@@ -259,6 +261,20 @@ class WorkpieceGeneratorStage(PipelineStage):
         if not handle_dict or generation_id is None:
             return
 
+        is_stale = self._generation_id_map.get(key) != generation_id
+        if is_stale:
+            logger.debug(
+                f"Received stale event '{event_name}' for {key}. "
+                "Cleaning up orphaned artifact."
+            )
+            try:
+                stale_handle = create_handle_from_dict(handle_dict)
+                get_context().artifact_store.adopt(stale_handle)
+                get_context().artifact_store.release(stale_handle)
+            except Exception as e:
+                logger.error(f"Error cleaning up stale artifact: {e}")
+            return
+
         try:
             handle = create_handle_from_dict(handle_dict)
             if not isinstance(handle, WorkPieceArtifactHandle):
@@ -268,7 +284,13 @@ class WorkpieceGeneratorStage(PipelineStage):
             get_context().artifact_store.adopt(handle)
 
             if event_name == "artifact_created":
-                self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
+                # This is now the atomic swap. `put_workpiece_handle` should
+                # return the old handle it replaced.
+                old_handle = self._artifact_cache.put_workpiece_handle(
+                    s_uid, w_uid, handle
+                )
+                if old_handle:
+                    get_context().artifact_store.release(old_handle)
                 return
 
             if event_name == "visual_chunk_ready":
@@ -293,18 +315,61 @@ class WorkpieceGeneratorStage(PipelineStage):
     ):
         """Callback for when an ops generation task finishes."""
         s_uid, w_uid = key
-        self._active_tasks.pop(key, None)
+        current_expected_id = self._generation_id_map.get(key)
+        active_task = self._active_tasks.get(key)
+        active_task_id = id(active_task) if active_task else "None"
 
-        if self._generation_id_map.get(key) != task_generation_id:
-            logger.debug(f"Ignoring stale ops callback for {key}.")
+        logger.debug(
+            f"[{key}] _on_task_complete called for task {id(task)}. "
+            f"Task Gen ID: {task_generation_id}, "
+            f"Expected Gen ID: {current_expected_id}. "
+            f"Active task in slot: {active_task_id}. "
+            f"Is this the active task? {task is active_task}"
+        )
+
+        if self._active_tasks.get(key) is task:
+            self._active_tasks.pop(key, None)
+            logger.debug(
+                f"[{key}] Popped active task {id(task)} from tracking."
+            )
+        else:
+            logger.debug(
+                f"[{key}] Ignoring 'when_done' for task {id(task)} because it "
+                "is not the currently active task."
+            )
             return
 
-        if task.get_status() == "completed":
+        if current_expected_id != task_generation_id:
+            logger.debug(
+                f"[{key}] Ignoring stale ops callback. "
+                f"Task ID {task_generation_id} "
+                f"does not match expected ID {current_expected_id}."
+            )
+            return
+
+        task_status = task.get_status()
+        logger.debug(f"[{key}] Task status is '{task_status}'.")
+
+        if task_status == "canceled":
+            logger.debug(
+                f"[{key}] Task was canceled. Not sending 'finished' signal."
+            )
+            return
+
+        if task_status == "completed":
+            logger.debug(f"[{key}] Task completed. Processing result.")
             try:
                 result_gen_id = task.result()
+                logger.debug(
+                    f"[{key}] Task result (gen_id): {result_gen_id}. "
+                    f"Re-checking against expected ID: "
+                    f"{self._generation_id_map.get(key)}"
+                )
                 if self._generation_id_map.get(key) != result_gen_id:
-                    logger.warning(f"Stale result for {key}. Invalidating.")
-                    self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
+                    logger.warning(
+                        f"[{key}] Stale result for {key}. Invalidating."
+                    )
+                    self._cleanup_entry(key)
                     return
 
                 handle = self._artifact_cache.get_workpiece_handle(
@@ -317,26 +382,30 @@ class WorkpieceGeneratorStage(PipelineStage):
                         handle.generation_size, workpiece.size
                     ):
                         logger.info(
-                            f"Result for {key} is stale due to size "
+                            f"[{key}] Result for {key} is stale due to size "
                             "change during generation. Regenerating."
                         )
-                        self._artifact_cache.invalidate_for_workpiece(
-                            s_uid, w_uid
-                        )
+                        # Don't cleanup, just launch a new task to replace
+                        # the now-stale artifact.
                         self._launch_task(step, workpiece)
                         return
             except Exception as e:
-                logger.error(f"Error processing result for {key}: {e}")
+                logger.error(f"[{key}] Error processing result for {key}: {e}")
         else:
             wp_name = workpiece.name
             logger.warning(
-                f"Ops generation for '{step.name}' on '{wp_name}' failed "
-                f"with status: {task.get_status()}."
+                f"[{key}] Ops generation for '{step.name}' "
+                f"on '{wp_name}' failed "
+                f"with status: {task_status}."
             )
             # The artifact might have been created and put in the cache
             # before the task failed. Clean it up.
-            self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
+            self._cleanup_entry(key)
 
+        logger.debug(
+            f"[{key}] Sending 'generation_finished' signal for task gen_id "
+            f"{task_generation_id}."
+        )
         self.generation_finished.send(
             self,
             step=step,

@@ -82,7 +82,7 @@ class Pipeline:
             entire pipeline changes.
     """
 
-    def __init__(self, doc: "Doc", task_manager: "TaskManager"):
+    def __init__(self, doc: Optional["Doc"], task_manager: "TaskManager"):
         """
         Initializes the Pipeline.
 
@@ -91,7 +91,7 @@ class Pipeline:
             task_manager: The TaskManager instance for background jobs.
         """
         logger.debug(f"{self.__class__.__name__}.__init__[{id(self)}] called")
-        self._doc: Doc = doc
+        self._doc: Optional[Doc] = doc
         self._task_manager = task_manager
         self._pause_count = 0
         self._last_known_busy_state = False
@@ -190,12 +190,12 @@ class Pipeline:
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
 
     @property
-    def doc(self) -> Doc:
+    def doc(self) -> Optional[Doc]:
         """The document model this pipeline is observing."""
         return self._doc
 
     @doc.setter
-    def doc(self, new_doc: Doc):
+    def doc(self, new_doc: Optional[Doc]):
         """Sets the document and manages signal connections."""
         if self._doc is new_doc:
             return
@@ -243,6 +243,8 @@ class Pipeline:
 
     def _connect_signals(self) -> None:
         """Connects to the document's signals."""
+        if not self.doc:
+            return
         self.doc.descendant_added.connect(self._on_descendant_added)
         self.doc.descendant_removed.connect(self._on_descendant_removed)
         self.doc.descendant_updated.connect(self._on_descendant_updated)
@@ -255,6 +257,8 @@ class Pipeline:
 
     def _disconnect_signals(self) -> None:
         """Disconnects from the document's signals."""
+        if not self.doc:
+            return
         self.doc.descendant_added.disconnect(self._on_descendant_added)
         self.doc.descendant_removed.disconnect(self._on_descendant_removed)
         self.doc.descendant_updated.disconnect(self._on_descendant_updated)
@@ -302,6 +306,8 @@ class Pipeline:
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
         """Finds a step anywhere in the document by its UID."""
+        if not self.doc:
+            return None
         for layer in self.doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
@@ -311,6 +317,8 @@ class Pipeline:
 
     def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
         """Finds a workpiece anywhere in the document by its UID."""
+        if not self.doc:
+            return None
         for wp in self.doc.all_workpieces:
             if wp.uid == uid:
                 return wp
@@ -589,7 +597,7 @@ class Pipeline:
 
     def reconcile_all(self) -> None:
         """Synchronizes all stages with the document."""
-        if self.is_paused:
+        if self.is_paused or not self.doc:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
 
