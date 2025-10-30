@@ -87,7 +87,12 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             "value-changed",
             lambda scale: self._debounce(self._on_amount_changed, scale),
         )
-        corner_row.connect("changed", self._on_corner_angle_changed)
+        corner_row.connect(
+            "changed",
+            lambda spin_row: self._debounce(
+                self._on_corner_angle_changed, spin_row
+            ),
+        )
 
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()
