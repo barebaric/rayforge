@@ -228,26 +228,42 @@ class TestWorkerPoolManager:
             initializer=worker_init,
             initargs=(init_file,),
         )
-        # Give workers time to start and run their initializer
-        time.sleep(0.5)
 
-        # To ensure all workers have started and are idle, we can submit a
-        # dummy task. This isn't strictly necessary but adds robustness.
-        completion_event = threading.Event()
+        # To ensure all workers have run their initializer, we submit one task
+        # per worker and wait for all of them to complete. This is much more
+        # reliable than a fixed sleep.
+        all_tasks_completed = threading.Event()
+        completed_count = 0
+        lock = threading.Lock()
 
         def on_complete(sender, key, task_id, result):
-            completion_event.set()
+            nonlocal completed_count
+            with lock:
+                completed_count += 1
+                if completed_count == num_workers:
+                    all_tasks_completed.set()
 
         pool.task_completed.connect(on_complete)
-        pool.submit("dummy_task", 1, simple_add_func, 1, 1)
-        completion_event.wait(timeout=2)
+        for i in range(num_workers):
+            pool.submit(f"init_task_{i}", i, simple_add_func, 1, 1)
 
-        # Shut down the pool to ensure all processes are finished
+        # Use a generous timeout for slow CI environments like Windows runners
+        completed_in_time = all_tasks_completed.wait(timeout=10)
+        assert completed_in_time, (
+            f"Not all worker initialization tasks completed in time. "
+            f"Expected {num_workers}, but only {completed_count} finished."
+        )
+
+        # Shut down the pool to ensure all processes are finished and files
+        # are flushed.
         pool.shutdown()
 
         # Check the side effect of the initializer
         assert init_file.exists()
-        lines = init_file.read_text().strip().split("\n")
+        content = init_file.read_text()
+        # Filter out empty strings that can result from splitting an empty file
+        lines = [line for line in content.strip().split("\n") if line]
+
         # There should be one line per worker process
         assert len(lines) == num_workers
         # All PIDs should be unique
