@@ -239,17 +239,16 @@ class TestArtifactStore(unittest.TestCase):
         # The main store should not know about this block yet.
         self.assertNotIn(handle.shm_name, main_store._managed_shms)
 
-        # 2. Simulate the worker process transferring ownership. On Windows,
-        # a shared memory block is only unlinked when all open handles to it
-        # are closed. The worker must close its handle after creation to
-        # allow the adopting process (main) to manage the block's lifecycle.
-        worker_shm = worker_store._managed_shms.pop(handle.shm_name)
-        worker_shm.close()
-
-        # 3. Simulate the main process receiving an event and adopting
-        # the handle.
+        # 2. Simulate the main process receiving an event and adopting the
+        # handle. Now, both the worker and main stores have open handles,
+        # ensuring the block persists.
         main_store.adopt(handle)
         self.assertIn(handle.shm_name, main_store._managed_shms)
+
+        # 3. Simulate the worker process transferring ownership by closing
+        # its handle. The main process now holds the only handle.
+        worker_shm = worker_store._managed_shms.pop(handle.shm_name)
+        worker_shm.close()
 
         # 4. Verify the block is still accessible by getting the artifact.
         try:
