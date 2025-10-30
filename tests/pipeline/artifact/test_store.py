@@ -239,10 +239,12 @@ class TestArtifactStore(unittest.TestCase):
         # The main store should not know about this block yet.
         self.assertNotIn(handle.shm_name, main_store._managed_shms)
 
-        # 2. The worker task finishes. Its store instance might be garbage
-        # collected, but the memory block persists because the worker *process*
-        # (from the pool) is still alive. We simulate this by simply letting
-        # worker_store go out of scope without calling shutdown().
+        # 2. Simulate the worker process transferring ownership. On Windows,
+        # a shared memory block is only unlinked when all open handles to it
+        # are closed. The worker must close its handle after creation to
+        # allow the adopting process (main) to manage the block's lifecycle.
+        worker_shm = worker_store._managed_shms.pop(handle.shm_name)
+        worker_shm.close()
 
         # 3. Simulate the main process receiving an event and adopting
         # the handle.
