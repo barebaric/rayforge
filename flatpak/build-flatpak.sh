@@ -14,4 +14,4 @@ flatpak run org.flatpak.Builder \
     --force-clean --sandbox --user --install --ccache \
     --install-deps-from=flathub \
     --mirror-screenshots-url=https://dl.flathub.org/media/ \
-    --repo=repo builddir flatpak/org.rayforge.rayforge.yml
+    --repo=repo builddir org.rayforge.rayforge.yml
