@@ -200,7 +200,7 @@ def main():
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
-    from .context import get_context
+    from rayforge.context import get_context
 
     # Initialize the full application context. This creates all managers
     # and sets up the backward-compatibility shim for old code.
