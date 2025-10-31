@@ -1,6 +1,6 @@
 app-id: org.rayforge.rayforge
 runtime: org.gnome.Platform
-runtime-version: '48'
+runtime-version: '49'
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -32,6 +32,8 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/c3/a3/21b519f58de90d684056c52ec4e45f744cfda7483f082dcc4dd18cc74a93/scikit_build-0.18.1-py3-none-any.whl
         sha256: a6860e300f6807e76f21854163bdb9db16afc74eadf34bd6a9947d3fdfcd725a
+    cleanup:
+      - "*"
 
   - name: python3-pybind11
     buildsystem: simple
@@ -41,6 +43,8 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/13/2f/0f24b288e2ce56f51c920137620b4434a38fd80583dbbe24fc2a1656c388/pybind11-2.13.6-py3-none-any.whl
         sha256: 237c41e29157b962835d356b370ededd57594a26d5894a795960f0047cb5caf5
+    cleanup:
+      - "*"
 
   - name: python3-meson-python
     buildsystem: simple
@@ -56,6 +60,8 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/e8/61/9dd3e68d2b6aa40a5fc678662919be3c3a7bf22cba5a6b4437619b77e156/pyproject_metadata-0.9.0-py3-none-any.whl
         sha256: fc862aab066a2e87734333293b0af5845fe8ac6cb69c451a41551001e923be0b
+    cleanup:
+      - "*"
 
   - name: python3-pythran
     buildsystem: simple
@@ -140,6 +146,8 @@ modules:
       - type: git
         url: https://github.com/PyO3/maturin
         tag: v1.9.4
+    cleanup:
+      - "*"
 
   - name: python3-vtracer
     buildsystem: simple
@@ -152,7 +160,6 @@ modules:
       - cargo fetch --manifest-path ./cmdapp/Cargo.toml --verbose
       - maturin build --release --compatibility linux --manifest-path ./cmdapp/Cargo.toml
       - pip3 install --verbose --exists-action=i --no-index --find-links=file://${PWD}/target/wheels --prefix=${FLATPAK_DEST} vtracer --no-build-isolation
-      - ls 
     sources:
       - cargo-sources-vtracer.json
       - type: git
@@ -179,22 +186,22 @@ modules:
       url: https://files.pythonhosted.org/packages/29/ff/a2440069461c63b95fa8b5b89e26eb606e57d8a01391ccaae3738f1b845d/expandvars-1.0.0-py3-none-any.whl
       sha256: ff1690eceb90bbdeefd1e4b15f4d217f22a3e66f776c2cb060635d2dde4a7689
 
-  - name: libglu
-    buildsystem: meson
-    sources:
-      - type: git
-        url: https://gitlab.freedesktop.org/mesa/glu
-        tag: glu-9.0.3
-
+  - shared-modules/glu/glu-9.json
   - python3-requirements.yaml
   - name: rayforge
     buildsystem: simple
     build-commands:
-      - pip3 install --prefix=/app --no-deps --no-build-isolation .
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=/app --no-deps --no-build-isolation .
     post-install:
       - install -Dm644 rayforge/resources/icons/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
       - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - echo $(git describe --exact-match --tags) > ${FLATPAK_DEST}/lib/python$(python -c
+        'import sys; print("%s.%s" %sys.version_info[0:2])')/site-packages/rayforge/version.txt
     sources:
       - type: git 
         url: https://github.com/barebaric/rayforge.git
-        commit: e85545b71830d1e83970c986d8977c99e9cdb1ab
+        tag: "0.23"
+        x-checker:
+          type: git
+          url: https://github.com/barebaric/rayforge.git
+          tag-pattern: ^([\d\.]+)$
