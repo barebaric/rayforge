@@ -40,6 +40,7 @@ from .artifact import (
     JobArtifactHandle,
     ArtifactCache,
     RenderContext,
+    WorkPieceArtifactHandle,
 )
 from .stage import (
     WorkPiecePipelineStage,
@@ -105,7 +106,7 @@ class Pipeline:
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
-        self.workpiece_visual_chunk_ready = Signal()
+        self.workpiece_chunk_available = Signal()
         self.workpiece_artifact_ready = Signal()
         self.step_render_ready = Signal()
         self.step_time_updated = Signal()
@@ -146,8 +147,8 @@ class Pipeline:
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
-        self._workpiece_stage.visual_chunk_available.connect(
-            self._on_workpiece_visual_chunk_available
+        self._workpiece_stage.workpiece_chunk_available.connect(
+            self._on_workpiece_chunk_available
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -510,7 +511,7 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_visual_chunk_available(
+    def _on_workpiece_chunk_available(
         self,
         sender: WorkPiecePipelineStage,
         *,
@@ -523,9 +524,9 @@ class Pipeline:
         workpiece = self._find_workpiece_by_uid(workpiece_uid)
         step = self._find_step_by_uid(step_uid)
         if workpiece and step:
-            self.workpiece_visual_chunk_ready.send(
+            self.workpiece_chunk_available.send(
                 step,
-                workpiece=workpiece,
+                key=key,
                 chunk_handle=chunk_handle,
                 generation_id=generation_id,
             )
@@ -648,6 +649,8 @@ class Pipeline:
         step_uid: str,
         workpiece_uid: str,
         handle: BaseArtifactHandle,
+        source_shm_name: str,
+        generation_id: int,
     ):
         """Relays signal that a new view bitmap artifact has been created."""
         self.workpiece_view_created.send(
@@ -655,6 +658,8 @@ class Pipeline:
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
             handle=handle,
+            source_shm_name=source_shm_name,
+            generation_id=generation_id,
         )
 
     def _on_workpiece_view_updated(
@@ -677,14 +682,16 @@ class Pipeline:
         *,
         step_uid: str,
         workpiece_uid: str,
-        handle: BaseArtifactHandle,
+        source_shm_name: str,
+        generation_id: int,
     ):
         """Relays signal that a new view bitmap artifact is ready."""
         self.workpiece_view_ready.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
-            handle=handle,
+            source_shm_name=source_shm_name,
+            generation_id=generation_id,
         )
 
     def _on_workpiece_view_generation_finished(
@@ -846,11 +853,13 @@ class Pipeline:
         step_uid: str,
         workpiece_uid: str,
         context: RenderContext,
+        source_handle: WorkPieceArtifactHandle,
+        generation_id: int,
     ):
         """
         Forwards a request to the view generator stage to render a new
         bitmap for a workpiece view.
         """
         self._workpiece_view_stage.request_view_render(
-            step_uid, workpiece_uid, context
+            step_uid, workpiece_uid, context, source_handle, generation_id
         )

@@ -96,7 +96,7 @@ def _draw_texture(
     alpha_ch = rgba_texture[..., 3, np.newaxis]
     rgb_ch = rgba_texture[..., :3]
     bgra_texture = np.empty((h, w, 4), dtype=np.uint8)
-    premultiplied_rgb = rgb_ch * alpha_ch * 255
+    premultiplied_rgb = rgb_ch * alpha_ch * 255.0
     # Round, clip, and cast to prevent truncation artifacts
     premultiplied_rgb_int = np.clip(np.round(premultiplied_rgb), 0, 255)
     premultiplied_rgb_int = premultiplied_rgb_int.astype(np.uint8)
@@ -106,12 +106,23 @@ def _draw_texture(
     bgra_texture[..., 2] = premultiplied_rgb_int[..., 0]  # R
     bgra_texture[..., 3] = (alpha_ch.squeeze() * 255).astype(np.uint8)
 
-    texture_surface = cairo.ImageSurface.create_for_data(
+    # The `create_for_data` surface is just a VIEW on the numpy buffer. The
+    # buffer can be garbage collected after this function returns, creating
+    # a race condition. To solve this, we create a new surface and paint
+    # the view onto it, forcing Cairo to make its own copy of the pixel data.
+    view_surface = cairo.ImageSurface.create_for_data(
         memoryview(np.ascontiguousarray(bgra_texture)),
         cairo.FORMAT_ARGB32,
         w,
         h,
     )
+    texture_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    copy_ctx = cairo.Context(texture_surface)
+    copy_ctx.set_source_surface(view_surface, 0, 0)
+    copy_ctx.paint()
+    # Now, `texture_surface` has its own data, and the `bgra_texture` and
+    # `view_surface` can be safely garbage collected.
+
     ctx.save()
     pos_mm = texture_data.position_mm
     dim_mm = texture_data.dimensions_mm
@@ -134,10 +145,13 @@ def _get_content_bbox(
     artifact: WorkPieceArtifact, show_travel: bool
 ) -> Optional[Tuple[float, float, float, float]]:
     """Calculate the union bounding box of all visual content."""
-    all_vertices: List[np.ndarray] = []
+    bbox_min = np.array([math.inf, math.inf])
+    bbox_max = np.array([-math.inf, -math.inf])
     has_content = False
 
+    # Union the bounding box of any vertices
     if artifact.vertex_data:
+        all_vertices: List[np.ndarray] = []
         v_data = artifact.vertex_data
         if v_data.powered_vertices.size > 0:
             all_vertices.append(v_data.powered_vertices)
@@ -147,32 +161,38 @@ def _get_content_bbox(
             if v_data.zero_power_vertices.size > 0:
                 all_vertices.append(v_data.zero_power_vertices)
 
-    v_stack = np.vstack(all_vertices) if all_vertices else None
-    if v_stack is not None:
-        v_x1, v_y1, _ = np.min(v_stack, axis=0)
-        v_x2, v_y2, _ = np.max(v_stack, axis=0)
-        has_content = True
-    else:
-        v_x1, v_y1, v_x2, v_y2 = math.inf, math.inf, -math.inf, -math.inf
+        if all_vertices:
+            v_stack = np.vstack(all_vertices)
+            v_min = np.min(v_stack, axis=0)[:2]
+            v_max = np.max(v_stack, axis=0)[:2]
+            bbox_min = np.minimum(bbox_min, v_min)
+            bbox_max = np.maximum(bbox_max, v_max)
+            has_content = True
 
-    if artifact.texture_data:
+    # Union the bounding box of the texture, if it has pixels
+    if (
+        artifact.texture_data
+        and artifact.texture_data.power_texture_data.size > 0
+    ):
         tex = artifact.texture_data
-        t_x1, t_y1 = tex.position_mm
-        t_x2, t_y2 = t_x1 + tex.dimensions_mm[0], t_y1 + tex.dimensions_mm[1]
-        v_x1, v_x2 = min(v_x1, t_x1), max(v_x2, t_x2)
-        v_y1, v_y2 = min(v_y1, t_y1), max(v_y2, t_y2)
+        t_min = np.array(tex.position_mm)
+        t_max = t_min + np.array(tex.dimensions_mm)
+        bbox_min = np.minimum(bbox_min, t_min)
+        bbox_max = np.maximum(bbox_max, t_max)
         has_content = True
 
     if not has_content:
         return None
 
-    return (v_x1, v_y1, v_x2 - v_x1, v_y2 - v_y1)
+    width, height = bbox_max - bbox_min
+    return (bbox_min[0], bbox_min[1], width, height)
 
 
 def make_workpiece_view_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
+    generation_id: int,
     creator_tag: str,
 ) -> Optional[Dict[str, Any]]:
     """
@@ -204,10 +224,17 @@ def make_workpiece_view_artifact_in_subprocess(
     view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
 
+    logger.debug(
+        f"View artifact created (shm_name={view_handle.shm_name}, "
+        f"gen_id={generation_id}). "
+        "Bitmap is currently empty. Sending 'view_artifact_created' event."
+    )
     proxy.send_event(
         "view_artifact_created",
-        {"handle_dict": view_handle.to_dict()},
+        {"handle_dict": view_handle.to_dict(), "generation_id": generation_id},
     )
+
+    logger.debug("Event sent. Beginning render into shared memory.")
 
     shm = None
     try:
@@ -232,11 +259,19 @@ def make_workpiece_view_artifact_in_subprocess(
 
         # --- Phase 3: Signal updates after each chunk of work ---
         if artifact.texture_data:
+            logger.debug(f"Drawing texture for {view_handle.shm_name}...")
             _draw_texture(ctx, artifact.texture_data, color_set)
             surface.flush()
-            proxy.send_event("view_artifact_updated")
+            logger.debug(
+                f"Texture drawn for {view_handle.shm_name}. "
+                f"Sending 'view_artifact_updated'."
+            )
+            proxy.send_event(
+                "view_artifact_updated", {"generation_id": generation_id}
+            )
 
         if artifact.vertex_data:
+            logger.debug(f"Drawing vertices for {view_handle.shm_name}...")
             # Set line width to be 1 pixel wide in device space
             line_width_mm = 1.0 / ppm_x if ppm_x > 0 else 1.0
             _draw_vertices(
@@ -247,7 +282,15 @@ def make_workpiece_view_artifact_in_subprocess(
                 line_width_mm,
             )
             surface.flush()
-            proxy.send_event("view_artifact_updated")
+            logger.debug(
+                f"Vertices drawn for {view_handle.shm_name}. "
+                f"Sending 'view_artifact_updated'."
+            )
+            proxy.send_event(
+                "view_artifact_updated", {"generation_id": generation_id}
+            )
+
+        logger.debug(f"Render complete for {view_handle.shm_name}.")
 
     finally:
         if shm:
