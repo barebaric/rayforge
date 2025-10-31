@@ -625,6 +625,7 @@ class TestWaitUntilSettled:
         completion_events = []
         tasks = []
 
+        start_time = time.time()
         for i in range(3):
             event = threading.Event()
             completion_events.append(event)
@@ -640,6 +641,7 @@ class TestWaitUntilSettled:
             task_key = f"multi_task_{i}"
             tasks.append(task_key)
 
+            start_time = time.time()  # reset
             manager.add_coroutine(
                 simple_coro,
                 duration=duration,
@@ -648,7 +650,6 @@ class TestWaitUntilSettled:
             )
 
         # wait_until_settled should wait for the longest task
-        start_time = time.time()
         result = manager.wait_until_settled(1000)  # 1 second timeout
         elapsed = time.time() - start_time
 
