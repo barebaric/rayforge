@@ -43,7 +43,7 @@ class WorkpieceGeneratorStage(PipelineStage):
 
         # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
-        self.visual_chunk_available = Signal()
+        self.workpiece_chunk_available = Signal()
         self.generation_finished = Signal()
 
     def _sizes_are_close(
@@ -294,7 +294,12 @@ class WorkpieceGeneratorStage(PipelineStage):
                 return
 
             if event_name == "visual_chunk_ready":
-                self.visual_chunk_available.send(
+                logger.debug(
+                    f"[{key}] Received 'visual_chunk_ready' event from task. "
+                    f"Emitting 'workpiece_chunk_available' signal for "
+                    f"generation {generation_id}."
+                )
+                self.workpiece_chunk_available.send(
                     self,
                     key=key,
                     chunk_handle=handle,

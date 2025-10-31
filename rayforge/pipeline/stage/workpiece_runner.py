@@ -224,7 +224,7 @@ def make_workpiece_artifact_in_subprocess(
             surface.flush()
             return
 
-        # --- Default chunking behavior ---
+        # Default chunking behavior
         total_height_px = size[1] * px_per_mm_y
 
         chunk_iter = workpiece.render_chunk(
@@ -253,8 +253,11 @@ def make_workpiece_artifact_in_subprocess(
                 step_settings=settings,
             )
 
-            # The ops are generated at the origin, so translate them to the
-            # correct position within the workpiece.
+            if chunk_artifact.texture_data:
+                chunk_artifact.texture_data.power_texture_data = (
+                    chunk_artifact.texture_data.power_texture_data.copy()
+                )
+
             y_offset_mm = (
                 size[1] * px_per_mm_y - (surface.get_height() + y_offset_px)
             ) / px_per_mm_y
@@ -282,10 +285,8 @@ def make_workpiece_artifact_in_subprocess(
         _("Generating path for '{name}'").format(name=workpiece.name)
     )
     initial_ops = _create_initial_ops()
-    final_artifact: Optional[WorkPieceArtifact] = None
-
-    # This will hold the assembled texture for hybrid artifacts
-    full_power_texture: Optional[np.ndarray] = None
+    chunk_artifacts_for_assembly = []
+    chunk_handles_to_release = []
 
     is_vector = opsproducer.is_vector_producer()
     encoder = VertexEncoder()
@@ -293,7 +294,7 @@ def make_workpiece_artifact_in_subprocess(
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight
 
-    # --- Path generation phase ---
+    # Path generation phase
     execute_ctx = proxy.sub_context(
         base_progress=0.0, progress_range=execute_weight
     )
@@ -301,72 +302,47 @@ def make_workpiece_artifact_in_subprocess(
 
     for chunk_artifact, execute_progress in execute_iterator:
         execute_ctx.set_progress(execute_progress)
+        chunk_artifacts_for_assembly.append(chunk_artifact)
 
-        if final_artifact is None:
-            final_artifact = chunk_artifact
-            # Prepend the initial state commands (power, speed, etc.)
-            new_ops = initial_ops.copy()
-            new_ops.extend(final_artifact.ops)
-            final_artifact.ops = new_ops
+        if not is_vector:
+            import copy
 
-            # If dealing with a chunked raster, prepare the full texture buffer
-            if not is_vector and final_artifact.texture_data:
+            # For progressive rendering, we create a separate artifact copy.
+            # This prevents mutation of the original chunk_artifact which is
+            # used to assemble the final texture.
+            chunk_for_view = copy.deepcopy(chunk_artifact)
+
+            # The producer sets texture position relative to the top-left
+            # (Y-down). We must convert it to bottom-left (Y-up) for the
+            # view renderer, which uses a consistent Y-up coordinate system
+            # for both ops and textures.
+            if chunk_for_view.texture_data:
                 size_mm = workpiece.size
-                px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-                full_width_px = int(size_mm[0] * px_per_mm_x)
-                full_height_px = int(size_mm[1] * px_per_mm_y)
-                if full_width_px > 0 and full_height_px > 0:
-                    full_power_texture = np.zeros(
-                        (full_height_px, full_width_px), dtype=np.uint8
-                    )
-        else:
-            final_artifact.ops.extend(chunk_artifact.ops)
+                (
+                    tex_pos_x,
+                    tex_pos_y_from_top,
+                ) = chunk_for_view.texture_data.position_mm
+                _tex_w, tex_h = chunk_for_view.texture_data.dimensions_mm
+                total_h = size_mm[1]
 
-        # For all chunks, paint their texture into the full buffer
-        if (
-            full_power_texture is not None
-            and chunk_artifact.texture_data is not None
-        ):
-            px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-            texture_data = chunk_artifact.texture_data.power_texture_data
-            chunk_h_px, chunk_w_px = texture_data.shape
-
-            # y-offset from top in mm, convert to pixels
-            y_start_px = int(
-                round(chunk_artifact.texture_data.position_mm[1] * px_per_mm_y)
-            )
-            x_start_px = 0  # Chunks are full width
-
-            y_end_px = y_start_px + chunk_h_px
-            x_end_px = x_start_px + chunk_w_px
-
-            # Check bounds to prevent errors from floating point inaccuracies
-            if (
-                y_end_px <= full_power_texture.shape[0]
-                and x_end_px <= full_power_texture.shape[1]
-            ):
-                full_power_texture[
-                    y_start_px:y_end_px, x_start_px:x_end_px
-                ] = texture_data
-            else:
-                logger.warning(
-                    f"Chunk texture out of bounds. Target: "
-                    f"[{y_start_px}:{y_end_px}, {x_start_px}:{x_end_px}] "
-                    f"in {full_power_texture.shape}"
+                # New Y is calculated from the bottom of the workpiece.
+                new_y_pos_from_bottom = total_h - tex_pos_y_from_top - tex_h
+                chunk_for_view.texture_data.position_mm = (
+                    tex_pos_x,
+                    new_y_pos_from_bottom,
                 )
 
-        # Send intermediate chunks for raster operations
-        if not is_vector:
-            # For progressive rendering, we need to encode vertices for
-            # the current chunk and send them back via a handle.
+            # Encode vertices for the current chunk.
             ops_for_chunk_render = initial_ops.copy()
-            ops_for_chunk_render.extend(chunk_artifact.ops)
-            chunk_artifact.vertex_data = encoder.encode(ops_for_chunk_render)
+            ops_for_chunk_render.extend(chunk_for_view.ops)
+            chunk_for_view.vertex_data = encoder.encode(ops_for_chunk_render)
 
             # Store in shared memory and get a handle
             chunk_handle = artifact_store.put(
-                chunk_artifact, creator_tag=f"{creator_tag}_chunk"
+                chunk_for_view, creator_tag=f"{creator_tag}_chunk"
             )
+            artifact_store.acquire(chunk_handle)
+            chunk_handles_to_release.append(chunk_handle)
 
             proxy.send_event(
                 "visual_chunk_ready",
@@ -379,25 +355,58 @@ def make_workpiece_artifact_in_subprocess(
     # Ensure path generation is marked as 100% complete before continuing.
     execute_ctx.set_progress(1.0)
 
-    if final_artifact is None:
+    if not chunk_artifacts_for_assembly:
         # If no artifact was produced (e.g., empty image), we still need
         # to return the generation_id to signal completion.
         return generation_id
 
-    # If we aggregated a hybrid, update the final artifact with the complete
-    # data
-    if full_power_texture is not None and final_artifact.texture_data:
-        final_artifact.texture_data.power_texture_data = full_power_texture
-        # The final artifact represents the whole workpiece, at its origin
-        final_artifact.texture_data.position_mm = (0.0, 0.0)
-        final_artifact.texture_data.dimensions_mm = workpiece.size
-        # The source dimensions should also reflect the full pixel buffer
-        final_artifact.source_dimensions = (
-            full_power_texture.shape[1],
-            full_power_texture.shape[0],
-        )
+    # Assemble final artifact from all chunks
+    final_artifact = chunk_artifacts_for_assembly[0]
+    final_ops = initial_ops.copy()
+    final_ops.extend(final_artifact.ops)
 
-    # --- Transform phase ---
+    for i in range(1, len(chunk_artifacts_for_assembly)):
+        final_ops.extend(chunk_artifacts_for_assembly[i].ops)
+    final_artifact.ops = final_ops
+
+    if not is_vector and final_artifact.texture_data:
+        size_mm = workpiece.size
+        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+        full_width_px = int(size_mm[0] * px_per_mm_x)
+        full_height_px = int(size_mm[1] * px_per_mm_y)
+        if full_width_px > 0 and full_height_px > 0:
+            full_power_texture = np.zeros(
+                (full_height_px, full_width_px), dtype=np.uint8
+            )
+            for chunk in chunk_artifacts_for_assembly:
+                if chunk.texture_data:
+                    texture_data = chunk.texture_data.power_texture_data
+                    chunk_h_px, chunk_w_px = texture_data.shape
+                    y_start_px = int(
+                        round(chunk.texture_data.position_mm[1] * px_per_mm_y)
+                    )
+                    x_start_px = 0
+                    y_end_px = y_start_px + chunk_h_px
+                    x_end_px = x_start_px + chunk_w_px
+                    if (
+                        y_end_px <= full_power_texture.shape[0]
+                        and x_end_px <= full_power_texture.shape[1]
+                    ):
+                        full_power_texture[
+                            y_start_px:y_end_px, x_start_px:x_end_px
+                        ] = texture_data
+                    else:
+                        logger.warning("Chunk texture out of bounds.")
+
+            final_artifact.texture_data.power_texture_data = full_power_texture
+            final_artifact.texture_data.position_mm = (0.0, 0.0)
+            final_artifact.texture_data.dimensions_mm = workpiece.size
+            final_artifact.source_dimensions = (
+                full_power_texture.shape[1],
+                full_power_texture.shape[0],
+            )
+
+    # Transform phase
     enabled_transformers = [t for t in opstransformers if t.enabled]
     if enabled_transformers:
         transform_context = proxy.sub_context(
@@ -473,4 +482,11 @@ def make_workpiece_artifact_in_subprocess(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
     )
+
+    # Now that the final artifact is created and stored, and we are completely
+    # finished with the intermediate chunks, we can release the local
+    # references.
+    for handle_to_release in chunk_handles_to_release:
+        artifact_store.release(handle_to_release)
+
     return generation_id
