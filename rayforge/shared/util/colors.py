@@ -24,13 +24,22 @@ class ColorSet:
     def get_lut(self, name: str) -> np.ndarray:
         """
         Gets a pre-calculated 256x4 color lookup table (LUT) by name.
-        Raises a ValueError if the LUT is not found or is invalid.
+        Returns a default magenta LUT if not found or invalid.
         """
         lut = self._data.get(name)
         if isinstance(lut, np.ndarray) and lut.shape == (256, 4):
             return lut
 
-        raise ValueError(f"LUT '{name}' not found or invalid.")
+        logger.warning(
+            f"LUT '{name}' not found or invalid in ColorSet. "
+            f"Returning default."
+        )
+        # Create a magenta LUT to indicate a missing color
+        default_lut = np.zeros((256, 4), dtype=np.float32)
+        default_lut[:, 0] = 1.0  # R
+        default_lut[:, 2] = 1.0  # B
+        default_lut[:, 3] = 1.0  # A
+        return default_lut
 
     def get_rgba(self, name: str) -> ColorRGBA:
         """
