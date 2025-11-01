@@ -746,9 +746,21 @@ class MainWindow(Adw.ApplicationWindow):
             # new workflow
             self.workflowview.set_workflow(activated_layer.workflow)
 
-    def _on_editor_notification(self, sender, message: str):
-        """Shows a toast when requested by the DocEditor."""
-        self.toast_overlay.add_toast(Adw.Toast.new(message))
+    def _on_editor_notification(
+        self, sender, message: str, persistent: bool = False
+    ):
+        """
+        Shows a toast when requested by the DocEditor.
+        If 'persistent' is True, the toast will have a dismiss button and
+        remain visible until closed.
+        """
+        if persistent:
+            toast = Adw.Toast.new(message)
+            toast.set_timeout(0)  # 0 = persistent
+            toast.set_priority(Adw.ToastPriority.HIGH)
+            self.toast_overlay.add_toast(toast)
+        else:
+            self.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def _on_assembly_for_preview_finished(
         self,
