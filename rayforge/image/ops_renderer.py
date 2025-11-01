@@ -26,15 +26,25 @@ class OpsRenderer(Renderer):
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
         """
-        For vector geometry, the natural size is the physical size of
-        the workpiece as determined by the importer. This is stored in the
-        workpiece's matrix.
+        For vector geometry, the "natural size" is the intrinsic physical
+        size of the content from the original file, in millimeters.
+
+        This implementation prioritizes the 'natural_size' value stored in
+        the ImportSource metadata by the importer. This ensures the size is
+        static and correct. If not found, it falls back to the workpiece's
+        current dynamic size.
         """
         if not workpiece.vectors or workpiece.vectors.is_empty():
             return None
 
-        # The .size property reads the physical scale from the matrix.
-        # This fulfills the contract of returning the untransformed size in mm.
+        # Prioritize the static, pre-calculated size from the importer.
+        source = workpiece.source
+        if source and source.metadata:
+            natural_size = source.metadata.get("natural_size")
+            if natural_size:
+                return natural_size
+
+        # Fallback: Use current size
         return workpiece.size
 
     def render_to_pixels(

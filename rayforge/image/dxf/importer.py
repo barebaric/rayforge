@@ -64,6 +64,9 @@ class DxfImporter(Importer):
         if not bounds or not bounds[2] or not bounds[3]:
             return ImportPayload(source=source, items=[])
 
+        _, _, width_mm, height_mm = bounds
+        source.metadata["natural_size"] = (width_mm, height_mm)
+
         scale = self._get_scale_to_mm(doc)
         min_x_mm, min_y_mm, _, _ = bounds
         blocks_cache: Dict[str, List[DocItem]] = {}
