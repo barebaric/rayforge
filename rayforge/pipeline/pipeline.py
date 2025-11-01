@@ -21,6 +21,7 @@ from typing import (
     Union,
     Any,
     Callable,
+    List,
 )
 from blinker import Signal
 from contextlib import contextmanager
@@ -41,6 +42,7 @@ from .artifact import (
     ArtifactCache,
     RenderContext,
     WorkPieceArtifactHandle,
+    WorkPieceViewArtifactHandle,
 )
 from .stage import (
     WorkPiecePipelineStage,
@@ -112,9 +114,7 @@ class Pipeline:
         self.step_time_updated = Signal()
         self.job_time_updated = Signal()
         self.job_ready = Signal()
-        self.workpiece_view_ready = Signal()
-        self.workpiece_view_created = Signal()
-        self.workpiece_view_updated = Signal()
+        self.view_artifacts_changed = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
@@ -168,17 +168,8 @@ class Pipeline:
         self._job_stage.generation_failed.connect(
             self._on_job_generation_failed
         )
-        self._workpiece_view_stage.view_artifact_ready.connect(
-            self._on_workpiece_view_ready
-        )
-        self._workpiece_view_stage.view_artifact_created.connect(
-            self._on_workpiece_view_created
-        )
-        self._workpiece_view_stage.view_artifact_updated.connect(
-            self._on_workpiece_view_updated
-        )
-        self._workpiece_view_stage.generation_finished.connect(
-            self._on_workpiece_view_generation_finished
+        self._workpiece_view_stage.view_artifacts_changed.connect(
+            self._on_view_artifacts_changed
         )
 
     def shutdown(self) -> None:
@@ -273,6 +264,15 @@ class Pipeline:
             or self._workpiece_view_stage.is_busy
         )
 
+    def is_workpiece_generating(
+        self, step_uid: str, workpiece_uid: str
+    ) -> bool:
+        """
+        Checks if the WorkpieceGeneratorStage is currently busy for a specific
+        (step, workpiece) pair.
+        """
+        return self._workpiece_stage.is_busy_for_key((step_uid, workpiece_uid))
+
     def _check_and_update_processing_state(self) -> None:
         """
         Deferred check of the pipeline's busy state. This is scheduled on
@@ -332,8 +332,8 @@ class Pipeline:
             return
         self._pause_count -= 1
         if self._pause_count == 0:
-            logger.debug("Pipeline resumed.")
-            self._schedule_reconciliation()
+            logger.debug("Pipeline resumed. Calling reconcile_all().")
+            self.reconcile_all()
 
     @contextmanager
     def paused(self) -> Generator[None, None, None]:
@@ -443,13 +443,21 @@ class Pipeline:
         parent_of_origin: DocItem,
     ) -> None:
         """Handles non-transform updates that require regeneration."""
+        if self.is_paused:
+            return
+        logger.debug(
+            f"Pipeline._on_descendant_updated received for origin: "
+            f"'{origin.name}' ({type(origin).__name__})"
+        )
         if isinstance(origin, Step):
             self._workpiece_stage.invalidate_for_step(origin.uid)
             self._step_stage.invalidate(origin.uid)
+            self._workpiece_view_stage.invalidate_for_step(origin.uid)
+            self.reconcile_all()
         elif isinstance(origin, WorkPiece):
             self._workpiece_stage.invalidate_for_workpiece(origin.uid)
-
-        self._schedule_reconciliation()
+            self._workpiece_view_stage.invalidate_for_workpiece(origin.uid)
+            self.reconcile_all()
 
     def _on_descendant_transform_changed(
         self,
@@ -459,6 +467,12 @@ class Pipeline:
         parent_of_origin: DocItem,
     ) -> None:
         """Handles transform changes by invalidating downstream artifacts."""
+        if self.is_paused:
+            return
+        logger.debug(
+            f"Pipeline._on_descendant_transform_changed received for origin: "
+            f"'{origin.name}' ({type(origin).__name__})"
+        )
         workpieces_to_check = []
         if isinstance(origin, WorkPiece):
             workpieces_to_check.append(origin)
@@ -468,13 +482,10 @@ class Pipeline:
             )
 
         for wp in workpieces_to_check:
-            # The WorkPieceArtifact is generated based on its size, not its
-            # position. The reconciliation logic in WorkPiecePipelineStage will
-            # check if the size has changed and invalidate if necessary.
-            # We no longer need to invalidate it eagerly here.
-
-            # The StepArtifact, however, depends on the world-space positions
-            # of all its workpieces, so it must be invalidated.
+            logger.debug(
+                f"  - Handling transform change for WorkPiece '{wp.name}'"
+            )
+            self._workpiece_stage.on_workpiece_transform_changed(wp)
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
                     self._request_step_assembly(step.uid)
@@ -542,6 +553,11 @@ class Pipeline:
         """
         Relays signal and triggers downstream step assembly.
         """
+        logger.debug(
+            f"Pipeline._on_workpiece_generation_finished for "
+            f"step='{step.name}', wp='{workpiece.name}', "
+            f"gen_id={generation_id}"
+        )
         self.workpiece_artifact_ready.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
@@ -642,65 +658,19 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_view_created(
+    def _on_view_artifacts_changed(
         self,
         sender: WorkPieceViewPipelineStage,
         *,
         step_uid: str,
         workpiece_uid: str,
-        handle: BaseArtifactHandle,
-        source_shm_name: str,
-        generation_id: int,
-    ):
-        """Relays signal that a new view bitmap artifact has been created."""
-        self.workpiece_view_created.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-            source_shm_name=source_shm_name,
-            generation_id=generation_id,
-        )
-
-    def _on_workpiece_view_updated(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-    ):
-        """Relays signal that a view artifact has been updated."""
-        self.workpiece_view_updated.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-        )
-
-    def _on_workpiece_view_ready(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        source_shm_name: str,
-        generation_id: int,
-    ):
-        """Relays signal that a new view bitmap artifact is ready."""
-        self.workpiece_view_ready.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            source_shm_name=source_shm_name,
-            generation_id=generation_id,
-        )
-
-    def _on_workpiece_view_generation_finished(
-        self, sender, *, key: Tuple[str, str]
     ):
         """
-        Handles completion of a view render task to update the overall busy
-        state.
+        Relays the signal that the set of drawable view artifacts has changed.
         """
+        self.view_artifacts_changed.send(
+            self, step_uid=step_uid, workpiece_uid=workpiece_uid
+        )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -854,12 +824,38 @@ class Pipeline:
         workpiece_uid: str,
         context: RenderContext,
         source_handle: WorkPieceArtifactHandle,
-        generation_id: int,
     ):
         """
         Forwards a request to the view generator stage to render a new
         bitmap for a workpiece view.
         """
-        self._workpiece_view_stage.request_view_render(
-            step_uid, workpiece_uid, context, source_handle, generation_id
+        logger.debug(
+            f"Pipeline forwarding view render request for "
+            f"step='{step_uid}', wp='{workpiece_uid}'. Context ppm="
+            f"{context.pixels_per_mm}, source='{source_handle.shm_name}'"
         )
+        self._workpiece_view_stage.request_view_render(
+            step_uid, workpiece_uid, context, source_handle
+        )
+
+    def get_view_artifacts_for_workpiece(
+        self, step_uid: str, workpiece_uid: str
+    ) -> List[WorkPieceViewArtifactHandle]:
+        """
+        Passthrough method to get the current set of drawable view artifacts
+        from the view generator stage.
+        """
+        return self._workpiece_view_stage.get_view_artifacts(
+            step_uid, workpiece_uid
+        )
+
+    def invalidate_view_for_workpiece(self, workpiece_uid: str):
+        """
+        Passthrough method to invalidate all view artifacts for a workpiece,
+        for example when it is deleted.
+        """
+        logger.debug(
+            f"Pipeline invalidating ALL views for workpiece "
+            f"UID '{workpiece_uid}'."
+        )
+        self._workpiece_view_stage.invalidate_for_workpiece(workpiece_uid)

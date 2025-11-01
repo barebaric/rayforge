@@ -64,6 +64,10 @@ class WorkPiecePipelineStage(PipelineStage):
     def is_busy(self) -> bool:
         return bool(self._active_tasks)
 
+    def is_busy_for_key(self, key: WorkpieceKey) -> bool:
+        """Checks if a task is active for a specific (step, workpiece) pair."""
+        return key in self._active_tasks
+
     def shutdown(self):
         logger.debug("WorkPiecePipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
@@ -99,6 +103,16 @@ class WorkPiecePipelineStage(PipelineStage):
                 for workpiece in layer.all_workpieces:
                     if self._is_stale(step, workpiece):
                         self._launch_task(step, workpiece)
+
+    def on_workpiece_transform_changed(self, workpiece: "WorkPiece"):
+        """
+        Handles transform changes. This method is now passive. It no longer
+        destructively cleans up artifacts. The `reconcile` loop is responsible
+        for detecting stale artifacts (e.g. from a size change) and
+        triggering regeneration. This prevents race conditions where a view is
+        trying to be rendered from an artifact that was just deleted.
+        """
+        pass
 
     def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
         """
@@ -271,7 +285,11 @@ class WorkPiecePipelineStage(PipelineStage):
             if event_name == "artifact_created":
                 if not isinstance(handle, WorkPieceArtifactHandle):
                     raise TypeError("Expected a WorkPieceArtifactHandle")
-                self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
+                old_handle = self._artifact_cache.put_workpiece_handle(
+                    s_uid, w_uid, handle
+                )
+                if old_handle:
+                    get_context().artifact_store.release(old_handle)
                 return
 
             if event_name == "visual_chunk_ready":
@@ -280,12 +298,15 @@ class WorkPiecePipelineStage(PipelineStage):
                     f"Emitting 'workpiece_chunk_available' signal for "
                     f"generation {generation_id}."
                 )
-                self.workpiece_chunk_available.send(
-                    self,
-                    key=key,
-                    chunk_handle=handle,
-                    generation_id=generation_id,
-                )
+                # This `with` block guarantees the artifact exists for the
+                # duration of all synchronous signal handlers.
+                with get_context().artifact_store.hold(handle):
+                    self.workpiece_chunk_available.send(
+                        self,
+                        key=key,
+                        chunk_handle=handle,
+                        generation_id=generation_id,
+                    )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True
@@ -369,11 +390,11 @@ class WorkPiecePipelineStage(PipelineStage):
                     ):
                         logger.info(
                             f"[{key}] Result for {key} is stale due to size "
-                            "change during generation. Regenerating."
+                            "change during generation. Invalidating."
                         )
-                        # Don't cleanup, just launch a new task to replace
-                        # the now-stale artifact.
-                        self._launch_task(step, workpiece)
+                        # The result is stale. Clean it up. The main
+                        # reconcile loop will trigger a new task if needed.
+                        self._cleanup_entry(key)
                         return
             except Exception as e:
                 logger.error(f"[{key}] Error processing result for {key}: {e}")

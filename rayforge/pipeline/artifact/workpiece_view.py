@@ -101,6 +101,6 @@ class WorkPieceViewArtifact(BaseArtifact):
             )
 
         return cls(
-            bitmap_data=arrays["bitmap_data"].copy(),
+            bitmap_data=arrays["bitmap_data"],
             bbox_mm=handle.bbox_mm,
         )

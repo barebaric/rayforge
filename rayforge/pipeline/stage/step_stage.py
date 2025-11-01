@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, List
 from blinker import Signal
 
 from ...context import get_context
@@ -8,6 +8,7 @@ from ..artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     create_handle_from_dict,
+    WorkPieceArtifactHandle,
 )
 from .base import PipelineStage
 
@@ -146,55 +147,97 @@ class StepPipelineStage(PipelineStage):
             )
             return
 
-        assembly_info = []
-        for wp in step.layer.all_workpieces:
+        # Phase 1: Check for all dependencies without acquiring them yet.
+        dependency_handles: List[WorkPieceArtifactHandle] = []
+        workpieces = list(step.layer.all_workpieces)
+        for wp in workpieces:
             handle = self._artifact_cache.get_workpiece_handle(
                 step.uid, wp.uid
             )
-            if handle is None:
-                return  # A dependency is not ready; abort.
+            if not isinstance(handle, WorkPieceArtifactHandle):
+                return  # A dependency is not ready or wrong type; abort.
+            dependency_handles.append(handle)
 
-            info = {
-                "artifact_handle_dict": handle.to_dict(),
-                "world_transform_list": wp.get_world_transform().to_list(),
-                "workpiece_dict": wp.in_world().to_dict(),
-            }
-            assembly_info.append(info)
-
-        if not assembly_info:
+        if not dependency_handles:
             self._cleanup_entry(step.uid, full_invalidation=True)
             return
 
-        generation_id = self._generation_id_map.get(step.uid, 0) + 1
-        self._generation_id_map[step.uid] = generation_id
+        # Phase 2: All dependencies present. Acquire them for the task's
+        # lifetime.
+        acquired_handles: List[WorkPieceArtifactHandle] = []
+        try:
+            logger.debug(
+                f"Step '{step.uid}': Acquiring {len(dependency_handles)} "
+                f"dependencies for assembly task."
+            )
+            for handle in dependency_handles:
+                if get_context().artifact_store.acquire(handle):
+                    acquired_handles.append(handle)
+                else:
+                    logger.warning(
+                        f"Step '{step.uid}': Failed to acquire dependency "
+                        f"{handle.shm_name}. Aborting assembly."
+                    )
+                    # Release any handles that were successfully acquired
+                    for h in acquired_handles:
+                        get_context().artifact_store.release(h)
+                    return
 
-        # Mark time as pending in the cache
-        self._time_cache[step.uid] = None
+            # If we reach here, all acquisitions were successful.
+            assembly_info = [
+                {
+                    "artifact_handle_dict": handle.to_dict(),
+                    "world_transform_list": wp.get_world_transform().to_list(),
+                    "workpiece_dict": wp.in_world().to_dict(),
+                }
+                for handle, wp in zip(acquired_handles, workpieces)
+            ]
 
-        from .step_runner import make_step_artifact_in_subprocess
+            generation_id = self._generation_id_map.get(step.uid, 0) + 1
+            self._generation_id_map[step.uid] = generation_id
 
-        def when_done_callback(task: "Task"):
-            self._on_assembly_complete(task, step, generation_id)
+            self._time_cache[step.uid] = None
 
-        # Define callback for events from subprocess
-        def when_event_callback(task: "Task", event_name: str, data: dict):
-            self._on_task_event(task, event_name, data, step)
+            from .step_runner import make_step_artifact_in_subprocess
 
-        task = self._task_manager.run_process(
-            make_step_artifact_in_subprocess,
-            assembly_info,
-            step.uid,
-            generation_id,
-            step.per_step_transformers_dicts,
-            machine.max_cut_speed,
-            machine.max_travel_speed,
-            machine.acceleration,
-            "step",
-            key=step.uid,
-            when_done=when_done_callback,
-            when_event=when_event_callback,  # Connect event listener
-        )
-        self._active_tasks[step.uid] = task
+            def when_done_callback(task: "Task"):
+                logger.debug(
+                    f"Step '{step.uid}': "
+                    f"Assembly task when_done callback executing."
+                )
+                self._on_assembly_complete(task, step, generation_id)
+                # Release the acquired handles now that the task is done.
+                for h in acquired_handles:
+                    get_context().artifact_store.release(h)
+                logger.debug(
+                    f"Step '{step.uid}': Released {len(acquired_handles)} "
+                    f"dependencies."
+                )
+
+            def when_event_callback(task: "Task", event_name: str, data: dict):
+                self._on_task_event(task, event_name, data, step)
+
+            logger.debug(f"Step '{step.uid}': Launching assembly task.")
+            task = self._task_manager.run_process(
+                make_step_artifact_in_subprocess,
+                assembly_info,
+                step.uid,
+                generation_id,
+                step.per_step_transformers_dicts,
+                machine.max_cut_speed,
+                machine.max_travel_speed,
+                machine.acceleration,
+                "step",
+                key=step.uid,
+                when_done=when_done_callback,
+                when_event=when_event_callback,
+            )
+            self._active_tasks[step.uid] = task
+        except Exception:
+            # General cleanup if something unexpected happens
+            for h in acquired_handles:
+                get_context().artifact_store.release(h)
+            raise
 
     def _on_task_event(
         self, task: "Task", event_name: str, data: dict, step: "Step"
@@ -202,7 +245,6 @@ class StepPipelineStage(PipelineStage):
         """Handles events broadcast from the subprocess."""
         step_uid = step.uid
         generation_id = data.get("generation_id")
-        # Ignore events from stale tasks
         if self._generation_id_map.get(step_uid) != generation_id:
             logger.debug(f"Ignoring stale event '{event_name}' for {step_uid}")
             return
@@ -248,7 +290,6 @@ class StepPipelineStage(PipelineStage):
 
         if task.get_status() == "completed":
             try:
-                # The task now only returns the generation ID for validation
                 result_gen_id = task.result()
                 if self._generation_id_map.get(step_uid) != result_gen_id:
                     logger.warning(
@@ -257,10 +298,10 @@ class StepPipelineStage(PipelineStage):
                     )
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
-                self._time_cache[step_uid] = -1.0  # Mark error
+                self._time_cache[step_uid] = -1.0
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")
-            self._time_cache[step_uid] = -1.0  # Mark error
+            self._time_cache[step_uid] = -1.0
 
         self.generation_finished.send(
             self, step=step, generation_id=task_generation_id

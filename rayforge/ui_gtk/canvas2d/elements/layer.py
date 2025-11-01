@@ -89,7 +89,7 @@ class LayerElement(CanvasElement):
 
         logger.debug(
             f"LayerElement for '{self.data.name}': sync_with_model is"
-            f" executing, called by {origin or sender}."
+            f" executing, called by {origin if origin else 'unknown'}."
         )
         self.set_visible(self.data.visible)
         from ..surface import WorkSurface
@@ -111,12 +111,20 @@ class LayerElement(CanvasElement):
         # Remove elements for items no longer in the layer
         for elem in current_visual_elements[:]:
             if elem.data not in model_items:
-                logger.debug(f"Removing visual element: {elem}")
+                logger.debug(
+                    f"sync_with_model: Removing visual element for "
+                    f"model {elem.data}"
+                )
                 elem.remove()
 
         # Add elements for new items in the layer.
         current_item_data = {elem.data for elem in self.children}
         items_to_add = model_items - current_item_data
+        if items_to_add:
+            logger.debug(
+                f"sync_with_model: Adding {len(items_to_add)} new "
+                f"visual elements."
+            )
         for item_data in items_to_add:
             new_elem = None
             if isinstance(item_data, WorkPiece):
@@ -171,9 +179,10 @@ class LayerElement(CanvasElement):
                     f"Cleaning up visuals for UID {removed_step_uid}."
                 )
                 # Instruct all workpiece views in this layer to clear the
-                # surface
+                # surfaces for the step that was just removed.
                 for wp_view in workpiece_views:
-                    wp_view.clear_ops_surface(removed_step_uid)
+                    if wp_view._drawable_surfaces.pop(removed_step_uid, None):
+                        wp_view.trigger_update()
                 elem.remove()
 
         # Add StepElements for new steps.

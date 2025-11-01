@@ -47,21 +47,23 @@ class ArtifactCache:
         step_uid: str,
         workpiece_uid: str,
         handle: WorkPieceArtifactHandle,
-    ):
-        """Stores a handle for a WorkPieceArtifact and invalidates deps."""
+    ) -> Optional[WorkPieceArtifactHandle]:
+        """
+        Stores a handle for a WorkPieceArtifact, atomically invalidates
+        downstream dependencies, and returns the old handle.
+        """
         key = (step_uid, workpiece_uid)
         old_handle = self._workpiece_handles.pop(key, None)
         self._release_handle(old_handle)
-
         self._workpiece_handles[key] = handle
 
-        # Invalidate parent step artifacts. We don't need a full invalidation
-        # that removes render handles, just ops handles.
+        # Atomically invalidate the parent step's ops artifact and the job.
+        # This is the correct place for this logic.
         ops_handle = self._step_ops_handles.pop(step_uid, None)
         self._release_handle(ops_handle)
-
-        # Invalidate grandparent job
         self.invalidate_for_job()
+
+        return old_handle
 
     def get_step_render_handle(
         self, step_uid: str
@@ -121,6 +123,12 @@ class ArtifactCache:
         """Returns a set of all (step_uid, workpiece_uid) keys."""
         return set(self._workpiece_handles.keys())
 
+    def get_all_workpiece_handles_as_dict(
+        self,
+    ) -> Dict[WorkPieceKey, WorkPieceArtifactHandle]:
+        """Returns a copy of the internal workpiece handles dictionary."""
+        return self._workpiece_handles.copy()
+
     def pop_step_ops_handle(
         self, step_uid: str
     ) -> Optional[StepOpsArtifactHandle]:
@@ -135,23 +143,15 @@ class ArtifactCache:
 
     def invalidate_for_workpiece(self, step_uid: str, workpiece_uid: str):
         """
-        Invalidates a specific workpiece and all downstream artifacts that
-        depend on it (its parent step and the final job).
+        Invalidates only a specific workpiece artifact. Does NOT cascade.
         """
         key = (step_uid, workpiece_uid)
         handle = self._workpiece_handles.pop(key, None)
         self._release_handle(handle)
 
-        # Invalidate parent step artifacts
-        ops_handle = self._step_ops_handles.pop(step_uid, None)
-        self._release_handle(ops_handle)
-
-        # Invalidate grandparent job
-        self.invalidate_for_job()
-
     def invalidate_for_step(self, step_uid: str):
         """
-        Invalidates a step's artifacts and the final job.
+        Invalidates all artifacts for a specific step and downstream.
         """
         # 1. Invalidate all associated WorkPieceArtifacts first
         keys_to_remove = [
