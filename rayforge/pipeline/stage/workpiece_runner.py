@@ -286,7 +286,6 @@ def make_workpiece_artifact_in_subprocess(
     )
     initial_ops = _create_initial_ops()
     chunk_artifacts_for_assembly = []
-    chunk_handles_to_release = []
 
     is_vector = opsproducer.is_vector_producer()
     encoder = VertexEncoder()
@@ -341,9 +340,6 @@ def make_workpiece_artifact_in_subprocess(
             chunk_handle = artifact_store.put(
                 chunk_for_view, creator_tag=f"{creator_tag}_chunk"
             )
-            artifact_store.acquire(chunk_handle)
-            chunk_handles_to_release.append(chunk_handle)
-
             proxy.send_event(
                 "visual_chunk_ready",
                 {
@@ -482,11 +478,5 @@ def make_workpiece_artifact_in_subprocess(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
     )
-
-    # Now that the final artifact is created and stored, and we are completely
-    # finished with the intermediate chunks, we can release the local
-    # references.
-    for handle_to_release in chunk_handles_to_release:
-        artifact_store.release(handle_to_release)
 
     return generation_id

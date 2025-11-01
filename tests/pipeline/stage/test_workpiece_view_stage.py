@@ -22,15 +22,14 @@ class TestWorkPieceViewStage(unittest.TestCase):
             self.mock_task_manager, self.mock_artifact_cache
         )
 
-    def test_stage_requests_render_and_passes_source_handle(
+    def test_stage_requests_render_and_passes_arguments(
         self, mock_get_context
     ):
         """
         Tests that the stage correctly requests a render and passes the
-        original source handle to the worker.
+        correct arguments to the worker process.
         """
         step_uid, wp_uid = "s1", "w1"
-        generation_id = 1
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -40,6 +39,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
         )
 
+        # Assume this is the final source for this workpiece
         self.mock_artifact_cache.get_workpiece_handle.return_value = (
             source_handle
         )
@@ -53,29 +53,23 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
         # Act
         self.stage.request_view_render(
-            step_uid, wp_uid, context, source_handle, generation_id
+            step_uid, wp_uid, context, source_handle
         )
 
         # Assert the task manager call
         self.mock_task_manager.run_process.assert_called_once()
         call_args = self.mock_task_manager.run_process.call_args
-        # The worker receives the handle to the ORIGINAL source artifact
+        kwargs = call_args.kwargs
+
         self.assertEqual(
-            call_args.kwargs["workpiece_artifact_handle_dict"],
-            source_handle.to_dict(),
+            kwargs["workpiece_artifact_handle_dict"], source_handle.to_dict()
         )
-        self.assertEqual(
-            call_args.kwargs["render_context_dict"], context.to_dict()
-        )
-        self.assertEqual(call_args.kwargs["generation_id"], generation_id)
-        # Check that the key is constructed correctly
-        expected_key = (
-            step_uid,
-            wp_uid,
-            source_handle.shm_name,
-            generation_id,
-        )
-        self.assertEqual(call_args.kwargs["key"], expected_key)
+        self.assertEqual(kwargs["render_context_dict"], context.to_dict())
+        self.assertEqual(kwargs["step_uid"], step_uid)
+        self.assertEqual(kwargs["workpiece_uid"], wp_uid)
+        self.assertTrue(kwargs["is_final_source"])
+        # Check that the key is the source handle's shm_name
+        self.assertEqual(kwargs["key"], source_handle.shm_name)
 
     def test_stage_handles_events_and_cleans_up_source_handle(
         self, mock_get_context
@@ -86,7 +80,6 @@ class TestWorkPieceViewStage(unittest.TestCase):
         on completion.
         """
         step_uid, wp_uid = "s1", "w1"
-        generation_id = 1
 
         # Arrange Mocks
         source_handle = WorkPieceArtifactHandle(
@@ -105,7 +98,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # End Arrange
 
         self.stage.request_view_render(
-            step_uid, wp_uid, context, source_handle, generation_id
+            step_uid, wp_uid, context, source_handle
         )
 
         # Get the callbacks and key from the task manager call
@@ -116,60 +109,50 @@ class TestWorkPieceViewStage(unittest.TestCase):
         task_key = call_kwargs["key"]
 
         mock_task = MagicMock()
-        mock_task.key = task_key  # Use the correct, 4-element key
+        mock_task.key = task_key
         mock_task.get_status.return_value = "completed"
 
-        # Mock signal handlers
-        created_handler = MagicMock()
-        updated_handler = MagicMock()
-        ready_handler = MagicMock()
-        finished_handler = MagicMock()
-        self.stage.view_artifact_created.connect(created_handler)
-        self.stage.view_artifact_updated.connect(updated_handler)
-        self.stage.view_artifact_ready.connect(ready_handler)
-        self.stage.generation_finished.connect(finished_handler)
+        # Mock signal handler for the new signal
+        changed_handler = MagicMock()
+        self.stage.view_artifacts_changed.connect(changed_handler)
 
-        # Act 1: Simulate "created" event
+        # Act 1: Simulate "created" event from runner
         view_handle_dict = {
             "shm_name": "final_view_shm",
             "bbox_mm": (0, 0, 1, 1),
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
-        when_event_cb(
-            mock_task,
-            "view_artifact_created",
-            {"handle_dict": view_handle_dict, "generation_id": generation_id},
-        )
+        event_payload = {
+            "handle_dict": view_handle_dict,
+            "is_final_source": True,
+            "step_uid": step_uid,
+            "workpiece_uid": wp_uid,
+        }
+        when_event_cb(mock_task, "view_artifact_created", event_payload)
 
-        # Assert 1: `adopt` is called and `created` signal fires
+        # Assert 1: `adopt` is called and `view_artifacts_changed` signal fires
         mock_store.adopt.assert_called_once()
-        created_handler.assert_called_once()
-        ready_handler.assert_not_called()
-        self.assertIsInstance(
-            created_handler.call_args.kwargs["handle"],
-            WorkPieceViewArtifactHandle,
+        # Check that the adopted handle is of the correct type
+        adopted_handle = mock_store.adopt.call_args.args[0]
+        self.assertIsInstance(adopted_handle, WorkPieceViewArtifactHandle)
+        self.assertEqual(adopted_handle.shm_name, "final_view_shm")
+        # Check that the signal was emitted correctly
+        changed_handler.assert_called_once_with(
+            self.stage, step_uid=step_uid, workpiece_uid=wp_uid
         )
 
-        # Act 2: Simulate "updated" event
-        when_event_cb(mock_task, "view_artifact_updated", {})
-        updated_handler.assert_called_once()
-
-        # Act 3: Simulate task completion
+        # Act 2: Simulate task completion
         when_done_cb(mock_task)
 
-        # Assert 3: Final signals fire and original source artifact is released
-        ready_handler.assert_called_once()
-        finished_handler.assert_called_once()
-        self.assertEqual(
-            finished_handler.call_args.kwargs["key"], (step_uid, wp_uid)
-        )
+        # Assert 2: Original source artifact is released
         mock_store.release.assert_called_once_with(source_handle)
 
     def test_shutdown_cleans_up_source_handles(self, mock_get_context):
         """
-        Tests that the shutdown method cancels tasks and cleans up any
-        in-flight source artifact handles it has taken ownership of.
+        Tests that the shutdown method cancels tasks. The release of the
+        source handle is managed by the task's `when_done` callback, which
+        should be triggered by the task manager upon cancellation.
         """
         # Arrange: Simulate a render request in flight
         step_uid, wp_uid = "s1", "w1"
@@ -189,7 +172,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         context = RenderContext((10.0, 10.0), False, 0, {})
 
         self.stage.request_view_render(
-            step_uid, wp_uid, context, source_handle, 1
+            step_uid, wp_uid, context, source_handle
         )
         self.assertTrue(self.stage.is_busy)
 
@@ -198,7 +181,11 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
         # Assert
         self.mock_task_manager.cancel_task.assert_called_once()
-        mock_store.release.assert_called_once_with(source_handle)
+        # The shutdown method itself does not release the handle; it relies on
+        # the task's when_done callback, which the TaskManager should invoke
+        # even for a cancelled task. We don't test for release here as it's
+        # an interaction with the TaskManager, not a direct action of shutdown.
+        mock_store.release.assert_not_called()
         self.assertFalse(self.stage.is_busy)
 
 

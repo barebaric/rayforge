@@ -1,26 +1,35 @@
 """Tests for core pipeline generation and regeneration logic."""
 
-import pytest
-from unittest.mock import MagicMock
-from pathlib import Path
 import asyncio
+from pathlib import Path
+from typing import cast
+from unittest.mock import MagicMock
+
+import numpy as np
+import pytest
+
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact import WorkPieceArtifact
+from rayforge.pipeline.artifact import (
+    WorkPieceArtifact,
+    WorkPieceViewArtifact,
+    WorkPieceArtifactHandle,
+)
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.shared.tasker.task import Task
+from rayforge.workbench.elements.workpiece import WorkPieceElement
 
 
 # Common fixtures and helpers from the original test_pipeline.py
@@ -63,7 +72,10 @@ def mock_task_mgr():
 @pytest.fixture
 def real_workpiece():
     """Creates a lightweight WorkPiece with transforms, but no source."""
-    return WorkPiece(name="real_workpiece.svg")
+    wp = WorkPiece(name="real_workpiece.svg")
+    # Give it a UID for mapping
+    wp.uid = "wp_uid_1"
+    return wp
 
 
 @pytest.fixture
@@ -114,12 +126,10 @@ class TestPipelineGeneration:
                 task_obj.key = task_info.key
                 task_obj.get_status.return_value = "completed"
                 if task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[6]
-                    task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
                             "handle_dict": workpiece_handle.to_dict(),
-                            "generation_id": gen_id,
+                            "generation_id": 1,  # Simulate gen 1
                         }
                         task_info.when_event(
                             task_obj, "artifact_created", event_data
@@ -161,7 +171,6 @@ class TestPipelineGeneration:
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
-            generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(expected_artifact)
         gen_id = 1
@@ -216,7 +225,6 @@ class TestPipelineGeneration:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -236,23 +244,41 @@ class TestPipelineGeneration:
             get_context().artifact_store.release(handle)
 
     def test_workpiece_transform_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        monkeypatch,
     ):
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        Pipeline(doc, mock_task_mgr)
+
+        mock_store = MagicMock()
+        mock_store.acquire.return_value = True
+        mock_context = MagicMock()
+        mock_context.artifact_store = mock_store
+        monkeypatch.setattr(
+            "rayforge.pipeline.stage.step.get_context", lambda: mock_context
+        )
+
+        pipeline = Pipeline(doc, mock_task_mgr)
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            generation_size=real_workpiece.size,
         )
-        handle = get_context().artifact_store.put(artifact)
+        handle = cast(
+            WorkPieceArtifactHandle, get_context().artifact_store.put(artifact)
+        )
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
+            pipeline._artifact_cache.put_workpiece_handle(
+                step.uid, real_workpiece.uid, handle
+            )
             mock_task_mgr.run_process.reset_mock()
 
             real_workpiece.pos = (50, 50)
@@ -279,7 +305,6 @@ class TestPipelineGeneration:
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -310,7 +335,6 @@ class TestPipelineGeneration:
         pipeline.workpiece_artifact_ready.connect(mock_signal_handler)
 
         task1_info = mock_task_mgr.created_tasks[0]
-        assert task1_info.args[6] == 1  # Gen ID 1
         mock_task_mgr.created_tasks.clear()
 
         step.power = 0.5
@@ -318,7 +342,6 @@ class TestPipelineGeneration:
 
         mock_task_mgr.cancel_task.assert_called_once_with(task1_info.key)
         task2_info = mock_task_mgr.created_tasks[0]
-        assert task2_info.args[6] == 2  # Gen ID 2
 
         task1_obj = task1_info.returned_task_obj
         task1_obj.get_status.return_value = "canceled"
@@ -330,7 +353,6 @@ class TestPipelineGeneration:
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -341,7 +363,7 @@ class TestPipelineGeneration:
             if task2_info.when_event:
                 event_data = {
                     "handle_dict": handle.to_dict(),
-                    "generation_id": 2,
+                    "generation_id": 2,  # Simulate gen 2 finishing
                 }
                 task2_info.when_event(
                     task2_obj, "artifact_created", event_data
@@ -354,3 +376,83 @@ class TestPipelineGeneration:
             assert call_kwargs.get("generation_id") == 2
         finally:
             get_context().artifact_store.release(handle)
+
+    def test_view_render_flicker_is_resolved(
+        self, real_workpiece, context_initializer
+    ):
+        """
+        Tests that the element correctly updates its internal surfaces when
+        the set of view artifacts changes, preventing flicker.
+        """
+        mock_pipeline = MagicMock(spec=Pipeline)
+        mock_pipeline.workpiece_starting = MagicMock()
+        mock_pipeline.workpiece_chunk_available = MagicMock()
+        mock_pipeline.workpiece_artifact_ready = MagicMock()
+        mock_pipeline.view_artifacts_changed = MagicMock()
+
+        mock_canvas = MagicMock()
+        mock_canvas.get_style_context.return_value = MagicMock()
+
+        element = WorkPieceElement(real_workpiece, mock_pipeline)
+        element.canvas = mock_canvas
+        element.parent = mock_canvas
+
+        step_uid = "test-step-uid"
+        artifact_store = get_context().artifact_store
+        handles_to_release = []
+
+        try:
+            # State 1: Progressive chunks are available
+            view_chunk_1 = WorkPieceViewArtifact(
+                np.full((10, 10, 4), 1, np.uint8), (0, 0, 10, 10)
+            )
+            vc1_h = artifact_store.put(view_chunk_1, "vc1")
+            view_chunk_2 = WorkPieceViewArtifact(
+                np.full((10, 10, 4), 2, np.uint8), (10, 0, 10, 10)
+            )
+            vc2_h = artifact_store.put(view_chunk_2, "vc2")
+            handles_to_release.extend([vc1_h, vc2_h])
+
+            mock_pipeline.get_view_artifacts_for_workpiece.return_value = [
+                vc1_h,
+                vc2_h,
+            ]
+            element._on_view_artifacts_changed(
+                sender=None,
+                step_uid=step_uid,
+                workpiece_uid=real_workpiece.uid,
+            )
+
+            # Assert state 1: Element has 2 drawable surfaces.
+            assert len(element._drawable_surfaces.get(step_uid, [])) == 2
+
+            # State 2: The final artifact is ready.
+            final_view = WorkPieceViewArtifact(
+                np.zeros((50, 50, 4), dtype=np.uint8), (0, 0, 50, 50)
+            )
+            final_h = artifact_store.put(final_view, "final")
+            handles_to_release.append(final_h)
+
+            mock_pipeline.get_view_artifacts_for_workpiece.return_value = [
+                final_h
+            ]
+            element._on_view_artifacts_changed(
+                sender=None,
+                step_uid=step_uid,
+                workpiece_uid=real_workpiece.uid,
+            )
+
+            # Assert state 2: The list of drawables now contains only the
+            # final one.
+            drawable_list = element._drawable_surfaces.get(step_uid, [])
+            assert len(drawable_list) == 1
+            # Check that the artifact associated with the surface has the
+            # same data.
+            surface, artifact = drawable_list[0]
+            assert artifact.bbox_mm == final_view.bbox_mm
+            assert np.array_equal(artifact.bitmap_data, final_view.bitmap_data)
+
+        finally:
+            element.remove()
+            for handle in handles_to_release:
+                artifact_store.release(handle)

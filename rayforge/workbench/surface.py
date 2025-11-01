@@ -356,6 +356,7 @@ class WorkSurface(Canvas):
         Finalizes an interactive transform by collecting all matrix changes
         from view elements and creating a single, undoable transaction.
         """
+        logger.debug(f"Transform end for {len(elements)} elements.")
         # Step 1: Collect all elements that may have changed.
         affected_elements = set()
         for element in elements:
@@ -384,17 +385,27 @@ class WorkSurface(Canvas):
                     (docitem, start_matrix, new_matrix.copy())
                 )
 
+        # If it was a resize, the pipeline was paused. We must resume it before
+        # committing the model changes. This ensures that the model's 'updated'
+        # signal is processed by the pipeline's invalidation handlers, which
+        # would otherwise be skipped.
+        if self._resizing:
+            logger.debug(
+                "Resize ended. Resuming pipeline before model commit."
+            )
+            self.editor.pipeline.resume()
+
         # Step 3: Delegate to the command handler to create the transaction.
         if changes_to_commit:
+            logger.debug(
+                f"Committing {len(changes_to_commit)} transform "
+                f"changes to model."
+            )
             self.editor.transform.create_transform_transaction(
                 changes_to_commit
             )
 
         self._transform_start_states.clear()
-
-        # If it was a resize, the ops are now stale. Resume the pipeline.
-        if self._resizing:
-            self.editor.pipeline.resume()
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """Overrides base to add application-specific layer selection logic."""

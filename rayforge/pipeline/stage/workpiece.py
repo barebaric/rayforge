@@ -64,6 +64,10 @@ class WorkpieceGeneratorStage(PipelineStage):
     def is_busy(self) -> bool:
         return bool(self._active_tasks)
 
+    def is_busy_for_key(self, key: WorkpieceKey) -> bool:
+        """Checks if a task is active for a specific (step, workpiece) pair."""
+        return key in self._active_tasks
+
     def shutdown(self):
         logger.debug("WorkpieceGeneratorStage shutting down.")
         for key in list(self._active_tasks.keys()):
@@ -98,31 +102,13 @@ class WorkpieceGeneratorStage(PipelineStage):
 
     def on_workpiece_transform_changed(self, workpiece: "WorkPiece"):
         """
-        Handles transform changes. Invalidates non-scalable artifacts only
-        if their size has changed, as position/rotation do not affect the
-        base artifact generation for rasters.
+        Handles transform changes. This method is now passive. It no longer
+        destructively cleans up artifacts. The `reconcile` loop is responsible
+        for detecting stale artifacts (e.g. from a size change) and
+        triggering regeneration. This prevents race conditions where a view is
+        trying to be rendered from an artifact that was just deleted.
         """
-        if not workpiece.layer or not workpiece.layer.workflow:
-            return
-        for step in workpiece.layer.workflow.steps:
-            key = (step.uid, workpiece.uid)
-            handle = self._artifact_cache.get_workpiece_handle(*key)
-
-            # Guard clauses for clarity
-            if not handle or handle.is_scalable:
-                continue
-
-            # If the size is still close enough, the artifact is valid.
-            if self._sizes_are_close(handle.generation_size, workpiece.size):
-                continue
-
-            # If we reach here, the artifact is non-scalable and its size has
-            # meaningfully changed. Invalidate it.
-            logger.debug(
-                f"Invalidating non-scalable artifact for {key} due to size "
-                f"change from {handle.generation_size} to {workpiece.size}."
-            )
-            self._cleanup_entry(key)
+        pass
 
     def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
         """
@@ -284,8 +270,7 @@ class WorkpieceGeneratorStage(PipelineStage):
             get_context().artifact_store.adopt(handle)
 
             if event_name == "artifact_created":
-                # This is now the atomic swap. `put_workpiece_handle` should
-                # return the old handle it replaced.
+                # The cache now handles the atomic swap and invalidation.
                 old_handle = self._artifact_cache.put_workpiece_handle(
                     s_uid, w_uid, handle
                 )
@@ -299,12 +284,15 @@ class WorkpieceGeneratorStage(PipelineStage):
                     f"Emitting 'workpiece_chunk_available' signal for "
                     f"generation {generation_id}."
                 )
-                self.workpiece_chunk_available.send(
-                    self,
-                    key=key,
-                    chunk_handle=handle,
-                    generation_id=generation_id,
-                )
+                # This `with` block guarantees the artifact exists for the
+                # duration of all synchronous signal handlers.
+                with get_context().artifact_store.hold(handle):
+                    self.workpiece_chunk_available.send(
+                        self,
+                        key=key,
+                        chunk_handle=handle,
+                        generation_id=generation_id,
+                    )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True
@@ -388,11 +376,11 @@ class WorkpieceGeneratorStage(PipelineStage):
                     ):
                         logger.info(
                             f"[{key}] Result for {key} is stale due to size "
-                            "change during generation. Regenerating."
+                            "change during generation. Invalidating."
                         )
-                        # Don't cleanup, just launch a new task to replace
-                        # the now-stale artifact.
-                        self._launch_task(step, workpiece)
+                        # The result is stale. Clean it up. The main
+                        # reconcile loop will trigger a new task if needed.
+                        self._cleanup_entry(key)
                         return
             except Exception as e:
                 logger.error(f"[{key}] Error processing result for {key}: {e}")

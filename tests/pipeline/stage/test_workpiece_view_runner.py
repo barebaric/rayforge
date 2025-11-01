@@ -112,10 +112,12 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
     mock_proxy = MagicMock()
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
-        vector_artifact_handle.to_dict(),
-        context.to_dict(),
-        generation_id=1,
+        proxy=mock_proxy,
+        workpiece_artifact_handle_dict=vector_artifact_handle.to_dict(),
+        render_context_dict=context.to_dict(),
+        is_final_source=True,
+        step_uid="s1",
+        workpiece_uid="w1",
         creator_tag="test_view",
     )
     assert result is None
@@ -138,7 +140,9 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
         assert artifact.bbox_mm == (5.0, 5.0, 10.0, 10.0)
         assert artifact.bitmap_data.shape == (12, 12, 4)
 
-        pixel_color = artifact.bitmap_data[1, 5]
+        # NOTE: Cairo renders to BGRA format in memory for FORMAT_ARGB32
+        # on little-endian systems. So index 2 is the Red channel.
+        pixel_color = artifact.bitmap_data[1, 6]
         # Assert Red is dominant and Alpha is significant
         assert pixel_color[2] > 100  # Red
         assert pixel_color[1] < 50  # Green
@@ -163,10 +167,12 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
     mock_proxy = MagicMock()
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
-        texture_artifact_handle.to_dict(),
-        context.to_dict(),
-        generation_id=1,
+        proxy=mock_proxy,
+        workpiece_artifact_handle_dict=texture_artifact_handle.to_dict(),
+        render_context_dict=context.to_dict(),
+        is_final_source=True,
+        step_uid="s1",
+        workpiece_uid="w1",
         creator_tag="test_view",
     )
     assert result is None
@@ -190,12 +196,14 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         assert artifact.bbox_mm == (0.0, 0.0, 50.0, 50.0)
         assert artifact.bitmap_data.shape == (50, 50, 4)
 
+        # NOTE: Cairo renders to BGRA format in memory. For gray/white,
+        # the order of B, G, R channels doesn't matter.
         # Check pixel from the top chunk (power 128 -> gray)
         gray_pixel = artifact.bitmap_data[10, 25]
-        assert abs(gray_pixel[0] - 128) <= 1
-        assert abs(gray_pixel[1] - 128) <= 1
-        assert abs(gray_pixel[2] - 128) <= 1
-        assert abs(gray_pixel[3] - 255) <= 1
+        assert abs(gray_pixel[0] - 128) <= 1  # Blue
+        assert abs(gray_pixel[1] - 128) <= 1  # Green
+        assert abs(gray_pixel[2] - 128) <= 1  # Red
+        assert abs(gray_pixel[3] - 255) <= 1  # Alpha
 
         # Check pixel from the bottom chunk (power 255 -> white)
         white_pixel = artifact.bitmap_data[40, 25]

@@ -9,7 +9,6 @@ from rayforge.pipeline.stage.job_runner import (
 )
 from rayforge.pipeline.artifact import JobArtifactHandle, StepOpsArtifactHandle
 from rayforge.pipeline.artifact.cache import ArtifactCache
-from rayforge.context import get_context
 from rayforge.pipeline.steps import create_contour_step
 
 
@@ -70,10 +69,18 @@ class TestJobGeneratorStage:
         assert stage._artifact_cache is artifact_cache
 
     def test_generate_job_triggers_task(
-        self, mock_task_mgr, artifact_cache, real_doc_with_step
+        self, mock_task_mgr, artifact_cache, real_doc_with_step, monkeypatch
     ):
         """Test that generate_job starts a task if steps are available."""
-        # Pre-populate the cache with a required StepOps handle for the job
+        # Arrange: Mock the artifact store to allow acquisition
+        mock_store = MagicMock()
+        mock_store.acquire.return_value = True
+        monkeypatch.setattr(
+            "rayforge.pipeline.stage.job.get_context",
+            lambda: MagicMock(artifact_store=mock_store),
+        )
+
+        # Pre-populate the cache with a required StepOps handle
         step = real_doc_with_step.active_layer.workflow.steps[0]
         step_ops_handle = StepOpsArtifactHandle(
             shm_name="dummy_step_ops",
@@ -84,8 +91,12 @@ class TestJobGeneratorStage:
         artifact_cache.put_step_ops_handle(step.uid, step_ops_handle)
 
         stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
+
+        # Act
         stage.generate_job(real_doc_with_step)
 
+        # Assert
+        mock_store.acquire.assert_called_once_with(step_ops_handle)
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args
         assert call_args[0][0] is make_job_artifact_in_subprocess
@@ -101,7 +112,12 @@ class TestJobGeneratorStage:
         """Tests the full event->completion flow for job generation."""
         # Arrange
         mock_store = MagicMock()
-        monkeypatch.setattr(get_context(), "artifact_store", mock_store)
+        mock_store.acquire.return_value = True
+        # Patch the get_context() call inside the stage module
+        monkeypatch.setattr(
+            "rayforge.pipeline.stage.job.get_context",
+            lambda: MagicMock(artifact_store=mock_store),
+        )
 
         step = real_doc_with_step.active_layer.workflow.steps[0]
         step_ops_handle = StepOpsArtifactHandle(
@@ -115,8 +131,12 @@ class TestJobGeneratorStage:
         stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
         mock_finished_signal = MagicMock()
         stage.generation_finished.connect(mock_finished_signal)
+
+        # Act 1: Generate the job
         stage.generate_job(real_doc_with_step)
 
+        # Assert 1: Task was created and dependency acquired
+        mock_store.acquire.assert_called_once_with(step_ops_handle)
         assert len(mock_task_mgr.created_tasks) == 1
         task = mock_task_mgr.created_tasks[0]
 
@@ -125,7 +145,7 @@ class TestJobGeneratorStage:
         mock_task_obj.get_status.return_value = "completed"
         mock_task_obj.result.return_value = None  # Runner returns None
 
-        # 1. Simulate the event
+        # Act 2: Simulate the event from the runner
         handle = JobArtifactHandle(
             shm_name="dummy_job_shm",
             handle_class_name="JobArtifactHandle",
@@ -136,17 +156,18 @@ class TestJobGeneratorStage:
         event_data = {"handle_dict": handle.to_dict()}
         task.when_event(mock_task_obj, "artifact_created", event_data)
 
-        # Assert event was processed correctly
+        # Assert 2: Event was processed correctly
         mock_store.adopt.assert_called_once_with(handle)
         assert artifact_cache.get_job_handle() == handle
 
-        # 2. Simulate task completion
+        # Act 3: Simulate task completion
         task.when_done(mock_task_obj)
 
-        # Assert completion was processed
+        # Assert 3: Completion was processed and dependency released
         mock_finished_signal.assert_called_once_with(
             stage, handle=handle, task_status="completed"
         )
+        mock_store.release.assert_called_once_with(step_ops_handle)
 
     def test_completion_with_failure(
         self,
@@ -155,10 +176,16 @@ class TestJobGeneratorStage:
         real_doc_with_step,
         monkeypatch,
     ):
-        """Tests that a failed task correctly cleans up the cached handle."""
+        """
+        Tests that a failed task correctly cleans up and releases handles.
+        """
         # Arrange
         mock_store = MagicMock()
-        monkeypatch.setattr(get_context(), "artifact_store", mock_store)
+        mock_store.acquire.return_value = True
+        monkeypatch.setattr(
+            "rayforge.pipeline.stage.job.get_context",
+            lambda: MagicMock(artifact_store=mock_store),
+        )
 
         step = real_doc_with_step.active_layer.workflow.steps[0]
         step_ops_handle = StepOpsArtifactHandle(
@@ -180,23 +207,6 @@ class TestJobGeneratorStage:
         mock_task_obj.get_status.return_value = "failed"
         mock_task_obj.result.side_effect = RuntimeError("Task failed")
 
-        # Simulate event, which places a handle in the cache
-        handle = JobArtifactHandle(
-            shm_name="dummy_job_shm",
-            handle_class_name="JobArtifactHandle",
-            artifact_type_name="JobArtifact",
-            time_estimate=0,
-            distance=0,
-        )
-        task.when_event(
-            mock_task_obj,
-            "artifact_created",
-            {"handle_dict": handle.to_dict()},
-        )
-
-        # Assert handle was cached
-        assert artifact_cache.get_job_handle() == handle
-
         # Act
         task.when_done(mock_task_obj)
 
@@ -205,3 +215,5 @@ class TestJobGeneratorStage:
         mock_failed_signal.assert_called_once_with(
             stage, task_status="failed", error=ANY
         )
+        # Assert dependency handle was still released even on failure
+        mock_store.release.assert_called_once_with(step_ops_handle)

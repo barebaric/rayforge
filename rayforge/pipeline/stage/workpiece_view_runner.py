@@ -192,9 +192,11 @@ def make_workpiece_view_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
-    generation_id: int,
+    is_final_source: bool,
+    step_uid: str,
+    workpiece_uid: str,
     creator_tag: str,
-) -> Optional[Dict[str, Any]]:
+) -> None:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
     """
@@ -205,11 +207,11 @@ def make_workpiece_view_artifact_in_subprocess(
     artifact = artifact_store.get(handle)
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")
-        return None
+        return
 
     bbox = _get_content_bbox(artifact, context.show_travel_moves)
     if not bbox or bbox[2] <= 1e-9 or bbox[3] <= 1e-9:
-        return None  # No content to render
+        return
 
     x_mm, y_mm, w_mm, h_mm = bbox
     ppm_x, ppm_y = context.pixels_per_mm
@@ -217,28 +219,26 @@ def make_workpiece_view_artifact_in_subprocess(
     width_px = min(round(w_mm * ppm_x) + 2 * margin, CAIRO_MAX_DIMENSION)
     height_px = min(round(h_mm * ppm_y) + 2 * margin, CAIRO_MAX_DIMENSION)
     if width_px <= 2 * margin or height_px <= 2 * margin:
-        return None
+        return
 
-    # --- Phase 1: Create and emit the shared artifact upfront ---
+    # --- Create and emit the shared artifact upfront ---
     bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
 
-    logger.debug(
-        f"View artifact created (shm_name={view_handle.shm_name}, "
-        f"gen_id={generation_id}). "
-        "Bitmap is currently empty. Sending 'view_artifact_created' event."
-    )
     proxy.send_event(
         "view_artifact_created",
-        {"handle_dict": view_handle.to_dict(), "generation_id": generation_id},
+        {
+            "handle_dict": view_handle.to_dict(),
+            "is_final_source": is_final_source,
+            "step_uid": step_uid,
+            "workpiece_uid": workpiece_uid,
+        },
     )
-
-    logger.debug("Event sent. Beginning render into shared memory.")
 
     shm = None
     try:
-        # --- Phase 2: Render directly into the shared memory buffer ---
+        # --- Render directly into the shared memory buffer ---
         shm = shared_memory.SharedMemory(name=view_handle.shm_name)
         shm_bitmap = np.ndarray(
             shape=(height_px, width_px, 4),
@@ -257,22 +257,10 @@ def make_workpiece_view_artifact_in_subprocess(
 
         color_set = ColorSet.from_dict(context.color_set_dict)
 
-        # --- Phase 3: Signal updates after each chunk of work ---
         if artifact.texture_data:
-            logger.debug(f"Drawing texture for {view_handle.shm_name}...")
             _draw_texture(ctx, artifact.texture_data, color_set)
-            surface.flush()
-            logger.debug(
-                f"Texture drawn for {view_handle.shm_name}. "
-                f"Sending 'view_artifact_updated'."
-            )
-            proxy.send_event(
-                "view_artifact_updated", {"generation_id": generation_id}
-            )
 
         if artifact.vertex_data:
-            logger.debug(f"Drawing vertices for {view_handle.shm_name}...")
-            # Set line width to be 1 pixel wide in device space
             line_width_mm = 1.0 / ppm_x if ppm_x > 0 else 1.0
             _draw_vertices(
                 ctx,
@@ -281,21 +269,11 @@ def make_workpiece_view_artifact_in_subprocess(
                 context.show_travel_moves,
                 line_width_mm,
             )
-            surface.flush()
-            logger.debug(
-                f"Vertices drawn for {view_handle.shm_name}. "
-                f"Sending 'view_artifact_updated'."
-            )
-            proxy.send_event(
-                "view_artifact_updated", {"generation_id": generation_id}
-            )
 
-        logger.debug(f"Render complete for {view_handle.shm_name}.")
+        surface.flush()
 
     finally:
         if shm:
             shm.close()
 
     proxy.set_progress(1.0)
-    # The result is communicated via events; return None.
-    return None

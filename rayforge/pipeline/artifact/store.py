@@ -5,6 +5,7 @@ from typing import Dict
 from multiprocessing import shared_memory
 import numpy as np
 import threading
+from contextlib import contextmanager
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
@@ -33,16 +34,27 @@ class ArtifactStore:
         for shm_name in list(self._managed_shms.keys()):
             self._release_by_name(shm_name)
 
+    @contextmanager
+    def hold(self, handle: BaseArtifactHandle):
+        """
+        A context manager to safely acquire and release a handle's reference.
+
+        Yields True if the reference was acquired successfully, and the 'with'
+        block's body is executed. If acquiring fails (because the artifact was
+        already released), it yields False. The user should check the yielded
+        value.
+        """
+        acquired = self.acquire(handle)
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                self.release(handle)
+
     def adopt(self, handle: BaseArtifactHandle) -> None:
         """
         Takes ownership of a shared memory block created by another process.
         The initial refcount is set to 1.
-
-        This method is called by the main process upon receiving an event that
-        an artifact has been created in a worker. It opens its own handle to
-        the shared memory block, ensuring it persists even if the creating
-        worker process exits. This `ArtifactStore` instance now becomes
-        responsible for the block's eventual release.
 
         Args:
             handle: The handle of the artifact whose shared memory block is
@@ -59,7 +71,9 @@ class ArtifactStore:
             with self._ref_counts_lock:
                 if shm_name not in self._ref_counts:
                     self._ref_counts[shm_name] = 1
-            logger.debug(f"Adopted shared memory block: {shm_name}")
+            logger.debug(
+                f"Adopted SHM block: {shm_name} (handle ID: {id(handle)})"
+            )
         except FileNotFoundError:
             logger.error(
                 f"Failed to adopt shared memory block {shm_name}: "
@@ -114,21 +128,46 @@ class ArtifactStore:
         with self._ref_counts_lock:
             self._ref_counts[shm_name] = 1
         handle = artifact.create_handle(shm_name, array_metadata)
+        logger.debug(
+            f"Put new artifact into SHM: {shm_name} "
+            f"(handle ID: {id(handle)}). Initial ref count: 1"
+        )
         return handle
 
     def get(self, handle: BaseArtifactHandle) -> BaseArtifact:
         """
         Reconstructs an artifact from a shared memory block using its handle.
+        This method returns an artifact containing NumPy arrays that are VIEWS
+        into the shared memory. It does NOT close the underlying memory.
         """
-        shm = shared_memory.SharedMemory(name=handle.shm_name)
+        shm_name = handle.shm_name
 
-        # Reconstruct views into the shared memory without copying data
+        # Use the long-lived, managed SharedMemory object from our dictionary.
+        shm_obj = self._managed_shms.get(shm_name)
+
+        if shm_obj is None:
+            logger.warning(
+                f"Attempted to 'get' artifact from non-managed SHM block "
+                f"'{shm_name}'. The block was likely released prematurely. "
+                f"(handle ID: {id(handle)})"
+            )
+            # As a fallback, try to open it just-in-time. This is not ideal
+            # but can prevent a crash in some race conditions. The caller
+            # must have already called adopt() for this to be managed.
+            try:
+                shm_obj = shared_memory.SharedMemory(name=shm_name)
+                self._managed_shms[shm_name] = shm_obj
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Shared memory block '{shm_name}' not found."
+                )
+
         arrays = {}
         for name, meta in handle.array_metadata.items():
             arr_view = np.ndarray(
                 meta["shape"],
                 dtype=np.dtype(meta["dtype"]),
-                buffer=shm.buf,
+                buffer=shm_obj.buf,
                 offset=meta["offset"],
             )
             arrays[name] = arr_view
@@ -141,13 +180,11 @@ class ArtifactStore:
         # Delegate reconstruction to the class
         artifact = artifact_class.from_storage(handle, arrays)
 
-        shm.close()
         return artifact
 
     def _release_by_name(self, shm_name: str) -> None:
         """
         Internal method to close and unlink a managed shared memory block.
-        This is now only called when the reference count reaches zero.
         """
         shm_obj = self._managed_shms.pop(shm_name, None)
         if not shm_obj:
@@ -169,39 +206,52 @@ class ArtifactStore:
                 f"Error releasing shared memory block {shm_name}: {e}"
             )
 
-    def acquire(self, handle: BaseArtifactHandle) -> None:
-        """Increments the reference count for a shared memory block."""
+    def acquire(self, handle: BaseArtifactHandle) -> bool:
+        """
+        Increments the reference count for a shared memory block.
+
+        Returns:
+            True if the reference was successfully acquired.
+            False if the artifact is no longer tracked (already released).
+        """
         with self._ref_counts_lock:
             shm_name = handle.shm_name
-            if shm_name in self._ref_counts:
+            if shm_name in self._ref_counts and self._ref_counts[shm_name] > 0:
                 self._ref_counts[shm_name] += 1
                 logger.debug(
-                    f"Acquired {shm_name}. New ref count: "
+                    f"Acquired {shm_name} "
+                    f"(handle ID: {id(handle)}). New ref count: "
                     f"{self._ref_counts[shm_name]}"
                 )
+                return True
             else:
                 logger.warning(
-                    f"Attempted to acquire un-tracked artifact {shm_name}"
+                    f"Failed to acquire un-tracked or released artifact "
+                    f"{shm_name} (handle ID: {id(handle)})"
                 )
+                return False
 
     def release(self, handle: BaseArtifactHandle) -> None:
         """
-        Decrements the reference count for a block. If the count reaches
+        Decrements the reference count for a block. If it reaches
         zero, the block is closed and unlinked.
         """
         shm_name = handle.shm_name
         with self._ref_counts_lock:
             if shm_name not in self._ref_counts:
                 logger.warning(
-                    f"Attempted to release un-tracked artifact {shm_name}"
+                    f"Attempted to release un-tracked artifact {shm_name} "
+                    f"(handle ID: {id(handle)})"
                 )
                 return
 
             self._ref_counts[shm_name] -= 1
             count = self._ref_counts[shm_name]
-            logger.debug(f"Released {shm_name}. New ref count: {count}")
+            logger.debug(
+                f"Released {shm_name} "
+                f"(handle ID: {id(handle)}). New ref count: {count}"
+            )
 
             if count <= 0:
                 self._ref_counts.pop(shm_name, None)
-                # Call the internal release method now that it's safe
                 self._release_by_name(shm_name)

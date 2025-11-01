@@ -1,4 +1,5 @@
-from typing import cast
+from __future__ import annotations
+from typing import cast, Any
 import unittest
 import json
 import numpy as np
@@ -12,7 +13,50 @@ from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
-from rayforge.pipeline.artifact.base import VertexData, TextureData
+from rayforge.pipeline.artifact.base import (
+    VertexData,
+    TextureData,
+    BaseArtifact,
+)
+from rayforge.pipeline.artifact.handle import BaseArtifactHandle
+
+
+class EmptyArtifactHandle(BaseArtifactHandle):
+    def __init__(self, ops: Ops, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.ops = ops
+
+
+class EmptyArtifact(BaseArtifact):
+    """A minimal artifact for testing edge cases."""
+
+    def __init__(self, ops: Ops):
+        self.ops = ops
+        self.artifact_type_name = self.__class__.__name__
+
+    def get_arrays_for_storage(self) -> dict:
+        return {}  # No arrays to store
+
+    def create_handle(
+        self, shm_name: str, array_metadata: dict
+    ) -> EmptyArtifactHandle:
+        return EmptyArtifactHandle(
+            ops=self.ops,
+            shm_name=shm_name,
+            handle_class_name="EmptyArtifactHandle",
+            artifact_type_name="EmptyArtifact",
+            array_metadata=array_metadata,
+        )
+
+    @classmethod
+    # Fixed (Style): Reformatted to fix line-too-long error.
+    def from_storage(
+        cls, handle: BaseArtifactHandle, arrays: dict
+    ) -> EmptyArtifact:
+        # Fixed: Reconstruct from the handle's ops.
+        # We cast here to satisfy the type checker.
+        typed_handle = cast(EmptyArtifactHandle, handle)
+        return cls(ops=typed_handle.ops)
 
 
 class TestArtifactStore(unittest.TestCase):
@@ -20,6 +64,7 @@ class TestArtifactStore(unittest.TestCase):
 
     def setUp(self):
         """Initializes a list to track created handles for cleanup."""
+        self.store = get_context().artifact_store
         self.handles_to_release = []
 
     def tearDown(self):
@@ -27,7 +72,16 @@ class TestArtifactStore(unittest.TestCase):
         Ensures all shared memory blocks created during tests are released.
         """
         for handle in self.handles_to_release:
-            get_context().artifact_store.release(handle)
+            # We release without checking if it's already released,
+            # as the store should handle this gracefully.
+            try:
+                self.store.release(handle)
+            except Exception:
+                # Suppress errors during teardown
+                pass
+        # Reset ref counts and shutdown to ensure a clean state
+        self.store._ref_counts.clear()
+        self.store.shutdown()
 
     def _create_sample_vertex_artifact(self) -> WorkPieceArtifact:
         """Helper to generate a consistent vertex artifact for tests."""
@@ -100,12 +154,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_vertex_artifact()
 
         # 1. Put the artifact into shared memory
-        handle = get_context().artifact_store.put(original_artifact)
+        handle = self.store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get the artifact back
-        retrieved_artifact = get_context().artifact_store.get(handle)
+        retrieved_artifact = self.store.get(handle)
 
         # 3. Verify the retrieved data
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
@@ -122,7 +176,8 @@ class TestArtifactStore(unittest.TestCase):
         )
 
         # 4. Release the memory
-        get_context().artifact_store.release(handle)
+        self.store.release(handle)
+        self.handles_to_release.remove(handle)
 
         # 5. Verify that the memory is no longer accessible
         with self.assertRaises(FileNotFoundError):
@@ -136,12 +191,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_hybrid_artifact()
 
         # 1. Put
-        handle = get_context().artifact_store.put(original_artifact)
+        handle = self.store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, WorkPieceArtifactHandle)
 
         # 2. Get
-        retrieved_artifact = get_context().artifact_store.get(handle)
+        retrieved_artifact = self.store.get(handle)
 
         # 3. Verify hybrid-specific attributes
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
@@ -165,7 +220,8 @@ class TestArtifactStore(unittest.TestCase):
         )
 
         # 4. Release
-        get_context().artifact_store.release(handle)
+        self.store.release(handle)
+        self.handles_to_release.remove(handle)
 
         # 5. Verify release
         with self.assertRaises(FileNotFoundError):
@@ -179,12 +235,12 @@ class TestArtifactStore(unittest.TestCase):
         original_artifact = self._create_sample_final_job_artifact()
 
         # 1. Put
-        handle = get_context().artifact_store.put(original_artifact)
+        handle = self.store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, JobArtifactHandle)
 
         # 2. Get
-        retrieved_artifact = get_context().artifact_store.get(handle)
+        retrieved_artifact = self.store.get(handle)
 
         # 3. Verify
         assert isinstance(retrieved_artifact, JobArtifact)
@@ -218,7 +274,8 @@ class TestArtifactStore(unittest.TestCase):
         )
 
         # 4. Release
-        get_context().artifact_store.release(handle)
+        self.store.release(handle)
+        self.handles_to_release.remove(handle)
 
         # 5. Verify release
         with self.assertRaises(FileNotFoundError):
@@ -230,11 +287,12 @@ class TestArtifactStore(unittest.TestCase):
         block, simulating a handover from a worker process.
         """
         original_artifact = self._create_sample_vertex_artifact()
-        main_store = get_context().artifact_store
+        main_store = self.store
 
         # 1. Simulate a worker creating an artifact in its own store instance.
         worker_store = ArtifactStore()
         handle = worker_store.put(original_artifact)
+        self.handles_to_release.append(handle)
 
         # The main store should not know about this block yet.
         self.assertNotIn(handle.shm_name, main_store._managed_shms)
@@ -247,8 +305,7 @@ class TestArtifactStore(unittest.TestCase):
 
         # 3. Simulate the worker process transferring ownership by closing
         # its handle. The main process now holds the only handle.
-        worker_shm = worker_store._managed_shms.pop(handle.shm_name)
-        worker_shm.close()
+        worker_store.shutdown()  # This will close and attempt to unlink
 
         # 4. Verify the block is still accessible by getting the artifact.
         try:
@@ -261,6 +318,7 @@ class TestArtifactStore(unittest.TestCase):
 
         # 5. Release the memory via the main store's mechanism.
         main_store.release(handle)
+        self.handles_to_release.remove(handle)
 
         # 6. Verify that the memory is now gone.
         with self.assertRaises(FileNotFoundError):
@@ -268,6 +326,186 @@ class TestArtifactStore(unittest.TestCase):
 
         # 7. Verify the block is no longer tracked by the main store.
         self.assertNotIn(handle.shm_name, main_store._managed_shms)
+
+    def test_reference_counting_multiple_acquires(self):
+        """
+        Tests that acquire/release correctly manage the reference count
+        and that the block is only unlinked on the final release.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+        self.handles_to_release.append(handle)
+
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+
+        # Acquire two more references
+        self.assertTrue(self.store.acquire(handle))
+        self.assertTrue(self.store.acquire(handle))
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 3)
+
+        # Release one reference, SHM should still exist
+        self.store.release(handle)
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 2)
+        # Verify SHM block is still present
+        shm = shared_memory.SharedMemory(name=handle.shm_name)
+        shm.close()
+
+        # Release another reference
+        self.store.release(handle)
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+
+        # Final release should unlink the memory
+        self.store.release(handle)
+        self.assertNotIn(handle.shm_name, self.store._ref_counts)
+        self.handles_to_release.remove(handle)
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle.shm_name)
+
+    def test_scoped_reference_context_manager(self):
+        """
+        Tests the `scoped_reference` context manager for correct
+        acquire/release behavior.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+        self.handles_to_release.append(handle)
+
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+
+        with self.store.hold(handle) as acquired:
+            self.assertTrue(acquired)
+            self.assertEqual(self.store._ref_counts[handle.shm_name], 2)
+            # Can get the artifact inside the scope
+            retrieved = self.store.get(handle)
+            # Fixed (Type Hinting): Add an isinstance check to inform the
+            # type checker that this is a WorkPieceArtifact, resolving the
+            # "reportAttributeAccessIssue".
+            assert isinstance(retrieved, WorkPieceArtifact)
+            self.assertIsNotNone(retrieved.vertex_data)
+
+        # After exiting the context, ref count should be back to 1
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+
+    def test_scoped_reference_on_released_handle(self):
+        """
+        Tests that `scoped_reference` correctly handles a handle that has
+        already been released.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+
+        # Release the artifact immediately
+        self.store.release(handle)
+
+        # The context manager should yield False and not raise an error
+        with self.store.hold(handle) as acquired:
+            self.assertFalse(acquired)
+            # The code inside this `if` block should not be executed
+            if acquired:
+                self.fail("Code inside 'if acquired' should not run.")
+
+    def test_shutdown_cleans_up_all_memory(self):
+        """
+        Tests that the `shutdown` method correctly releases all managed
+        shared memory blocks.
+        """
+        # Use a separate store to not interfere with the global context
+        local_store = ArtifactStore()
+        artifact1 = self._create_sample_vertex_artifact()
+        artifact2 = self._create_sample_hybrid_artifact()
+
+        handle1 = local_store.put(artifact1)
+        handle2 = local_store.put(artifact2)
+
+        # Verify blocks exist
+        shm1 = shared_memory.SharedMemory(name=handle1.shm_name)
+        shm1.close()
+        shm2 = shared_memory.SharedMemory(name=handle2.shm_name)
+        shm2.close()
+
+        # Shutdown the store
+        local_store.shutdown()
+
+        # Verify both blocks are unlinked
+        self.assertNotIn(handle1.shm_name, local_store._managed_shms)
+        self.assertNotIn(handle2.shm_name, local_store._managed_shms)
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle1.shm_name)
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle2.shm_name)
+
+    def test_put_empty_artifact(self):
+        """
+        Tests putting an artifact that has no numpy arrays. This should
+        create a minimal (1-byte) shared memory block.
+        """
+        artifact = EmptyArtifact(ops=Ops())
+        handle = self.store.put(artifact)
+        self.handles_to_release.append(handle)
+
+        # Check that a block was created and is managed
+        self.assertIn(handle.shm_name, self.store._managed_shms)
+        shm = self.store._managed_shms[handle.shm_name]
+        self.assertGreaterEqual(shm.size, 1)
+
+        # Check we can get it back
+        retrieved = cast(EmptyArtifact, self.store.get(handle))
+        self.assertIsInstance(retrieved, EmptyArtifact)
+        # Verify ops were restored correctly
+        self.assertEqual(retrieved.ops, artifact.ops)
+
+        self.store.release(handle)
+        self.handles_to_release.remove(handle)
+
+    def test_get_on_released_handle_raises_error(self):
+        """
+        Tests that attempting to 'get' an artifact after it has been
+        fully released raises a FileNotFoundError.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+
+        # Release it
+        self.store.release(handle)
+
+        # Attempting to get it now should fail
+        with self.assertRaises(FileNotFoundError):
+            self.store.get(handle)
+
+    def test_double_release_is_safe(self):
+        """
+        Tests that releasing an already-released handle does not cause an
+        error and is handled gracefully.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+
+        # First release (correct)
+        self.store.release(handle)
+        self.assertNotIn(handle.shm_name, self.store._ref_counts)
+
+        # Second release (should be ignored without error)
+        try:
+            self.store.release(handle)
+        except Exception as e:
+            self.fail(f"Second release raised an unexpected exception: {e}")
+
+    def test_adopt_already_managed_handle(self):
+        """
+        Tests that adopting a handle that the store already created and
+        manages is a no-op and does not affect the ref count.
+        """
+        artifact = self._create_sample_vertex_artifact()
+        handle = self.store.put(artifact)
+        self.handles_to_release.append(handle)
+
+        # Ref count should be 1 after putting
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+
+        # Adopting it again should do nothing
+        self.store.adopt(handle)
+        self.assertEqual(self.store._ref_counts[handle.shm_name], 1)
+        self.assertIn(handle.shm_name, self.store._managed_shms)
 
 
 if __name__ == "__main__":
