@@ -34,14 +34,22 @@ class RuidaImporter(Importer):
         geometry = self._get_geometry(job)
         geometry.close_gaps()
 
-        if not geometry or geometry.is_empty():
-            return None
-
         source = ImportSource(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=RUIDA_RENDERER,
         )
+
+        if not geometry or geometry.is_empty():
+            # Still return a source for an empty file, but no items.
+            return ImportPayload(source=source, items=[])
+
+        # Calculate and store the true natural size from the job's extents.
+        min_x, min_y, max_x, max_y = job.get_extents()
+        width_mm = max_x - min_x
+        height_mm = max_y - min_y
+        if width_mm > 0 and height_mm > 0:
+            source.metadata["natural_size"] = (width_mm, height_mm)
 
         component_geometries = geometry.split_into_components()
 

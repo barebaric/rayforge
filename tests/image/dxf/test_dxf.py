@@ -129,6 +129,26 @@ class TestDXFImporter:
         assert size is not None
         assert size == pytest.approx((100.0, 50.0))
 
+    def test_natural_size_is_static_after_resize(
+        self, line_workpiece: WorkPiece
+    ):
+        """
+        Tests the fix: verifies that the natural size is an intrinsic property
+        of the import source and does not change when the workpiece is resized.
+        """
+        assert line_workpiece is not None
+        initial_natural_size = line_workpiece.get_natural_size()
+        assert initial_natural_size == pytest.approx((100.0, 50.0))
+
+        # Act: Resize the workpiece to a different size and aspect ratio
+        line_workpiece.set_size(200.0, 25.0)
+        assert line_workpiece.size == pytest.approx((200.0, 25.0))
+
+        # Assert: The natural size should remain unchanged
+        natural_size_after_resize = line_workpiece.get_natural_size()
+        assert natural_size_after_resize is not None
+        assert natural_size_after_resize == pytest.approx(initial_natural_size)
+
     def test_get_aspect_ratio(self, line_workpiece: WorkPiece):
         assert line_workpiece is not None
         ratio = line_workpiece.get_natural_aspect_ratio()
