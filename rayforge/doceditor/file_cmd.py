@@ -268,11 +268,13 @@ class FileCmd:
 
         if scale_factor < 1.0:
             msg = _(
-                "Imported item was larger than the work area and has been "
+                "⚠️ Imported item was larger than the work area and has been "
                 "scaled down to fit."
             )
             logger.info(msg)
-            self._editor.notification_requested.send(self, message=msg)
+            self._editor.notification_requested.send(
+                self, message=msg, persistent=True
+            )
 
             # The pivot for scaling should be the center of the bounding box
             bbox_center_x = bbox_x + bbox_w / 2
