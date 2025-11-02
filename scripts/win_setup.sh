@@ -1,31 +1,40 @@
-#!/bin/bash
-set -e
+# This logic handles both CI/CD environments (where MSYS2_PATH may be pre-set)
+# and local development (where it needs to be auto-detected).
 
-# --- MSYS2 Path Detection ---
-# 1. Use existing MSYS2_PATH (set by CI workflow) if available and non-empty.
-if [ -n "$MSYS2_PATH" ]; then
-    echo "--- Using pre-set MSYS2_PATH from environment: $MSYS2_PATH"
-elif command -v cygpath >/dev/null 2>&1; then
-    # 2. If running locally, use cygpath to detect the root installation path reliably.
-    #    cygpath -u '/' gives the Unix path of the root (e.g., /c/msys64)
-    MSYS2_PATH=$(cygpath -u '/')
-    # MSYS2_PATH often ends up as '/' if we are already in the MSYS2 root.
-    # If it is '/', we assume the installation is at the common default.
-    if [ "$MSYS2_PATH" = "/" ] || [ -z "$MSYS2_PATH" ]; then
-        MSYS2_PATH="/c/msys64"
-    fi
-    echo "--- Auto-detected MSYS2_PATH: $MSYS2_PATH"
+# Priority 1: Check if MSYS2_PATH is already set AND is a valid MINGW64 environment.
+# This is the most reliable method and correctly handles properly configured CI runners.
+if [ -n "$MSYS2_PATH" ] && [ -d "$MSYS2_PATH/mingw64/bin" ]; then
+    echo "--- Using pre-set and validated MSYS2 Path: $MSYS2_PATH"
 else
-    # 3. Final fallback (e.g., if cygpath isn't in PATH yet, or running outside msys2_shell)
-    MSYS2_PATH="/c/msys64"
-    echo "--- Using default MSYS2_PATH fallback: $MSYS2_PATH (Verify locally)"
-fi
+    # Priority 2: If the variable is not set or points to an invalid location,
+    # attempt auto-detection. This provides the "just works" local experience.
+    if [ -n "$MSYS2_PATH" ]; then
+        # This message is helpful for debugging CI issues.
+        echo "--- Pre-set MSYS2_PATH '$MSYS2_PATH' is invalid. Attempting auto-detection..."
+    else
+        echo "--- MSYS2_PATH not set. Attempting auto-detection..."
+    fi
 
-# 4. Final validation check
-if [ ! -d "$MSYS2_PATH/mingw64/bin" ]; then
-    echo "FATAL: Detected MSYS2_PATH ($MSYS2_PATH) does not contain mingw64/bin."
-    echo "       Please ensure MSYS2 is installed and correctly configured."
-    exit 1
+    # Use the original auto-detection method. Redirect stderr to suppress noise.
+    WIN_MSYS2_PATH=$(cd / && pwd -W 2>/dev/null)
+
+    if [ -n "$WIN_MSYS2_PATH" ]; then
+        # Convert the Windows path (e.g., C:\msys64) to a POSIX path (/c/msys64)
+        DETECTED_PATH="/$(echo "$WIN_MSYS2_PATH" | sed 's/\\/\//g' | sed 's/://')"
+        
+        # CRITICAL: Validate the auto-detected path to ensure it's correct.
+        if [ -d "$DETECTED_PATH/mingw64/bin" ]; then
+            echo "--- Auto-detected and validated MSYS2 Path: $DETECTED_PATH"
+            MSYS2_PATH="$DETECTED_PATH" # Set the variable for the rest of the script
+        else
+            echo "FATAL: Auto-detected path '$DETECTED_PATH' is not a valid MSYS2 MINGW64 installation."
+            exit 1
+        fi
+    else
+        echo "FATAL: Could not auto-detect MSYS2 installation path."
+        echo "Please run this script from within an MSYS2 MINGW64 shell."
+        exit 1
+    fi
 fi
 
 # --- Stage 1: Install System (Pacman) Dependencies ---
