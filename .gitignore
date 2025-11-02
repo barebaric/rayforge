@@ -8,6 +8,7 @@ dist
 build
 media
 *.egg-info
+.msys2_env
 
 .flatpak-builder
 repo
