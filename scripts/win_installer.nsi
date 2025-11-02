@@ -22,11 +22,9 @@ SetCompressor lzma ; Use modern, efficient compression
 
 ; Installer attributes
 Name "${PRODUCT_NAME} ${APP_VERSION}"
-; --- FIXED: Point to the dist folder at the project root ---
 OutFile "..\dist\${PRODUCT_NAME}-v${APP_VERSION}-installer.exe"
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\${PRODUCT_NAME}" "Install_Dir"
-; --- FIXED: Point to the icon file at the project root ---
 Icon "..\${ICON_FILE}"
 UninstallIcon "..\${ICON_FILE}"
 
@@ -44,10 +42,8 @@ UninstPage instfiles
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   
-  ; --- FIXED: Point to the executable in the project root's dist folder ---
   File "..\dist\${EXECUTABLE_NAME}"
   
-  ; --- FIXED: Point to the icon file at the project root ---
   File "..\${ICON_FILE}"
   
   ; Store installation folder

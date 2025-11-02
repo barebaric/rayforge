@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rayforge-v${{ steps.set-version.outputs.version }}-installer.zip
-          path: dist/RayForge-v${{ steps.set-version.outputs.version }}-installer.exe
+          path: dist/rayforge-v${{ steps.set-version.outputs.version }}-installer.exe
           compression-level: 9
 
   test-exe:
@@ -156,7 +156,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           # The file to attach to the release is the installer
-          files: RayForge-v${{ needs.build.outputs.version }}-installer.exe
+          files: rayforge-v${{ needs.build.outputs.version }}-installer.exe
           draft: false
           prerelease: false
           name: Release ${{ needs.build.outputs.version }}

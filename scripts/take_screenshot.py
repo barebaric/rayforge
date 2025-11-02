@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to start the RayForge application and take a screenshot of the main
-window.
+Script to start Rayforge and take a screenshot of the main window.
 The screenshot is saved to docs/ss-main.png.
 """
 
