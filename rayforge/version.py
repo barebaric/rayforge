@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from typing import Optional
 
@@ -6,10 +7,16 @@ __dir__ = os.path.dirname(__file__)
 
 
 def get_version_from_git() -> Optional[str]:
+    kwargs = {
+        "stderr": subprocess.DEVNULL,
+        "cwd": __dir__,
+    }
+    if sys.platform == "win32":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+
     try:
-        output = subprocess.check_output(
-            ["git", "describe"], stderr=subprocess.DEVNULL, cwd=__dir__
-        )
+        # Use **kwargs to pass the arguments
+        output = subprocess.check_output(["git", "describe"], **kwargs)
     except (
         subprocess.CalledProcessError,
         FileNotFoundError,

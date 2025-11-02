@@ -21,6 +21,9 @@ PYINSTALLER_EXE_NAME="rayforge-v${CLEAN_VERSION}"
 INSTALLER_EXE_NAME="rayforge-v${CLEAN_VERSION}-installer.exe"
 
 echo "--- Starting Windows Build Process (Version: $APP_VERSION) ---"
+echo "Embedding version ${APP_VERSION} into rayforge/version.txt"
+echo "${APP_VERSION}" > rayforge/version.txt
+
 
 # ----------------------------------------------------
 # STEP 1: Generate .ico file from SVG
