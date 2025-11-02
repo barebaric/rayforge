@@ -64,9 +64,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
 
     PACKAGES=(
       # --- Core Build Toolchain ---
-      mingw-w64-x86_64-gcc
+      mingw-w64-x86_64-toolchain
       mingw-w64-x86_64-cmake
-      mingw-w64-x86_64-make
       mingw-w64-x86_64-rust
       mingw-w64-x86_64-meson
       mingw-w64-x86_64-pkgconf
