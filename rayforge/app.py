@@ -1,5 +1,6 @@
 # flake8: noqa: E402
 import warnings
+import traceback
 import logging
 import mimetypes
 import argparse
@@ -67,7 +68,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.exception("Unhandled exception caught in app.py")
+    # Print full traceback to stderr (console or log)
+    traceback.print_exception(exc_type, exc_value, exc_traceback)
+
+    logger.error(
+        "Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback)
+    )
     sys.exit(1)
 
 
