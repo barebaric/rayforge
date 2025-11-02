@@ -636,8 +636,8 @@ class TestWaitUntilSettled:
 
                 return on_done
 
-            # Tasks with different durations: 0.1s, 0.2s, 0.3s
-            duration = 0.1 * (i + 1)
+            # Tasks with different durations: 0.5s, 1.0s, 1.5s
+            duration = 0.5 * (i + 1)
             task_key = f"multi_task_{i}"
             tasks.append(task_key)
 
@@ -652,14 +652,14 @@ class TestWaitUntilSettled:
             )
 
         # wait_until_settled should wait for the longest task
-        result = manager.wait_until_settled(1000)  # 1 second timeout
+        result = manager.wait_until_settled(3000)  # 3 second timeout
         elapsed = time.time() - start_time
 
         assert result is True
         assert (
-            elapsed >= 0.25
+            elapsed >= 1.2
         )  # Should have waited at least the longest task duration
-        assert elapsed < 1.0  # But less than the timeout
+        assert elapsed < 3.0  # But less than the timeout
 
         # All tasks should be completed
         for event in completion_events:
