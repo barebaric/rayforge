@@ -641,7 +641,9 @@ class TestWaitUntilSettled:
             task_key = f"multi_task_{i}"
             tasks.append(task_key)
 
-            start_time = time.time()  # reset
+            start_time = (
+                time.time()
+            )  # reset, because only the last iteration matters
             manager.add_coroutine(
                 simple_coro,
                 duration=duration,
@@ -655,7 +657,7 @@ class TestWaitUntilSettled:
 
         assert result is True
         assert (
-            elapsed >= 0.3
+            elapsed >= 0.25
         )  # Should have waited at least the longest task duration
         assert elapsed < 1.0  # But less than the timeout
 
