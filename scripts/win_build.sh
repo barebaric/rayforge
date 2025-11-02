@@ -57,14 +57,17 @@ fi
 # ----------------------------------------------------
 echo "Building executable with PyInstaller..."
 
+# Using --noconsole prevents any logs from showing, even
+# if started from an existing console. So we use --hide-console
+# for debuggability instead.
 WIN_MSYS2_PATH=$(cygpath -w "$MSYS2_PATH")
 echo "Using Windows MSYS2 Path for PyInstaller assets: $WIN_MSYS2_PATH"
 
-pyinstaller --onefile --noconsole \
+pyinstaller --onefile --hide-console hide-early \
   --log-level INFO \
   --name "${PYINSTALLER_EXE_NAME}" \
   --icon="rayforge.ico" \
-  --add-data "rayforge/version.txt;rayforge/version.txt" \
+  --add-data "rayforge/version.txt;rayforge" \
   --add-data "rayforge/resources;rayforge/resources" \
   --add-data "rayforge/locale;rayforge/locale" \
   --add-data "etc;etc" \

@@ -22,7 +22,7 @@ SetCompressor lzma ; Use modern, efficient compression
 
 ; Installer attributes
 Name "${PRODUCT_NAME} ${APP_VERSION}"
-OutFile "..\dist\${PRODUCT_NAME}-v${APP_VERSION}-installer.exe"
+OutFile "..\dist\rayforge-v${APP_VERSION}-installer.exe"
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\${PRODUCT_NAME}" "Install_Dir"
 Icon "..\${ICON_FILE}"
