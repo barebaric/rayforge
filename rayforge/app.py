@@ -1,7 +1,6 @@
 # flake8: noqa: E402
 import warnings
 import logging
-import traceback
 import mimetypes
 import argparse
 import sys
@@ -68,30 +67,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logging.error("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
-
-    # We must import Gtk here, inside the handler, to avoid initialization
-    # order problems at the module level.
-    from gi.repository import Gtk
-
-    # Format the traceback for the dialog
-    error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-
-    # Create and show a GTK error dialog
-    dialog = Gtk.MessageDialog(
-        transient_for=None,
-        modal=True,
-        message_type=Gtk.MessageType.ERROR,
-        buttons=Gtk.ButtonsType.OK,
-        text=_("An unexpected error occurred"),
-    )
-    dialog.format_secondary_text(
-        _("The application has encountered a critical error and must close.\n"
-          "Details of the error have been saved to the log.\n\n")
-        + f"{error_message}"
-    )
-    dialog.run()
-    dialog.destroy()
+    logger.exception("Unhandled exception caught in app.py")
     sys.exit(1)
 
 
