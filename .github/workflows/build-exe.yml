@@ -107,11 +107,18 @@ jobs:
           # The build script will source .msys2_env internally.
           bash scripts/win_build.sh "${{ env.VERSION }}"
 
-      - name: Upload Artifact
+      - name: Upload Raw Executable Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}.zip
+          name: rayforge-v${{ steps.set-version.outputs.version }}-exe.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+          compression-level: 9
+      
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rayforge-v${{ steps.set-version.outputs.version }}-installer.zip
+          path: dist/RayForge-v${{ steps.set-version.outputs.version }}-installer.exe
           compression-level: 9
 
   test-exe:
@@ -122,7 +129,8 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: rayforge-v${{ needs.build.outputs.version }}.zip
+          # This job still tests the raw executable
+          name: rayforge-v${{ needs.build.outputs.version }}-exe.zip
 
       - name: Test Executable
         shell: bash
@@ -138,15 +146,17 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
     steps:
-      - name: Download Artifact
+      - name: Download Installer Artifact
         uses: actions/download-artifact@v4
         with:
-          name: rayforge-v${{ needs.build.outputs.version }}.zip
+          # For the release, we use the installer artifact
+          name: rayforge-v${{ needs.build.outputs.version }}-installer.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: rayforge-v${{ needs.build.outputs.version }}.exe
+          # The file to attach to the release is the installer
+          files: RayForge-v${{ needs.build.outputs.version }}-installer.exe
           draft: false
           prerelease: false
           name: Release ${{ needs.build.outputs.version }}

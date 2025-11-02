@@ -2,14 +2,30 @@
 set -e
 
 # --- MSYS2 Path Detection ---
-if [ -z "$MSYS2_PATH" ]; then
-    WIN_MSYS2_PATH=$(cd / && pwd -W)
-    if [ -n "$WIN_MSYS2_PATH" ]; then
-        MSYS2_PATH="/$(echo "$WIN_MSYS2_PATH" | sed 's/\\/\//g' | sed 's/://')"
-    else
-        echo "FATAL: Could not reliably determine MSYS2 installation path."
-        exit 1
+# 1. Use existing MSYS2_PATH (set by CI workflow) if available and non-empty.
+if [ -n "$MSYS2_PATH" ]; then
+    echo "--- Using pre-set MSYS2_PATH from environment: $MSYS2_PATH"
+elif command -v cygpath >/dev/null 2>&1; then
+    # 2. If running locally, use cygpath to detect the root installation path reliably.
+    #    cygpath -u '/' gives the Unix path of the root (e.g., /c/msys64)
+    MSYS2_PATH=$(cygpath -u '/')
+    # MSYS2_PATH often ends up as '/' if we are already in the MSYS2 root.
+    # If it is '/', we assume the installation is at the common default.
+    if [ "$MSYS2_PATH" = "/" ] || [ -z "$MSYS2_PATH" ]; then
+        MSYS2_PATH="/c/msys64"
     fi
+    echo "--- Auto-detected MSYS2_PATH: $MSYS2_PATH"
+else
+    # 3. Final fallback (e.g., if cygpath isn't in PATH yet, or running outside msys2_shell)
+    MSYS2_PATH="/c/msys64"
+    echo "--- Using default MSYS2_PATH fallback: $MSYS2_PATH (Verify locally)"
+fi
+
+# 4. Final validation check
+if [ ! -d "$MSYS2_PATH/mingw64/bin" ]; then
+    echo "FATAL: Detected MSYS2_PATH ($MSYS2_PATH) does not contain mingw64/bin."
+    echo "       Please ensure MSYS2 is installed and correctly configured."
+    exit 1
 fi
 
 # --- Stage 1: Install System (Pacman) Dependencies ---
@@ -18,20 +34,24 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     
     # --- Create Environment File (.msys2_env) ---
     echo "Writing environment variables to .msys2_env..."
-    echo "MSYS2_PATH=$MSYS2_PATH" > .msys2_env
-    echo "PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> .msys2_env
-    echo "GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> .msys2_env
-    echo "LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> .msys2_env
+    # Note: We use 'export' in the env file so it's ready to be sourced by subsequent scripts (like win_build.sh)
+    echo "export MSYS2_PATH=$MSYS2_PATH" > .msys2_env
+    echo "export PKG_CONFIG_PATH=$MSYS2_PATH/mingw64/lib/pkgconfig" >> .msys2_env
+    echo "export GI_TYPELIB_PATH=$MSYS2_PATH/mingw64/lib/girepository-1.0" >> .msys2_env
+    echo "export LD_LIBRARY_PATH=$MSYS2_PATH/mingw64/lib" >> .msys2_env
     
     # --- Permissions Check ---
-    if ! touch "/var/lib/pacman/sync/permission_test" 2>/dev/null; then
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        echo "!!! PERMISSION ERROR: This script requires Administrator privileges."
-        echo "!!! Please run setup.bat using 'Run as administrator'."
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        exit 1
+    # We skip this check in CI because the runner user usually has sufficient privileges.
+    if [[ -z "${CI}" ]]; then
+        if ! touch "/var/lib/pacman/sync/permission_test" 2>/dev/null; then
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            echo "!!! PERMISSION ERROR: This script requires Administrator privileges."
+            echo "!!! Please run setup.bat using 'Run as administrator' (if applicable)."
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            exit 1
+        fi
+        rm -f "/var/lib/pacman/sync/permission_test"
     fi
-    rm -f "/var/lib/pacman/sync/permission_test"
 
     PACKAGES=(
       # --- Core Build Toolchain ---
@@ -48,6 +68,10 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       autoconf
       automake
       libtool
+
+      # Installer & Icon Tools
+      mingw-w64-x86_64-nsis
+      mingw-w64-x86_64-imagemagick
 
       # Base Python Environment and Bindings
       mingw-w64-x86_64-python
@@ -66,7 +90,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-x86_64-librsvg
       mingw-w64-x86_64-poppler
       mingw-w64-x86_64-libvips
-      mingw-w64-x86_64-libheif
       mingw-w64-x86_64-openslide
       mingw-w64-x86_64-angleproject
 
@@ -116,12 +139,12 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     # Add Python site-packages path, now that we know Python is installed
     PYTHON_BIN_PATH="$MSYS2_PATH/mingw64/bin/python"
     PYTHON_VERSION=$("$PYTHON_BIN_PATH" -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
-    echo "PYTHONPATH=$MSYS2_PATH/mingw64/lib/$PYTHON_VERSION/site-packages:\$PYTHONPATH" >> .msys2_env
+    echo "export PYTHONPATH=$MSYS2_PATH/mingw64/lib/$PYTHON_VERSION/site-packages:\$PYTHONPATH" >> .msys2_env
     source .msys2_env
 
     # Export necessary toolchain variables
     export CC=x86_64-w64-mingw32-gcc
-    export CXX=x86_64-w64-mingw32-g++
+    export CXX=x86_w64-w64-mingw32-g++
     export LD=x86_64-w64-mingw32-ld
     export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
 
