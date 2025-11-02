@@ -76,6 +76,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       autoconf
       automake
       libtool
+      git
 
       # Installer & Icon Tools
       mingw-w64-x86_64-nsis
