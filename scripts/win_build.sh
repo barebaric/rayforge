@@ -64,6 +64,7 @@ pyinstaller --onefile --noconsole \
   --log-level INFO \
   --name "${PYINSTALLER_EXE_NAME}" \
   --icon="rayforge.ico" \
+  --add-data "rayforge/version.txt;rayforge/version.txt" \
   --add-data "rayforge/resources;rayforge/resources" \
   --add-data "rayforge/locale;rayforge/locale" \
   --add-data "etc;etc" \
