@@ -99,7 +99,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     echo "Installing required system packages..."
     pacman -S --needed --noconfirm "${PACKAGES[@]}"
 
-    echo "✅ Pacman setup complete. The environment will now reload to continue with Python packages."
+    echo "✅ Pacman setup complete."
 fi
 
 # --- Stage 2: Install Python (Pip) Dependencies ---
@@ -111,6 +111,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         exit 1
     fi
     source .msys2_env
+
 
     # Add Python site-packages path, now that we know Python is installed
     PYTHON_BIN_PATH="$MSYS2_PATH/mingw64/bin/python"
@@ -125,12 +126,12 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
 
     echo "Installing/updating pip packages..."
-    python -m pip install --upgrade pip --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
-    python -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
-    python -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
-    python -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
-    python -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."
 fi
