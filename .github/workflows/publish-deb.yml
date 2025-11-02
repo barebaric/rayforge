@@ -106,7 +106,9 @@ jobs:
 
       - name: Build Source-Only Package for PPA
         if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
-        run: debuild -S -us -uc
+        run: |
+          mv dist/*.orig.tar.gz ../
+          debuild -S -us -uc
 
       - name: Sign source package
         if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
