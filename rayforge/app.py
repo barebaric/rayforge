@@ -1,12 +1,13 @@
 # flake8: noqa: E402
 import warnings
 import logging
+import traceback
 import mimetypes
 import argparse
 import sys
 import os
 import gettext
-import asyncio  # Import asyncio
+import asyncio
 from pathlib import Path
 
 # ===================================================================
@@ -58,12 +59,51 @@ if hasattr(sys, "_MEIPASS"):
     logger.info(f"Files in typelib path: {files}")
 
 
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """
+    Catches unhandled exceptions, logs them, and shows a user-friendly dialog.
+    This is crucial for --noconsole builds.
+    """
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logging.error("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+    # We must import Gtk here, inside the handler, to avoid initialization
+    # order problems at the module level.
+    from gi.repository import Gtk
+
+    # Format the traceback for the dialog
+    error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+    # Create and show a GTK error dialog
+    dialog = Gtk.MessageDialog(
+        transient_for=None,
+        modal=True,
+        message_type=Gtk.MessageType.ERROR,
+        buttons=Gtk.ButtonsType.OK,
+        text=_("An unexpected error occurred"),
+    )
+    dialog.format_secondary_text(
+        _("The application has encountered a critical error and must close.\n"
+          "Details of the error have been saved to the log.\n\n")
+        + f"{error_message}"
+    )
+    dialog.run()
+    dialog.destroy()
+    sys.exit(1)
+
+
 def main():
     # ===================================================================
     # SECTION 2: MAIN APPLICATION ENTRY POINT
     # This function contains all logic that should ONLY run in the
     # main process.
     # ===================================================================
+
+    # Set the global exception handler.
+    sys.excepthook = handle_exception
 
     # We need Adw for the class definition, so this one import is okay here.
     import gi

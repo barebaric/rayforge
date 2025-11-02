@@ -2,73 +2,65 @@
 
 This guide covers setting up your development environment for Rayforge.
 
-## Prerequisites
+## Linux
+
+### Prerequisites
 
 First, install [Pixi](https://pixi.sh/) by following the instructions on the [official website](https://pixi.sh/latest/installation/).
 
-## Install System Dependencies
+### Install
 
-Install Gtk/Adwaita system dependency (Debian/Ubuntu):
+Install the Gtk/Adwaita system dependency, and then let Pixi handle the rest:
 
 ```bash
 sudo apt install gir1.2-adw-1
-```
-
-## Install Project Dependencies
-
-Let Pixi handle the Python dependencies:
-
-```bash
 pixi install
 ```
 
 This command reads `pixi.toml` and installs all conda and pip dependencies into a local `.pixi` virtual environment.
 
-## Activate the Development Shell
+### Pre-commit Hooks (Optional)
 
-For an interactive workflow, you can activate a shell within the project's environment:
-
-```bash
-pixi shell
-```
-
-Inside this shell, you can run commands directly without the `pixi run` prefix (e.g., `rayforge`, `pytest`). Type `exit` to leave the shell.
-
-## Run the Application
-
-Test that your setup works by running the application:
+To automatically format and lint your code before each commit, you can install pre-commit hooks:
 
 ```bash
-pixi run rayforge
+pixi run pre-commit-install
 ```
 
-You may also want to use debugging in development:
+### Useful Commands
 
-```bash
-pixi run rayforge --loglevel=DEBUG
+All commands are run via `pixi run`:
+
+-   `pixi run rayforge`: Run the application.
+    -   Add `--loglevel=DEBUG` for more verbose output.
+-   `pixi run test`: Run the full test suite with `pytest`.
+-   `pixi run format`: Format all code using `ruff`.
+-   `pixi run lint`: Run all linters (`flake8`, `pyflakes`, `pyright`).
+
+## Windows
+
+### Prerequisites
+
+-   [MSYS2](https://www.msys2.org/) (provides the MinGW64 environment).
+-   [Git for Windows](https://git-scm.com/download/win).
+
+### Install
+
+Development tasks on Windows are managed via the `run.bat` script, which is a wrapper for the MSYS2 shell.
+
+After cloning the repository, run the setup command from a standard Windows Command Prompt or PowerShell:
+
+```batch
+.\run.bat setup
 ```
 
-## Run Tests and Lint
+This executes `scripts/win_setup.sh` to install all necessary system and Python packages into your MSYS2/MinGW64 environment.
 
-Verify your setup by running the test suite:
+### Useful Commands
 
-```bash
-pixi run test
-pixi run lint
-```
+All commands are run via the `run.bat` script:
 
-## Project Structure
-
-The main source code is organized in the following directories:
-
-- **`rayforge/core/`**: Document model and geometry handling
-- **`rayforge/pipeline/`**: Core processing pipeline for generating machine operations
-- **`rayforge/machine/`**: Hardware interface layer, including device drivers
-- **`rayforge/doceditor/`**: Main document editor controller and its UI
-- **`rayforge/workbench/`**: 2D/3D canvas and visualization systems
-- **`rayforge/image/`**: Importers for various file formats (SVG, DXF, etc.)
-- **`rayforge/shared/`**: Common utilities, including the tasker for background job management
-
-## Next Steps
-
-After setting up your environment, continue with [Submitting Changes](submitting-changes.md) to learn how to contribute code.
+-   `run app`: Run the application from source.
+    -   Add `--loglevel=DEBUG` for more verbose output.
+-   `run test`: Run the full test suite using `pytest`.
+-   `run build`: Build the final Windows executable (`.exe`).

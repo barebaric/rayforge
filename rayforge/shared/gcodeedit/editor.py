@@ -43,8 +43,11 @@ class GcodeEditor(Gtk.Box):
         self.search_entry.connect("search-changed", self._on_search_changed)
 
         buffer = self.text_view.get_buffer()
-        self.search_tag = buffer.create_tag("search")
-        self.highlight_tag = buffer.create_tag("highlight")
+        tag_table = buffer.get_tag_table()
+        self.search_tag = Gtk.TextTag(name="search")
+        tag_table.add(self.search_tag)
+        self.highlight_tag = Gtk.TextTag(name="highlight")
+        tag_table.add(self.highlight_tag)
         self.current_highlight_line = -1
 
         style_context = self.get_style_context()

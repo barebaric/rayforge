@@ -2,11 +2,10 @@
 name = "rayforge"
 version = "0.1.0"
 channels = ["conda-forge", "bioconda", "msys2", "coastline"]
-platforms = ["linux-64", "osx-64", "win-64"]
+platforms = ["linux-64"]
 
 [environments]
 default = { features = ["test"], solve-group = "default" }
-windows-build = { features = ["windows-build", "test"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
 
 [dependencies]
@@ -64,12 +63,6 @@ xorg-libxext = "*"
 xorg-libxinerama = "*"
 xorg-libxrandr = "*"
 
-[target.osx-64.dependencies]
-libvips = "*"
-
-[target.win-64.dependencies]
-# libvips is handled by MSYS2, so no dependency here
-
 [feature.test.dependencies]
 pytest = "*"
 
@@ -82,6 +75,7 @@ flake8 = "*"
 pyflakes = "*"
 pyright = "*"
 ruff = "*"
+pre-commit = "*"
 
 [feature.website.dependencies]
 go = "*"
@@ -95,13 +89,11 @@ pillow = "*"
 cairosvg = "*"
 hugo = "*"
 
-[feature.windows-build.dependencies]
-pyinstaller = "*"
-
 [tool.pixi]
 workdir = "."
 
 [tasks]
+pre-commit-install = "pre-commit install"
 flake = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
 pyflakes = { env = { PYFLAKES_BUILTINS = "_" }, cmd = "pyflakes rayforge tests" }
 pyright = "pyright"
@@ -125,36 +117,6 @@ cmd = "scripts/with_gdk.sh scripts/take_screenshot.py"
 [tasks.wheel]
 cmd = "python3 -m build"
 depends-on = ["compile-translations"]
-
-[tasks.build-exe]
-cmd = """
-bash -c '
-  set -e
-  VERSION=${1:-"dev"}
-  echo "Building version: $VERSION"
-  
-  # The MSYS2_PREFIX env var will be set by the GHA workflow
-  MSYS_DIR=${MSYS2_PREFIX}
-  echo "Using MSYS2 prefix: $MSYS_DIR"
-
-  # We use pixi only to get the path to its own environment
-  PIXI_PREFIX=$(pixi info -e windows-build --prefix)
-
-  pyinstaller --onefile --noconsole \\
-    --log-level INFO \\
-    --name "rayforge-${VERSION}" \\
-    --add-data "rayforge/resources;rayforge/resources" \\
-    --add-data "rayforge/locale;rayforge/locale" \\
-    --add-data "${MSYS_DIR}/share/glib-2.0/schemas;glib-2.0/schemas" \\
-    --add-data "${MSYS_DIR}/share/icons;share/icons" \\
-    --add-data "${MSYS_DIR}/lib/girepository-1.0;gi/repository" \\
-    --add-binary "${MSYS_DIR}/bin/libEGL.dll;." \\
-    --add-binary "${MSYS_DIR}/bin/libGLESv2.dll;." \\
-    --add-binary "${MSYS_DIR}/bin/libvips-42.dll;." \\
-    --hidden-import gi._gi_cairo \\
-    rayforge/app.py
-'
-"""
 
 [tasks.build-deb]
 # Builds a binary .deb package for local installation and testing.
