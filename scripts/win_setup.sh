@@ -151,9 +151,9 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     source .msys2_env
 
     # Export necessary toolchain variables
-    export CC=x86_64-w64-mingw32-gcc
-    export CXX=x86_w64-w64-mingw32-g++
-    export LD=x86_64-w64-mingw32-ld
+    #export CC=x86_64-w64-mingw32-gcc
+    #export CXX=x86_w64-w64-mingw32-g++
+    #export LD=x86_64-w64-mingw32-ld
     export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
 
     echo "Installing/updating pip packages..."
