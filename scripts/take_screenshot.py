@@ -278,6 +278,10 @@ def create_patched_app_class():
             """Activate the application and set up the window."""
             from rayforge.core.vectorization_config import TraceConfig
             import mimetypes
+            from rayforge.context import get_context
+
+            # Initialize the full context before creating the window
+            get_context().initialize_full_context()
 
             win = MainWindow(application=self)
             win.set_default_size(1600, 1100)
@@ -366,26 +370,19 @@ def initialize_logging_and_imports():
     canvas3d.initialize()
 
 
-def initialize_configuration():
-    """Initialize configuration managers."""
-    import rayforge.shared.tasker
-    import rayforge.config
-
-    rayforge.config.initialize_managers()
-
-
 def shutdown_application():
     """Perform graceful shutdown of the application."""
     import asyncio
-    import rayforge.config
     import rayforge.shared.tasker
+    from rayforge.context import get_context
 
     logger.info("Application exiting.")
+    context = get_context()
 
     async def shutdown_async():
         logger.info("Starting graceful async shutdown...")
-        if rayforge.config.machine_mgr:
-            await rayforge.config.machine_mgr.shutdown()
+        # The context now handles shutting down all its owned managers
+        await context.shutdown()
         logger.info("Async shutdown complete.")
 
     loop = rayforge.shared.tasker.task_mgr._loop
@@ -400,9 +397,10 @@ def shutdown_application():
             "Task manager loop not running, skipping async shutdown."
         )
 
-    if rayforge.config.config_mgr:
-        rayforge.config.config_mgr.save()
-    logger.info("Saved config.")
+    # Save configuration
+    if context.config_mgr:
+        context.config_mgr.save()
+        logger.info("Saved config.")
 
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
@@ -453,9 +451,6 @@ def main():
 
         # Initialize logging and imports
         initialize_logging_and_imports()
-
-        # Initialize configuration
-        initialize_configuration()
 
         # Create and run the patched application
         PatchedApp = create_patched_app_class()
