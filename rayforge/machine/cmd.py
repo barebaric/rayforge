@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .driver.driver import Axis
     from ..doceditor.editor import DocEditor
     from ..core.ops import Ops
+    from .models.laser import Laser
 
 
 logger = logging.getLogger(__name__)
@@ -135,13 +136,12 @@ class MachineCmd:
         ops = artifact.ops
 
         head = machine.get_default_head()
-        if not head.frame_power:
+        if not head.frame_power_percent:
             logger.warning("Framing cancelled: Frame power is zero.")
             return  # This is a successful cancellation, not an error
 
-        normalized_power = head.frame_power / head.max_power
         frame = ops.get_frame(
-            power=normalized_power,
+            power=head.frame_power_percent,
             speed=machine.max_travel_speed,
         )
         from ..core.ops import Ops
@@ -269,6 +269,21 @@ class MachineCmd:
         self._editor.task_manager.add_coroutine(
             lambda ctx: machine.jog(axis, distance, speed)
         )
+
+    def set_power(self, head: "Laser", percent: float):
+        """
+        Adds a task to set the laser power to a specific percentage.
+
+        Args:
+            head: The laser head to control
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        config = get_context().config
+        machine = config.machine
+        if machine:
+            self._editor.task_manager.add_coroutine(
+                lambda ctx: machine.set_power(head, percent)
+            )
 
     def home(self, machine: "Machine", axis: Optional[Axis] = None):
         """Adds a task to home a specific axis."""

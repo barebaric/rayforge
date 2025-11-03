@@ -1071,6 +1071,15 @@ class MainWindow(Adw.ApplicationWindow):
                     "suggested-action"
                 )
 
+            # Update focus button sensitivity
+            head = active_machine.get_default_head()
+            can_focus = (
+                head
+                and head.focus_power_percent > 0
+                and not is_job_or_task_active
+            )
+            am.get_action("toggle-focus").set_enabled(can_focus)
+
             connected = conn_status == TransportStatus.CONNECTED
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
@@ -1192,6 +1201,13 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if not config.machine:
             return
+
+        # Disable focus mode when homing
+        focus_action = self.action_manager.get_action("toggle-focus")
+        focus_state = focus_action.get_state()
+        if focus_state and focus_state.get_boolean():
+            focus_action.change_state(GLib.Variant.new_boolean(False))
+
         self.machine_cmd.home_machine(config.machine)
 
     def _run_machine_job(self, job_coroutine: Coroutine):
@@ -1207,6 +1223,13 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if not config.machine:
             return
+
+        # Disable focus mode when framing
+        focus_action = self.action_manager.get_action("toggle-focus")
+        focus_state = focus_action.get_state()
+        if focus_state and focus_state.get_boolean():
+            focus_action.change_state(GLib.Variant.new_boolean(False))
+
         # Get the coroutine object for the framing job
         job_coro = self.machine_cmd.frame_job(
             config.machine, on_progress=self._on_job_progress_updated
@@ -1218,6 +1241,13 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if not config.machine:
             return
+
+        # Disable focus mode when sending
+        focus_action = self.action_manager.get_action("toggle-focus")
+        focus_state = focus_action.get_state()
+        if focus_state and focus_state.get_boolean():
+            focus_action.change_state(GLib.Variant.new_boolean(False))
+
         # Get the coroutine object for the send job
         job_coro = self.machine_cmd.send_job(
             config.machine, on_progress=self._on_job_progress_updated
@@ -1250,6 +1280,32 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         self.machine_cmd.clear_alarm(config.machine)
+
+    def on_toggle_focus_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        """
+        Handles the 'change-state' signal for the 'toggle-focus' action.
+        This toggles the laser focus mode on/off.
+        """
+        config = get_context().config
+        if not config.machine:
+            return
+
+        is_focus_on = value.get_boolean()
+        head = config.machine.get_default_head()
+
+        if is_focus_on:
+            self.machine_cmd.set_power(head, head.focus_power_percent)
+        else:
+            self.machine_cmd.set_power(head, 0)
+        action.set_state(value)
+
+        # Update the toolbar button icon
+        if is_focus_on:
+            self.toolbar.focus_button.set_child(self.toolbar.focus_off_icon)
+        else:
+            self.toolbar.focus_button.set_child(self.toolbar.focus_on_icon)
 
     def on_jog_clicked(self, action, param):
         """Show the jog control dialog."""

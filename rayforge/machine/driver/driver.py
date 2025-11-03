@@ -295,13 +295,13 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def set_power(self, head: "Laser", percent: int) -> None:
+    async def set_power(self, head: "Laser", percent: float) -> None:
         """
         Sets the laser power to the specified percentage of max power.
 
         Args:
             head: The laser head to control.
-            percent: Power percentage (0-100). 0 disables power.
+            percent: Power percentage (0-1.0). 0 disables power.
         """
         pass
 

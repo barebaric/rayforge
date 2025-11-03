@@ -109,16 +109,18 @@ class NoDeviceDriver(Driver):
     async def clear_alarm(self) -> None:
         pass
 
-    async def set_power(self, head: "Laser", percent: int) -> None:
+    async def set_power(self, head: "Laser", percent: float) -> None:
         """
         Sets the laser power to the specified percentage of max power.
 
         Args:
             head: The laser head to control.
-            percent: Power percentage (0-100). 0 disables power.
+            percent: Power percentage (0.0-1.0). 0 disables power.
         """
         # Dummy driver doesn't control any hardware, so just log the call
-        self._log(f"set_power called with head {head.uid} at {percent}%")
+        self._log(
+            f"set_power called with head {head.uid} at {percent * 100:.1f}%"
+        )
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """Dummy driver supports jogging for all axes."""

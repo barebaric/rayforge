@@ -182,7 +182,7 @@ class TestMachine:
         # --- Arrange ---
         # Configure the machine to be capable of framing.
         head = machine.get_default_head()
-        head.frame_power = 1
+        head.set_frame_power(1)
         assert machine.can_frame() is True
 
         # Add a step to the workflow, which is required for job assembly.
@@ -213,6 +213,27 @@ class TestMachine:
         assert isinstance(ops, Ops)
         assert not ops.is_empty()
         assert received_doc is doc
+
+    def test_can_focus(self, machine: Machine):
+        """Test that can_focus returns True when any head has focus power."""
+        # Default state - focus power is 0
+        assert machine.can_focus() is False
+
+        # Set focus power on default head
+        head = machine.get_default_head()
+        head.set_focus_power(0.1)
+        assert machine.can_focus() is True
+
+        # Add another head with focus power
+        laser2 = Laser()
+        laser2.set_focus_power(0.05)
+        machine.add_head(laser2)
+        assert machine.can_focus() is True
+
+        # Set focus power to 0 on all heads
+        head.set_focus_power(0.0)
+        laser2.set_focus_power(0.0)
+        assert machine.can_focus() is False
 
     @pytest.mark.asyncio
     async def test_simple_commands(

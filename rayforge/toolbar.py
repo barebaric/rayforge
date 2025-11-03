@@ -245,6 +245,15 @@ class MainToolbar(Gtk.Box):
         self.jog_button.set_action_name("win.machine-jog")
         self.append(self.jog_button)
 
+        self.focus_on_icon = get_icon("laser-on-symbolic")
+        self.focus_off_icon = get_icon("laser-off-symbolic")
+        self.focus_button = Gtk.ToggleButton()
+        self.focus_button.set_child(self.focus_on_icon)
+        self.focus_button.set_tooltip_text(_("Toggle focus laser"))
+        self.focus_button.set_action_name("win.toggle-focus")
+        self.focus_button.connect("toggled", self._on_focus_toggled)
+        self.append(self.focus_button)
+
         # Add spacer to push machine selector to the right
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
@@ -280,3 +289,11 @@ class MainToolbar(Gtk.Box):
             button.set_child(self.visibility_on_icon)
         else:
             button.set_child(self.visibility_off_icon)
+
+    def _on_focus_toggled(self, button: Gtk.ToggleButton):
+        """Callback to update the focus icon when the button's
+        state changes for any reason (user click or action state change)."""
+        if button.get_active():
+            button.set_child(self.focus_off_icon)
+        else:
+            button.set_child(self.focus_on_icon)
