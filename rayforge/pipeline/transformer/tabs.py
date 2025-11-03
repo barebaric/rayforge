@@ -53,6 +53,9 @@ class TabOpsTransformer(OpsTransformer):
         of the incoming Ops object during the generation phase.
         """
         if not workpiece.vectors:
+            logger.debug(
+                "TabOps: workpiece has no vectors, cannot generate clip data."
+            )
             return []
 
         clip_data = []
@@ -62,6 +65,9 @@ class TabOpsTransformer(OpsTransformer):
         logger.debug(
             "TabOps: Generating clip data in LOCAL space for workpiece "
             f"'{workpiece.name}'"
+        )
+        logger.debug(
+            f"TabOps: Workpiece vectors bbox: {workpiece.vectors.rect()}"
         )
 
         for tab in workpiece.tabs:
@@ -128,11 +134,13 @@ class TabOpsTransformer(OpsTransformer):
                 center_y = center[1] + radius * math.sin(tab_angle)
 
             logger.debug(
-                f"Local space tab center: ({center_x:.2f}, {center_y:.2f}), "
+                f"Local space tab center (from normalized vectors): "
+                f"({center_x:.4f}, {center_y:.4f}), "
                 f"width: {tab.width:.2f}mm"
             )
             clip_data.append((center_x, center_y, tab.width))
 
+        logger.debug(f"TabOps: Finished generating clip data: {clip_data}")
         return clip_data
 
     def run(
@@ -167,6 +175,42 @@ class TabOpsTransformer(OpsTransformer):
             f"Generated {len(tab_clip_data)} tab clip points for clipping."
         )
 
+        processed_clip_data = tab_clip_data
+        # Check if the coordinate space of the workpiece vectors (where tabs
+        # are defined) is different from the final workpiece size (which the
+        # incoming Ops object should represent). If so, we must scale the tab
+        # points.
+        # This handles cases like FrameProducer where Ops are generated at
+        # final size, but the workpiece.vectors are still normalized to a
+        # 1x1 box.
+        if workpiece.vectors and not workpiece.vectors.is_empty():
+            vector_rect = workpiece.vectors.rect()
+            if vector_rect:
+                final_w, final_h = workpiece.size
+                _vx, _vy, vector_w, vector_h = vector_rect
+
+                # Avoid division by zero for empty or linear geometry
+                if vector_w > 1e-6 and vector_h > 1e-6:
+                    scale_x = final_w / vector_w
+                    scale_y = final_h / vector_h
+
+                    # Only apply scaling if it's significant, to avoid
+                    # float errors
+                    if abs(scale_x - 1.0) > 1e-3 or abs(scale_y - 1.0) > 1e-3:
+                        logger.debug(
+                            "TabOps: Scaling tab clip points from vector space"
+                            " to final ops space. "
+                            f"Scale=({scale_x:.3f}, {scale_y:.3f})"
+                        )
+                        processed_clip_data = [
+                            (x * scale_x, y * scale_y, width)
+                            for x, y, width in tab_clip_data
+                        ]
+
+        logger.debug(
+            f"TabOps: Clipping points to be used: {processed_clip_data}"
+        )
+
         new_commands: List[Command] = []
         active_section_type: Optional[SectionType] = None
         section_buffer: List[Command] = []
@@ -183,7 +227,11 @@ class TabOpsTransformer(OpsTransformer):
                 temp_ops.commands = section_buffer
                 num_before = len(temp_ops)
 
-                for x, y, width in tab_clip_data:
+                for x, y, width in processed_clip_data:
+                    logger.debug(
+                        f"TabOps: Clipping at ({x:.4f}, {y:.4f}) "
+                        f"with width {width:.2f}"
+                    )
                     temp_ops.clip_at(x, y, width)
 
                 num_after = len(temp_ops)
