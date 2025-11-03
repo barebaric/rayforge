@@ -1079,7 +1079,9 @@ class WorkSurface(Canvas):
 
     def get_selected_items(self) -> Sequence[DocItem]:
         return [
-            cast(DocItem, elem.data) for elem in self.get_selected_elements()
+            elem.data
+            for elem in self.get_selected_elements()
+            if isinstance(elem.data, DocItem)
         ]
 
     def get_selected_top_level_items(self) -> List[DocItem]:
