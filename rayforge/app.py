@@ -249,7 +249,7 @@ def main():
         logger.info("Async shutdown complete.")
 
     # 2. Run the async shutdown on the TaskManager's event loop and wait for it.
-    loop = rayforge.shared.tasker.task_mgr._loop
+    loop = rayforge.shared.tasker.task_mgr.loop
     if loop.is_running():
         future = asyncio.run_coroutine_threadsafe(shutdown_async(), loop)
         try:

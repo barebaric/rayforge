@@ -42,9 +42,9 @@ class TaskManager:
 
         self._lock = threading.RLock()
         self.tasks_updated: Signal = Signal()
-        self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+        self.loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread: threading.Thread = threading.Thread(
-            target=self._run_event_loop, args=(self._loop,), daemon=True
+            target=self._run_event_loop, args=(self.loop,), daemon=True
         )
         self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
@@ -127,7 +127,7 @@ class TaskManager:
 
         # Coroutines use the asyncio event loop
         asyncio.run_coroutine_threadsafe(
-            self._run_task(task, task.when_done_callback), self._loop
+            self._run_task(task, task.when_done_callback), self.loop
         )
 
     def add_coroutine(
@@ -168,7 +168,7 @@ class TaskManager:
         """
         # The first argument 'None' tells asyncio to use its default
         # ThreadPoolExecutor.
-        return await self._loop.run_in_executor(None, func, *args)
+        return await self.loop.run_in_executor(None, func, *args)
 
     def run_thread(
         self,
@@ -555,8 +555,8 @@ class TaskManager:
             self._pool.shutdown()
 
             # Stop the asyncio loop
-            if self._loop.is_running():
-                self._loop.call_soon_threadsafe(self._loop.stop)
+            if self.loop.is_running():
+                self.loop.call_soon_threadsafe(self.loop.stop)
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
                 logger.warning("thread shutdown timed out, ignoring")
