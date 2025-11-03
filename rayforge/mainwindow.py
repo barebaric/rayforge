@@ -229,9 +229,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
-        app = self.get_application()
-        if app:
-            self.action_manager.set_accelerators(app)
+        shortcut_controller = Gtk.ShortcutController()
+        self.action_manager.register_shortcuts(shortcut_controller)
+        self.add_controller(shortcut_controller)
 
         # Set the initial state of the surface based on the action's default
         show_tabs_action = self.action_manager.get_action("show_tabs")

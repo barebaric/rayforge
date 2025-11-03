@@ -280,74 +280,70 @@ class ActionManager:
         # 2. Confirm the state change, which updates the action and widgets.
         action.set_state(state)
 
-    def set_accelerators(self, app: Gtk.Application):
-        """Sets keyboard accelerators for the application's actions."""
-        # File
-        app.set_accels_for_action("win.import", ["<Primary>i"])
-        app.set_accels_for_action("win.export", ["<Primary>e"])
-        app.set_accels_for_action("win.quit", ["<Primary>q"])
+    def register_shortcuts(self, controller: Gtk.ShortcutController):
+        """
+        Populates the given ShortcutController with all application shortcuts.
+        """
+        shortcuts = {
+            # File
+            "win.import": "<Primary>i",
+            "win.export": "<Primary>e",
+            "win.quit": "<Primary>q",
+            # Edit
+            "win.undo": "<Primary>z",
+            "win.redo": "<Primary>y",
+            "win.redo_alt": "<Primary><Shift>z",
+            "win.cut": "<Primary>x",
+            "win.copy": "<Primary>c",
+            "win.paste": "<Primary>v",
+            "win.select_all": "<Primary>a",
+            "win.duplicate": "<Primary>d",
+            "win.remove": "Delete",
+            "win.clear": "<Primary><Shift>Delete",
+            "win.preferences": "<Primary>comma",
+            # View
+            "win.show_workpieces": "h",
+            "win.show_tabs": "t",
+            "win.toggle_camera_view": "<Alt>c",
+            "win.toggle_travel_view": "<Primary><Shift>t",
+            "win.toggle_gcode_preview": "<Primary><Shift>g",
+            "win.show_3d_view": "F12",
+            "win.simulate_mode": "<Primary><Shift>s",
+            "win.view_top": "1",
+            "win.view_front": "2",
+            "win.view_iso": "7",
+            "win.view_toggle_perspective": "p",
+            # Object
+            "win.add_stock": "<Alt>s",
+            "win.add-tabs-equidistant": "<Alt>t",
+            # Arrange
+            "win.group": "<Primary>g",
+            "win.ungroup": "<Primary>u",
+            "win.layer-move-up": "<Primary>Page_Up",
+            "win.layer-move-down": "<Primary>Page_Down",
+            "win.align-left": "<Primary><Shift>Left",
+            "win.align-right": "<Primary><Shift>Right",
+            "win.align-top": "<Primary><Shift>Up",
+            "win.align-bottom": "<Primary><Shift>Down",
+            "win.align-h-center": "<Primary><Shift>Home",
+            "win.align-v-center": "<Primary><Shift>End",
+            "win.spread-h": "<Primary><Shift>h",
+            "win.spread-v": "<Primary><Shift>v",
+            "win.layout-pixel-perfect": "<Alt>a",
+            "win.flip-horizontal": "<Shift>h",
+            "win.flip-vertical": "<Shift>v",
+            # Machine & Help
+            "win.machine-settings": "<Primary>less",
+            "win.machine-jog": "<Primary>j",
+            "win.about": "F1",
+        }
 
-        # Edit
-        app.set_accels_for_action("win.undo", ["<Primary>z"])
-        app.set_accels_for_action("win.redo", ["<Primary>y"])
-        app.set_accels_for_action("win.redo_alt", ["<Primary><Shift>z"])
-        app.set_accels_for_action("win.cut", ["<Primary>x"])
-        app.set_accels_for_action("win.copy", ["<Primary>c"])
-        app.set_accels_for_action("win.paste", ["<Primary>v"])
-        app.set_accels_for_action("win.select_all", ["<Primary>a"])
-        app.set_accels_for_action("win.duplicate", ["<Primary>d"])
-        app.set_accels_for_action("win.remove", ["Delete"])
-        app.set_accels_for_action("win.clear", ["<Primary><Shift>Delete"])
-        app.set_accels_for_action("win.preferences", ["<Primary>comma"])
-
-        # View
-        app.set_accels_for_action("win.show_workpieces", ["h"])
-        app.set_accels_for_action("win.show_tabs", ["t"])
-        app.set_accels_for_action("win.toggle_camera_view", ["<Alt>c"])
-        app.set_accels_for_action(
-            "win.toggle_travel_view", ["<Primary><Shift>t"]
-        )
-        app.set_accels_for_action(
-            "win.toggle_gcode_preview", ["<Primary><Shift>g"]
-        )
-        app.set_accels_for_action("win.show_3d_view", ["F12"])
-        app.set_accels_for_action("win.simulate_mode", ["<Primary><Shift>s"])
-        app.set_accels_for_action("win.view_top", ["1"])
-        app.set_accels_for_action("win.view_front", ["2"])
-        app.set_accels_for_action("win.view_iso", ["7"])
-        app.set_accels_for_action("win.view_toggle_perspective", ["p"])
-
-        # Object
-        app.set_accels_for_action("win.add_stock", ["<Alt>s"])
-        app.set_accels_for_action("win.add-tabs-equidistant", ["<Alt>t"])
-
-        # Arrange
-        app.set_accels_for_action("win.group", ["<Primary>g"])
-        app.set_accels_for_action("win.ungroup", ["<Primary>u"])
-        app.set_accels_for_action("win.layer-move-up", ["<Primary>Page_Up"])
-        app.set_accels_for_action(
-            "win.layer-move-down", ["<Primary>Page_Down"]
-        )
-        app.set_accels_for_action("win.align-left", ["<Shift>Left"])
-        app.set_accels_for_action("win.align-right", ["<Shift>Right"])
-        app.set_accels_for_action("win.align-top", ["<Shift>Up"])
-        app.set_accels_for_action("win.align-bottom", ["<Shift>Down"])
-        app.set_accels_for_action("win.align-h-center", ["<Shift>Home"])
-        app.set_accels_for_action("win.align-v-center", ["<Shift>End"])
-        app.set_accels_for_action("win.spread-h", ["<Primary><Shift>h"])
-        app.set_accels_for_action("win.spread-v", ["<Primary><Shift>v"])
-        app.set_accels_for_action("win.layout-pixel-perfect", ["<Alt>a"])
-        app.set_accels_for_action("win.flip-horizontal", ["<Shift>h"])
-        app.set_accels_for_action("win.flip-vertical", ["<Shift>v"])
-
-        # Machine & Help
-        app.set_accels_for_action("win.machine-settings", ["<Primary>less"])
-        app.set_accels_for_action("win.machine-jog", ["<Primary>j"])
-        app.set_accels_for_action("win.about", ["F1"])
-
-        # NOTE: Direct machine control actions (home, frame, send, etc.) are
-        # intentionally left without keyboard shortcuts to prevent accidental
-        # and potentially dangerous machine activation.
+        for action_name, shortcut_str in shortcuts.items():
+            shortcut = Gtk.Shortcut.new(
+                Gtk.ShortcutTrigger.parse_string(shortcut_str),
+                Gtk.NamedAction.new(action_name),
+            )
+            controller.add_shortcut(shortcut)
 
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
