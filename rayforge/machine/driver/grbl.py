@@ -55,8 +55,8 @@ class GrblNetworkDriver(Driver):
     supports_settings = True
     reports_granular_progress = False
 
-    def __init__(self, context: RayforgeContext):
-        super().__init__(context)
+    def __init__(self, context: RayforgeContext, machine: "Machine"):
+        super().__init__(context, machine)
         self.host = None
         self.http = None
         self.websocket = None
@@ -280,7 +280,6 @@ class GrblNetworkDriver(Driver):
     async def run(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -288,8 +287,8 @@ class GrblNetworkDriver(Driver):
     ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
-        encoder = GcodeEncoder.for_machine(machine)
-        gcode, op_map = encoder.encode(ops, machine, doc)
+        encoder = GcodeEncoder.for_machine(self._machine)
+        gcode, op_map = encoder.encode(ops, self._machine, doc)
 
         try:
             # For GRBL driver, we don't track individual commands

@@ -41,8 +41,8 @@ class SmoothieDriver(Driver):
     supports_settings = False
     reports_granular_progress = True
 
-    def __init__(self, context: RayforgeContext):
-        super().__init__(context)
+    def __init__(self, context: RayforgeContext, machine: "Machine"):
+        super().__init__(context, machine)
         self.telnet = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -167,14 +167,13 @@ class SmoothieDriver(Driver):
     async def run(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        encoder = GcodeEncoder.for_machine(machine)
-        gcode, op_map = encoder.encode(ops, machine, doc)
+        encoder = GcodeEncoder.for_machine(self._machine)
+        gcode, op_map = encoder.encode(ops, self._machine, doc)
         gcode_lines = gcode.splitlines()
 
         try:

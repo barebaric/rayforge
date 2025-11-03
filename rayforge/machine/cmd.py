@@ -107,13 +107,12 @@ class MachineCmd:
             if machine.reports_granular_progress:
                 await machine.driver.run(
                     ops,
-                    machine,
                     self._editor.doc,
                     on_command_done=self._current_monitor.update_progress,
                 )
             else:
                 await machine.driver.run(
-                    ops, machine, self._editor.doc, on_command_done=None
+                    ops, self._editor.doc, on_command_done=None
                 )
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
