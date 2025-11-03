@@ -267,3 +267,57 @@ def filter_to_external_contours(contours: List[Geometry]) -> List[Geometry]:
         for c in normalized_contours
         if get_subpath_area(c.commands, 0) > 1e-9
     ]
+
+
+def remove_inner_edges(geometry: Geometry) -> Geometry:
+    """
+    Filters a geometry, keeping all open paths and only the external-most
+    closed paths (contours).
+
+    This function first splits the input geometry into individual contours.
+    It then separates these contours into two groups: open paths and closed
+    paths. The closed paths are filtered to remove any inner contours (holes),
+    and finally, the remaining external closed paths are recombined with the
+    original open paths into a new Geometry object.
+
+    Args:
+        geometry: The input Geometry object to filter.
+
+    Returns:
+        A new Geometry object containing only the external contours and all
+        original open paths.
+    """
+    from .geometry import Geometry  # For creating the new object
+
+    if geometry.is_empty():
+        return Geometry()
+
+    all_contours = split_into_contours(geometry)
+    if not all_contours:
+        return Geometry()
+
+    closed_contours: List[Geometry] = []
+    open_contours: List[Geometry] = []
+
+    for contour in all_contours:
+        # Use a reasonably small tolerance for checking if a path is closed.
+        if contour.is_closed(tolerance=1e-6):
+            closed_contours.append(contour)
+        else:
+            open_contours.append(contour)
+
+    # Filter the closed contours to get only the external ones
+    external_closed_contours = filter_to_external_contours(closed_contours)
+
+    # Reassemble the final geometry
+    final_geo = Geometry()
+    for contour in external_closed_contours:
+        final_geo.commands.extend(contour.commands)
+    for contour in open_contours:
+        final_geo.commands.extend(contour.commands)
+
+    # Preserve the last_move_to from the original, as it's the most
+    # sensible value, although its direct relevance might be diminished.
+    final_geo.last_move_to = geometry.last_move_to
+
+    return final_geo

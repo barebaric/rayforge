@@ -18,11 +18,13 @@ from copy import deepcopy
 import numpy as np
 from .linearize import linearize_arc
 from .analysis import (
+    is_closed,
     get_path_winding_order,
     get_point_and_tangent_at,
     get_outward_normal_at,
     get_subpath_area,
 )
+from .contours import remove_inner_edges
 from .query import (
     get_bounding_rect,
     find_closest_point_on_path,
@@ -418,6 +420,26 @@ class Geometry:
         """
         return get_outward_normal_at(self.commands, segment_index, t)
 
+    def is_closed(self, tolerance: float = 1e-6) -> bool:
+        """
+        Checks if the geometry's path is closed.
+
+        This method assumes the Geometry object represents a single contour.
+        It checks if the start point (from the first MoveTo) and the end
+        point (from the last moving command) are within the given tolerance.
+
+        For geometries with multiple contours, use `split_into_contours()`
+        and call this method on each resulting part.
+
+        Args:
+            tolerance: The maximum distance to consider start and end points
+                       equal.
+
+        Returns:
+            True if the path is closed, False otherwise.
+        """
+        return is_closed(self.commands, tolerance)
+
     def _get_valid_contours_data(
         self, contour_geometries: List["Geometry"]
     ) -> List[Dict]:
@@ -447,11 +469,9 @@ class Geometry:
             min_x, min_y, max_x, max_y = contour_geo.rect()
             bbox_area = (max_x - min_x) * (max_y - min_y)
 
-            is_closed = (
-                math.isclose(start_point[0], end_point[0])
-                and math.isclose(start_point[1], end_point[1])
-                and bbox_area > 1e-6
-            )
+            # A contour is valid and closed if its path is closed AND it's
+            # not degenerate (has some area).
+            is_closed = contour_geo.is_closed() and bbox_area > 1e-9
 
             # A single-contour geometry by definition has only one segment list
             segments = contour_geo.segments()
@@ -469,6 +489,20 @@ class Geometry:
                 }
             )
         return contour_data
+
+    def remove_inner_edges(self) -> "Geometry":
+        """
+        Filters the geometry, keeping all open paths and only the external-most
+        closed paths (contours).
+
+        This is a convenience wrapper around the `remove_inner_edges` function
+        in the `contours` module. It effectively removes any "holes" from
+        closed shapes while preserving any open lines or arcs.
+
+        Returns:
+            A new Geometry object containing the filtered paths.
+        """
+        return remove_inner_edges(self)
 
     @staticmethod
     def _find_connected_components_bfs(

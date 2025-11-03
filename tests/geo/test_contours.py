@@ -243,3 +243,90 @@ def test_close_geometry_gaps_functional():
     assert isinstance(result_inter.commands[2], LineToCommand)
     # The new LineTo should connect to the exact previous end point
     assert result_inter.commands[2].end == (10, 10, 0)
+
+
+def test_remove_inner_edges():
+    """
+    Tests the remove_inner_edges function and the Geometry.remove_inner_edges
+    method.
+    """
+    # Test Case 1: Empty Geometry
+    geo_empty = Geometry()
+    result_empty = geo_empty.remove_inner_edges()
+    assert result_empty.is_empty()
+    assert result_empty is not geo_empty, "Should return a new object"
+
+    # Test Case 2: Geometry with only an open path
+    geo_open = Geometry()
+    geo_open.move_to(50, 50)
+    geo_open.line_to(60, 60)
+    result_open = geo_open.remove_inner_edges()
+    contours_open = result_open.split_into_contours()
+    assert len(contours_open) == 1
+    assert not contours_open[0].is_closed()
+
+    # Test Case 3: Geometry with only a single closed path
+    geo_closed = Geometry.from_points([(0, 0), (1, 0), (1, 1), (0, 1)])
+    result_closed = geo_closed.remove_inner_edges()
+    assert result_closed.area() == pytest.approx(1.0)
+    assert len(result_closed.split_into_contours()) == 1
+
+    # Test Case 4: Donut shape (one outer, one inner closed path)
+    geo_donut = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hole = Geometry.from_points([(2, 2), (2, 8), (8, 8), (8, 2)])
+    geo_donut.commands.extend(hole.commands)
+    assert geo_donut.area() == pytest.approx(100 - 36)  # Area = 64
+
+    result_donut = geo_donut.remove_inner_edges()
+    # The result should only contain the outer shape's area
+    assert result_donut.area() == pytest.approx(100)
+    assert len(result_donut.split_into_contours()) == 1
+
+    # Test Case 5: Mix of open and closed paths
+    geo_mix = geo_donut.copy()  # Start with the donut
+    # Add an open line segment outside the donut
+    geo_mix.move_to(20, 20)
+    geo_mix.line_to(30, 30)
+    # Add another open line segment inside the donut's hole
+    geo_mix.move_to(4, 4)
+    geo_mix.line_to(6, 6)
+
+    result_mix = geo_mix.remove_inner_edges()
+
+    # The area should still be just the outer square's area
+    assert result_mix.area() == pytest.approx(100)
+
+    # Check the contours: should be 1 closed path and 2 open paths
+    contours_mix = result_mix.split_into_contours()
+    assert len(contours_mix) == 3
+
+    closed_count = sum(1 for c in contours_mix if c.is_closed())
+    open_count = sum(1 for c in contours_mix if not c.is_closed())
+
+    assert closed_count == 1
+    assert open_count == 2
+
+    # Test Case 6: Bullseye shape (3 nested closed paths)
+    c1 = Geometry.from_points([(0, 0), (30, 0), (30, 30), (0, 30)])  # Outer
+    c2_ccw = Geometry.from_points(
+        [(5, 5), (25, 5), (25, 25), (5, 25)]
+    )  # Middle hole
+    # Reverse the middle contour to make it a proper hole (CW)
+    c2_hole = reverse_contour(c2_ccw)
+    c3 = Geometry.from_points(
+        [(10, 10), (20, 10), (20, 20), (10, 20)]
+    )  # Inner
+    geo_bullseye = Geometry()
+    geo_bullseye.commands.extend(c1.commands)
+    geo_bullseye.commands.extend(c2_hole.commands)
+    geo_bullseye.commands.extend(c3.commands)
+    # Total area = (30*30) - (20*20) + (10*10) = 900 - 400 + 100 = 600
+    assert geo_bullseye.area() == pytest.approx(600)
+
+    result_bullseye = geo_bullseye.remove_inner_edges()
+    # The result should contain the outer and inner-most solids.
+    # The area method sums the individual areas of the contours.
+    # Expected area = area(c1) + area(c3) = 900 + 100 = 1000
+    assert result_bullseye.area() == pytest.approx(1000)
+    contours_bullseye = result_bullseye.split_into_contours()
+    assert len(contours_bullseye) == 2

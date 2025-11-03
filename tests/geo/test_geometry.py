@@ -593,3 +593,35 @@ def test_close_gaps_respects_tolerance():
     # The MoveTo SHOULD be replaced
     assert isinstance(geo_copy2.commands[2], LineToCommand)
     assert geo_copy2.commands[2].end == (10, 10, 0)
+
+
+def test_is_closed_method():
+    """Tests the Geometry.is_closed() method."""
+    # Test a single, closed contour
+    geo_closed = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    assert geo_closed.is_closed() is True
+
+    # Test a single, nearly closed contour
+    geo_nearly_closed = Geometry()
+    geo_nearly_closed.move_to(0, 0)
+    geo_nearly_closed.line_to(10, 0)
+    geo_nearly_closed.line_to(10, 10)
+    geo_nearly_closed.line_to(0, 10)
+    geo_nearly_closed.line_to(1e-7, -1e-7)
+    assert geo_nearly_closed.is_closed(tolerance=1e-6) is True
+    assert geo_nearly_closed.is_closed(tolerance=1e-8) is False
+
+    # Test an open path
+    geo_open = Geometry.from_points([(0, 0), (10, 10)], close=False)
+    assert geo_open.is_closed() is False
+
+    # Test empty geometry
+    assert Geometry().is_closed() is False
+
+    # Test geometry with multiple contours
+    geo_multi = Geometry.from_points([(0, 0), (1, 1), (0, 1)])  # closed
+    second_contour = Geometry.from_points(
+        [(10, 10), (11, 11), (10, 11)]
+    )  # closed
+    geo_multi.commands.extend(second_contour.commands)
+    assert geo_multi.is_closed() is False
