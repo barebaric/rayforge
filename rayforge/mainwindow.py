@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Optional, cast, Coroutine
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 import asyncio
-
+from concurrent.futures import Future
 from . import __version__
 from .shared.tasker import task_mgr
 from .context import get_context
@@ -433,7 +433,7 @@ class MainWindow(Adw.ApplicationWindow):
         logger.debug("Job finished")
         self.status_monitor.stop_live_view()
 
-    def _on_job_future_done(self, future: asyncio.Future):
+    def _on_job_future_done(self, future: Future):
         """Callback for when the job submission task completes or fails."""
         try:
             # Check for exceptions during job assembly or submission.
@@ -1199,10 +1199,9 @@ class MainWindow(Adw.ApplicationWindow):
         Wraps a machine job coroutine in an asyncio.Task and handles
         its completion or failure.
         """
-        # Create a task to run the job coroutine in the background
-        task = asyncio.create_task(job_coroutine)
+        fut = asyncio.run_coroutine_threadsafe(job_coroutine, task_mgr.loop)
         # Add a callback to handle the result (or exception) of the task
-        task.add_done_callback(self._on_job_future_done)
+        fut.add_done_callback(self._on_job_future_done)
 
     def on_frame_clicked(self, action, param):
         config = get_context().config
