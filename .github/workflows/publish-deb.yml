@@ -53,7 +53,7 @@ jobs:
           rustc
 
       - name: Import GPG key
-        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
@@ -74,18 +74,26 @@ jobs:
         run: |
           chmod +x ./scripts/build-deb.sh
           ./scripts/build-deb.sh --source
+
           DEB_FILE_PATH=$(find dist -name "*.deb" -type f | head -n 1)
           if [ -z "$DEB_FILE_PATH" ]; then
             echo "::error::Build failed, no .deb file found in dist/ directory."
             exit 1
           fi
 
-          # Extract just the filename from the path
+          # Find the .changes file which is needed for signing and uploading
+          CHANGES_FILE_PATH=$(find dist -name "*.changes" -type f | head -n 1)
+          if [ -z "$CHANGES_FILE_PATH" ]; then
+            echo "::error::Build failed, no .changes file found in dist/ directory."
+            exit 1
+          fi
+
           DEB_FILENAME=$(basename "$DEB_FILE_PATH")
 
           # Output both the full path (for testing) and the filename (for the artifact)
           echo "deb_file_path=$DEB_FILE_PATH" >> $GITHUB_OUTPUT
           echo "deb_filename=$DEB_FILENAME" >> $GITHUB_OUTPUT
+          echo "changes_file_path=$CHANGES_FILE_PATH" >> $GITHUB_OUTPUT
 
       - name: Install runtime dependencies for testing
         run: |
@@ -104,20 +112,14 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
 
-      - name: Build Source-Only Package for PPA
-        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
-        run: |
-          mv dist/*.orig.tar.gz ../
-          debuild -S -us -uc
-
       - name: Sign source package
         if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          # Note: debuild places the source package in the parent directory (../)
-          CHANGES_FILE=$(ls ../*_source.changes)
+          CHANGES_FILE=${{ steps.build_packages.outputs.changes_file_path }}
+          echo "Signing $CHANGES_FILE..."
           echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
           debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" "$CHANGES_FILE"
           rm /tmp/passphrase.txt
@@ -130,4 +132,4 @@ jobs:
 
       - name: Upload to PPA
         if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
-        run: dput ppa:knipknap/rayforge ../*_source.changes
+        run: dput ppa:knipknap/rayforge ${{ steps.build_packages.outputs.changes_file_path }}
