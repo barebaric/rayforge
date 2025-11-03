@@ -183,3 +183,20 @@ class TestDummyDriverCallback:
 
         # Verify callback was called
         assert callback_mock.call_count == len(ops)
+
+    @pytest.mark.asyncio
+    async def test_set_power_with_head(
+        self, driver, machine, context_initializer
+    ):
+        """Test that set_power method accepts head parameter."""
+        from rayforge.machine.models.laser import Laser
+
+        # Create a test laser head
+        test_head = Laser()
+        test_head.uid = "test-head"
+
+        # Call set_power with head and percentage
+        await driver.set_power(test_head, 50)
+
+        # The dummy driver just logs, so we can't verify much here
+        # but this test ensures the signature works correctly

@@ -37,6 +37,7 @@ from .grbl_util import (
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ..models.machine import Machine
+    from ..models.laser import Laser
 
 logger = logging.getLogger(__name__)
 
@@ -512,6 +513,28 @@ class GrblSerialDriver(Driver):
 
     async def clear_alarm(self) -> None:
         await self._execute_command("$X")
+
+    async def set_power(self, head: "Laser", percent: int) -> None:
+        """
+        Sets the laser power to the specified percentage of max power.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0-100). 0 disables power.
+        """
+        # Get the dialect for power control commands
+        dialect = self._machine.dialect
+
+        if percent <= 0:
+            # Disable power
+            cmd = dialect.laser_off
+        else:
+            # Enable power with specified percentage
+            power_abs = (percent / 100.0) * head.max_power
+            power_val = dialect.format_laser_power(power_abs)
+            cmd = dialect.laser_on.format(power=power_val)
+
+        await self._execute_command(cmd)
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports jogging for all axes."""

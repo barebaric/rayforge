@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...shared.varset import VarSet
     from ..models.machine import Machine
+    from ..models.laser import Laser
     from ...pipeline.encoder.gcode import GcodeOpMap
 
 
@@ -290,6 +291,17 @@ class Driver(ABC):
     async def clear_alarm(self) -> None:
         """
         Sends a command to clear any active alarm state.
+        """
+        pass
+
+    @abstractmethod
+    async def set_power(self, head: "Laser", percent: int) -> None:
+        """
+        Sets the laser power to the specified percentage of max power.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0-100). 0 disables power.
         """
         pass
 

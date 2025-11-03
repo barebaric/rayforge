@@ -351,6 +351,125 @@ class TestMachine:
         assert machine.can_jog(Axis.Y)
         assert machine.can_jog(Axis.Z)
 
+    @pytest.mark.asyncio
+    async def test_set_power_calls_driver(
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        context_initializer,
+    ):
+        """Test that set_power correctly calls driver with percentage."""
+        # Mock the driver's set_power method
+        mock_set_power = mocker.spy(machine.driver, "set_power")
+
+        # Call set_power with 50%
+        await machine.set_power(percent=50)
+
+        # Verify the driver method was called with correct argument
+        default_head = machine.get_default_head()
+        mock_set_power.assert_called_once_with(default_head, 50)
+
+    @pytest.mark.asyncio
+    async def test_set_power_zero_percent(
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        context_initializer,
+    ):
+        """Test that set_power with 0% calls driver with disable command."""
+        # Mock the driver's set_power method
+        mock_set_power = mocker.spy(machine.driver, "set_power")
+
+        # Call set_power with 0%
+        await machine.set_power(percent=0)
+
+        # Verify the driver method was called with 0
+        default_head = machine.get_default_head()
+        mock_set_power.assert_called_once_with(default_head, 0)
+
+    @pytest.mark.asyncio
+    async def test_set_power_full_power(
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        context_initializer,
+    ):
+        """Test that set_power with 100% calls driver with max power."""
+        # Mock the driver's set_power method
+        mock_set_power = mocker.spy(machine.driver, "set_power")
+
+        # Call set_power with 100%
+        await machine.set_power(percent=100)
+
+        # Verify the driver method was called with 100
+        default_head = machine.get_default_head()
+        mock_set_power.assert_called_once_with(default_head, 100)
+
+    @pytest.mark.asyncio
+    async def test_set_power_with_specific_head(
+        self,
+        machine: Machine,
+        mocker,
+        task_mgr: TaskManager,
+        context_initializer,
+    ):
+        """Test that set_power with specific head calls driver correctly."""
+        # Mock driver's set_power method
+        mock_set_power = mocker.spy(machine.driver, "set_power")
+
+        # Get a specific head (second head)
+        laser2 = Laser()
+        laser2.uid = "test-laser-2"
+        machine.add_head(laser2)
+
+        # Call set_power with specific head
+        await machine.set_power(head=laser2, percent=75)
+
+        # Verify driver method was called with correct arguments
+        mock_set_power.assert_called_once_with(laser2, 75)
+
+    def test_dialect_property(self, machine: Machine):
+        """Test that dialect property returns correct dialect instance."""
+        from rayforge.machine.models.dialect import get_dialect
+
+        # Get the dialect through the property
+        dialect = machine.dialect
+
+        # Verify it's the correct type
+        from rayforge.machine.models.dialect import GcodeDialect
+
+        assert isinstance(dialect, GcodeDialect)
+
+        # Verify it matches what get_dialect would return
+        expected_dialect = get_dialect(machine.dialect_name)
+        assert dialect == expected_dialect
+
+    def test_dialect_property_changes_with_dialect_name(
+        self, machine: Machine
+    ):
+        """Test that dialect property reflects changes to dialect_name."""
+        from rayforge.machine.models.dialect import (
+            GRBL_DIALECT,
+            SMOOTHIEWARE_DIALECT,
+        )
+
+        # Initial state
+        assert machine.dialect_name == "grbl"
+        assert machine.dialect == GRBL_DIALECT
+
+        # Change dialect name
+        machine.set_dialect_name("smoothieware")
+
+        # Verify dialect property returns the new dialect
+        assert machine.dialect == SMOOTHIEWARE_DIALECT
+
+        # Change back
+        machine.set_dialect_name("grbl")
+        assert machine.dialect == GRBL_DIALECT
+
     def test_can_g0_with_speed(self, machine: Machine):
         assert machine.can_g0_with_speed()
 

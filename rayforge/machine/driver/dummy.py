@@ -17,6 +17,7 @@ from .driver import Driver, Axis
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ..models.machine import Machine
+    from ..models.laser import Laser
 
 
 class NoDeviceDriver(Driver):
@@ -107,6 +108,17 @@ class NoDeviceDriver(Driver):
 
     async def clear_alarm(self) -> None:
         pass
+
+    async def set_power(self, head: "Laser", percent: int) -> None:
+        """
+        Sets the laser power to the specified percentage of max power.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0-100). 0 disables power.
+        """
+        # Dummy driver doesn't control any hardware, so just log the call
+        self._log(f"set_power called with head {head.uid} at {percent}%")
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """Dummy driver supports jogging for all axes."""

@@ -24,6 +24,7 @@ from ..driver import get_driver_cls
 from ..driver.driver import Axis
 from .laser import Laser
 from .macro import Macro, MacroTrigger
+from .dialect import get_dialect, GcodeDialect
 
 if TYPE_CHECKING:
     from ...shared.varset import VarSet
@@ -308,6 +309,11 @@ class Machine:
             self._rebuild_driver_instance, key=(self.id, "rebuild-driver")
         )
 
+    @property
+    def dialect(self) -> "GcodeDialect":
+        """Get the current dialect instance for this machine."""
+        return get_dialect(self.dialect_name)
+
     def set_dialect_name(self, dialect_name: str):
         if self.dialect_name == dialect_name:
             return
@@ -565,6 +571,25 @@ class Machine:
             ).format(error=str(e))
 
         return True, None
+
+    async def set_power(
+        self, head: Optional["Laser"] = None, percent: int = 0
+    ) -> None:
+        """
+        Sets the laser power to the specified percentage of max power.
+
+        Args:
+            head: The laser head to control. If None, uses the default head.
+            percent: Power percentage (0-100). 0 disables power.
+        """
+        if not self.driver:
+            raise ValueError("No driver configured for this machine.")
+
+        # Use default head if none specified
+        if head is None:
+            head = self.get_default_head()
+
+        await self.driver.set_power(head, percent)
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
