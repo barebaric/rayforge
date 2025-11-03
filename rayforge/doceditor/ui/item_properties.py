@@ -306,8 +306,8 @@ class DocItemPropertiesWidget(Expander):
 
             self.editor.transform.set_size(
                 items=self.items,
-                width=new_width_from_ui,
-                height=self.items[0].size[1],  # Pass current height
+                width=get_spinrow_float(self.width_row),
+                height=get_spinrow_float(self.height_row),
                 fixed_ratio=self.fixed_ratio_switch.get_active(),
             )
         finally:
@@ -335,8 +335,8 @@ class DocItemPropertiesWidget(Expander):
 
             self.editor.transform.set_size(
                 items=self.items,
-                width=self.items[0].size[0],  # Pass current width
-                height=new_height_from_ui,
+                width=get_spinrow_float(self.width_row),
+                height=get_spinrow_float(self.height_row),
                 fixed_ratio=self.fixed_ratio_switch.get_active(),
             )
         finally:
@@ -352,8 +352,7 @@ class DocItemPropertiesWidget(Expander):
             if new_x_machine is None:
                 return
 
-            # Get current Y from the first item
-            current_y_machine = self.y_row.get_value()
+            # Get current Y from the UI widget
             current_y_machine = self.y_row.get_value()
             self.editor.transform.set_position(
                 self.items, new_x_machine, current_y_machine
@@ -371,8 +370,7 @@ class DocItemPropertiesWidget(Expander):
             if new_y_machine is None:
                 return
 
-            # Get current X from the first item
-            current_x_machine = self.x_row.get_value()
+            # Get current X from the UI widget
             current_x_machine = self.x_row.get_value()
             self.editor.transform.set_position(
                 self.items, current_x_machine, new_y_machine
@@ -531,8 +529,7 @@ class DocItemPropertiesWidget(Expander):
             item for item in self.items if abs(item.pos[0] - 0.0) >= 1e-9
         ]
         if items_to_reset:
-            # Get current Y from the first item
-            current_y_machine = self.y_row.get_value()
+            # Get current Y from the UI widget
             current_y_machine = self.y_row.get_value()
             self.editor.transform.set_position(
                 items_to_reset, 0.0, current_y_machine
@@ -567,8 +564,7 @@ class DocItemPropertiesWidget(Expander):
                 items_to_reset.append(item)
 
         if items_to_reset:
-            # Get current X from the first item
-            current_x_machine = self.x_row.get_value()
+            # Get current X from the UI widget
             current_x_machine = self.x_row.get_value()
             self.editor.transform.set_position(
                 items_to_reset, current_x_machine, target_y_machine
