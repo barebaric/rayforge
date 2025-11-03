@@ -253,20 +253,38 @@ class LaserPreferencesPage(Adw.PreferencesPage):
         self.laserhead_config_group.add(self.max_power_row)
 
         frame_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=1, page_increment=10
+            lower=0, upper=100, step_increment=0.1, page_increment=1
         )
         self.frame_power_row = Adw.SpinRow(
             title=_("Frame Power"),
             subtitle=_(
-                "Power value in Gcode to use when framing. 0 to disable"
+                "Power value in percent to use when framing. 0 to disable"
             ),
             adjustment=frame_power_adjustment,
+            digits=2,
         )
         frame_power_adjustment.set_value(0)
         self.handler_ids["frame_power"] = self.frame_power_row.connect(
             "changed", self.on_frame_power_changed
         )
         self.laserhead_config_group.add(self.frame_power_row)
+
+        focus_power_adjustment = Gtk.Adjustment(
+            lower=0, upper=100, step_increment=0.1, page_increment=1
+        )
+        self.focus_power_row = Adw.SpinRow(
+            title=_("Focus Power"),
+            subtitle=_(
+                "Power value in percent to use when focusing. 0 to disable"
+            ),
+            adjustment=focus_power_adjustment,
+            digits=2,
+        )
+        focus_power_adjustment.set_value(0)
+        self.handler_ids["focus_power"] = self.focus_power_row.connect(
+            "changed", self.on_focus_power_changed
+        )
+        self.laserhead_config_group.add(self.focus_power_row)
 
         spot_size_x_adjustment = Gtk.Adjustment(
             lower=0.01,
@@ -320,6 +338,7 @@ class LaserPreferencesPage(Adw.PreferencesPage):
             self.tool_number_row.handler_block(self.handler_ids["tool_number"])
             self.max_power_row.handler_block(self.handler_ids["max_power"])
             self.frame_power_row.handler_block(self.handler_ids["frame_power"])
+            self.focus_power_row.handler_block(self.handler_ids["focus_power"])
             self.spot_size_x_row.handler_block(self.handler_ids["spot_x"])
             self.spot_size_y_row.handler_block(self.handler_ids["spot_y"])
 
@@ -330,7 +349,12 @@ class LaserPreferencesPage(Adw.PreferencesPage):
             self.name_row.set_text(selected_head.name)
             self.tool_number_row.set_value(selected_head.tool_number)
             self.max_power_row.set_value(selected_head.max_power)
-            self.frame_power_row.set_value(selected_head.frame_power)
+            self.frame_power_row.set_value(
+                selected_head.frame_power_percent * 100
+            )
+            self.focus_power_row.set_value(
+                selected_head.focus_power_percent * 100
+            )
             spot_x, spot_y = selected_head.spot_size_mm
             self.spot_size_x_row.set_value(spot_x)
             self.spot_size_y_row.set_value(spot_y)
@@ -343,6 +367,9 @@ class LaserPreferencesPage(Adw.PreferencesPage):
             self.max_power_row.handler_unblock(self.handler_ids["max_power"])
             self.frame_power_row.handler_unblock(
                 self.handler_ids["frame_power"]
+            )
+            self.focus_power_row.handler_unblock(
+                self.handler_ids["focus_power"]
             )
             self.spot_size_x_row.handler_unblock(self.handler_ids["spot_x"])
             self.spot_size_y_row.handler_unblock(self.handler_ids["spot_y"])
@@ -381,7 +408,14 @@ class LaserPreferencesPage(Adw.PreferencesPage):
         selected_laser = self._get_selected_laser()
         if not selected_laser:
             return
-        selected_laser.set_frame_power(get_spinrow_int(spinrow))
+        selected_laser.set_frame_power(get_spinrow_float(spinrow) / 100)
+
+    def on_focus_power_changed(self, spinrow):
+        """Update the focus power of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected_laser.set_focus_power(get_spinrow_float(spinrow) / 100)
 
     def on_spot_size_changed(self, spinrow):
         """Update the spot size of the selected Laser."""

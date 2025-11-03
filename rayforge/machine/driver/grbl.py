@@ -377,13 +377,13 @@ class GrblNetworkDriver(Driver):
     async def clear_alarm(self) -> None:
         await self._execute_command("$X")
 
-    async def set_power(self, head: "Laser", percent: int) -> None:
+    async def set_power(self, head: "Laser", percent: float) -> None:
         """
         Sets the laser power to the specified percentage of max power.
 
         Args:
             head: The laser head to control.
-            percent: Power percentage (0-100). 0 disables power.
+            percent: Power percentage (0.0-1.0). 0 disables power.
         """
         # Get the dialect for power control commands
         dialect = self._machine.dialect
@@ -393,7 +393,7 @@ class GrblNetworkDriver(Driver):
             cmd = dialect.laser_off
         else:
             # Enable power with specified percentage
-            power_abs = (percent / 100.0) * head.max_power
+            power_abs = percent * head.max_power
             power_val = dialect.format_laser_power(power_abs)
             cmd = dialect.laser_on.format(power=power_val)
 

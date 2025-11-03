@@ -537,7 +537,13 @@ class Machine:
 
     def can_frame(self):
         for head in self.heads:
-            if head.frame_power:
+            if head.frame_power_percent:
+                return True
+        return False
+
+    def can_focus(self):
+        for head in self.heads:
+            if head.focus_power_percent:
                 return True
         return False
 
@@ -573,15 +579,18 @@ class Machine:
         return True, None
 
     async def set_power(
-        self, head: Optional["Laser"] = None, percent: int = 0
+        self, head: Optional["Laser"] = None, percent: float = 0.0
     ) -> None:
         """
         Sets the laser power to the specified percentage of max power.
 
         Args:
             head: The laser head to control. If None, uses the default head.
-            percent: Power percentage (0-100). 0 disables power.
+            percent: Power percentage (0-1.0). 0 disables power.
         """
+        logger.debug(
+            f"Head {head.uid if head else None} power to {percent * 100}%"
+        )
         if not self.driver:
             raise ValueError("No driver configured for this machine.")
 

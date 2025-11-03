@@ -155,6 +155,12 @@ class ActionManager:
             GLib.Variant.new_boolean(False),
         )
 
+        self._add_stateful_action(
+            "toggle-focus",
+            self.win.on_toggle_focus_state_change,
+            GLib.Variant.new_boolean(False),
+        )
+
         self.update_action_states()
 
     def update_action_states(self, *args, **kwargs):
