@@ -100,55 +100,54 @@ class EdgeTracer(OpsProducer):
             geo.transform(scaling_matrix.to_4x4_numpy())
             mm_space_contours.append(geo)
 
-        # 4. Now, process the mm-space contours: normalize, filter, and offset.
-        final_geometry = Geometry()
+        # 4. Normalize.
+        target_contours = []
         if mm_space_contours:
-            target_contours = []
             if is_vector_source:
                 # For direct vector sources, trust the input and don't
                 # perform polygon cleaning, which would discard open paths.
                 target_contours = mm_space_contours
             else:
                 # For raster-traced sources, clean up the contours.
-                normalized_contours = contours.normalize_winding_orders(
+                target_contours = contours.normalize_winding_orders(
                     mm_space_contours
                 )
-                if self.remove_inner_paths:
-                    target_contours = contours.filter_to_external_contours(
-                        normalized_contours
-                    )
-                else:
-                    target_contours = normalized_contours
 
-            # Combine all contours into a single geometry object before
-            # offsetting.
-            composite_geo = Geometry()
-            for geo in target_contours:
-                composite_geo.commands.extend(geo.commands)
+        # 5. Apply offsets.
+        composite_geo = Geometry()
+        for geo in target_contours:
+            composite_geo.commands.extend(geo.commands)
 
-            if abs(total_offset) > 1e-6:
-                # Attempt to apply the offset (grow/shrink).
-                grown_geometry = composite_geo.grow(total_offset)
+        if abs(total_offset) > 1e-6:
+            # Attempt to apply the offset (grow/shrink).
+            grown_geometry = composite_geo.grow(total_offset)
 
-                # Check if the grow operation failed (returned empty geometry).
-                # This can happen with complex or malformed input shapes.
-                if grown_geometry.is_empty() and not composite_geo.is_empty():
-                    logger.warning(
-                        f"EdgeTracer for '{workpiece.name}' failed to apply "
-                        f"an offset of {total_offset:.3f} mm. This can be "
-                        "caused by micro-gaps or self-intersections in the "
-                        "source geometry. Falling back to the un-offset path."
-                    )
-                    # Fall back to the original, un-offset geometry.
-                    final_geometry = composite_geo
-                else:
-                    # The grow operation was successful or input was empty.
-                    final_geometry = grown_geometry
-            else:
-                # No offset was requested, so use the composite geometry.
+            # Check if the grow operation failed (returned empty geometry).
+            # This can happen with complex or malformed input shapes.
+            if grown_geometry.is_empty() and not composite_geo.is_empty():
+                logger.warning(
+                    f"EdgeTracer for '{workpiece.name}' failed to apply "
+                    f"an offset of {total_offset:.3f} mm. This can be "
+                    "caused by micro-gaps or self-intersections in the "
+                    "source geometry. Falling back to the un-offset path."
+                )
+                # Fall back to the original, un-offset geometry.
                 final_geometry = composite_geo
+            else:
+                # The grow operation was successful or input was empty.
+                final_geometry = grown_geometry
+        else:
+            # No offset was requested, so use the composite geometry.
+            final_geometry = composite_geo
 
-        # 5. Convert to Ops. No further scaling is needed.
+        # 6. Remove inner edges (optional)
+        #    This is done *after* offsetting (grow) because the grow operation
+        #    can resolve intersections and produce a clean set of external
+        #    and internal paths, which is exactly what we want to filter.
+        if self.remove_inner_paths:
+            final_geometry = final_geometry.remove_inner_edges()
+
+        # 7. Convert to Ops. No further scaling is needed.
         if not final_geometry.is_empty():
             final_ops.set_laser(laser.uid)
             final_ops.ops_section_start(
@@ -157,7 +156,7 @@ class EdgeTracer(OpsProducer):
             final_ops.extend(Ops.from_geometry(final_geometry))
             final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        # 6. Create the artifact. The ops are pre-scaled, so they are not
+        # 8. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
         return WorkPieceArtifact(
             ops=final_ops,

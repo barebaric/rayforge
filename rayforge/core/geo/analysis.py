@@ -8,6 +8,40 @@ if TYPE_CHECKING:
     from .geometry import Geometry
 
 
+def is_closed(commands: List[Any], tolerance: float = 1e-6) -> bool:
+    """
+    Checks if a single-contour path defined by a list of commands is closed.
+
+    A path is considered closed if it contains at least one drawing command
+    and its start and end points are within the specified tolerance. The path
+    is expected to begin with a MoveToCommand.
+
+    Args:
+        commands: A list of command objects representing a single contour.
+        tolerance: The maximum distance to consider start and end points equal.
+
+    Returns:
+        True if the path is closed, False otherwise.
+    """
+    # Imports are local to prevent circular dependencies at module load time.
+    from .geometry import MoveToCommand, MovingCommand
+
+    if len(commands) < 2:
+        return False
+
+    start_cmd = commands[0]
+    # A valid contour for this check should start with a MoveTo
+    if not isinstance(start_cmd, MoveToCommand) or start_cmd.end is None:
+        return False
+
+    # The last command must be a moving command to have an endpoint
+    end_cmd = commands[-1]
+    if not isinstance(end_cmd, MovingCommand) or end_cmd.end is None:
+        return False
+
+    return math.dist(start_cmd.end, end_cmd.end) < tolerance
+
+
 def encloses(container: "Geometry", content: "Geometry") -> bool:
     """
     Checks if a container geometry fully encloses a content geometry.

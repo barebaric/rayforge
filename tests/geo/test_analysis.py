@@ -11,6 +11,7 @@ from rayforge.core.geo.analysis import (
     arc_direction_is_clockwise,
     get_subpath_area,
     encloses,
+    is_closed,
 )
 
 
@@ -271,6 +272,42 @@ def test_arc_direction_is_small_radius_arc():
         (0.9, 1.0, 0.0),
     ]
     assert arc_direction_is_clockwise(points, center) is True
+
+
+def test_is_closed():
+    """Tests the is_closed utility function."""
+    # A perfectly closed square
+    geo_closed = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    assert is_closed(geo_closed.commands) is True
+
+    # A nearly closed square
+    geo_nearly_closed = Geometry()
+    geo_nearly_closed.move_to(0, 0)
+    geo_nearly_closed.line_to(10, 0)
+    geo_nearly_closed.line_to(10, 10)
+    geo_nearly_closed.line_to(0, 10)
+    geo_nearly_closed.line_to(1e-7, -1e-7)
+    assert is_closed(geo_nearly_closed.commands, tolerance=1e-6) is True
+    assert is_closed(geo_nearly_closed.commands, tolerance=1e-8) is False
+
+    # An open path
+    geo_open = Geometry.from_points([(0, 0), (10, 10)], close=False)
+    assert is_closed(geo_open.commands) is False
+
+    # An empty path
+    assert is_closed(Geometry().commands) is False
+
+    # A single point path (less than 2 commands)
+    geo_point = Geometry()
+    geo_point.move_to(5, 5)
+    assert is_closed(geo_point.commands) is False
+
+    # Path that doesn't start with MoveTo
+    geo_bad_start = Geometry()
+    geo_bad_start.line_to(10, 10)
+    geo_bad_start.line_to(0, 10)
+    geo_bad_start.line_to(0, 0)
+    assert is_closed(geo_bad_start.commands) is False
 
 
 def test_encloses_simple():
