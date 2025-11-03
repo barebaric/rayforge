@@ -82,7 +82,7 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
             self._format_log_entry_for_terminal(entry)
             for entry in log_snapshot
         ]
-        text_buffer.set_text("".join(formatted_lines))
+        text_buffer.set_text("".join(formatted_lines), -1)
         # Always scroll to the bottom on initial population
         GLib.idle_add(self._scroll_to_bottom)
 

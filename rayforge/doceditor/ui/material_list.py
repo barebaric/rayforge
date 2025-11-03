@@ -46,7 +46,7 @@ class MaterialRow(Gtk.Box):
         color_data = (".material-color {{ background-color: {}; }}").format(
             self.material.get_display_color()
         )
-        color_provider.load_from_data(color_data.encode())
+        color_provider.load_from_string(color_data)
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
