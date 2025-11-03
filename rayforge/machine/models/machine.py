@@ -58,7 +58,7 @@ class Machine:
         self.driver_args: Dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
 
-        self.driver: Driver = NoDeviceDriver(context)
+        self.driver: Driver = NoDeviceDriver(context, self)
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
@@ -161,7 +161,7 @@ class Machine:
             )
             self.precheck_error = str(e)
 
-        new_driver = driver_cls(self.context)
+        new_driver = driver_cls(self.context, self)
 
         # Run setup. A setup error is considered fatal and prevents connection.
         try:

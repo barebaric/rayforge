@@ -163,10 +163,9 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        ops, received_machine, received_doc = run_spy.call_args.args
+        ops, received_doc = run_spy.call_args.args
         assert isinstance(ops, Ops)
         assert not ops.is_empty()
-        assert received_machine is machine
         assert received_doc is doc
 
     @pytest.mark.asyncio
@@ -210,10 +209,9 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        ops, received_machine, received_doc = run_spy.call_args.args
+        ops, received_doc = run_spy.call_args.args
         assert isinstance(ops, Ops)
         assert not ops.is_empty()
-        assert received_machine is machine
         assert received_doc is doc
 
     @pytest.mark.asyncio
@@ -395,7 +393,7 @@ class TestMachine:
 
         try:
             # Create driver directly to avoid setup issues
-            driver = GrblNetworkDriver(context_initializer)
+            driver = GrblNetworkDriver(context_initializer, machine)
             driver.setup(host="test")
             machine.driver = driver
 
@@ -425,7 +423,7 @@ class TestMachine:
 
         try:
             # Create driver directly to avoid setup issues
-            driver = GrblSerialDriver(context_initializer)
+            driver = GrblSerialDriver(context_initializer, machine)
             driver.setup(port="/dev/test", baudrate=115200)
             machine.driver = driver
 
@@ -459,7 +457,7 @@ class TestMachine:
         mock_send_and_wait = mocker.AsyncMock()
 
         # Create driver directly to avoid setup issues
-        driver = SmoothieDriver(context_initializer)
+        driver = SmoothieDriver(context_initializer, machine)
         driver._send_and_wait = mock_send_and_wait
         machine.driver = driver
 
@@ -528,7 +526,7 @@ class TestMachine:
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblSerialDriver(context_initializer)
+        driver = GrblSerialDriver(context_initializer, machine)
         driver.setup(port="/dev/test", baudrate=115200)
         machine.driver = driver
 
@@ -544,7 +542,7 @@ class TestMachine:
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
         # Create driver directly to avoid setup issues
-        driver = GrblNetworkDriver(context_initializer)
+        driver = GrblNetworkDriver(context_initializer, machine)
         driver.setup(host="test")
         machine.driver = driver
 
@@ -558,7 +556,7 @@ class TestMachine:
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
         # Create driver directly to avoid setup issues
-        driver = SmoothieDriver(context_initializer)
+        driver = SmoothieDriver(context_initializer, machine)
         driver.setup(host="test", port=23)
         machine.driver = driver
 

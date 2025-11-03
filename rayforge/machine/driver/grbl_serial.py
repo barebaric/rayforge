@@ -55,8 +55,8 @@ class GrblSerialDriver(Driver):
     supports_settings = True
     reports_granular_progress = True
 
-    def __init__(self, context: RayforgeContext):
-        super().__init__(context)
+    def __init__(self, context: RayforgeContext, machine: "Machine"):
+        super().__init__(context, machine)
         self.serial_transport: Optional[SerialTransport] = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
@@ -331,7 +331,6 @@ class GrblSerialDriver(Driver):
     async def run(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -348,8 +347,8 @@ class GrblSerialDriver(Driver):
             self._sent_gcode_queue.get_nowait()
         self._buffer_has_space.set()  # Initially, there is space
 
-        encoder = GcodeEncoder.for_machine(machine)
-        gcode, op_map = encoder.encode(ops, machine, doc)
+        encoder = GcodeEncoder.for_machine(self._machine)
+        gcode, op_map = encoder.encode(ops, self._machine, doc)
         gcode_lines = gcode.splitlines()
 
         logger.debug(

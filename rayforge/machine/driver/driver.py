@@ -133,8 +133,9 @@ class Driver(ABC):
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
 
-    def __init__(self, context: RayforgeContext):
+    def __init__(self, context: RayforgeContext, machine: "Machine"):
         self._context = context
+        self._machine = machine
         self.log_received = Signal()
         self.state_changed = Signal()
         self.command_status_changed = Signal()
@@ -197,7 +198,6 @@ class Driver(ABC):
     async def run(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -209,7 +209,6 @@ class Driver(ABC):
 
         Args:
             ops: The operations to execute
-            machine: The machine configuration
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
@@ -385,7 +384,6 @@ class Driver(ABC):
     def _track_command_execution(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -401,7 +399,6 @@ class Driver(ABC):
 
         Args:
             ops: The operations to execute
-            machine: The machine configuration
             doc: The document context
             on_command_done: Optional callback for command completion
 
@@ -410,6 +407,6 @@ class Driver(ABC):
         """
         from ...pipeline.encoder.gcode import GcodeEncoder
 
-        encoder = GcodeEncoder.for_machine(machine)
-        _, op_map = encoder.encode(ops, machine, doc)
+        encoder = GcodeEncoder.for_machine(self._machine)
+        _, op_map = encoder.encode(ops, self._machine, doc)
         return op_map

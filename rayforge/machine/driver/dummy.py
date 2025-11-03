@@ -29,8 +29,8 @@ class NoDeviceDriver(Driver):
     supports_settings = False
     reports_granular_progress = True
 
-    def __init__(self, context: RayforgeContext):
-        super().__init__(context)
+    def __init__(self, context: RayforgeContext, machine: "Machine"):
+        super().__init__(context, machine)
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -49,7 +49,6 @@ class NoDeviceDriver(Driver):
     async def run(
         self,
         ops: Ops,
-        machine: "Machine",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -63,7 +62,7 @@ class NoDeviceDriver(Driver):
         on_command_done callback for each command with a small delay.
         """
         # Get the operation map for tracking
-        _ = self._track_command_execution(ops, machine, doc, on_command_done)
+        _ = self._track_command_execution(ops, doc, on_command_done)
 
         # Simulate command execution with delays
         for op_index in range(len(ops)):
