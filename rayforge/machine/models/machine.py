@@ -87,7 +87,6 @@ class Machine:
         self.connection_status_changed = Signal()
         self.state_changed = Signal()
         self.job_finished = Signal()
-        self.log_received = Signal()
         self.command_status_changed = Signal()
 
         self._connect_driver_signals()
@@ -111,7 +110,6 @@ class Machine:
             self._on_driver_connection_status_changed
         )
         self.driver.state_changed.connect(self._on_driver_state_changed)
-        self.driver.log_received.connect(self._on_driver_log_received)
         self.driver.command_status_changed.connect(
             self._on_driver_command_status_changed
         )
@@ -126,7 +124,6 @@ class Machine:
             self._on_driver_connection_status_changed
         )
         self.driver.state_changed.disconnect(self._on_driver_state_changed)
-        self.driver.log_received.disconnect(self._on_driver_log_received)
         self.driver.command_status_changed.disconnect(
             self._on_driver_command_status_changed
         )
@@ -244,10 +241,6 @@ class Machine:
     def _on_driver_job_finished(self, driver: Driver):
         """Proxies the job finished signal from the active driver."""
         self._scheduler(self.job_finished.send, self)
-
-    def _on_driver_log_received(self, driver: Driver, message: str):
-        """Proxies the log received signal from the active driver."""
-        self._scheduler(self.log_received.send, self, message=message)
 
     def _on_driver_command_status_changed(
         self,

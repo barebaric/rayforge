@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import inspect
+import logging
 from typing import (
     Optional,
     cast,
@@ -13,7 +14,6 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
-from ...debug import LogType
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.varset import Var, VarSet, HostnameVar
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
@@ -43,6 +43,9 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ..models.machine import Machine
     from ..models.laser import Laser
+
+
+logger = logging.getLogger(__name__)
 
 
 class GrblNetworkDriver(Driver):
@@ -125,40 +128,70 @@ class GrblNetworkDriver(Driver):
 
     async def _get_hardware_info(self):
         url = f"{self.http_base}{hw_info_url}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, f"GET {url}"
+        logger.debug(
+            f"GET {url}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": f"GET {url}",
+            },
         )
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data.encode("utf-8")
+        logger.debug(
+            f"GET {url} response: {data}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data.encode("utf-8"),
+            },
         )
         return data
 
     async def _get_device_info(self):
         url = f"{self.http_base}{fw_info_url}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, f"GET {url}"
+        logger.debug(
+            f"GET {url}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": f"GET {url}",
+            },
         )
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data.encode("utf-8")
+        logger.debug(
+            f"GET {url} response: {data}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data.encode("utf-8"),
+            },
         )
         return data
 
     async def _get_eeprom_info(self):
         url = f"{self.http_base}{eeprom_info_url}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, f"GET {url}"
+        logger.debug(
+            f"GET {url}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": f"GET {url}",
+            },
         )
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data.encode("utf-8")
+        logger.debug(
+            f"GET {url} response: {data}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data.encode("utf-8"),
+            },
         )
         return data
 
@@ -173,16 +206,26 @@ class GrblNetworkDriver(Driver):
             )
 
         url = f"{self.http_base}{command_url.format(command=command)}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, f"GET {url}"
+        logger.debug(
+            f"GET {url}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": f"GET {url}",
+            },
         )
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     response.raise_for_status()  # Check for 4xx/5xx errors
                     data = await response.text()
-            self._context.debug_log_manager.add_entry(
-                self.__class__.__name__, LogType.RX, data.encode("utf-8")
+            logger.debug(
+                f"GET {url} response: {data}",
+                extra={
+                    "log_category": "RAW_IO",
+                    "direction": "RX",
+                    "data": data.encode("utf-8"),
+                },
             )
             return data
         except aiohttp.ClientError as e:
@@ -203,38 +246,57 @@ class GrblNetworkDriver(Driver):
         )
         url = f"{self.http_base}{upload_url}?path=/"
 
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__,
-            LogType.TX,
-            f"POST to {url} with file '{filename}' size {len(gcode)}",
+        log_data = f"POST to {url} with file '{filename}' size {len(gcode)}"
+        logger.debug(
+            log_data,
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": log_data,
+            },
         )
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=form) as response:
                 response.raise_for_status()
                 data = await response.text()
 
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data.encode("utf-8")
+        logger.debug(
+            f"POST {url} response: {data}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data.encode("utf-8"),
+            },
         )
         return data
 
     async def _execute(self, filename):
         url = f"{self.http_base}{execute_url.format(filename=filename)}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, f"GET {url}"
+        logger.debug(
+            f"GET {url}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": f"GET {url}",
+            },
         )
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data.encode("utf-8")
+        logger.debug(
+            f"GET {url} response: {data}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data.encode("utf-8"),
+            },
         )
         await session.close()
         return data
 
     async def connect(self):
         if not self.host:
-            self._on_connection_status_changed(
+            self._update_connection_status(
                 TransportStatus.DISCONNECTED, "No host configured"
             )
             return
@@ -245,37 +307,33 @@ class GrblNetworkDriver(Driver):
     async def _connection_loop(self) -> None:
         assert self.http and self.websocket
         while self.keep_running:
-            self._on_connection_status_changed(TransportStatus.CONNECTING)
+            self._update_connection_status(TransportStatus.CONNECTING)
             try:
-                self._log("Fetching hardware info...")
+                logger.info("Fetching hardware info...")
                 await self._get_hardware_info()
 
-                self._log("Fetching device info...")
+                logger.info("Fetching device info...")
                 await self._get_device_info()
 
-                self._log("Fetching EEPROM info...")
+                logger.info("Fetching EEPROM info...")
                 await self._get_eeprom_info()
 
-                self._log("Starting HTTP and WebSocket transports...")
+                logger.info("Starting HTTP and WebSocket transports...")
                 async with asyncio.TaskGroup() as tg:
                     tg.create_task(self.http.connect())
                     tg.create_task(self.websocket.connect())
 
             except DeviceConnectionError as e:
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
-                )
+                self._update_connection_status(TransportStatus.ERROR, str(e))
             except Exception as e:
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
-                )
+                self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if self.websocket:
                     await self.websocket.disconnect()
                 if self.http:
                     await self.http.disconnect()
 
-            self._on_connection_status_changed(TransportStatus.SLEEPING)
+            self._update_connection_status(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
     async def run(
@@ -304,7 +362,7 @@ class GrblNetworkDriver(Driver):
             await self._upload(gcode, "rayforge.gcode")
             await self._execute("rayforge.gcode")
         except Exception as e:
-            self._on_connection_status_changed(TransportStatus.ERROR, str(e))
+            self._update_connection_status(TransportStatus.ERROR, str(e))
             raise
         finally:
             self.job_finished.send(self)
@@ -423,19 +481,21 @@ class GrblNetworkDriver(Driver):
     def on_http_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
-        self._on_command_status_changed(status, message)
+        self._update_command_status(status, message)
 
     def on_websocket_data_received(self, sender, data: bytes):
-        source = f"{self.__class__.__name__}.WebSocket"
-        self._context.debug_log_manager.add_entry(source, LogType.RX, data)
+        logger.debug(
+            f"WS RX: {data}",
+            extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
+        )
         try:
             data_str = data.decode("utf-8").strip()
         except UnicodeDecodeError:
-            self._log(f"Received non-UTF8 data on WebSocket: {data!r}")
+            logger.warning(f"Received non-UTF8 data on WebSocket: {data!r}")
             return
 
         for line in data_str.splitlines():
-            self._log(line)
+            logger.info(line, extra={"log_category": "MACHINE_EVENT"})
             request = self._current_request
 
             # If a command is awaiting a response, collect the lines.
@@ -444,16 +504,25 @@ class GrblNetworkDriver(Driver):
 
             # Process line for state updates, regardless of active request.
             if line.startswith("<") and line.endswith(">"):
-                state = parse_state(line, self.state, self._log)
+                state = parse_state(
+                    line, self.state, lambda message: logger.info(message)
+                )
                 if state != self.state:
                     self.state = state
-                    self._on_state_changed()
+                    logger.info(
+                        f"Device state changed: {self.state.status.name}",
+                        extra={
+                            "log_category": "STATE_CHANGE",
+                            "state": self.state,
+                        },
+                    )
+                    self.state_changed.send(self, state=self.state)
             elif line == "ok":
-                self._on_command_status_changed(TransportStatus.IDLE)
+                self._update_command_status(TransportStatus.IDLE)
                 if request:
                     request.finished.set()
             elif line.startswith("error:"):
-                self._on_command_status_changed(
+                self._update_command_status(
                     TransportStatus.ERROR, message=line
                 )
                 if request:
@@ -462,7 +531,7 @@ class GrblNetworkDriver(Driver):
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
-        self._on_connection_status_changed(status, message)
+        self._update_connection_status(status, message)
 
     def get_setting_vars(self) -> List["VarSet"]:
         return get_grbl_setting_varsets()
@@ -512,7 +581,13 @@ class GrblNetworkDriver(Driver):
         if len(unknown_vars) > 0:
             # Append the VarSet of unknown settings if any were found
             result.append(unknown_vars)
-        self._on_settings_read(result)
+
+        num_settings = sum(len(vs) for vs in result)
+        logger.info(
+            f"Driver settings read with {num_settings} settings.",
+            extra={"log_category": "DRIVER_EVENT"},
+        )
+        self.settings_read.send(self, settings=result)
 
     async def write_setting(self, key: str, value: Any) -> None:
         """Writes a setting by sending '$<key>=<value>'."""
@@ -522,3 +597,23 @@ class GrblNetworkDriver(Driver):
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""
         return False
+
+    def _update_command_status(
+        self, status: TransportStatus, message: Optional[str] = None
+    ):
+        log_data = f"Command status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        self.command_status_changed.send(self, status=status, message=message)
+
+    def _update_connection_status(
+        self, status: TransportStatus, message: Optional[str] = None
+    ):
+        log_data = f"Connection status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        self.connection_status_changed.send(
+            self, status=status, message=message
+        )

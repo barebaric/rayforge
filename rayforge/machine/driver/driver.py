@@ -14,9 +14,7 @@ from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto, IntFlag
 from ...core.ops import Ops
-from ...debug import LogType
 from ...context import RayforgeContext
-from ..transport import TransportStatus
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -118,13 +116,9 @@ class Driver(ABC):
        move_to()
 
     All drivers provide the following signals:
-       log_received: for log messages
        state_changed: emitted when the DeviceState changes
        command_status_changed: to monitor a command that was sent
        connection_status_changed: signals connectivity changes
-
-    Subclasses of driver MUST NOT emit these signals directly;
-    the should instead call self._log, self,_on_state_changed, etc.
     """
 
     label: str
@@ -137,7 +131,6 @@ class Driver(ABC):
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         self._context = context
         self._machine = machine
-        self.log_received = Signal()
         self.state_changed = Signal()
         self.command_status_changed = Signal()
         self.connection_status_changed = Signal()
@@ -332,57 +325,6 @@ class Driver(ABC):
             speed: The jog speed in mm/min
         """
         pass
-
-    def _log(self, message: str):
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.APP_INFO, message
-        )
-        self.log_received.send(self, message=message)
-
-    def _on_state_changed(self):
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.STATE_CHANGE, self.state
-        )
-        self.state_changed.send(self, state=self.state)
-
-    def _on_settings_read(self, settings: List["VarSet"]):
-        num_settings = sum(len(vs) for vs in settings)
-        logger.info(f"Driver settings read with {num_settings} settings.")
-
-        all_values = {}
-        for vs in settings:
-            all_values.update(vs.get_values())
-
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__,
-            LogType.APP_INFO,
-            f"Device settings read: {all_values}",
-        )
-        self.settings_read.send(self, settings=settings)
-
-    def _on_command_status_changed(
-        self, status: TransportStatus, message: Optional[str] = None
-    ):
-        log_data = f"Command status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.APP_INFO, log_data
-        )
-        self.command_status_changed.send(self, status=status, message=message)
-
-    def _on_connection_status_changed(
-        self, status: TransportStatus, message: Optional[str] = None
-    ):
-        log_data = f"Connection status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.APP_INFO, log_data
-        )
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
 
     def can_g0_with_speed(self) -> bool:
         """

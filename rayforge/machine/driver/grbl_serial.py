@@ -14,7 +14,6 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
-from ...debug import LogType
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ..transport import TransportStatus, SerialTransport
@@ -140,7 +139,7 @@ class GrblSerialDriver(Driver):
         logger.debug(
             f"Serial transport status changed: {status}, message: {message}"
         )
-        self._on_connection_status_changed(status, message)
+        self._update_connection_status(status, message)
 
     async def cleanup(self):
         logger.debug("GrblNextSerialDriver cleanup initiated.")
@@ -169,8 +168,13 @@ class GrblSerialDriver(Driver):
         if not self.serial_transport or not self.serial_transport.is_connected:
             raise ConnectionError("Serial transport not initialized")
         payload = (command + ("\n" if add_newline else "")).encode("utf-8")
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, payload
+        logger.debug(
+            f"TX: {payload!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": payload,
+            },
         )
         await self.serial_transport.send(payload)
 
@@ -195,7 +199,7 @@ class GrblSerialDriver(Driver):
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
         while self.keep_running:
-            self._on_connection_status_changed(TransportStatus.CONNECTING)
+            self._update_connection_status(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
 
             transport = self.serial_transport
@@ -204,7 +208,7 @@ class GrblSerialDriver(Driver):
             try:
                 await transport.connect()
                 logger.info("Connection established successfully.")
-                self._on_connection_status_changed(TransportStatus.CONNECTED)
+                self._update_connection_status(TransportStatus.CONNECTED)
                 logger.debug(f"is_connected: {transport.is_connected}")
 
                 logger.debug("Sending initial status query")
@@ -217,8 +221,13 @@ class GrblSerialDriver(Driver):
                         try:
                             logger.debug("Sending status poll")
                             payload = b"?"
-                            self._context.debug_log_manager.add_entry(
-                                self.__class__.__name__, LogType.TX, payload
+                            logger.debug(
+                                f"TX: {payload!r}",
+                                extra={
+                                    "log_category": "RAW_IO",
+                                    "direction": "TX",
+                                    "data": payload,
+                                },
                             )
                             if self.serial_transport:
                                 await self.serial_transport.send(payload)
@@ -235,17 +244,13 @@ class GrblSerialDriver(Driver):
 
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
-                )
+                self._update_connection_status(TransportStatus.ERROR, str(e))
             except asyncio.CancelledError:
                 logger.info("Connection loop cancelled.")
                 break
             except Exception as e:
                 logger.error(f"Unexpected error in connection loop: {e}")
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
-                )
+                self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if transport and transport.is_connected:
                     logger.debug("Disconnecting transport in finally block")
@@ -255,7 +260,7 @@ class GrblSerialDriver(Driver):
                 break
 
             logger.debug("Connection lost. Reconnecting in 5s…")
-            self._on_connection_status_changed(TransportStatus.SLEEPING)
+            self._update_connection_status(TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
         logger.debug("Leaving _connection_loop.")
@@ -284,10 +289,13 @@ class GrblSerialDriver(Driver):
                     self._current_request = request
                     try:
                         logger.debug(f"Executing command: {request.command}")
-                        self._context.debug_log_manager.add_entry(
-                            self.__class__.__name__,
-                            LogType.TX,
-                            request.payload,
+                        logger.debug(
+                            f"TX: {request.payload!r}",
+                            extra={
+                                "log_category": "RAW_IO",
+                                "direction": "TX",
+                                "data": request.payload,
+                            },
                         )
                         if self.serial_transport:
                             await self.serial_transport.send(request.payload)
@@ -299,7 +307,7 @@ class GrblSerialDriver(Driver):
 
                     except ConnectionError as e:
                         logger.error(f"Connection error during command: {e}")
-                        self._on_connection_status_changed(
+                        self._update_connection_status(
                             TransportStatus.ERROR,
                             str(e),
                         )
@@ -324,9 +332,7 @@ class GrblSerialDriver(Driver):
                 break
             except Exception as e:
                 logger.error(f"Unexpected error in command queue: {e}")
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
-                )
+                self._update_connection_status(TransportStatus.ERROR, str(e))
         logger.debug("Leaving _process_command_queue.")
 
     async def run(
@@ -393,8 +399,13 @@ class GrblSerialDriver(Driver):
                             "Serial transport disconnected during job."
                         )
 
-                    self._context.debug_log_manager.add_entry(
-                        self.__class__.__name__, LogType.TX, command_bytes
+                    logger.debug(
+                        f"TX: {command_bytes!r}",
+                        extra={
+                            "log_category": "RAW_IO",
+                            "direction": "TX",
+                            "data": command_bytes,
+                        },
                     )
                     await self.serial_transport.send(command_bytes)
                     self._rx_buffer_count += command_len
@@ -436,8 +447,13 @@ class GrblSerialDriver(Driver):
 
         if self.serial_transport:
             payload = b"\x18"
-            self._context.debug_log_manager.add_entry(
-                self.__class__.__name__, LogType.TX, payload
+            logger.debug(
+                f"TX: {payload!r}",
+                extra={
+                    "log_category": "RAW_IO",
+                    "direction": "TX",
+                    "data": payload,
+                },
             )
             await self.serial_transport.send(payload)
             # Clear the command queue for single commands
@@ -612,7 +628,13 @@ class GrblSerialDriver(Driver):
         if len(unknown_vars) > 0:
             # Append the VarSet of unknown settings if any were found
             result.append(unknown_vars)
-        self._on_settings_read(result)
+
+        num_settings = sum(len(vs) for vs in result)
+        logger.info(
+            f"Driver settings read with {num_settings} settings.",
+            extra={"log_category": "DRIVER_EVENT"},
+        )
+        self.settings_read.send(self, settings=result)
 
     async def write_setting(self, key: str, value: Any) -> None:
         cmd = f"${key}={value}"
@@ -623,8 +645,9 @@ class GrblSerialDriver(Driver):
         Primary handler for incoming serial data. Decodes, buffers, and
         delegates processing of complete messages.
         """
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data
+        logger.debug(
+            f"RX: {data!r}",
+            extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
         try:
             data_str = data.decode("utf-8")
@@ -664,8 +687,10 @@ class GrblSerialDriver(Driver):
         and updates the device state.
         """
         logger.debug(f"Processing received status message: {report}")
-        self._log(report)
-        state = parse_state(report, self.state, self._log)
+        logger.info(report, extra={"log_category": "MACHINE_EVENT"})
+        state = parse_state(
+            report, self.state, lambda message: logger.info(message)
+        )
 
         # If a job is active, 'Idle' state between commands should be
         # reported as 'Run' to the UI.
@@ -674,7 +699,11 @@ class GrblSerialDriver(Driver):
 
         if state != self.state:
             self.state = state
-            self._on_state_changed()
+            logger.info(
+                f"Device state changed: {self.state.status.name}",
+                extra={"log_category": "STATE_CHANGE", "state": self.state},
+            )
+            self.state_changed.send(self, state=self.state)
 
     def _handle_general_response(self, line: str):
         """
@@ -682,7 +711,7 @@ class GrblSerialDriver(Driver):
         or settings output.
         """
         logger.debug(f"Processing received line: {line}")
-        self._log(line)
+        logger.info(line, extra={"log_category": "MACHINE_EVENT"})
 
         # Logic for character-counting streaming protocol during a job
         if self._job_running:
@@ -725,8 +754,13 @@ class GrblSerialDriver(Driver):
                         "was empty. Ignoring."
                     )
             elif line.startswith("error:"):
-                self._on_command_status_changed(TransportStatus.ERROR, line)
-                logger.error(f"GRBL error during job: {line}. Halting stream.")
+                self.command_status_changed.send(
+                    self, status=TransportStatus.ERROR, message=line
+                )
+                logger.error(
+                    f"GRBL error during job: {line}. Halting stream.",
+                    extra={"log_category": "ERROR"},
+                )
                 self._job_exception = DeviceConnectionError(
                     f"GRBL error: {line}"
                 )
@@ -743,7 +777,7 @@ class GrblSerialDriver(Driver):
 
         # Check for command completion signals
         if line == "ok":
-            self._on_command_status_changed(TransportStatus.IDLE)
+            self.command_status_changed.send(self, status=TransportStatus.IDLE)
             if request:
                 logger.debug(
                     f"Command '{request.command}' completed with 'ok'"
@@ -752,7 +786,9 @@ class GrblSerialDriver(Driver):
 
         elif line.startswith("error:"):
             # This is a COMMAND error, not a CONNECTION error.
-            self._on_command_status_changed(TransportStatus.ERROR, line)
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=line
+            )
             if request:
                 request.finished.set()
         else:
@@ -762,3 +798,14 @@ class GrblSerialDriver(Driver):
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""
         return False
+
+    def _update_connection_status(
+        self, status: TransportStatus, message: Optional[str] = None
+    ):
+        log_data = f"Connection status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        self.connection_status_changed.send(
+            self, status=status, message=message
+        )

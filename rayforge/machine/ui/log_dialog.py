@@ -1,12 +1,15 @@
 import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from gi.repository import Gtk, Adw, GLib, Gio
 from blinker import Signal
 from ...context import get_context
-from ...debug import LogEntry, LogType
-from ..driver.driver import TransportStatus
+from ...logging_setup import (
+    ui_log_event_received,
+    get_memory_handler,
+    get_ui_formatter,
+    UILogFilter,
+)
 from ..models.machine import Machine
 
 
@@ -62,52 +65,39 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
 
         self._populate_history()
 
-        if machine:
-            machine.log_received.connect(self.on_log_received)
-            machine.command_status_changed.connect(
-                self.on_command_status_changed
-            )
-            machine.connection_status_changed.connect(
-                self.on_connection_status_changed
-            )
+        # Connect to the new global UI log signal
+        ui_log_event_received.connect(self.on_ui_log_received)
+        self.connect("closed", self.on_closed)
 
         parent_width = parent.get_allocated_width()
         self.set_size_request(max(100, parent_width - 24), -1)
         self.set_follows_content_size(True)
 
+    def on_closed(self, *args):
+        # Disconnect from the signal when the dialog is closed to prevent leaks
+        ui_log_event_received.disconnect(self.on_ui_log_received)
+
     def _populate_history(self):
-        log_snapshot = get_context().debug_log_manager._get_log_snapshot()
+        memory_handler = get_memory_handler()
+        ui_formatter = get_ui_formatter()
+        if not memory_handler or not ui_formatter:
+            return
+
+        ui_filter = UILogFilter()
+        log_records = [
+            record
+            for record in memory_handler.buffer
+            if ui_filter.filter(record)
+        ]
+
         text_buffer = self.terminal.get_buffer()
+        # Use the one true formatter to create the lines
         formatted_lines = [
-            self._format_log_entry_for_terminal(entry)
-            for entry in log_snapshot
+            ui_formatter.format(record) + "\n" for record in log_records
         ]
         text_buffer.set_text("".join(formatted_lines), -1)
         # Always scroll to the bottom on initial population
         GLib.idle_add(self._scroll_to_bottom)
-
-    def _format_log_entry_for_terminal(self, entry: LogEntry) -> str:
-        local_timestamp = entry.timestamp.astimezone().strftime(
-            "%Y-%m-%d %H:%M:%S.%f"
-        )[:-3]
-        data_str = ""
-        if isinstance(entry.data, bytes):
-            try:
-                data_str = entry.data.decode("utf-8").strip()
-            except UnicodeDecodeError:
-                data_str = f"[Binary data: {len(entry.data)} bytes]"
-        elif isinstance(entry.data, str):
-            data_str = entry.data.strip()
-        else:
-            data_str = str(entry.data)
-
-        if entry.log_type in [LogType.TX, LogType.RX]:
-            return ""
-
-        return (
-            f"[{local_timestamp}] {entry.source} "
-            f" ({entry.log_type.name}): {data_str}\n"
-        )
 
     def _is_at_bottom(self) -> bool:
         """Check if the scrolled window is at the bottom."""
@@ -122,8 +112,9 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         # This is true if the user is already at the bottom.
         should_autoscroll = self._is_at_bottom()
 
-        timestamp = datetime.now().strftime("%x %X")
-        formatted_message = f"[{timestamp}] {data}\n"
+        # The 'data' is already a fully pre-formatted string from the handler.
+        # We just need to add the newline.
+        formatted_message = f"{data}\n"
         text_buffer = self.terminal.get_buffer()
         text_buffer.insert(text_buffer.get_end_iter(), formatted_message)
 
@@ -138,36 +129,16 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         text_buffer.delete_mark(mark)
         return False
 
-    def on_log_received(self, sender, message: Optional[str] = None):
+    def on_ui_log_received(self, sender, message: Optional[str] = None):
         if not message:
             return
-        driver_name = sender.__class__.__name__
-        self.append_to_terminal(f"{driver_name}: {message}")
-
-    def on_command_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
-    ):
-        msg = _("Command status changed to {status}").format(
-            status=status.name
-        )
-        if message:
-            msg += f" with message: {message}"
-        self.append_to_terminal(msg)
-
-    def on_connection_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
-    ):
-        msg = _("Connection status changed to {status}").format(
-            status=status.name
-        )
-        if message:
-            msg += f" with message: {message}"
-        self.append_to_terminal(msg)
+        # The message is already formatted by the UILogHandler's formatter
+        GLib.idle_add(self.append_to_terminal, message)
 
     def _on_save_log_clicked(self, button: Gtk.Button):
         self.save_log_button.set_sensitive(False)
 
-        archive_path = get_context().debug_log_manager.create_dump_archive()
+        archive_path = get_context().debug_dump_manager.create_dump_archive()
 
         if not archive_path:
             self.notification_requested.send(

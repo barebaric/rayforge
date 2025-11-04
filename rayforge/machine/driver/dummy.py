@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import logging
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -18,6 +19,9 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ..models.machine import Machine
     from ..models.laser import Laser
+
+
+logger = logging.getLogger(__name__)
 
 
 class NoDeviceDriver(Driver):
@@ -118,8 +122,9 @@ class NoDeviceDriver(Driver):
             percent: Power percentage (0.0-1.0). 0 disables power.
         """
         # Dummy driver doesn't control any hardware, so just log the call
-        self._log(
-            f"set_power called with head {head.uid} at {percent * 100:.1f}%"
+        logger.info(
+            f"set_power called with head {head.uid} at {percent * 100:.1f}%",
+            extra={"log_category": "DRIVER_CMD"},
         )
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
