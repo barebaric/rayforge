@@ -24,7 +24,7 @@ class _HistoryButton(Gtk.Box):
         self.set_spacing(0)
         # The "linked" style class makes the two buttons appear joined
         # together.
-        self.get_style_context().add_class("linked")
+        self.add_css_class("linked")
 
         self.manager: Optional[HistoryManager] = None
 
@@ -74,7 +74,7 @@ class _HistoryButton(Gtk.Box):
             if not isinstance(list_box, Gtk.ListBox):
                 list_box = Gtk.ListBox()
                 list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-                list_box.get_style_context().add_class("popover-list")
+                list_box.add_css_class("popover-list")
                 popover.set_child(list_box)
 
             # A simple implementation is to clear and refill.
