@@ -98,6 +98,26 @@ class FileCmd:
                 )
                 t.execute(command)
 
+    def _finalize_import_on_main_thread(
+        self,
+        payload: ImportPayload,
+        filename: Path,
+        position_mm: Optional[Tuple[float, float]],
+    ):
+        """
+        Performs the final steps of an import on the main thread.
+        This includes positioning items (which may send UI notifications) and
+        committing them to the document (which fires signals that update UI).
+        """
+        # 1. Position the new items. This is now safe as it runs on the main
+        #    thread, so any notifications it sends are valid.
+        self._position_newly_imported_items(payload.items, position_mm)
+
+        # 2. Add the positioned items to the document model. This is also
+        #    safe now as all subsequent signal handling will be on the
+        #    main thread.
+        self._commit_items_to_document(payload.items, payload.source, filename)
+
     async def _load_file_async(
         self,
         filename: Path,
@@ -122,7 +142,7 @@ class FileCmd:
                 filename, mime_type, vector_config
             )
 
-            # 2. Validate the result and notify user on failure.
+            # 2. Validate the result.
             if not payload or not payload.items:
                 if mime_type and mime_type.startswith("image/"):
                     msg = _(
@@ -138,23 +158,38 @@ class FileCmd:
                     f"Importer created no items for '{filename.name}' "
                     f"(MIME: {mime_type})"
                 )
-                self._editor.notification_requested.send(self, message=msg)
+                # Schedule the error notification on the main thread.
+                self._task_manager.schedule_on_main_thread(
+                    self._editor.notification_requested.send, self, message=msg
+                )
                 return
 
-            # 3. Position the new items before adding them to the document.
-            self._position_newly_imported_items(payload.items, position_mm)
+            # 3. Schedule the final positioning and committing on the main
+            #    thread, and wait for it to complete.
+            import_finished_event = asyncio.Event()
 
-            # 4. Add the positioned items to the document model.
-            self._commit_items_to_document(
-                payload.items, payload.source, filename
-            )
+            def finalizer_wrapper():
+                """Wraps the finalizer to signal completion."""
+                try:
+                    self._finalize_import_on_main_thread(
+                        payload, filename, position_mm
+                    )
+                finally:
+                    # Always set the event, even if finalization fails,
+                    # to prevent the awaiter from hanging forever.
+                    import_finished_event.set()
+
+            self._task_manager.schedule_on_main_thread(finalizer_wrapper)
+
+            # Wait here until the scheduled task has finished executing.
+            await import_finished_event.wait()
 
         except Exception as e:
             logger.error(
                 f"Import task for {filename.name} failed.", exc_info=e
             )
-            # Re-raise the exception so the caller (e.g., the test) knows
-            # about the failure.
+            # Re-raise the exception so the caller (e.g., the TaskManager)
+            # knows about the failure.
             raise
 
     def load_file_from_path(
@@ -181,7 +216,6 @@ class FileCmd:
         # This wrapper adapts our clean async method to the TaskManager,
         # which expects a coroutine that accepts a 'ctx' argument.
         async def wrapper(ctx, fn, mt, vc, pos_mm):
-            # The 'ctx' from the task manager is ignored.
             try:
                 # Update task message for UI feedback
                 ctx.set_message(_(f"Importing {filename.name}..."))
