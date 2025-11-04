@@ -78,7 +78,7 @@ class OpsTimeline:
             if cmd.is_state_command():
                 cmd.apply_to_state(current_state)
             # Only add movement commands to the timeline steps
-            elif not cmd.is_marker_command():
+            elif not cmd.is_marker():
                 # Store command with state and starting position
                 self.steps.append(
                     (cmd, State(**current_state.__dict__), current_pos)

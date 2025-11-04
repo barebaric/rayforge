@@ -395,7 +395,7 @@ def _prepare_optimization_jobs(
 
     for i, long_segment in enumerate(long_segments):
         # Handle passthrough segments like markers
-        if not long_segment or long_segment[0].is_marker_command():
+        if not long_segment or long_segment[0].is_marker():
             jobs.append(
                 {
                     "type": "passthrough",
@@ -665,7 +665,7 @@ class Optimize(OpsTransformer):
             if not segment:
                 continue
 
-            if segment[0].is_marker_command():
+            if segment[0].is_marker():
                 ops.add(segment[0])
                 continue
 

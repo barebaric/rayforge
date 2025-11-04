@@ -138,7 +138,7 @@ def test_set_laser_command():
 def test_all_marker_commands(cmd_class, args):
     """Tests that all marker commands identify as such and not other types."""
     cmd = cmd_class(*args)
-    assert cmd.is_marker_command()
+    assert cmd.is_marker()
     assert not cmd.is_cutting_command()
     assert not cmd.is_travel_command()
     assert not cmd.is_state_command()

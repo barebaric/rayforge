@@ -90,7 +90,7 @@ class CairoEncoder(OpsEncoder):
                     current_power = cmd.power
                     continue
 
-                if cmd.is_marker_command() or cmd.end is None:
+                if cmd.is_marker() or cmd.end is None:
                     continue
 
                 x, y, _ = cmd.end

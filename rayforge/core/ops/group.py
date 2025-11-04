@@ -23,7 +23,7 @@ def group_by_state_continuity(
     current_segment: List[Command] = []
 
     for op in operations:
-        if op.is_marker_command():
+        if op.is_marker():
             if current_segment:
                 segments.append(current_segment)
             segments.append([op])
@@ -112,7 +112,7 @@ def group_by_command_type(commands: List[Command]) -> List[List[Command]]:
                 current_segment.append(MoveToCommand(current_pos))
             current_segment.append(cmd)
             current_pos = cmd.end
-        elif cmd.is_state_command() or cmd.is_marker_command():
+        elif cmd.is_state_command() or cmd.is_marker():
             if current_segment:
                 segments.append(current_segment)
             segments.append([cmd])
