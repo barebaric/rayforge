@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import logging
 from typing import (
     List,
     Optional,
@@ -12,7 +13,6 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
-from ...debug import LogType
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.varset import VarSet, HostnameVar, IntVar
 from ..transport import TelnetTransport, TransportStatus
@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ..models.machine import Machine
     from ..models.laser import Laser
+
+
+logger = logging.getLogger(__name__)
 
 
 class SmoothieDriver(Driver):
@@ -114,13 +117,13 @@ class SmoothieDriver(Driver):
     async def _connection_loop(self) -> None:
         while self.keep_running:
             if not self.telnet:
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, "Driver not configured"
+                self.on_telnet_status_changed(
+                    self, TransportStatus.ERROR, "Driver not configured"
                 )
                 await asyncio.sleep(5)
                 continue
 
-            self._on_connection_status_changed(TransportStatus.CONNECTING)
+            self.on_telnet_status_changed(self, TransportStatus.CONNECTING)
             try:
                 await self.telnet.connect()
                 # The transport handles the connection loop.
@@ -132,8 +135,8 @@ class SmoothieDriver(Driver):
             except asyncio.CancelledError:
                 break  # cleanup is called
             except Exception as e:
-                self._on_connection_status_changed(
-                    TransportStatus.ERROR, str(e)
+                self.on_telnet_status_changed(
+                    self, TransportStatus.ERROR, str(e)
                 )
             finally:
                 if self.telnet:
@@ -142,7 +145,7 @@ class SmoothieDriver(Driver):
             if not self.keep_running:
                 break
 
-            self._on_connection_status_changed(TransportStatus.SLEEPING)
+            self.on_telnet_status_changed(self, TransportStatus.SLEEPING)
             await asyncio.sleep(5)
 
     async def _send_and_wait(self, cmd: bytes, wait_for_ok: bool = True):
@@ -151,8 +154,9 @@ class SmoothieDriver(Driver):
         if wait_for_ok:
             self._ok_event.clear()
 
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.TX, cmd
+        logger.debug(
+            f"TX: {cmd!r}",
+            extra={"log_category": "RAW_IO", "direction": "TX", "data": cmd},
         )
         await self.telnet.send(cmd)
 
@@ -202,7 +206,7 @@ class SmoothieDriver(Driver):
                         await result
 
         except Exception as e:
-            self._on_connection_status_changed(TransportStatus.ERROR, str(e))
+            self.on_telnet_status_changed(self, TransportStatus.ERROR, str(e))
             raise
         finally:
             self.job_finished.send(self)
@@ -295,31 +299,56 @@ class SmoothieDriver(Driver):
         await self._send_and_wait(cmd.encode("utf-8"))
 
     def on_telnet_data_received(self, sender, data: bytes):
-        self._context.debug_log_manager.add_entry(
-            self.__class__.__name__, LogType.RX, data
+        logger.debug(
+            f"RX: {data!r}",
+            extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
         data_str = data.decode("utf-8")
         for line in data_str.splitlines():
-            self._log(line)
+            logger.info(line, extra={"log_category": "MACHINE_EVENT"})
             if "ok" in line:
                 self._ok_event.set()
-                self._on_command_status_changed(TransportStatus.IDLE)
+                self.command_status_changed.send(
+                    self, status=TransportStatus.IDLE
+                )
 
             if not line.startswith("<") or not line.endswith(">"):
                 continue
-            state = parse_state(line[1:-1], self.state, self._log)
+            state = parse_state(
+                line[1:-1], self.state, lambda message: logger.info(message)
+            )
             if state != self.state:
                 self.state = state
-                self._on_state_changed()
+                logger.info(
+                    f"Device state changed: {self.state.status.name}",
+                    extra={
+                        "log_category": "STATE_CHANGE",
+                        "state": self.state,
+                    },
+                )
+                self.state_changed.send(self, state=self.state)
 
     def on_telnet_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
-        self._on_connection_status_changed(status, message)
+        log_data = f"Connection status: {status.name}"
+        if message:
+            log_data += f" - {message}"
+        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        self.connection_status_changed.send(
+            self, status=status, message=message
+        )
         if status in [TransportStatus.DISCONNECTED, TransportStatus.ERROR]:
             if self.state.status != DeviceStatus.UNKNOWN:
                 self.state.status = DeviceStatus.UNKNOWN
-                self._on_state_changed()
+                logger.info(
+                    f"Device state changed: {self.state.status.name}",
+                    extra={
+                        "log_category": "STATE_CHANGE",
+                        "state": self.state,
+                    },
+                )
+                self.state_changed.send(self, state=self.state)
 
     async def read_settings(self) -> None:
         raise NotImplementedError(

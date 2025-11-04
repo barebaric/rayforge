@@ -9,17 +9,13 @@ import os
 import gettext
 import asyncio
 from pathlib import Path
+from rayforge.logging_setup import setup_logging
 
 # ===================================================================
 # SECTION 1: SAFE, MODULE-LEVEL SETUP
 # This code will run for the main app AND all subprocesses.
 # ===================================================================
 
-# Configure basic logging first.
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 
@@ -43,6 +39,7 @@ else:
 
 # Make "_" available in all modules
 locale_dir = base_dir / "rayforge" / "locale"
+logging.getLogger().setLevel(logging.DEBUG)
 logger.debug(f"Loading locales from {locale_dir}")
 gettext.install("rayforge", locale_dir)
 
@@ -169,9 +166,8 @@ def main():
 
     args = parser.parse_args()
 
-    # Set logging level based on the command-line argument
-    log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
-    logging.getLogger().setLevel(log_level)
+    # Set logging level based on the command-line argument.
+    setup_logging(args.loglevel)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
     # ===================================================================
