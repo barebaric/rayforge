@@ -111,7 +111,7 @@ env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection
 cmd = "pytest -v"
 
 [tasks.uitest]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0"}
 cmd = "pytest -v -m ui"
 
 [tasks.screenshot]
