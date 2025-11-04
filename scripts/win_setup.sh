@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 # This logic handles both CI/CD environments (where MSYS2_PATH may be pre-set)
 # and local development (where it needs to be auto-detected).
 
@@ -144,18 +147,13 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     fi
     source .msys2_env
 
-
     # Add Python site-packages path, now that we know Python is installed
     PYTHON_BIN_PATH="$MSYS2_PATH/mingw64/bin/python"
     PYTHON_VERSION=$("$PYTHON_BIN_PATH" -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
     echo "export PYTHONPATH=$MSYS2_PATH/mingw64/lib/$PYTHON_VERSION/site-packages:\$PYTHONPATH" >> .msys2_env
     source .msys2_env
 
-    # Export necessary toolchain variables
-    #export CC=x86_64-w64-mingw32-gcc
-    #export CXX=x86_w64-w64-mingw32-g++
-    #export LD=x86_64-w64-mingw32-ld
-    export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
+        export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
 
     echo "Installing/updating pip packages..."
     $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
