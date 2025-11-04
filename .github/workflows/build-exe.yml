@@ -55,9 +55,9 @@ jobs:
           # Use cygpath to reliably convert the runner's Windows path to an MSYS2 path.
           # This is the standard and most robust method.
           MSYS2_PATH_VAR=$(cygpath -u "${{ steps.msys2.outputs.msys2-location }}")
-          
+
           echo "MSYS2_PATH=$MSYS2_PATH_VAR" >> $GITHUB_ENV
-          
+
           # Add necessary binaries to the system PATH for subsequent steps
           echo "$MSYS2_PATH_VAR/mingw64/bin" >> $GITHUB_PATH
           echo "$MSYS2_PATH_VAR/usr/bin" >> $GITHUB_PATH
@@ -68,7 +68,7 @@ jobs:
           # The MSYS2_PATH is required by the setup script to generate the .msys2_env file.
           export MSYS2_PATH=${{ env.MSYS2_PATH }}
           bash scripts/win_setup.sh
-    
+
       - name: Verify GI Typelib Files
         shell: msys2 {0}
         if: false
@@ -113,7 +113,7 @@ jobs:
           name: rayforge-v${{ steps.set-version.outputs.version }}-exe.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
           compression-level: 9
-      
+
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:

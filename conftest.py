@@ -7,6 +7,7 @@ from functools import partial
 import pytest_asyncio
 from typing import TYPE_CHECKING
 from unittest.mock import patch
+from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
 from rayforge import context as rayforge_context
 
@@ -59,8 +60,8 @@ def pytest_configure(config):
     pass
 
 
-@pytest.fixture(scope="session", autouse=True)
-def block_glib_event_loop():
+@pytest.fixture(scope="function", autouse=True)
+def block_glib_event_loop(request):
     """
     Session-wide, autouse fixture to patch GLib event loop functions
     BEFORE any application modules are imported by tests. This is critical
@@ -69,9 +70,17 @@ def block_glib_event_loop():
 
     This uses unittest.mock.patch directly because the standard `mocker`
     fixture is function-scoped and cannot be used in a session-scoped fixture.
+
+    This patch is SKIPPED for tests marked with 'ui'.
     """
+    # Conditionally apply the patch. If the 'ui' marker is present on the
+    # test, we do not apply the patch, as UI tests require GLib.idle_add.
+    if "ui" in request.keywords:
+        yield
+        return
+
     fail_msg = (
-        "A call to GLib.idle_add() was detected during tests. "
+        "A call to GLib.idle_add() was detected during backend tests. "
         "This is forbidden as it can cause deadlocks. All main-thread "
         "callbacks should be routed through the test-aware TaskManager "
         "scheduler."
@@ -138,8 +147,8 @@ def clean_context_singleton():
 @pytest_asyncio.fixture(scope="function")
 async def task_mgr():
     """
-    Provides a test-isolated TaskManager, configured to bridge its main-thread
-    callbacks to the asyncio event loop.
+    Provides a test-isolated TaskManager for ASYNC tests, configured to
+    bridge its callbacks to the asyncio event loop.
     """
     from rayforge.shared.tasker.manager import TaskManager
 
@@ -228,3 +237,40 @@ def test_machine_and_config(context_initializer):
     context.config.set_machine(test_machine)
 
     yield test_machine, context.config
+
+
+@pytest.fixture(scope="function")
+def ui_task_mgr():
+    """
+    Provides a test-isolated TaskManager for SYNC UI tests. It uses
+    GLib.idle_add to safely communicate with the main GTK thread.
+    """
+    from rayforge.shared.tasker.manager import TaskManager
+
+    tm = TaskManager(main_thread_scheduler=GLib.idle_add)
+    yield tm
+    if tm.has_tasks():
+        logger.warning(
+            "Task manager still has tasks at end of test. Shutting down."
+        )
+    tm.shutdown()
+
+
+@pytest.fixture(scope="function")
+def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
+    """
+    A SYNCHRONOUS context initializer for UI tests. It uses the GLib-based
+    `ui_task_mgr`.
+    """
+    from rayforge import config
+    from rayforge.context import get_context
+    from rayforge.shared import tasker
+
+    temp_config_dir = tmp_path / "config"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_config_dir / "machines")
+    monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
+
+    context = get_context()
+    context.initialize_full_context()
+    yield context
