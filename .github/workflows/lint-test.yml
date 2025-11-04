@@ -2,13 +2,13 @@ name: Lint and Test
 on:
   push:
     branches:
-      - '**'  # Run on all branches
+      - "**" # Run on all branches
     tags:
-      - '*'  # Include tags to trigger builds
+      - "*" # Include tags to trigger builds
   pull_request:
     branches:
-      - '**'  # Run on PRs targeting any branch
-  workflow_call:  # Allow this workflow to be called by other workflows
+      - "**" # Run on PRs targeting any branch
+  workflow_call: # Allow this workflow to be called by other workflows
 
 jobs:
   lint-test:
@@ -31,11 +31,17 @@ jobs:
       - name: Setup environment
         run: pixi install
 
+      - name: Install Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Compile Translations
         run: pixi run compile-translations
 
       - name: Run flake8 Lint
         run: pixi run lint
 
-      - name: Run tests
-        run: pixi run test
+      - name: Run backend tests
+        run: pixi run test -m "not ui"
+
+      - name: Run UI tests
+        run: xvfb-run pixi run uitest

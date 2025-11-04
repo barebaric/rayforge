@@ -510,7 +510,9 @@ class TaskManager:
         progress = self.get_overall_progress_unsafe()
         tasks = list(self._tasks.values())
         self._main_thread_scheduler(
-            self.tasks_updated.send, self, tasks=tasks, progress=progress
+            lambda: self.tasks_updated.send(
+                self, tasks=tasks, progress=progress
+            )
         )
 
     def get_overall_progress(self) -> float:

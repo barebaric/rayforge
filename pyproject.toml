@@ -86,3 +86,7 @@ norecursedirs = [
     ".pixi",
     "__pycache__",
 ]
+markers = [
+    "ui: marks tests as UI tests that require a graphical environment and a real GTK event loop",
+]
+addopts = "-m 'not ui'"

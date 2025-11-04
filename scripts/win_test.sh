@@ -4,16 +4,20 @@ set -e
 
 # Ensure the MSYS2 environment is configured.
 if [ ! -f .msys2_env ]; then
-    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/setup_windows.sh' first."
+    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/win_setup.sh' first."
     exit 1
 fi
 
 # Load the environment variables (MSYS2_PATH, PKG_CONFIG_PATH, etc.)
 source .msys2_env
 
-echo "--- Running Tests ---"
+# Define the Python executable for convenience
+PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
 
-# Use the Python interpreter from our MSYS2 environment to run pytest.
-$MSYS2_PATH/mingw64/bin/python -m pytest -v -ra
+echo "--- Running Backend Tests ---"
+$PYTHON_EXEC -m pytest -v -ra -m "not ui"
+
+echo "--- Running UI Tests ---"
+$PYTHON_EXEC -m pytest -v -ra -m "ui"
 
 echo "✅ All tests passed."
