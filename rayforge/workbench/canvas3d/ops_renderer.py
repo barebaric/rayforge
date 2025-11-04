@@ -98,7 +98,7 @@ class OpsRenderer(BaseRenderer):
 
         ops.preload_state()
         for i, command in enumerate(ops.commands):
-            if not isinstance(command, Command) or command.is_marker_command():
+            if not isinstance(command, Command) or command.is_marker():
                 continue
 
             if hasattr(command, "state") and command.state is not None:

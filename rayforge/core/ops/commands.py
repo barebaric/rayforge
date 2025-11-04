@@ -71,7 +71,7 @@ class Command:
         """Whether it is a non-cutting movement."""
         return False
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         """Whether this is a logical marker for the generator."""
         return False
 
@@ -287,13 +287,13 @@ class SetLaserCommand(Command):
 
 @dataclass(frozen=True, repr=False)
 class JobStartCommand(Command):
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
 
 @dataclass(frozen=True, repr=False)
 class JobEndCommand(Command):
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
 
@@ -301,7 +301,7 @@ class JobEndCommand(Command):
 class LayerStartCommand(Command):
     layer_uid: str
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:
@@ -314,7 +314,7 @@ class LayerStartCommand(Command):
 class LayerEndCommand(Command):
     layer_uid: str
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:
@@ -327,7 +327,7 @@ class LayerEndCommand(Command):
 class WorkpieceStartCommand(Command):
     workpiece_uid: str
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:
@@ -340,7 +340,7 @@ class WorkpieceStartCommand(Command):
 class WorkpieceEndCommand(Command):
     workpiece_uid: str
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:
@@ -363,7 +363,7 @@ class OpsSectionStartCommand(Command):
     section_type: SectionType
     workpiece_uid: str  # Provides context to downstream transformers
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:
@@ -379,7 +379,7 @@ class OpsSectionEndCommand(Command):
 
     section_type: SectionType
 
-    def is_marker_command(self) -> bool:
+    def is_marker(self) -> bool:
         return True
 
     def to_dict(self) -> Dict[str, Any]:

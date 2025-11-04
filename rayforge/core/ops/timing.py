@@ -46,7 +46,7 @@ def estimate_time(
     for cmd in commands:
         if cmd.is_state_command():
             cmd.apply_to_state(state)
-        elif not cmd.is_marker_command():
+        elif not cmd.is_marker():
             cmd.state = copy(state)
 
     total_time = 0.0

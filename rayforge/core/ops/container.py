@@ -384,7 +384,7 @@ class Ops:
         for cmd in self.commands:
             if cmd.is_state_command():
                 cmd.apply_to_state(state)
-            elif not cmd.is_marker_command():
+            elif not cmd.is_marker():
                 cmd.state = copy(state)
 
     def clear(self) -> None:
@@ -735,7 +735,7 @@ class Ops:
             elif command.is_cutting_command():
                 segment.append(command)
 
-            elif command.is_state_command() or command.is_marker_command():
+            elif command.is_state_command() or command.is_marker():
                 yield segment
                 yield [command]
                 segment = []
@@ -1097,7 +1097,7 @@ class Ops:
         clipped_pen_pos: Optional[Tuple[float, float, float]] = None
 
         for cmd in self.commands:
-            if cmd.is_state_command() or cmd.is_marker_command():
+            if cmd.is_state_command() or cmd.is_marker():
                 new_ops.add(deepcopy(cmd))
                 continue
 
