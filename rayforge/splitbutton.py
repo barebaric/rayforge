@@ -31,7 +31,7 @@ class SplitMenuButton(Gtk.Box):
         super().__init__(**kwargs)
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.set_spacing(0)
-        self.get_style_context().add_class("linked")
+        self.add_css_class("linked")
 
         if not actions:
             raise ValueError("SplitMenuButton requires at least one action.")
@@ -67,7 +67,7 @@ class SplitMenuButton(Gtk.Box):
         popover = Gtk.Popover()
         list_box = Gtk.ListBox()
         list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        list_box.get_style_context().add_class("popover-list")
+        list_box.add_css_class("popover-list")
         popover.set_child(list_box)
 
         for i, (name, icon_name, action_name) in enumerate(self.actions):

@@ -246,26 +246,21 @@ class WorkSurface(Canvas):
         Reads the current theme colors from the widget's style context
         and applies them to the AxisRenderer.
         """
-        style_context = self.get_style_context()
-
         # Get the foreground color for axes and labels
-        found, fg_rgba = style_context.lookup_color("view_fg_color")
-        if found:
-            self._axis_renderer.set_fg_color(
-                (fg_rgba.red, fg_rgba.green, fg_rgba.blue, fg_rgba.alpha)
-            )
+        fg_rgba = self.get_color()
+        self._axis_renderer.set_fg_color(
+            (fg_rgba.red, fg_rgba.green, fg_rgba.blue, fg_rgba.alpha)
+        )
 
-        # Get the separator color for the grid lines
-        found, grid_rgba = style_context.lookup_color("separator_color")
-        if found:
-            self._axis_renderer.set_grid_color(
-                (
-                    grid_rgba.red,
-                    grid_rgba.green,
-                    grid_rgba.blue,
-                    grid_rgba.alpha,
-                )
+        # Set the separator color for the grid lines
+        self._axis_renderer.set_grid_color(
+            (
+                fg_rgba.red,
+                fg_rgba.green,
+                fg_rgba.blue,
+                fg_rgba.alpha * 0.3,
             )
+        )
 
     def _on_history_changed(self, sender, **kwargs):
         """
