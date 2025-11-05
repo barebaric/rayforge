@@ -134,7 +134,7 @@ PROFILES: List[MachineProfile] = [
         ],
     ),
     MachineProfile(
-        name="Xtool D1 Pro",
+        name="xTool D1 Pro",
         driver_class_name="GrblNetworkDriver",
         dialect_name="GRBL",
         gcode_precision=3,
