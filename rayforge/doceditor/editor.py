@@ -179,8 +179,20 @@ class DocEditor:
         Imports a file from the specified path and waits for the operation
         to complete.
         """
-        # Directly await the private async method, which is self-contained.
-        await self.file._load_file_async(filename, mime_type, vector_config)
+        # Step 1: Run the importer
+        payload = await self.file._load_file_async(
+            filename, mime_type, vector_config
+        )
+        if not payload or not payload.items:
+            logger.warning(
+                f"Test import of {filename.name} produced no items."
+            )
+            return
+
+        # Step 2: Run the finalizer on the main thread.
+        self.file._finalize_import_on_main_thread(
+            payload, filename, position_mm=None
+        )
 
     async def export_gcode_to_path(self, output_path: "Path") -> None:
         """
