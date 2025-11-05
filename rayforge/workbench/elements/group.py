@@ -1,7 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Optional, cast
 from gi.repository import GLib
-from ...core.item import DocItem
 from ...core.workpiece import WorkPiece
 from ...core.group import Group
 from ..canvas import ShrinkWrapGroup
@@ -34,7 +33,7 @@ class GroupElement(ShrinkWrapGroup):
         self._on_transform_changed(self.data)
 
         # Build the child view hierarchy.
-        self.sync_with_model(origin=None)
+        self.sync_with_model()
 
         # Schedule the group to become "active" and
         # perform its first shrink-wrap calculation in the next idle cycle.
@@ -114,9 +113,7 @@ class GroupElement(ShrinkWrapGroup):
             )
             self.data.matrix = self.transform.copy()
 
-    def sync_with_model(
-        self, *args, origin: Optional[DocItem] = None, **kwargs
-    ):
+    def sync_with_model(self, *args, **kwargs):
         """
         Reconciles child elements (WorkPieceElement, GroupElement) with the
         state of the Group model.

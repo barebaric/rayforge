@@ -30,7 +30,9 @@ def test_add_step_fires_descendant_added_signal(workflow):
     step = Step("Test Step")
     workflow.add_step(step)
 
-    handler.assert_called_once_with(workflow, origin=step)
+    handler.assert_called_once_with(
+        workflow, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_remove_step_fires_descendant_removed_signal(workflow):
@@ -42,7 +44,9 @@ def test_remove_step_fires_descendant_removed_signal(workflow):
     workflow.descendant_removed.connect(handler)
     workflow.remove_step(step)
 
-    handler.assert_called_once_with(workflow, origin=step)
+    handler.assert_called_once_with(
+        workflow, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_step_change_fires_workflow_descendant_updated_signal(workflow):
@@ -57,7 +61,9 @@ def test_step_change_fires_workflow_descendant_updated_signal(workflow):
     step.set_power(0.5)
 
     # Assert
-    handler.assert_called_once_with(workflow, origin=step)
+    handler.assert_called_once_with(
+        workflow, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_workflow_to_dict_serialization():

@@ -40,6 +40,8 @@ class Doc(DocItem):
     @classmethod
     def from_dict(cls, data: Dict) -> "Doc":
         """Deserializes the document from a dictionary."""
+        from .stock import StockItem
+
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
 

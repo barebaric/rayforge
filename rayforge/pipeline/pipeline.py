@@ -324,41 +324,65 @@ class Pipeline:
                 return wp
         return None
 
-    def _on_descendant_added(self, sender: Any, *, origin: DocItem) -> None:
+    def _on_descendant_added(
+        self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
+    ) -> None:
         """Handles the addition of a new model object."""
-        if self.is_paused:
-            return
-        self.reconcile_all()
+        if not self.is_paused:
+            self.reconcile_all()
 
-    def _on_descendant_removed(self, sender: Any, *, origin: DocItem) -> None:
+    def _on_descendant_removed(
+        self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
+    ) -> None:
         """Handles the removal of a model object."""
-        if self.is_paused:
-            return
-        self.reconcile_all()
+        if isinstance(origin, WorkPiece):
+            # The parent_of_origin is the direct parent (Layer or Group)
+            # from which the item was removed. We traverse up the tree from
+            # there to robustly find the containing layer.
+            layer: Optional[Layer] = None
+            current_item: Optional[DocItem] = parent_of_origin
+            while current_item:
+                if isinstance(current_item, Layer):
+                    layer = current_item
+                    break
+                current_item = current_item.parent
+
+            if layer and layer.workflow:
+                logger.debug(
+                    f"Workpiece '{origin.name}' removed from layer "
+                    f"'{layer.name}'. Invalidating old step artifacts."
+                )
+                for step in layer.workflow.steps:
+                    self._step_stage.invalidate(step.uid)
+
+        if not self.is_paused:
+            self.reconcile_all()
 
     def _on_descendant_updated(
-        self, sender: Any, *, origin: Union[Step, WorkPiece]
+        self,
+        sender: Any,
+        *,
+        origin: Union[Step, WorkPiece],
+        parent_of_origin: DocItem,
     ) -> None:
         """Handles non-transform updates that require regeneration."""
-        if self.is_paused:
-            return
         if isinstance(origin, Step):
-            # A fundamental property of a Step has changed. This invalidates
-            # all artifacts that depend on it, starting from the bottom.
             self._workpiece_stage.invalidate_for_step(origin.uid)
             self._step_stage.invalidate(origin.uid)
-            self.reconcile_all()
         elif isinstance(origin, WorkPiece):
             self._workpiece_stage.invalidate_for_workpiece(origin.uid)
+
+        if not self.is_paused:
             self.reconcile_all()
 
     def _on_descendant_transform_changed(
-        self, sender: Any, *, origin: Union[WorkPiece, Group, Layer]
+        self,
+        sender: Any,
+        *,
+        origin: Union[WorkPiece, Group, Layer],
+        parent_of_origin: DocItem,
     ) -> None:
         """Handles transform changes by invalidating downstream artifacts."""
-        if self.is_paused:
-            return
-
         workpieces_to_check = []
         if isinstance(origin, WorkPiece):
             workpieces_to_check.append(origin)
@@ -373,14 +397,13 @@ class Pipeline:
                 for step in wp.layer.workflow.steps:
                     self._step_stage.mark_stale_and_trigger(step)
 
-        self.reconcile_all()
+        if not self.is_paused:
+            self.reconcile_all()
 
     def _on_job_assembly_invalidated(self, sender: Any) -> None:
         """
         Handles the signal sent when per-step transformers change.
         """
-        if self.is_paused:
-            return
         logger.debug(
             "Per-step transformers changed. Invalidating step artifacts."
         )
@@ -389,7 +412,8 @@ class Pipeline:
                 if layer.workflow:
                     for step in layer.workflow.steps:
                         self._step_stage.mark_stale_and_trigger(step)
-        self.reconcile_all()
+        if not self.is_paused:
+            self.reconcile_all()
 
     def _on_workpiece_generation_starting(
         self,

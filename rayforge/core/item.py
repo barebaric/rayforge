@@ -361,7 +361,7 @@ class DocItem(ABC):
 
         child.parent = self
         self._connect_child_signals(child)
-        self.descendant_added.send(self, origin=child)
+        self.descendant_added.send(self, origin=child, parent_of_origin=self)
         return child
 
     def remove_child(self, child: DocItem):
@@ -370,7 +370,7 @@ class DocItem(ABC):
 
         self.children.remove(child)
         child.parent = None
-        self.descendant_removed.send(self, origin=child)
+        self.descendant_removed.send(self, origin=child, parent_of_origin=self)
         self._disconnect_child_signals(child)
 
     def add_children(
@@ -458,7 +458,9 @@ class DocItem(ABC):
         # 3. Process removals and notify.
         for child in old_set - new_set:
             child.parent = None
-            self.descendant_removed.send(self, origin=child)
+            self.descendant_removed.send(
+                self, origin=child, parent_of_origin=self
+            )
             self._disconnect_child_signals(child)
 
         # 4. Process additions and notify.
@@ -467,7 +469,9 @@ class DocItem(ABC):
                 child.parent.remove_child(child)
             child.parent = self
             self._connect_child_signals(child)
-            self.descendant_added.send(self, origin=child)
+            self.descendant_added.send(
+                self, origin=child, parent_of_origin=self
+            )
 
     def get_depth(self) -> int:
         """
@@ -550,25 +554,43 @@ class DocItem(ABC):
             self._on_descendant_transform_changed
         )
 
-    def _on_child_updated(self, sender: DocItem, **kwargs):
-        self.descendant_updated.send(self, origin=sender)
+    def _on_child_updated(self, sender: DocItem):
+        self.descendant_updated.send(
+            self, origin=sender, parent_of_origin=self
+        )
 
-    def _on_child_transform_changed(self, sender: DocItem, **kwargs):
-        self.descendant_transform_changed.send(self, origin=sender)
+    def _on_child_transform_changed(self, sender: DocItem):
+        self.descendant_transform_changed.send(
+            self, origin=sender, parent_of_origin=self
+        )
 
-    def _on_descendant_added(self, sender: DocItem, *, origin: DocItem):
-        self.descendant_added.send(self, origin=origin)
+    def _on_descendant_added(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
+        self.descendant_added.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
 
-    def _on_descendant_removed(self, sender: DocItem, *, origin: DocItem):
-        self.descendant_removed.send(self, origin=origin)
+    def _on_descendant_removed(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
+        self.descendant_removed.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
 
-    def _on_descendant_updated(self, sender: DocItem, *, origin: DocItem):
-        self.descendant_updated.send(self, origin=origin)
+    def _on_descendant_updated(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
+        self.descendant_updated.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
 
     def _on_descendant_transform_changed(
-        self, sender: DocItem, *, origin: DocItem
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ):
-        self.descendant_transform_changed.send(self, origin=origin)
+        self.descendant_transform_changed.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
 
     @property
     def matrix(self) -> "Matrix":
