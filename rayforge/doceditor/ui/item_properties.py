@@ -174,7 +174,7 @@ class DocItemPropertiesWidget(Expander):
 
         # --- Reset Buttons ---
         def create_reset_button(tooltip_text, on_clicked):
-            button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
+            button = Gtk.Button.new_from_icon_name("edit-undo-symbolic")
             button.set_valign(Gtk.Align.CENTER)
             button.set_tooltip_text(tooltip_text)
             button.connect("clicked", on_clicked)
