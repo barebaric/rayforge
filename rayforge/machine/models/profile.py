@@ -155,6 +155,17 @@ PROFILES: List[MachineProfile] = [
                 "spot_size_mm": [0.05, 0.05],
             }
         ],
+        hookmacros=[
+            {
+                "trigger": "JOB_START",
+                "code": [
+                    "M5",
+                    "G90",
+                    "M17",
+                    "M106 S0",
+                ],
+            }
+        ],
     ),
     MachineProfile(
         name=_("Other Device"),
