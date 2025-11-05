@@ -163,6 +163,17 @@ class AboutDialog(Adw.Window):
                 and GLib.SOURCE_REMOVE,
             )
 
+    def _on_copy_version_clicked(self, button: Gtk.Button):
+        """Copy the version information to clipboard."""
+        clipboard = self.get_display().get_clipboard()
+        clipboard.set(__version__ or _not_found_str)
+        button.set_child(get_icon("check-symbolic"))
+        GLib.timeout_add(
+            2000,
+            lambda: button.set_child(get_icon("edit-copy-symbolic"))
+            and GLib.SOURCE_REMOVE,
+        )
+
     def _build_main_page(self):
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         content_box.set_halign(Gtk.Align.FILL)
@@ -185,12 +196,6 @@ class AboutDialog(Adw.Window):
         title.set_markup("<span size='xx-large' weight='bold'>Rayforge</span>")
         title.set_margin_top(6)
         hero_box.append(title)
-
-        version_label = Gtk.Label()
-        version_label.set_markup(
-            f"<small>Version {__version__ or _not_found_str}</small>"
-        )
-        hero_box.append(version_label)
 
         copyright_label = Gtk.Label(label="© 2025 Samuel Abels")
         hero_box.append(copyright_label)
@@ -217,6 +222,20 @@ class AboutDialog(Adw.Window):
 
         prefgroup = Adw.PreferencesGroup()
         content_box.append(prefgroup)
+
+        # Version row with copy button
+        version_row = Adw.ActionRow(title=_("Version"))
+        version_row.set_subtitle(__version__ or _not_found_str)
+
+        copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
+        copy_button.set_valign(Gtk.Align.CENTER)
+        copy_button.add_css_class("flat")
+        copy_button.set_tooltip_text(_("Copy Version"))
+        copy_button.connect("clicked", self._on_copy_version_clicked)
+        version_row.add_suffix(copy_button)
+
+        prefgroup.add(version_row)
+
         dev_row = Adw.ActionRow(
             title=_("Lead Developer"), subtitle="Samuel Abels"
         )
