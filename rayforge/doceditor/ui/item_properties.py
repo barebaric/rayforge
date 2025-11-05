@@ -9,6 +9,7 @@ from ...core.workpiece import WorkPiece
 from ...icons import get_icon
 from ...shared.ui.expander import Expander
 from ...shared.util.adwfix import get_spinrow_float
+from .image_metadata_dialog import ImageMetadataDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -48,6 +49,18 @@ class DocItemPropertiesWidget(Expander):
             title=_("Source File"),
             visible=False,  # Hidden by default
         )
+
+        # Info button for metadata
+        self.metadata_info_button = Gtk.Button()
+        self.metadata_info_button.set_child(get_icon("info-symbolic"))
+        self.metadata_info_button.set_valign(Gtk.Align.CENTER)
+        self.metadata_info_button.set_tooltip_text(_("Show Image Metadata"))
+        self.metadata_info_button.connect(
+            "clicked", self._on_metadata_info_clicked
+        )
+
+        # Button to open file in file browser.
+        self.source_file_row.add_suffix(self.metadata_info_button)
         self.open_source_button = Gtk.Button()
         self.open_source_button.set_child(get_icon("open-in-new-symbolic"))
         self.open_source_button.set_valign(Gtk.Align.CENTER)
@@ -430,6 +443,25 @@ class DocItemPropertiesWidget(Expander):
             except Exception as e:
                 logger.error(f"Failed to show file in browser: {e}")
 
+    def _on_metadata_info_clicked(self, button):
+        """Handles the metadata info button click."""
+        if len(self.items) != 1 or not isinstance(self.items[0], WorkPiece):
+            return
+
+        workpiece = cast(WorkPiece, self.items[0])
+        source = workpiece.source
+
+        if not source or not source.metadata:
+            return
+
+        # Create and show the metadata dialog
+        root = self.get_root()
+        dialog = ImageMetadataDialog(
+            parent=root if isinstance(root, Gtk.Window) else None
+        )
+        dialog.set_metadata(source)
+        dialog.present()
+
     def _on_reset_aspect_clicked(self, button):
         if not self.items:
             return
@@ -694,14 +726,22 @@ class DocItemPropertiesWidget(Expander):
             if file_path.is_file():
                 self.source_file_row.set_subtitle(file_path.name)
                 self.open_source_button.set_sensitive(True)
+                # Enable metadata button if source has metadata
+                source = workpiece.source
+                has_metadata = bool(
+                    source and source.metadata and len(source.metadata) > 0
+                )
+                self.metadata_info_button.set_sensitive(has_metadata)
             else:
                 self.source_file_row.set_subtitle(
                     _("{name} (not found)").format(name=file_path.name)
                 )
                 self.open_source_button.set_sensitive(False)
+                self.metadata_info_button.set_sensitive(False)
         else:
             self.source_file_row.set_subtitle(_("(No source file)"))
             self.open_source_button.set_sensitive(False)
+            self.metadata_info_button.set_sensitive(False)
 
     def _update_tabs_rows(self, workpiece: WorkPiece):
         can_have_tabs = workpiece.vectors is not None
