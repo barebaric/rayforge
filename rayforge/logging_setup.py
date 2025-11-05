@@ -117,10 +117,9 @@ def setup_logging(loglevel_str: str):
     # Handlers will then filter messages by their own specific levels.
     root_logger.setLevel(logging.DEBUG)
 
-    # Run cleanup BEFORE adding new handlers
-    _cleanup_old_logs(LOG_DIR, LOG_FILES_TO_KEEP)
-
-    # 1. Console Handler (for user-facing CLI output)
+    # 1. Add the console handler IMMEDIATELY after clearing.
+    # This prevents logging calls in helper functions (like _cleanup_old_logs)
+    # from implicitly re-triggering basicConfig.
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(log_level)
     console_formatter = logging.Formatter(
@@ -129,6 +128,9 @@ def setup_logging(loglevel_str: str):
     console_handler.setFormatter(console_formatter)
     console_handler.addFilter(ConsoleLogFilter())
     root_logger.addHandler(console_handler)
+
+    # Now it is safe to run functions that might log things.
+    _cleanup_old_logs(LOG_DIR, LOG_FILES_TO_KEEP)
 
     # 2. Session File Handler (for persistent, detailed logs)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
