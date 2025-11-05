@@ -15,7 +15,7 @@ from typing import (
 from ...context import RayforgeContext
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
-from ...shared.varset import Var, VarSet, HostnameVar
+from ...shared.varset import Var, VarSet, HostnameVar, PortVar
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
@@ -62,6 +62,8 @@ class GrblNetworkDriver(Driver):
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self.host = None
+        self.port = None
+        self.ws_port = None
         self.http = None
         self.websocket = None
         self.keep_running = False
@@ -85,26 +87,43 @@ class GrblNetworkDriver(Driver):
                     key="host",
                     label=_("Hostname"),
                     description=_("The IP address or hostname of the device"),
-                )
+                ),
+                PortVar(
+                    key="port",
+                    label=_("HTTP Port"),
+                    description=_("The HTTP port for the device"),
+                    default=80,
+                ),
+                PortVar(
+                    key="ws_port",
+                    label=_("WebSocket Port"),
+                    description=_("The WebSocket port for the device"),
+                    default=81,
+                ),
             ]
         )
 
     def setup(self, **kwargs: Any):
         host = cast(str, kwargs.get("host", ""))
+        port = cast(int, kwargs.get("port", 80))
+        ws_port = cast(int, kwargs.get("ws_port", 81))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
         super().setup()
         self.host = host
+        self.port = port
+        self.ws_port = ws_port
 
-        self.http_base = f"http://{host}"
+        self.http_base = f"http://{host}:{port}"
         self.http = HttpTransport(
             f"{self.http_base}{status_url}", receive_interval=0.5
         )
         self.http.received.connect(self.on_http_data_received)
         self.http.status_changed.connect(self.on_http_status_changed)
 
-        self.websocket = WebSocketTransport(f"ws://{host}:81/", self.http_base)
+        ws_url = f"ws://{host}:{ws_port}/"
+        self.websocket = WebSocketTransport(ws_url, self.http_base)
         self.websocket.received.connect(self.on_websocket_data_received)
         self.websocket.status_changed.connect(self.on_websocket_status_changed)
 
