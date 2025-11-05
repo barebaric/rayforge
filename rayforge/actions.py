@@ -138,6 +138,13 @@ class ActionManager:
         self._add_action("flip-horizontal", self.on_flip_horizontal)
         self._add_action("flip-vertical", self.on_flip_vertical)
 
+        # Macro Actions
+        self._add_action(
+            "execute-macro",
+            self.win.on_execute_macro,
+            GLib.VariantType.new("s"),
+        )
+
         # Machine Control Actions
         self._add_action("machine-home", self.win.on_home_clicked)
         self._add_action("machine-frame", self.win.on_frame_clicked)
