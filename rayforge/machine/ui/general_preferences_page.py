@@ -15,6 +15,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         self.machine = machine
         self._is_initializing = True
+        self._current_driver_name = self.machine.driver_name
 
         # Error Banner Group
         error_group = Adw.PreferencesGroup()
@@ -66,24 +67,28 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         factory.connect("bind", self.on_factory_bind)
         self.combo_row.set_factory(factory)
 
+        # Perform the initial population of the driver VarSet
+        initial_var_set = driver_cls.get_setup_vars()
+        initial_var_set.set_values(self.machine.driver_args)
+        self.driver_group.populate(initial_var_set)
+
         # Connect to the machine's changed signal to get updates
         self.machine.changed.connect(self._on_machine_changed)
         self.connect("destroy", self._on_destroy)
 
-        # Connect the signal BEFORE setting the initial selection.
-        # This ensures that our handler is called to correctly set the initial
-        # title and subtitle, working around the widget's buggy behavior.
+        # Connect the signal for the combo row
         self.combo_row.connect("notify::selected", self.on_combo_row_changed)
 
-        # Now, set the initial selection. This will trigger the
-        # on_combo_row_changed
-        # handler, which correctly populates the title and subtitle.
+        # Now, set the initial selection and update its title/subtitle
         if driver_cls:
             selected_index = drivers.index(driver_cls)
             self.combo_row.set_selected(selected_index)
+            # Manually set title/subtitle for the initial state
+            self.combo_row.set_title(driver_cls.label)
+            self.combo_row.set_subtitle(driver_cls.subtitle)
         else:
-            # Manually trigger an update for the empty state
-            self.on_combo_row_changed(self.combo_row, None)
+            self.combo_row.set_title(_("Select driver"))
+            self.combo_row.set_subtitle("")
 
         # Group for Machine Settings
         machine_group = Adw.PreferencesGroup(title=_("Machine Settings"))
@@ -245,12 +250,15 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         """
         self._update_error_state()
 
-        # Repopulate the driver-specific settings based on the current
-        # machine state. This is the single source of truth for the UI.
-        driver_cls = self.machine.driver.__class__
-        var_set = driver_cls.get_setup_vars()
-        var_set.set_values(self.machine.driver_args)
-        self.driver_group.populate(var_set)
+        # ONLY repopulate the driver settings if the driver *class* has
+        # actually changed. This prevents a full UI rebuild (and focus loss)
+        # when just a parameter value is changed.
+        if self.machine.driver_name != self._current_driver_name:
+            self._current_driver_name = self.machine.driver_name
+            driver_cls = self.machine.driver.__class__
+            var_set = driver_cls.get_setup_vars()
+            var_set.set_values(self.machine.driver_args)
+            self.driver_group.populate(var_set)
 
         # Update travel speed row based on driver features
         self._update_travel_speed_state()
@@ -296,6 +304,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         row.set_subtitle(driver_cls.subtitle)
 
     def on_combo_row_changed(self, combo_row, _param):
+        if self._is_initializing:
+            return
+
         selected_index = combo_row.get_selected()
         if selected_index < 0:
             self.combo_row.set_title(_("Select driver"))
@@ -311,15 +322,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # If the user selected a new driver, update the machine model.
         # The `machine.changed` signal will then trigger _on_machine_changed
         # to update the UI, including the driver settings widgets.
-        if (
-            not self._is_initializing
-            and self.machine.driver_name != driver_cls.__name__
-        ):
+        if self.machine.driver_name != driver_cls.__name__:
             self.machine.set_driver(driver_cls, {})
-        elif self._is_initializing:
-            # During initialization, the signal handler isn't connected yet
-            # or might not fire as expected, so we populate directly.
-            self._on_machine_changed(self.machine)
 
     def on_name_changed(self, entry_row, _):
         """Update the machine name when the text changes."""

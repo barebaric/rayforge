@@ -8,6 +8,8 @@ from ...machine.transport.validators import is_valid_hostname_or_ip
 from .baudratevar import BaudrateVar
 from .hostnamevar import HostnameVar
 from .serialportvar import SerialPortVar
+from .intvar import IntVar
+from .floatvar import FloatVar
 from .var import Var
 from .varset import VarSet
 
@@ -93,16 +95,22 @@ class VarSetWidget(Adw.PreferencesGroup):
             return self._create_baud_rate_row(var)
         if isinstance(var, HostnameVar):
             return self._create_hostname_row(var)
+        if isinstance(var, IntVar):
+            return self._create_integer_row(var)
+        if isinstance(var, FloatVar):
+            return self._create_float_row(var)
 
+        # Fallback to generic types if no specific class matches
         var_type = var.var_type
         if var_type is str:
             return self._create_string_row(var)
         elif var_type is bool:
             return self._create_boolean_row(var)
-        elif var_type is int:
-            return self._create_integer_row(var)
-        elif var_type is float:
-            return self._create_float_row(var)
+
+        logger.warning(
+            f"No UI widget defined for Var with key '{var.key}' "
+            f"and type {type(var)}"
+        )
         return None
 
     def _add_apply_button_if_needed(self, row, key):
@@ -170,11 +178,14 @@ class VarSetWidget(Adw.PreferencesGroup):
             )
         return row
 
-    def _create_integer_row(self, var: Var[int]):
+    def _create_integer_row(self, var: IntVar):
+        lower = var.min_val if var.min_val is not None else -2147483647
+        upper = var.max_val if var.max_val is not None else 2147483647
+
         adj = Gtk.Adjustment(
             value=var.value if var.value is not None else 0,
-            lower=-2147483647,
-            upper=2147483647,
+            lower=lower,
+            upper=upper,
             step_increment=1,
         )
         row = Adw.SpinRow(
@@ -186,11 +197,14 @@ class VarSetWidget(Adw.PreferencesGroup):
             self._add_apply_button_if_needed(row, var.key)
         return row
 
-    def _create_float_row(self, var: Var[float]):
+    def _create_float_row(self, var: FloatVar):
+        lower = var.min_val if var.min_val is not None else -1.0e12
+        upper = var.max_val if var.max_val is not None else 1.0e12
+
         adj = Gtk.Adjustment(
             value=var.value if var.value is not None else 0.0,
-            lower=-1.0e12,
-            upper=1.0e12,
+            lower=lower,
+            upper=upper,
             step_increment=0.1,
         )
         row = Adw.SpinRow(
