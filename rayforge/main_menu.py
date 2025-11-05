@@ -1,4 +1,6 @@
 from gi.repository import Gio
+from typing import List
+from .machine.models.macro import Macro
 
 
 class MainMenu(Gio.Menu):
@@ -151,6 +153,13 @@ class MainMenu(Gio.Menu):
         jog_group.append(_("Jog Controls..."), "win.machine-jog")
         machine_menu.append_section(None, jog_group)
 
+        # Macros submenu under jog controls
+        macros_menu = Gio.Menu()
+        # This section will be populated dynamically
+        self.dynamic_macros_section = Gio.Menu()
+        macros_menu.append_section(None, self.dynamic_macros_section)
+        machine_menu.append_submenu(_("Macros"), macros_menu)
+
         job_group = Gio.Menu()
         job_group.append(_("Send Job"), "win.machine-send")
         job_group.append(_("Pause / Resume Job"), "win.machine-hold")
@@ -169,3 +178,10 @@ class MainMenu(Gio.Menu):
         help_menu = Gio.Menu()
         help_menu.append(_("About"), "win.about")
         self.append_submenu(_("_Help"), help_menu)
+
+    def update_macros_menu(self, macros: List[Macro]):
+        """Clears and rebuilds the dynamic macro execution menu items."""
+        self.dynamic_macros_section.remove_all()
+        for macro in macros:
+            action_name = f"win.execute-macro('{macro.uid}')"
+            self.dynamic_macros_section.append(macro.name, action_name)
