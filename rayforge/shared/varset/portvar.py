@@ -1,5 +1,5 @@
 from typing import Optional
-from .var import Var, ValidationError
+from .intvar import IntVar, ValidationError
 
 
 def port_validator(port: Optional[int]):
@@ -8,11 +8,11 @@ def port_validator(port: Optional[int]):
         raise ValidationError(_("Port cannot be empty."))
     if not isinstance(port, int):
         raise ValidationError(_("Port must be a number."))
-    if port < 1 or port > 65535:
-        raise ValidationError(_("Port must be between 1 and 65535."))
+    # The range check (1-65535) is handled by IntVar's validator logic
+    # because we pass min_val and max_val to its constructor.
 
 
-class PortVar(Var[int]):
+class PortVar(IntVar):
     """A Var subclass for network port numbers."""
 
     def __init__(
@@ -26,9 +26,10 @@ class PortVar(Var[int]):
         super().__init__(
             key=key,
             label=label,
-            var_type=int,
             description=description,
             default=default,
             value=value,
+            min_val=1,
+            max_val=65535,
             validator=port_validator,
         )

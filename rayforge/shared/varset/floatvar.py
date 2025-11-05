@@ -16,21 +16,24 @@ class FloatVar(Var[float]):
         max_val: Optional[float] = None,
         extra_validator: Optional[Callable[[float], None]] = None,
     ):
+        self.min_val = min_val
+        self.max_val = max_val
+
         def validator(v: Optional[float]):
             # A None value is valid for an unset optional field.
             if v is None:
                 return
 
-            if min_val is not None and v < min_val:
+            if self.min_val is not None and v < self.min_val:
                 raise ValidationError(
                     _("Value must be at least {min_val}.").format(
-                        min_val=min_val
+                        min_val=self.min_val
                     )
                 )
-            if max_val is not None and v > max_val:
+            if self.max_val is not None and v > self.max_val:
                 raise ValidationError(
                     _("Value must be at most {max_val}.").format(
-                        max_val=max_val
+                        max_val=self.max_val
                     )
                 )
             if extra_validator:

@@ -14,7 +14,7 @@ from typing import (
 from ...context import RayforgeContext
 from ...core.ops import Ops
 from ...pipeline.encoder.gcode import GcodeEncoder
-from ...shared.varset import VarSet, HostnameVar, IntVar
+from ...shared.varset import VarSet, HostnameVar, PortVar
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
@@ -70,13 +70,11 @@ class SmoothieDriver(Driver):
                     label=_("Hostname"),
                     description=_("The IP address or hostname of the device"),
                 ),
-                IntVar(
+                PortVar(
                     key="port",
                     label=_("Port"),
                     description=_("The Telnet port number"),
                     default=23,
-                    min_val=1,
-                    max_val=65535,
                 ),
             ]
         )
