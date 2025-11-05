@@ -111,6 +111,7 @@ PROFILES: List[MachineProfile] = [
         heads=[
             {
                 "frame_power": 10.0,
+                "focus_power": 10.0,
                 "spot_size_mm": [0.1, 0.1],
             }
         ],
@@ -127,7 +128,31 @@ PROFILES: List[MachineProfile] = [
         heads=[
             {
                 "frame_power": 10.0,
+                "focus_power": 10.0,
                 "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+    ),
+    MachineProfile(
+        name="Xtool D1 Pro",
+        driver_class_name="GrblNetworkDriver",
+        dialect_name="GRBL",
+        gcode_precision=3,
+        dimensions=(430, 390),
+        y_axis_down=False,
+        max_travel_speed=3000,
+        max_cut_speed=1000,
+        home_on_start=True,
+        driver_args={
+            "host": "",
+            "port": 8080,
+            "ws_port": 8081,
+        },
+        heads=[
+            {
+                "frame_power": 10.0,
+                "focus_power": 10.0,
+                "spot_size_mm": [0.05, 0.05],
             }
         ],
     ),
