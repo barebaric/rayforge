@@ -335,7 +335,9 @@ class TestPipeline:
             step.power = 0.5
             # Manually call the signal handler to simulate the pipeline's
             # correct reaction to a step update.
-            pipeline._on_descendant_updated(sender=step, origin=step)
+            pipeline._on_descendant_updated(
+                sender=step, origin=step, parent_of_origin=layer.workflow
+            )
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -1282,7 +1284,9 @@ class TestPipeline:
         # This simulates a rapid UI change, cancelling task1 and
         # starting task2.
         step.power = 0.5  # Change a property to trigger invalidation
-        pipeline._on_descendant_updated(sender=step, origin=step)
+        pipeline._on_descendant_updated(
+            sender=step, origin=step, parent_of_origin=layer.workflow
+        )
 
         # Assert 2: A new task was created, and the old one was cancelled.
         mock_task_mgr.run_process.assert_called_once()
@@ -1410,7 +1414,9 @@ class TestPipeline:
         # Act 3: Trigger a second regeneration immediately, cancelling task 1
         # and starting task 2.
         step.power = 0.5
-        pipeline._on_descendant_updated(sender=step, origin=step)
+        pipeline._on_descendant_updated(
+            sender=step, origin=step, parent_of_origin=layer.workflow
+        )
 
         # Assert 3: A new task was created and the pipeline remains busy,
         # without firing redundant state change signals.

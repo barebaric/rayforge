@@ -106,7 +106,9 @@ class MaterialTestCmd:
             f"Created material test grid ({width_mm:.1f}x{height_mm:.1f} mm)"
         )
 
-    def _on_step_updated(self, sender: DocItem, *, origin: DocItem):
+    def _on_step_updated(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
         if not isinstance(origin, Step) or not origin.opsproducer_dict:
             return
         if origin.opsproducer_dict.get("type") != "MaterialTestGridProducer":

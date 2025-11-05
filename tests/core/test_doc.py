@@ -92,7 +92,9 @@ def test_add_layer_fires_descendant_added(doc):
     doc.add_layer(new_layer)
 
     assert len(doc.layers) == initial_layer_count + 1
-    handler.assert_called_once_with(doc, origin=new_layer)
+    handler.assert_called_once_with(
+        doc, origin=new_layer, parent_of_origin=doc
+    )
 
 
 def test_remove_layer_fires_descendant_removed(doc):
@@ -106,7 +108,9 @@ def test_remove_layer_fires_descendant_removed(doc):
     doc.descendant_removed.connect(handler)
     doc.remove_layer(layer_to_remove)
 
-    handler.assert_called_once_with(doc, origin=layer_to_remove)
+    handler.assert_called_once_with(
+        doc, origin=layer_to_remove, parent_of_origin=doc
+    )
 
 
 def test_descendant_updated_bubbles_up_to_doc(doc):
@@ -127,7 +131,9 @@ def test_descendant_updated_bubbles_up_to_doc(doc):
     step.set_power(0.5)
 
     # Assert
-    handler.assert_called_once_with(doc, origin=step)
+    handler.assert_called_once_with(
+        doc, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_descendant_added_bubbles_up_to_doc(doc):
@@ -144,7 +150,9 @@ def test_descendant_added_bubbles_up_to_doc(doc):
     workflow.add_step(step)
 
     # Assert
-    handler.assert_called_once_with(doc, origin=step)
+    handler.assert_called_once_with(
+        doc, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_descendant_removed_bubbles_up_to_doc(doc):
@@ -162,7 +170,9 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
     workflow.remove_step(step)
 
     # Assert
-    handler.assert_called_once_with(doc, origin=step)
+    handler.assert_called_once_with(
+        doc, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_doc_serialization_with_import_sources(doc):

@@ -51,7 +51,7 @@ class LayerElement(CanvasElement):
         self.data.updated.connect(self.sync_with_model)
         self.data.descendant_added.connect(self.sync_with_model)
         self.data.descendant_removed.connect(self.sync_with_model)
-        self.sync_with_model(origin=None)
+        self.sync_with_model(self.data)
 
     def remove(self):
         """Disconnects signals before removing the element."""
@@ -76,7 +76,10 @@ class LayerElement(CanvasElement):
         self.children.sort(key=_z_order_sort_key)
 
     def sync_with_model(
-        self, *args, origin: Optional[DocItem] = None, **kwargs
+        self,
+        sender,
+        origin: Optional[DocItem] = None,
+        parent_of_origin: Optional[DocItem] = None,
     ):
         """
         Reconciles all child elements with the state of the Layer model.
@@ -86,7 +89,7 @@ class LayerElement(CanvasElement):
 
         logger.debug(
             f"LayerElement for '{self.data.name}': sync_with_model is"
-            f" executing, called by {origin}."
+            f" executing, called by {origin or sender}."
         )
         self.set_visible(self.data.visible)
         from ..surface import WorkSurface

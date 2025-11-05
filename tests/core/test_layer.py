@@ -45,7 +45,9 @@ def test_add_workpiece_fires_descendant_added(
 
     layer.add_workpiece(mock_workpiece_with_signals)
 
-    handler.assert_called_once_with(layer, origin=mock_workpiece_with_signals)
+    handler.assert_called_once_with(
+        layer, origin=mock_workpiece_with_signals, parent_of_origin=layer
+    )
     assert mock_workpiece_with_signals in layer.workpieces
 
 
@@ -62,7 +64,9 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     workflow.add_step(step)
 
     # Assert
-    handler.assert_called_once_with(layer, origin=step)
+    handler.assert_called_once_with(
+        layer, origin=step, parent_of_origin=workflow
+    )
 
 
 def test_workpiece_data_change_bubbles_up_to_layer(
@@ -82,7 +86,7 @@ def test_workpiece_data_change_bubbles_up_to_layer(
 
     # Assert
     descendant_updated_handler.assert_called_once_with(
-        layer, origin=mock_workpiece_with_signals
+        layer, origin=mock_workpiece_with_signals, parent_of_origin=layer
     )
 
 
@@ -105,7 +109,7 @@ def test_workpiece_transform_change_bubbles_up_to_layer(
 
     # Assert
     transform_changed_handler.assert_called_once_with(
-        layer, origin=mock_workpiece_with_signals
+        layer, origin=mock_workpiece_with_signals, parent_of_origin=layer
     )
 
 

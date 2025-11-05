@@ -122,6 +122,9 @@ class StepGeneratorStage(PipelineStage):
         if full_invalidation:
             render_handle = self._artifact_cache.pop_step_render_handle(key)
             if render_handle:
+                logger.debug(
+                    f"Popped and released stale render handle for step {key}."
+                )
                 get_context().artifact_store.release(render_handle)
 
         self._artifact_cache.invalidate_for_job()
