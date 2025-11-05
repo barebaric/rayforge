@@ -4,9 +4,10 @@
 
 - No setup needed. Do not run "cd", assume you are in the correct path by default.
 - Use these commands:
-   o `pixi run format`. Apply automatic code formatting.
-   o `pixi run test`.
-   o `pixi run lint`. Performs linting and static code analysis.
+   o `pixi run format`: Apply automatic code formatting
+   o `pixi run test`: Run backend tests
+   o `pixi run uitest`: Run UI tests
+   o `pixi run lint`. Performs linting and static code analysis
 
 ## Code style
 
