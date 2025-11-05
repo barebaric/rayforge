@@ -33,13 +33,16 @@ class FileCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    async def _run_importer_async(
+    async def _load_file_async(
         self,
         filename: Path,
         mime_type: Optional[str],
         vector_config: Optional[TraceConfig],
     ) -> Optional[ImportPayload]:
-        """Runs the blocking import function in a background thread."""
+        """
+        Runs the blocking import function in a background thread and returns
+        the resulting payload.
+        """
         return await asyncio.to_thread(
             import_file, filename, mime_type, vector_config
         )
@@ -118,80 +121,6 @@ class FileCmd:
         #    main thread.
         self._commit_items_to_document(payload.items, payload.source, filename)
 
-    async def _load_file_async(
-        self,
-        filename: Path,
-        mime_type: Optional[str],
-        vector_config: Optional[TraceConfig],
-        position_mm: Optional[Tuple[float, float]] = None,
-    ):
-        """
-        The core awaitable logic for loading a file and committing it to the
-        document. This is a pure async method without TaskManager context.
-
-        Args:
-            filename: Path to the file to import
-            mime_type: MIME type of the file
-            vector_config: Configuration for vectorization
-            position_mm: Optional (x, y) tuple in world coordinates (mm)
-                to center the imported item
-        """
-        try:
-            # 1. Run blocking I/O and CPU work in a background thread.
-            payload = await self._run_importer_async(
-                filename, mime_type, vector_config
-            )
-
-            # 2. Validate the result.
-            if not payload or not payload.items:
-                if mime_type and mime_type.startswith("image/"):
-                    msg = _(
-                        f"Failed to import {filename.name}. The image file "
-                        f"may be corrupted or in an unsupported format."
-                    )
-                else:
-                    msg = _(
-                        f"Import failed: No items were created "
-                        f"from {filename.name}"
-                    )
-                logger.warning(
-                    f"Importer created no items for '{filename.name}' "
-                    f"(MIME: {mime_type})"
-                )
-                # Schedule the error notification on the main thread.
-                self._task_manager.schedule_on_main_thread(
-                    self._editor.notification_requested.send, self, message=msg
-                )
-                return
-
-            # 3. Schedule the final positioning and committing on the main
-            #    thread, and wait for it to complete.
-            import_finished_event = asyncio.Event()
-
-            def finalizer_wrapper():
-                """Wraps the finalizer to signal completion."""
-                try:
-                    self._finalize_import_on_main_thread(
-                        payload, filename, position_mm
-                    )
-                finally:
-                    # Always set the event, even if finalization fails,
-                    # to prevent the awaiter from hanging forever.
-                    import_finished_event.set()
-
-            self._task_manager.schedule_on_main_thread(finalizer_wrapper)
-
-            # Wait here until the scheduled task has finished executing.
-            await import_finished_event.wait()
-
-        except Exception as e:
-            logger.error(
-                f"Import task for {filename.name} failed.", exc_info=e
-            )
-            # Re-raise the exception so the caller (e.g., the TaskManager)
-            # knows about the failure.
-            raise
-
     def load_file_from_path(
         self,
         filename: Path,
@@ -219,12 +148,75 @@ class FileCmd:
             try:
                 # Update task message for UI feedback
                 ctx.set_message(_(f"Importing {filename.name}..."))
-                await self._load_file_async(fn, mt, vc, pos_mm)
+
+                # 1. Run blocking I/O and CPU work in a background thread.
+                payload = await self._load_file_async(fn, mt, vc)
+
+                # 2. Validate the result.
+                if not payload or not payload.items:
+                    if mt and mt.startswith("image/"):
+                        msg = _(
+                            f"Failed to import {fn.name}. The image file "
+                            f"may be corrupted or in an unsupported format."
+                        )
+                    else:
+                        msg = _(
+                            f"Import failed: No items were created "
+                            f"from {fn.name}"
+                        )
+                    logger.warning(
+                        f"Importer created no items for '{fn.name}' "
+                        f"(MIME: {mt})"
+                    )
+                    # Schedule the error notification on the main thread.
+                    self._task_manager.schedule_on_main_thread(
+                        self._editor.notification_requested.send,
+                        self,
+                        message=msg,
+                    )
+                    ctx.set_message(_("Import failed."))
+                    return
+
+                # 3. Schedule finalization on main thread and wait for it to
+                #    signal completion back to this (background) thread.
+                loop = asyncio.get_running_loop()
+                main_thread_done = loop.create_future()
+
+                def finalizer_and_callback():
+                    """Wraps finalizer to signal future on completion/error."""
+                    try:
+                        self._finalize_import_on_main_thread(
+                            payload, fn, pos_mm
+                        )
+                        if not main_thread_done.done():
+                            loop.call_soon_threadsafe(
+                                main_thread_done.set_result, True
+                            )
+                    except Exception as e:
+                        logger.error(
+                            "Failed import finalization on main thread.",
+                            exc_info=True,
+                        )
+                        if not main_thread_done.done():
+                            loop.call_soon_threadsafe(
+                                main_thread_done.set_exception, e
+                            )
+
+                self._task_manager.schedule_on_main_thread(
+                    finalizer_and_callback
+                )
+
+                # Wait here until the main thread signals completion or error.
+                await main_thread_done
+
                 ctx.set_message(_("Import complete!"))
-            except Exception:
-                # The async method already logs the full error.
-                # Just update the task status for the UI.
+            except Exception as e:
+                # This will catch failures from the importer or the finalizer.
                 ctx.set_message(_("Import failed."))
+                logger.error(
+                    f"Import task for {fn.name} failed in wrapper.",
+                    exc_info=e,
+                )
                 # Re-raise to ensure the task manager marks the task as failed.
                 raise
 
