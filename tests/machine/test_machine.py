@@ -652,6 +652,20 @@ class TestMachine:
         await machine.home(Axis.Y)
         home_mock.assert_called_once_with(Axis.Y)
 
+    @pytest.mark.asyncio
+    async def test_run_raw_delegates_to_driver(self, machine: Machine, mocker):
+        """Test that the machine's run_raw method delegates to the driver."""
+        # Spy on the active driver's run_raw method
+        run_raw_spy = mocker.spy(machine.driver, "run_raw")
+
+        test_gcode = "G0 X10 Y10\nG1 F1000 X20"
+
+        # Call the machine's run_raw method
+        await machine.run_raw(test_gcode)
+
+        # Verify that the driver's method was called with the correct argument
+        run_raw_spy.assert_called_once_with(test_gcode)
+
     def test_reports_granular_progress_no_device_driver(
         self, machine: Machine
     ):

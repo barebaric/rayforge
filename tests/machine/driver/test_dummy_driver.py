@@ -200,3 +200,23 @@ class TestDummyDriverCallback:
 
         # The dummy driver just logs, so we can't verify much here
         # but this test ensures the signature works correctly
+
+    @pytest.mark.asyncio
+    async def test_run_raw_sends_job_finished(self, driver):
+        """Test that run_raw sends the job_finished signal upon completion."""
+        # Mock the send method of the job_finished signal
+        driver.job_finished.send = MagicMock()
+
+        test_gcode = "G0 X10\nG1 Y20"
+
+        await driver.run_raw(test_gcode)
+
+        # Verify the signal was sent
+        driver.job_finished.send.assert_called_once_with(driver)
+
+    @pytest.mark.asyncio
+    async def test_run_raw_with_empty_gcode(self, driver):
+        """Test that run_raw with empty gcode still sends job_finished."""
+        driver.job_finished.send = MagicMock()
+        await driver.run_raw("")
+        driver.job_finished.send.assert_called_once_with(driver)

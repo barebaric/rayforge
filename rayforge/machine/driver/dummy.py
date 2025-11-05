@@ -85,6 +85,16 @@ class NoDeviceDriver(Driver):
                     pass
         self.job_finished.send(self)
 
+    async def run_raw(self, gcode: str) -> None:
+        """
+        Dummy implementation that simulates raw G-code execution.
+        """
+        gcode_lines = gcode.splitlines()
+        for _ in gcode_lines:
+            # Small delay to simulate execution time
+            await asyncio.sleep(0.01)
+        self.job_finished.send(self)
+
     async def set_hold(self, hold: bool = True) -> None:
         pass
 

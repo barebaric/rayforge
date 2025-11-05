@@ -210,6 +210,16 @@ class Driver(ABC):
         pass
 
     @abstractmethod
+    async def run_raw(self, gcode: str) -> None:
+        """
+        Executes a raw G-code string on the machine.
+
+        Args:
+            gcode: The raw G-code to execute.
+        """
+        pass
+
+    @abstractmethod
     async def set_hold(self, hold: bool = True) -> None:
         """
         Sends a command to put the currently executing program on hold.

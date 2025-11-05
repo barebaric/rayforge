@@ -209,6 +209,23 @@ class SmoothieDriver(Driver):
         finally:
             self.job_finished.send(self)
 
+    async def run_raw(self, gcode: str) -> None:
+        """
+        Executes a raw G-code string by sending it line-by-line to the
+        device and waiting for an 'ok' after each line.
+        """
+        gcode_lines = gcode.splitlines()
+        try:
+            for line in gcode_lines:
+                line = line.strip()
+                if line:
+                    await self._send_and_wait(line.encode())
+        except Exception as e:
+            self.on_telnet_status_changed(self, TransportStatus.ERROR, str(e))
+            raise
+        finally:
+            self.job_finished.send(self)
+
     async def set_hold(self, hold: bool = True) -> None:
         if hold:
             await self._send_and_wait(b"!")
