@@ -116,7 +116,7 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         # We just need to add the newline.
         formatted_message = f"{data}\n"
         text_buffer = self.terminal.get_buffer()
-        text_buffer.insert(text_buffer.get_end_iter(), formatted_message)
+        text_buffer.insert(text_buffer.get_end_iter(), formatted_message, -1)
 
         if should_autoscroll:
             GLib.idle_add(self._scroll_to_bottom)
