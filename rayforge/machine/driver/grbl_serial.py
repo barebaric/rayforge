@@ -6,6 +6,7 @@ from typing import (
     Optional,
     Any,
     List,
+    Dict,
     cast,
     TYPE_CHECKING,
     Callable,
@@ -335,14 +336,13 @@ class GrblSerialDriver(Driver):
                 self._update_connection_status(TransportStatus.ERROR, str(e))
         logger.debug("Leaving _process_command_queue.")
 
-    async def run(
+    def _start_job(
         self,
-        ops: Ops,
-        doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
-    ) -> None:
+    ):
+        """Initializes state for a new streaming job."""
         self._is_cancelled = False
         self._job_running = True
         self._on_command_done = on_command_done
@@ -354,10 +354,15 @@ class GrblSerialDriver(Driver):
             self._sent_gcode_queue.get_nowait()
         self._buffer_has_space.set()  # Initially, there is space
 
-        encoder = GcodeEncoder.for_machine(self._machine)
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
-        gcode_lines = gcode.splitlines()
-
+    async def _stream_gcode(
+        self,
+        gcode_lines: List[str],
+        gcode_to_op_map: Optional[Dict[int, int]] = None,
+    ):
+        """
+        The core G-code streaming logic using character-counting protocol.
+        Assumes _start_job() has been called.
+        """
         logger.debug(
             f"Starting GRBL streaming job with {len(gcode_lines)} lines."
         )
@@ -374,7 +379,9 @@ class GrblSerialDriver(Driver):
                 if not line:
                     continue
 
-                op_index = op_map.gcode_to_op.get(line_idx)
+                op_index = (
+                    gcode_to_op_map.get(line_idx) if gcode_to_op_map else None
+                )
                 # Command is line + newline character
                 command_bytes = (line + "\n").encode("utf-8")
                 command_len = len(command_bytes)
@@ -434,6 +441,33 @@ class GrblSerialDriver(Driver):
             if not self._is_cancelled:
                 self.job_finished.send(self)
             logger.debug("G-code streaming finished.")
+
+    async def run(
+        self,
+        ops: Ops,
+        doc: "Doc",
+        on_command_done: Optional[
+            Callable[[int], Union[None, Awaitable[None]]]
+        ] = None,
+    ) -> None:
+        self._start_job(on_command_done)
+
+        encoder = GcodeEncoder.for_machine(self._machine)
+        gcode, op_map = encoder.encode(ops, self._machine, doc)
+        gcode_lines = gcode.splitlines()
+
+        await self._stream_gcode(gcode_lines, op_map.gcode_to_op)
+
+    async def run_raw(self, gcode: str) -> None:
+        """
+        Executes a raw G-code string using the character-counting streaming
+        protocol.
+        """
+        self._start_job()
+
+        gcode_lines = gcode.splitlines()
+
+        await self._stream_gcode(gcode_lines)
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")

@@ -386,6 +386,23 @@ class GrblNetworkDriver(Driver):
         finally:
             self.job_finished.send(self)
 
+    async def run_raw(self, gcode: str) -> None:
+        """
+        Executes a raw G-code string by uploading it as a file to the device
+        and then starting the job.
+        """
+        if not self.host:
+            raise ConnectionError("Driver not configured with a host.")
+
+        try:
+            await self._upload(gcode, "rayforge_raw.gcode")
+            await self._execute("rayforge_raw.gcode")
+        except Exception as e:
+            self._update_connection_status(TransportStatus.ERROR, str(e))
+            raise
+        finally:
+            self.job_finished.send(self)
+
     async def _execute_command(self, command: str) -> List[str]:
         """
         Sends a command via HTTP and waits for the full response from the

@@ -470,6 +470,13 @@ class Machine:
 
         await self.driver.jog(axis, distance, speed)
 
+    async def run_raw(self, gcode: str):
+        """Executes a raw G-code string on the machine."""
+        if self.driver is None:
+            logger.warning("run_raw called but no driver is available.")
+            return
+        await self.driver.run_raw(gcode)
+
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """Check if machine's supports jogging for the given axis."""
         if self.driver is None:
