@@ -7,6 +7,9 @@
 !ifndef APP_VERSION
   !define APP_VERSION "0.0.0"
 !endif
+!ifndef APP_DIR_NAME
+  !define APP_DIR_NAME "rayforge-v0.0.0"
+!endif
 !ifndef EXECUTABLE_NAME
   !define EXECUTABLE_NAME "rayforge.exe"
 !endif
@@ -42,9 +45,8 @@ UninstPage instfiles
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   
-  File "..\dist\${EXECUTABLE_NAME}"
-  
-  File "..\${ICON_FILE}"
+  ; Copy all files from the PyInstaller output directory
+  File /r "..\dist\${APP_DIR_NAME}\*.*"
   
   ; Store installation folder
   WriteRegStr HKLM "Software\${PRODUCT_NAME}" "Install_Dir" "$INSTDIR"
@@ -53,14 +55,14 @@ Section "MainSection" SEC01
   WriteUninstaller "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayName" "${PRODUCT_NAME}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayIcon" "$INSTDIR\${ICON_FILE}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayIcon" "$INSTDIR\${EXECUTABLE_NAME}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayVersion" "${APP_VERSION}"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoRepair" 1
   
   ; Create Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
-  CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXECUTABLE_NAME}" "" "$INSTDIR\${ICON_FILE}" 0
+  CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXECUTABLE_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall ${PRODUCT_NAME}.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
@@ -72,13 +74,12 @@ Section "Uninstall"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
   DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
 
-  ; Remove files and directories
-  Delete "$INSTDIR\${EXECUTABLE_NAME}"
-  Delete "$INSTDIR\${ICON_FILE}"
+  ; Remove the entire installation directory
+  ; We delete the uninstaller first, then recursively remove its parent directory.
   Delete "$INSTDIR\uninstall.exe"
-  RMDir "$INSTDIR"
+  RMDir /r "$INSTDIR"
 
   ; Remove shortcuts
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\*.*"
-  RMDir "$SMPROGRAMS\${PRODUCT_NAME}"
+  RMDir /r "$SMPROGRAMS\${PRODUCT_NAME}"
 SectionEnd
