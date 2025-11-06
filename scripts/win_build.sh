@@ -17,8 +17,8 @@ source .msys2_env
 
 # Use Bash parameter expansion `${APP_VERSION#v}` to remove a leading 'v' if it exists.
 CLEAN_VERSION="${APP_VERSION#v}"
-PYINSTALLER_EXE_NAME="rayforge-v${CLEAN_VERSION}"
-INSTALLER_EXE_NAME="rayforge-v${CLEAN_VERSION}-installer.exe"
+BUNDLE_NAME="rayforge-v${CLEAN_VERSION}"
+INSTALLER_EXE_NAME="${BUNDLE_NAME}-installer.exe"
 
 echo "--- Starting Windows Build Process (Version: $APP_VERSION) ---"
 echo "Embedding version ${APP_VERSION} into rayforge/version.txt"
@@ -55,7 +55,7 @@ fi
 # ----------------------------------------------------
 # STEP 4: Build with PyInstaller
 # ----------------------------------------------------
-echo "Building executable with PyInstaller..."
+echo "Building application directory with PyInstaller..."
 
 # Using --noconsole prevents any logs from showing, even
 # if started from an existing console. So we use --hide-console
@@ -63,9 +63,9 @@ echo "Building executable with PyInstaller..."
 WIN_MSYS2_PATH=$(cygpath -w "$MSYS2_PATH")
 echo "Using Windows MSYS2 Path for PyInstaller assets: $WIN_MSYS2_PATH"
 
-pyinstaller --onefile --hide-console hide-early \
+pyinstaller --onedir --hide-console hide-early \
   --log-level INFO \
-  --name "${PYINSTALLER_EXE_NAME}" \
+  --name "${BUNDLE_NAME}" \
   --icon="rayforge.ico" \
   --add-data "rayforge/version.txt;rayforge" \
   --add-data "rayforge/resources;rayforge/resources" \
@@ -80,7 +80,7 @@ pyinstaller --onefile --hide-console hide-early \
   --hidden-import "gi._gi_cairo" \
   rayforge/app.py
 
-echo "✅ PyInstaller executable build complete: dist/${PYINSTALLER_EXE_NAME}.exe"
+echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"
 
 # ----------------------------------------------------
 # STEP 5: Build Installer with NSIS
@@ -89,7 +89,8 @@ echo "Building installer with NSIS..."
 
 makensis -V2 \
   -DAPP_VERSION="${CLEAN_VERSION}" \
-  -DEXECUTABLE_NAME="${PYINSTALLER_EXE_NAME}.exe" \
+  -DAPP_DIR_NAME="${BUNDLE_NAME}" \
+  -DEXECUTABLE_NAME="${BUNDLE_NAME}.exe" \
   -DICON_FILE="rayforge.ico" \
   scripts/win_installer.nsi
 
