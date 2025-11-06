@@ -88,7 +88,7 @@ class MachineCmd:
                 self._progress_handler
             )
 
-        def cleanup_monitor(sender, **kwargs):
+        def cleanup_monitor():
             """Cleans up the monitor when the job is done."""
             logger.debug("Job finished, cleaning up monitor.")
             if self._current_monitor:
@@ -97,11 +97,6 @@ class MachineCmd:
                 )
                 self._current_monitor = None
             self._on_progress_callback = None
-            # Disconnect self to avoid being called again for this job
-            machine.job_finished.disconnect(cleanup_monitor)
-
-        # Connect to the machine's job_finished signal for cleanup
-        machine.job_finished.connect(cleanup_monitor)
 
         # Signal that the job has started.
         self._scheduler(self.job_started.send, self)
@@ -119,11 +114,8 @@ class MachineCmd:
                 )
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
-        except Exception:
-            # If run() throws an exception, the job_finished signal might not
-            # be sent by the driver. We must clean up here.
-            cleanup_monitor(machine)
-            raise
+        finally:
+            cleanup_monitor()
 
     async def _run_frame_action(
         self,
