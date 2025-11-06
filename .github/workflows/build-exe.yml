@@ -137,10 +137,9 @@ jobs:
           echo "Listing files in current directory:"
           ls -l
           
-          # The executable is now inside a directory with the same name.
-          BUNDLE_DIR="rayforge-v${{ needs.build.outputs.version }}"
-          echo "Running executable from inside the '${BUNDLE_DIR}' directory:"
-          ./"${BUNDLE_DIR}/${BUNDLE_DIR}.exe" --help
+          EXECUTABLE_NAME="rayforge-v${{ needs.build.outputs.version }}.exe"
+          echo "Running executable directly:"
+          ./"${EXECUTABLE_NAME}" --help
 
   release:
     name: Create GitHub Release
