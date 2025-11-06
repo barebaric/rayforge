@@ -48,3 +48,14 @@ class FloatVar(Var[float]):
             value=value,
             validator=validator,
         )
+
+
+class SliderFloatVar(FloatVar):
+    """
+    A FloatVar subclass that hints to the UI that it should be represented
+    by a slider rather than a spinbox.
+    The value is typically expected to be in a normalized 0.0-1.0 range,
+    which the UI will display as 0-100.
+    """
+
+    pass

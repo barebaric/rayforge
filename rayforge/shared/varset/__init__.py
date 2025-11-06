@@ -1,4 +1,4 @@
-from .floatvar import FloatVar
+from .floatvar import FloatVar, SliderFloatVar
 from .hostnamevar import HostnameVar
 from .intvar import IntVar
 from .portvar import PortVar
@@ -8,12 +8,13 @@ from .var import Var, ValidationError
 from .varset import VarSet
 
 __all__ = [
+    "BaudrateVar",
     "FloatVar",
     "HostnameVar",
     "IntVar",
     "PortVar",
     "SerialPortVar",
-    "BaudrateVar",
+    "SliderFloatVar",
     "ValidationError",
     "Var",
     "VarSet",
