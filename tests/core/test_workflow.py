@@ -159,12 +159,19 @@ def test_workflow_from_dict_ignores_non_step_children():
 
 
 def test_workflow_roundtrip_serialization():
-    """Tests that to_dict() and from_dict() produce equivalent objects."""
+    """
+    Tests that to_dict() and from_dict() produce equivalent objects,
+    including the properties of child steps.
+    """
     # Create a workflow with steps
     original = Workflow("Roundtrip Workflow")
     original.matrix = Matrix.translation(5, 10) @ Matrix.rotation(30)
 
     step1 = Step("Step 1")
+    step1.set_power(0.75)
+    step1.set_cut_speed(2000)
+    step1.set_kerf_mm(0.2)
+
     step2 = Step("Step 2")
     original.add_step(step1)
     original.add_step(step2)
@@ -178,3 +185,16 @@ def test_workflow_roundtrip_serialization():
     assert restored.name == original.name
     assert restored.matrix == original.matrix
     assert len(restored.steps) == len(original.steps)
+
+    # Check that child step properties were restored
+    restored_step1 = restored.steps[0]
+    restored_step2 = restored.steps[1]
+
+    assert restored_step1.uid == step1.uid
+    assert restored_step1.power == 0.75
+    assert restored_step1.cut_speed == 2000
+    assert restored_step1.kerf_mm == 0.2
+
+    # Verify the second step (with default values) is also correct
+    assert restored_step2.uid == step2.uid
+    assert restored_step2.power == 1.0  # Default value
