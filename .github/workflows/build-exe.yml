@@ -107,11 +107,11 @@ jobs:
           # The build script will source .msys2_env internally.
           bash scripts/win_build.sh "${{ env.VERSION }}"
 
-      - name: Upload Raw Executable Artifact
+      - name: Upload PyInstaller bundle
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}-exe.zip
-          path: dist/rayforge-v${{ steps.set-version.outputs.version }}.exe
+          name: rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle.zip
+          path: dist/rayforge-v${{ steps.set-version.outputs.version }}/
           compression-level: 9
 
       - name: Upload Installer Artifact
@@ -129,16 +129,18 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          # This job still tests the raw executable
-          name: rayforge-v${{ needs.build.outputs.version }}-exe.zip
+          name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
 
       - name: Test Executable
         shell: bash
         run: |
           echo "Listing files in current directory:"
           ls -l
-          echo "Running executable with --help:"
-          ./rayforge-v${{ needs.build.outputs.version }}.exe --help
+          
+          # The executable is now inside a directory with the same name.
+          BUNDLE_DIR="rayforge-v${{ needs.build.outputs.version }}"
+          echo "Running executable from inside the '${BUNDLE_DIR}' directory:"
+          ./"${BUNDLE_DIR}/${BUNDLE_DIR}.exe" --help
 
   release:
     name: Create GitHub Release
