@@ -5,6 +5,7 @@ import logging
 from typing import Optional, cast
 from gi.repository import Gtk, Adw
 from blinker import Signal
+from ...context import get_context
 from ...core.material import Material, MaterialAppearance
 from ...core.material_library import MaterialLibrary
 from ...shared.util.adw import PreferencesGroupWithButton
@@ -159,7 +160,24 @@ class MaterialListWidget(PreferencesGroupWithButton):
         if self._current_library is None:
             return
 
+        # Reject deletion if the material is still in use
         root = self.get_root()
+        recipe_mgr = get_context().recipe_mgr
+        if recipe_mgr.is_material_in_use(material.uid):
+            err_dialog = Adw.MessageDialog(
+                transient_for=cast(Gtk.Window, root) if root else None,
+                heading=_("Cannot Delete Material"),
+                body=_(
+                    "This material is currently used by one or more recipes. "
+                    "Please remove the recipes that use this material before "
+                    "deleting it."
+                ),
+            )
+            err_dialog.add_response("ok", _("OK"))
+            err_dialog.present()
+            return  # Stop the deletion process
+
+        # Ask for confirmation
         dialog = Adw.MessageDialog(
             transient_for=cast(Gtk.Window, root) if root else None,
             heading=_("Delete '{name}'?").format(name=material.name),

@@ -15,6 +15,7 @@ Operations define how Rayforge processes your designs. Each operation type is op
 
 - **[Multi-Layer Operations](multi-layer.md)**: Assign different operations to layers in your design for complex workflows
 - **[Holding Tabs](holding-tabs.md)**: Add tabs to contour cuts to keep pieces in place during cutting
+- **[Recipes](recipes.md)**: Create and manage reusable settings presets with intelligent matching
 - **[G-code Macros & Hooks](macros-hooks.md)**: Automate tasks with custom G-code snippets
 
 ## Quality Enhancement
@@ -28,17 +29,18 @@ Operations define how Rayforge processes your designs. Each operation type is op
 
 ## Quick Feature Reference
 
-| Feature                    | Description                                                                 | Learn More |
-|:---------------------------|:----------------------------------------------------------------------------|:-----------|
-| Multi-Layer Operations     | Assign different operations (engrave, cut) to layers                        | [Guide](multi-layer.md) |
-| 3D G-code Preview          | Visualize toolpaths before sending to machine                               | [UI Guide](../ui/3d-preview.md) |
-| Holding Tabs               | Auto or manual tab placement for contour cuts                               | [Guide](holding-tabs.md) |
-| Overscan                   | Reduce burn marks at raster engraving endpoints                             | [Guide](overscan.md) |
-| Kerf Compensation          | Adjust paths to compensate for material removed by laser                    | [Guide](kerf.md) |
-| 2.5D Cutting               | Multi-pass cuts with configurable step-down for thick materials             | [Operations](operations/contour.md) |
-| Camera Alignment           | Position designs using live camera feed                                     | [Camera Guide](camera.md) |
-| Path Optimization          | Minimize travel time and improve quality                                    | [Operations](operations/index.md) |
-| Variable Substitution      | Use variables in macros and hooks                                           | [Macros Guide](macros-hooks.md) |
+| Feature                | Description                                                         | Learn More                          |
+| :--------------------- | :------------------------------------------------------------------ | :---------------------------------- |
+| Recipes and Settings   | Create reusable settings presets with intelligent material matching | [Guide](recipes.md)    |
+| Multi-Layer Operations | Assign different operations (engrave, cut) to layers                | [Guide](multi-layer.md)             |
+| 3D G-code Preview      | Visualize toolpaths before sending to machine                       | [UI Guide](../ui/3d-preview.md)     |
+| Holding Tabs           | Auto or manual tab placement for contour cuts                       | [Guide](holding-tabs.md)            |
+| Overscan               | Reduce burn marks at raster engraving endpoints                     | [Guide](overscan.md)                |
+| Kerf Compensation      | Adjust paths to compensate for material removed by laser            | [Guide](kerf.md)                    |
+| 2.5D Cutting           | Multi-pass cuts with configurable step-down for thick materials     | [Operations](operations/contour.md) |
+| Camera Alignment       | Position designs using live camera feed                             | [Camera Guide](camera.md)           |
+| Path Optimization      | Minimize travel time and improve quality                            | [Operations](operations/index.md)   |
+| Variable Substitution  | Use variables in macros and hooks                                   | [Macros Guide](macros-hooks.md)     |
 
 ## Best Practices
 

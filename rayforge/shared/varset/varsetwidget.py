@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Any, cast
+from typing import Any
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ..util.adwfix import get_spinrow_int
@@ -11,6 +11,8 @@ from .hostnamevar import HostnameVar
 from .serialportvar import SerialPortVar
 from .intvar import IntVar
 from .floatvar import FloatVar, SliderFloatVar
+from .boolvar import BoolVar
+from .choicevar import ChoiceVar
 from .var import Var
 from .varset import VarSet
 
@@ -67,10 +69,10 @@ class VarSetWidget(Adw.PreferencesGroup):
         for key, (row, var) in self.widget_map.items():
             value = None
             if isinstance(var, SliderFloatVar):
-                child = row.get_child()
-                assert child is not None
-                scale = cast(Gtk.Scale, child.get_last_child())
-                value = scale.get_value() / 100.0
+                if isinstance(row, Adw.ActionRow):
+                    scale = row.get_activatable_widget()
+                    if isinstance(scale, Gtk.Scale):
+                        value = scale.get_value() / 100.0
             elif isinstance(row, Adw.EntryRow):
                 value = row.get_text()
             elif isinstance(row, Adw.SwitchRow):
@@ -83,10 +85,17 @@ class VarSetWidget(Adw.PreferencesGroup):
                 )
             elif isinstance(row, Adw.ComboRow):
                 selected = row.get_selected_item()
-                value_str = (
+                display_str = (
                     selected.get_string() if selected else ""  # type: ignore
                 )
-                value = "" if value_str == NULL_CHOICE_LABEL else value_str
+                if display_str == NULL_CHOICE_LABEL:
+                    value = None
+                elif isinstance(var, ChoiceVar):
+                    # Convert display name back to stored value (e.g., UID)
+                    value = var.get_value_for_display(display_str)
+                else:
+                    value = display_str
+
             values[key] = value
         return values
 
@@ -98,10 +107,10 @@ class VarSetWidget(Adw.PreferencesGroup):
 
             row, var = self.widget_map[key]
             if isinstance(var, SliderFloatVar):
-                child = row.get_child()
-                assert child is not None
-                scale = cast(Gtk.Scale, child.get_last_child())
-                scale.set_value(float(value) * 100.0)
+                if isinstance(row, Adw.ActionRow):
+                    scale = row.get_activatable_widget()
+                    if isinstance(scale, Gtk.Scale):
+                        scale.set_value(float(value) * 100.0)
             elif isinstance(row, Adw.EntryRow):
                 row.set_text(str(value))
             elif isinstance(row, Adw.SwitchRow):
@@ -112,11 +121,29 @@ class VarSetWidget(Adw.PreferencesGroup):
             elif isinstance(row, Adw.ComboRow):
                 model = row.get_model()
                 if isinstance(model, Gtk.StringList):
-                    val_str = str(value)
+                    # Determine the string to display in the UI
+                    display_str_to_find = NULL_CHOICE_LABEL
+                    if value is not None:
+                        if isinstance(var, ChoiceVar):
+                            # Ask the var to translate its internal value
+                            # to a display value (e.g., Name).
+                            display_str_to_find = var.get_display_for_value(
+                                str(value)
+                            ) or str(value)
+                        else:
+                            display_str_to_find = str(value)
+
+                    # Find the index of that string in the model and select it
+                    found = False
                     for i in range(model.get_n_items()):
-                        if model.get_string(i) == val_str:
+                        if model.get_string(i) == display_str_to_find:
                             row.set_selected(i)
+                            found = True
                             break
+                    if not found:
+                        row.set_selected(
+                            0
+                        )  # Default to "None Selected" if not found
 
     def _on_data_changed(self, key: str):
         self.data_changed.send(self, key=key)
@@ -124,6 +151,8 @@ class VarSetWidget(Adw.PreferencesGroup):
     def _create_row_for_var(self, var: Var):
         if isinstance(var, SliderFloatVar):
             return self._create_slider_row(var)
+        if isinstance(var, ChoiceVar):
+            return self._create_choice_row(var)
         if isinstance(var, SerialPortVar):
             return self._create_port_selection_row(var)
         if isinstance(var, BaudrateVar):
@@ -136,11 +165,10 @@ class VarSetWidget(Adw.PreferencesGroup):
             return self._create_float_row(var)
 
         # Fallback to generic types if no specific class matches
-        var_type = var.var_type
-        if var_type is str:
-            return self._create_string_row(var)
-        elif var_type is bool:
+        if isinstance(var, BoolVar):
             return self._create_boolean_row(var)
+        if var.var_type is str:
+            return self._create_string_row(var)
 
         logger.warning(
             f"No UI widget defined for Var with key '{var.key}' "
@@ -285,6 +313,29 @@ class VarSetWidget(Adw.PreferencesGroup):
         else:
             self._add_apply_button_if_needed(row, var.key)
 
+        return row
+
+    def _create_choice_row(self, var: ChoiceVar):
+        """Creates an Adw.ComboRow for a ChoiceVar."""
+        # Add a "None" option to allow unsetting the choice
+        choices = [NULL_CHOICE_LABEL] + var.choices
+        store = Gtk.StringList.new(choices)
+        row = Adw.ComboRow(
+            title=var.label, subtitle=var.description or "", model=store
+        )
+        # Set the initial selection
+        if var.value and var.value in choices:
+            row.set_selected(choices.index(var.value))
+        else:
+            row.set_selected(0)  # Default to "None"
+
+        if self.explicit_apply:
+            self._add_apply_button_if_needed(row, var.key)
+        else:
+            row.connect(
+                "notify::selected-item",
+                lambda r, p: self._on_data_changed(var.key),
+            )
         return row
 
     def _create_baud_rate_row(self, var: BaudrateVar):

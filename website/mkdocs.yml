@@ -50,6 +50,7 @@ nav:
           - Multi-Layer: docs/features/multi-layer.md
           - Stock Handling: docs/features/stock-handling.md
           - Material Libraries: docs/features/material-libraries.md
+          - Recipes: docs/features/recipes.md
           - Camera: docs/features/camera.md
           - Simulation: docs/features/simulation-mode.md
           - Holding Tabs: docs/features/holding-tabs.md

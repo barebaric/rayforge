@@ -827,6 +827,10 @@ class MachineManager:
     def get_machine_by_id(self, machine_id):
         return self.machines.get(machine_id)
 
+    def get_machines(self) -> List["Machine"]:
+        """Returns a list of all managed machines, sorted by name."""
+        return sorted(list(self.machines.values()), key=lambda m: m.name)
+
     def create_default_machine(self):
         machine = Machine(get_context())
         self.add_machine(machine)

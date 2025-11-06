@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, List, Callable
 from ..context import RayforgeContext
 from ..core.step import Step
+from ..core.capability import CUT, SCORE, ENGRAVE, UTILITY
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
     DepthEngraver,
@@ -31,6 +32,7 @@ def create_contour_step(
         typelabel=_("Contour"),
         name=name,
     )
+    step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = EdgeTracer().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
@@ -72,6 +74,7 @@ def create_raster_step(
         typelabel=_("Engrave (Raster)"),
         name=name,
     )
+    step.capabilities = {ENGRAVE}
     step.opsproducer_dict = Rasterizer().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
@@ -111,6 +114,7 @@ def create_depth_engrave_step(
         typelabel=_("Engrave (Depth-Aware)"),
         name=name,
     )
+    step.capabilities = {ENGRAVE}
     step.opsproducer_dict = DepthEngraver().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
@@ -142,6 +146,7 @@ def create_shrinkwrap_step(
         typelabel=_("Shrink Wrap"),
         name=name,
     )
+    step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = ShrinkWrapProducer().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
@@ -173,6 +178,7 @@ def create_frame_step(
         typelabel=_("Frame Outline"),
         name=name,
     )
+    step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = FrameProducer().to_dict()
     # FrameProducer does not use image data, so no modifiers are needed.
     step.modifiers_dicts = []
@@ -200,6 +206,7 @@ def create_material_test_step(
         typelabel=_("Material Test Grid"),
         name=name,
     )
+    step.capabilities = {UTILITY}
     step.opsproducer_dict = MaterialTestGridProducer().to_dict()
     # Material test doesn't use image modifiers
     step.modifiers_dicts = []

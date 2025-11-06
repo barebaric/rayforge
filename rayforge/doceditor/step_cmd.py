@@ -5,6 +5,8 @@ from ..undo import DictItemCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor
+    from ..core.step import Step
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ class StepCmd:
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
+        self._doc = editor.doc
+        self._context = editor.context
 
     def set_step_param(
         self,
@@ -49,3 +53,48 @@ class StepCmd:
             on_change_callback=on_change_callback,
         )
         self._editor.history_manager.execute(command)
+
+    def apply_best_recipe_to_step(self, step: "Step"):
+        """
+        Finds the best matching recipe for a given step and applies its
+        settings. This modifies the step object directly and is not undoable
+        by itself; it should be called before the step is added to the
+        document via an undoable command.
+        """
+        # Get the context from the active layer and machine
+        active_layer = self._doc.active_layer
+        stock_item = active_layer.stock_item if active_layer else None
+        machine = self._context.machine
+
+        # Query the RecipeManager for the best match for ANY supported
+        # capability
+        all_matching_recipes = []
+        if step.capabilities:
+            recipe_mgr = self._context.recipe_mgr
+            for cap in step.capabilities:
+                all_matching_recipes.extend(
+                    recipe_mgr.find_recipes(
+                        stock_item=stock_item,
+                        capability=cap,
+                        machine=machine,
+                    )
+                )
+
+        # Sort all found recipes together to find the absolute best one.
+        all_matching_recipes.sort(
+            key=lambda r: (r.get_specificity_score(), r.name.lower())
+        )
+
+        # If matching_recipes is not empty, apply the best one
+        if all_matching_recipes:
+            best_recipe = all_matching_recipes[0]
+            logger.info(
+                f"Applying best recipe '{best_recipe.name}' to new step."
+            )
+            # Apply the settings to the step object
+            for key, value in best_recipe.settings.items():
+                if hasattr(step, key):
+                    setattr(step, key, value)
+
+            # Store a reference to the applied recipe
+            step.applied_recipe_uid = best_recipe.uid

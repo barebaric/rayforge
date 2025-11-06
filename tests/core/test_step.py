@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from rayforge.core.step import Step
 from rayforge.core.matrix import Matrix
 from rayforge.core.doc import Doc
+from rayforge.core.capability import CUT, ENGRAVE
 
 
 @pytest.fixture
@@ -30,6 +31,8 @@ def test_step_initialization(step):
     assert step.visible is True
     assert step.selected_laser_uid is None
     assert step.generated_workpiece_uid is None
+    assert step.applied_recipe_uid is None
+    assert step.capabilities == set()
     assert step.modifiers_dicts == []
     assert step.opsproducer_dict is None
     assert step.per_workpiece_transformers_dicts == []
@@ -153,6 +156,8 @@ def test_serialization_to_dict_all_properties(step):
     step.visible = False
     step.selected_laser_uid = "laser-abc"
     step.generated_workpiece_uid = "wp-xyz"
+    step.applied_recipe_uid = "recipe-123"
+    step.capabilities = {ENGRAVE, CUT}
     step.opsproducer_dict = {"type": "EngraveProducer", "dpi": 300}
     step.per_step_transformers_dicts = [{"type": "CoolingPause"}]
     step.pixels_per_mm = (100, 100)
@@ -172,6 +177,8 @@ def test_serialization_to_dict_all_properties(step):
     assert data["visible"] is False
     assert data["selected_laser_uid"] == "laser-abc"
     assert data["generated_workpiece_uid"] == "wp-xyz"
+    assert data["applied_recipe_uid"] == "recipe-123"
+    assert set(data["capabilities"]) == {"CUT", "ENGRAVE"}
     assert data["opsproducer_dict"] == {"type": "EngraveProducer", "dpi": 300}
     assert data["per_step_transformers_dicts"] == [{"type": "CoolingPause"}]
     assert data["pixels_per_mm"] == (100, 100)
@@ -193,6 +200,8 @@ def test_deserialization_from_dict(step):
         "visible": False,
         "selected_laser_uid": "laser-def",
         "generated_workpiece_uid": "wp-123",
+        "applied_recipe_uid": "recipe-456",
+        "capabilities": ["CUT"],
         "modifiers_dicts": [],
         "opsproducer_dict": {"type": "OutlineProducer"},
         "per_workpiece_transformers_dicts": [],
@@ -218,6 +227,8 @@ def test_deserialization_from_dict(step):
     assert restored.visible is False
     assert restored.selected_laser_uid == "laser-def"
     assert restored.generated_workpiece_uid == "wp-123"
+    assert restored.applied_recipe_uid == "recipe-456"
+    assert restored.capabilities == {CUT}
     assert restored.opsproducer_dict == {"type": "OutlineProducer"}
     assert restored.pixels_per_mm == (20, 20)
     assert restored.power == 0.5
@@ -248,6 +259,8 @@ def test_deserialization_with_missing_keys(step):
     assert restored.uid == "step-min"
     assert restored.name == "MinimalType"  # Falls back to typelabel
     assert restored.selected_laser_uid is None
+    assert restored.applied_recipe_uid is None
+    assert restored.capabilities == set()
     assert restored.power == 1.0  # Default value
     assert restored.cut_speed == 500  # Default value
     assert restored.kerf_mm == 0.0  # Default value
@@ -267,6 +280,8 @@ def test_step_roundtrip_serialization():
     original.set_cut_speed(3000)
     original.set_kerf_mm(0.18)
     original.selected_laser_uid = "the-best-laser"
+    original.applied_recipe_uid = "recipe-abc"
+    original.capabilities = {CUT}
     original.opsproducer_dict = {"type": "TestProducer", "value": 42}
     original.matrix = Matrix.translation(50, 50)
 
@@ -285,5 +300,7 @@ def test_step_roundtrip_serialization():
     assert restored.cut_speed == original.cut_speed
     assert restored.kerf_mm == original.kerf_mm
     assert restored.selected_laser_uid == original.selected_laser_uid
+    assert restored.applied_recipe_uid == original.applied_recipe_uid
+    assert restored.capabilities == original.capabilities
     assert restored.opsproducer_dict == original.opsproducer_dict
     assert restored.matrix == original.matrix
