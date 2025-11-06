@@ -112,12 +112,7 @@ class TestMachineCmdJobMonitoring:
 
         job_started_spy = MagicMock()
         progress_updated_spy = MagicMock()
-
-        # Use an asyncio.Event for robust synchronization
-        job_finished_event = asyncio.Event()
-        job_finished_spy = MagicMock(
-            side_effect=lambda *a, **kw: job_finished_event.set()
-        )
+        job_finished_spy = MagicMock()
 
         machine_cmd.job_started.connect(job_started_spy)
         machine.job_finished.connect(job_finished_spy)
@@ -144,8 +139,10 @@ class TestMachineCmdJobMonitoring:
             dummy_handle, machine, on_progress=lambda metrics: None
         )
 
-        # Explicitly wait for the job_finished signal to be processed
-        await asyncio.wait_for(job_finished_event.wait(), timeout=1)
+        # Yield control to the event loop to allow signal handlers
+        # (like cleanup_monitor) that were scheduled with `call_soon`
+        # to run before we proceed with assertions.
+        await asyncio.sleep(0)
 
         # --- Assert ---
         # 1. Verify job lifecycle signals
