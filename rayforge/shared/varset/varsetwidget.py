@@ -1,5 +1,6 @@
 import re
 import logging
+from typing import Any, cast
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ..util.adwfix import get_spinrow_int
@@ -9,7 +10,7 @@ from .baudratevar import BaudrateVar
 from .hostnamevar import HostnameVar
 from .serialportvar import SerialPortVar
 from .intvar import IntVar
-from .floatvar import FloatVar
+from .floatvar import FloatVar, SliderFloatVar
 from .var import Var
 from .varset import VarSet
 
@@ -31,7 +32,6 @@ class VarSetWidget(Adw.PreferencesGroup):
     rows with explicit "Apply" buttons.
     """
 
-    # Emits sender, key=...
     data_changed = Signal()
 
     def __init__(self, explicit_apply=False, **kwargs):
@@ -61,12 +61,17 @@ class VarSetWidget(Adw.PreferencesGroup):
                 self._created_rows.append(row)
                 self.widget_map[var.key] = (row, var)
 
-    def get_values(self) -> dict[str, object]:
+    def get_values(self) -> dict[str, Any]:
         """Reads all current values from the UI widgets."""
         values = {}
         for key, (row, var) in self.widget_map.items():
             value = None
-            if isinstance(row, Adw.EntryRow):
+            if isinstance(var, SliderFloatVar):
+                child = row.get_child()
+                assert child is not None
+                scale = cast(Gtk.Scale, child.get_last_child())
+                value = scale.get_value() / 100.0
+            elif isinstance(row, Adw.EntryRow):
                 value = row.get_text()
             elif isinstance(row, Adw.SwitchRow):
                 value = row.get_active()
@@ -85,10 +90,40 @@ class VarSetWidget(Adw.PreferencesGroup):
             values[key] = value
         return values
 
+    def set_values(self, values: dict[str, Any]):
+        """Sets the UI widgets from a dictionary of values."""
+        for key, value in values.items():
+            if key not in self.widget_map or value is None:
+                continue
+
+            row, var = self.widget_map[key]
+            if isinstance(var, SliderFloatVar):
+                child = row.get_child()
+                assert child is not None
+                scale = cast(Gtk.Scale, child.get_last_child())
+                scale.set_value(float(value) * 100.0)
+            elif isinstance(row, Adw.EntryRow):
+                row.set_text(str(value))
+            elif isinstance(row, Adw.SwitchRow):
+                row.set_active(bool(value))
+            elif isinstance(row, Adw.SpinRow):
+                # Coerce to float for SpinRow, even if var is int
+                row.set_value(float(value))
+            elif isinstance(row, Adw.ComboRow):
+                model = row.get_model()
+                if isinstance(model, Gtk.StringList):
+                    val_str = str(value)
+                    for i in range(model.get_n_items()):
+                        if model.get_string(i) == val_str:
+                            row.set_selected(i)
+                            break
+
     def _on_data_changed(self, key: str):
         self.data_changed.send(self, key=key)
 
     def _create_row_for_var(self, var: Var):
+        if isinstance(var, SliderFloatVar):
+            return self._create_slider_row(var)
         if isinstance(var, SerialPortVar):
             return self._create_port_selection_row(var)
         if isinstance(var, BaudrateVar):
@@ -217,6 +252,39 @@ class VarSetWidget(Adw.PreferencesGroup):
             row.connect("changed", lambda r: self._on_data_changed(var.key))
         else:
             self._add_apply_button_if_needed(row, var.key)
+        return row
+
+    def _create_slider_row(self, var: SliderFloatVar):
+        row = Adw.ActionRow(title=var.label, subtitle=var.description or "")
+        min_val = (var.min_val if var.min_val is not None else 0.0) * 100
+        max_val = (var.max_val if var.max_val is not None else 1.0) * 100
+        default_val = (var.default if var.default is not None else 0.0) * 100
+
+        adj = Gtk.Adjustment(
+            value=default_val,
+            lower=min_val,
+            upper=max_val,
+            step_increment=1,
+            page_increment=10,
+        )
+        scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            adjustment=adj,
+            digits=0,
+            draw_value=True,
+            hexpand=True,
+        )
+        scale.set_size_request(200, -1)
+        row.add_suffix(scale)
+        row.set_activatable_widget(scale)
+
+        if not self.explicit_apply:
+            scale.connect(
+                "value-changed", lambda s: self._on_data_changed(var.key)
+            )
+        else:
+            self._add_apply_button_if_needed(row, var.key)
+
         return row
 
     def _create_baud_rate_row(self, var: BaudrateVar):
