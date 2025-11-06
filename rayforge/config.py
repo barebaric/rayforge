@@ -21,6 +21,9 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 CORE_MATERIALS_DIR = Path(__file__).parent / "resources" / "core_materials"
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"
 
+# Material directories
+USER_RECIPES_DIR = CONFIG_DIR / "recipes"
+
 logger.info(f"Config dir is {CONFIG_DIR}")
 logger.info(f"Log dir is {LOG_DIR}")
 

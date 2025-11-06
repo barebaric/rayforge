@@ -651,6 +651,10 @@ class MainWindow(Adw.ApplicationWindow):
             workflow = first_workpiece_layer.workflow
             # The first factory in the list is the default step type
             default_step = create_contour_step(get_context())
+
+            # Apply best recipe using the new helper method
+            self.doc_editor.step.apply_best_recipe_to_step(default_step)
+
             workflow.add_step(default_step)
             logger.info(
                 f"Added default '{default_step.typelabel}' step to "

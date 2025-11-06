@@ -171,6 +171,10 @@ class WorkflowView(Expander):
         if popup.selected_factory:
             step_factory = popup.selected_factory
             new_step = step_factory(self.editor.context)
+
+            # Apply best recipe using helper method
+            self.editor.step.apply_best_recipe_to_step(new_step)
+
             command = ListItemCommand(
                 owner_obj=self.workflow,
                 item=new_step,

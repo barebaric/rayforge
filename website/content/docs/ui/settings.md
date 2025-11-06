@@ -47,6 +47,15 @@ Configure machine profiles and hardware. See [Machine Setup](../machine/index.md
 - **Machine Profiles**: Create and manage multiple machine configurations
 - **Default Profile**: Select which profile loads on startup
 
+## Recipes and Presets
+
+Rayforge's recipe system allows you to create and manage reusable settings presets.
+See [Recipes](../features/recipes.md) for comprehensive coverage of the recipe system.
+
+- **Recipe Library**: Access and manage your recipe collection
+- **Material-Based Matching**: Automatic recipe suggestions based on stock material
+- **Step-Level Application**: Apply and fine-tune recipes for individual operations
+
 ## Performance
 
 ### Rendering

@@ -9,6 +9,7 @@ from ...shared.util.adwfix import get_spinrow_float
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from .step_settings import WIDGET_REGISTRY
+from .recipe_control_widget import RecipeControlWidget
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
@@ -77,6 +78,11 @@ class StepSettingsDialog(Adw.Window):
         page = Adw.PreferencesPage()
         scrolled_window.set_child(page)
 
+        # 0. Recipe Control Widget
+        self.recipe_control = RecipeControlWidget(self.editor, self.step)
+        self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
+        page.add(self.recipe_control)
+
         # 1. Producer Settings
         producer_dict = self.step.opsproducer_dict
         producer = None
@@ -103,37 +109,23 @@ class StepSettingsDialog(Adw.Window):
         if machine and machine.heads:
             laser_names = [head.name for head in machine.heads]
             string_list = Gtk.StringList.new(laser_names)
-            laser_row = Adw.ComboRow(title=_("Laser Head"), model=string_list)
-
-            # Set initial selection
-            initial_index = 0
-            if step.selected_laser_uid:
-                try:
-                    initial_index = next(
-                        i
-                        for i, head in enumerate(machine.heads)
-                        if head.uid == step.selected_laser_uid
-                    )
-                except StopIteration:
-                    pass  # Fallback to index 0
-            laser_row.set_selected(initial_index)
-
-            laser_row.connect("notify::selected", self.on_laser_selected)
-            general_group.add(laser_row)
+            self.laser_row = Adw.ComboRow(
+                title=_("Laser Head"), model=string_list
+            )
+            self.laser_row.connect("notify::selected", self.on_laser_selected)
+            general_group.add(self.laser_row)
 
         # Power Slider
         power_row = Adw.ActionRow(title=_("Power (%)"))
-        power_adjustment = Gtk.Adjustment(
+        self.power_adjustment = Gtk.Adjustment(
             upper=100, step_increment=1, page_increment=10
         )
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=power_adjustment,
+            adjustment=self.power_adjustment,
             digits=0,
             draw_value=True,
         )
-        power_percent = step.power * 100.0
-        power_adjustment.set_value(power_percent)
         power_scale.set_size_request(300, -1)
         power_scale.connect(
             "value-changed",
@@ -161,7 +153,6 @@ class StepSettingsDialog(Adw.Window):
             quantity="speed",
             max_value_in_base=max_cut_speed,
         )
-        self.cut_speed_helper.set_value_in_base_units(step.cut_speed)
         self.cut_speed_helper.changed.connect(
             self._on_cut_speed_changed_wrapper
         )
@@ -189,18 +180,18 @@ class StepSettingsDialog(Adw.Window):
             quantity="speed",
             max_value_in_base=max_travel_speed,
         )
-        self.travel_speed_helper.set_value_in_base_units(step.travel_speed)
         self.travel_speed_helper.changed.connect(
             self._on_travel_speed_changed_wrapper
         )
         general_group.add(travel_speed_row)
 
         # Add a switch for air assist
-        air_assist_row = Adw.SwitchRow()
-        air_assist_row.set_title(_("Air Assist"))
-        air_assist_row.set_active(step.air_assist)
-        air_assist_row.connect("notify::active", self.on_air_assist_changed)
-        general_group.add(air_assist_row)
+        self.air_assist_row = Adw.SwitchRow()
+        self.air_assist_row.set_title(_("Air Assist"))
+        self.air_assist_row.connect(
+            "notify::active", self.on_air_assist_changed
+        )
+        general_group.add(self.air_assist_row)
 
         # Kerf Setting (conditionally visible)
         kerf_adj = Gtk.Adjustment(
@@ -215,7 +206,6 @@ class StepSettingsDialog(Adw.Window):
             adjustment=kerf_adj,
             digits=3,
         )
-        kerf_adj.set_value(self.step.kerf_mm)
         self.kerf_row.connect(
             "changed", lambda r: self._debounce(self._on_kerf_changed, r)
         )
@@ -260,7 +250,44 @@ class StepSettingsDialog(Adw.Window):
                         )
                         page.add(widget)
 
+        self._sync_widgets_to_model()
         self.changed = Signal()
+
+    def _sync_widgets_to_model(self, sender=None, **kwargs):
+        """
+        Updates all widgets to reflect the current state of the Step model.
+        """
+        machine = get_context().machine
+
+        # Sync Laser Head
+        if machine and machine.heads:
+            initial_index = 0
+            if self.step.selected_laser_uid:
+                try:
+                    initial_index = next(
+                        i
+                        for i, head in enumerate(machine.heads)
+                        if head.uid == self.step.selected_laser_uid
+                    )
+                except StopIteration:
+                    pass  # Fallback to index 0
+            self.laser_row.set_selected(initial_index)
+
+        # Sync Power
+        power_percent = self.step.power * 100.0
+        self.power_adjustment.set_value(power_percent)
+
+        # Sync Speeds
+        self.cut_speed_helper.set_value_in_base_units(self.step.cut_speed)
+        self.travel_speed_helper.set_value_in_base_units(
+            self.step.travel_speed
+        )
+
+        # Sync Air Assist
+        self.air_assist_row.set_active(self.step.air_assist)
+
+        # Sync Kerf
+        self.kerf_row.get_adjustment().set_value(self.step.kerf_mm)
 
     def on_laser_selected(self, combo_row, pspec):
         """Handles changes in the laser head selection."""

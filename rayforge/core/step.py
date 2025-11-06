@@ -1,11 +1,12 @@
 from __future__ import annotations
 import logging
 from abc import ABC
-from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast
+from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from blinker import Signal
 
 from .item import DocItem
 from .matrix import Matrix
+from .capability import Capability, CAPABILITIES_BY_NAME
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -36,12 +37,10 @@ class Step(DocItem, ABC):
         self.visible = True
         self.selected_laser_uid: Optional[str] = None
         self.generated_workpiece_uid: Optional[str] = None
+        self.applied_recipe_uid: Optional[str] = None
+        self.capabilities: Set[Capability] = set()
 
         # Configuration for the pipeline, stored as dictionaries.
-        # - `per_workpiece_transformers` run in the background on a single
-        #   workpiece before caching.
-        # - `per_step_transformers` run on the combined ops of all workpieces
-        #   in a step during final job assembly.
         self.modifiers_dicts: List[Dict[str, Any]] = []
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
         self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
@@ -53,10 +52,9 @@ class Step(DocItem, ABC):
         self.per_step_transformer_changed = Signal()
         self.visibility_changed = Signal()
 
-        # Default machine-dependent values. These will be overwritten by
-        # the step factories in the pipeline module.
-        self.power = 1.0  # Normalized power 0.0-1.0
-        self.max_power = 1000  # G-code scaled value, for reference
+        # Default machine-dependent values.
+        self.power = 1.0
+        self.max_power = 1000
         self.cut_speed = 500
         self.max_cut_speed = 10000
         self.travel_speed = 5000
@@ -75,6 +73,8 @@ class Step(DocItem, ABC):
             "visible": self.visible,
             "selected_laser_uid": self.selected_laser_uid,
             "generated_workpiece_uid": self.generated_workpiece_uid,
+            "applied_recipe_uid": self.applied_recipe_uid,
+            "capabilities": [c.name for c in self.capabilities],
             "modifiers_dicts": self.modifiers_dicts,
             "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
@@ -102,6 +102,16 @@ class Step(DocItem, ABC):
         step.visible = data["visible"]
         step.selected_laser_uid = data.get("selected_laser_uid")
         step.generated_workpiece_uid = data.get("generated_workpiece_uid")
+        step.applied_recipe_uid = data.get("applied_recipe_uid")
+
+        # Deserialize capabilities from list of names to instances
+        cap_names = data.get("capabilities", [])
+        step.capabilities = {
+            CAPABILITIES_BY_NAME[name]
+            for name in cap_names
+            if name in CAPABILITIES_BY_NAME
+        }
+
         step.modifiers_dicts = data["modifiers_dicts"]
         step.opsproducer_dict = data["opsproducer_dict"]
         step.per_workpiece_transformers_dicts = data[
@@ -119,6 +129,7 @@ class Step(DocItem, ABC):
         step.kerf_mm = data.get("kerf_mm", 0.0)
         return step
 
+    # ... rest of the Step class methods ...
     def get_settings(self) -> Dict[str, Any]:
         """
         Bundles all physical process parameters into a dictionary.

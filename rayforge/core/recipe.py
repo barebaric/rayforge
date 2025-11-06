@@ -1,152 +1,147 @@
-import yaml
 import uuid
-import logging
-from pathlib import Path
-from typing import Dict, Any, Optional, List
-from blinker import Signal
-from .workflow import Workflow
+from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
+from dataclasses import dataclass, field, asdict
+from .capability import Capability, CAPABILITIES_BY_NAME, CUT
+
+if TYPE_CHECKING:
+    from .stock import StockItem
+    from ..machine.models.machine import Machine
 
 
-logger = logging.getLogger(__name__)
-
-
+@dataclass
 class Recipe:
     """
-    A saved, portable entity that contains a Workflow and its
-    associated metadata (e.g., material, thickness). It lives in a
-    user-level library, outside any specific document.
+    A preset for configuring a single task (capability) based on context,
+    such as material and thickness. This is a pure data object.
     """
 
-    def __init__(self, name: str):
-        self.uid: str = str(uuid.uuid4())
-        self.name: str = name
-        self.workflow: Optional[Workflow] = None
-        self.metadata: Dict[str, Any] = {
-            "material": "",
-            "thickness_mm": 0.0,
-            "description": "",
-            "author": "",
-        }
-        self.changed = Signal()
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = "New Recipe"
+    description: str = ""
 
-    def set_name(self, name: str):
-        """Sets the recipe's name and triggers a save."""
-        if self.name == name:
-            return
-        self.name = name
-        self.changed.send(self)
+    # --- Applicability Criteria ---
+    target_capability_name: str = CUT.name
+    target_machine_id: Optional[str] = None
+    material_uid: Optional[str] = None
+    min_thickness_mm: Optional[float] = None
+    max_thickness_mm: Optional[float] = None
 
-    def set_workflow(self, workflow: Optional[Workflow]):
+    # --- Payload ---
+    # A single dictionary of settings to be applied.
+    settings: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def capability(self) -> Capability:
+        """Returns the capability instance for this recipe."""
+        return CAPABILITIES_BY_NAME.get(self.target_capability_name, CUT)
+
+    def matches(
+        self,
+        stock_item: Optional["StockItem"],
+        capability: Optional[Capability] = None,
+        machine: Optional["Machine"] = None,
+    ) -> bool:
         """
-        Sets the recipe's workflow and triggers a save.
-        Note: The workflow must be serializable.
-        """
-        # A proper comparison would be complex; for now, any set is a change.
-        self.workflow = workflow
-        self.changed.send(self)
+        Checks if this recipe is a valid candidate for the given context.
 
-    def set_metadata(self, metadata: Dict[str, Any]):
-        """Sets the recipe's metadata and triggers a save."""
-        if self.metadata == metadata:
-            return
-        self.metadata = metadata
-        self.changed.send(self)
+        Args:
+            stock_item: The stock item to check against. Can be None.
+            capability: An optional capability to filter by.
+            machine: An optional machine to filter by.
+
+        Returns:
+            True if the recipe is a valid match, False otherwise.
+        """
+        # 1. Check machine compatibility
+        if self.target_machine_id:
+            # This recipe requires a specific machine.
+            if not machine or machine.id != self.target_machine_id:
+                return False
+
+        # A recipe is considered compatible up to this point, so now check
+        # secondary constraints like laser head.
+
+        # 2. Check laser head compatibility (if specified in settings)
+        target_laser_uid = self.settings.get("selected_laser_uid")
+        if target_laser_uid:
+            # This recipe requires a specific laser head. It can only match if
+            # a machine context is provided and that machine has the head.
+            if not machine or not any(
+                head.uid == target_laser_uid for head in machine.heads
+            ):
+                return False
+
+        # 3. Check capability
+        if capability and self.target_capability_name != capability.name:
+            return False
+
+        # 4. Check material compatibility
+        if self.material_uid:
+            # This recipe requires a specific material.
+            if not stock_item or stock_item.material_uid != self.material_uid:
+                return False
+
+        # 5. Check thickness compatibility
+        thickness_mm = stock_item.thickness if stock_item else None
+        if (
+            self.min_thickness_mm is not None
+            or self.max_thickness_mm is not None
+        ):
+            # This recipe requires a specific thickness or range.
+            if thickness_mm is None:
+                return False  # No thickness provided, cannot match.
+            if (
+                self.min_thickness_mm is not None
+                and thickness_mm < self.min_thickness_mm
+            ):
+                return False
+            if (
+                self.max_thickness_mm is not None
+                and thickness_mm > self.max_thickness_mm
+            ):
+                return False
+
+        # If all checks passed, it's a match.
+        return True
+
+    def get_specificity_score(self) -> Tuple[int, int, int, int]:
+        """
+        Calculates a score based on how specific the recipe's criteria are.
+        A lower score indicates a more specific (and therefore better) match.
+        The score is a tuple (machine, laser, material, thickness).
+
+        Returns:
+            A tuple representing the specificity score.
+        """
+        # Score 0 for specific, 1 for generic (None or not present)
+        machine_score = 0 if self.target_machine_id is not None else 1
+        laser_score = 0 if "selected_laser_uid" in self.settings else 1
+        material_score = 0 if self.material_uid is not None else 1
+        thickness_score = (
+            0
+            if self.min_thickness_mm is not None
+            or self.max_thickness_mm is not None
+            else 1
+        )
+        return (machine_score, laser_score, material_score, thickness_score)
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes the Recipe to a dictionary for saving.
-        NOTE: Workflow serialization is required for this to be complete.
-        """
-        return {
-            "uid": self.uid,
-            "name": self.name,
-            # "workflow": self.workflow.to_dict() if self.workflow else None,
-            "metadata": self.metadata,
-        }
+        """Serializes the Recipe to a dictionary suitable for YAML."""
+        return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Recipe":
-        """
-        Deserializes a Recipe from a dictionary.
-        NOTE: A loaded Recipe's workflow is not instantiated here because it
-        lacks a document context. It should be instantiated by the consumer
-        when applying the recipe to a document.
-        """
-        recipe = cls(data["name"])
-        recipe.uid = data.get("uid", recipe.uid)
-        recipe.metadata = data.get("metadata", {})
-        # workflow_data = data.get("workflow")
-        # if workflow_data:
-        #     # The workflow would be instantiated here if it were document-
-        #     # independent, but it requires a `doc` object.
-        #     pass
-        return recipe
-
-
-class RecipeManager:
-    """
-    Manages loading and saving Recipe objects from/to a dedicated folder.
-    Automatically saves recipes when they are changed.
-    """
-
-    def __init__(self, base_dir: Path):
-        self.base_dir = base_dir
-        self.recipes: Dict[str, Recipe] = {}
-        self._recipe_ref_for_pyreverse: Recipe
-        self.base_dir.mkdir(parents=True, exist_ok=True)
-        self.load()
-
-    def filename_from_id(self, recipe_id: str) -> Path:
-        return self.base_dir / f"{recipe_id}.yaml"
-
-    def add_recipe(self, recipe: Recipe):
-        """Adds a recipe to the manager and connects its changed signal."""
-        if recipe.uid in self.recipes:
-            return
-        self.recipes[recipe.uid] = recipe
-        recipe.changed.connect(self.on_recipe_changed)
-
-    def get_recipe_by_id(self, recipe_id: str) -> Optional[Recipe]:
-        return self.recipes.get(recipe_id)
-
-    def get_all_recipes(self) -> List[Recipe]:
-        return list(self.recipes.values())
-
-    def save_recipe(self, recipe: Recipe):
-        """Saves a single recipe to a YAML file."""
-        logger.debug(f"Saving recipe {recipe.name} ({recipe.uid})")
-        recipe_file = self.filename_from_id(recipe.uid)
-        with open(recipe_file, "w") as f:
-            data = recipe.to_dict()
-            yaml.safe_dump(data, f)
-
-    def load_recipe(self, recipe_id: str) -> Optional[Recipe]:
-        """Loads a single recipe from a file and adds it to the manager."""
-        recipe_file = self.filename_from_id(recipe_id)
-        if not recipe_file.exists():
-            logger.warning(f"Recipe file not found: {recipe_file}")
-            return None
-        try:
-            with open(recipe_file, "r") as f:
-                data = yaml.safe_load(f)
-        except Exception as e:
-            logger.error(f"Error loading recipe file {recipe_file.name}: {e}")
-            return None
-        if not data:
-            logger.warning(f"Skipping empty or invalid recipe {f.name}")
-            return None
-
-        recipe = Recipe.from_dict(data)
-        recipe.uid = recipe_id  # Ensure UID matches filename stem
-        self.add_recipe(recipe)
-        return recipe
-
-    def on_recipe_changed(self, recipe: Recipe, **kwargs):
-        """Callback that saves the recipe whenever it changes."""
-        self.save_recipe(recipe)
-
-    def load(self):
-        """Loads all recipes from the base directory."""
-        self.recipes.clear()
-        for file in self.base_dir.glob("*.yaml"):
-            self.load_recipe(file.stem)
+        """Deserializes a Recipe from a dictionary."""
+        return cls(
+            uid=data.get("uid", str(uuid.uuid4())),
+            name=data.get("name", "Unnamed Recipe"),
+            description=data.get("description", ""),
+            target_capability_name=data.get(
+                "target_capability_name", CUT.name
+            ),
+            target_machine_id=data.get("target_machine_id"),
+            material_uid=data.get("material_uid"),
+            min_thickness_mm=data.get("min_thickness_mm"),
+            max_thickness_mm=data.get("max_thickness_mm"),
+            settings=data.get("settings", {}),
+        )

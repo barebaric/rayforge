@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .camera.manager import CameraManager
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
+    from .core.recipe_manager import RecipeManager
     from .machine.models.machine import Machine, MachineManager
     from .debug import DebugDumpManager
 
@@ -41,6 +42,7 @@ class RayforgeContext:
         self._config: Optional["Config"] = None
         self._camera_mgr: Optional["CameraManager"] = None
         self._material_mgr: Optional["LibraryManager"] = None
+        self._recipe_mgr: Optional["RecipeManager"] = None
         self._debug_dump_manager = DebugDumpManager()
 
     @property
@@ -87,6 +89,13 @@ class RayforgeContext:
         return self._material_mgr
 
     @property
+    def recipe_mgr(self) -> "RecipeManager":
+        """Returns the recipe manager. Raises an error if not initialized."""
+        if self._recipe_mgr is None:
+            raise RuntimeError("Recipe manager is not initialized.")
+        return self._recipe_mgr
+
+    @property
     def debug_dump_manager(self) -> "DebugDumpManager":
         """Returns the debug dump manager."""
         return self._debug_dump_manager
@@ -105,6 +114,7 @@ class RayforgeContext:
         # circular dependencies at the module level.
         from .camera.manager import CameraManager
         from .core.library_manager import LibraryManager
+        from .core.recipe_manager import RecipeManager
         from .machine.models.machine import MachineManager
         from .config import (
             CONFIG_DIR,
@@ -112,6 +122,7 @@ class RayforgeContext:
             CONFIG_FILE,
             CORE_MATERIALS_DIR,
             USER_MATERIALS_DIR,
+            USER_RECIPES_DIR,
         )
         from .core.config import ConfigManager as CoreConfigManager
 
@@ -152,7 +163,14 @@ class RayforgeContext:
         self._material_mgr.load_all_libraries()
         logger.info(
             f"Material manager initialized with "
-            f"{len(self._material_mgr)} materials"
+            f"{len(self._material_mgr.get_all_materials())} materials"
+        )
+
+        # Initialize the recipe manager
+        self._recipe_mgr = RecipeManager(USER_RECIPES_DIR)
+        logger.info(
+            f"Recipe manager initialized with "
+            f"{len(self._recipe_mgr.get_all_recipes())} recipes"
         )
 
         logger.info("Full application context initialized")
