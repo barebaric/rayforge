@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from rayforge.core.doc import Doc
 from rayforge.pipeline.stage.base import PipelineStage
-from rayforge.pipeline.stage.workpiece import WorkpieceGeneratorStage
+from rayforge.pipeline.stage.workpiece_stage import WorkPiecePipelineStage
 
 
 @pytest.fixture
@@ -24,10 +24,10 @@ def mock_doc():
     return MagicMock(spec=Doc)
 
 
-class TestWorkpieceGeneratorStage:
+class TestWorkPiecePipelineStage:
     def test_instantiation(self, mock_task_mgr, mock_artifact_cache):
-        """Test that WorkpieceGeneratorStage can be created."""
-        stage = WorkpieceGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        """Test that WorkPiecePipelineStage can be created."""
+        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_cache)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_cache is mock_artifact_cache
@@ -36,7 +36,7 @@ class TestWorkpieceGeneratorStage:
         self, mock_task_mgr, mock_artifact_cache, mock_doc
     ):
         """Test that the stage implements all required abstract methods."""
-        stage = WorkpieceGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_cache)
         # These should not raise NotImplementedError
         stage.reconcile(mock_doc)
         stage.shutdown()

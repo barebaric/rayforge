@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 ViewKey = Tuple[str, str]  # (step_uid, workpiece_uid)
 
 
-class WorkPieceViewGeneratorStage(PipelineStage):
+class WorkPieceViewPipelineStage(PipelineStage):
     """
     An on-demand stage that generates pre-rendered bitmap artifacts
     (`WorkPieceViewArtifact`) for display in the UI.
@@ -55,7 +55,7 @@ class WorkPieceViewGeneratorStage(PipelineStage):
 
     def shutdown(self):
         """Cancels any active rendering tasks."""
-        logger.debug("WorkPieceViewGeneratorStage shutting down.")
+        logger.debug("WorkPieceViewPipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
             task = self._active_tasks.pop(key, None)
             if task:

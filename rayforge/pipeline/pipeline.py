@@ -41,10 +41,10 @@ from .artifact import (
     RenderContext,
 )
 from .stage import (
-    WorkpieceGeneratorStage,
-    StepGeneratorStage,
-    JobGeneratorStage,
-    WorkPieceViewGeneratorStage,
+    WorkPiecePipelineStage,
+    StepPipelineStage,
+    JobPipelineStage,
+    WorkPieceViewPipelineStage,
 )
 
 
@@ -123,16 +123,16 @@ class Pipeline:
         self._last_known_busy_state = False
 
         # Stages
-        self._workpiece_stage = WorkpieceGeneratorStage(
+        self._workpiece_stage = WorkPiecePipelineStage(
             self._task_manager, self._artifact_cache
         )
-        self._step_stage = StepGeneratorStage(
+        self._step_stage = StepPipelineStage(
             self._task_manager, self._artifact_cache
         )
-        self._job_stage = JobGeneratorStage(
+        self._job_stage = JobPipelineStage(
             self._task_manager, self._artifact_cache
         )
-        self._workpiece_view_stage = WorkPieceViewGeneratorStage(
+        self._workpiece_view_stage = WorkPieceViewPipelineStage(
             self._task_manager, self._artifact_cache
         )
 
@@ -417,7 +417,7 @@ class Pipeline:
 
     def _on_workpiece_generation_starting(
         self,
-        sender: WorkpieceGeneratorStage,
+        sender: WorkPiecePipelineStage,
         *,
         step: Step,
         workpiece: WorkPiece,
@@ -433,7 +433,7 @@ class Pipeline:
 
     def _on_workpiece_visual_chunk_available(
         self,
-        sender: WorkpieceGeneratorStage,
+        sender: WorkPiecePipelineStage,
         *,
         key: Tuple[str, str],
         chunk_handle: BaseArtifactHandle,
@@ -453,7 +453,7 @@ class Pipeline:
 
     def _on_workpiece_generation_finished(
         self,
-        sender: WorkpieceGeneratorStage,
+        sender: WorkPiecePipelineStage,
         *,
         step: Step,
         workpiece: WorkPiece,
@@ -471,7 +471,7 @@ class Pipeline:
         )
 
     def _on_step_render_artifact_ready(
-        self, sender: StepGeneratorStage, *, step: Step
+        self, sender: StepPipelineStage, *, step: Step
     ) -> None:
         """
         Handles the signal that a step's visual data is ready.
@@ -481,7 +481,7 @@ class Pipeline:
         self.step_render_ready.send(self, step=step, generation_id=0)
 
     def _on_step_task_completed(
-        self, sender: StepGeneratorStage, *, step: Step, generation_id: int
+        self, sender: StepPipelineStage, *, step: Step, generation_id: int
     ) -> None:
         """
         Handles the signal that the entire step task (including time) is done.
@@ -493,7 +493,7 @@ class Pipeline:
         )
 
     def _on_step_time_estimate_ready(
-        self, sender: StepGeneratorStage, *, step: Step, time: float
+        self, sender: StepPipelineStage, *, step: Step, time: float
     ) -> None:
         """Handles the new, accurate time estimate from the step stage."""
         self.step_time_updated.send(self)
@@ -536,7 +536,7 @@ class Pipeline:
 
     def _on_job_generation_finished(
         self,
-        sender: JobGeneratorStage,
+        sender: JobPipelineStage,
         *,
         handle: Optional[BaseArtifactHandle],
         task_status: str,
@@ -549,7 +549,7 @@ class Pipeline:
 
     def _on_job_generation_failed(
         self,
-        sender: JobGeneratorStage,
+        sender: JobPipelineStage,
         *,
         error: Optional[Exception],
         task_status: str,
@@ -564,7 +564,7 @@ class Pipeline:
 
     def _on_workpiece_view_created(
         self,
-        sender: WorkPieceViewGeneratorStage,
+        sender: WorkPieceViewPipelineStage,
         *,
         step_uid: str,
         workpiece_uid: str,
@@ -580,7 +580,7 @@ class Pipeline:
 
     def _on_workpiece_view_updated(
         self,
-        sender: WorkPieceViewGeneratorStage,
+        sender: WorkPieceViewPipelineStage,
         *,
         step_uid: str,
         workpiece_uid: str,
@@ -594,7 +594,7 @@ class Pipeline:
 
     def _on_workpiece_view_ready(
         self,
-        sender: WorkPieceViewGeneratorStage,
+        sender: WorkPieceViewPipelineStage,
         *,
         step_uid: str,
         workpiece_uid: str,

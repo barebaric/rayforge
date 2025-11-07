@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, ANY
 
 from rayforge.core.doc import Doc
 from rayforge.pipeline.stage.base import PipelineStage
-from rayforge.pipeline.stage.job import JobGeneratorStage, JobKey
+from rayforge.pipeline.stage.job_stage import JobPipelineStage, JobKey
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
 )
@@ -61,10 +61,10 @@ def real_doc_with_step(context_initializer, test_machine_and_config):
 
 
 @pytest.mark.usefixtures("context_initializer")
-class TestJobGeneratorStage:
+class TestJobPipelineStage:
     def test_instantiation(self, mock_task_mgr, artifact_cache):
-        """Test that JobGeneratorStage can be created."""
-        stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
+        """Test that JobPipelineStage can be created."""
+        stage = JobPipelineStage(mock_task_mgr, artifact_cache)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_cache is artifact_cache
@@ -83,7 +83,7 @@ class TestJobGeneratorStage:
         )
         artifact_cache.put_step_ops_handle(step.uid, step_ops_handle)
 
-        stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
+        stage = JobPipelineStage(mock_task_mgr, artifact_cache)
         stage.generate_job(real_doc_with_step)
 
         mock_task_mgr.run_process.assert_called_once()
@@ -112,7 +112,7 @@ class TestJobGeneratorStage:
         )
         artifact_cache.put_step_ops_handle(step.uid, step_ops_handle)
 
-        stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
+        stage = JobPipelineStage(mock_task_mgr, artifact_cache)
         mock_finished_signal = MagicMock()
         stage.generation_finished.connect(mock_finished_signal)
         stage.generate_job(real_doc_with_step)
@@ -169,7 +169,7 @@ class TestJobGeneratorStage:
         )
         artifact_cache.put_step_ops_handle(step.uid, step_ops_handle)
 
-        stage = JobGeneratorStage(mock_task_mgr, artifact_cache)
+        stage = JobPipelineStage(mock_task_mgr, artifact_cache)
         mock_failed_signal = MagicMock()
         stage.generation_failed.connect(mock_failed_signal)
         stage.generate_job(real_doc_with_step)

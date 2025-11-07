@@ -32,7 +32,7 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
 class StepOpsArtifact(BaseArtifact):
     """
     Represents an artifact containing only the final, transformed operations
-    for a Step. This is consumed by the JobGeneratorStage.
+    for a Step. This is consumed by the JobPipelineStage.
     """
 
     def __init__(
