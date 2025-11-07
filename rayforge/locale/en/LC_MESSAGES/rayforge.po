@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-07 08:18+0100\n"
+"POT-Creation-Date: 2025-11-07 15:35+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -21,49 +21,55 @@ msgstr ""
 msgid "Layer 1"
 msgstr ""
 
-#: rayforge/core/capability.py:118 rayforge/main_menu.py:35
+#: rayforge/core/capability.py:131 rayforge/main_menu.py:35
 msgid "Cut"
 msgstr ""
 
-#: rayforge/core/capability.py:125 rayforge/core/capability.py:163
-#: rayforge/core/capability.py:201
-msgid "Optionally force a specific laser head."
+#: rayforge/core/capability.py:138 rayforge/core/capability.py:184
+#: rayforge/core/capability.py:230
+msgid "Optionally force a specific laser head"
 msgstr ""
 
-#: rayforge/core/capability.py:129 rayforge/core/capability.py:167
-#: rayforge/core/capability.py:205
+#: rayforge/core/capability.py:142 rayforge/core/capability.py:188
+#: rayforge/core/capability.py:234
 msgid "Power"
 msgstr ""
 
-#: rayforge/core/capability.py:136
-#: rayforge/doceditor/ui/step_settings_dialog.py:147
+#: rayforge/core/capability.py:149
+#: rayforge/doceditor/ui/step_settings_dialog.py:113
 msgid "Cut Speed"
 msgstr ""
 
-#: rayforge/core/capability.py:142 rayforge/core/capability.py:180
-#: rayforge/core/capability.py:218
-#: rayforge/doceditor/ui/step_settings_dialog.py:190
+#: rayforge/core/capability.py:155 rayforge/core/capability.py:201
+#: rayforge/core/capability.py:247
+#: rayforge/doceditor/ui/step_settings_dialog.py:156
 msgid "Air Assist"
 msgstr ""
 
-#: rayforge/core/capability.py:156
+#: rayforge/core/capability.py:160 rayforge/core/capability.py:206
+#: rayforge/core/capability.py:252
+msgid "Kerf"
+msgstr ""
+
+#: rayforge/core/capability.py:161 rayforge/core/capability.py:207
+#: rayforge/core/capability.py:253
+msgid "The effective width of the laser beam"
+msgstr ""
+
+#: rayforge/core/capability.py:177
 msgid "Engrave"
 msgstr ""
 
-#: rayforge/core/capability.py:174
+#: rayforge/core/capability.py:195
 msgid "Engrave Speed"
 msgstr ""
 
-#: rayforge/core/capability.py:194
+#: rayforge/core/capability.py:223
 msgid "Score"
 msgstr ""
 
-#: rayforge/core/capability.py:212
+#: rayforge/core/capability.py:241
 msgid "Score Speed"
-msgstr ""
-
-#: rayforge/core/capability.py:232
-msgid "Utility"
 msgstr ""
 
 #: rayforge/camera/ui/selection_dialog.py:13
@@ -78,16 +84,17 @@ msgstr ""
 #: rayforge/camera/ui/alignment_dialog.py:133
 #: rayforge/machine/ui/preferences_page.py:143
 #: rayforge/machine/ui/hook_list.py:117 rayforge/machine/ui/gcode_editor.py:54
-#: rayforge/machine/ui/profile_selector.py:54
+#: rayforge/machine/ui/profile_selector.py:65
 #: rayforge/doceditor/ui/material_library_list.py:207
 #: rayforge/doceditor/ui/material_library_list.py:235
 #: rayforge/doceditor/ui/material_library_list.py:288
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:124
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:122
 #: rayforge/doceditor/ui/add_material_dialog.py:23
 #: rayforge/doceditor/ui/add_material_dialog.py:32
-#: rayforge/doceditor/ui/recipe_list.py:188
-#: rayforge/doceditor/ui/recipe_selector_dialog.py:81
-#: rayforge/doceditor/ui/recipe_control_widget.py:213
+#: rayforge/doceditor/ui/recipe_list.py:193
+#: rayforge/doceditor/ui/recipe_selector_dialog.py:98
+#: rayforge/doceditor/ui/material_selector.py:98
+#: rayforge/doceditor/ui/recipe_control_widget.py:222
 #: rayforge/doceditor/ui/material_list.py:189
 #: rayforge/doceditor/ui/import_handler.py:211
 msgid "Cancel"
@@ -134,7 +141,7 @@ msgstr ""
 #: rayforge/machine/ui/gcode_editor.py:87
 #: rayforge/machine/ui/laser_preferences_page.py:221
 #: rayforge/machine/ui/general_preferences_page.py:41
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:150
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:148
 #: rayforge/doceditor/ui/add_material_dialog.py:39
 #: rayforge/doceditor/ui/stock_properties_dialog.py:66
 msgid "Name"
@@ -481,7 +488,7 @@ msgid ""
 msgstr ""
 
 #: rayforge/machine/models/laser.py:9 rayforge/machine/models/laser.py:68
-#: rayforge/doceditor/ui/step_settings_dialog.py:113
+#: rayforge/doceditor/ui/step_settings_dialog.py:79
 msgid "Laser Head"
 msgstr ""
 
@@ -640,7 +647,7 @@ msgstr ""
 
 #: rayforge/machine/ui/preferences_page.py:144
 #: rayforge/doceditor/ui/material_library_list.py:208
-#: rayforge/doceditor/ui/recipe_list.py:189
+#: rayforge/doceditor/ui/recipe_list.py:194
 #: rayforge/doceditor/ui/material_list.py:190
 msgid "Delete"
 msgstr ""
@@ -694,7 +701,7 @@ msgstr ""
 
 #: rayforge/machine/ui/gcode_editor.py:82
 #: rayforge/doceditor/ui/material_library_list.py:236
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:123
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:121
 #: rayforge/doceditor/ui/add_material_dialog.py:24
 msgid "Save"
 msgstr ""
@@ -883,11 +890,11 @@ msgstr ""
 msgid "Z-"
 msgstr ""
 
-#: rayforge/machine/ui/profile_selector.py:26
+#: rayforge/machine/ui/profile_selector.py:34
 msgid "Add a New Machine"
 msgstr ""
 
-#: rayforge/machine/ui/profile_selector.py:27
+#: rayforge/machine/ui/profile_selector.py:35
 msgid "Select a machine profile to use as a template."
 msgstr ""
 
@@ -2603,7 +2610,7 @@ msgid "Change Depth Engraving setting"
 msgstr ""
 
 #: rayforge/doceditor/ui/material_library_list.py:48
-#: rayforge/doceditor/ui/material_selector.py:146
+#: rayforge/doceditor/ui/material_selector.py:112
 msgid "Core Materials"
 msgstr ""
 
@@ -2635,7 +2642,7 @@ msgid "No user libraries found."
 msgstr ""
 
 #: rayforge/doceditor/ui/material_library_list.py:201
-#: rayforge/doceditor/ui/recipe_list.py:182
+#: rayforge/doceditor/ui/recipe_list.py:187
 #: rayforge/doceditor/ui/material_list.py:183
 #, python-brace-format
 msgid "Delete '{name}'?"
@@ -2677,7 +2684,7 @@ msgid "Enter a name for the new library folder:"
 msgstr ""
 
 #: rayforge/doceditor/ui/material_library_list.py:289
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:123
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:121
 #: rayforge/doceditor/ui/add_material_dialog.py:33
 msgid "Add"
 msgstr ""
@@ -2686,147 +2693,159 @@ msgstr ""
 msgid "Failed to create library. A folder with that name may already exist."
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:30
-#, python-brace-format
-msgid "{name} Settings"
-msgstr ""
-
-#: rayforge/doceditor/ui/step_settings_dialog.py:105
+#: rayforge/doceditor/ui/step_settings_dialog.py:66
 msgid "General Settings"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:119
+#: rayforge/doceditor/ui/step_settings_dialog.py:85
 msgid "Power (%)"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:148
-#: rayforge/doceditor/ui/step_settings_dialog.py:175
+#: rayforge/doceditor/ui/step_settings_dialog.py:114
+#: rayforge/doceditor/ui/step_settings_dialog.py:141
 #, python-brace-format
 msgid "Max: {max_speed}"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:174
+#: rayforge/doceditor/ui/step_settings_dialog.py:140
 msgid "Travel Speed"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:204
+#: rayforge/doceditor/ui/step_settings_dialog.py:170
 msgid "Beam Width (Kerf)"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:205
+#: rayforge/doceditor/ui/step_settings_dialog.py:171
 msgid "Effective laser cut width in machine units"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:307
+#: rayforge/doceditor/ui/step_settings_dialog.py:242
 msgid "Change Laser"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:385
+#: rayforge/doceditor/ui/step_settings_dialog.py:302
 msgid "Change Kerf"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:397
+#: rayforge/doceditor/ui/step_settings_dialog.py:314
 msgid "Change laser power"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:419
+#: rayforge/doceditor/ui/step_settings_dialog.py:336
 msgid "Change cut speed"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:433
+#: rayforge/doceditor/ui/step_settings_dialog.py:350
 msgid "Change Travel Speed"
 msgstr ""
 
-#: rayforge/doceditor/ui/step_settings_dialog.py:447
+#: rayforge/doceditor/ui/step_settings_dialog.py:364
 msgid "Toggle air assist"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:119
+#: rayforge/doceditor/ui/step_settings_dialog.py:419
+msgid "No post-processing options available for this step."
+msgstr ""
+
+#: rayforge/doceditor/ui/step_settings_dialog.py:440
+#, python-brace-format
+msgid "{name} Settings"
+msgstr ""
+
+#: rayforge/doceditor/ui/step_settings_dialog.py:493
+msgid "Step Settings"
+msgstr ""
+
+#: rayforge/doceditor/ui/step_settings_dialog.py:501
+msgid "Post Processing"
+msgstr ""
+
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:117
 msgid "Edit Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:119
-#: rayforge/doceditor/ui/recipe_list.py:91
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:117
+#: rayforge/doceditor/ui/recipe_list.py:96
 msgid "Add New Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:142
-#: rayforge/doceditor/ui/recipe_control_widget.py:31
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:140
+#: rayforge/doceditor/ui/recipe_control_widget.py:30
 msgid "Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:144
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:142
 msgid "A named preset of settings that can be automatically applied later."
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:159
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:157
 msgid "Description"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:165
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:163
 msgid "Applicability"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:167
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:165
 msgid ""
 "Define when this recipe should be suggested. Leave fields blank to match any "
 "value."
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:176
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:174
 msgid "Task Type"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:186
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:184
 msgid "Any Machine"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:192
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:190
 msgid "Machine"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:212
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:210
 #: rayforge/doceditor/ui/stock_properties_dialog.py:87
 msgid "Material"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:213
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:211
 msgid "Select..."
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:219
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:217
 msgid "Clear Material Selection"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:228
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:226
 msgid "Min Thickness"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:229
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:227
 msgid "Minimum stock thickness for this recipe to apply"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:234
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:232
 msgid "Max Thickness"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:235
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:233
 msgid "Maximum stock thickness for this recipe to apply"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:251
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:249
 msgid "Settings"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:253
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:251
 msgid "The process settings that will be applied by this recipe."
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:346
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:344
 msgid "Not Found"
 msgstr ""
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:349
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:347
 msgid "Any"
 msgstr ""
 
@@ -2906,23 +2925,23 @@ msgstr ""
 msgid "No thickness specified"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_list.py:95
+#: rayforge/doceditor/ui/recipe_list.py:100
 msgid "No recipes found."
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_list.py:184
+#: rayforge/doceditor/ui/recipe_list.py:189
 msgid "The recipe will be permanently removed. This action cannot be undone."
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_selector_dialog.py:41
+#: rayforge/doceditor/ui/recipe_selector_dialog.py:55
 msgid "Select Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_selector_dialog.py:42
+#: rayforge/doceditor/ui/recipe_selector_dialog.py:56
 msgid "Choose a recipe to apply to the current step."
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_selector_dialog.py:50
+#: rayforge/doceditor/ui/recipe_selector_dialog.py:66
 msgid "Show only compatible recipes"
 msgstr ""
 
@@ -2956,8 +2975,12 @@ msgstr ""
 msgid "Manage your saved recipes for different materials and processes."
 msgstr ""
 
-#: rayforge/doceditor/ui/material_selector.py:91
+#: rayforge/doceditor/ui/material_selector.py:54
 msgid "Select Material"
+msgstr ""
+
+#: rayforge/doceditor/ui/material_selector.py:55
+msgid "Choose a material from the available libraries."
 msgstr ""
 
 #: rayforge/doceditor/ui/add_tabs_popover.py:37
@@ -3008,43 +3031,43 @@ msgstr ""
 msgid "Metadata copied to clipboard"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:35
+#: rayforge/doceditor/ui/recipe_control_widget.py:33
 msgid "Choose..."
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:41
+#: rayforge/doceditor/ui/recipe_control_widget.py:39
 msgid "Save As..."
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:47
-#: rayforge/doceditor/ui/recipe_control_widget.py:214
+#: rayforge/doceditor/ui/recipe_control_widget.py:45
+#: rayforge/doceditor/ui/recipe_control_widget.py:223
 msgid "Update"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:98
+#: rayforge/doceditor/ui/recipe_control_widget.py:106
 msgid "Manual Settings"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:121
+#: rayforge/doceditor/ui/recipe_control_widget.py:128
 #, python-brace-format
 msgid "Apply Recipe '{name}'"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:152
+#: rayforge/doceditor/ui/recipe_control_widget.py:161
 #, python-brace-format
 msgid "New {cap} Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:188
+#: rayforge/doceditor/ui/recipe_control_widget.py:197
 msgid "Set Applied Recipe"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:207
+#: rayforge/doceditor/ui/recipe_control_widget.py:216
 #, python-brace-format
 msgid "Update Recipe '{name}'?"
 msgstr ""
 
-#: rayforge/doceditor/ui/recipe_control_widget.py:209
+#: rayforge/doceditor/ui/recipe_control_widget.py:218
 msgid ""
 "This will permanently overwrite the saved recipe with the current step "
 "settings. This action cannot be undone."
