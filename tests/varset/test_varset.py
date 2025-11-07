@@ -1,16 +1,16 @@
-import unittest
+import pytest
 from rayforge.shared.varset.var import Var, ValidationError
 from rayforge.shared.varset.intvar import IntVar
 from rayforge.shared.varset.varset import VarSet
 
 
-class TestVarSet(unittest.TestCase):
+class TestVarSet:
     def test_creation(self):
         """Test basic creation of an empty VarSet."""
         vs = VarSet(title="My Settings", description="Some settings.")
-        self.assertEqual(vs.title, "My Settings")
-        self.assertEqual(vs.description, "Some settings.")
-        self.assertEqual(len(vs), 0)
+        assert vs.title == "My Settings"
+        assert vs.description == "Some settings."
+        assert len(vs) == 0
 
     def test_creation_with_vars(self):
         """Test creating a VarSet pre-populated with Var objects."""
@@ -19,18 +19,18 @@ class TestVarSet(unittest.TestCase):
             Var(key="b", label="B", var_type=int),
         ]
         vs = VarSet(vars=vars_list)
-        self.assertEqual(len(vs), 2)
-        self.assertIn("a", vs.keys())
-        self.assertIn("b", vs.keys())
+        assert len(vs) == 2
+        assert "a" in vs.keys()
+        assert "b" in vs.keys()
 
     def test_add_var(self):
         """Test adding a Var to the set."""
         vs = VarSet()
         v = Var(key="test1", label="Test 1", var_type=str, default="abc")
         vs.add(v)
-        self.assertEqual(len(vs), 1)
-        self.assertIn("test1", vs.keys())
-        self.assertIs(vs["test1"], v)
+        assert len(vs) == 1
+        assert "test1" in vs.keys()
+        assert vs["test1"] is v
 
     def test_add_duplicate_key(self):
         """Test that adding a Var with a duplicate key raises a KeyError."""
@@ -38,7 +38,7 @@ class TestVarSet(unittest.TestCase):
         v1 = Var(key="test1", label="Test 1", var_type=str)
         v2 = Var(key="test1", label="Test 2", var_type=int)
         vs.add(v1)
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             vs.add(v2)
 
     def test_get_and_keys(self):
@@ -46,27 +46,27 @@ class TestVarSet(unittest.TestCase):
         vs = VarSet()
         v1 = Var(key="a", label="A", var_type=str)
         vs.add(v1)
-        self.assertIs(vs.get("a"), v1)
-        self.assertIsNone(vs.get("nonexistent"))
-        self.assertEqual(list(vs.keys()), ["a"])
+        assert vs.get("a") is v1
+        assert vs.get("nonexistent") is None
+        assert list(vs.keys()) == ["a"]
 
     def test_set_value_by_key(self):
         """Test setting a Var's value using dictionary-style access."""
         vs = VarSet()
         vs.add(Var(key="timeout", label="Timeout", var_type=int, default=10))
         vs["timeout"] = 30
-        self.assertEqual(vs["timeout"].value, 30)
+        assert vs["timeout"].value == 30
 
     def test_set_value_nonexistent_key(self):
         """
         Test that setting a value for a nonexistent key raises a KeyError.
         """
         vs = VarSet()
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             vs["nonexistent"] = 100
 
-    def test_iteration(self):
-        """Test that iterating over a VarSet yields Vars in insertion order."""
+    def test_iteration_and_vars_property(self):
+        """Test iteration, insertion order, and the .vars property."""
         vs = VarSet()
         v1 = Var(key="b_var", label="B", var_type=str)
         v2 = Var(key="a_var", label="A", var_type=str)
@@ -75,18 +75,24 @@ class TestVarSet(unittest.TestCase):
         vs.add(v2)
         vs.add(v3)
 
+        # Test iterator
         iterated_vars = list(vs)
-        self.assertEqual(len(iterated_vars), 3)
-        self.assertIs(iterated_vars[0], v1)
-        self.assertIs(iterated_vars[1], v2)
-        self.assertIs(iterated_vars[2], v3)
+        assert len(iterated_vars) == 3
+        assert iterated_vars[0] is v1
+        assert iterated_vars[1] is v2
+        assert iterated_vars[2] is v3
+
+        # Test .vars property
+        property_vars = vs.vars
+        assert isinstance(property_vars, list)
+        assert property_vars == iterated_vars
 
     def test_len(self):
         """Test the __len__ method."""
         vs = VarSet()
-        self.assertEqual(len(vs), 0)
+        assert len(vs) == 0
         vs.add(Var(key="a", label="A", var_type=str))
-        self.assertEqual(len(vs), 1)
+        assert len(vs) == 1
 
     def test_get_values(self):
         """
@@ -107,7 +113,7 @@ class TestVarSet(unittest.TestCase):
             "enabled": True,
             "empty": None,
         }
-        self.assertDictEqual(values, expected)
+        assert values == expected
 
     def test_set_values(self):
         """
@@ -128,17 +134,17 @@ class TestVarSet(unittest.TestCase):
         }
         vs.set_values(new_values)
 
-        self.assertEqual(vs["name"].value, "forge")
-        self.assertEqual(vs["speed"].value, 2000)
-        self.assertEqual(vs["enabled"].value, False)
+        assert vs["name"].value == "forge"
+        assert vs["speed"].value == 2000
+        assert vs["enabled"].value is False
 
     def test_clear(self):
         """Test the clear method to remove all Vars."""
         vs = VarSet()
         vs.add(Var(key="name", label="Name", var_type=str, default="ray"))
-        self.assertEqual(len(vs), 1)
+        assert len(vs) == 1
         vs.clear()
-        self.assertEqual(len(vs), 0)
+        assert len(vs) == 0
 
     def test_validate(self):
         """Test the master validate method on the VarSet."""
@@ -148,13 +154,22 @@ class TestVarSet(unittest.TestCase):
         vs.add(v_ok)
         vs.add(v_bad)
 
-        # Validation should fail because v_bad's value is out of bounds
-        with self.assertRaisesRegex(ValidationError, "at least 10"):
+        with pytest.raises(ValidationError, match="at least 10"):
             vs.validate()
 
-        # After fixing the bad value, validation should pass
         vs["bad"] = 15
         try:
             vs.validate()
         except ValidationError:
-            self.fail("VarSet.validate() raised ValidationError unexpectedly.")
+            pytest.fail(
+                "VarSet.validate() raised ValidationError unexpectedly."
+            )
+
+    def test_repr(self):
+        """Test the __repr__ method."""
+        vs = VarSet(title="My Settings")
+        vs.add(Var(key="a", label="A", var_type=str))
+        vs.add(Var(key="b", label="B", var_type=int))
+        representation = repr(vs)
+        assert "title='My Settings'" in representation
+        assert "count=2" in representation

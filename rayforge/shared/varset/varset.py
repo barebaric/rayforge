@@ -29,6 +29,11 @@ class VarSet:
             for var in vars:
                 self.add(var)
 
+    @property
+    def vars(self) -> List[Var]:
+        """Returns the list of Var objects in the set."""
+        return list(self._vars.values())
+
     def add(self, var: Var):
         """Adds a Var to the set. Raises KeyError if the key exists."""
         if var.key in self._vars:
