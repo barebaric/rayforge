@@ -5,11 +5,9 @@ from rayforge.core.capability import (
     EngraveCapability,
     LaserHeadVar,
     ScoreCapability,
-    UtilityCapability,
     CUT,
     ENGRAVE,
     SCORE,
-    UTILITY,
     ALL_CAPABILITIES,
     CAPABILITIES_BY_NAME,
 )
@@ -77,26 +75,14 @@ def test_score_capability(mocker):
     assert speed_var.default == 5000
 
 
-def test_utility_capability():
-    """Tests the properties of the UtilityCapability singleton."""
-    assert UTILITY.name == "UTILITY"
-    assert UTILITY.label == "Utility"
-    assert isinstance(UTILITY, UtilityCapability)
-
-    # Utility varset should be empty by having no variables to iterate
-    assert len(list(UTILITY.varset)) == 0
-
-
 def test_collections():
     """Tests the global collections of capabilities."""
-    assert len(ALL_CAPABILITIES) == 4
+    assert len(ALL_CAPABILITIES) == 3
     assert CUT in ALL_CAPABILITIES
     assert ENGRAVE in ALL_CAPABILITIES
     assert SCORE in ALL_CAPABILITIES
-    assert UTILITY in ALL_CAPABILITIES
 
-    assert len(CAPABILITIES_BY_NAME) == 4
+    assert len(CAPABILITIES_BY_NAME) == 3
     assert CAPABILITIES_BY_NAME["CUT"] is CUT
     assert CAPABILITIES_BY_NAME["ENGRAVE"] is ENGRAVE
     assert CAPABILITIES_BY_NAME["SCORE"] is SCORE
-    assert CAPABILITIES_BY_NAME["UTILITY"] is UTILITY

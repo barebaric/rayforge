@@ -135,7 +135,7 @@ class CutCapability(Capability):
         return VarSet(
             vars=[
                 LaserHeadVar(
-                    description=_("Optionally force a specific laser head.")
+                    description=_("Optionally force a specific laser head")
                 ),
                 SliderFloatVar(
                     key="power",
@@ -158,7 +158,7 @@ class CutCapability(Capability):
                 FloatVar(
                     key="kerf_mm",
                     label=_("Kerf"),
-                    description=_("The effective width of the laser beam."),
+                    description=_("The effective width of the laser beam"),
                     default=0.1,
                     min_val=0.0,
                     max_val=2.0,
@@ -181,7 +181,7 @@ class EngraveCapability(Capability):
         return VarSet(
             vars=[
                 LaserHeadVar(
-                    description=_("Optionally force a specific laser head.")
+                    description=_("Optionally force a specific laser head")
                 ),
                 SliderFloatVar(
                     key="power",
@@ -204,7 +204,7 @@ class EngraveCapability(Capability):
                 FloatVar(
                     key="kerf_mm",
                     label=_("Kerf"),
-                    description=_("The effective width of the laser beam."),
+                    description=_("The effective width of the laser beam"),
                     default=0.1,
                     min_val=0.0,
                     max_val=2.0,
@@ -227,7 +227,7 @@ class ScoreCapability(Capability):
         return VarSet(
             vars=[
                 LaserHeadVar(
-                    description=_("Optionally force a specific laser head.")
+                    description=_("Optionally force a specific laser head")
                 ),
                 SliderFloatVar(
                     key="power",
@@ -250,7 +250,7 @@ class ScoreCapability(Capability):
                 FloatVar(
                     key="kerf_mm",
                     label=_("Kerf"),
-                    description=_("The effective width of the laser beam."),
+                    description=_("The effective width of the laser beam"),
                     default=0.1,
                     min_val=0.0,
                     max_val=2.0,
@@ -259,34 +259,16 @@ class ScoreCapability(Capability):
         )
 
 
-class UtilityCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "UTILITY"
-
-    @property
-    def label(self) -> str:
-        return _("Utility")
-
-    @property
-    def varset(self) -> VarSet:
-        # Utility tasks like 'Frame' typically have no user-tunable settings
-        # that would belong in a recipe.
-        return VarSet()
-
-
 # Instantiate singletons of each capability
 CUT = CutCapability()
 ENGRAVE = EngraveCapability()
 SCORE = ScoreCapability()
-UTILITY = UtilityCapability()
 
 # A list of all available capability instances, for populating UI dropdowns
 ALL_CAPABILITIES: List[Capability] = [
     CUT,
     ENGRAVE,
     SCORE,
-    UTILITY,
 ]
 
 # A map for deserializing from a name string back to a capability instance

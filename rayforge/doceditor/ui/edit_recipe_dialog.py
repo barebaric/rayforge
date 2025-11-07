@@ -4,7 +4,7 @@ from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...context import get_context
 from ...core.recipe import Recipe
-from ...core.capability import ALL_CAPABILITIES, UTILITY
+from ...core.capability import ALL_CAPABILITIES
 from ...shared.units.definitions import get_unit
 from ...shared.varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
@@ -110,9 +110,7 @@ class AddEditRecipeDialog(Adw.MessageDialog):
         )
         self._machine_ids: List[Optional[str]] = []
         # Filter out the Utility capability for UI purposes
-        self._ui_capabilities = [
-            cap for cap in ALL_CAPABILITIES if cap is not UTILITY
-        ]
+        self._ui_capabilities = [cap for cap in ALL_CAPABILITIES]
 
         is_editing = recipe is not None
         self.set_heading(
