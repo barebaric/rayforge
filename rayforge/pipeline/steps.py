@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, List, Callable
 from ..context import RayforgeContext
 from ..core.step import Step
-from ..core.capability import CUT, SCORE, ENGRAVE, UTILITY
+from ..core.capability import CUT, SCORE, ENGRAVE
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
     DepthEngraver,
@@ -206,7 +206,7 @@ def create_material_test_step(
         typelabel=_("Material Test Grid"),
         name=name,
     )
-    step.capabilities = {UTILITY}
+    step.capabilities = set()
     step.opsproducer_dict = MaterialTestGridProducer().to_dict()
     # Material test doesn't use image modifiers
     step.modifiers_dicts = []
