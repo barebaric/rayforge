@@ -1,6 +1,9 @@
 # Recipes and Settings
 
-Rayforge provides a powerful recipe system that allows you to create, manage, and apply consistent settings across your laser cutting projects. This guide covers the complete user journey from creating recipes in the general settings to applying them to operations and managing settings at the step level.
+Rayforge provides a powerful recipe system that allows you to create, manage, and apply
+consistent settings across your laser cutting projects. This guide covers the complete
+user journey from creating recipes in the general settings to applying them to operations
+and managing settings at the step level.
 
 ## Overview
 
@@ -14,7 +17,8 @@ The recipe system consists of three main components:
 
 ### Creating Recipes
 
-Recipes are named presets that contain all the settings needed for specific operations. You can create recipes through the main settings interface:
+Recipes are named presets that contain all the settings needed for specific operations.
+You can create recipes through the main settings interface:
 
 #### 1. Access Recipe Manager
 
