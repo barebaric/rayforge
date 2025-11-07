@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 JobKey = "final_job"
 
 
-class JobGeneratorStage(PipelineStage):
+class JobPipelineStage(PipelineStage):
     """A pipeline stage that assembles the final job artifact."""
 
     def __init__(
@@ -44,7 +44,7 @@ class JobGeneratorStage(PipelineStage):
 
     def shutdown(self):
         """Cancels the active job generation task."""
-        logger.debug("JobGeneratorStage shutting down.")
+        logger.debug("JobPipelineStage shutting down.")
         if self._active_task:
             self._task_manager.cancel_task(self._active_task.key)
             self._active_task = None

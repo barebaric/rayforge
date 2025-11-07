@@ -1,11 +1,11 @@
-from .workpiece import WorkpieceGeneratorStage
-from .step import StepGeneratorStage
-from .job import JobGeneratorStage
-from .workpiece_view import WorkPieceViewGeneratorStage
+from .workpiece_stage import WorkPiecePipelineStage
+from .step_stage import StepPipelineStage
+from .job_stage import JobPipelineStage
+from .workpiece_view_stage import WorkPieceViewPipelineStage
 
 __all__ = [
-    "WorkpieceGeneratorStage",
-    "StepGeneratorStage",
-    "JobGeneratorStage",
-    "WorkPieceViewGeneratorStage",
+    "WorkPiecePipelineStage",
+    "StepPipelineStage",
+    "JobPipelineStage",
+    "WorkPieceViewPipelineStage",
 ]

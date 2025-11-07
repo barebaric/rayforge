@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 WorkpieceKey = Tuple[str, str]  # (step_uid, workpiece_uid)
 
 
-class WorkpieceGeneratorStage(PipelineStage):
+class WorkPiecePipelineStage(PipelineStage):
     """
     Generates and caches base artifacts for (Step, WorkPiece) pairs.
     """
@@ -65,7 +65,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         return bool(self._active_tasks)
 
     def shutdown(self):
-        logger.debug("WorkpieceGeneratorStage shutting down.")
+        logger.debug("WorkPiecePipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
             self._cleanup_task(key)
         self._active_tasks.clear()
@@ -75,7 +75,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         Synchronizes the cache with the document, generating artifacts
         for new or invalid items and cleaning up obsolete ones.
         """
-        logger.debug("WorkpieceGeneratorStage reconciling...")
+        logger.debug("WorkPiecePipelineStage reconciling...")
         all_current_pairs = {
             (step.uid, workpiece.uid)
             for layer in doc.layers
@@ -183,7 +183,7 @@ class WorkpieceGeneratorStage(PipelineStage):
         Removes a workpiece cache entry, releases its resources, and
         requests cancellation of its task.
         """
-        logger.debug(f"WorkpieceGeneratorStage: Cleaning up entry {key}.")
+        logger.debug(f"WorkPiecePipelineStage: Cleaning up entry {key}.")
         s_uid, w_uid = key
         self._generation_id_map.pop(key, None)
         self._cleanup_task(key)

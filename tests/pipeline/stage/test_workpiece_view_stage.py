@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from rayforge.pipeline.stage.workpiece_view import (
-    WorkPieceViewGeneratorStage,
+from rayforge.pipeline.stage.workpiece_view_stage import (
+    WorkPieceViewPipelineStage,
 )
 from rayforge.pipeline.artifact import (
     RenderContext,
@@ -12,12 +12,12 @@ from rayforge.pipeline.artifact import (
 
 
 class TestWorkPieceViewStage(unittest.TestCase):
-    """Test suite for the WorkPieceViewGeneratorStage."""
+    """Test suite for the WorkPieceViewPipelineStage."""
 
     def setUp(self):
         self.mock_artifact_cache = MagicMock()
         self.mock_task_manager = MagicMock()
-        self.stage = WorkPieceViewGeneratorStage(
+        self.stage = WorkPieceViewPipelineStage(
             self.mock_task_manager, self.mock_artifact_cache
         )
 
@@ -57,7 +57,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             call_args.kwargs["render_context_dict"], context.to_dict()
         )
 
-    @patch("rayforge.pipeline.stage.workpiece_view.get_context")
+    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
     def test_stage_handles_events_and_completion(self, mock_get_context):
         """
         Tests that the stage correctly handles events from the runner and

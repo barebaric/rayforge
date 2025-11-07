@@ -11,7 +11,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.stage.base import PipelineStage
-from rayforge.pipeline.stage.step import StepGeneratorStage
+from rayforge.pipeline.stage.step_stage import StepPipelineStage
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
@@ -121,10 +121,10 @@ def _complete_step_task(task, time=42.0, gen_id=1):
 
 
 @pytest.mark.usefixtures("context_initializer")
-class TestStepGeneratorStage:
+class TestStepPipelineStage:
     def test_instantiation(self, mock_task_mgr, mock_artifact_cache):
-        """Test that StepGeneratorStage can be created."""
-        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        """Test that StepPipelineStage can be created."""
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_cache is mock_artifact_cache
@@ -137,7 +137,7 @@ class TestStepGeneratorStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
 
         # Act
         stage.reconcile(doc)
@@ -153,7 +153,7 @@ class TestStepGeneratorStage:
         """Tests that explicitly marking a step as stale triggers assembly."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
 
         # Act
         stage.mark_stale_and_trigger(step)
@@ -171,7 +171,7 @@ class TestStepGeneratorStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
 
         render_signal_handler = MagicMock()
         time_signal_handler = MagicMock()
@@ -245,7 +245,7 @@ class TestStepGeneratorStage:
         """Tests that invalidating a step cleans up all its artifacts."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepGeneratorStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
         stage.mark_stale_and_trigger(step)
         _complete_step_task(mock_task_mgr.created_tasks[0])
         mock_task_mgr.created_tasks.clear()

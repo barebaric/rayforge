@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 StepKey = str  # step_uid
 
 
-class StepGeneratorStage(PipelineStage):
+class StepPipelineStage(PipelineStage):
     """
     A pipeline stage that assembles workpiece artifacts into a step
     artifact.
@@ -53,7 +53,7 @@ class StepGeneratorStage(PipelineStage):
         return self._time_cache.get(step_uid)
 
     def shutdown(self):
-        logger.debug("StepGeneratorStage shutting down.")
+        logger.debug("StepPipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
             self._cleanup_task(key)
 
@@ -107,7 +107,7 @@ class StepGeneratorStage(PipelineStage):
 
     def _cleanup_entry(self, key: StepKey, full_invalidation: bool):
         """Removes a step artifact, clears time cache, and cancels its task."""
-        logger.debug(f"StepGeneratorStage: Cleaning up entry {key}.")
+        logger.debug(f"StepPipelineStage: Cleaning up entry {key}.")
         self._generation_id_map.pop(key, None)
         self._time_cache.pop(key, None)  # Clear the time cache
         self._cleanup_task(key)

@@ -79,7 +79,7 @@ The `Pipeline` is the core processing engine that runs in the background.
 It takes the `Doc Model` as its input and orchestrates a series of distinct
 `PipelineStage`s.
 
-### **2a. WorkpieceGeneratorStage: Per-Item Processing**
+### **2a. WorkPiecePipelineStage: Per-Item Processing**
 
 This stage processes each `(WorkPiece, Step)` combination individually to
 create a cached `WorkPieceArtifact`. This artifact contains toolpaths in the
@@ -99,7 +99,7 @@ The output is a **WorkPieceArtifact** stored in shared memory. This contains
 un-positioned, un-rotated data ready for the next stage and for direct
 consumption by the 2D canvas.
 
-### **2b. StepGeneratorStage: Step-Level Assembly**
+### **2b. StepPipelineStage: Step-Level Assembly**
 
 This stage is responsible for assembling final artifacts for an entire step. It
 consumes the `WorkPieceArtifacts` for all workpieces that are part of a given
@@ -114,7 +114,7 @@ step.
     by transformers that operate on the step as a whole, such as path
     `Optimize`ation or `Multi-Pass` operations.
 
-The `StepGeneratorStage` produces two distinct outputs:
+The `StepPipelineStage` produces two distinct outputs:
 
 - A **StepRenderArtifact**: A lightweight "render bundle" for the 3D canvas,
   containing all vertex and texture data for the entire step in final
@@ -122,12 +122,12 @@ The `StepGeneratorStage` produces two distinct outputs:
 - A **StepOpsArtifact**: An artifact containing only the final, transformed
   `Ops` for the entire step. This is consumed later by the job generator.
 
-### **2c. JobGeneratorStage: Final Job Assembly**
+### **2c. JobPipelineStage: Final Job Assembly**
 
 This stage is invoked when the user wants to generate the final G-code. It
-consumes the `StepOpsArtifacts` created by the `StepGeneratorStage`.
+consumes the `StepOpsArtifacts` created by the `StepPipelineStage`.
 
-1.  **Assemble Ops & Encode:** The `JobGeneratorStage` retrieves all required
+1.  **Assemble Ops & Encode:** The `JobPipelineStage` retrieves all required
     `StepOpsArtifacts` from the cache and combines their `Ops` into a single,
     large sequence. It then encodes this sequence into G-code and generates
     a final set of vertices for simulation, along with a high-fidelity
