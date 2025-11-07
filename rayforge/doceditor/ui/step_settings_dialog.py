@@ -8,6 +8,7 @@ from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 from ...shared.util.adwfix import get_spinrow_float
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
+from ...icons import get_icon
 from .step_settings import WIDGET_REGISTRY
 from .recipe_control_widget import RecipeControlWidget
 
@@ -15,19 +16,17 @@ if TYPE_CHECKING:
     from ..editor import DocEditor
 
 
-class StepSettingsDialog(Adw.Window):
-    def __init__(
-        self,
-        editor: "DocEditor",
-        step: Step,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
+class GeneralStepSettingsView(Adw.PreferencesPage):
+    """A view for the general and producer settings of a Step."""
+
+    changed = Signal()
+
+    def __init__(self, editor: "DocEditor", step: Step):
+        super().__init__()
         self.editor = editor
         self.doc = editor.doc
         self.step = step
         self.history_manager: HistoryManager = self.doc.history_manager
-        self.set_title(_("{name} Settings").format(name=step.name))
 
         # Used to delay updates from continuous-change widgets like sliders
         # to avoid excessive updates.
@@ -45,44 +44,6 @@ class StepSettingsDialog(Adw.Window):
             max_cut_speed = 3000  # mm/min
             max_travel_speed = 3000  # mm/min
 
-        # Create a vertical box to hold the header bar and the content
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_content(main_box)
-
-        # Add a header bar for title and window controls (like close)
-        header = Adw.HeaderBar()
-        main_box.append(header)
-
-        # Set a reasonable default size to avoid being too narrow
-        self.set_default_size(600, 750)
-
-        # Destroy window on close to prevent leaks, as a new one is created
-        # each time
-        self.set_hide_on_close(False)
-        self.connect("close-request", self._on_close_request)
-
-        # Add a key controller to close the dialog on Escape press
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
-        # The main content area should be scrollable
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(
-            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
-        )
-        scrolled_window.set_vexpand(True)  # Allow the scrolled area to grow
-        main_box.append(scrolled_window)
-
-        # Create a preferences page and add it to the scrollable area
-        page = Adw.PreferencesPage()
-        scrolled_window.set_child(page)
-
-        # 0. Recipe Control Widget
-        self.recipe_control = RecipeControlWidget(self.editor, self.step)
-        self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
-        page.add(self.recipe_control)
-
         # 1. Producer Settings
         producer_dict = self.step.opsproducer_dict
         producer = None
@@ -97,13 +58,18 @@ class StepSettingsDialog(Adw.Window):
                         self.editor,
                         self.step.typelabel,
                         producer_dict,
-                        page,
+                        self,
                         self.step,
                     )
-                    page.add(widget)
+                    self.add(widget)
 
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
-        page.add(general_group)
+        self.add(general_group)
+
+        # Recipe Control Widget
+        self.recipe_control = RecipeControlWidget(self.editor, self.step)
+        self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
+        general_group.add(self.recipe_control)
 
         # Laser Head Selector
         if machine and machine.heads:
@@ -216,42 +182,11 @@ class StepSettingsDialog(Adw.Window):
             producer.supports_kerf if producer else False
         )
 
-        # 3. Path Post-Processing Transformers
-        if self.step.per_workpiece_transformers_dicts:
-            for t_dict in self.step.per_workpiece_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
-                            self.editor,
-                            transformer.label,
-                            t_dict,
-                            page,
-                            self.step,
-                        )
-                        page.add(widget)
-
-        # 4. Post-Step (Assembly) Transformers
-        if self.step.per_step_transformers_dicts:
-            for t_dict in self.step.per_step_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
-                            self.editor,
-                            transformer.label,
-                            t_dict,
-                            page,
-                            self.step,
-                        )
-                        page.add(widget)
-
-        self._sync_widgets_to_model()
-        self.changed = Signal()
+    def _cleanup(self):
+        """Clean up resources like the debounce timer."""
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+            self._debounce_timer = 0
 
     def _sync_widgets_to_model(self, sender=None, **kwargs):
         """
@@ -329,24 +264,6 @@ class StepSettingsDialog(Adw.Window):
             self.kerf_row.set_value(new_kerf)
 
         self.changed.send(self)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing the dialog on Escape or Ctrl+W."""
-        has_ctrl = state & Gdk.ModifierType.CONTROL_MASK
-
-        # Gdk.KEY_w covers both lowercase 'w' and uppercase 'W'
-        if keyval == Gdk.KEY_Escape or (has_ctrl and keyval == Gdk.KEY_w):
-            self.close()
-            return True
-        return False
-
-    def _on_close_request(self, window):
-        # Clean up the debounce timer when the window is closed to prevent
-        # a GLib warning.
-        if self._debounce_timer > 0:
-            GLib.source_remove(self._debounce_timer)
-            self._debounce_timer = 0
-        return False  # Allow the window to close
 
     def _debounce(self, callback, *args):
         """
@@ -448,3 +365,174 @@ class StepSettingsDialog(Adw.Window):
         )
         self.history_manager.execute(command)
         self.changed.send(self)
+
+
+class PostProcessingSettingsView(Adw.PreferencesPage):
+    """A view for the post-processing transformers of a Step."""
+
+    def __init__(self, editor: "DocEditor", step: Step):
+        super().__init__()
+
+        content_added = False
+
+        # 3. Path Post-Processing Transformers
+        if step.per_workpiece_transformers_dicts:
+            for t_dict in step.per_workpiece_transformers_dicts:
+                transformer_name = t_dict.get("name")
+                if transformer_name:
+                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    if WidgetClass:
+                        transformer = OpsTransformer.from_dict(t_dict)
+                        widget = WidgetClass(
+                            editor,
+                            transformer.label,
+                            t_dict,
+                            self,
+                            step,
+                        )
+                        self.add(widget)
+                        content_added = True
+
+        # 4. Post-Step (Assembly) Transformers
+        if step.per_step_transformers_dicts:
+            for t_dict in step.per_step_transformers_dicts:
+                transformer_name = t_dict.get("name")
+                if transformer_name:
+                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    if WidgetClass:
+                        transformer = OpsTransformer.from_dict(t_dict)
+                        widget = WidgetClass(
+                            editor,
+                            transformer.label,
+                            t_dict,
+                            self,
+                            step,
+                        )
+                        self.add(widget)
+                        content_added = True
+
+        if not content_added:
+            # Add a placeholder to ensure this page is never empty. An empty
+            # page can cause layout issues.
+            placeholder_group = Adw.PreferencesGroup()
+            placeholder_label = Gtk.Label(
+                label=_("No post-processing options available for this step."),
+                halign=Gtk.Align.CENTER,
+                margin_top=24,
+                margin_bottom=24,
+                wrap=True,
+            )
+            placeholder_label.add_css_class("dim-label")
+            placeholder_group.add(placeholder_label)
+            self.add(placeholder_group)
+
+
+class StepSettingsDialog(Adw.Window):
+    def __init__(
+        self,
+        editor: "DocEditor",
+        step: Step,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.editor = editor
+        self.step = step
+        self.set_title(_("{name} Settings").format(name=step.name))
+
+        # Adw.ToolbarView provides areas for a header, content, and bottom bar.
+        main_view = Adw.ToolbarView()
+        self.set_content(main_view)
+
+        # A HeaderBar provides the window decorations (close button, etc.)
+        header = Adw.HeaderBar()
+        main_view.add_top_bar(header)
+
+        # Gtk.Stack holds the pages.
+        stack = Gtk.Stack()
+        main_view.set_content(stack)
+
+        # Set a reasonable default size to avoid being too narrow
+        self.set_default_size(600, 750)
+
+        # Destroy window on close to prevent leaks
+        self.set_hide_on_close(False)
+        self.connect("close-request", self._on_close_request)
+
+        # Add a key controller to close the dialog on Escape press
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
+
+        # --- Page 1: Main Step Settings ---
+        self.general_view = GeneralStepSettingsView(self.editor, self.step)
+        scrolled_page1 = Gtk.ScrolledWindow(
+            child=self.general_view,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        )
+        stack.add_named(scrolled_page1, "step-settings")
+
+        # --- Page 2: Post Processing Settings ---
+        self.post_processing_view = PostProcessingSettingsView(
+            self.editor, self.step
+        )
+        scrolled_page2 = Gtk.ScrolledWindow(
+            child=self.post_processing_view,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        )
+        stack.add_named(scrolled_page2, "post-processing")
+
+        # --- Build the custom switcher ---
+        switcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        switcher_box.add_css_class("linked")
+        header.set_title_widget(switcher_box)
+
+        btn1 = Gtk.ToggleButton()
+        btn1.set_child(
+            self._create_tab_title(_("Step Settings"), "laser-path-symbolic")
+        )
+        btn1.connect("toggled", self._on_tab_toggled, stack, "step-settings")
+        switcher_box.append(btn1)
+
+        btn2 = Gtk.ToggleButton(group=btn1)
+        btn2.set_child(
+            self._create_tab_title(
+                _("Post Processing"), "post-processor-symbolic"
+            )
+        )
+        btn2.connect("toggled", self._on_tab_toggled, stack, "post-processing")
+        switcher_box.append(btn2)
+
+        # Set initial state
+        btn1.set_active(True)
+        self.general_view._sync_widgets_to_model()
+
+    def _on_tab_toggled(self, button, stack, page_name):
+        """Callback to switch the Gtk.Stack page."""
+        if button.get_active():
+            stack.set_visible_child_name(page_name)
+
+    def _create_tab_title(self, title_str: str, icon_name: str) -> Gtk.Widget:
+        """Creates a box with an icon and a label for a tab button."""
+        icon = get_icon(icon_name)
+        label = Gtk.Label(label=title_str)
+        box = Gtk.Box(spacing=6, orientation=Gtk.Orientation.HORIZONTAL)
+        box.append(icon)
+        box.append(label)
+        return box
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        """Handle key press events, closing the dialog on Escape or Ctrl+W."""
+        has_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+
+        if keyval == Gdk.KEY_Escape or (has_ctrl and keyval == Gdk.KEY_w):
+            self.close()
+            return True
+        return False
+
+    def _on_close_request(self, window):
+        # Clean up the debounce timer in the general view when the window is
+        # closed to prevent a GLib warning.
+        self.general_view._cleanup()
+        return False  # Allow the window to close

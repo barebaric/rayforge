@@ -1,7 +1,7 @@
 import logging
 import yaml
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING, Set
 from .recipe import Recipe
 from .capability import Capability
 
@@ -95,7 +95,7 @@ class RecipeManager:
     def find_recipes(
         self,
         stock_item: Optional["StockItem"],
-        capability: Optional[Capability] = None,
+        capabilities: Optional[Set[Capability]] = None,
         machine: Optional["Machine"] = None,
     ) -> List[Recipe]:
         """
@@ -103,8 +103,8 @@ class RecipeManager:
 
         Args:
             stock_item: The stock item context to match against. Can be None.
-            capability: An optional filter to only return recipes that target
-                        a certain capability.
+            capabilities: An optional filter to only return recipes for a
+                        specific set of capabilities.
             machine: An optional machine context to match against. Can be None.
 
         Returns:
@@ -114,7 +114,7 @@ class RecipeManager:
         candidates = [
             r
             for r in self.get_all_recipes()
-            if r.matches(stock_item, capability, machine)
+            if r.matches(stock_item, capabilities, machine)
         ]
 
         # 2. Sort candidates based on their specificity score and name

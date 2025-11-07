@@ -2,28 +2,28 @@
 
 import logging
 from typing import Optional, List
-from gi.repository import Gtk, Adw, GObject
+from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.material import Material
 from ...core.material_library import MaterialLibrary
+from ...shared.util.gtk import apply_css
 
 logger = logging.getLogger(__name__)
 
 
-class MaterialSelectorRow(Gtk.Box):
+css = """
+.material-selector-list {
+    background: none;
+}
+"""
+
+
+class MaterialSelectorRow(Adw.ActionRow):
     """A widget representing a single Material in the selector ListBox."""
 
     def __init__(self, material: Material):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        super().__init__(title=material.name, activatable=True)
         self.material = material
-        self._setup_ui()
-
-    def _setup_ui(self):
-        """Builds the user interface for the row."""
-        self.set_margin_top(6)
-        self.set_margin_bottom(6)
-        self.set_margin_start(12)
-        self.set_margin_end(6)
 
         # Color indicator
         color_box = Gtk.Box()
@@ -38,43 +38,10 @@ class MaterialSelectorRow(Gtk.Box):
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        self.append(color_box)
-
-        # Labels
-        labels_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=0, hexpand=True
-        )
-        self.append(labels_box)
-
-        title_label = Gtk.Label(
-            label=self.material.name,
-            halign=Gtk.Align.START,
-            xalign=0,
-        )
-        labels_box.append(title_label)
+        self.add_prefix(color_box)
 
 
-class MaterialListBoxRow(Gtk.ListBoxRow):
-    """Custom ListBoxRow to hold a reference to a Material."""
-
-    material: Material
-
-    def __init__(self, material: Material):
-        super().__init__()
-        self.material = material
-        self.set_child(MaterialSelectorRow(material))
-
-
-# GObject wrapper for MaterialLibrary for use in Gio.ListStore
-class LibraryListItem(GObject.Object):
-    __gtype_name__ = "LibraryListItem"
-
-    def __init__(self, library: MaterialLibrary):
-        super().__init__()
-        self.library = library
-
-
-class MaterialSelectorDialog(Adw.Window):
+class MaterialSelectorDialog(Adw.MessageDialog):
     """A dialog for selecting a material."""
 
     def __init__(self, parent: Gtk.Window, on_select_callback):
@@ -84,26 +51,17 @@ class MaterialSelectorDialog(Adw.Window):
         self._all_materials: List[Material] = []
         self.libraries: List[MaterialLibrary] = []
 
-        self._setup_ui()
-        self._populate_libraries()
+        self.set_heading(_("Select Material"))
+        self.set_body(_("Choose a material from the available libraries."))
 
-    def _setup_ui(self):
-        self.set_title(_("Select Material"))
-        self.set_default_size(350, 500)
-        self.set_modal(True)
+        # This is the proper, targeted CSS for the ListBox.
+        # It manually creates the grouped, rounded-corner appearance.
+        apply_css(css)
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_content(main_box)
-
-        header = Adw.HeaderBar()
-        main_box.append(header)
-
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        # Main content area
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content_box.set_margin_top(12)
-        content_box.set_margin_bottom(12)
-        content_box.set_margin_start(12)
-        content_box.set_margin_end(12)
-        main_box.append(content_box)
+        self.set_extra_child(content_box)
 
         # Library dropdown
         self.library_dropdown = Gtk.DropDown()
@@ -124,15 +82,23 @@ class MaterialSelectorDialog(Adw.Window):
             min_content_height=300,
             vexpand=True,
         )
+        scrolled_window.add_css_class("card")
         content_box.append(scrolled_window)
 
         # Material list
         self.material_list = Gtk.ListBox()
         self.material_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.material_list.add_css_class("material-selector-list")
         self.material_list.connect(
             "row-activated", self._on_material_activated
         )
         scrolled_window.set_child(self.material_list)
+
+        # Add response button
+        self.add_response("cancel", _("Cancel"))
+        self.set_default_response("cancel")
+
+        self._populate_libraries()
 
     def _populate_libraries(self):
         """Populates the library dropdown."""
@@ -180,12 +146,14 @@ class MaterialSelectorDialog(Adw.Window):
 
         for material in self._all_materials:
             if search_text in material.name.lower():
-                row = MaterialListBoxRow(material)
+                row = MaterialSelectorRow(material)
                 self.material_list.append(row)
 
-    def _on_material_activated(self, listbox, row):
+    def _on_material_activated(
+        self, listbox: Gtk.ListBox, row: MaterialSelectorRow
+    ):
         """Handles when a material is selected."""
-        if isinstance(row, MaterialListBoxRow):
+        if isinstance(row, MaterialSelectorRow):
             selected_material = row.material
             self.on_select_callback(selected_material.uid)
             self.close()

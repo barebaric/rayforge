@@ -68,26 +68,18 @@ class StepCmd:
 
         # Query the RecipeManager for the best match for ANY supported
         # capability
-        all_matching_recipes = []
+        matching_recipes = []
         if step.capabilities:
             recipe_mgr = self._context.recipe_mgr
-            for cap in step.capabilities:
-                all_matching_recipes.extend(
-                    recipe_mgr.find_recipes(
-                        stock_item=stock_item,
-                        capability=cap,
-                        machine=machine,
-                    )
-                )
-
-        # Sort all found recipes together to find the absolute best one.
-        all_matching_recipes.sort(
-            key=lambda r: (r.get_specificity_score(), r.name.lower())
-        )
+            matching_recipes = recipe_mgr.find_recipes(
+                stock_item=stock_item,
+                capabilities=step.capabilities,
+                machine=machine,
+            )
 
         # If matching_recipes is not empty, apply the best one
-        if all_matching_recipes:
-            best_recipe = all_matching_recipes[0]
+        if matching_recipes:
+            best_recipe = matching_recipes[0]
             logger.info(
                 f"Applying best recipe '{best_recipe.name}' to new step."
             )

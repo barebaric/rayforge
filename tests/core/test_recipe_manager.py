@@ -206,7 +206,7 @@ class TestRecipeManager:
         stock.material_uid = "walnut"
         stock.thickness = 3.0
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=machine_a
+            stock, capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 5
@@ -225,7 +225,7 @@ class TestRecipeManager:
         stock.material_uid = "walnut"
         stock.thickness = 3.0
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=machine_b
+            stock, capabilities={CUT}, machine=machine_b
         )
 
         assert len(results) == 3
@@ -246,7 +246,7 @@ class TestRecipeManager:
         stock.material_uid = "walnut"
         stock.thickness = 3.0
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=None
+            stock, capabilities={CUT}, machine=None
         )
 
         assert len(results) == 3
@@ -261,7 +261,7 @@ class TestRecipeManager:
         stock.material_uid = "walnut"
         stock.thickness = 10.0  # Thickness mismatch
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=machine_a
+            stock, capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 2
@@ -278,7 +278,7 @@ class TestRecipeManager:
         # This recipe doesn't match because it also has a machine spec
         # so only generic-cut should appear.
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=machine_a
+            stock, capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -294,7 +294,7 @@ class TestRecipeManager:
         stock.material_uid = "mdf"
         stock.thickness = 10.0
         results = manager_with_recipes.find_recipes(
-            stock, capability=CUT, machine=machine_a
+            stock, capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -307,7 +307,7 @@ class TestRecipeManager:
         Test that only generic recipes are returned when no stock is provided.
         """
         results = manager_with_recipes.find_recipes(
-            None, capability=CUT, machine=machine_a
+            None, capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -321,8 +321,43 @@ class TestRecipeManager:
         stock.material_uid = "walnut"
         stock.thickness = 3.0
         results = manager_with_recipes.find_recipes(
-            stock, capability=ENGRAVE, machine=machine_a
+            stock, capabilities={ENGRAVE}, machine=machine_a
         )
 
         assert len(results) == 1
         assert results[0].uid == "generic-engrave"
+
+    def test_find_recipes_multi_capability(
+        self, manager_with_recipes: RecipeManager, machine_a: Mock
+    ):
+        """Test finding recipes that match one of several capabilities."""
+        stock = StockItem()
+        stock.material_uid = "walnut"
+        stock.thickness = 3.0
+        results = manager_with_recipes.find_recipes(
+            stock, capabilities={CUT, ENGRAVE}, machine=machine_a
+        )
+
+        assert len(results) == 6
+        result_uids = [r.uid for r in results]
+
+        # All the CUT recipes should be present
+        assert "machine-a-laser-1-walnut-3mm" in result_uids
+        assert "machine-a-walnut-3mm" in result_uids
+        assert "walnut-3mm-cut" in result_uids
+        assert "walnut-any-thickness" in result_uids
+        assert "generic-cut" in result_uids
+
+        # The ENGRAVE recipe should also be present
+        assert "generic-engrave" in result_uids
+
+        # Check the sorting order (specificity, then name)
+        # The 5 CUT recipes should come first, in their specific order.
+        # Then the ENGRAVE recipe, which has the same low specificity as
+        # generic-cut and will be sorted after it by name.
+        assert results[0].uid == "machine-a-laser-1-walnut-3mm"
+        assert results[1].uid == "machine-a-walnut-3mm"
+        assert results[2].uid == "walnut-3mm-cut"
+        assert results[3].uid == "walnut-any-thickness"
+        assert results[4].uid == "generic-cut"
+        assert results[5].uid == "generic-engrave"
