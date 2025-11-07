@@ -1,11 +1,13 @@
 import uuid
-from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
+import math
+from typing import Dict, Any, Optional, Set, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field, asdict
 from .capability import Capability, CAPABILITIES_BY_NAME, CUT
 
 if TYPE_CHECKING:
     from .stock import StockItem
     from ..machine.models.machine import Machine
+    from .step import Step
 
 
 @dataclass
@@ -35,10 +37,34 @@ class Recipe:
         """Returns the capability instance for this recipe."""
         return CAPABILITIES_BY_NAME.get(self.target_capability_name, CUT)
 
+    def matches_step_settings(
+        self,
+        step: "Step",
+        tolerance=1e-6,
+    ) -> bool:
+        """
+        Compares this recipe's settings against a Step object's current
+        settings. Only keys present in the recipe are checked.
+        """
+        for key, recipe_val in self.settings.items():
+            if not hasattr(step, key):
+                return False  # Step is missing an attribute the recipe defines
+
+            step_val = getattr(step, key)
+
+            if isinstance(step_val, float) and isinstance(recipe_val, float):
+                if not math.isclose(
+                    step_val, recipe_val, rel_tol=0, abs_tol=tolerance
+                ):
+                    return False
+            elif step_val != recipe_val:
+                return False
+        return True
+
     def matches(
         self,
         stock_item: Optional["StockItem"],
-        capability: Optional[Capability] = None,
+        capabilities: Optional[Set[Capability]] = None,
         machine: Optional["Machine"] = None,
     ) -> bool:
         """
@@ -46,7 +72,7 @@ class Recipe:
 
         Args:
             stock_item: The stock item to check against. Can be None.
-            capability: An optional capability to filter by.
+            capabilities: An optional set of capabilities to filter by.
             machine: An optional machine to filter by.
 
         Returns:
@@ -72,7 +98,7 @@ class Recipe:
                 return False
 
         # 3. Check capability
-        if capability and self.target_capability_name != capability.name:
+        if capabilities and self.capability not in capabilities:
             return False
 
         # 4. Check material compatibility

@@ -24,6 +24,11 @@ class RecipeRow(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(6)
 
+        icon_name = f"{recipe.capability.name.lower()}-symbolic"
+        icon = get_icon(icon_name)
+        icon.set_valign(Gtk.Align.CENTER)
+        self.append(icon)
+
         labels_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, hexpand=True
         )

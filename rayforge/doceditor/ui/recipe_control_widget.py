@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class RecipeControlWidget(Adw.PreferencesGroup):
+class RecipeControlWidget(Adw.ActionRow):
     """
     A widget for managing recipe application within the StepSettingsDialog.
     """
@@ -27,27 +27,26 @@ class RecipeControlWidget(Adw.PreferencesGroup):
         super().__init__(**kwargs)
         self.editor = editor
         self.step = step
-
-        self.row = Adw.ActionRow(title=_("Recipe"))
-        self.add(self.row)
+        self.set_title(_("Recipe"))
 
         # "Choose..." Button
         choose_button = Gtk.Button(label=_("Choose..."))
         choose_button.set_valign(Gtk.Align.CENTER)
         choose_button.connect("clicked", self._on_choose_clicked)
-        self.row.add_suffix(choose_button)
+        self.add_suffix(choose_button)
 
         # "Save As..." Button
         save_as_button = Gtk.Button(label=_("Save As..."))
         save_as_button.set_valign(Gtk.Align.CENTER)
         save_as_button.connect("clicked", self._on_save_as_clicked)
-        self.row.add_suffix(save_as_button)
+        self.add_suffix(save_as_button)
 
         # "Update" Button
         self.update_button = Gtk.Button(label=_("Update"))
         self.update_button.set_valign(Gtk.Align.CENTER)
+        self.update_button.add_css_class("suggested-action")
         self.update_button.connect("clicked", self._on_update_clicked)
-        self.row.add_suffix(self.update_button)
+        self.add_suffix(self.update_button)
 
         self.step.updated.connect(self._update_ui)
         self._update_ui(self.step)
@@ -55,9 +54,17 @@ class RecipeControlWidget(Adw.PreferencesGroup):
     def _get_step_settings(self) -> Dict[str, Any]:
         """Extracts recipe-relevant settings from the step."""
         settings = {}
-        # This list should ideally come from the Capability's VarSet definition
-        # to be fully generic. For now, hardcode known properties.
-        recipe_keys = ["power", "cut_speed"]
+        capability = self._get_primary_capability()
+        if not capability:
+            logger.warning(
+                "Could not determine primary capability for step. "
+                "Cannot save recipe settings."
+            )
+            return {}
+
+        # The capability defines which Step properties are part of a recipe.
+        recipe_keys = capability.get_setting_keys()
+
         for key in recipe_keys:
             if hasattr(self.step, key):
                 settings[key] = getattr(self.step, key)
@@ -89,20 +96,20 @@ class RecipeControlWidget(Adw.PreferencesGroup):
             )
 
         if current_recipe:
-            self.row.set_subtitle(current_recipe.name)
-            # Check if settings have diverged from the recipe
-            step_settings = self._get_step_settings()
-            if step_settings != current_recipe.settings:
+            self.set_subtitle(current_recipe.name)
+
+            # Check if settings have diverged from the recipe by asking
+            # the recipe to compare itself against the step.
+            if not current_recipe.matches_step_settings(self.step):
                 is_modified = True
         else:
-            self.row.set_subtitle(_("Manual Settings"))
+            self.set_subtitle(_("Manual Settings"))
 
         self.update_button.set_visible(is_modified)
 
     def _on_choose_clicked(self, button: Gtk.Button):
         """Opens the recipe selector dialog."""
-        primary_cap = self._get_primary_capability()
-        if not primary_cap:
+        if not self.step.capabilities:
             logger.warning("Step has no capabilities, cannot choose recipe.")
             return
 
@@ -110,7 +117,7 @@ class RecipeControlWidget(Adw.PreferencesGroup):
         dialog = RecipeSelectorDialog(
             parent=parent_window,
             editor=self.editor,
-            capability=primary_cap,
+            capabilities=self.step.capabilities,
             on_select_callback=self._apply_recipe,
         )
         dialog.present()
@@ -138,7 +145,9 @@ class RecipeControlWidget(Adw.PreferencesGroup):
                             new_value=value,
                         )
                     )
+        # Signal to the parent dialog that its widgets need to be synced
         self.recipe_applied.send(self)
+        self._update_ui(self.step)
 
     def _on_save_as_clicked(self, button: Gtk.Button):
         """Saves the current step settings as a new recipe."""

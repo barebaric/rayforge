@@ -2,6 +2,14 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ..models.profile import MachineProfile, PROFILES
+from ...shared.util.gtk import apply_css
+
+
+css = """
+.profile-selector-list {
+    background: none;
+}
+"""
 
 
 class MachineProfileSelectorDialog(Adw.MessageDialog):
@@ -27,6 +35,8 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.set_body(_("Select a machine profile to use as a template."))
         self.set_transient_for(kwargs.get("transient_for"))
 
+        apply_css(css)
+
         # Build the custom content area
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content.set_margin_top(12)
@@ -37,12 +47,13 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         )
         scrolled_window.set_min_content_height(300)
         scrolled_window.set_vexpand(True)
+        scrolled_window.add_css_class("card")
         content.append(scrolled_window)
 
         self.profile_list_box = Gtk.ListBox()
         # A single click now selects the row, making it ready for activation.
         self.profile_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.profile_list_box.get_style_context().add_class("boxed-list")
+        self.profile_list_box.add_css_class("profile-selector-list")
         self.profile_list_box.connect("row-activated", self._on_row_activated)
         scrolled_window.set_child(self.profile_list_box)
 

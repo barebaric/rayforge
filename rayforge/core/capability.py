@@ -2,7 +2,14 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 from abc import ABC, abstractmethod
 from ..context import get_context
-from ..shared.varset import ChoiceVar, VarSet, IntVar, SliderFloatVar, BoolVar
+from ..shared.varset import (
+    ChoiceVar,
+    VarSet,
+    IntVar,
+    SliderFloatVar,
+    BoolVar,
+    FloatVar,
+)
 
 
 class LaserHeadVar(ChoiceVar):
@@ -104,6 +111,12 @@ class Capability(ABC):
         """
         raise NotImplementedError
 
+    def get_setting_keys(self) -> List[str]:
+        """
+        Returns a list of keys for the settings defined by this capability.
+        """
+        return [var.key for var in self.varset.vars]
+
     def __str__(self) -> str:
         return self.label
 
@@ -141,6 +154,14 @@ class CutCapability(Capability):
                     key="air_assist",
                     label=_("Air Assist"),
                     default=True,
+                ),
+                FloatVar(
+                    key="kerf_mm",
+                    label=_("Kerf"),
+                    description=_("The effective width of the laser beam."),
+                    default=0.1,
+                    min_val=0.0,
+                    max_val=2.0,
                 ),
             ]
         )
@@ -180,6 +201,14 @@ class EngraveCapability(Capability):
                     label=_("Air Assist"),
                     default=True,
                 ),
+                FloatVar(
+                    key="kerf_mm",
+                    label=_("Kerf"),
+                    description=_("The effective width of the laser beam."),
+                    default=0.1,
+                    min_val=0.0,
+                    max_val=2.0,
+                ),
             ]
         )
 
@@ -217,6 +246,14 @@ class ScoreCapability(Capability):
                     key="air_assist",
                     label=_("Air Assist"),
                     default=True,
+                ),
+                FloatVar(
+                    key="kerf_mm",
+                    label=_("Kerf"),
+                    description=_("The effective width of the laser beam."),
+                    default=0.1,
+                    min_val=0.0,
+                    max_val=2.0,
                 ),
             ]
         )

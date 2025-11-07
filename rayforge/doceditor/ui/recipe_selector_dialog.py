@@ -1,14 +1,23 @@
 import logging
-from typing import List, Callable, TYPE_CHECKING
+from typing import List, Callable, TYPE_CHECKING, Set
 from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...core.capability import Capability
+from ...shared.util.gtk import apply_css
+from ...icons import get_icon
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)
+
+
+css = """
+.recipe-selector-list {
+    background: none;
+}
+"""
 
 
 class RecipeSelectorDialog(Adw.MessageDialog):
@@ -25,21 +34,28 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             super().__init__(**kwargs)
             self.recipe: Recipe = recipe
 
+            # Add icon as a prefix
+            icon_name = f"{recipe.capability.name.lower()}-symbolic"
+            icon = get_icon(icon_name)
+            self.add_prefix(icon)
+
     def __init__(
         self,
         parent: Gtk.Window,
         editor: "DocEditor",
-        capability: Capability,
+        capabilities: Set[Capability],
         on_select_callback: Callable[[Recipe], None],
     ):
         super().__init__(transient_for=parent)
         self.editor = editor
-        self.capability = capability
+        self.capabilities = capabilities
         self.on_select_callback = on_select_callback
         self._all_recipes: List[Recipe] = []
 
         self.set_heading(_("Select Recipe"))
         self.set_body(_("Choose a recipe to apply to the current step."))
+
+        apply_css(css)
 
         # Main content area
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -68,12 +84,13 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             min_content_height=300,
             vexpand=True,
         )
+        scrolled_window.add_css_class("card")
         content_box.append(scrolled_window)
 
         # Recipe list
         self.recipe_list = Gtk.ListBox()
         self.recipe_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.recipe_list.get_style_context().add_class("boxed-list")
+        self.recipe_list.add_css_class("recipe-selector-list")
         self.recipe_list.connect("row-activated", self._on_recipe_activated)
         scrolled_window.set_child(self.recipe_list)
 
@@ -112,7 +129,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
 
             # Filter by compatibility
             if show_compatible_only and not recipe.matches(
-                stock_item, self.capability, machine
+                stock_item, self.capabilities, machine
             ):
                 continue
 

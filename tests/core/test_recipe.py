@@ -137,7 +137,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is True
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is True
 
     def test_matches_generic(
         self, generic_recipe: Recipe, mock_machine_a: Mock
@@ -146,9 +146,9 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "any-material"
         stock.thickness = 10.0
-        assert generic_recipe.matches(stock, CUT, mock_machine_a) is True
-        assert generic_recipe.matches(None, CUT, mock_machine_a) is True
-        assert generic_recipe.matches(stock, CUT, None) is True
+        assert generic_recipe.matches(stock, {CUT}, mock_machine_a) is True
+        assert generic_recipe.matches(None, {CUT}, mock_machine_a) is True
+        assert generic_recipe.matches(stock, {CUT}, None) is True
 
     def test_matches_machine_fail(
         self, sample_recipe: Recipe, mock_machine_b: Mock
@@ -157,7 +157,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_b) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_b) is False
 
     def test_matches_laser_head_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -168,7 +168,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_no_machine_provided_fail(self, sample_recipe: Recipe):
         """
@@ -177,7 +177,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, CUT, None) is False
+        assert sample_recipe.matches(stock, {CUT}, None) is False
 
     def test_matches_capability_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -186,7 +186,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, ENGRAVE, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {ENGRAVE}, mock_machine_a) is False
 
     def test_matches_material_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -195,7 +195,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "wrong-material"
         stock.thickness = 6.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thin(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -204,7 +204,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 3.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thick(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -213,7 +213,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = 10.0
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_no_stock_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -221,7 +221,7 @@ class TestRecipe:
         """
         Test that a specific recipe fails to match when no stock is provided.
         """
-        assert sample_recipe.matches(None, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(None, {CUT}, mock_machine_a) is False
 
     def test_matches_no_thickness_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -233,7 +233,7 @@ class TestRecipe:
         stock = StockItem()
         stock.material_uid = "plywood-6mm"
         stock.thickness = None
-        assert sample_recipe.matches(stock, CUT, mock_machine_a) is False
+        assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_material_only_recipe(self):
         """Test a recipe that only specifies material."""
@@ -263,3 +263,56 @@ class TestRecipe:
         assert recipe.matches(stock_match) is True
         assert recipe.matches(stock_fail) is False
         assert recipe.matches(stock_no_thickness) is False
+
+    def test_matches_step_settings(self):
+        """Tests the comparison between a recipe's settings and a Step."""
+        recipe = Recipe(
+            settings={
+                "power": 0.8,
+                "cut_speed": 1000,
+                "kerf_mm": 0.15,
+                "air_assist": True,
+            }
+        )
+
+        # 1. Perfect match (and step has extra properties which are ignored)
+        mock_step = Mock()
+        mock_step.power = 0.8
+        mock_step.cut_speed = 1000
+        mock_step.kerf_mm = 0.15
+        mock_step.air_assist = True
+        mock_step.extra_property = "should_be_ignored"
+        assert recipe.matches_step_settings(mock_step) is True
+
+        # 2. Float match within tolerance
+        mock_step.power = 0.80000001
+        assert recipe.matches_step_settings(mock_step) is True
+
+        # 3. Mismatch (integer value)
+        mock_step.power = 0.8  # reset
+        mock_step.cut_speed = 1001
+        assert recipe.matches_step_settings(mock_step) is False
+
+        # 4. Mismatch (float value outside tolerance)
+        mock_step.cut_speed = 1000  # reset
+        mock_step.power = 0.81
+        assert recipe.matches_step_settings(mock_step) is False
+
+        # 5. Mismatch (boolean value)
+        mock_step.power = 0.8  # reset
+        mock_step.air_assist = False
+        assert recipe.matches_step_settings(mock_step) is False
+
+        # 6. Mismatch (step is missing an attribute)
+        mock_step_missing = Mock(spec=["power", "kerf_mm", "air_assist"])
+        mock_step_missing.power = 0.8
+        # cut_speed is missing
+        assert recipe.matches_step_settings(mock_step_missing) is False
+
+        # 7. Mismatch (type difference)
+        mock_step_bad_type = Mock()
+        mock_step_bad_type.power = 0.8
+        mock_step_bad_type.cut_speed = "1000"  # string vs int
+        mock_step_bad_type.kerf_mm = 0.15
+        mock_step_bad_type.air_assist = True
+        assert recipe.matches_step_settings(mock_step_bad_type) is False
