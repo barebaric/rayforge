@@ -378,7 +378,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # Sort workpieces by the max dimension of their first variant's mask
         # (heuristic for placing largest items first).
         groups.sort(key=lambda v_group: -max(v_group[0].mask.shape))
-        return groups, total_area_px
+        return groups, int(total_area_px)
 
     def _create_packing_canvas(
         self, total_area_px: int, items: List[List[WorkpieceVariant]]
