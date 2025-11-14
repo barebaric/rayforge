@@ -3,6 +3,7 @@ import pytest
 import math
 import numpy as np
 from typing import cast
+from unittest.mock import patch
 
 from rayforge.core.geo import (
     Geometry,
@@ -294,82 +295,6 @@ def test_area():
     assert geo_two_shapes.area() == pytest.approx(50.0)
 
 
-def test_split_into_components_empty_geometry():
-    geo = Geometry()
-    components = geo.split_into_components()
-    assert len(components) == 0
-
-
-def test_split_into_components_single_contour():
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(10, 0)
-    geo.line_to(10, 10)
-    components = geo.split_into_components()
-    assert len(components) == 1
-    assert len(components[0].commands) == 3
-
-
-def test_split_into_components_two_separate_shapes():
-    geo = Geometry()
-    # Shape 1
-    geo.move_to(0, 0)
-    geo.line_to(10, 0)
-    geo.line_to(10, 10)
-    geo.line_to(0, 10)
-    geo.close_path()
-    # Shape 2
-    geo.move_to(20, 20)
-    geo.line_to(30, 20)
-    geo.line_to(30, 30)
-    geo.line_to(20, 30)
-    geo.close_path()
-
-    components = geo.split_into_components()
-    assert len(components) == 2
-    assert len(components[0].commands) == 5
-    assert len(components[1].commands) == 5
-
-
-def test_split_into_components_containment_letter_o():
-    geo = Geometry()
-    # Outer circle (r=10, center=0,0)
-    geo.move_to(10, 0)
-    geo.arc_to(-10, 0, i=-10, j=0, clockwise=False)
-    geo.arc_to(10, 0, i=10, j=0, clockwise=False)
-    # Inner circle (r=5, center=0,0)
-    geo.move_to(5, 0)
-    geo.arc_to(-5, 0, i=-5, j=0, clockwise=False)
-    geo.arc_to(5, 0, i=5, j=0, clockwise=False)
-
-    components = geo.split_into_components()
-    assert len(components) == 1
-    assert len(components[0].commands) == 6  # 2 moves, 4 arcs
-
-
-def test_split_into_contours_method(sample_geometry):
-    """Tests the split_into_contours method on the Geometry class."""
-    # sample_geometry has one MoveTo, so it's one contour.
-    contours = sample_geometry.split_into_contours()
-    assert len(contours) == 1
-    assert len(contours[0].commands) == len(sample_geometry.commands)
-
-    # Add another contour
-    sample_geometry.move_to(100, 100)
-    sample_geometry.line_to(110, 110)
-
-    contours = sample_geometry.split_into_contours()
-    assert len(contours) == 2
-    assert len(contours[0].commands) == 3  # original M, L, A
-    assert len(contours[1].commands) == 2  # new M, L
-
-    # Check content of the split contours
-    assert isinstance(contours[0].commands[0], MoveToCommand)
-    assert contours[0].commands[0].end == (0, 0, 0)
-    assert isinstance(contours[1].commands[0], MoveToCommand)
-    assert contours[1].commands[0].end == (100, 100, 0)
-
-
 def test_segments():
     """Tests the segments() method for extracting point lists."""
     # Test case 1: Empty geometry
@@ -506,122 +431,94 @@ def test_dump_and_load(sample_geometry):
     assert loaded_empty.last_move_to == (0.0, 0.0, 0.0)
 
 
-def test_close_gaps_on_empty_geometry():
-    """Tests that close_gaps() doesn't fail on an empty Geometry."""
-    geo = Geometry()
-    geo.close_gaps()
-    assert geo.is_empty()
+# --- Wrapper Method Tests ---
+# These tests verify that the Geometry methods correctly wrap and call the
+# underlying stateless functions from other modules.
 
 
-def test_close_gaps_no_change_needed():
-    """Tests that a clean geometry is not modified."""
-    # Perfectly closed square
-    geo_closed = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
-    original_cmds = geo_closed.copy().commands
-    geo_closed.close_gaps()
-    assert len(geo_closed.commands) == len(original_cmds)
-    for cmd1, cmd2 in zip(geo_closed.commands, original_cmds):
-        assert cmd1.to_dict() == cmd2.to_dict()
+@patch("rayforge.core.geo.contours.close_geometry_gaps")
+def test_close_gaps_wrapper(mock_close_gaps, sample_geometry):
+    """Tests the Geometry.close_gaps() wrapper method."""
+    # The wrapper modifies the object in-place, so we need to simulate the
+    # return value of the underlying function.
+    mock_return_geo = Geometry()
+    mock_return_geo.line_to(1, 1)  # Give it some unique content
+    mock_close_gaps.return_value = mock_return_geo
 
-    # Open path with a large gap
-    geo_open = Geometry()
-    geo_open.move_to(0, 0)
-    geo_open.line_to(10, 10)
-    geo_open.move_to(50, 50)
-    geo_open.line_to(60, 60)
-    original_cmds_open = geo_open.copy().commands
-    geo_open.close_gaps()
-    assert len(geo_open.commands) == len(original_cmds_open)
-    for cmd1, cmd2 in zip(geo_open.commands, original_cmds_open):
-        assert cmd1.to_dict() == cmd2.to_dict()
+    # The method should return `self`
+    result = sample_geometry.close_gaps(tolerance=1e-5)
+    assert result is sample_geometry
+
+    # Check that the underlying function was called correctly
+    mock_close_gaps.assert_called_once_with(sample_geometry, tolerance=1e-5)
+
+    # Check that the geometry's commands were updated from the result
+    assert sample_geometry.commands == mock_return_geo.commands
 
 
-def test_close_gaps_intra_contour():
-    """Tests closing a small gap at the end of a single contour."""
-    geo = Geometry()
-    geo.move_to(0, 0, 5)
-    geo.line_to(10, 0)
-    geo.line_to(10, 10)
-    geo.line_to(0, 10)
-    geo.line_to(0.000001, -0.000002, 5.000001)  # Ends very close to (0,0,5)
-
-    assert geo.commands[-1].end != geo.commands[0].end
-    geo.close_gaps(tolerance=1e-5)
-    # The final point should be snapped to the exact start point
-    assert geo.commands[-1].end == geo.commands[0].end
-    assert geo.commands[-1].end == (0, 0, 5)
+@patch("rayforge.core.geo.geometry.is_closed")
+def test_is_closed_wrapper(mock_is_closed, sample_geometry):
+    """Tests the Geometry.is_closed() wrapper method."""
+    mock_is_closed.return_value = True
+    result = sample_geometry.is_closed(tolerance=1e-5)
+    assert result is True
+    mock_is_closed.assert_called_once_with(
+        sample_geometry.commands, tolerance=1e-5
+    )
 
 
-def test_close_gaps_inter_contour():
-    """Tests stitching two contours with a small jump between them."""
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(10, 10, 1)  # End of first contour
-    geo.move_to(10.000001, 10.000002, 1.000003)  # Small jump
-    geo.line_to(20, 20)
-
-    assert isinstance(geo.commands[2], MoveToCommand)
-    geo.close_gaps(tolerance=1e-5)
-    # The MoveTo should be replaced by a LineTo
-    assert isinstance(geo.commands[2], LineToCommand)
-    # The new LineTo should connect to the exact previous end point
-    assert geo.commands[2].end == (10, 10, 1)
-    # The end point of the final LineTo should remain the same
-    assert geo.commands[3].end == (20, 20, 0)
-    # The total number of commands should not change
-    assert len(geo.commands) == 4
+@patch("rayforge.core.geo.contours.remove_inner_edges")
+def test_remove_inner_edges_wrapper(mock_remove, sample_geometry):
+    """Tests the Geometry.remove_inner_edges() wrapper method."""
+    mock_remove.return_value = "Success"
+    result = sample_geometry.remove_inner_edges()
+    assert result == "Success"
+    mock_remove.assert_called_once_with(sample_geometry)
 
 
-def test_close_gaps_respects_tolerance():
-    """Tests that the tolerance parameter is correctly used."""
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(10, 10)
-    geo.move_to(10.1, 10.1)  # A gap of sqrt(0.1^2 + 0.1^2) ~= 0.14
-    geo.line_to(20, 20)
-
-    # First, try with a tolerance that is too small
-    geo_copy1 = geo.copy()
-    geo_copy1.close_gaps(tolerance=0.1)
-    # The MoveTo should NOT be replaced
-    assert isinstance(geo_copy1.commands[2], MoveToCommand)
-    assert geo_copy1.commands[2].end == (10.1, 10.1, 0)
-
-    # Now, try with a tolerance that is large enough
-    geo_copy2 = geo.copy()
-    geo_copy2.close_gaps(tolerance=0.2)
-    # The MoveTo SHOULD be replaced
-    assert isinstance(geo_copy2.commands[2], LineToCommand)
-    assert geo_copy2.commands[2].end == (10, 10, 0)
+@patch("rayforge.core.geo.split.split_into_contours")
+def test_split_into_contours_wrapper(mock_split, sample_geometry):
+    """Tests the Geometry.split_into_contours() wrapper method."""
+    sample_geometry.split_into_contours()
+    mock_split.assert_called_once_with(sample_geometry)
 
 
-def test_is_closed_method():
-    """Tests the Geometry.is_closed() method."""
-    # Test a single, closed contour
-    geo_closed = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
-    assert geo_closed.is_closed() is True
+@patch("rayforge.core.geo.split.split_into_components")
+def test_split_into_components_wrapper(mock_split, sample_geometry):
+    """Tests the Geometry.split_into_components() wrapper method."""
+    sample_geometry.split_into_components()
+    mock_split.assert_called_once_with(sample_geometry)
 
-    # Test a single, nearly closed contour
-    geo_nearly_closed = Geometry()
-    geo_nearly_closed.move_to(0, 0)
-    geo_nearly_closed.line_to(10, 0)
-    geo_nearly_closed.line_to(10, 10)
-    geo_nearly_closed.line_to(0, 10)
-    geo_nearly_closed.line_to(1e-7, -1e-7)
-    assert geo_nearly_closed.is_closed(tolerance=1e-6) is True
-    assert geo_nearly_closed.is_closed(tolerance=1e-8) is False
 
-    # Test an open path
-    geo_open = Geometry.from_points([(0, 0), (10, 10)], close=False)
-    assert geo_open.is_closed() is False
+@patch("rayforge.core.geo.analysis.encloses")
+def test_encloses_wrapper(mock_encloses, sample_geometry):
+    """Tests the Geometry.encloses() wrapper method."""
+    other_geo = Geometry()
+    sample_geometry.encloses(other_geo)
+    mock_encloses.assert_called_once_with(sample_geometry, other_geo)
 
-    # Test empty geometry
-    assert Geometry().is_closed() is False
 
-    # Test geometry with multiple contours
-    geo_multi = Geometry.from_points([(0, 0), (1, 1), (0, 1)])  # closed
-    second_contour = Geometry.from_points(
-        [(10, 10), (11, 11), (10, 11)]
-    )  # closed
-    geo_multi.commands.extend(second_contour.commands)
-    assert geo_multi.is_closed() is False
+@patch("rayforge.core.geo.intersect.check_self_intersection")
+def test_has_self_intersections_wrapper(mock_check, sample_geometry):
+    """Tests the Geometry.has_self_intersections() wrapper method."""
+    sample_geometry.has_self_intersections(fail_on_t_junction=True)
+    mock_check.assert_called_once_with(
+        sample_geometry.commands, fail_on_t_junction=True
+    )
+
+
+@patch("rayforge.core.geo.intersect.check_intersection")
+def test_intersects_with_wrapper(mock_check, sample_geometry):
+    """Tests the Geometry.intersects_with() wrapper method."""
+    other_geo = Geometry()
+    sample_geometry.intersects_with(other_geo)
+    mock_check.assert_called_once_with(
+        sample_geometry.commands, other_geo.commands
+    )
+
+
+@patch("rayforge.core.geo.transform.grow_geometry")
+def test_grow_wrapper(mock_grow, sample_geometry):
+    """Tests the Geometry.grow() wrapper method."""
+    sample_geometry.grow(amount=5.0)
+    mock_grow.assert_called_once_with(sample_geometry, offset=5.0)

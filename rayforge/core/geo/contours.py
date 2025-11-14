@@ -3,6 +3,7 @@ import math
 from typing import List, TYPE_CHECKING
 from .analysis import get_subpath_area
 from .primitives import is_point_in_polygon
+from .split import split_into_contours
 
 if TYPE_CHECKING:
     from .geometry import Geometry, Command
@@ -201,39 +202,6 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
             normalized_contours.append(contour_to_normalize)
 
     return normalized_contours
-
-
-def split_into_contours(geometry: Geometry) -> List[Geometry]:
-    """
-    Splits a Geometry object into a list of separate, single-contour
-    Geometry objects. Each new object represents one continuous subpath
-    that starts with a MoveToCommand.
-    """
-    if geometry.is_empty():
-        return []
-
-    from .geometry import Geometry, MoveToCommand
-
-    contours: List[Geometry] = []
-    current_geo: Geometry | None = None
-
-    for cmd in geometry.commands:
-        if isinstance(cmd, MoveToCommand):
-            # A MoveTo command always starts a new contour.
-            current_geo = Geometry()
-            contours.append(current_geo)
-
-        if current_geo is None:
-            # This handles geometries that might not start with a
-            # MoveToCommand. The first drawing command will implicitly
-            # start the first contour.
-            current_geo = Geometry()
-            contours.append(current_geo)
-
-        current_geo.add(cmd)
-
-    # Filter out any empty geometries that might have been created
-    return [c for c in contours if not c.is_empty()]
 
 
 def filter_to_external_contours(contours: List[Geometry]) -> List[Geometry]:
