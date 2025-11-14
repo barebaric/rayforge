@@ -2,59 +2,11 @@ import pytest
 from rayforge.core.geo import Geometry, MoveToCommand, LineToCommand
 from rayforge.core.geo.analysis import get_subpath_area
 from rayforge.core.geo.contours import (
-    split_into_contours,
     filter_to_external_contours,
     reverse_contour,
     normalize_winding_orders,
     close_geometry_gaps,
 )
-
-
-def test_split_into_contours_empty():
-    """Tests splitting an empty Geometry object."""
-    geo = Geometry()
-    contours = split_into_contours(geo)
-    assert len(contours) == 0
-
-
-def test_split_into_contours_single():
-    """Tests splitting a Geometry with a single continuous path."""
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(10, 0)
-    geo.line_to(10, 10)
-    contours = split_into_contours(geo)
-    assert len(contours) == 1
-    assert len(contours[0].commands) == 3
-    assert contours[0].commands[0].end == (0, 0, 0)
-
-
-def test_split_into_contours_multiple_disjoint():
-    """Tests splitting a Geometry with multiple separate paths."""
-    geo = Geometry()
-    # Contour 1
-    geo.move_to(0, 0)
-    geo.line_to(1, 1)
-    # Contour 2
-    geo.move_to(10, 10)
-    geo.line_to(11, 11)
-    geo.line_to(12, 12)
-    contours = split_into_contours(geo)
-    assert len(contours) == 2
-    assert len(contours[0].commands) == 2
-    assert len(contours[1].commands) == 3
-    assert contours[0].commands[0].end == (0, 0, 0)
-    assert contours[1].commands[0].end == (10, 10, 0)
-
-
-def test_split_into_contours_no_initial_move_to():
-    """Tests splitting a Geometry that starts with a drawing command."""
-    geo = Geometry()
-    geo.line_to(5, 5)  # Implicit start
-    geo.line_to(10, 0)
-    contours = split_into_contours(geo)
-    assert len(contours) == 1
-    assert len(contours[0].commands) == 2
 
 
 def test_reverse_contour_simple_polygon():
@@ -241,8 +193,29 @@ def test_close_geometry_gaps_functional():
 
     # The MoveTo should be replaced with a LineTo in the result
     assert isinstance(result_inter.commands[2], LineToCommand)
-    # The new LineTo should connect to the exact previous end point
+    # The new LineTo should connect to the exact previous endpoint
     assert result_inter.commands[2].end == (10, 10, 0)
+
+
+def test_close_geometry_gaps_respects_tolerance():
+    """Tests that the tolerance parameter is correctly used."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.move_to(10.1, 10.1)  # A gap of sqrt(0.1^2 + 0.1^2) ~= 0.14
+    geo.line_to(20, 20)
+
+    # First, try with a tolerance that is too small
+    result1 = close_geometry_gaps(geo, tolerance=0.1)
+    # The MoveTo should NOT be replaced
+    assert isinstance(result1.commands[2], MoveToCommand)
+    assert result1.commands[2].end == (10.1, 10.1, 0)
+
+    # Now, try with a tolerance that is large enough
+    result2 = close_geometry_gaps(geo, tolerance=0.2)
+    # The MoveTo SHOULD be replaced
+    assert isinstance(result2.commands[2], LineToCommand)
+    assert result2.commands[2].end == (10, 10, 0)
 
 
 def test_remove_inner_edges():

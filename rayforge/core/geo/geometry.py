@@ -10,7 +10,6 @@ from typing import (
     TypeVar,
     Dict,
     Any,
-    Set,
     Iterable,
     Type,
 )
@@ -24,7 +23,6 @@ from .analysis import (
     get_outward_normal_at,
     get_subpath_area,
 )
-from .contours import remove_inner_edges
 from .query import (
     get_bounding_rect,
     find_closest_point_on_path,
@@ -33,7 +31,6 @@ from .query import (
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
-    is_point_in_polygon,
 )
 
 
@@ -196,7 +193,7 @@ class Geometry:
         from . import contours  # Local import to prevent circular dependency
 
         # The function returns a new object; we update self with its data.
-        new_geo = contours.close_geometry_gaps(self, tolerance)
+        new_geo = contours.close_geometry_gaps(self, tolerance=tolerance)
         self.commands = new_geo.commands
         self._winding_cache.clear()  # Winding order might have changed
         return self
@@ -332,7 +329,7 @@ class Geometry:
         """
         from . import transform  # Local import to prevent circular dependency
 
-        return transform.grow_geometry(self, amount)
+        return transform.grow_geometry(self, offset=amount)
 
     def find_closest_point(
         self, x: float, y: float
@@ -438,7 +435,7 @@ class Geometry:
         Returns:
             True if the path is closed, False otherwise.
         """
-        return is_closed(self.commands, tolerance)
+        return is_closed(self.commands, tolerance=tolerance)
 
     def _get_valid_contours_data(
         self, contour_geometries: List["Geometry"]
@@ -502,107 +499,27 @@ class Geometry:
         Returns:
             A new Geometry object containing the filtered paths.
         """
-        return remove_inner_edges(self)
+        from . import contours  # Local import to prevent circular dependency
 
-    @staticmethod
-    def _find_connected_components_bfs(
-        num_contours: int, adj: List[List[int]]
-    ) -> List[List[int]]:
-        """Finds connected components in the graph using BFS."""
-        visited: Set[int] = set()
-        components: List[List[int]] = []
-        for i in range(num_contours):
-            if i not in visited:
-                component = []
-                q = [i]
-                visited.add(i)
-                while q:
-                    u = q.pop(0)
-                    component.append(u)
-                    for v in adj[u]:
-                        if v not in visited:
-                            visited.add(v)
-                            q.append(v)
-                components.append(component)
-        return components
+        return contours.remove_inner_edges(self)
 
     def split_into_components(self) -> List["Geometry"]:
         """
         Analyzes the geometry and splits it into a list of separate,
         logically connected shapes (components).
         """
-        logger.debug("Starting to split_into_components")
-        if self.is_empty():
-            logger.debug("Geometry is empty, returning empty list.")
-            return []
+        from . import split as split_module
 
-        contour_geometries = self.split_into_contours()
-        if len(contour_geometries) <= 1:
-            logger.debug("<= 1 contour, returning a copy of the whole.")
-            return [self.copy()]
-
-        all_contour_data = self._get_valid_contours_data(contour_geometries)
-        if not all_contour_data:
-            logger.debug("No valid contours found after filtering.")
-            return []
-
-        if not any(c["is_closed"] for c in all_contour_data):
-            logger.debug("No closed paths found. Returning single component.")
-            return [self.copy()]
-
-        num_contours = len(all_contour_data)
-        adj: List[List[int]] = [[] for _ in range(num_contours)]
-        for i in range(num_contours):
-            if not all_contour_data[i]["is_closed"]:
-                continue
-            for j in range(num_contours):
-                if i == j:
-                    continue
-                data_i = all_contour_data[i]
-                data_j = all_contour_data[j]
-                if is_point_in_polygon(
-                    data_j["vertices"][0], data_i["vertices"]
-                ):
-                    adj[i].append(j)
-                    adj[j].append(i)
-
-        component_indices_list = self._find_connected_components_bfs(
-            num_contours, adj
-        )
-        logger.debug(f"Found {len(component_indices_list)} raw components.")
-
-        final_geometries: List[Geometry] = []
-        stray_open_geo = Geometry()
-        for i, indices in enumerate(component_indices_list):
-            component_geo = Geometry()
-            has_closed_path = False
-            for idx in indices:
-                contour = all_contour_data[idx]
-                component_geo.commands.extend(contour["geo"].commands)
-                if contour["is_closed"]:
-                    has_closed_path = True
-
-            if has_closed_path:
-                final_geometries.append(component_geo)
-            else:
-                stray_open_geo.commands.extend(component_geo.commands)
-
-        if not stray_open_geo.is_empty():
-            logger.debug(
-                "Found stray open paths, creating a final component for them."
-            )
-            final_geometries.append(stray_open_geo)
-
-        return final_geometries
+        return split_module.split_into_components(self)
 
     def split_into_contours(self) -> List["Geometry"]:
         """
         Splits the geometry into a list of separate, single-contour
         Geometry objects.
         """
-        from . import contours  # Local import to prevent circular dependency
+        from . import split as split_module
 
-        return contours.split_into_contours(self)
+        return split_module.split_into_contours(self)
 
     def has_self_intersections(self, fail_on_t_junction: bool = False) -> bool:
         """
