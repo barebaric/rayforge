@@ -40,7 +40,7 @@ jobs:
 
       - name: Build documentation for PR Preview
         if: github.event_name == 'pull_request'
-        run: pixi run site-build
+        run: pixi run -e website site-build
 
       - name: Upload artifact for pull request review
         if: github.event_name == 'pull_request'

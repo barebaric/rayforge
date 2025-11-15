@@ -5,10 +5,11 @@ channels = ["conda-forge", "bioconda", "msys2", "coastline"]
 platforms = ["linux-64"]
 
 [environments]
-default = { features = ["test"], solve-group = "default" }
+default = { features = ["app", "test"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
+build = { features = ["build-tools"], solve-group = "build" }
 
-[dependencies]
+[feature.app.dependencies]
 adwaita-icon-theme = "*"
 glib = "*"
 cairo = "*"
@@ -27,12 +28,10 @@ pycairo = "==1.28.0"
 PyOpenGL = "==3.1.9"
 PyOpenGL-accelerate = "==3.1.9"
 PyGObject = "==3.50.0"
-
-[build-dependencies]
 pkg-config = "*"
 rust = "*"
 
-[pypi-dependencies]
+[feature.app.pypi-dependencies]
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.12.14"
 blinker = "==1.9.0"
@@ -47,7 +46,7 @@ PyYAML = "==6.0.2"
 vtracer = "==0.6.11"
 websockets = "==14.2"
 
-[target.linux-64.dependencies]
+[feature.app.target.linux-64.dependencies]
 libvips = "*"
 xorg-xproto = "*"
 xorg-libx11 = "*"
@@ -64,6 +63,9 @@ xorg-presentproto = "*"
 xorg-libxext = "*"
 xorg-libxinerama = "*"
 xorg-libxrandr = "*"
+
+[feature.build-tools.dependencies]
+gettext = "*"
 
 [feature.test.dependencies]
 pytest = "*"
