@@ -31,7 +31,7 @@ jobs:
           pixi-version: latest
 
       - name: Compile Translations
-        run: pixi run compile-translations
+        run: pixi run -e build compile-translations
 
       - name: Build snap
         uses: snapcore/action-build@v1
