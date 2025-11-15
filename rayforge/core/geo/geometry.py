@@ -47,6 +47,11 @@ class Command:
     ) -> None:
         self.end: Optional[Tuple[float, float, float]] = end
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Command):
+            return NotImplemented
+        return self.__dict__ == other.__dict__
+
     def to_dict(self) -> Dict[str, Any]:
         return {"type": self.__class__.__name__}
 
@@ -128,6 +133,21 @@ class Geometry:
 
     def __len__(self) -> int:
         return len(self.commands)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Geometry):
+            return NotImplemented
+        if len(self.commands) != len(other.commands):
+            return False
+        for command, other_command in zip(self.commands, other.commands):
+            if command != other_command:
+                return False
+        return True
+
+    def __hash__(self):
+        # A simple hash based on the commands. This allows Geometry objects
+        # to be used in sets and as dictionary keys.
+        return hash(tuple(str(cmd.__dict__) for cmd in self.commands))
 
     def copy(self: T_Geometry) -> T_Geometry:
         """Creates a deep copy of the Geometry object."""
@@ -330,6 +350,32 @@ class Geometry:
         from . import transform  # Local import to prevent circular dependency
 
         return transform.grow_geometry(self, offset=amount)
+
+    def split_inner_and_outer_contours(
+        self,
+    ) -> Tuple[List["Geometry"], List["Geometry"]]:
+        """
+        Splits the geometry's contours into two distinct lists: internal
+        contours (holes) and external contours (solids).
+
+        This is a convenience wrapper around the
+        `split_inner_and_outer_contours`
+        function in the `contours` module.
+
+        Returns:
+            A tuple containing two lists of Geometry objects:
+            (internal_contours, external_contours).
+        """
+        from . import contours as contours_module
+        from . import split as split_module
+
+        # 1. Split self into individual contours
+        contour_list = split_module.split_into_contours(self)
+        if not contour_list:
+            return [], []
+
+        # 2. Split the list of contours into inner and outer
+        return contours_module.split_inner_and_outer_contours(contour_list)
 
     def find_closest_point(
         self, x: float, y: float

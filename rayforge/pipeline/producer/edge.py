@@ -1,4 +1,5 @@
 import logging
+from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
@@ -16,6 +17,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class CutOrder(Enum):
+    """Defines the processing order for nested paths."""
+
+    INSIDE_OUTSIDE = auto()
+    OUTSIDE_INSIDE = auto()
+
+
 class EdgeTracer(OpsProducer):
     """
     Uses the tracer to find all paths in a shape. Can optionally trace
@@ -27,6 +35,7 @@ class EdgeTracer(OpsProducer):
         remove_inner_paths: bool = False,
         path_offset_mm: float = 0.0,
         cut_side: CutSide = CutSide.OUTSIDE,
+        cut_order: CutOrder = CutOrder.INSIDE_OUTSIDE,
     ):
         """
         Initializes the EdgeTracer.
@@ -36,11 +45,13 @@ class EdgeTracer(OpsProducer):
                                 are traced, and inner holes are ignored.
             path_offset_mm: An absolute distance to offset the generated path.
             cut_side: The rule for determining the final cut side.
+            cut_order: The processing order for nested paths.
         """
         super().__init__()
         self.remove_inner_paths = remove_inner_paths
         self.path_offset_mm = path_offset_mm
         self.cut_side = cut_side
+        self.cut_order = cut_order
 
     def run(
         self,
@@ -54,8 +65,6 @@ class EdgeTracer(OpsProducer):
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("EdgeTracer requires a workpiece context.")
-
-        final_ops = Ops()
 
         # 1. Calculate total offset from producer and step settings
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -140,24 +149,60 @@ class EdgeTracer(OpsProducer):
             # No offset was requested, so use the composite geometry.
             final_geometry = composite_geo
 
-        # 6. Remove inner edges (optional)
-        #    This is done *after* offsetting (grow) because the grow operation
-        #    can resolve intersections and produce a clean set of external
-        #    and internal paths, which is exactly what we want to filter.
-        if self.remove_inner_paths:
-            final_geometry = final_geometry.remove_inner_edges()
-
-        # 7. Convert to Ops. No further scaling is needed.
+        # 6. Create Ops by splitting into optimizable groups
+        final_ops = Ops()
         if not final_geometry.is_empty():
             final_ops.set_laser(laser.uid)
-            final_ops.ops_section_start(
-                SectionType.VECTOR_OUTLINE, workpiece.uid
-            )
-            final_ops.extend(Ops.from_geometry(final_geometry))
-            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        # 8. Create the artifact. The ops are pre-scaled, so they are not
-        #    scalable in the pipeline cache sense.
+            if self.remove_inner_paths:
+                # Simple case: remove inner paths and create one optimizable
+                # group
+                final_geometry = final_geometry.remove_inner_edges()
+                final_ops.ops_section_start(
+                    SectionType.VECTOR_OUTLINE, workpiece.uid
+                )
+                final_ops.extend(Ops.from_geometry(final_geometry))
+                final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+            else:
+                # Complex case: separate inner and outer paths into two groups
+                split_func = final_geometry.split_inner_and_outer_contours
+                inner_contours, outer_contours = split_func()
+
+                # Combine the lists of contours into composite Geometry objects
+                outer_geo = Geometry()
+                for geo in outer_contours:
+                    outer_geo.commands.extend(geo.commands)
+
+                inner_geo = Geometry()
+                for geo in inner_contours:
+                    inner_geo.commands.extend(geo.commands)
+
+                group1 = (
+                    inner_geo
+                    if self.cut_order == CutOrder.INSIDE_OUTSIDE
+                    else outer_geo
+                )
+                group2 = (
+                    outer_geo
+                    if self.cut_order == CutOrder.INSIDE_OUTSIDE
+                    else inner_geo
+                )
+
+                if not group1.is_empty():
+                    final_ops.ops_section_start(
+                        SectionType.VECTOR_OUTLINE, workpiece.uid
+                    )
+                    final_ops.extend(Ops.from_geometry(group1))
+                    final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+                if not group2.is_empty():
+                    final_ops.ops_section_start(
+                        SectionType.VECTOR_OUTLINE, workpiece.uid
+                    )
+                    final_ops.extend(Ops.from_geometry(group2))
+                    final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        # 7. Create the artifact.
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
@@ -178,6 +223,7 @@ class EdgeTracer(OpsProducer):
                 "remove_inner_paths": self.remove_inner_paths,
                 "path_offset_mm": self.path_offset_mm,
                 "cut_side": self.cut_side.name,
+                "cut_order": self.cut_order.name,
             },
         }
 
@@ -193,10 +239,17 @@ class EdgeTracer(OpsProducer):
         except KeyError:
             cut_side = CutSide.OUTSIDE
 
+        cut_order_str = params.get("cut_order", "INSIDE_OUTSIDE")
+        try:
+            cut_order = CutOrder[cut_order_str]
+        except KeyError:
+            cut_order = CutOrder.INSIDE_OUTSIDE
+
         return cls(
             remove_inner_paths=params.get("remove_inner_paths", False),
             path_offset_mm=params.get(
                 "path_offset_mm", params.get("offset_mm", 0.0)
             ),
             cut_side=cut_side,
+            cut_order=cut_order,
         )

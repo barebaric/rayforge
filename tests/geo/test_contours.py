@@ -6,6 +6,7 @@ from rayforge.core.geo.contours import (
     reverse_contour,
     normalize_winding_orders,
     close_geometry_gaps,
+    split_inner_and_outer_contours,
 )
 
 
@@ -32,6 +33,90 @@ def test_reverse_contour_with_arc():
 
     reversed_semi = reverse_contour(semi)
     assert get_subpath_area(reversed_semi.commands, 0) < 0
+
+
+def test_split_inner_and_outer_contours_empty_and_single():
+    """Tests splitting with empty or single-item lists."""
+    # Empty list
+    internal, external = split_inner_and_outer_contours([])
+    assert internal == []
+    assert external == []
+
+    # Single item (is always external)
+    c1 = Geometry.from_points([(0, 0), (1, 0), (0, 1)])
+    internal, external = split_inner_and_outer_contours([c1])
+    assert internal == []
+    assert external == [c1]
+
+
+def test_split_inner_and_outer_contours_simple_donut():
+    """Tests splitting a simple solid-and-hole shape."""
+    outer = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hole = Geometry.from_points([(2, 2), (8, 2), (8, 8), (2, 8)])
+
+    # Test with standard order
+    contours = [outer, hole]
+    internal, external = split_inner_and_outer_contours(contours)
+    assert internal == [hole]
+    assert external == [outer]
+
+    # Test with reversed input order
+    contours_rev = [hole, outer]
+    internal_rev, external_rev = split_inner_and_outer_contours(contours_rev)
+    assert internal_rev == [hole]
+    assert external_rev == [outer]
+
+
+def test_split_inner_and_outer_contours_bullseye():
+    """
+    Tests splitting a multi-level nesting. The key is that the middle
+    contour is a hole, while the inner and outer are solids.
+    """
+    c1_outer = Geometry.from_points([(0, 0), (30, 0), (30, 30), (0, 30)])
+    c2_hole = Geometry.from_points([(5, 5), (25, 5), (25, 25), (5, 25)])
+    c3_inner = Geometry.from_points([(10, 10), (20, 10), (20, 20), (10, 20)])
+
+    # Solids: c1_outer, c3_inner. Hole: c2_hole.
+    contours = [c1_outer, c2_hole, c3_inner]
+
+    internal, external = split_inner_and_outer_contours(contours)
+
+    assert len(internal) == 1
+    assert internal[0] is c2_hole
+    assert len(external) == 2
+    assert set(external) == {c1_outer, c3_inner}
+
+
+def test_split_inner_and_outer_contours_two_letter_b_shapes():
+    """
+    Tests that splitting correctly performs a global partition of solids and
+    holes.
+    """
+    # Component 1: A "B" shape
+    b1_outer = Geometry.from_points([(0, 0), (10, 0), (10, 20), (0, 20)])
+    b1_hole_top = Geometry.from_points([(2, 12), (8, 12), (8, 18), (2, 18)])
+    b1_hole_bottom = Geometry.from_points([(2, 2), (8, 2), (8, 8), (2, 8)])
+
+    # Component 2: Another "B" shape, shifted
+    b2_outer = Geometry.from_points([(100, 0), (110, 0), (110, 20), (100, 20)])
+    b2_hole_top = Geometry.from_points(
+        [(102, 12), (108, 12), (108, 18), (102, 18)]
+    )
+    b2_hole_bottom = Geometry.from_points(
+        [(102, 2), (108, 2), (108, 8), (102, 2)]
+    )
+
+    all_solids = {b1_outer, b2_outer}
+    all_holes = {b1_hole_top, b1_hole_bottom, b2_hole_top, b2_hole_bottom}
+
+    # Unordered list containing all 6 contours
+    contours = list(all_solids | all_holes)
+
+    internal, external = split_inner_and_outer_contours(contours)
+    assert len(internal) == 4
+    assert len(external) == 2
+    assert set(internal) == all_holes
+    assert set(external) == all_solids
 
 
 def test_normalize_winding_donut_all_ccw():
@@ -91,7 +176,7 @@ def test_filter_external_shape_with_hole():
     contours = [outer, hole]
     result = filter_to_external_contours(contours)
     assert len(result) == 1
-    assert get_subpath_area(result[0].commands, 0) > 0
+    assert result[0] is outer
 
 
 def test_filter_external_bullseye_nesting():
@@ -102,9 +187,9 @@ def test_filter_external_bullseye_nesting():
     contours = [c1, c2, c3]
     result = filter_to_external_contours(contours)
     assert len(result) == 2
-    areas = [get_subpath_area(r.commands, 0) for r in result]
-    # Both resulting areas should be positive (CCW) after normalization.
-    assert all(a > 0 for a in areas)
+    assert c1 in result
+    assert c3 in result
+    assert c2 not in result
 
 
 def test_filter_external_robust_to_winding_order():
@@ -121,8 +206,7 @@ def test_filter_external_robust_to_winding_order():
     # A correct filter should normalize the hole to CW and then discard it.
     result = filter_to_external_contours([outer, incorrect_hole])
     assert len(result) == 1
-    # Check that the returned geometry is equivalent to the original outer one.
-    assert result[0].area() == pytest.approx(outer.area())
+    assert result[0] is outer
 
 
 def test_filter_external_two_separate_shapes():
