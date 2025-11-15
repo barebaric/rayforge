@@ -8,8 +8,6 @@ import uuid
 class MacroTrigger(Enum):
     """Defines events in the job lifecycle where G-code can be injected."""
 
-    JOB_START = "At the very beginning of the job"
-    JOB_END = "At the very end of the job"
     LAYER_START = "Before processing a layer"
     LAYER_END = "After processing a layer"
     WORKPIECE_START = "Before processing a workpiece"

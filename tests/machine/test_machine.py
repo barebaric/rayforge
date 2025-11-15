@@ -2,6 +2,7 @@ from typing import Tuple
 import pytest
 import asyncio
 from pathlib import Path
+
 from rayforge.core.doc import Doc
 from rayforge.core.import_source import ImportSource
 from rayforge.core.ops import Ops
@@ -14,6 +15,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
+from rayforge.machine.models.macro import MacroTrigger
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.core.matrix import Matrix
 from rayforge.pipeline import steps
@@ -465,30 +467,28 @@ class TestMachine:
         assert isinstance(dialect, GcodeDialect)
 
         # Verify it matches what get_dialect would return
-        expected_dialect = get_dialect(machine.dialect_name)
+        expected_dialect = get_dialect(machine.dialect_uid)
         assert dialect == expected_dialect
 
-    def test_dialect_property_changes_with_dialect_name(
-        self, machine: Machine
-    ):
-        """Test that dialect property reflects changes to dialect_name."""
-        from rayforge.machine.models.dialect import (
+    def test_dialect_property_changes_with_dialect_uid(self, machine: Machine):
+        """Test that dialect property reflects changes to dialect_uid."""
+        from rayforge.machine.models.dialect_builtins import (
             GRBL_DIALECT,
             SMOOTHIEWARE_DIALECT,
         )
 
         # Initial state
-        assert machine.dialect_name == "grbl"
+        assert machine.dialect_uid == "grbl"
         assert machine.dialect == GRBL_DIALECT
 
-        # Change dialect name
-        machine.set_dialect_name("smoothieware")
+        # Change dialect uid
+        machine.set_dialect_uid("smoothieware")
 
         # Verify dialect property returns the new dialect
         assert machine.dialect == SMOOTHIEWARE_DIALECT
 
         # Change back
-        machine.set_dialect_name("grbl")
+        machine.set_dialect_uid("grbl")
         assert machine.dialect == GRBL_DIALECT
 
     def test_can_g0_with_speed(self, machine: Machine):
@@ -716,3 +716,116 @@ class TestMachine:
 
         # SmoothieDriver should report granular progress
         assert machine.reports_granular_progress
+
+    @pytest.mark.asyncio
+    async def test_hook_migration_full(self, task_mgr: TaskManager):
+        """
+        Tests that legacy JOB_START and JOB_END hooks are migrated to a new
+        custom dialect upon loading a machine.
+        """
+        from rayforge.machine.models.dialect import (
+            get_dialect,
+            _DIALECT_REGISTRY,
+        )
+
+        initial_dialect_count = len(_DIALECT_REGISTRY)
+        start_code = ["G28 ; Home at start"]
+        end_code = ["M2 ; Program End"]
+
+        legacy_data = {
+            "machine": {
+                "name": "Legacy Machine",
+                "dialect_uid": "grbl",
+                "hookmacros": {
+                    "JOB_START": {"code": start_code},
+                    "JOB_END": {"code": end_code},
+                    "LAYER_START": {"code": ["; Layer Start"]},
+                },
+            }
+        }
+
+        # Act
+        new_machine = Machine.from_dict(legacy_data)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Assert Migration
+        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert new_machine.dialect_uid != "grbl"
+        assert "JOB_START" not in new_machine.hookmacros
+        assert "JOB_END" not in new_machine.hookmacros
+        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+
+        # Assert New Dialect Content
+        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        assert migrated_dialect.is_custom is True
+        assert migrated_dialect.default_preamble == start_code
+        assert migrated_dialect.default_postscript == end_code
+        assert "Legacy Machine" in migrated_dialect.label
+
+    @pytest.mark.asyncio
+    async def test_hook_migration_partial(self, task_mgr: TaskManager):
+        """
+        Tests that migration works correctly if only one legacy hook is
+        present.
+        """
+        from rayforge.machine.models.dialect import (
+            get_dialect,
+            _DIALECT_REGISTRY,
+        )
+
+        base_dialect = get_dialect("grbl")
+        initial_dialect_count = len(_DIALECT_REGISTRY)
+        start_code = ["G21 G90"]
+
+        legacy_data = {
+            "machine": {
+                "name": "Partial Legacy",
+                "dialect_uid": "grbl",
+                "hookmacros": {"JOB_START": {"code": start_code}},
+            }
+        }
+
+        # Act
+        new_machine = Machine.from_dict(legacy_data)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Assert Migration
+        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert new_machine.dialect_uid != "grbl"
+        assert not new_machine.hookmacros
+
+        # Assert New Dialect Content
+        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        assert migrated_dialect.is_custom is True
+        assert migrated_dialect.default_preamble == start_code
+        # Postscript should be inherited from the original dialect
+        assert (
+            migrated_dialect.default_postscript
+            == base_dialect.default_postscript
+        )
+
+    @pytest.mark.asyncio
+    async def test_hook_migration_not_needed(self, task_mgr: TaskManager):
+        """
+        Tests that no migration occurs for a modern machine configuration.
+        """
+        from rayforge.machine.models.dialect import _DIALECT_REGISTRY
+
+        initial_dialect_count = len(_DIALECT_REGISTRY)
+
+        modern_data = {
+            "machine": {
+                "name": "Modern Machine",
+                "dialect_uid": "smoothieware",
+                "hookmacros": {"LAYER_START": {"code": ["; Modern Hook"]}},
+            }
+        }
+
+        # Act
+        new_machine = Machine.from_dict(modern_data)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Assert No Migration
+        assert len(_DIALECT_REGISTRY) == initial_dialect_count
+        assert new_machine.dialect_uid == "smoothieware"
+        assert MacroTrigger.LAYER_START in new_machine.hookmacros

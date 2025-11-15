@@ -180,8 +180,10 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
 
     # 1. Isolate test configuration files
     temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
@@ -267,8 +269,11 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     from rayforge.shared import tasker
 
     temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
-    monkeypatch.setattr(config, "MACHINE_DIR", temp_config_dir / "machines")
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
     monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
 
     context = get_context()

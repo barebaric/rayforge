@@ -2,7 +2,6 @@ from typing import cast, Dict, Tuple
 from gi.repository import Gtk, Adw
 from ...machine.models.machine import Machine
 from ..models.macro import Macro, MacroTrigger
-from ...machine.models.dialect import get_dialect
 from .gcode_editor import GcodeEditorDialog
 
 
@@ -141,23 +140,15 @@ class HookList(Adw.PreferencesGroup):
         """Handles the 'Edit' button click for a specific trigger."""
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
 
-        # Determine the default code for this specific trigger
-        dialect = get_dialect(self.machine.dialect_name)
-        default_code = []
-        if trigger == MacroTrigger.JOB_START:
-            default_code = dialect.default_preamble
-        elif trigger == MacroTrigger.JOB_END:
-            default_code = dialect.default_postscript
-
         # If a macro already exists (even if empty), edit it directly.
-        # Otherwise, create a new one pre-filled with the dialect's default.
+        # Otherwise, create a new one.
         existing_macro = self.machine.hookmacros.get(trigger)
         if existing_macro is not None:
             macro_to_edit = existing_macro
         else:
             macro_to_edit = Macro(
                 name=trigger.name.replace("_", " ").title(),
-                code=default_code or [_("# Your G-code here")],
+                code=[_("# Your G-code here")],
             )
 
         # Pass the list of available macros for the include popover
@@ -168,7 +159,6 @@ class HookList(Adw.PreferencesGroup):
             macro_to_edit,
             allow_name_edit=False,
             existing_macros=existing_macros,
-            default_code=default_code,
         )
         editor_dialog.connect(
             "close-request",

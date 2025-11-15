@@ -18,7 +18,6 @@ class GcodeEditorDialog(Adw.Window):
         *,
         allow_name_edit: bool = False,
         existing_macros: Optional[List[Macro]] = None,
-        default_code: Optional[List[str]] = None,
         variable_context_level: str = "job",
     ):
         """
@@ -31,7 +30,6 @@ class GcodeEditorDialog(Adw.Window):
               name.
             existing_macros: A list of other macros to check for name
               uniqueness.
-            default_code: If provided, an "Append Default" button is shown.
             variable_context_level: The context level for variable
               documentation.
         """
@@ -40,7 +38,6 @@ class GcodeEditorDialog(Adw.Window):
         self.saved = False
         self._allow_name_edit = allow_name_edit
         self.existing_macros = existing_macros or []
-        self.default_code = default_code or []
         self.variable_context_level = variable_context_level
         self.set_title(_("Edit Macro"))
         self.set_size_request(750, 700)
@@ -54,14 +51,6 @@ class GcodeEditorDialog(Adw.Window):
         cancel_button = Gtk.Button(label=_("Cancel"))
         cancel_button.connect("clicked", lambda w: self.close())
         header.pack_start(cancel_button)
-
-        # "Append Default" button for hooks
-        if self.default_code:
-            self.append_default_button = Gtk.Button(label=_("Append Default"))
-            self.append_default_button.connect(
-                "clicked", self._on_append_default
-            )
-            header.pack_start(self.append_default_button)
 
         # Button for Variables
         variables_button = Gtk.MenuButton(
@@ -250,22 +239,6 @@ class GcodeEditorDialog(Adw.Window):
             self.close()
             return True  # Event handled, stop propagation
         return False
-
-    def _on_append_default(self, button: Gtk.Button):
-        """Appends the default code to the text view."""
-        if not self.default_code:
-            return
-
-        buffer = self.text_view.get_buffer()
-        text = buffer.get_text(
-            buffer.get_start_iter(), buffer.get_end_iter(), True
-        )
-
-        # Add a newline if the buffer isn't empty and doesn't end with one
-        if text and not text.endswith("\n"):
-            buffer.insert(buffer.get_end_iter(), "\n", -1)
-
-        buffer.insert(buffer.get_end_iter(), "\n".join(self.default_code), -1)
 
     def _validate_name(self, *args):
         """Checks the validity of the macro name and updates UI feedback."""

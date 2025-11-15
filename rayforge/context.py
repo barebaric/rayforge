@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .core.library_manager import LibraryManager
     from .core.recipe_manager import RecipeManager
     from .machine.models.machine import Machine, MachineManager
+    from .machine.models.dialect_manager import DialectManager
     from .debug import DebugDumpManager
 
 
@@ -33,8 +34,13 @@ class RayforgeContext:
         """
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
+        from .machine.models.dialect_manager import DialectManager
+        from .config import DIALECT_DIR
 
         self.artifact_store = ArtifactStore()
+        # The DialectManager is safe and necessary for all processes.
+        self._dialect_mgr = DialectManager(DIALECT_DIR)
+
         # These managers are initialized to None. The main application thread
         # MUST call initialize_full_context() to create them.
         self._machine_mgr: Optional["MachineManager"] = None
@@ -52,6 +58,13 @@ class RayforgeContext:
         the config or machine is not set.
         """
         return self._config.machine if self._config else None
+
+    @property
+    def dialect_mgr(self) -> "DialectManager":
+        """Returns the dialect manager. Raises an error if not initialized."""
+        if self._dialect_mgr is None:
+            raise RuntimeError("Dialect manager is not initialized.")
+        return self._dialect_mgr
 
     @property
     def machine_mgr(self) -> "MachineManager":
