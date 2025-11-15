@@ -1,26 +1,33 @@
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from __future__ import annotations
+import uuid
+from dataclasses import dataclass, field, asdict, replace
+from typing import List, Dict, Optional, Any
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
 
 
 def register_dialect(dialect: "GcodeDialect"):
-    """Adds a dialect to the central registry, keyed by its unique `name`."""
-    if dialect.name in _DIALECT_REGISTRY:
+    """
+    Adds a dialect to the central registry, keyed by its case-insensitive
+    unique `uid`.
+    """
+    uid_key = dialect.uid.lower()
+    if uid_key in _DIALECT_REGISTRY:
         raise ValueError(
-            f"Dialect with name '{dialect.name}' is already registered."
+            f"Dialect with UID '{dialect.uid}' is already registered."
         )
-    _DIALECT_REGISTRY[dialect.name] = dialect
+    _DIALECT_REGISTRY[uid_key] = dialect
 
 
-def get_dialect(name: str) -> "GcodeDialect":
-    """Retrieves a GcodeDialect instance from the registry by its name."""
-    dialect = _DIALECT_REGISTRY.get(name.lower())
+def get_dialect(uid: str) -> "GcodeDialect":
+    """
+    Retrieves a GcodeDialect instance from the registry by its
+    case-insensitive UID.
+    """
+    dialect = _DIALECT_REGISTRY.get(uid.lower())
     if not dialect:
-        raise ValueError(
-            f"Unknown or unsupported G-code dialect name: '{name}'"
-        )
+        raise ValueError(f"Unknown or unsupported G-code dialect UID: '{uid}'")
     return dialect
 
 
@@ -37,7 +44,6 @@ class GcodeDialect:
     specific hardware dialect (e.g., GRBL, Marlin, Smoothieware).
     """
 
-    name: str  # Stable, programmatic identifier (e.g., "grbl", "marlin")
     label: str  # User-facing name for UI (e.g., "GRBL")
     description: str
 
@@ -59,6 +65,23 @@ class GcodeDialect:
     default_preamble: List[str] = field(default_factory=list)
     default_postscript: List[str] = field(default_factory=list)
 
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    is_custom: bool = False
+    parent_uid: Optional[str] = None
+
+    def copy_as_custom(self, new_label: str) -> "GcodeDialect":
+        """
+        Creates a new, custom dialect instance from this one, generating a
+        new UID.
+        """
+        return replace(
+            self,
+            uid=str(uuid.uuid4()),  # Explicitly generate a new UID
+            is_custom=True,
+            parent_uid=self.uid,
+            label=new_label,
+        )
+
     def format_laser_power(self, power: float) -> int:
         """
         Formats laser power value. Default is to convert to integer.
@@ -73,95 +96,29 @@ class GcodeDialect:
         """
         return f" F{int(speed)}" if speed is not None else ""
 
-    def __post_init__(self):
-        """Automatically register the dialect instance after it's created."""
-        register_dialect(self)
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the dialect to a dictionary."""
+        return asdict(self)
 
-
-GRBL_DIALECT = GcodeDialect(
-    name="grbl",
-    label=_("GRBL (universal)"),
-    description=_("Standard GRBL for most diode lasers and hobby CNCs."),
-    laser_on="M4 S{power}",
-    laser_off="M5",
-    tool_change="T{tool_number}",
-    set_speed="",
-    travel_move="G0 X{x} Y{y} Z{z}",
-    linear_move="G1 X{x} Y{y} Z{z}{f_command}",
-    arc_cw="G2 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    air_assist_on="M8",
-    air_assist_off="M9",
-    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
-    default_postscript=[
-        "M5 ;Ensure laser is off",
-        "G0 X0 Y0 ;Return to origin",
-    ],
-)
-
-GRBL_DIALECT_NOZ = GcodeDialect(
-    name="grbl_noz",
-    label=_("GRBL (no Z axis)"),
-    description=_(
-        "Standard GRBL, but removes Z axis commands for more efficient G-code."
-    ),
-    laser_on="M4 S{power}",
-    laser_off="M5",
-    tool_change="T{tool_number}",
-    set_speed="",
-    travel_move="G0 X{x} Y{y}",
-    linear_move="G1 X{x} Y{y}{f_command}",
-    arc_cw="G2 X{x} Y{y} I{i} J{j}{f_command}",
-    arc_ccw="G3 X{x} Y{y} I{i} J{j}{f_command}",
-    air_assist_on="M8",
-    air_assist_off="M9",
-    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
-    default_postscript=[
-        "M5 ;Ensure laser is off",
-        "G0 X0 Y0 ;Return to origin",
-    ],
-)
-
-SMOOTHIEWARE_DIALECT = GcodeDialect(
-    name="smoothieware",
-    label=_("Smoothieware"),
-    description=_("G-code dialect for Smoothieware-based controllers."),
-    laser_on="M3 S{power}",
-    laser_off="M5",
-    tool_change="T{tool_number}",
-    set_speed="",
-    travel_move="G0 X{x} Y{y} Z{z}{f_command}",
-    linear_move="G1 X{x} Y{y} Z{z}{f_command}",
-    arc_cw="G2 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    air_assist_on="M8",
-    air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
-    default_postscript=[
-        "M5 ; Ensure laser is off",
-        "G0 X0 Y0 ; Return to origin",
-    ],
-)
-
-MARLIN_DIALECT = GcodeDialect(
-    name="marlin",
-    label=_("Marlin"),
-    description=_(
-        "G-code for Marlin-based controllers, common in 3D printers."
-    ),
-    laser_on="M4 S{power}",
-    laser_off="M5",
-    tool_change="T{tool_number}",
-    set_speed="",
-    travel_move="G0 X{x} Y{y} Z{z}{f_command}",
-    linear_move="G1 X{x} Y{y} Z{z}{f_command}",
-    arc_cw="G2 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
-    air_assist_on="M8",
-    air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
-    default_postscript=[
-        "M5 ; Ensure laser is off",
-        "G0 X0 Y0 ; Return to origin",
-    ],
-)
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "GcodeDialect":
+        """Creates a dialect instance from a dictionary."""
+        return cls(
+            label=data.get("label", _("Unnamed Dialect")),
+            description=data.get("description", ""),
+            laser_on=data.get("laser_on", ""),
+            laser_off=data.get("laser_off", ""),
+            tool_change=data.get("tool_change", ""),
+            set_speed=data.get("set_speed", ""),
+            travel_move=data.get("travel_move", ""),
+            linear_move=data.get("linear_move", ""),
+            arc_cw=data.get("arc_cw", ""),
+            arc_ccw=data.get("arc_ccw", ""),
+            air_assist_on=data.get("air_assist_on", ""),
+            air_assist_off=data.get("air_assist_off", ""),
+            default_preamble=data.get("default_preamble", []),
+            default_postscript=data.get("default_postscript", []),
+            uid=data.get("uid", str(uuid.uuid4())),
+            is_custom=data.get("is_custom", False),
+            parent_uid=data.get("parent_uid"),
+        )

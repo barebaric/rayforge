@@ -21,7 +21,7 @@ class MachineProfile:
 
     name: str
     driver_class_name: Optional[str] = None
-    dialect_name: Optional[str] = None
+    dialect_uid: Optional[str] = None
     gcode_precision: Optional[int] = None
     dimensions: Optional[Tuple[int, int]] = None
     y_axis_down: Optional[bool] = None
@@ -55,8 +55,8 @@ class MachineProfile:
                     f" with args {self.driver_args}"
                 )
 
-        if self.dialect_name is not None:
-            m.dialect_name = self.dialect_name
+        if self.dialect_uid is not None:
+            m.dialect_uid = self.dialect_uid
         if self.gcode_precision is not None:
             m.gcode_precision = self.gcode_precision
         if self.dimensions is not None:
@@ -101,7 +101,7 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name="Sculpfun iCube",
         driver_class_name="GrblDriver",
-        dialect_name="GRBL",
+        dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(120, 120),
         y_axis_down=False,
@@ -119,7 +119,7 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name="Sculpfun S30",
         driver_class_name="GrblSerialDriver",
-        dialect_name="GRBL",
+        dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(400, 400),
         y_axis_down=False,
@@ -136,7 +136,7 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name="xTool D1 Pro",
         driver_class_name="GrblNetworkDriver",
-        dialect_name="GRBL",
+        dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(430, 390),
         y_axis_down=False,
@@ -170,7 +170,7 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name=_("Other Device"),
         driver_class_name="GrblDriver",
-        dialect_name="GRBL",
+        dialect_uid="grbl",
         y_axis_down=False,
     ),
 ]

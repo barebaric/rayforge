@@ -63,7 +63,7 @@ class Machine:
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
-        self.dialect_name: str = "grbl"
+        self.dialect_uid: str = "grbl"
         self.gcode_precision: int = 3
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
@@ -305,12 +305,12 @@ class Machine:
     @property
     def dialect(self) -> "GcodeDialect":
         """Get the current dialect instance for this machine."""
-        return get_dialect(self.dialect_name)
+        return get_dialect(self.dialect_uid)
 
-    def set_dialect_name(self, dialect_name: str):
-        if self.dialect_name == dialect_name:
+    def set_dialect_uid(self, dialect_uid: str):
+        if self.dialect_uid == dialect_uid:
             return
-        self.dialect_name = dialect_name
+        self.dialect_uid = dialect_uid
         self.changed.send(self)
 
     def set_gcode_precision(self, precision: int):
@@ -691,7 +691,7 @@ class Machine:
                 "driver_args": self.driver_args,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
-                "dialect": self.dialect_name,
+                "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
                 "y_axis_down": self.y_axis_down,
                 "heads": [head.to_dict() for head in self.heads],
@@ -714,6 +714,63 @@ class Machine:
             }
         }
 
+    @staticmethod
+    def _migrate_legacy_hooks_to_dialect(
+        hook_data: Dict[str, Any],
+        current_dialect_uid: str,
+        machine_name: str,
+        context: RayforgeContext,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """
+        Checks for legacy JOB_START/JOB_END hooks and migrates them to a
+        new custom dialect.
+
+        Returns:
+            A tuple containing the (potentially new) dialect UID and the
+            cleaned hook_data dictionary.
+        """
+        job_start_hook_data = hook_data.get("JOB_START")
+        job_end_hook_data = hook_data.get("JOB_END")
+
+        if not job_start_hook_data and not job_end_hook_data:
+            # No migration needed
+            return current_dialect_uid, hook_data
+
+        logger.info(
+            f"Migrating JOB_START/JOB_END hooks to a new custom dialect "
+            f"for machine '{machine_name}'."
+        )
+
+        try:
+            base_dialect = get_dialect(current_dialect_uid)
+        except ValueError:
+            logger.warning(
+                f"Could not find base dialect '{current_dialect_uid}' for "
+                f"migration. Using 'grbl' as a fallback."
+            )
+            base_dialect = get_dialect("grbl")
+
+        new_label = _("{label} (for {machine_name})").format(
+            label=base_dialect.label, machine_name=machine_name
+        )
+        new_dialect = base_dialect.copy_as_custom(new_label=new_label)
+
+        if job_start_hook_data:
+            new_dialect.default_preamble = job_start_hook_data.get("code", [])
+        if job_end_hook_data:
+            new_dialect.default_postscript = job_end_hook_data.get("code", [])
+
+        # Add the new dialect to the manager (registers and saves it)
+        context.dialect_mgr.add_dialect(new_dialect)
+
+        # Clean up the old hook data so it isn't loaded or re-saved
+        new_hook_data = hook_data.copy()
+        new_hook_data.pop("JOB_START", None)
+        new_hook_data.pop("JOB_END", None)
+
+        # Return the new dialect's UID and the cleaned hook data
+        return new_dialect.uid, new_hook_data
+
     @classmethod
     def from_dict(
         cls, data: Dict[str, Any], is_inert: bool = False
@@ -729,15 +786,27 @@ class Machine:
             "clear_alarm_on_connect", ma.clear_alarm_on_connect
         )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
-        ma.dialect_name = ma_data.get("dialect", "grbl")
+
+        dialect_uid = ma_data.get("dialect_uid")
+        if not dialect_uid:  # backward compatibility
+            dialect_uid = ma_data.get("dialect", "grbl").lower()
+
+        hook_data = ma_data.get("hookmacros", {})
+
+        # Run the migration logic, which may update the dialect_uid and
+        # hook_data
+        dialect_uid, hook_data = cls._migrate_legacy_hooks_to_dialect(
+            hook_data, dialect_uid, ma.name, context
+        )
+
+        ma.dialect_uid = dialect_uid
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
         )
 
-        # Deserialize hookmacros first, if they exist
-        hook_data = ma_data.get("hookmacros", {})
+        # Deserialize remaining hookmacros from the (potentially cleaned) data
         for trigger_name, macro_data in hook_data.items():
             try:
                 trigger = MacroTrigger[trigger_name]

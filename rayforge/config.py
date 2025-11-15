@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 CONFIG_DIR = Path(user_config_dir("rayforge"))
 MACHINE_DIR = CONFIG_DIR / "machines"
 MACHINE_DIR.mkdir(parents=True, exist_ok=True)
+DIALECT_DIR = CONFIG_DIR / "dialects"
+DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 
 # State files (like logs)

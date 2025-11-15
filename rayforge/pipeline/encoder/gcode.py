@@ -22,7 +22,7 @@ from ...core.ops import (
     WorkpieceStartCommand,
     WorkpieceEndCommand,
 )
-from ...machine.models.dialect import GcodeDialect, get_dialect
+from ...machine.models.dialect import GcodeDialect
 from ...machine.models.macro import MacroTrigger
 from ...shared.util.template import TemplateFormatter
 from .base import OpsEncoder
@@ -86,8 +86,7 @@ class GcodeEncoder(OpsEncoder):
         Factory method to create a GcodeEncoder instance configured for a
         specific machine's dialect.
         """
-        dialect = get_dialect(machine.dialect_name)
-        return cls(dialect)
+        return cls(machine.dialect)
 
     def _get_current_laser_head(self, context: GcodeContext):
         if not self.active_laser_uid:
@@ -146,13 +145,6 @@ class GcodeEncoder(OpsEncoder):
             formatter = TemplateFormatter(context.machine, context)
             expanded_lines = formatter.expand_macro(macro_action)
             gcode.extend(expanded_lines)
-            return
-
-        # If we get here, no user macros were found, so use defaults.
-        if trigger == MacroTrigger.JOB_START:
-            gcode.extend(self.dialect.default_preamble)
-        elif trigger == MacroTrigger.JOB_END:
-            gcode.extend(self.dialect.default_postscript)
 
     def _handle_command(
         self, gcode: List[str], cmd: Command, context: GcodeContext
@@ -199,7 +191,7 @@ class GcodeEncoder(OpsEncoder):
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
-                self._emit_macros(context, gcode, MacroTrigger.JOB_START)
+                gcode.extend(self.dialect.default_preamble)
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
@@ -207,9 +199,7 @@ class GcodeEncoder(OpsEncoder):
                 self._laser_off(context, gcode)
                 if self.air_assist:
                     self._set_air_assist(context, gcode, False)
-
-                # Then, run the user macro or the full default postscript.
-                self._emit_macros(context, gcode, MacroTrigger.JOB_END)
+                gcode.extend(self.dialect.default_postscript)
             case LayerStartCommand(layer_uid=uid):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):

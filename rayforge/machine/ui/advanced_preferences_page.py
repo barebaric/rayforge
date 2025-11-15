@@ -1,9 +1,11 @@
 import logging
 from gi.repository import Gtk, Adw
-from ..models.dialect import get_available_dialects
+from ..models.dialect import get_available_dialects, GcodeDialect
+from ...context import get_context
 from ...shared.util.adwfix import get_spinrow_int
 from .hook_list import HookList
 from .macro_list import MacroListEditor
+from .dialect_list import DialectListEditor
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,8 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
             **kwargs,
         )
         self.machine = machine
+        self.dialect_mgr = get_context().dialect_mgr
+        self.available_dialects: list[GcodeDialect] = []
 
         # Output settings (was Dialect)
         output_group = Adw.PreferencesGroup(title=_("Output"))
@@ -25,14 +29,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         )
         self.add(output_group)
 
-        # Get all available dialects from the registry
-        self.available_dialects = get_available_dialects()
-        dialect_display_names = [d.label for d in self.available_dialects]
-        dialect_store = Gtk.StringList.new(dialect_display_names)
-
-        self.dialect_combo_row = Adw.ComboRow(
-            title=_("G-Code Dialect"), model=dialect_store
-        )
+        self.dialect_combo_row = Adw.ComboRow(title=_("G-Code Dialect"))
         self.dialect_combo_row.set_use_subtitle(True)
         output_group.add(self.dialect_combo_row)
 
@@ -64,32 +61,58 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         self.dialect_combo_row.connect(
             "notify::selected", self.on_dialect_changed
         )
+        self.dialect_mgr.dialects_changed.connect(
+            self._on_available_dialects_changed
+        )
+        self.connect("destroy", self._on_destroy)
 
-        # Now, set the initial selection, which will trigger on_dialect
-        # changed.
-        try:
-            dialect_names = [d.name for d in self.available_dialects]
-            selected_index = dialect_names.index(self.machine.dialect_name)
-            self.dialect_combo_row.set_selected(selected_index)
-        except (ValueError, AttributeError):
-            # Default to the first dialect if not set or invalid
-            if self.available_dialects:
-                self.dialect_combo_row.set_selected(0)
-            else:
-                # Manually trigger handler for empty state
-                self.on_dialect_changed(self.dialect_combo_row, None)
+        # Initial population
+        self._on_available_dialects_changed()
 
-        # Add the new HookList widget, replacing the old ScriptListEditor
+        # Add the HookList widget
         hook_list_group = HookList(machine=self.machine)
         self.add(hook_list_group)
 
-        # Add the new Macro Editor widget
+        # Add the Macro Editor widget
         macro_editor_group = MacroListEditor(
             machine=self.machine,
             title=_("Macros"),
             description=_("Create and manage reusable G-code snippets."),
         )
         self.add(macro_editor_group)
+
+        # Add the Dialect Editor widget
+        dialect_editor_group = DialectListEditor(
+            title=_("Dialect Management"),
+            description=_(
+                "Create and manage custom G-code dialect definitions."
+            ),
+        )
+        self.add(dialect_editor_group)
+
+    def _on_destroy(self, *args):
+        self.dialect_mgr.dialects_changed.disconnect(
+            self._on_available_dialects_changed
+        )
+
+    def _on_available_dialects_changed(self, sender=None, **kwargs):
+        """Repopulate the dropdown when the list of dialects changes."""
+        current_dialect_uid = self.machine.dialect_uid
+        self.available_dialects = get_available_dialects()
+
+        dialect_display_names = [d.label for d in self.available_dialects]
+        dialect_store = Gtk.StringList.new(dialect_display_names)
+        self.dialect_combo_row.set_model(dialect_store)
+
+        try:
+            dialect_uids = [d.uid for d in self.available_dialects]
+            selected_index = dialect_uids.index(current_dialect_uid)
+            self.dialect_combo_row.set_selected(selected_index)
+        except (ValueError, AttributeError):
+            if self.available_dialects:
+                self.dialect_combo_row.set_selected(0)
+            else:
+                self.on_dialect_changed(self.dialect_combo_row, None)
 
     def _on_dialect_factory_setup(self, factory, list_item):
         """Setup handler for the dialect dropdown factory."""
@@ -108,20 +131,17 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         """Update the ComboRow display and the machine's dialect."""
         selected_index = combo_row.get_selected()
 
-        if selected_index < 0:
+        if selected_index < 0 or not self.available_dialects:
             self.dialect_combo_row.set_title(_("G-Code Dialect"))
             self.dialect_combo_row.set_subtitle(_("No dialects available."))
             return
 
         new_dialect = self.available_dialects[selected_index]
-
-        # Update the row's own title and subtitle to reflect the selection
         self.dialect_combo_row.set_title(new_dialect.label)
         self.dialect_combo_row.set_subtitle(new_dialect.description)
 
-        # Update the machine model if the dialect has actually changed
-        if self.machine.dialect_name != new_dialect.name:
-            self.machine.set_dialect_name(new_dialect.name)
+        if self.machine.dialect_uid != new_dialect.uid:
+            self.machine.set_dialect_uid(new_dialect.uid)
 
     def on_precision_changed(self, spinrow):
         """Update the machine's G-code precision when the value changes."""
