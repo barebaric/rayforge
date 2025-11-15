@@ -72,12 +72,8 @@ class DialectEditorDialog(Adw.Window):
 
         # Preamble & Postscript
         pre_post_group = Adw.PreferencesGroup(title=_("Scripts"))
-        self._add_text_view_row(
-            pre_post_group, "default_preamble", _("Default Preamble")
-        )
-        self._add_text_view_row(
-            pre_post_group, "default_postscript", _("Default Postscript")
-        )
+        self._add_text_view_row(pre_post_group, "preamble", _("Preamble"))
+        self._add_text_view_row(pre_post_group, "postscript", _("Postscript"))
 
         form_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         form_box.set_margin_top(20)

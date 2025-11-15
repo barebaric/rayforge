@@ -191,7 +191,7 @@ class GcodeEncoder(OpsEncoder):
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
-                gcode.extend(self.dialect.default_preamble)
+                gcode.extend(self.dialect.preamble)
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
@@ -199,7 +199,7 @@ class GcodeEncoder(OpsEncoder):
                 self._laser_off(context, gcode)
                 if self.air_assist:
                     self._set_air_assist(context, gcode, False)
-                gcode.extend(self.dialect.default_postscript)
+                gcode.extend(self.dialect.postscript)
             case LayerStartCommand(layer_uid=uid):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):

@@ -15,8 +15,8 @@ GRBL_DIALECT = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
-    default_postscript=[
+    preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
+    postscript=[
         "M5 ;Ensure laser is off",
         "G0 X0 Y0 ;Return to origin",
     ],
@@ -38,8 +38,8 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
-    default_postscript=[
+    preamble=["G21 ;Set units to mm", "G90 ;Absolute positioning"],
+    postscript=[
         "M5 ;Ensure laser is off",
         "G0 X0 Y0 ;Return to origin",
     ],
@@ -59,8 +59,8 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
-    default_postscript=[
+    preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
+    postscript=[
         "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
     ],
@@ -82,8 +82,8 @@ MARLIN_DIALECT = GcodeDialect(
     arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
-    default_preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
-    default_postscript=[
+    preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
+    postscript=[
         "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
     ],
