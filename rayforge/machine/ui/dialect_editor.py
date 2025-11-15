@@ -1,12 +1,8 @@
 import copy
-from typing import List, cast
+from typing import List
 from gi.repository import Adw, Gtk
-from ...machine.models.dialect import GcodeDialect
-
-
-def _list_to_text(lines: List[str]) -> str:
-    """Converts a list of strings to a single string with newlines."""
-    return "\n".join(lines)
+from ...shared.varset.varsetwidget import VarSetWidget
+from ..models.dialect import GcodeDialect
 
 
 def _text_to_list(text: str) -> List[str]:
@@ -15,7 +11,10 @@ def _text_to_list(text: str) -> List[str]:
 
 
 class DialectEditorDialog(Adw.Window):
-    """A dialog window for creating or editing a G-code dialect."""
+    """
+    A dialog window for creating or editing a G-code dialect.
+    This dialog is driven by VarSets provided by the GcodeDialect model itself.
+    """
 
     def __init__(
         self,
@@ -25,10 +24,8 @@ class DialectEditorDialog(Adw.Window):
         super().__init__(transient_for=parent)
         self.set_default_size(600, 500)
 
-        self.dialect = copy.deepcopy(dialect)  # Work on a copy
+        self.dialect = copy.deepcopy(dialect)
         self.saved = False
-
-        self._widgets: dict[str, Gtk.Widget] = {}
 
         title = (
             _("Edit Dialect: {label}").format(label=self.dialect.label)
@@ -48,41 +45,27 @@ class DialectEditorDialog(Adw.Window):
         save_button.connect("clicked", self._on_save_clicked)
         header.pack_end(save_button)
 
-        # General Info
-        info_group = Adw.PreferencesGroup(title=_("General Information"))
-        self._add_entry_row(
-            info_group, "label", _("Label"), _("User-facing name")
-        )
-        self._add_entry_row(
-            info_group, "description", _("Description"), _("Short description")
-        )
+        # Get the editor definition from the model
+        varsets = self.dialect.get_editor_varsets()
 
-        # Templates
-        templates_group = Adw.PreferencesGroup(title=_("Command Templates"))
-        self._add_entry_row(templates_group, "laser_on", _("Laser On"))
-        self._add_entry_row(templates_group, "laser_off", _("Laser Off"))
-        self._add_entry_row(templates_group, "travel_move", _("Travel Move"))
-        self._add_entry_row(templates_group, "linear_move", _("Linear Move"))
-        self._add_entry_row(templates_group, "arc_cw", _("Arc (CW)"))
-        self._add_entry_row(templates_group, "arc_ccw", _("Arc (CCW)"))
-        self._add_entry_row(templates_group, "tool_change", _("Tool Change"))
-        self._add_entry_row(templates_group, "set_speed", _("Set Speed"))
-        self._add_entry_row(templates_group, "air_assist_on", _("Air On"))
-        self._add_entry_row(templates_group, "air_assist_off", _("Air Off"))
+        # Create and populate a VarSetWidget for each group defined by
+        # the model
+        self.info_widget = VarSetWidget()
+        self.templates_widget = VarSetWidget()
+        self.scripts_widget = VarSetWidget()
 
-        # Preamble & Postscript
-        pre_post_group = Adw.PreferencesGroup(title=_("Scripts"))
-        self._add_text_view_row(pre_post_group, "preamble", _("Preamble"))
-        self._add_text_view_row(pre_post_group, "postscript", _("Postscript"))
+        self.info_widget.populate(varsets["info"])
+        self.templates_widget.populate(varsets["templates"])
+        self.scripts_widget.populate(varsets["scripts"])
 
         form_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         form_box.set_margin_top(20)
         form_box.set_margin_start(50)
         form_box.set_margin_end(50)
         form_box.set_margin_bottom(50)
-        form_box.append(info_group)
-        form_box.append(templates_group)
-        form_box.append(pre_post_group)
+        form_box.append(self.info_widget)
+        form_box.append(self.templates_widget)
+        form_box.append(self.scripts_widget)
 
         scrolled_content = Gtk.ScrolledWindow(child=form_box)
         scrolled_content.set_vexpand(True)
@@ -91,62 +74,26 @@ class DialectEditorDialog(Adw.Window):
         main_vbox.append(header)
         main_vbox.append(scrolled_content)
         self.set_content(main_vbox)
-        self._populate_from_dialect()
-
-    def _add_entry_row(
-        self, group: Adw.PreferencesGroup, key: str, title: str, tooltip=""
-    ):
-        row = Adw.EntryRow(title=title)
-        if tooltip:
-            row.set_tooltip_text(tooltip)
-        self._widgets[key] = row
-        group.add(row)
-
-    def _add_text_view_row(
-        self, group: Adw.PreferencesGroup, key: str, title: str
-    ):
-        row = Adw.ExpanderRow(title=title)
-        text_view = Gtk.TextView(
-            monospace=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
-        )
-        text_view.get_style_context().add_class("gcode-editor")
-        scroller = Gtk.ScrolledWindow(
-            child=text_view,
-            min_content_height=100,
-            hscrollbar_policy=Gtk.PolicyType.NEVER,
-        )
-        row.add_row(scroller)
-        self._widgets[key] = text_view
-        group.add(row)
-
-    def _populate_from_dialect(self):
-        for key, widget in self._widgets.items():
-            value = getattr(self.dialect, key, None)
-            if value is None:
-                continue
-            if isinstance(widget, Adw.EntryRow):
-                widget.set_text(str(value))
-            elif isinstance(widget, Gtk.TextView):
-                widget.get_buffer().set_text(_list_to_text(value))
 
     def _update_dialect_from_ui(self):
-        for key, widget in self._widgets.items():
-            if isinstance(widget, Adw.EntryRow):
-                setattr(self.dialect, key, widget.get_text())
-            elif isinstance(widget, Gtk.TextView):
-                buffer = widget.get_buffer()
-                start = buffer.get_start_iter()
-                end = buffer.get_end_iter()
-                text = buffer.get_text(start, end, True)
-                setattr(self.dialect, key, _text_to_list(text))
+        """Updates the dialect object from the values in the VarSetWidgets."""
+        all_values = {}
+        all_values.update(self.info_widget.get_values())
+        all_values.update(self.templates_widget.get_values())
+        all_values.update(self.scripts_widget.get_values())
+
+        for key, value in all_values.items():
+            if key in ("preamble", "postscript"):
+                # Convert multi-line text back to list of strings
+                setattr(self.dialect, key, _text_to_list(value))
+            elif hasattr(self.dialect, key):
+                setattr(self.dialect, key, value)
 
     def _validate(self) -> bool:
         """Validates that essential fields are filled."""
-        label_widget = cast(Adw.EntryRow, self._widgets["label"])
-        label = label_widget.get_text().strip()
-        if not label:
-            return False
-        return True
+        values = self.info_widget.get_values()
+        label = values.get("label", "").strip()
+        return bool(label)
 
     def _on_save_clicked(self, button: Gtk.Button):
         if self._validate():

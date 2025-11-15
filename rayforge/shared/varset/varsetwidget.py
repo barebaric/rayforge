@@ -9,6 +9,7 @@ from ...machine.transport.validators import is_valid_hostname_or_ip
 from .baudratevar import BaudrateVar
 from .hostnamevar import HostnameVar
 from .serialportvar import SerialPortVar
+from .textareavar import TextAreaVar
 from .intvar import IntVar
 from .floatvar import FloatVar, SliderFloatVar
 from .boolvar import BoolVar
@@ -55,6 +56,11 @@ class VarSetWidget(Adw.PreferencesGroup):
         Clears previous dynamic rows and builds new ones from a VarSet.
         Any static rows added manually are preserved.
         """
+        # Set the group's title and description from the VarSet
+        if var_set.title:
+            self.set_title(var_set.title)
+            self.set_description(var_set.description)
+
         self.clear_dynamic_rows()
         for var in var_set:
             row = self._create_row_for_var(var)
@@ -68,7 +74,13 @@ class VarSetWidget(Adw.PreferencesGroup):
         values = {}
         for key, (row, var) in self.widget_map.items():
             value = None
-            if isinstance(var, SliderFloatVar):
+            if isinstance(var, TextAreaVar):
+                text_view = row.core_widget  # type: ignore
+                if isinstance(text_view, Gtk.TextView):
+                    buffer = text_view.get_buffer()
+                    start, end = buffer.get_start_iter(), buffer.get_end_iter()
+                    value = buffer.get_text(start, end, True)
+            elif isinstance(var, SliderFloatVar):
                 if isinstance(row, Adw.ActionRow):
                     scale = row.get_activatable_widget()
                     if isinstance(scale, Gtk.Scale):
@@ -106,7 +118,11 @@ class VarSetWidget(Adw.PreferencesGroup):
                 continue
 
             row, var = self.widget_map[key]
-            if isinstance(var, SliderFloatVar):
+            if isinstance(var, TextAreaVar):
+                text_view = row.core_widget  # type: ignore
+                if isinstance(text_view, Gtk.TextView):
+                    text_view.get_buffer().set_text(str(value))
+            elif isinstance(var, SliderFloatVar):
                 if isinstance(row, Adw.ActionRow):
                     scale = row.get_activatable_widget()
                     if isinstance(scale, Gtk.Scale):
@@ -149,6 +165,8 @@ class VarSetWidget(Adw.PreferencesGroup):
         self.data_changed.send(self, key=key)
 
     def _create_row_for_var(self, var: Var):
+        if isinstance(var, TextAreaVar):
+            return self._create_textarea_row(var)
         if isinstance(var, SliderFloatVar):
             return self._create_slider_row(var)
         if isinstance(var, ChoiceVar):
@@ -447,4 +465,27 @@ class VarSetWidget(Adw.PreferencesGroup):
                 "notify::selected-item",
                 lambda r, p: self._on_data_changed(var.key),
             )
+        return row
+
+    def _create_textarea_row(self, var: TextAreaVar) -> Adw.ExpanderRow:
+        """Creates a row with a multi-line text view for TextAreaVar."""
+        row = Adw.ExpanderRow(title=var.label, subtitle=var.description or "")
+        text_view = Gtk.TextView(
+            monospace=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
+        )
+        text_view.get_style_context().add_class("gcode-editor")
+        scroller = Gtk.ScrolledWindow(
+            child=text_view,
+            min_content_height=100,
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+        )
+        row.add_row(scroller)
+
+        if var.value is not None:
+            text_view.get_buffer().set_text(str(var.value))
+
+        # Attach the text_view to the row instance as a normal Python attribute
+        row.core_widget = text_view  # type: ignore
+
+        # For text views, changes are not signaled automatically.
         return row

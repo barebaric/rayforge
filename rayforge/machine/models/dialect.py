@@ -2,6 +2,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field, asdict, replace
 from typing import List, Dict, Optional, Any
+from ...shared.varset import VarSet, Var, TextAreaVar
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
@@ -68,6 +69,68 @@ class GcodeDialect:
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
     parent_uid: Optional[str] = None
+
+    def get_editor_varsets(self) -> Dict[str, VarSet]:
+        """
+        Returns a dictionary of VarSets that define the editable fields for
+        this dialect, serving as the single source of truth for the UI.
+        """
+        info_vs = VarSet(title=_("General Information"))
+        info_vs.add(
+            Var(
+                "label",
+                _("Label"),
+                str,
+                _("User-facing name"),
+                value=self.label,
+            )
+        )
+        info_vs.add(
+            Var(
+                "description",
+                _("Description"),
+                str,
+                _("Short description"),
+                value=self.description,
+            )
+        )
+
+        templates_vs = VarSet(title=_("Command Templates"))
+        template_fields = [
+            ("laser_on", _("Laser On")),
+            ("laser_off", _("Laser Off")),
+            ("travel_move", _("Travel Move")),
+            ("linear_move", _("Linear Move")),
+            ("arc_cw", _("Arc (CW)")),
+            ("arc_ccw", _("Arc (CCW)")),
+            ("tool_change", _("Tool Change")),
+            ("set_speed", _("Set Speed")),
+            ("air_assist_on", _("Air On")),
+            ("air_assist_off", _("Air Off")),
+        ]
+        for key, label in template_fields:
+            templates_vs.add(Var(key, label, str, value=getattr(self, key)))
+
+        scripts_vs = VarSet(title=_("Scripts"))
+        scripts_vs.add(
+            TextAreaVar(
+                "preamble", _("Preamble"), str, value="\n".join(self.preamble)
+            )
+        )
+        scripts_vs.add(
+            TextAreaVar(
+                "postscript",
+                _("Postscript"),
+                str,
+                value="\n".join(self.postscript),
+            )
+        )
+
+        return {
+            "info": info_vs,
+            "templates": templates_vs,
+            "scripts": scripts_vs,
+        }
 
     def copy_as_custom(self, new_label: str) -> "GcodeDialect":
         """
