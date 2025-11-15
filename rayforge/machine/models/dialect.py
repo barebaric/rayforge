@@ -62,8 +62,8 @@ class GcodeDialect:
     air_assist_off: str
 
     # Preamble & Postscript
-    default_preamble: List[str] = field(default_factory=list)
-    default_postscript: List[str] = field(default_factory=list)
+    preamble: List[str] = field(default_factory=list)
+    postscript: List[str] = field(default_factory=list)
 
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
@@ -116,8 +116,8 @@ class GcodeDialect:
             arc_ccw=data.get("arc_ccw", ""),
             air_assist_on=data.get("air_assist_on", ""),
             air_assist_off=data.get("air_assist_off", ""),
-            default_preamble=data.get("default_preamble", []),
-            default_postscript=data.get("default_postscript", []),
+            preamble=data.get("preamble", []),
+            postscript=data.get("postscript", []),
             uid=data.get("uid", str(uuid.uuid4())),
             is_custom=data.get("is_custom", False),
             parent_uid=data.get("parent_uid"),

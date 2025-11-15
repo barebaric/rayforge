@@ -758,8 +758,8 @@ class TestMachine:
         # Assert New Dialect Content
         migrated_dialect = get_dialect(new_machine.dialect_uid)
         assert migrated_dialect.is_custom is True
-        assert migrated_dialect.default_preamble == start_code
-        assert migrated_dialect.default_postscript == end_code
+        assert migrated_dialect.preamble == start_code
+        assert migrated_dialect.postscript == end_code
         assert "Legacy Machine" in migrated_dialect.label
 
     @pytest.mark.asyncio
@@ -797,12 +797,9 @@ class TestMachine:
         # Assert New Dialect Content
         migrated_dialect = get_dialect(new_machine.dialect_uid)
         assert migrated_dialect.is_custom is True
-        assert migrated_dialect.default_preamble == start_code
+        assert migrated_dialect.preamble == start_code
         # Postscript should be inherited from the original dialect
-        assert (
-            migrated_dialect.default_postscript
-            == base_dialect.default_postscript
-        )
+        assert migrated_dialect.postscript == base_dialect.postscript
 
     @pytest.mark.asyncio
     async def test_hook_migration_not_needed(self, task_mgr: TaskManager):

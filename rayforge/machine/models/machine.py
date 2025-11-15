@@ -756,9 +756,9 @@ class Machine:
         new_dialect = base_dialect.copy_as_custom(new_label=new_label)
 
         if job_start_hook_data:
-            new_dialect.default_preamble = job_start_hook_data.get("code", [])
+            new_dialect.preamble = job_start_hook_data.get("code", [])
         if job_end_hook_data:
-            new_dialect.default_postscript = job_end_hook_data.get("code", [])
+            new_dialect.postscript = job_end_hook_data.get("code", [])
 
         # Add the new dialect to the manager (registers and saves it)
         context.dialect_mgr.add_dialect(new_dialect)
