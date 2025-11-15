@@ -2,7 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING, cast
 from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer, CutSide
-from ....pipeline.producer.edge import EdgeTracer
+from ....pipeline.producer.edge import EdgeTracer, CutOrder
 from ....shared.util.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
@@ -52,6 +52,18 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         cut_side_row.set_selected(list(CutSide).index(producer.cut_side))
         self.add(cut_side_row)
 
+        # Cut Order
+        cut_order_choices = [
+            _(co.name.replace("_", "-").title()) for co in CutOrder
+        ]
+        cut_order_row = Adw.ComboRow(
+            title=_("Cut Order"),
+            subtitle=_("Processing order for nested paths"),
+            model=Gtk.StringList.new(cut_order_choices),
+        )
+        cut_order_row.set_selected(list(CutOrder).index(producer.cut_order))
+        self.add(cut_order_row)
+
         # Path Offset
         offset_adj = Gtk.Adjustment(
             lower=0.0,
@@ -85,6 +97,7 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             ),
         )
         cut_side_row.connect("notify::selected", self._on_cut_side_changed)
+        cut_order_row.connect("notify::selected", self._on_cut_order_changed)
 
         # Set initial sensitivity
         self._update_offset_sensitivity(producer.cut_side)
@@ -112,3 +125,8 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         selected_idx = row.get_selected()
         new_mode = list(CutSide)[selected_idx]
         self._on_param_changed("cut_side", new_mode.name)
+
+    def _on_cut_order_changed(self, row, _):
+        selected_idx = row.get_selected()
+        new_mode = list(CutOrder)[selected_idx]
+        self._on_param_changed("cut_order", new_mode.name)

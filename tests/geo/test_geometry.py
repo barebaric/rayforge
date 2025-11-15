@@ -456,6 +456,35 @@ def test_close_gaps_wrapper(mock_close_gaps, sample_geometry):
     assert sample_geometry.commands == mock_return_geo.commands
 
 
+@patch("rayforge.core.geo.contours.split_inner_and_outer_contours")
+@patch("rayforge.core.geo.split.split_into_contours")
+def test_split_inner_and_outer_contours_wrapper(
+    mock_split_contours, mock_split_inner_outer, sample_geometry
+):
+    """
+    Tests the Geometry.split_into_inner_and_outer_contours() wrapper method.
+    """
+    # 1. Setup mock return values
+    mock_contour_list = [Geometry(), Geometry()]
+    mock_split_contours.return_value = mock_contour_list
+
+    mock_result_tuple = ([mock_contour_list[0]], [mock_contour_list[1]])
+    mock_split_inner_outer.return_value = mock_result_tuple
+
+    # 2. Call the wrapper method
+    result = sample_geometry.split_inner_and_outer_contours()
+
+    # 3. Assertions
+    # Check that the first function was called correctly
+    mock_split_contours.assert_called_once_with(sample_geometry)
+
+    # Check that the second function was called with the result of the first
+    mock_split_inner_outer.assert_called_once_with(mock_contour_list)
+
+    # Check that the final result is what the second function returned
+    assert result is mock_result_tuple
+
+
 @patch("rayforge.core.geo.geometry.is_closed")
 def test_is_closed_wrapper(mock_is_closed, sample_geometry):
     """Tests the Geometry.is_closed() wrapper method."""

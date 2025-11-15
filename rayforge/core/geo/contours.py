@@ -1,12 +1,15 @@
 from __future__ import annotations
 import math
-from typing import List, TYPE_CHECKING
+import logging
+from typing import List, Tuple, TYPE_CHECKING
 from .analysis import get_subpath_area
 from .primitives import is_point_in_polygon
 from .split import split_into_contours
 
 if TYPE_CHECKING:
     from .geometry import Geometry, Command
+
+logger = logging.getLogger(__name__)
 
 
 def close_geometry_gaps(
@@ -156,6 +159,37 @@ def reverse_contour(contour: Geometry) -> Geometry:
         last_point = start_point
 
     return new_geo
+
+
+def split_inner_and_outer_contours(
+    contours: List[Geometry],
+) -> Tuple[List[Geometry], List[Geometry]]:
+    """
+    Splits a list of single-contour Geometries into two lists: external
+    contours (solids) and internal ones (holes).
+
+    This function robustly partitions the list into two groups based on the
+    even-odd fill rule.
+
+    Args:
+        contours: A list of Geometry objects, where each object is assumed
+                  to represent a single, closed contour.
+
+    Returns:
+        A tuple containing two lists: (internal_contours, external_contours).
+    """
+    if not contours:
+        return [], []
+
+    # filter_to_external_contours correctly identifies all contours that are
+    # "solid" based on the even-odd rule.
+    external_contours = filter_to_external_contours(contours)
+    external_set = set(external_contours)
+
+    # All other contours are, by definition, "internal" (holes).
+    internal_contours = [c for c in contours if c not in external_set]
+
+    return internal_contours, external_contours
 
 
 def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
