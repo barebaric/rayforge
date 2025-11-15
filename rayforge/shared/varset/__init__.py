@@ -6,6 +6,7 @@ from .hostnamevar import HostnameVar
 from .intvar import IntVar
 from .portvar import PortVar
 from .serialportvar import SerialPortVar
+from .textareavar import TextAreaVar
 from .var import Var, ValidationError
 from .varset import VarSet
 
@@ -19,6 +20,7 @@ __all__ = [
     "PortVar",
     "SerialPortVar",
     "SliderFloatVar",
+    "TextAreaVar",
     "ValidationError",
     "Var",
     "VarSet",
