@@ -14,8 +14,10 @@ from ...core.group import Group
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
 from ...core.item import DocItem
-from ...core.vectorization_config import TraceConfig
-from ...core.import_source import ImportSource
+from ...core.vectorization_spec import VectorizationSpec
+from ...core.source_asset import SourceAsset
+from ...core.generation_config import GenerationConfig
+from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import Importer, ImportPayload
 from .renderer import DXF_RENDERER
 
@@ -41,9 +43,9 @@ class DxfImporter(Importer):
     extensions = (".dxf",)
 
     def get_doc_items(
-        self, vector_config: Optional[TraceConfig] = None
+        self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
-        # DXF is a vector format, so the vector_config is ignored.
+        # DXF is a vector format, so the vectorization_spec is ignored.
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")
@@ -53,8 +55,8 @@ class DxfImporter(Importer):
 
         bounds = self._get_bounds_mm(doc)
 
-        # Create the ImportSource. It's valid even for an empty file.
-        source = ImportSource(
+        # Create the SourceAsset. It's valid even for an empty file.
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=DXF_RENDERER,
@@ -94,7 +96,7 @@ class DxfImporter(Importer):
         scale: float,
         tx: float,
         ty: float,
-        source: ImportSource,
+        source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
     ):
         """Recursively parses all block definitions into lists of DocItems."""
@@ -120,7 +122,7 @@ class DxfImporter(Importer):
         scale: float,
         tx: float,
         ty: float,
-        source: ImportSource,
+        source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
         split_components: bool = False,
@@ -170,11 +172,18 @@ class DxfImporter(Importer):
                     norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
                     normalized_geo.transform(norm_matrix.to_4x4_numpy())
 
+                passthrough_spec = PassthroughSpec()
+                gen_config = GenerationConfig(
+                    source_asset_uid=source.uid,
+                    segment_mask_geometry=Geometry(),
+                    vectorization_spec=passthrough_spec,
+                )
+
                 wp = WorkPiece(
                     name=self.source_file.stem,
                     vectors=normalized_geo,
+                    generation_config=gen_config,
                 )
-                wp.import_source_uid = source.uid
 
                 # Set the workpiece's matrix to position and scale it.
                 wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(

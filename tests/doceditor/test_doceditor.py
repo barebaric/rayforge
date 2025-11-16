@@ -5,7 +5,7 @@ import pytest
 import re
 from rayforge.doceditor.editor import DocEditor
 from rayforge.pipeline import steps
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.vectorization_spec import TraceSpec
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,11 +84,11 @@ async def test_import_svg_export_gcode(
     # Action 1: Import the file and await its completion.
     logger.info(f"Importing file: {svg_path}")
 
-    # Create a TraceConfig instance to trigger tracing behavior.
-    trace_config = TraceConfig()
+    # Create a TraceSpec instance to trigger tracing behavior.
+    trace_spec = TraceSpec()
 
     await editor.import_file_from_path(
-        svg_path, mime_type="image/svg+xml", vector_config=trace_config
+        svg_path, mime_type="image/svg+xml", vectorization_spec=trace_spec
     )
     logger.info("Import task has finished.")
 

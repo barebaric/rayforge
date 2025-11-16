@@ -4,7 +4,10 @@ import asyncio
 from pathlib import Path
 
 from rayforge.core.doc import Doc
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
@@ -56,18 +59,22 @@ def doc_editor(
     return DocEditor(task_mgr, context_initializer, doc)
 
 
-def create_test_workpiece_and_source() -> Tuple[WorkPiece, ImportSource]:
-    """Creates a simple WorkPiece and its linked ImportSource for testing."""
+def create_test_workpiece_and_source() -> Tuple[WorkPiece, SourceAsset]:
+    """Creates a simple WorkPiece and its linked SourceAsset for testing."""
     svg_data = b'<svg><path d="M0,0 L10,10"/></svg>'
     source_file = Path("test.svg")
-    source = ImportSource(
+    source = SourceAsset(
         source_file=source_file,
         original_data=svg_data,
         renderer=SVG_RENDERER,
     )
-    workpiece = WorkPiece(name=source_file.name)
+    gen_config = GenerationConfig(
+        source_asset_uid=source.uid,
+        segment_mask_geometry=Geometry(),
+        vectorization_spec=PassthroughSpec(),
+    )
+    workpiece = WorkPiece(name=source_file.name, generation_config=gen_config)
     workpiece.matrix = workpiece.matrix @ Matrix.scale(10, 10)
-    workpiece.import_source_uid = source.uid
     return workpiece, source
 
 
@@ -148,7 +155,7 @@ class TestMachine:
 
         # Add a workpiece to the document, which will trigger ops generation.
         workpiece, source = create_test_workpiece_and_source()
-        doc.add_import_source(source)
+        doc.add_source_asset(source)
         doc.active_layer.add_child(workpiece)
 
         # Wait for the background processing to finish.
@@ -195,7 +202,7 @@ class TestMachine:
 
         # Add a workpiece to the document.
         workpiece, source = create_test_workpiece_and_source()
-        doc.add_import_source(source)
+        doc.add_source_asset(source)
         doc.active_layer.add_child(workpiece)
 
         # Wait for background processing to complete.

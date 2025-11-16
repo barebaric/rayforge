@@ -58,7 +58,7 @@ def _setup_workpiece_with_context(
     Helper to run importer, correctly link workpiece to its source,
     and mock the document context for rendering tests.
     """
-    payload = importer.get_doc_items(vector_config=None)
+    payload = importer.get_doc_items(vectorization_spec=None)
     if not payload or not payload.items:
         return None
 
@@ -71,8 +71,8 @@ def _setup_workpiece_with_context(
     source = payload.source
 
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     mock_parent = Mock()
     mock_parent.doc = mock_doc
@@ -100,7 +100,7 @@ def inches_workpiece(inches_dxf_importer) -> Optional[WorkPiece]:
 # Test cases
 class TestDXFImporter:
     def test_empty_dxf(self, empty_dxf_importer):
-        payload = empty_dxf_importer.get_doc_items(vector_config=None)
+        payload = empty_dxf_importer.get_doc_items(vectorization_spec=None)
         assert payload is not None
         assert payload.source is not None
         assert len(payload.items) == 0
@@ -176,5 +176,5 @@ class TestDXFImporter:
     def test_invalid_dxf_handling(self):
         invalid_dxf = b"invalid dxf content"
         importer = DxfImporter(invalid_dxf)
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
         assert payload is None

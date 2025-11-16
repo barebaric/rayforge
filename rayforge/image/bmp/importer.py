@@ -12,10 +12,11 @@ with warnings.catch_warnings():
 
 from ...core.workpiece import WorkPiece
 from ..base_importer import Importer, ImportPayload
-from ...core.vectorization_config import TraceConfig
+from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...core.geo import Geometry
-from ...core.import_source import ImportSource
+from ...core.source_asset import SourceAsset
 from ...core.matrix import Matrix
+from ...core.generation_config import GenerationConfig
 from ..tracing import trace_surface
 from .parser import parse_bmp
 from .renderer import BMP_RENDERER
@@ -30,18 +31,17 @@ class BmpImporter(Importer):
     is_bitmap = True
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
-        if not vector_config:
-            logger.error("BmpImporter requires a vector_config to trace.")
+        if not isinstance(vectorization_spec, TraceSpec):
+            logger.error("BmpImporter requires a TraceSpec to trace.")
             return None
 
-        # Step 1: Create the ImportSource to hold the original data and config
-        source = ImportSource(
+        # Step 1: Create the SourceAsset to hold the original data and config
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=BMP_RENDERER,
-            vector_config=vector_config,
         )
 
         # Step 2: Use the parser to get clean pixel data and metadata.
@@ -114,6 +114,15 @@ class BmpImporter(Importer):
                 geo.close_gaps()
                 combined_geo.commands.extend(geo.commands)
 
+        # Get the pixel-space bounding box for the segmentation mask.
+        min_x, min_y, max_x, max_y = combined_geo.rect()
+        mask_geo = Geometry()
+        mask_geo.move_to(min_x, min_y)
+        mask_geo.line_to(max_x, min_y)
+        mask_geo.line_to(max_x, max_y)
+        mask_geo.line_to(min_x, max_y)
+        mask_geo.close_path()
+
         # Normalize the pixel-based geometry to a 1x1 unit square.
         if width > 0 and height > 0:
             norm_scale_x = 1.0 / width
@@ -121,12 +130,19 @@ class BmpImporter(Importer):
             normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
             combined_geo.transform(normalization_matrix.to_4x4_numpy())
 
-        # Create the WorkPiece with the normalized vectors.
+        # Create the GenerationConfig.
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=mask_geo,
+            vectorization_spec=vectorization_spec,
+        )
+
+        # Create the WorkPiece with the normalized vectors and new config.
         final_wp = WorkPiece(
             name=self.source_file.stem,
             vectors=combined_geo,
+            generation_config=gen_config,
         )
-        final_wp.import_source_uid = source.uid
 
         # Apply the final physical size via the matrix. This is now correct.
         final_wp.set_size(width_mm, height_mm)

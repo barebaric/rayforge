@@ -5,8 +5,8 @@ from typing import Optional, List, Tuple, TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
-    from ..core.vectorization_config import TraceConfig
-    from ..core.import_source import ImportSource
+    from ..core.vectorization_spec import VectorizationSpec
+    from ..core.source_asset import SourceAsset
 
 
 class ImportPayload(NamedTuple):
@@ -15,7 +15,7 @@ class ImportPayload(NamedTuple):
     It's a self-contained package ready for integration into a document.
     """
 
-    source: "ImportSource"
+    source: "SourceAsset"
     items: List["DocItem"]
 
 
@@ -24,7 +24,7 @@ class Importer(ABC):
     An abstract base class that defines the interface for all importers.
 
     An Importer acts as a factory, taking raw file data and producing a
-    self-contained `ImportPayload`. This payload contains the `ImportSource`
+    self-contained `ImportPayload`. This payload contains the `SourceAsset`
     (the link to the original file) and a list of `DocItem` objects
     (typically `WorkPiece` instances) ready to be added to a document.
 
@@ -67,15 +67,15 @@ class Importer(ABC):
 
     @abstractmethod
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
         """
         Parses the raw data and returns a self-contained ImportPayload.
 
-        The payload contains the single ImportSource for the file and a list
+        The payload contains the single SourceAsset for the file and a list
         of top-level DocItems (WorkPieces and/or Groups). The generated
-        WorkPieces should be linked to the ImportSource via their
-        `import_source_uid`.
+        WorkPieces should be linked to the SourceAsset via their
+        `generation_config`.
 
         The returned items should be fully configured but unparented. Their
         transformation matrices should represent their position and scale

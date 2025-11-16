@@ -14,11 +14,13 @@ from svgelements import (
 )
 
 from ...core.geo import Geometry
-from ...core.import_source import ImportSource
+from ...core.source_asset import SourceAsset
 from ...core.item import DocItem
 from ...core.matrix import Matrix
-from ...core.vectorization_config import TraceConfig
+from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...core.workpiece import WorkPiece
+from ...core.generation_config import GenerationConfig
+from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
 from .renderer import SVG_RENDERER
@@ -33,27 +35,28 @@ class SvgImporter(Importer):
     extensions = (".svg",)
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
         """
         Generates DocItems from SVG data.
 
-        If vector_config is provided, it renders the SVG to a bitmap and
+        If a TraceSpec is provided, it renders the SVG to a bitmap and
         traces it. This is robust but may lose fidelity.
 
-        If vector_config is None, it attempts to parse the SVG path and
-        shape data directly for a high-fidelity vector import.
+        Otherwise, it attempts to parse the SVG path and shape data
+        directly for a high-fidelity vector import.
         """
         # Process the SVG: trim it
         trimmed_data = trim_svg(self.raw_data)
 
         # Create import source.
-        source = ImportSource(
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
-            working_data=trimmed_data,
             renderer=SVG_RENDERER,
         )
+        # Store the trimmed data as the base render data for tracing.
+        source.base_render_data = trimmed_data
 
         # Read metadata.
         metadata = {}
@@ -80,9 +83,9 @@ class SvgImporter(Importer):
         except Exception as e:
             logger.warning(f"Could not calculate SVG metadata: {e}")
 
-        if vector_config is not None:
+        if isinstance(vectorization_spec, TraceSpec):
             # Path 1: Render to bitmap and trace
-            items = self._get_doc_items_from_trace(source, vector_config)
+            items = self._get_doc_items_from_trace(source, vectorization_spec)
         else:
             # Path 2: Direct vector parsing
             items = self._get_doc_items_direct(source)
@@ -93,7 +96,7 @@ class SvgImporter(Importer):
         return ImportPayload(source=source, items=items)
 
     def _get_doc_items_from_trace(
-        self, source: ImportSource, vector_config: TraceConfig
+        self, source: SourceAsset, vectorization_spec: TraceSpec
     ) -> Optional[List[DocItem]]:
         """
         Renders trimmed SVG data to a bitmap, traces it, and creates a
@@ -111,7 +114,7 @@ class SvgImporter(Importer):
             logger.warning("failed to find a size")
             return None
 
-        if not source.working_data:
+        if not source.base_render_data:
             logger.error("source has no data to trace")
             return None
 
@@ -119,11 +122,10 @@ class SvgImporter(Importer):
         w_px, h_px = 2048, 2048
 
         surface = SVG_RENDERER.render_to_pixels_from_data(
-            source.working_data, w_px, h_px
+            source.base_render_data, w_px, h_px
         )
 
         wp = WorkPiece(name=self.source_file.stem)
-        wp.import_source_uid = source.uid
 
         if surface:
             geometries = trace_surface(surface)
@@ -133,6 +135,14 @@ class SvgImporter(Importer):
                     geo.close_gaps()
                     combined_geo.commands.extend(geo.commands)
 
+                min_x, min_y, max_x, max_y = combined_geo.rect()
+                mask_geo = Geometry()
+                mask_geo.move_to(min_x, min_y)
+                mask_geo.line_to(max_x, min_y)
+                mask_geo.line_to(max_x, max_y)
+                mask_geo.line_to(min_x, max_y)
+                mask_geo.close_path()
+
                 # Normalize the pixel-based geometry to a 1x1 unit square
                 if surface.get_width() > 0 and surface.get_height() > 0:
                     norm_x = 1.0 / surface.get_width()
@@ -141,6 +151,12 @@ class SvgImporter(Importer):
                     combined_geo.transform(norm_matrix.to_4x4_numpy())
 
                 wp.vectors = combined_geo
+                gen_config = GenerationConfig(
+                    source_asset_uid=source.uid,
+                    segment_mask_geometry=mask_geo,
+                    vectorization_spec=vectorization_spec,
+                )
+                wp.generation_config = gen_config
 
         # Always set the size. If tracing failed, the workpiece will be empty
         # but correctly sized.
@@ -149,12 +165,12 @@ class SvgImporter(Importer):
         return [wp]
 
     def _get_doc_items_direct(
-        self, source: ImportSource
+        self, source: SourceAsset
     ) -> Optional[List[DocItem]]:
         """
         Orchestrates the direct parsing of SVG data into DocItems.
         """
-        if not source.working_data:
+        if not source.base_render_data:
             logger.error("source has no data to process for direct import")
             return None
 
@@ -166,7 +182,7 @@ class SvgImporter(Importer):
                 "falling back to trace method for direct import."
             )
             logger.warning(msg)
-            return self._get_doc_items_from_trace(source, TraceConfig())
+            return self._get_doc_items_from_trace(source, TraceSpec())
         final_width_mm, final_height_mm = final_dims_mm
 
         # 2. Parse SVG data into an object model.
@@ -185,7 +201,7 @@ class SvgImporter(Importer):
                 "falling back to trace method."
             )
             logger.warning(msg)
-            return self._get_doc_items_from_trace(source, TraceConfig())
+            return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
 
         # 5. Normalize geometry to a 0-1 unit square and flip Y-axis.
@@ -198,7 +214,7 @@ class SvgImporter(Importer):
         return [wp]
 
     def _get_final_dimensions(
-        self, source: ImportSource
+        self, source: SourceAsset
     ) -> Optional[Tuple[float, float]]:
         """
         Extracts the final width and height in millimeters from source
@@ -210,13 +226,13 @@ class SvgImporter(Importer):
             return width, height
         return None
 
-    def _parse_svg_data(self, source: ImportSource) -> Optional[SVG]:
+    def _parse_svg_data(self, source: SourceAsset) -> Optional[SVG]:
         """Parses SVG byte data into an svgelements.SVG object."""
-        if not source.working_data:
+        if not source.base_render_data:
             logger.error("Source has no working_data to parse.")
             return None
         try:
-            svg_stream = io.BytesIO(source.working_data)
+            svg_stream = io.BytesIO(source.base_render_data)
             return SVG.parse(svg_stream, ppi=PPI)
         except Exception as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
@@ -377,13 +393,22 @@ class SvgImporter(Importer):
     def _create_workpiece(
         self,
         geo: Geometry,
-        source: ImportSource,
+        source: SourceAsset,
         width_mm: float,
         height_mm: float,
     ) -> WorkPiece:
         """Creates and configures the final WorkPiece."""
-        wp = WorkPiece(name=self.source_file.stem, vectors=geo)
-        wp.import_source_uid = source.uid
+        passthrough_spec = PassthroughSpec()
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=passthrough_spec,
+        )
+        wp = WorkPiece(
+            name=self.source_file.stem,
+            vectors=geo,
+            generation_config=gen_config,
+        )
         wp.set_size(width_mm, height_mm)
         wp.pos = (0, 0)
         logger.info(

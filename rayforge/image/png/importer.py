@@ -6,11 +6,12 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.workpiece import WorkPiece
-from ...core.vectorization_config import TraceConfig
 from ...core.geo import Geometry
-from ...core.import_source import ImportSource
+from ...core.source_asset import SourceAsset
 from ...core.matrix import Matrix
+from ...core.workpiece import WorkPiece
+from ...core.vectorization_spec import VectorizationSpec, TraceSpec
+from ...core.generation_config import GenerationConfig
 from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
 from .. import image_util
@@ -26,10 +27,10 @@ class PngImporter(Importer):
     is_bitmap = True
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
-        if not vector_config:
-            logger.error("PngImporter requires a vector_config to trace.")
+        if not isinstance(vectorization_spec, TraceSpec):
+            logger.error("PngImporter requires a TraceSpec to trace.")
             return None
 
         try:
@@ -43,24 +44,17 @@ class PngImporter(Importer):
             )
         except pyvips.Error as e:
             logger.error(
-                f"pyvips failed to load PNG '{self.source_file.name}': {e}"
-            )
-            return None
-        except Exception as e:
-            logger.error(
-                f"Unexpected error loading PNG '{self.source_file.name}': {e}",
-                exc_info=True,
+                f"pyvips failed to load PNG buffer: {e}", exc_info=True
             )
             return None
 
         metadata = image_util.extract_vips_metadata(image)
         metadata["image_format"] = "PNG"
 
-        source = ImportSource(
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PNG_RENDERER,
-            vector_config=vector_config,
             metadata=metadata,
         )
 
@@ -76,6 +70,10 @@ class PngImporter(Importer):
             f"{surface.get_width()}x{surface.get_height()}"
         )
 
+        # Determine physical size first
+        width_mm, height_mm = image_util.get_physical_size_mm(image)
+
+        # Trace the surface to get geometry in PIXEL coordinates
         geometries = trace_surface(surface)
         combined_geo = Geometry()
 
@@ -89,31 +87,45 @@ class PngImporter(Importer):
                 "Tracing did not produce any vector geometries. "
                 "Creating a workpiece with a frame around the image instead."
             )
+            # Create a rectangle representing the full image boundary in PIXEL
+            # coordinates.
             combined_geo.move_to(0, 0)
             combined_geo.line_to(image.width, 0)
             combined_geo.line_to(image.width, image.height)
             combined_geo.line_to(0, image.height)
             combined_geo.close_path()
 
-        # 1. Calculate independent scale factors for X and Y to map the
-        #    pixel geometry into a 1x1 unit square.
+        # Get the pixel-space bounding box for the segmentation mask.
+        min_x, min_y, max_x, max_y = combined_geo.rect()
+        mask_geo = Geometry()
+        mask_geo.move_to(min_x, min_y)
+        mask_geo.line_to(max_x, min_y)
+        mask_geo.line_to(max_x, max_y)
+        mask_geo.line_to(min_x, max_y)
+        mask_geo.close_path()
+
+        # 1. Normalize the pixel-based geometry to a 1x1 unit square.
         if image.width > 0 and image.height > 0:
             norm_scale_x = 1.0 / image.width
             norm_scale_y = 1.0 / image.height
-
-            # 2. Create a non-uniform scaling matrix.
             normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
-
-            # 3. Apply this transform to the geometry data.
             combined_geo.transform(normalization_matrix.to_4x4_numpy())
 
-        final_wp = WorkPiece(name=self.source_file.stem, vectors=combined_geo)
-        final_wp.import_source_uid = source.uid
+        # 2. Create the GenerationConfig.
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=mask_geo,
+            vectorization_spec=vectorization_spec,
+        )
 
-        width_mm, height_mm = image_util.get_physical_size_mm(image)
+        # 3. Create the WorkPiece with the now-normalized vectors and config.
+        final_wp = WorkPiece(
+            name=self.source_file.stem,
+            vectors=combined_geo,
+            generation_config=gen_config,
+        )
 
-        # This call is now architecturally sound. It applies the physical size
-        # via the matrix to a true 1x1 normalized shape.
+        # 4. Apply the final physical size via the matrix.
         final_wp.set_size(width_mm, height_mm)
         final_wp.pos = (0, 0)
 

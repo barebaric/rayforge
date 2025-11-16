@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gi.repository import Gio, Adw
 
-from ...core.vectorization_config import TraceConfig
+from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from . import file_dialogs
 
 if TYPE_CHECKING:
@@ -24,16 +24,16 @@ def _on_svg_options_response(
     position_mm: Optional[tuple[float, float]] = None,
 ):
     """Handles the user's choice from the SVG import dialog."""
-    vector_config: Optional[TraceConfig] = None
+    vectorization_spec: Optional[VectorizationSpec] = None
     if response_id == "trace":
-        vector_config = TraceConfig()
+        vectorization_spec = TraceSpec()
     elif response_id == "direct":
-        vector_config = None  # None now signifies direct vector import
+        vectorization_spec = None  # None now signifies direct vector import
     else:  # "cancel" or the dialog was closed
         return
 
     editor.file.load_file_from_path(
-        file_path, mime_type, vector_config, position_mm
+        file_path, mime_type, vectorization_spec, position_mm
     )
     # Hide properties widget in case something was selected before import
     win.item_revealer.set_reveal_child(False)
@@ -98,9 +98,9 @@ def _on_file_selected(dialog, result, user_data):
             _show_svg_import_dialog(win, editor, file_path, mime_type)
         else:
             # For all other raster types, default to tracing.
-            vector_config = TraceConfig()
+            vectorization_spec = TraceSpec()
             editor.file.load_file_from_path(
-                file_path, mime_type, vector_config
+                file_path, mime_type, vectorization_spec
             )
             # Hide properties widget in case something was selected before
             # import
@@ -142,9 +142,9 @@ def import_file_at_position(
         _show_svg_import_dialog(win, editor, file_path, mime_type, position_mm)
     else:
         # For all other raster types, default to tracing
-        vector_config = TraceConfig()
+        vectorization_spec = TraceSpec()
         editor.file.load_file_from_path(
-            file_path, mime_type, vector_config, position_mm
+            file_path, mime_type, vectorization_spec, position_mm
         )
 
     # Hide properties widget in case something was selected before import
@@ -164,10 +164,10 @@ def _on_batch_trace_response(
     """
     if response_id == "import":
         # User confirmed - import all files with default tracing
-        vector_config = TraceConfig()
+        vectorization_spec = TraceSpec()
         for file_path, mime_type in file_list:
             editor.file.load_file_from_path(
-                file_path, mime_type, vector_config, position_mm
+                file_path, mime_type, vectorization_spec, position_mm
             )
         logger.info(f"Batch imported {len(file_list)} raster files")
     # else: user cancelled, do nothing

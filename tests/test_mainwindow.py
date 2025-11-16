@@ -26,7 +26,7 @@ gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
 from rayforge.mainwindow import MainWindow
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.vectorization_spec import TraceSpec
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def test_main_window_simulation_mode_activation(
     win.doc_editor.file.load_file_from_path(
         filename=test_file_path,
         mime_type="image/png",
-        vector_config=TraceConfig(),
+        vectorization_spec=TraceSpec(),
     )
     assert wait_for_document_to_settle(win), (
         "Document did not settle or has no result"

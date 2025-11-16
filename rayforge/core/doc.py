@@ -5,7 +5,7 @@ from ..undo import HistoryManager
 from .workpiece import WorkPiece
 from .layer import Layer
 from .item import DocItem
-from .import_source import ImportSource
+from .source_asset import SourceAsset
 
 if TYPE_CHECKING:
     from .stock import StockItem
@@ -28,7 +28,7 @@ class Doc(DocItem):
         self.history_manager = HistoryManager()
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
-        self.import_sources: Dict[str, ImportSource] = {}
+        self.source_assets: Dict[str, SourceAsset] = {}
 
         # A new document starts with one empty workpiece layer
         workpiece_layer = Layer(_("Layer 1"))
@@ -58,11 +58,11 @@ class Doc(DocItem):
 
         doc._active_layer_index = data.get("active_layer_index", 0)
 
-        import_sources = {
-            uid: ImportSource.from_dict(src_data)
-            for uid, src_data in data.get("import_sources", {}).items()
+        source_assets = {
+            uid: SourceAsset.from_dict(src_data)
+            for uid, src_data in data.get("source_assets", {}).items()
         }
-        doc.import_sources = import_sources
+        doc.source_assets = source_assets
 
         return doc
 
@@ -99,11 +99,11 @@ class Doc(DocItem):
         self.set_children(new_children_list)
         self.updated.send(self)
 
-    def get_import_source_by_uid(self, uid: str) -> Optional[ImportSource]:
+    def get_source_asset_by_uid(self, uid: str) -> Optional[SourceAsset]:
         """
-        Retrieves an ImportSource from the document's registry by its UID.
+        Retrieves a SourceAsset from the document's registry by its UID.
         """
-        return self.import_sources.get(uid)
+        return self.source_assets.get(uid)
 
     def to_dict(self) -> Dict:
         """Serializes the document and its children to a dictionary."""
@@ -115,17 +115,17 @@ class Doc(DocItem):
             "stock_items": [
                 stock_item.to_dict() for stock_item in self.stock_items
             ],
-            "import_sources": {
-                uid: source.to_dict()
-                for uid, source in self.import_sources.items()
+            "source_assets": {
+                uid: asset.to_dict()
+                for uid, asset in self.source_assets.items()
             },
         }
 
-    def add_import_source(self, source: ImportSource):
-        """Adds or updates an ImportSource in the document's registry."""
-        if not isinstance(source, ImportSource):
-            raise TypeError("Only ImportSource objects can be added.")
-        self.import_sources[source.uid] = source
+    def add_source_asset(self, asset: SourceAsset):
+        """Adds or updates a SourceAsset in the document's registry."""
+        if not isinstance(asset, SourceAsset):
+            raise TypeError("Only SourceAsset objects can be added.")
+        self.source_assets[asset.uid] = asset
 
     @property
     def doc(self) -> "Doc":

@@ -7,10 +7,11 @@ import numpy as np
 from pypdf import PdfReader, PdfWriter, Transformation
 
 from ...core.geo import Geometry
-from ...core.import_source import ImportSource
+from ...core.source_asset import SourceAsset
 from ...core.matrix import Matrix
-from ...core.vectorization_config import TraceConfig
+from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...core.workpiece import WorkPiece
+from ...core.generation_config import GenerationConfig
 from .. import image_util
 from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
@@ -27,7 +28,7 @@ class PdfImporter(Importer):
     This importer can operate in two modes:
     1.  As-is Import: The PDF is imported as a background image, preserving its
         original dimensions. This happens when no vectorization is requested.
-    2.  Vectorization: If a TraceConfig is provided, the importer performs an
+    2.  Vectorization: If a TraceSpec is provided, the importer performs an
         auto-cropping and tracing operation. It first finds the content bounds,
         crops the PDF to that area, and then traces the result to generate
         vector geometry.
@@ -38,76 +39,100 @@ class PdfImporter(Importer):
     extensions = (".pdf",)
 
     # --- Constants for Rendering and Conversion ---
-    _TARGET_MEGAPIXELS = 8.0
-    _MAX_RENDER_DIM = 8192
+    _TRACE_PPM = (
+        24.0  # ~600 DPI. High Pixels-Per-Millimeter for accurate tracing.
+    )
+    _MAX_RENDER_DIM = 16384
     _POINTS_PER_INCH = 72.0
     _MM_PER_INCH = 25.4
     _PT_PER_MM = _POINTS_PER_INCH / _MM_PER_INCH
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
         """
         Retrieve document items from the PDF file.
 
-        If a vector_config is provided, the PDF content will be auto-cropped,
-        traced, and imported as vectors. Otherwise, the PDF is imported as a
-        background image with its original dimensions.
+        If a vectorization_spec is provided, the PDF content will be
+        auto-cropped, traced, and imported as vectors. Otherwise, the
+        PDF is imported as a background image with its original dimensions.
 
         Args:
-            vector_config: Configuration for vector tracing. If None, the PDF
-              is not traced.
+            vectorization_spec: Configuration for vector tracing. If None,
+              the PDF is not traced.
 
         Returns:
             An ImportPayload containing the source and a WorkPiece, or None if
             processing fails.
         """
-        source = ImportSource(
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PDF_RENDERER,
         )
-        wp = WorkPiece(name=self.source_file.stem)
-        wp.import_source_uid = source.uid
 
         original_size_mm = self._get_pdf_size(source)
         if not original_size_mm:
-            # If size can't be determined, return a workpiece without a size.
-            return ImportPayload(source=source, items=[wp])
+            # If size can't be determined, return with just the source.
+            return ImportPayload(source=source, items=[])
 
-        if not vector_config:
-            # No vectorization, just set the size and return.
+        if not isinstance(vectorization_spec, TraceSpec):
+            # No vectorization requested. Create an empty workpiece sized to
+            # the PDF, with a default GenerationConfig for future tracing.
+            wp = WorkPiece(name=self.source_file.stem)
             wp.set_size(original_size_mm[0], original_size_mm[1])
+            # Prime the workpiece for future parametric tracing.
+            gen_config = GenerationConfig(
+                source_asset_uid=source.uid,
+                segment_mask_geometry=Geometry(),  # Empty mask for now
+                vectorization_spec=TraceSpec(),
+            )
+            wp.generation_config = gen_config
             return ImportPayload(source=source, items=[wp])
 
         # Perform the full crop-and-trace operation.
-        trace_result = self._autocrop_and_trace(
-            source, original_size_mm, vector_config
-        )
+        trace_result = self._autocrop_and_trace(source, original_size_mm)
 
-        if trace_result:
-            final_geo_mm, final_size_mm = trace_result
-            final_geo_mm.close_gaps()
-            self._populate_workpiece_with_vectors(
-                wp, final_geo_mm, final_size_mm
-            )
-        else:
-            # Fallback to original size if tracing fails.
+        if not trace_result:
+            # Fallback to an empty, full-size workpiece if tracing fails.
             logger.warning(
                 "PDF tracing failed. Falling back to original dimensions."
             )
+            wp = WorkPiece(name=self.source_file.stem)
             wp.set_size(original_size_mm[0], original_size_mm[1])
+            gen_config = GenerationConfig(
+                source_asset_uid=source.uid,
+                segment_mask_geometry=Geometry(),
+                vectorization_spec=vectorization_spec,
+            )
+            wp.generation_config = gen_config
+            return ImportPayload(source=source, items=[wp])
+
+        # Tracing was successful.
+        final_geo_mm, final_size_mm, mask_geo = trace_result
+        final_geo_mm.close_gaps()
+
+        wp = WorkPiece(name=self.source_file.stem)
+        self._populate_workpiece_with_vectors(wp, final_geo_mm, final_size_mm)
+
+        # Attach the final generation config.
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=mask_geo,
+            vectorization_spec=vectorization_spec,
+        )
+        wp.generation_config = gen_config
 
         return ImportPayload(source=source, items=[wp])
 
     def _get_pdf_size(
-        self, source: ImportSource
+        self, source: SourceAsset
     ) -> Optional[Tuple[float, float]]:
         """
         Retrieve the natural size of the PDF's first page in millimeters.
 
         Args:
-            source: The ImportSource containing the PDF data.
+            source: The SourceAsset containing the PDF data.
 
         Returns:
             A tuple of (width, height) in millimeters, or None if the size
@@ -162,21 +187,19 @@ class PdfImporter(Importer):
 
     def _autocrop_and_trace(
         self,
-        source: ImportSource,
+        source: SourceAsset,
         original_size_mm: Tuple[float, float],
-        vector_config: TraceConfig,
-    ) -> Optional[Tuple[Geometry, Tuple[float, float]]]:
+    ) -> Optional[Tuple[Geometry, Tuple[float, float], Geometry]]:
         """
         Orchestrates the autocrop, trace, and scale process.
 
         Args:
-            source: The ImportSource containing the PDF.
+            source: The SourceAsset containing the PDF.
             original_size_mm: The original dimensions of the PDF.
-            vector_config: Configuration for vector tracing.
 
         Returns:
-            A tuple containing the final scaled Geometry and the final size in
-            millimeters, or None on failure.
+            A tuple containing (final_geometry_mm, final_size_mm,
+            segment_mask_geometry), or None on failure.
         """
         # Stage 1: Create a new, tightly cropped PDF in memory.
         crop_result = self._autocrop_pdf(source, original_size_mm)
@@ -184,9 +207,10 @@ class PdfImporter(Importer):
             logger.warning("PDF auto-cropping failed.")
             return None
 
-        cropped_pdf_data, final_size_mm = crop_result
-        # Update the source's main data with the cropped version for rendering.
-        source.data = cropped_pdf_data
+        cropped_pdf_data, final_size_mm, mask_geo = crop_result
+
+        # Update the asset's base_render_data with the cropped version.
+        source.base_render_data = cropped_pdf_data
 
         # Stage 2: Trace the new, cropped PDF to get pixel-based geometry.
         trace_result = self._trace_pdf_data(cropped_pdf_data, final_size_mm)
@@ -210,11 +234,11 @@ class PdfImporter(Importer):
         scaling_matrix = Matrix.scale(scale_x, scale_y)
         pixel_geometry.transform(scaling_matrix.to_4x4_numpy())
 
-        return pixel_geometry, final_size_mm
+        return pixel_geometry, final_size_mm, mask_geo
 
     def _autocrop_pdf(
-        self, source: ImportSource, original_size_mm: Tuple[float, float]
-    ) -> Optional[Tuple[bytes, Tuple[float, float]]]:
+        self, source: SourceAsset, original_size_mm: Tuple[float, float]
+    ) -> Optional[Tuple[bytes, Tuple[float, float], Geometry]]:
         """
         Crops a PDF to its content's bounding box.
 
@@ -226,8 +250,8 @@ class PdfImporter(Importer):
             original_size_mm: The original (width, height) of the PDF in mm.
 
         Returns:
-            A tuple of (cropped_pdf_bytes, (new_width_mm, new_height_mm)),
-            or None.
+            A tuple of (cropped_pdf_bytes, (new_width_mm, new_height_mm),
+            segment_mask_geometry_px), or None.
         """
         # Render the original PDF to an image for content analysis.
         w_mm, h_mm = original_size_mm
@@ -245,8 +269,17 @@ class PdfImporter(Importer):
             logger.warning("No content found in PDF for cropping.")
             return None
 
-        # Convert pixel crop box to PDF's coordinate system (points, Y-up).
         min_x_px, min_y_px, box_w_px, box_h_px = crop_box_px
+
+        # Create the segment mask geometry from the pixel-space crop box.
+        mask_geo = Geometry()
+        mask_geo.move_to(min_x_px, min_y_px)
+        mask_geo.line_to(min_x_px + box_w_px, min_y_px)
+        mask_geo.line_to(min_x_px + box_w_px, min_y_px + box_h_px)
+        mask_geo.line_to(min_x_px, min_y_px + box_h_px)
+        mask_geo.close_path()
+
+        # Convert pixel crop box to PDF's coordinate system (points, Y-up).
         mm_per_px_x = w_mm / w_px
         mm_per_px_y = h_mm / h_px
 
@@ -283,7 +316,7 @@ class PdfImporter(Importer):
             to_mm(crop_width_pt, "pt"),
             to_mm(crop_height_pt, "pt"),
         )
-        return output_stream.getvalue(), final_size_mm
+        return output_stream.getvalue(), final_size_mm, mask_geo
 
     def _find_content_bounding_box_px(
         self, vips_image
@@ -365,10 +398,12 @@ class PdfImporter(Importer):
         self, w_mm: float, h_mm: float
     ) -> Tuple[int, int]:
         """
-        Calculates optimal rendering dimensions in pixels.
+        Calculates optimal rendering dimensions in pixels based on a fixed
+        pixels-per-millimeter setting.
 
-        Aims for a target megapixel count to ensure sufficient detail for
-        tracing, while respecting a maximum dimension limit to manage memory.
+        This ensures a consistent, high level of detail for tracing,
+        regardless of the PDF's physical dimensions, while respecting a
+        maximum dimension limit to manage memory.
 
         Args:
             w_mm: Width in millimeters.
@@ -378,21 +413,24 @@ class PdfImporter(Importer):
             A tuple of (width, height) in pixels.
         """
         if w_mm <= 0 or h_mm <= 0:
-            return 2048, 2048  # Default resolution for invalid input
+            # Default to A4 size at the target resolution for invalid input
+            return (
+                int(210 * self._TRACE_PPM),
+                int(297 * self._TRACE_PPM),
+            )
 
-        target_pixels = self._TARGET_MEGAPIXELS * 1024 * 1024
-        aspect_ratio = h_mm / w_mm
+        w_px = int(w_mm * self._TRACE_PPM)
+        h_px = int(h_mm * self._TRACE_PPM)
 
-        w_px = int((target_pixels / aspect_ratio) ** 0.5)
-        h_px = int(w_px * aspect_ratio)
-
-        # Clamp dimensions to the maximum allowed size.
-        if w_px > self._MAX_RENDER_DIM:
-            w_px = self._MAX_RENDER_DIM
-            h_px = int(w_px * aspect_ratio)
-        if h_px > self._MAX_RENDER_DIM:
-            h_px = self._MAX_RENDER_DIM
-            w_px = int(h_px / aspect_ratio)
+        # If calculated size exceeds max, scale down while preserving aspect.
+        if w_px > self._MAX_RENDER_DIM or h_px > self._MAX_RENDER_DIM:
+            scale_factor = 1.0
+            if w_px > self._MAX_RENDER_DIM:
+                scale_factor = self._MAX_RENDER_DIM / w_px
+            if h_px > self._MAX_RENDER_DIM:
+                scale_factor = min(scale_factor, self._MAX_RENDER_DIM / h_px)
+            w_px = int(w_px * scale_factor)
+            h_px = int(h_px * scale_factor)
 
         return max(w_px, 1), max(h_px, 1)
 

@@ -21,16 +21,17 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from ..context import get_context
+from .generation_config import GenerationConfig
 from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
 from .tab import Tab
-from ..context import get_context
 
 if TYPE_CHECKING:
-    from .layer import Layer
     from ..image.base_renderer import Renderer
-    from .import_source import ImportSource
+    from .layer import Layer
+    from .source_asset import SourceAsset
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class WorkPiece(DocItem):
         self,
         name: str,
         vectors: Optional[Geometry] = None,
+        generation_config: Optional[GenerationConfig] = None,
     ):
         super().__init__(name=name)
         self.vectors = vectors
@@ -69,7 +71,7 @@ class WorkPiece(DocItem):
           sizing, positioning, and rotation are handled by applying the
           `WorkPiece.matrix` to this normalized shape.
         """
-        self.import_source_uid: Optional[str] = None
+        self.generation_config = generation_config
 
         # The cache for rendered vips images. Key is (width, height).
         # This is the proper place for this state, not monkey-patched.
@@ -90,27 +92,46 @@ class WorkPiece(DocItem):
         self._render_cache.clear()
 
     @property
-    def source(self) -> "Optional[ImportSource]":
+    def source(self) -> "Optional[SourceAsset]":
         """
-        Convenience property to retrieve the full ImportSource object from the
+        Convenience property to retrieve the full SourceAsset object from the
         document's central registry.
         """
-        if self.doc and self.import_source_uid:
-            return self.doc.get_import_source_by_uid(self.import_source_uid)
+        if self.doc and self.generation_config:
+            return self.doc.get_source_asset_by_uid(
+                self.generation_config.source_asset_uid
+            )
         return None
 
     @property
     def data(self) -> Optional[bytes]:
-        """Retrieves the raw source data."""
+        """
+        Retrieves the appropriate source data for rendering.
+
+        This property intelligently selects the correct data:
+        1. Prioritizes transient data for isolated/subprocess instances.
+        2. Prioritizes the `base_render_data` (e.g., a trimmed SVG) if it
+           exists, as this is what the workpiece's size is based on.
+        3. Falls back to the `original_data` if no specific render data
+           is available.
+        """
         # Prioritize transient data for isolated/subprocess instances
         if self._data is not None:
             return self._data
         source = self.source
-        return source.data if source else None
+        if not source:
+            return None
+
+        # Prioritize the processed render data if it exists.
+        if source.base_render_data is not None:
+            return source.base_render_data
+
+        # Fall back to the original data.
+        return source.original_data
 
     @property
     def source_file(self) -> Optional[Path]:
-        """Retrieves the source file path from the linked ImportSource."""
+        """Retrieves the source file path from the linked SourceAsset."""
         source = self.source
         return source.source_file if source else None
 
@@ -167,19 +188,20 @@ class WorkPiece(DocItem):
         """
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
-        world_wp = WorkPiece(self.name, self.vectors)
+        world_wp = WorkPiece(
+            self.name, self.vectors, deepcopy(self.generation_config)
+        )
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
-        world_wp.import_source_uid = self.import_source_uid
 
         # Hydrate with data and renderer for use in isolated contexts
         # like subprocesses where the document link is lost.
         source = self.source
         if source:
             # Use the public .data property to get the correct render data
-            world_wp._data = source.data
+            world_wp._data = self.data
             world_wp._renderer = source.renderer
 
         # Do NOT link back to the parent. The point of this method is to
@@ -205,7 +227,11 @@ class WorkPiece(DocItem):
             "vectors": self.vectors.to_dict() if self.vectors else None,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
-            "import_source_uid": self.import_source_uid,
+            "generation_config": (
+                self.generation_config.to_dict()
+                if self.generation_config
+                else None
+            ),
         }
 
     @classmethod
@@ -220,9 +246,15 @@ class WorkPiece(DocItem):
             Geometry.from_dict(data["vectors"]) if data["vectors"] else None
         )
 
+        config_data = data.get("generation_config")
+        generation_config = (
+            GenerationConfig.from_dict(config_data) if config_data else None
+        )
+
         wp = cls(
             name=data["name"],
             vectors=vectors,
+            generation_config=generation_config,
         )
         wp.uid = data["uid"]
         wp.matrix = Matrix.from_list(data["matrix"])
@@ -235,7 +267,6 @@ class WorkPiece(DocItem):
             loaded_tabs.append(Tab(**t_data_copy))
         wp.tabs = loaded_tabs
         wp.tabs_enabled = data.get("tabs_enabled", True)
-        wp.import_source_uid = data.get("import_source_uid")
 
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:

@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Callable
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
-from ..core.vectorization_config import TraceConfig
+from ..core.vectorization_spec import VectorizationSpec
 from ..image import import_file, ImportPayload
-from ..core.import_source import ImportSource
+from ..core.source_asset import SourceAsset
 from ..context import get_context
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..undo import ListItemCommand
@@ -37,14 +37,14 @@ class FileCmd:
         self,
         filename: Path,
         mime_type: Optional[str],
-        vector_config: Optional[TraceConfig],
+        vectorization_spec: Optional[VectorizationSpec],
     ) -> Optional[ImportPayload]:
         """
         Runs the blocking import function in a background thread and returns
         the resulting payload.
         """
         return await asyncio.to_thread(
-            import_file, filename, mime_type, vector_config
+            import_file, filename, mime_type, vectorization_spec
         )
 
     def _position_newly_imported_items(
@@ -78,7 +78,7 @@ class FileCmd:
     def _commit_items_to_document(
         self,
         items: List[DocItem],
-        source: Optional[ImportSource],
+        source: Optional[SourceAsset],
         filename: Path,
     ):
         """
@@ -86,7 +86,7 @@ class FileCmd:
         the history manager.
         """
         if source:
-            self._editor.doc.add_import_source(source)
+            self._editor.doc.add_source_asset(source)
 
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _(f"Import {filename.name}")
@@ -125,7 +125,7 @@ class FileCmd:
         self,
         filename: Path,
         mime_type: Optional[str],
-        vector_config: Optional[TraceConfig],
+        vectorization_spec: Optional[VectorizationSpec],
         position_mm: Optional[Tuple[float, float]] = None,
     ):
         """
@@ -135,7 +135,7 @@ class FileCmd:
         Args:
             filename: Path to the file to import
             mime_type: MIME type of the file
-            vector_config: Configuration for vectorization
+            vectorization_spec: Configuration for vectorization
                 (None for direct vector import)
             position_mm: Optional (x, y) tuple in world coordinates (mm)
                 to center the imported item.
@@ -144,13 +144,13 @@ class FileCmd:
 
         # This wrapper adapts our clean async method to the TaskManager,
         # which expects a coroutine that accepts a 'ctx' argument.
-        async def wrapper(ctx, fn, mt, vc, pos_mm):
+        async def wrapper(ctx, fn, mt, vec_spec, pos_mm):
             try:
                 # Update task message for UI feedback
                 ctx.set_message(_(f"Importing {filename.name}..."))
 
                 # 1. Run blocking I/O and CPU work in a background thread.
-                payload = await self._load_file_async(fn, mt, vc)
+                payload = await self._load_file_async(fn, mt, vec_spec)
 
                 # 2. Validate the result.
                 if not payload or not payload.items:
@@ -224,7 +224,7 @@ class FileCmd:
             wrapper,
             filename,
             mime_type,
-            vector_config,
+            vectorization_spec,
             position_mm,
             key=f"import-{filename}",
         )
