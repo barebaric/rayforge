@@ -8,8 +8,11 @@ from unittest.mock import Mock
 from rayforge.image.pdf.importer import PdfImporter
 from rayforge.image.pdf.renderer import PDF_RENDERER
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
+from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.geo import Geometry
 
 
 def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
@@ -26,18 +29,22 @@ def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
 
 
 def _setup_workpiece_with_context(
-    importer: PdfImporter, vector_config=None
+    importer: PdfImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vector_config=vector_config)
+    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
     assert payload is not None
     source = payload.source
-    wp = cast(WorkPiece, payload.items[0])
+    # Handle cases where importer returns no items (e.g., invalid data)
+    if not payload.items:
+        wp = WorkPiece(name="empty")
+    else:
+        wp = cast(WorkPiece, payload.items[0])
 
     # Mock the document context so workpiece.source resolves correctly
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     # By setting a mock parent with a `doc` property, we allow the
     # workpiece's `doc` property to resolve to our mock.
@@ -84,16 +91,17 @@ class TestPdfImporter:
         Tests the importer creates a WorkPiece with the correct initial size.
         """
         importer = PdfImporter(basic_pdf_data)
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
 
         assert payload
-        assert isinstance(payload.source, ImportSource)
+        assert isinstance(payload.source, SourceAsset)
         assert payload.source.original_data == basic_pdf_data
         assert len(payload.items) == 1
 
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
-        assert wp.import_source_uid == payload.source.uid
+        assert wp.generation_config is not None
+        assert wp.generation_config.source_asset_uid == payload.source.uid
 
         # The importer should set the size based on the PDF's natural
         # dimensions.
@@ -105,11 +113,10 @@ class TestPdfImporter:
     def test_importer_handles_invalid_data(self):
         """Tests the importer creates a WorkPiece even with invalid data."""
         importer = PdfImporter(b"this is not a pdf")
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
         assert payload is not None
-        assert isinstance(payload.source, ImportSource)
-        assert len(payload.items) == 1
-        assert isinstance(payload.items[0], WorkPiece)
+        assert isinstance(payload.source, SourceAsset)
+        assert len(payload.items) == 0
 
 
 class TestPdfRenderer:
@@ -165,19 +172,23 @@ class TestPdfRenderer:
         """
         Test that the renderer does not raise exceptions for invalid data.
         """
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("invalid.pdf"),
             original_data=b"not a valid pdf",
             renderer=PDF_RENDERER,
         )
-        invalid_wp = WorkPiece(name="invalid")
-        invalid_wp.import_source_uid = source.uid
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=TraceSpec(),
+        )
+        invalid_wp = WorkPiece(name="invalid", generation_config=gen_config)
 
         # Mock document context
         mock_doc = Mock()
-        mock_doc.import_sources = {source.uid: source}
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         mock_parent = Mock()
         mock_parent.doc = mock_doc

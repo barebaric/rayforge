@@ -15,7 +15,7 @@ class ProceduralRenderer(Renderer):
     Renders procedural content by dispatching to a drawing function.
 
     This renderer is a generic execution engine. It reads a "recipe" from
-    the WorkPiece's ImportSource data. The recipe is a JSON object that
+    the WorkPiece's SourceAsset data. The recipe is a JSON object that
     specifies a path to a drawing function and the geometric parameters to
     pass to it. This allows for creating resolution-independent content
     without hardcoding rendering logic for each procedural type.
@@ -25,12 +25,12 @@ class ProceduralRenderer(Renderer):
         self, workpiece: "WorkPiece", func_key: str
     ) -> Tuple[Optional[dict], Optional[dict], Optional[Callable]]:
         """Helper to deserialize the recipe and import a function."""
-        if not workpiece.source or not workpiece.source.data:
+        if not workpiece.source or not workpiece.source.original_data:
             logger.warning("Procedural workpiece has no source data.")
             return None, None, None
 
         try:
-            recipe = json.loads(workpiece.source.data)
+            recipe = json.loads(workpiece.source.original_data)
             params = recipe.get("params", {})
             func_path = recipe.get(func_key)
 

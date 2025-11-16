@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from ...core.geo import Geometry
-from ...core.import_source import ImportSource
-from ...core.vectorization_config import TraceConfig
+from ...core.source_asset import SourceAsset
+from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
 from ...core.workpiece import WorkPiece
+from ...core.generation_config import GenerationConfig
 from ..base_importer import Importer, ImportPayload
 from .renderer import PROCEDURAL_RENDERER
 
@@ -20,7 +21,7 @@ class ProceduralImporter(Importer):
 
     Unlike file-based importers that parse existing data, this importer is
     instantiated programmatically with the "recipe" for creating content.
-    It generates the ImportSource and WorkPiece on the fly.
+    It generates the SourceAsset and WorkPiece on the fly.
     """
 
     def __init__(
@@ -47,7 +48,7 @@ class ProceduralImporter(Importer):
         self.params = params
         self.name = name
 
-        # Create the recipe data that will be stored in the ImportSource.
+        # Create the recipe data that will be stored in the SourceAsset.
         recipe_dict = {
             "drawing_function_path": self.drawing_function_path,
             "size_function_path": self.size_function_path,
@@ -59,11 +60,11 @@ class ProceduralImporter(Importer):
         super().__init__(data=recipe_data, source_file=Path(f"[{self.name}]"))
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
         """
         Generates the ImportPayload containing the procedural WorkPiece and
-        its corresponding ImportSource.
+        its corresponding SourceAsset.
         """
         # Step 1: Calculate the initial size by dynamically calling the size
         # function.
@@ -78,8 +79,8 @@ class ProceduralImporter(Importer):
             )
             return None
 
-        # Step 2: Create the ImportSource using the pre-generated recipe.
-        source = ImportSource(
+        # Step 2: Create the SourceAsset using the pre-generated recipe.
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,  # This is the recipe data
             renderer=PROCEDURAL_RENDERER,
@@ -94,8 +95,19 @@ class ProceduralImporter(Importer):
         frame_geo.line_to(1, 1)
         frame_geo.line_to(0, 1)
         frame_geo.close_path()
-        wp = WorkPiece(name=self.name, vectors=frame_geo)
-        wp.import_source_uid = source.uid
+
+        procedural_spec = ProceduralSpec()
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),  # No bitmap source
+            vectorization_spec=procedural_spec,
+        )
+
+        wp = WorkPiece(
+            name=self.name,
+            vectors=frame_geo,
+            generation_config=gen_config,
+        )
         wp.set_size(width_mm, height_mm)
 
         # Step 4: Return the complete payload.

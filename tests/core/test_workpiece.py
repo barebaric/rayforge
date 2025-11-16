@@ -5,12 +5,14 @@ from typing import Tuple, cast
 from dataclasses import asdict
 from blinker import Signal
 from rayforge.core.doc import Doc
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.svg.renderer import SvgRenderer
 from rayforge.image import import_file
 
@@ -30,12 +32,12 @@ def sample_svg_data() -> bytes:
 @pytest.fixture
 def doc_with_workpiece(
     sample_svg_data: bytes, tmp_path: Path
-) -> Tuple[Doc, WorkPiece, ImportSource]:
+) -> Tuple[Doc, WorkPiece, SourceAsset]:
     """
-    Creates a Doc with a single WorkPiece linked to an ImportSource,
+    Creates a Doc with a single WorkPiece linked to a SourceAsset,
     which is the correct way to test a WorkPiece's data-dependent methods.
     """
-    # Use the new convenience function to handle the entire import process.
+    # Use the real import function to handle the entire import process.
     svg_file = tmp_path / "test_rect.svg"
     svg_file.write_bytes(sample_svg_data)
     payload = import_file(svg_file)
@@ -45,14 +47,14 @@ def doc_with_workpiece(
     wp = cast(WorkPiece, payload.items[0])
 
     doc = Doc()
-    doc.add_import_source(source)
+    doc.add_source_asset(source)
     doc.active_layer.add_child(wp)
     return doc, wp, source
 
 
 @pytest.fixture
 def workpiece_instance(
-    doc_with_workpiece: Tuple[Doc, WorkPiece, ImportSource],
+    doc_with_workpiece: Tuple[Doc, WorkPiece, SourceAsset],
 ):
     """Provides the WorkPiece instance from the doc_with_workpiece fixture."""
     return doc_with_workpiece[1]
@@ -77,7 +79,7 @@ class TestWorkPiece:
         assert isinstance(wp.transform_changed, Signal)
         assert wp.tabs == []
         assert wp.tabs_enabled is True
-        assert wp.import_source_uid is not None
+        assert wp.generation_config is not None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -88,7 +90,6 @@ class TestWorkPiece:
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
-        wp.import_source_uid = "source-123"
         data_dict = wp.to_dict()
 
         # Key check: renderer and source_file are NOT part of the workpiece
@@ -98,7 +99,8 @@ class TestWorkPiece:
         assert "data" not in data_dict
         assert "size" not in data_dict
         assert isinstance(data_dict["matrix"], list)
-        assert data_dict["import_source_uid"] == "source-123"
+        assert "generation_config" in data_dict
+        assert data_dict["generation_config"]["source_asset_uid"] == source.uid
 
         new_wp = WorkPiece.from_dict(data_dict)
 
@@ -108,8 +110,6 @@ class TestWorkPiece:
         assert new_wp.source_file is None
 
         # Add it to the doc to link it to its source
-        source.uid = "source-123"  # Ensure UID matches for lookup
-        doc.add_import_source(source)
         doc.active_layer.add_child(new_wp)
 
         assert new_wp.name == wp.name
@@ -120,7 +120,8 @@ class TestWorkPiece:
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
         assert new_wp.get_natural_size() == (100.0, 50.0)
-        assert new_wp.import_source_uid == "source-123"
+        assert new_wp.generation_config is not None
+        assert new_wp.generation_config.source_asset_uid == source.uid
 
     def test_serialization_with_tabs(self, workpiece_instance):
         """Tests that tabs are correctly serialized and deserialized."""
@@ -204,14 +205,18 @@ class TestWorkPiece:
 
         # Setup doc and source with the mock renderer
         doc = Doc()
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("nosize.dat"),
             original_data=b"",
             renderer=MockNoSizeRenderer(),
         )
-        doc.add_import_source(source)
-        wp = WorkPiece("nosize.dat")
-        wp.import_source_uid = source.uid
+        doc.add_source_asset(source)
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        wp = WorkPiece("nosize.dat", generation_config=gen_config)
         doc.active_layer.add_child(wp)
 
         # The size should fall back to the provided bounds
@@ -294,9 +299,6 @@ class TestWorkPiece:
         # Calculation is complex, but we can check a known point.
         # Center of 100x50 is (0.5,0.5) in local coords.
         # After sizing to 20x10, world center is (50,25).
-        # Rotating origin (0,0) around (50,25) by 90deg gives
-        # (50 - (-25), 25 + 50) = (75, 75).
-        # But that's in the unscaled space. The transform is more complex.
         # Let's check the transformed center instead.
         center_out = matrix.transform_point((0.5, 0.5))
         assert center_out == pytest.approx((50, 25))

@@ -7,8 +7,11 @@ import asyncio
 from rayforge.shared.tasker.task import Task
 from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
@@ -95,7 +98,7 @@ def doc():
 
 @pytest.mark.usefixtures("context_initializer")
 class TestPipeline:
-    # This data is used by multiple tests to create the ImportSource.
+    # This data is used by multiple tests to create the SourceAsset.
     svg_data = b"""
     <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
     <rect width="50" height="30" />
@@ -103,13 +106,18 @@ class TestPipeline:
 
     def _setup_doc_with_workpiece(self, doc, workpiece):
         """Helper to correctly link a workpiece to a source within a doc."""
-        source = ImportSource(
+        source = SourceAsset(
             Path(workpiece.name),
             original_data=self.svg_data,
             renderer=SVG_RENDERER,
         )
-        doc.add_import_source(source)
-        workpiece.import_source_uid = source.uid
+        doc.add_source_asset(source)
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        workpiece.generation_config = gen_config
         # Simulate importer setting the size and pos
         workpiece.set_size(50, 30)
         workpiece.pos = 10, 20

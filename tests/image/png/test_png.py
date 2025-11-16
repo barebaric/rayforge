@@ -3,10 +3,12 @@ import pytest
 from pathlib import Path
 from typing import cast, Tuple
 from unittest.mock import Mock
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.geo import Geometry
 from rayforge.image.png.importer import PngImporter
 from rayforge.image.png.renderer import PNG_RENDERER
 from rayforge.image import renderer_by_name
@@ -38,10 +40,10 @@ def get_pixel_bgra(
 
 
 def _setup_workpiece_with_context(
-    importer: PngImporter, vector_config=None
+    importer: PngImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vector_config=vector_config)
+    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
     assert payload is not None and payload.items, (
         "Importer failed to produce a workpiece. Surface was likely blank."
     )
@@ -49,8 +51,8 @@ def _setup_workpiece_with_context(
     wp = cast(WorkPiece, payload.items[0])
 
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     mock_parent = Mock()
     mock_parent.doc = mock_doc
@@ -82,21 +84,27 @@ def grayscale_png_data() -> bytes:
 def bilevel_workpiece(bilevel_png_data: bytes) -> WorkPiece:
     """A WorkPiece created from the bilevel PNG data."""
     importer = PngImporter(bilevel_png_data)
-    return _setup_workpiece_with_context(importer, vector_config=TraceConfig())
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
 
 
 @pytest.fixture
 def color_workpiece(color_png_data: bytes) -> WorkPiece:
     """A WorkPiece created from the color PNG data."""
     importer = PngImporter(color_png_data)
-    return _setup_workpiece_with_context(importer, vector_config=TraceConfig())
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
 
 
 @pytest.fixture
 def grayscale_workpiece(grayscale_png_data: bytes) -> WorkPiece:
     """A WorkPiece created from the grayscale PNG data."""
     importer = PngImporter(grayscale_png_data)
-    return _setup_workpiece_with_context(importer, vector_config=TraceConfig())
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
 
 
 class TestPngImporter:
@@ -121,15 +129,16 @@ class TestPngImporter:
         """
         png_data = request.getfixturevalue(png_data_fixture)
         importer = PngImporter(png_data)
-        payload = importer.get_doc_items(vector_config=TraceConfig())
+        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
 
         assert payload and payload.items and len(payload.items) == 1
-        assert isinstance(payload.source, ImportSource)
+        assert isinstance(payload.source, SourceAsset)
 
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
-        assert wp.import_source_uid == payload.source.uid
-        assert payload.source.data == png_data
+        assert wp.generation_config is not None
+        assert wp.generation_config.source_asset_uid == payload.source.uid
+        assert payload.source.original_data == png_data
 
         # Verify that metadata was collected and attached (integration check)
         assert payload.source.metadata is not None
@@ -143,25 +152,25 @@ class TestPngImporter:
         assert wp.size[0] == pytest.approx(expected_width_mm, 5)
         assert wp.size[1] == pytest.approx(expected_height_mm, 5)
 
-    def test_importer_requires_vector_config(self, color_png_data: bytes):
-        """Importer returns None if no vector_config is provided."""
+    def test_importer_requires_vectorization_spec(self, color_png_data: bytes):
+        """Importer returns None if no vectorization_spec is provided."""
         importer = PngImporter(color_png_data)
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
         assert payload is None
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid PNG data."""
         importer = PngImporter(b"this is not a png")
-        payload = importer.get_doc_items(vector_config=TraceConfig())
+        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
         assert payload is None
 
-    def test_import_source_serialization_with_metadata(self):
+    def test_source_asset_serialization_with_metadata(self):
         """Checks that metadata is correctly serialized and deserialized."""
         metadata = {
             "image_format": "PNG",
             "width": 100,
         }
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("test.png"),
             original_data=b"dummy",
             renderer=PNG_RENDERER,
@@ -178,7 +187,7 @@ class TestPngImporter:
         assert "PngRenderer" in renderer_by_name
 
         # Deserialize from dict
-        restored_source = ImportSource.from_dict(state)
+        restored_source = SourceAsset.from_dict(state)
         assert restored_source.metadata == metadata
         assert restored_source.renderer is PNG_RENDERER
 
@@ -256,18 +265,22 @@ class TestPngRenderer:
         """
         Test that the renderer does not raise exceptions for invalid data.
         """
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("nonexistent"),
             original_data=b"invalid data",
             renderer=PNG_RENDERER,
         )
-        invalid_wp = WorkPiece(name="invalid")
-        invalid_wp.import_source_uid = source.uid
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=TraceSpec(),
+        )
+        invalid_wp = WorkPiece(name="invalid", generation_config=gen_config)
 
         mock_doc = Mock()
-        mock_doc.import_sources = {source.uid: source}
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         mock_parent = Mock()
         mock_parent.doc = mock_doc

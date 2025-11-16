@@ -9,32 +9,30 @@ from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.image.svg.svgutil import MM_PER_PX
 from rayforge.image.util import parse_length
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.geo import (
     Geometry,
     MoveToCommand,
     LineToCommand,
 )
 from rayforge.core.matrix import Matrix
-from rayforge.core.import_source import ImportSource
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.vectorization_spec import PassthroughSpec
 
 
 def _setup_workpiece_with_context(
-    importer: SvgImporter, vector_config=None
+    importer: SvgImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vector_config=vector_config)
-    assert payload is not None
+    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
+    assert payload is not None and payload.items
     source = payload.source
     wp = cast(WorkPiece, payload.items[0])
 
-    # Add working_data attribute to mock source if it's missing
-    if not hasattr(source, "working_data"):
-        setattr(source, "working_data", source.original_data)
-
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     mock_parent = Mock()
     mock_parent.doc = mock_doc
@@ -108,7 +106,7 @@ class TestSvgImporter:
         self, basic_svg_data: bytes
     ):
         importer = SvgImporter(basic_svg_data, source_file=Path("test.svg"))
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
 
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
@@ -122,7 +120,7 @@ class TestSvgImporter:
         importer = SvgImporter(
             transparent_svg_data, source_file=Path("test.svg")
         )
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
 
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
@@ -133,11 +131,11 @@ class TestSvgImporter:
 
     def test_direct_vector_import_geometry(self, square_svg_data: bytes):
         """
-        Tests the direct vector import path (vector_config=None) for geometry
-        extraction and transformation.
+        Tests the direct vector import path (vectorization_spec=None) for
+        geometry extraction and transformation.
         """
         importer = SvgImporter(square_svg_data, source_file=Path("square.svg"))
-        payload = importer.get_doc_items(vector_config=None)
+        payload = importer.get_doc_items(vectorization_spec=None)
 
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
@@ -227,14 +225,14 @@ class TestSvgImporter:
 
     def test_traced_bitmap_import_geometry(self, transparent_svg_data: bytes):
         """
-        Tests the traced bitmap import path (vector_config provided).
+        Tests the traced bitmap import path (vectorization_spec provided).
         """
         importer = SvgImporter(
             transparent_svg_data, source_file=Path("trace.svg")
         )
-        trace_config = TraceConfig(threshold=0.5)
+        trace_spec = TraceSpec(threshold=0.5)
 
-        payload = importer.get_doc_items(vector_config=trace_config)
+        payload = importer.get_doc_items(vectorization_spec=trace_spec)
 
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
@@ -320,7 +318,7 @@ class TestSvgRenderer:
         # 2. Test the renderer
         # Simulate a workpiece linked to a source with no metadata, which is
         # the state after trying to import an empty SVG.
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("empty.svg"),
             original_data=empty_svg_data,
             renderer=SVG_RENDERER,
@@ -328,13 +326,19 @@ class TestSvgRenderer:
         source.metadata = {}  # Empty metadata for an empty SVG
 
         workpiece = WorkPiece(name="empty_wp")
-        workpiece.import_source_uid = source.uid
+        # Manually create a basic generation_config to link to the source
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        workpiece.generation_config = gen_config
 
         # Set up mock parent structure so `workpiece.source` resolves correctly
         mock_doc = Mock()
-        mock_doc.import_sources = {source.uid: source}
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         mock_parent = Mock()
         mock_parent.doc = mock_doc

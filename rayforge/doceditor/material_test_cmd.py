@@ -72,7 +72,7 @@ class MaterialTestCmd:
             workpiece = payload.items[0]
             assert isinstance(workpiece, WorkPiece)
 
-            self._doc.add_import_source(source)
+            self._doc.add_source_asset(source)
             step.generated_workpiece_uid = workpiece.uid  # Link step to WP
             width_mm, height_mm = workpiece.size
 
@@ -137,14 +137,14 @@ class MaterialTestCmd:
 
         # Re-create the recipe with the updated geometric parameters.
         try:
-            old_recipe = json.loads(source.data)
+            old_recipe = json.loads(source.original_data)
             new_recipe_dict = {
                 "drawing_function_path": old_recipe["drawing_function_path"],
                 "size_function_path": old_recipe["size_function_path"],
                 "params": new_params,
             }
             new_recipe_data = json.dumps(new_recipe_dict).encode("utf-8")
-            source.data = new_recipe_data
+            source.original_data = new_recipe_data
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Could not update procedural source data: {e}")
             return

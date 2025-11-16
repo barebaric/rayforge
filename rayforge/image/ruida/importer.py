@@ -3,9 +3,11 @@ from typing import List, Optional
 import numpy as np
 from ...core.item import DocItem
 from ...core.geo import Geometry
-from ...core.vectorization_config import TraceConfig
+from ...core.vectorization_spec import VectorizationSpec
 from ..base_importer import Importer, ImportPayload
-from ...core.import_source import ImportSource
+from ...core.source_asset import SourceAsset
+from ...core.generation_config import GenerationConfig
+from ...core.vectorization_spec import PassthroughSpec
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser
 from .job import RuidaJob
@@ -27,14 +29,14 @@ class RuidaImporter(Importer):
         return parser.parse()
 
     def get_doc_items(
-        self, vector_config: Optional["TraceConfig"] = None
+        self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
-        # Ruida files are always vector, so vector_config is ignored.
+        # Ruida files are always vector, so vectorization_spec is ignored.
         job = self._get_job()
         geometry = self._get_geometry(job)
         geometry.close_gaps()
 
-        source = ImportSource(
+        source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=RUIDA_RENDERER,
@@ -70,8 +72,17 @@ class RuidaImporter(Importer):
                 normalized_geo.transform(norm_matrix.to_4x4_numpy())
 
             # Create a workpiece for this component
-            wp = WorkPiece(name=self.source_file.stem, vectors=normalized_geo)
-            wp.import_source_uid = source.uid
+            passthrough_spec = PassthroughSpec()
+            gen_config = GenerationConfig(
+                source_asset_uid=source.uid,
+                segment_mask_geometry=Geometry(),
+                vectorization_spec=passthrough_spec,
+            )
+            wp = WorkPiece(
+                name=self.source_file.stem,
+                vectors=normalized_geo,
+                generation_config=gen_config,
+            )
             wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
                 width, height
             )

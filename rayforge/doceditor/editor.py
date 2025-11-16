@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
-from ..core.vectorization_config import TraceConfig
+from ..core.vectorization_spec import VectorizationSpec
 from ..pipeline.pipeline import Pipeline
 from ..machine.cmd import MachineCmd
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
@@ -173,7 +173,7 @@ class DocEditor:
         self,
         filename: Path,
         mime_type: Optional[str],
-        vector_config: Optional[TraceConfig],
+        vectorization_spec: Optional[VectorizationSpec],
     ) -> None:
         """
         Imports a file from the specified path and waits for the operation
@@ -181,7 +181,7 @@ class DocEditor:
         """
         # Step 1: Run the importer
         payload = await self.file._load_file_async(
-            filename, mime_type, vector_config
+            filename, mime_type, vectorization_spec
         )
         if not payload or not payload.items:
             logger.warning(

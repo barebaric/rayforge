@@ -5,8 +5,11 @@ from pathlib import Path
 from typing import Tuple, cast, Dict
 from unittest.mock import Mock
 
-from rayforge.core.import_source import ImportSource
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.geo import Geometry
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
+from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.procedural.importer import ProceduralImporter
 from rayforge.image.procedural.renderer import PROCEDURAL_RENDERER
@@ -54,8 +57,8 @@ def _setup_workpiece_with_context(
 
     # Mock the document context so workpiece.source resolves correctly
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     mock_parent = Mock()
     mock_parent.doc = mock_doc
@@ -81,7 +84,7 @@ class TestProceduralImporter:
     def test_importer_creates_correct_payload(self):
         """
         Tests that the importer generates a valid payload with a correctly
-        configured ImportSource and WorkPiece.
+        configured SourceAsset and WorkPiece.
         """
         importer = ProceduralImporter(
             drawing_function_path=MOCK_DRAW_FUNC_PATH,
@@ -94,9 +97,9 @@ class TestProceduralImporter:
         assert payload is not None
         assert len(payload.items) == 1
 
-        # 1. Test the ImportSource
+        # 1. Test the SourceAsset
         source = payload.source
-        assert isinstance(source, ImportSource)
+        assert isinstance(source, SourceAsset)
         assert source.renderer is PROCEDURAL_RENDERER
         assert source.source_file == Path("[Test Procedural Item]")
 
@@ -110,7 +113,8 @@ class TestProceduralImporter:
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
         assert wp.name == "Test Procedural Item"
-        assert wp.import_source_uid == source.uid
+        assert wp.generation_config is not None
+        assert wp.generation_config.source_asset_uid == source.uid
 
         # Verify the size was set correctly by calling the mock size func
         assert wp.size == (MOCK_PARAMS["width"], MOCK_PARAMS["height"])
@@ -164,17 +168,21 @@ class TestProceduralRenderer:
         """
         Tests graceful failure when the source data is not valid JSON.
         """
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("bad"),
             original_data=b"{not_json",
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.import_source_uid = source.uid
+        wp.generation_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=ProceduralSpec(),
+        )
         # Mock parent context
-        mock_doc = Mock(import_sources={source.uid: source})
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        mock_doc = Mock(source_assets={source.uid: source})
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         wp.parent = Mock(doc=mock_doc)
 
@@ -190,16 +198,20 @@ class TestProceduralRenderer:
             "size_function_path": "invalid.path",
             "params": {},
         }
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("bad"),
             original_data=json.dumps(recipe).encode("utf-8"),
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.import_source_uid = source.uid
-        mock_doc = Mock(import_sources={source.uid: source})
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        wp.generation_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=ProceduralSpec(),
+        )
+        mock_doc = Mock(source_assets={source.uid: source})
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         wp.parent = Mock(doc=mock_doc)
 
@@ -215,16 +227,20 @@ class TestProceduralRenderer:
             "size_function_path": MOCK_ERROR_FUNC_PATH,
             "params": {},
         }
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("bad"),
             original_data=json.dumps(recipe).encode("utf-8"),
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.import_source_uid = source.uid
-        mock_doc = Mock(import_sources={source.uid: source})
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        wp.generation_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=ProceduralSpec(),
+        )
+        mock_doc = Mock(source_assets={source.uid: source})
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         wp.parent = Mock(doc=mock_doc)
 

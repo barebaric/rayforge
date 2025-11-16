@@ -3,7 +3,7 @@ import logging
 import mimetypes
 from pathlib import Path
 from typing import Dict, Optional, Type, Union
-from ..core.vectorization_config import TraceConfig
+from ..core.vectorization_spec import VectorizationSpec
 from .base_importer import Importer, ImportPayload
 from .base_renderer import Renderer
 from .bmp.importer import BmpImporter
@@ -59,7 +59,7 @@ for base in importers:
 def import_file(
     source: Union[Path, bytes],
     mime_type: Optional[str] = None,
-    vector_config: Optional[TraceConfig] = None,
+    vectorization_spec: Optional[VectorizationSpec] = None,
 ) -> Optional[ImportPayload]:
     """
     A high-level convenience function to import a file from a path or raw
@@ -73,7 +73,7 @@ def import_file(
     Args:
         source: The pathlib.Path to the file or the raw bytes data.
         mime_type: An optional MIME type to force a specific importer.
-        vector_config: An optional TraceConfig for vectorization.
+        vectorization_spec: An optional VectorizationSpec for vectorization.
 
     Returns:
         An ImportPayload containing the source and doc items, or None if
@@ -112,7 +112,7 @@ def import_file(
     # 3. Execute importer
     try:
         importer = importer_class(file_data, source_file=source_file)
-        return importer.get_doc_items(vector_config)
+        return importer.get_doc_items(vectorization_spec)
     except Exception as e:
         logger.error(
             f"Importer {importer_class.__name__} failed for {source_file}",

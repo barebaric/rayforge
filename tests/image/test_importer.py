@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from rayforge.image import import_file
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -28,7 +28,7 @@ class TestImporter:
     def test_import_png_by_path_with_tracing(self, tests_root: Path):
         """Tests importing and vectorizing a PNG using its path."""
         png_path = tests_root / "image/png/color.png"
-        payload = import_file(png_path, vector_config=TraceConfig())
+        payload = import_file(png_path, vectorization_spec=TraceSpec())
 
         assert payload is not None
         assert len(payload.items) == 1

@@ -117,7 +117,7 @@ def main():
             'map' signal handler to ensure the main window is fully initialized.
             """
             # This import must be inside the method.
-            from rayforge.core.vectorization_config import TraceConfig
+            from rayforge.core.vectorization_spec import TraceSpec
 
             assert self.win is not None
             # self.args.filenames will be a list of paths
@@ -126,14 +126,14 @@ def main():
 
                 # Default to tracing any file that supports it. If
                 # --direct-vector is passed, attempt to use vectors
-                # directly by passing a None config.
-                vector_config = (
-                    None if self.args.direct_vector else TraceConfig()
+                # directly by passing a None spec.
+                vectorization_spec = (
+                    None if self.args.direct_vector else TraceSpec()
                 )
                 self.win.doc_editor.file.load_file_from_path(
                     filename=Path(filename),
                     mime_type=mime_type,
-                    vector_config=vector_config,
+                    vectorization_spec=vectorization_spec,
                 )
 
             return GLib.SOURCE_REMOVE  # ensure this handler only runs once

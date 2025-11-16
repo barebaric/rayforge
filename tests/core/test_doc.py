@@ -5,8 +5,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
-from rayforge.core.import_source import ImportSource
-from rayforge.core.vectorization_config import TraceConfig
+from rayforge.core.source_asset import SourceAsset
 from rayforge.image.svg.renderer import SvgRenderer
 
 
@@ -25,7 +24,7 @@ def test_doc_initialization(doc):
     # Check that the first layer is active
     assert doc.active_layer.name == "Layer 1"
     assert doc.history_manager is not None
-    assert doc.import_sources == {}
+    assert doc.source_assets == {}
     assert doc.stock_items == []
 
 
@@ -57,29 +56,29 @@ def test_doc_stock_items_management(doc):
     assert stock1.parent is None
 
 
-def test_add_and_get_import_source(doc):
-    """Tests the getter and setter for import sources."""
-    source = ImportSource(
+def test_add_and_get_source_asset(doc):
+    """Tests the getter and setter for source assets."""
+    asset = SourceAsset(
         source_file=Path("a.png"),
         original_data=b"abc",
         renderer=SvgRenderer(),
     )
 
     # Test adding a source
-    doc.add_import_source(source)
-    assert len(doc.import_sources) == 1
-    assert source.uid in doc.import_sources
+    doc.add_source_asset(asset)
+    assert len(doc.source_assets) == 1
+    assert asset.uid in doc.source_assets
 
     # Test retrieving the source
-    retrieved_source = doc.get_import_source_by_uid(source.uid)
-    assert retrieved_source is source
+    retrieved_asset = doc.get_source_asset_by_uid(asset.uid)
+    assert retrieved_asset is asset
 
     # Test retrieving a non-existent source
-    assert doc.get_import_source_by_uid("non-existent-uid") is None
+    assert doc.get_source_asset_by_uid("non-existent-uid") is None
 
-    # Test that adding a non-ImportSource object raises a TypeError
+    # Test that adding a non-SourceAsset object raises a TypeError
     with pytest.raises(TypeError):
-        doc.add_import_source("not a source")
+        doc.add_source_asset("not a source")
 
 
 def test_add_layer_fires_descendant_added(doc):
@@ -175,45 +174,33 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
     )
 
 
-def test_doc_serialization_with_import_sources(doc):
-    """Tests that the import_sources registry is serialized correctly."""
-    # Source with vectorization config
-    source1 = ImportSource(
+def test_doc_serialization_with_source_assets(doc):
+    """Tests that the source_assets registry is serialized correctly."""
+    asset1 = SourceAsset(
         source_file=Path("a.png"),
         original_data=b"abc",
         renderer=SvgRenderer(),
-        vector_config=TraceConfig(threshold=0.8),
     )
-    # Source without vectorization config (e.g., an SVG)
-    source2 = ImportSource(
+    asset2 = SourceAsset(
         source_file=Path("b.svg"),
         original_data=b"def",
         renderer=SvgRenderer(),
     )
-    doc.add_import_source(source1)
-    doc.add_import_source(source2)
+    doc.add_source_asset(asset1)
+    doc.add_source_asset(asset2)
 
     data_dict = doc.to_dict()
 
-    assert "import_sources" in data_dict
-    assert len(data_dict["import_sources"]) == 2
-    assert source1.uid in data_dict["import_sources"]
-    assert source2.uid in data_dict["import_sources"]
+    assert "source_assets" in data_dict
+    assert len(data_dict["source_assets"]) == 2
+    assert asset1.uid in data_dict["source_assets"]
+    assert asset2.uid in data_dict["source_assets"]
 
-    # Check structure of a source with config
-    source1_dict = data_dict["import_sources"][source1.uid]
-    assert source1_dict["uid"] == source1.uid
-    assert source1_dict["source_file"] == "a.png"
-    assert source1_dict["renderer_name"] == "SvgRenderer"
-    assert source1_dict["vector_config"] is not None
-    assert source1_dict["vector_config"]["threshold"] == 0.8
-
-    # Check structure of a source without config
-    source2_dict = data_dict["import_sources"][source2.uid]
-    assert source2_dict["uid"] == source2.uid
-    assert source2_dict["source_file"] == "b.svg"
-    assert source2_dict["renderer_name"] == "SvgRenderer"
-    assert source2_dict["vector_config"] is None
+    # Check structure of a source asset
+    asset1_dict = data_dict["source_assets"][asset1.uid]
+    assert asset1_dict["uid"] == asset1.uid
+    assert asset1_dict["source_file"] == "a.png"
+    assert asset1_dict["renderer_name"] == "SvgRenderer"
 
 
 def test_doc_serialization_with_stock_items(doc):
@@ -254,7 +241,7 @@ def test_doc_from_dict_deserialization():
             }
         ],
         "stock_items": [],
-        "import_sources": {},
+        "source_assets": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -307,7 +294,7 @@ def test_doc_from_dict_with_default_active_layer_index():
             }
         ],
         "stock_items": [],
-        "import_sources": {},
+        "source_assets": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:

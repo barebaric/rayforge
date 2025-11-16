@@ -14,9 +14,11 @@ from rayforge.image.bmp.parser import (
     _get_row_offset,
 )
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_config import TraceConfig
-from rayforge.core.import_source import ImportSource
+from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
+from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.geo import Geometry
 
 TEST_DATA_DIR = Path(__file__).parent
 
@@ -94,7 +96,7 @@ def import_payload_helper():
         payload = import_file(
             source=data,
             mime_type="image/bmp",
-            vector_config=TraceConfig(),
+            vectorization_spec=TraceSpec(),
         )
         assert payload is not None, "import_file failed to produce a payload"
         return payload
@@ -107,8 +109,8 @@ def _setup_workpiece_with_context(payload: ImportPayload) -> WorkPiece:
     wp = cast(WorkPiece, payload.items[0])
 
     mock_doc = Mock()
-    mock_doc.import_sources = {source.uid: source}
-    mock_doc.get_import_source_by_uid.side_effect = mock_doc.import_sources.get
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
 
     mock_parent = Mock()
     mock_parent.doc = mock_doc
@@ -274,10 +276,11 @@ class TestBmpImporter:
         payload = import_payload_helper(bmp_data)
 
         assert payload and payload.items and len(payload.items) == 1
-        assert isinstance(payload.source, ImportSource)
+        assert isinstance(payload.source, SourceAsset)
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
-        assert wp.import_source_uid == payload.source.uid
+        assert wp.generation_config is not None
+        assert wp.generation_config.source_asset_uid == payload.source.uid
 
         # Use the actual DPI from the file for the size assertion.
         # The importer uses the file's DPI, so the test must do the same.
@@ -337,19 +340,23 @@ class TestBmpRenderer:
         Test that the renderer does not raise exceptions for a WorkPiece
         with invalid data.
         """
-        source = ImportSource(
+        source = SourceAsset(
             source_file=Path("invalid.bmp"),
             original_data=b"not a valid bmp",
             renderer=BMP_RENDERER,
         )
-        invalid_wp = WorkPiece(name="invalid")
-        invalid_wp.import_source_uid = source.uid
+        gen_config = GenerationConfig(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=TraceSpec(),
+        )
+        invalid_wp = WorkPiece(name="invalid", generation_config=gen_config)
 
         # Mock document context
         mock_doc = Mock()
-        mock_doc.import_sources = {source.uid: source}
-        mock_doc.get_import_source_by_uid.side_effect = (
-            mock_doc.import_sources.get
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
         )
         mock_parent = Mock()
         mock_parent.doc = mock_doc
