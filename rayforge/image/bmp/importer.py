@@ -53,6 +53,10 @@ class BmpImporter(Importer):
         dpi_x = dpi_x or 96.0
         dpi_y = dpi_y or 96.0
 
+        # Update the source asset with the image dimensions
+        source.width_px = width
+        source.height_px = height
+
         try:
             # Step 3: Create a clean pyvips image from the RGBA buffer.
             image = pyvips.Image.new_from_memory(

@@ -52,6 +52,8 @@ class PngImporter(Importer):
             original_data=self.raw_data,
             renderer=PNG_RENDERER,
             metadata=metadata,
+            width_px=image.width,
+            height_px=image.height,
         )
 
         normalized_image = image_util.normalize_to_rgba(image)

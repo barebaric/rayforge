@@ -23,7 +23,7 @@ class SvgRenderer(Renderer):
         Calculates the natural size from metadata or by parsing the data.
         """
         # For traced/cropped items, the authoritative size is in the config.
-        if config := workpiece.generation_config:
+        if config := workpiece.source_segment:
             w = config.cropped_width_mm
             h = config.cropped_height_mm
             if w is not None and h is not None:
@@ -65,13 +65,15 @@ class SvgRenderer(Renderer):
     def _render_to_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[pyvips.Image]:
-        config = workpiece.generation_config
+        config = workpiece.source_segment
+        source = workpiece.source
         # Path 1: Traced SVG. Render the original data, then crop.
         if (
             config
             and config.crop_window_px
-            and config.source_image_width_px
-            and config.source_image_height_px
+            and source
+            and source.width_px
+            and source.height_px
         ):
             full_render_data = workpiece.original_data
             if not full_render_data:
@@ -79,8 +81,8 @@ class SvgRenderer(Renderer):
 
             full_image = self._render_vips_from_data(
                 full_render_data,
-                config.source_image_width_px,
-                config.source_image_height_px,
+                source.width_px,
+                source.height_px,
             )
             if not full_image:
                 return None

@@ -8,7 +8,7 @@ from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
 from ...core.workpiece import WorkPiece
-from ...core.generation_config import GenerationConfig
+from ...core.source_asset_segment import SourceAssetSegment
 from ..base_importer import Importer, ImportPayload
 from .renderer import PROCEDURAL_RENDERER
 
@@ -97,16 +97,19 @@ class ProceduralImporter(Importer):
         frame_geo.close_path()
 
         procedural_spec = ProceduralSpec()
-        gen_config = GenerationConfig(
+        # Create a copy of geometry for segment_mask_geometry
+        # This should be same as the vectors for procedural import
+        segment_mask_geo = frame_geo.copy()
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),  # No bitmap source
+            segment_mask_geometry=segment_mask_geo,
             vectorization_spec=procedural_spec,
         )
 
         wp = WorkPiece(
             name=self.name,
             vectors=frame_geo,
-            generation_config=gen_config,
+            source_segment=gen_config,
         )
         wp.set_size(width_mm, height_mm)
 

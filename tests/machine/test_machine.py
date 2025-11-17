@@ -5,7 +5,7 @@ from pathlib import Path
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
@@ -68,12 +68,12 @@ def create_test_workpiece_and_source() -> Tuple[WorkPiece, SourceAsset]:
         original_data=svg_data,
         renderer=SVG_RENDERER,
     )
-    gen_config = GenerationConfig(
+    gen_config = SourceAssetSegment(
         source_asset_uid=source.uid,
         segment_mask_geometry=Geometry(),
         vectorization_spec=PassthroughSpec(),
     )
-    workpiece = WorkPiece(name=source_file.name, generation_config=gen_config)
+    workpiece = WorkPiece(name=source_file.name, source_segment=gen_config)
     workpiece.matrix = workpiece.matrix @ Matrix.scale(10, 10)
     return workpiece, source
 

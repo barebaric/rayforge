@@ -22,7 +22,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from .generation_config import GenerationConfig
+from .source_asset_segment import SourceAssetSegment
 from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
@@ -48,7 +48,7 @@ class WorkPiece(DocItem):
         self,
         name: str,
         vectors: Optional[Geometry] = None,
-        generation_config: Optional[GenerationConfig] = None,
+        source_segment: Optional[SourceAssetSegment] = None,
     ):
         super().__init__(name=name)
         self.vectors = vectors
@@ -71,7 +71,7 @@ class WorkPiece(DocItem):
           sizing, positioning, and rotation are handled by applying the
           `WorkPiece.matrix` to this normalized shape.
         """
-        self.generation_config = generation_config
+        self.source_segment = source_segment
 
         # The cache for rendered vips images. Key is (width, height).
         # This is the proper place for this state, not monkey-patched.
@@ -97,9 +97,9 @@ class WorkPiece(DocItem):
         Convenience property to retrieve the full SourceAsset object from the
         document's central registry.
         """
-        if self.doc and self.generation_config:
+        if self.doc and self.source_segment:
             return self.doc.get_source_asset_by_uid(
-                self.generation_config.source_asset_uid
+                self.source_segment.source_asset_uid
             )
         return None
 
@@ -198,7 +198,7 @@ class WorkPiece(DocItem):
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
         world_wp = WorkPiece(
-            self.name, self.vectors, deepcopy(self.generation_config)
+            self.name, self.vectors, deepcopy(self.source_segment)
         )
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.matrix = self.get_world_transform()
@@ -236,9 +236,9 @@ class WorkPiece(DocItem):
             "vectors": self.vectors.to_dict() if self.vectors else None,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
-            "generation_config": (
-                self.generation_config.to_dict()
-                if self.generation_config
+            "source_segment": (
+                self.source_segment.to_dict()
+                if self.source_segment
                 else None
             ),
         }
@@ -255,15 +255,15 @@ class WorkPiece(DocItem):
             Geometry.from_dict(data["vectors"]) if data["vectors"] else None
         )
 
-        config_data = data.get("generation_config")
-        generation_config = (
-            GenerationConfig.from_dict(config_data) if config_data else None
+        config_data = data.get("source_segment")
+        source_segment = (
+            SourceAssetSegment.from_dict(config_data) if config_data else None
         )
 
         wp = cls(
             name=data["name"],
             vectors=vectors,
-            generation_config=generation_config,
+            source_segment=source_segment,
         )
         wp.uid = data["uid"]
         wp.matrix = Matrix.from_list(data["matrix"])

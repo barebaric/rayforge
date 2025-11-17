@@ -17,7 +17,7 @@ from rayforge.core.geo import (
 )
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 
 
@@ -327,12 +327,12 @@ class TestSvgRenderer:
 
         workpiece = WorkPiece(name="empty_wp")
         # Manually create a basic generation_config to link to the source
-        gen_config = GenerationConfig(
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
-        workpiece.generation_config = gen_config
+        workpiece.source_segment = gen_config
 
         # Set up mock parent structure so `workpiece.source` resolves correctly
         mock_doc = Mock()

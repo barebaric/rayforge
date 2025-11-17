@@ -16,7 +16,7 @@ from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ...core.vectorization_spec import VectorizationSpec
 from ...core.source_asset import SourceAsset
-from ...core.generation_config import GenerationConfig
+from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import Importer, ImportPayload
 from .renderer import DXF_RENDERER
@@ -173,16 +173,19 @@ class DxfImporter(Importer):
                     normalized_geo.transform(norm_matrix.to_4x4_numpy())
 
                 passthrough_spec = PassthroughSpec()
-                gen_config = GenerationConfig(
+                # Create a copy of geometry for segment_mask_geometry
+                # This should be same as the normalized component geometry
+                segment_mask_geo = normalized_geo.copy()
+                gen_config = SourceAssetSegment(
                     source_asset_uid=source.uid,
-                    segment_mask_geometry=Geometry(),
+                    segment_mask_geometry=segment_mask_geo,
                     vectorization_spec=passthrough_spec,
                 )
 
                 wp = WorkPiece(
                     name=self.source_file.stem,
                     vectors=normalized_geo,
-                    generation_config=gen_config,
+                    source_segment=gen_config,
                 )
 
                 # Set the workpiece's matrix to position and scale it.

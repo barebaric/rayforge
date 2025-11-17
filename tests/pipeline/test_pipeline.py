@@ -9,7 +9,7 @@ from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
@@ -112,12 +112,12 @@ class TestPipeline:
             renderer=SVG_RENDERER,
         )
         doc.add_source_asset(source)
-        gen_config = GenerationConfig(
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
-        workpiece.generation_config = gen_config
+        workpiece.source_segment = gen_config
         # Simulate importer setting the size and pos
         workpiece.set_size(50, 30)
         workpiece.pos = 10, 20
