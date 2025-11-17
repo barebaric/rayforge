@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
-from ...core.vectorization_spec import TraceSpec
+from ...core.vectorization_spec import (
+    TraceSpec,
+    PassthroughSpec,
+    VectorizationSpec,
+)
 from ...core.workpiece import WorkPiece
 from ...image import ImportPayload, import_file_from_bytes, image_util
 from ...shared.util.cairoutil import draw_geometry_to_cairo_context
@@ -22,6 +26,7 @@ PREVIEW_RENDER_SIZE_PX = 1024
 class RasterImportDialog(Adw.Window):
     """
     A dialog for importing raster images with live preview of vectorization.
+    Also handles SVG import options (direct vs. trace).
     """
 
     def __init__(
@@ -35,6 +40,7 @@ class RasterImportDialog(Adw.Window):
         self.editor = editor
         self.file_path = file_path
         self.mime_type = mime_type
+        self.is_svg = self.mime_type == "image/svg+xml"
         self.response = Signal()
 
         # Internal state
@@ -86,9 +92,24 @@ class RasterImportDialog(Adw.Window):
         preferences_page = Adw.PreferencesPage()
         sidebar.append(preferences_page)
 
+        # Import Mode Group (for SVG)
+        mode_group = Adw.PreferencesGroup(title=_("Import Mode"))
+        preferences_page.add(mode_group)
+
+        self.use_vectors_switch = Adw.SwitchRow(
+            title=_("Use Original Vectors"),
+            subtitle=_("Import vector data directly (SVG only)"),
+            active=True,
+        )
+        self.use_vectors_switch.connect(
+            "notify::active", self._on_import_mode_toggled
+        )
+        mode_group.add(self.use_vectors_switch)
+        mode_group.set_visible(self.is_svg)
+
         # Trace Settings Group
-        trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
-        preferences_page.add(trace_group)
+        self.trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
+        preferences_page.add(self.trace_group)
 
         # Auto Threshold
         self.auto_threshold_switch = Adw.SwitchRow(
@@ -99,7 +120,7 @@ class RasterImportDialog(Adw.Window):
         self.auto_threshold_switch.connect(
             "notify::active", self._on_auto_threshold_toggled
         )
-        trace_group.add(self.auto_threshold_switch)
+        self.trace_group.add(self.auto_threshold_switch)
 
         # Manual Threshold Slider
         self.threshold_adjustment = Gtk.Adjustment.new(
@@ -120,7 +141,7 @@ class RasterImportDialog(Adw.Window):
         )
         self.threshold_row.add_suffix(self.threshold_scale)
         self.threshold_row.set_sensitive(False)  # Disabled by default
-        trace_group.add(self.threshold_row)
+        self.trace_group.add(self.threshold_row)
 
         # Invert
         self.invert_switch = Adw.SwitchRow(
@@ -130,12 +151,12 @@ class RasterImportDialog(Adw.Window):
         self.invert_switch.connect(
             "notify::active", self._schedule_preview_update
         )
-        trace_group.add(self.invert_switch)
+        self.trace_group.add(self.invert_switch)
 
         # Preview Area
         preview_frame = Gtk.Frame(
             vexpand=True,
-            hexpand=True,  # This should expand
+            hexpand=True,
             margin_top=12,
             margin_bottom=12,
             margin_start=6,
@@ -152,8 +173,16 @@ class RasterImportDialog(Adw.Window):
         self.preview_area.set_draw_func(self._on_draw_preview)
         preview_frame.set_child(self.preview_area)
 
-        # Initial Load
+        # Initial Load & State
         self._load_initial_data()
+        self._on_import_mode_toggled(
+            self.use_vectors_switch
+        )  # Sets initial sensitivity
+        self._schedule_preview_update()
+
+    def _on_import_mode_toggled(self, switch, *args):
+        is_direct_import = self.is_svg and switch.get_active()
+        self.trace_group.set_sensitive(not is_direct_import)
         self._schedule_preview_update()
 
     def _on_auto_threshold_toggled(self, switch, _pspec):
@@ -170,13 +199,18 @@ class RasterImportDialog(Adw.Window):
             )
             self.close()
 
-    def _get_current_spec(self) -> TraceSpec:
-        """Constructs a TraceSpec from the current UI control values."""
-        return TraceSpec(
-            threshold=self.threshold_adjustment.get_value(),
-            auto_threshold=self.auto_threshold_switch.get_active(),
-            invert=self.invert_switch.get_active(),
-        )
+    def _get_current_spec(self) -> VectorizationSpec:
+        """
+        Constructs a VectorizationSpec from the current UI control values.
+        """
+        if self.is_svg and self.use_vectors_switch.get_active():
+            return PassthroughSpec()
+        else:
+            return TraceSpec(
+                threshold=self.threshold_adjustment.get_value(),
+                auto_threshold=self.auto_threshold_switch.get_active(),
+                invert=self.invert_switch.get_active(),
+            )
 
     def _schedule_preview_update(self, *args):
         if self._in_update:
@@ -192,9 +226,8 @@ class RasterImportDialog(Adw.Window):
 
     async def _update_preview_task(self, ctx):
         """
-        Async task to generate a vector preview. This task only produces
-        the import payload; the background image is rendered separately from
-        the original data to avoid masking it prematurely.
+        Async task to generate a vector preview. This task handles both
+        direct vector import and bitmap tracing modes.
         """
         if not self._file_bytes:
             return
@@ -203,7 +236,8 @@ class RasterImportDialog(Adw.Window):
         ctx.set_message(_("Generating preview..."))
 
         try:
-            # Run the blocking I/O and CPU-bound work in a thread
+            # Run the blocking I/O and CPU-bound work in a thread.
+            # This works for both TraceSpec and PassthroughSpec.
             payload = await asyncio.to_thread(
                 import_file_from_bytes,
                 self._file_bytes,
@@ -215,7 +249,9 @@ class RasterImportDialog(Adw.Window):
             if not payload or not payload.items:
                 raise ValueError("Import process failed to produce any items.")
 
-            # Create a separate, temporary workpiece for the background render
+            # Background Rendering
+            # For a consistent preview, we always render the source file to a
+            # bitmap to serve as the background, regardless of import mode.
             bg_wp = WorkPiece(name="preview-bg")
             bg_wp._renderer = payload.source.renderer
             bg_wp._data = payload.source.original_data
@@ -242,40 +278,44 @@ class RasterImportDialog(Adw.Window):
             if not vips_image:
                 raise ValueError("Renderer failed to create a preview image.")
 
-            # Crop the background to match the bounds of the traced vectors.
-            if crop_px := payload.source.metadata.get("crop_window_px"):
-                trace_w = payload.source.metadata.get("trace_image_width_px")
-                trace_h = payload.source.metadata.get("trace_image_height_px")
-
-                if trace_w and trace_h and trace_w > 0 and trace_h > 0:
-                    preview_w = vips_image.width
-                    preview_h = vips_image.height
-                    scale_x = preview_w / trace_w
-                    scale_y = preview_h / trace_h
-
-                    x, y, w, h = crop_px
-                    crop_x_preview = int(x * scale_x)
-                    crop_y_preview = int(y * scale_y)
-                    crop_w_preview = int(w * scale_x)
-                    crop_h_preview = int(h * scale_y)
-
-                    cropped = image_util.safe_crop(
-                        vips_image,
-                        crop_x_preview,
-                        crop_y_preview,
-                        crop_w_preview,
-                        crop_h_preview,
+            # For traced items, crop the background to match the content
+            # bounds.
+            if isinstance(spec, TraceSpec):
+                if crop_px := payload.source.metadata.get("crop_window_px"):
+                    trace_w = payload.source.metadata.get(
+                        "trace_image_width_px"
                     )
-                    if cropped is not None:
-                        vips_image = cropped
+                    trace_h = payload.source.metadata.get(
+                        "trace_image_height_px"
+                    )
 
-            # Invert the background preview if the user has toggled invert.
-            if spec.invert:
-                # Composite onto a white background BEFORE inverting, to
-                # handle images with alpha channels.
-                vips_image = vips_image.flatten(
-                    background=[255, 255, 255]
-                ).invert()
+                    if trace_w and trace_h and trace_w > 0 and trace_h > 0:
+                        preview_w, preview_h = (
+                            vips_image.width,
+                            vips_image.height,
+                        )
+                        scale_x, scale_y = (
+                            preview_w / trace_w,
+                            preview_h / trace_h,
+                        )
+
+                        x, y, w, h = crop_px
+                        crop_x = int(x * scale_x)
+                        crop_y = int(y * scale_y)
+                        crop_w = int(w * scale_x)
+                        crop_h = int(h * scale_y)
+
+                        cropped = image_util.safe_crop(
+                            vips_image, crop_x, crop_y, crop_w, crop_h
+                        )
+                        if cropped is not None:
+                            vips_image = cropped
+
+                # Invert the background preview if the user has toggled invert.
+                if spec.invert:
+                    vips_image = vips_image.flatten(
+                        background=[255, 255, 255]
+                    ).invert()
 
             png_bytes = vips_image.pngsave_buffer()
 
@@ -316,65 +356,140 @@ class RasterImportDialog(Adw.Window):
         if self._preview_payload is None:
             logger.warning("Preview generation resulted in no payload.")
 
+    def _draw_checkerboard_background(
+        self, ctx: cairo.Context, width: int, height: int
+    ):
+        """Fills the given context with a light gray checkerboard pattern."""
+        CHECKER_SIZE = 10
+        # Create a small surface to hold one tile of the pattern (2x2 checkers)
+        tile_surface = cairo.ImageSurface(
+            cairo.FORMAT_RGB24, CHECKER_SIZE * 2, CHECKER_SIZE * 2
+        )
+        tile_ctx = cairo.Context(tile_surface)
+
+        # Color 1 (e.g., light gray)
+        tile_ctx.set_source_rgb(0.85, 0.85, 0.85)
+        tile_ctx.rectangle(0, 0, CHECKER_SIZE, CHECKER_SIZE)
+        tile_ctx.fill()
+        tile_ctx.rectangle(
+            CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE
+        )
+        tile_ctx.fill()
+
+        # Color 2 (e.g., slightly darker gray)
+        tile_ctx.set_source_rgb(0.78, 0.78, 0.78)
+        tile_ctx.rectangle(CHECKER_SIZE, 0, CHECKER_SIZE, CHECKER_SIZE)
+        tile_ctx.fill()
+        tile_ctx.rectangle(0, CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE)
+        tile_ctx.fill()
+
+        # Create a pattern from the tile and set it to repeat
+        pattern = cairo.SurfacePattern(tile_surface)
+        pattern.set_extend(cairo.EXTEND_REPEAT)
+
+        # Use the pattern as the source for the main context and paint
+        ctx.set_source(pattern)
+        ctx.paint()
+
     def _on_draw_preview(
         self, area: Gtk.DrawingArea, ctx: cairo.Context, w, h
     ):
         """Draws the background image and vectors onto the preview area."""
-        ctx.set_source_rgb(0.9, 0.9, 0.9)
-        ctx.paint()
+        # Use the helper to draw a checkerboard over the entire area
+        self._draw_checkerboard_background(ctx, w, h)
 
-        if not self._background_pixbuf or not self._preview_payload:
+        if not self._preview_payload:
             return
 
         item = self._preview_payload.items[0]
         if not isinstance(item, WorkPiece) or not item.vectors:
             return
 
-        img_w = self._background_pixbuf.get_width()
-        img_h = self._background_pixbuf.get_height()
-        if img_w == 0 or img_h == 0:
+        is_direct_import = self.is_svg and self.use_vectors_switch.get_active()
+
+        # Determine the correct aspect ratio for the content
+        aspect_w, aspect_h = 1.0, 1.0
+        if is_direct_import:
+            # For direct import, the true aspect ratio is from the workpiece's
+            # final calculated size in millimeters.
+            size_mm = item.size
+            if size_mm and size_mm[0] > 0 and size_mm[1] > 0:
+                aspect_w, aspect_h = size_mm
+        else:
+            # For tracing, the aspect ratio is from the background image
+            # pixbuf, which has been cropped during the preview generation.
+            if self._background_pixbuf:
+                aspect_w = self._background_pixbuf.get_width()
+                aspect_h = self._background_pixbuf.get_height()
+
+        if aspect_w <= 0 or aspect_h <= 0:
             return
 
-        # Calculate a single, shared transformation for image and vectors
+        # Calculate drawing area based on the CORRECT aspect ratio
         margin = 20
         view_w, view_h = w - 2 * margin, h - 2 * margin
         if view_w <= 0 or view_h <= 0:
             return
 
-        scale = min(view_w / img_w, view_h / img_h)
-        draw_w, draw_h = img_w * scale, img_h * scale
+        # Fit the content box (defined by its aspect ratio) into the view
+        scale = min(view_w / aspect_w, view_h / aspect_h)
+        draw_w = aspect_w * scale
+        draw_h = aspect_h * scale
         draw_x = (w - draw_w) / 2
         draw_y = (h - draw_h) / 2
 
         ctx.save()
-        # Move to the top-left corner where drawing will start
+        # Move origin to the top-left of our correctly-proportioned draw area
         ctx.translate(draw_x, draw_y)
-        # Scale the entire coordinate system
-        ctx.scale(scale, scale)
 
-        # 1. Create a temporary surface for the unmasked source image
-        img_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_w, img_h)
-        img_ctx = cairo.Context(img_surface)
-        Gdk.cairo_set_source_pixbuf(img_ctx, self._background_pixbuf, 0, 0)
-        img_ctx.paint()
+        # Step 1: Draw the masked image ONLY if in tracing mode
+        if not is_direct_import:
+            if self._background_pixbuf:
+                img_w = self._background_pixbuf.get_width()
+                img_h = self._background_pixbuf.get_height()
 
-        # 2. Create a temporary surface for the vector mask (white shape)
-        mask_surface = cairo.ImageSurface(cairo.FORMAT_A8, img_w, img_h)
-        mask_ctx = cairo.Context(mask_surface)
-        mask_ctx.scale(img_w, img_h)  # Scale to image pixel dimensions
-        mask_ctx.translate(0, 1)  # Flip Y-axis
-        mask_ctx.scale(1, -1)
-        draw_geometry_to_cairo_context(item.vectors, mask_ctx)
-        mask_ctx.set_source_rgb(1, 1, 1)
-        mask_ctx.fill()
+                img_surface = cairo.ImageSurface(
+                    cairo.FORMAT_ARGB32, img_w, img_h
+                )
+                img_ctx = cairo.Context(img_surface)
+                Gdk.cairo_set_source_pixbuf(
+                    img_ctx, self._background_pixbuf, 0, 0
+                )
+                img_ctx.paint()
 
-        # 3. Draw white background
-        ctx.set_source_rgb(1, 1, 1)
-        ctx.paint()
+                mask_surface = cairo.ImageSurface(
+                    cairo.FORMAT_A8, img_w, img_h
+                )
+                mask_ctx = cairo.Context(mask_surface)
+                mask_ctx.scale(img_w, img_h)
+                mask_ctx.translate(0, 1)
+                mask_ctx.scale(1, -1)
+                draw_geometry_to_cairo_context(item.vectors, mask_ctx)
+                mask_ctx.set_source_rgb(1, 1, 1)
+                mask_ctx.fill()
 
-        # 4. Draw the original image, masked by the vector shape
-        ctx.set_source_surface(img_surface, 0, 0)
-        ctx.mask_surface(mask_surface, 0, 0)
+                # Use a saved context to draw the image without affecting
+                # the main context's transformation for the subsequent stroke.
+                ctx.save()
+                ctx.scale(scale, scale)
+                ctx.set_source_surface(img_surface, 0, 0)
+                ctx.mask_surface(mask_surface, 0, 0)
+                ctx.restore()
+
+        # Step 2: Draw the vector stroke on top for ALL modes
+        # This uses the exact same, proven logic as the direct vector mode.
+        ctx.scale(draw_w, draw_h)
+        ctx.translate(0, 1)
+        ctx.scale(1, -1)
+
+        max_dim = max(draw_w, draw_h)
+        if max_dim > 0:
+            ctx.set_line_width(2.0 / max_dim)
+
+        ctx.set_source_rgb(0.1, 0.5, 1.0)
+        ctx.new_path()
+        draw_geometry_to_cairo_context(item.vectors, ctx)
+        ctx.stroke()
 
         ctx.restore()
 
