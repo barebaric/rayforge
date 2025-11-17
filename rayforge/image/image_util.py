@@ -4,7 +4,7 @@ import cairo
 import numpy
 import pyvips
 
-from ..core.generation_config import GenerationConfig
+from ..core.source_asset_segment import SourceAssetSegment
 from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..core.workpiece import WorkPiece
@@ -284,13 +284,15 @@ def create_single_workpiece_from_trace(
     pos_x_mm = min_x * mm_per_px_x
     pos_y_mm = (image.height - max_y) * mm_per_px_y
 
-    gen_config = GenerationConfig(
+    # Update the source asset with the image dimensions
+    source.width_px = image.width
+    source.height_px = image.height
+
+    gen_config = SourceAssetSegment(
         source_asset_uid=source.uid,
         segment_mask_geometry=normalized_mask_geo,
         vectorization_spec=vectorization_spec,
         crop_window_px=(min_x, min_y, width_px, height_px),
-        source_image_width_px=image.width,
-        source_image_height_px=image.height,
         cropped_width_mm=width_mm,
         cropped_height_mm=height_mm,
     )
@@ -298,15 +300,11 @@ def create_single_workpiece_from_trace(
     # Also store crop info in metadata for the transient preview dialog,
     # which doesn't have access to the final workpiece's gen_config.
     source.metadata["crop_window_px"] = gen_config.crop_window_px
-    source.metadata["trace_image_width_px"] = gen_config.source_image_width_px
-    source.metadata["trace_image_height_px"] = (
-        gen_config.source_image_height_px
-    )
 
     final_wp = WorkPiece(
         name=name_stem,
         vectors=normalized_vectors,
-        generation_config=gen_config,
+        source_segment=gen_config,
     )
 
     final_wp.set_size(width_mm, height_mm)

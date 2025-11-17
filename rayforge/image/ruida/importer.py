@@ -6,7 +6,7 @@ from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
 from ..base_importer import Importer, ImportPayload
 from ...core.source_asset import SourceAsset
-from ...core.generation_config import GenerationConfig
+from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import PassthroughSpec
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser
@@ -73,15 +73,18 @@ class RuidaImporter(Importer):
 
             # Create a workpiece for this component
             passthrough_spec = PassthroughSpec()
-            gen_config = GenerationConfig(
+            # Create a copy of geometry for segment_mask_geometry
+            # This should be same as the normalized component geometry
+            segment_mask_geo = normalized_geo.copy()
+            gen_config = SourceAssetSegment(
                 source_asset_uid=source.uid,
-                segment_mask_geometry=Geometry(),
+                segment_mask_geometry=segment_mask_geo,
                 vectorization_spec=passthrough_spec,
             )
             wp = WorkPiece(
                 name=self.source_file.stem,
                 vectors=normalized_geo,
-                generation_config=gen_config,
+                source_segment=gen_config,
             )
             wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
                 width, height

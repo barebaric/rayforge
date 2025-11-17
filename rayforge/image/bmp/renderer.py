@@ -21,7 +21,7 @@ class BmpRenderer(Renderer):
     def get_natural_size(
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
-        if config := workpiece.generation_config:
+        if config := workpiece.source_segment:
             w = config.cropped_width_mm
             h = config.cropped_height_mm
             if w is not None and h is not None:
@@ -55,7 +55,7 @@ class BmpRenderer(Renderer):
             return None
 
         image_to_process = full_image
-        if config := workpiece.generation_config:
+        if config := workpiece.source_segment:
             if crop := config.crop_window_px:
                 x, y, w, h = map(int, crop)
                 image_to_process = image_util.safe_crop(full_image, x, y, w, h)

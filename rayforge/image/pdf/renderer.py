@@ -46,8 +46,9 @@ class PdfRenderer(Renderer):
         if not data_to_render:
             return None
 
-        config = workpiece.generation_config
-        source_w_px = config.source_image_width_px if config else None
+        source = workpiece.source
+        source_w_px = source.width_px if source else None
+        config = workpiece.source_segment
 
         # Determine DPI for the initial full-page render.
         size_mm = self.get_natural_size(workpiece)

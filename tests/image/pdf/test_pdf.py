@@ -11,7 +11,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.geo import Geometry
 
 
@@ -104,8 +104,8 @@ class TestPdfImporter:
 
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
-        assert wp.generation_config is not None
-        assert wp.generation_config.source_asset_uid == payload.source.uid
+        assert wp.source_segment is not None
+        assert wp.source_segment.source_asset_uid == payload.source.uid
 
         # The importer traces and auto-crops. For a full-page PDF, the size
         # should be very close to the PDF's natural dimensions.
@@ -184,12 +184,12 @@ class TestPdfRenderer:
             original_data=b"not a valid pdf",
             renderer=PDF_RENDERER,
         )
-        gen_config = GenerationConfig(
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=TraceSpec(),
         )
-        invalid_wp = WorkPiece(name="invalid", generation_config=gen_config)
+        invalid_wp = WorkPiece(name="invalid", source_segment=gen_config)
 
         # Mock document context
         mock_doc = Mock()

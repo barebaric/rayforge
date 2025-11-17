@@ -10,7 +10,7 @@ ImageModifierChain = List[Dict[str, Any]]
 
 
 @dataclass
-class GenerationConfig:
+class SourceAssetSegment:
     """
     A self-contained set of instructions for generating a WorkPiece's vectors.
     """
@@ -22,8 +22,6 @@ class GenerationConfig:
 
     # --- Fields for cropped/traced bitmap rendering ---
     crop_window_px: Optional[Tuple[float, float, float, float]] = None
-    source_image_width_px: Optional[int] = None
-    source_image_height_px: Optional[int] = None
     cropped_width_mm: Optional[float] = None
     cropped_height_mm: Optional[float] = None
 
@@ -35,15 +33,13 @@ class GenerationConfig:
             "image_modifier_chain": self.image_modifier_chain,
             "vectorization_spec": self.vectorization_spec.to_dict(),
             "crop_window_px": self.crop_window_px,
-            "source_image_width_px": self.source_image_width_px,
-            "source_image_height_px": self.source_image_height_px,
             "cropped_width_mm": self.cropped_width_mm,
             "cropped_height_mm": self.cropped_height_mm,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "GenerationConfig":
-        """Deserializes a dictionary into a GenerationConfig instance."""
+    def from_dict(cls, data: Dict[str, Any]) -> "SourceAssetSegment":
+        """Deserializes a dictionary into a SourceAssetSegment instance."""
         # Handle tuple conversion for crop_window_px if it's a list from JSON
         crop_window = data.get("crop_window_px")
         if isinstance(crop_window, list):
@@ -59,8 +55,6 @@ class GenerationConfig:
                 data["vectorization_spec"]
             ),
             crop_window_px=crop_window,
-            source_image_width_px=data.get("source_image_width_px"),
-            source_image_height_px=data.get("source_image_height_px"),
             cropped_width_mm=data.get("cropped_width_mm"),
             cropped_height_mm=data.get("cropped_height_mm"),
         )

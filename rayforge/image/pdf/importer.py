@@ -74,6 +74,10 @@ class PdfImporter(Importer):
             logger.error("Failed to render PDF to an image for processing.")
             return None
 
+        # Update the source asset with the rendered image dimensions
+        source.width_px = vips_image.width
+        source.height_px = vips_image.height
+
         # Set resolution metadata on the newly rendered image
         px_per_mm = dpi / 25.4
         vips_image = vips_image.copy(xres=px_per_mm, yres=px_per_mm)

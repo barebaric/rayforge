@@ -16,7 +16,7 @@ from svgelements import (
 )
 
 from ...core.geo import Geometry
-from ...core.generation_config import GenerationConfig
+from ...core.source_asset_segment import SourceAssetSegment
 from ...core.item import DocItem
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
@@ -392,15 +392,18 @@ class SvgImporter(Importer):
     ) -> WorkPiece:
         """Creates and configures the final WorkPiece."""
         passthrough_spec = PassthroughSpec()
-        gen_config = GenerationConfig(
+        # Create a copy of geometry for segment_mask_geometry
+        # This should be same as the vectors for direct import
+        segment_mask_geo = geo.copy()
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            segment_mask_geometry=segment_mask_geo,
             vectorization_spec=passthrough_spec,
         )
         wp = WorkPiece(
             name=self.source_file.stem,
             vectors=geo,
-            generation_config=gen_config,
+            source_segment=gen_config,
         )
         wp.set_size(width_mm, height_mm)
         wp.pos = (0, 0)

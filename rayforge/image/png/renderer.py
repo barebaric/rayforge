@@ -44,7 +44,7 @@ class PngRenderer(Renderer):
             return None
 
         image_to_process = full_image
-        if config := workpiece.generation_config:
+        if config := workpiece.source_segment:
             if crop := config.crop_window_px:
                 x, y, w, h = map(int, crop)
                 image_to_process = image_util.safe_crop(full_image, x, y, w, h)

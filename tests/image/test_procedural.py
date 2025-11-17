@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Tuple, cast, Dict
 from unittest.mock import Mock
 
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.geo import Geometry
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
@@ -113,8 +113,8 @@ class TestProceduralImporter:
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
         assert wp.name == "Test Procedural Item"
-        assert wp.generation_config is not None
-        assert wp.generation_config.source_asset_uid == source.uid
+        assert wp.source_segment is not None
+        assert wp.source_segment.source_asset_uid == source.uid
 
         # Verify the size was set correctly by calling the mock size func
         assert wp.size == (MOCK_PARAMS["width"], MOCK_PARAMS["height"])
@@ -174,7 +174,7 @@ class TestProceduralRenderer:
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.generation_config = GenerationConfig(
+        wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),
@@ -204,7 +204,7 @@ class TestProceduralRenderer:
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.generation_config = GenerationConfig(
+        wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),
@@ -233,7 +233,7 @@ class TestProceduralRenderer:
             renderer=PROCEDURAL_RENDERER,
         )
         wp = WorkPiece(name="bad")
-        wp.generation_config = GenerationConfig(
+        wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),

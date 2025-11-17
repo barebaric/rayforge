@@ -11,7 +11,7 @@ from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.generation_config import GenerationConfig
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.svg.renderer import SvgRenderer
 from rayforge.image import import_file
@@ -79,7 +79,7 @@ class TestWorkPiece:
         assert isinstance(wp.transform_changed, Signal)
         assert wp.tabs == []
         assert wp.tabs_enabled is True
-        assert wp.generation_config is not None
+        assert wp.source_segment is not None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -99,8 +99,8 @@ class TestWorkPiece:
         assert "data" not in data_dict
         assert "size" not in data_dict
         assert isinstance(data_dict["matrix"], list)
-        assert "generation_config" in data_dict
-        assert data_dict["generation_config"]["source_asset_uid"] == source.uid
+        assert "source_segment" in data_dict
+        assert data_dict["source_segment"]["source_asset_uid"] == source.uid
 
         new_wp = WorkPiece.from_dict(data_dict)
 
@@ -120,8 +120,8 @@ class TestWorkPiece:
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
         assert new_wp.get_natural_size() == (100.0, 50.0)
-        assert new_wp.generation_config is not None
-        assert new_wp.generation_config.source_asset_uid == source.uid
+        assert new_wp.source_segment is not None
+        assert new_wp.source_segment.source_asset_uid == source.uid
 
     def test_serialization_with_tabs(self, workpiece_instance):
         """Tests that tabs are correctly serialized and deserialized."""
@@ -211,12 +211,12 @@ class TestWorkPiece:
             renderer=MockNoSizeRenderer(),
         )
         doc.add_source_asset(source)
-        gen_config = GenerationConfig(
+        gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
-        wp = WorkPiece("nosize.dat", generation_config=gen_config)
+        wp = WorkPiece("nosize.dat", source_segment=gen_config)
         doc.active_layer.add_child(wp)
 
         # The size should fall back to the provided bounds

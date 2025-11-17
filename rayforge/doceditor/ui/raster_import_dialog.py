@@ -282,12 +282,8 @@ class RasterImportDialog(Adw.Window):
             # bounds.
             if isinstance(spec, TraceSpec):
                 if crop_px := payload.source.metadata.get("crop_window_px"):
-                    trace_w = payload.source.metadata.get(
-                        "trace_image_width_px"
-                    )
-                    trace_h = payload.source.metadata.get(
-                        "trace_image_height_px"
-                    )
+                    trace_w = payload.source.width_px
+                    trace_h = payload.source.height_px
 
                     if trace_w and trace_h and trace_w > 0 and trace_h > 0:
                         preview_w, preview_h = (
