@@ -394,29 +394,29 @@ class RasterImportDialog(Adw.Window):
         # Use the helper to draw a checkerboard over the entire area
         self._draw_checkerboard_background(ctx, w, h)
 
-        if not self._preview_payload:
+        if not self._preview_payload or not self._preview_payload.items:
             return
 
         item = self._preview_payload.items[0]
-        if not isinstance(item, WorkPiece) or not item.vectors:
+        boundaries = item.boundaries if isinstance(item, WorkPiece) else None
+        if not boundaries:
             return
 
         is_direct_import = self.is_svg and self.use_vectors_switch.get_active()
 
         # Determine the correct aspect ratio for the content
         aspect_w, aspect_h = 1.0, 1.0
-        if is_direct_import:
+        if is_direct_import and isinstance(item, WorkPiece):
             # For direct import, the true aspect ratio is from the workpiece's
             # final calculated size in millimeters.
             size_mm = item.size
             if size_mm and size_mm[0] > 0 and size_mm[1] > 0:
                 aspect_w, aspect_h = size_mm
-        else:
+        elif self._background_pixbuf:
             # For tracing, the aspect ratio is from the background image
             # pixbuf, which has been cropped during the preview generation.
-            if self._background_pixbuf:
-                aspect_w = self._background_pixbuf.get_width()
-                aspect_h = self._background_pixbuf.get_height()
+            aspect_w = self._background_pixbuf.get_width()
+            aspect_h = self._background_pixbuf.get_height()
 
         if aspect_w <= 0 or aspect_h <= 0:
             return
@@ -439,41 +439,34 @@ class RasterImportDialog(Adw.Window):
         ctx.translate(draw_x, draw_y)
 
         # Step 1: Draw the masked image ONLY if in tracing mode
-        if not is_direct_import:
-            if self._background_pixbuf:
-                img_w = self._background_pixbuf.get_width()
-                img_h = self._background_pixbuf.get_height()
+        if not is_direct_import and self._background_pixbuf:
+            img_w = self._background_pixbuf.get_width()
+            img_h = self._background_pixbuf.get_height()
 
-                img_surface = cairo.ImageSurface(
-                    cairo.FORMAT_ARGB32, img_w, img_h
-                )
-                img_ctx = cairo.Context(img_surface)
-                Gdk.cairo_set_source_pixbuf(
-                    img_ctx, self._background_pixbuf, 0, 0
-                )
-                img_ctx.paint()
+            img_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_w, img_h)
+            img_ctx = cairo.Context(img_surface)
+            Gdk.cairo_set_source_pixbuf(img_ctx, self._background_pixbuf, 0, 0)
+            img_ctx.paint()
 
-                mask_surface = cairo.ImageSurface(
-                    cairo.FORMAT_A8, img_w, img_h
-                )
-                mask_ctx = cairo.Context(mask_surface)
-                mask_ctx.scale(img_w, img_h)
-                mask_ctx.translate(0, 1)
-                mask_ctx.scale(1, -1)
-                draw_geometry_to_cairo_context(item.vectors, mask_ctx)
-                mask_ctx.set_source_rgb(1, 1, 1)
-                mask_ctx.fill()
+            mask_surface = cairo.ImageSurface(cairo.FORMAT_A8, img_w, img_h)
+            mask_ctx = cairo.Context(mask_surface)
+            # Set up the mask context to draw the Y-up normalized geometry
+            mask_ctx.scale(img_w, img_h)
+            mask_ctx.translate(0, 1)
+            mask_ctx.scale(1, -1)
+            draw_geometry_to_cairo_context(boundaries, mask_ctx)
+            mask_ctx.set_source_rgb(1, 1, 1)
+            mask_ctx.fill()
 
-                # Use a saved context to draw the image without affecting
-                # the main context's transformation for the subsequent stroke.
-                ctx.save()
-                ctx.scale(scale, scale)
-                ctx.set_source_surface(img_surface, 0, 0)
-                ctx.mask_surface(mask_surface, 0, 0)
-                ctx.restore()
+            ctx.save()
+            # Correctly scale the image surface to fit the drawing area
+            ctx.scale(draw_w / img_w, draw_h / img_h)
+            ctx.set_source_surface(img_surface, 0, 0)
+            ctx.mask_surface(mask_surface, 0, 0)
+            ctx.restore()
 
         # Step 2: Draw the vector stroke on top for ALL modes
-        # This uses the exact same, proven logic as the direct vector mode.
+        # Set up the main context to draw the Y-up normalized geometry
         ctx.scale(draw_w, draw_h)
         ctx.translate(0, 1)
         ctx.scale(1, -1)
@@ -484,7 +477,7 @@ class RasterImportDialog(Adw.Window):
 
         ctx.set_source_rgb(0.1, 0.5, 1.0)
         ctx.new_path()
-        draw_geometry_to_cairo_context(item.vectors, ctx)
+        draw_geometry_to_cairo_context(boundaries, ctx)
         ctx.stroke()
 
         ctx.restore()

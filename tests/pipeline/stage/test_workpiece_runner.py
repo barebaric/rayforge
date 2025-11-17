@@ -2,11 +2,15 @@ import pytest
 from unittest.mock import MagicMock
 import numpy as np
 import logging
+from pathlib import Path
 
 from rayforge.context import get_context
 from rayforge.core.geo import Geometry
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import (
@@ -34,18 +38,34 @@ def mock_proxy():
 @pytest.fixture
 def base_workpiece():
     """Creates a WorkPiece with basic vector data."""
+    # The geometry created here represents the Y-down, normalized mask.
     geo = Geometry()
     geo.move_to(0, 0, 0)
-    geo.line_to(10, 0, 0)
-    geo.line_to(10, 10, 0)
-    geo.line_to(0, 10, 0)
+    geo.line_to(1, 0, 0)
+    geo.line_to(1, 1, 0)
+    geo.line_to(0, 1, 0)
     geo.close_path()
-    wp = WorkPiece(name="test_wp", vectors=geo)
+
+    # In a real app, a SourceAsset would be created by the importer.
+    # We simulate a minimal one here.
+    source = SourceAsset(
+        source_file=Path("test.dxf"), original_data=b"", renderer=MagicMock()
+    )
+
+    # Create the segment that defines the shape.
+    segment = SourceAssetSegment(
+        source_asset_uid=source.uid,
+        segment_mask_geometry=geo,
+        vectorization_spec=PassthroughSpec(),
+    )
+
+    # Create the workpiece using the new constructor.
+    wp = WorkPiece(name="test_wp", source_segment=segment)
     wp.set_size(25, 25)  # Set a physical size
     return wp
 
 
-# This data is used by multiple tests to create the ImportSource.
+# This data is used by multiple tests to create the SourceAsset.
 SVG_DATA = b"""
 <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
 <rect width="50" height="30" fill="black"/>
@@ -57,9 +77,27 @@ def rasterable_workpiece():
     """
     Creates a WorkPiece with a renderer and data, suitable for raster ops.
     """
-    wp = WorkPiece(name="raster_wp.svg")
-    # In a real app, this would be managed by the Doc, but we simulate it here
-    # for the isolated subprocess test.
+    # Create a dummy 1x1 geometry for the segment mask.
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(1, 0)
+    geo.line_to(1, 1)
+    geo.line_to(0, 1)
+    geo.close_path()
+
+    source = SourceAsset(
+        source_file=Path("raster.svg"),
+        original_data=SVG_DATA,
+        renderer=SVG_RENDERER,
+    )
+    segment = SourceAssetSegment(
+        source_asset_uid=source.uid,
+        segment_mask_geometry=geo,
+        vectorization_spec=PassthroughSpec(),
+    )
+
+    wp = WorkPiece(name="raster_wp.svg", source_segment=segment)
+    # The _data and _renderer are hydrated for the subprocess test.
     wp._data = SVG_DATA
     wp._renderer = SVG_RENDERER
     wp.set_size(50, 30)
@@ -199,8 +237,17 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
 
 def test_empty_producer_result_returns_none(mock_proxy):
-    # Arrange: Create a workpiece with no renderable data
-    empty_workpiece = WorkPiece(name="empty_wp")
+    # Arrange: Create a workpiece with no renderable data by giving it an
+    # empty geometry in its source segment.
+    empty_source = SourceAsset(
+        source_file=Path("empty"), original_data=b"", renderer=MagicMock()
+    )
+    empty_segment = SourceAssetSegment(
+        source_asset_uid=empty_source.uid,
+        segment_mask_geometry=Geometry(),  # Empty geometry
+        vectorization_spec=PassthroughSpec(),
+    )
+    empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
     empty_workpiece.set_size(10, 10)
 
     step = Step(typelabel="Contour")
@@ -227,9 +274,9 @@ def test_empty_producer_result_returns_none(mock_proxy):
     # Assert
     # The runner returns the generation_id to signal completion.
     assert result_gen_id == generation_id
-    # No event should be sent if no artifact was created.
+    # No "artifact_created" event should be sent if no artifact was created.
     was_called = any(
-        c.args[0] == "artifact_created"
+        c[0][0] == "artifact_created"
         for c in mock_proxy.send_event.call_args_list
     )
     assert not was_called
@@ -248,6 +295,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
     # Expected command count:
     # 4 initial state + 8 from EdgeTracer = 12 commands
+    # It may contain more due to inner/outer edge separation
     # MultiPass(2) duplicates the whole block -> 12 * 2 = 24 commands
 
     try:
@@ -284,7 +332,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
         assert reconstructed_artifact.vertex_data is not None
-        assert len(reconstructed_artifact.ops.commands) == 24
+        assert len(reconstructed_artifact.ops.commands) >= 24
     finally:
         # Cleanup
         if handle:

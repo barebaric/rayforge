@@ -1,6 +1,5 @@
 import logging
 from typing import List, Optional
-import numpy as np
 from ...core.item import DocItem
 from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
@@ -61,21 +60,25 @@ class RuidaImporter(Importer):
             width = max(max_x - min_x, 1e-9)
             height = max(max_y - min_y, 1e-9)
 
-            # Normalize the component geometry to have its origin at (0,0)
-            # and a 1x1 size
-            normalized_geo = component_geo.copy()
-            translate_matrix = Matrix.translation(-min_x, -min_y)
-            normalized_geo.transform(translate_matrix.to_4x4_numpy())
+            # The component geometry is Y-up. We must convert it to a
+            # normalized Y-down geometry for storage in the segment.
+            segment_mask_geo = component_geo.copy()
 
+            # 1. Translate to origin (0,0 is bottom-left).
+            translate_matrix = Matrix.translation(-min_x, -min_y)
+            segment_mask_geo.transform(translate_matrix.to_4x4_numpy())
+
+            # 2. Normalize to a 1x1 box (still Y-up).
             if width > 0 and height > 0:
                 norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
-                normalized_geo.transform(norm_matrix.to_4x4_numpy())
+                segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
+
+            # 3. Flip the Y-axis to convert to Y-down for storage.
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
 
             # Create a workpiece for this component
             passthrough_spec = PassthroughSpec()
-            # Create a copy of geometry for segment_mask_geometry
-            # This should be same as the normalized component geometry
-            segment_mask_geo = normalized_geo.copy()
             gen_config = SourceAssetSegment(
                 source_asset_uid=source.uid,
                 segment_mask_geometry=segment_mask_geo,
@@ -83,7 +86,6 @@ class RuidaImporter(Importer):
             )
             wp = WorkPiece(
                 name=self.source_file.stem,
-                vectors=normalized_geo,
                 source_segment=gen_config,
             )
             wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
@@ -94,43 +96,19 @@ class RuidaImporter(Importer):
 
         items: List[DocItem]
         if len(workpieces) > 1:
-            # 1. Calculate collective bounding box of new workpieces.
-            all_corners = []
-            for wp in workpieces:
-                unit_corners = [(0, 0), (1, 0), (1, 1), (0, 1)]
-                # At this stage, world transform is just the local matrix
-                world_transform = wp.matrix
-                all_corners.extend(
-                    [world_transform.transform_point(c) for c in unit_corners]
-                )
+            # Use the Group factory method for clean group creation
+            dummy_parent = Group()
+            group_result = Group.create_from_items(workpieces, dummy_parent)
 
-            if not all_corners:
-                items = workpieces  # Fallback
+            if group_result:
+                new_group = group_result.new_group
+                child_matrices = group_result.child_matrices
+                for wp in workpieces:
+                    wp.matrix = child_matrices[wp.uid]
+                new_group.set_children(workpieces)
+                items = [new_group]
             else:
-                min_x = min(p[0] for p in all_corners)
-                min_y = min(p[1] for p in all_corners)
-                max_x = max(p[0] for p in all_corners)
-                max_y = max(p[1] for p in all_corners)
-                bbox_x, bbox_y = min_x, min_y
-                bbox_w = max(max_x - min_x, 1e-9)
-                bbox_h = max(max_y - min_y, 1e-9)
-
-                # 2. Create group and set its matrix to match the bbox.
-                group = Group(name=self.source_file.stem)
-                group.matrix = Matrix.translation(
-                    bbox_x, bbox_y
-                ) @ Matrix.scale(bbox_w, bbox_h)
-
-                # 3. Update workpiece matrices to be relative to the group.
-                try:
-                    group_inv_matrix = group.matrix.invert()
-                    for wp in workpieces:
-                        wp.matrix = group_inv_matrix @ wp.matrix
-                    # 4. Add children and return the configured group.
-                    group.set_children(workpieces)
-                    items = [group]
-                except np.linalg.LinAlgError:
-                    items = workpieces  # Fallback
+                items = workpieces  # Fallback
 
         elif workpieces:
             items = workpieces

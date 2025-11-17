@@ -294,7 +294,7 @@ class WorkPieceElement(CanvasElement):
               `{'segment_index': int, 't': float}`
             if the point is within the threshold, otherwise None.
         """
-        if not self.data.vectors or not self.canvas:
+        if not self.data.boundaries or not self.canvas:
             return None
 
         work_surface = cast("WorkSurface", self.canvas)
@@ -327,7 +327,9 @@ class WorkPieceElement(CanvasElement):
         local_y_mm = local_y_norm * natural_h
 
         # 3. Find closest point on path in local mm space
-        closest = self.data.vectors.find_closest_point(local_x_mm, local_y_mm)
+        closest = self.data.boundaries.find_closest_point(
+            local_x_mm, local_y_mm
+        )
         if not closest:
             return None
 

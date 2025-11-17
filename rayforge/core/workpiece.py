@@ -40,41 +40,20 @@ logger = logging.getLogger(__name__)
 class WorkPiece(DocItem):
     """
     Represents a real-world workpiece. It is a lightweight data container,
-    holding its vector geometry, its transformation matrix, and a link to its
-    source. It is completely decoupled from importers.
+    holding its transformation matrix and a link to its source and shape
+    definition via a SourceAssetSegment.
     """
 
     def __init__(
         self,
         name: str,
-        vectors: Optional[Geometry] = None,
         source_segment: Optional[SourceAssetSegment] = None,
     ):
         super().__init__(name=name)
-        self.vectors = vectors
-        """
-        The normalized vector geometry defining the intrinsic shape.
-
-        This `Geometry` object represents the workpiece's shape, normalized
-        to fit within a 1x1 unit reference box. This separation of intrinsic
-        shape from its world transformation is crucial for preventing
-        rendering and processing errors.
-
-        The local coordinate space of this normalized geometry has the
-        following properties:
-
-        - **Reference Size**: The geometry is scaled to fit within a box
-          that is approximately 1 unit wide by 1 unit tall.
-        - **Origin (0,0)**: The anchor point is the bottom-left corner of the
-          geometry's bounding box.
-        - **Transformation**: The vector data itself is static. All physical
-          sizing, positioning, and rotation are handled by applying the
-          `WorkPiece.matrix` to this normalized shape.
-        """
         self.source_segment = source_segment
+        self._boundaries_cache: Optional[Geometry] = None
 
         # The cache for rendered vips images. Key is (width, height).
-        # This is the proper place for this state, not monkey-patched.
         self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
         # Transient attributes for deserialized instances in subprocesses
@@ -87,9 +66,12 @@ class WorkPiece(DocItem):
     def clear_render_cache(self):
         """
         Invalidates and clears all cached renders for this workpiece.
-        Should be called if the underlying _data or geometry changes.
+        Should be called if the underlying data or geometry changes.
         """
         self._render_cache.clear()
+        self._boundaries_cache = (
+            None  # Also clear the boundaries cache on update
+        )
 
     @property
     def source(self) -> "Optional[SourceAsset]":
@@ -154,6 +136,53 @@ class WorkPiece(DocItem):
         return source.renderer if source else None
 
     @property
+    def boundaries(self) -> Optional[Geometry]:
+        """
+        The normalized vector geometry defining the workpiece shape.
+
+        This `Geometry` object represents the workpiece's intrinsic shape,
+        normalized to fit within a 1x1 unit reference box. This separation of
+        intrinsic shape from its world transformation is crucial for
+        preventing rendering and processing errors.
+
+        The local coordinate space of this normalized geometry has the
+        following properties:
+
+        - **Coordinate System**: Y-up, where (0, 0) is the bottom-left corner.
+        - **Reference Size**: The geometry is scaled to fit within a box
+          that is 1 unit wide by 1 unit tall.
+        - **Origin (0,0)**: The anchor point is the bottom-left corner of the
+          geometry's bounding box.
+        - **Transformation**: The vector data itself is static. All physical
+          sizing, positioning, and rotation are handled by applying the
+          `WorkPiece.matrix` to this normalized shape.
+
+        This property reads the Y-down geometry from the source segment,
+        transforms it to the Y-up system, and caches the result.
+        """
+        if self._boundaries_cache:
+            return self._boundaries_cache
+
+        if not self.source_segment:
+            return None
+
+        # Get the Y-down geometry from storage
+        y_down_geo = self.source_segment.segment_mask_geometry
+        if not y_down_geo or y_down_geo.is_empty():
+            return None
+
+        y_up_geo = y_down_geo.copy()
+
+        # Transformation to flip Y axis in a 0-1 box:
+        # 1. Scale Y by -1 (flips it from Y-down to Y-up)
+        # 2. Translate Y by +1 (moves it back into the 0-1 box)
+        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+        y_up_geo.transform(flip_matrix.to_4x4_numpy())
+
+        self._boundaries_cache = y_up_geo
+        return self._boundaries_cache
+
+    @property
     def tabs(self) -> List[Tab]:
         """The list of Tab objects for this workpiece."""
         return self._tabs
@@ -197,9 +226,7 @@ class WorkPiece(DocItem):
         """
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
-        world_wp = WorkPiece(
-            self.name, self.vectors, deepcopy(self.source_segment)
-        )
+        world_wp = WorkPiece(self.name, deepcopy(self.source_segment))
         world_wp.uid = self.uid  # Preserve UID for tracking
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
@@ -233,13 +260,10 @@ class WorkPiece(DocItem):
             "uid": self.uid,
             "name": self.name,
             "matrix": self._matrix.to_list(),
-            "vectors": self.vectors.to_dict() if self.vectors else None,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
             "source_segment": (
-                self.source_segment.to_dict()
-                if self.source_segment
-                else None
+                self.source_segment.to_dict() if self.source_segment else None
             ),
         }
 
@@ -248,13 +272,6 @@ class WorkPiece(DocItem):
         """
         Restores a WorkPiece instance from a dictionary.
         """
-        from .geo import Geometry
-        from ..image import renderer_by_name
-
-        vectors = (
-            Geometry.from_dict(data["vectors"]) if data["vectors"] else None
-        )
-
         config_data = data.get("source_segment")
         source_segment = (
             SourceAssetSegment.from_dict(config_data) if config_data else None
@@ -262,7 +279,6 @@ class WorkPiece(DocItem):
 
         wp = cls(
             name=data["name"],
-            vectors=vectors,
             source_segment=source_segment,
         )
         wp.uid = data["uid"]
@@ -282,6 +298,8 @@ class WorkPiece(DocItem):
             wp._data = data["data"]
         if "renderer_name" in data:
             renderer_name = data["renderer_name"]
+            from ..image import renderer_by_name
+
             if renderer_name in renderer_by_name:
                 wp._renderer = renderer_by_name[renderer_name]
 
@@ -349,9 +367,7 @@ class WorkPiece(DocItem):
     ) -> Optional[cairo.ImageSurface]:
         """Renders to a pixel surface at the workpiece's current size.
         Returns None if size is not valid."""
-        # Use the final world-space size for rendering resolution. This is
-        # critical for preserving quality when scaling is applied to a
-        # parent group.
+        # Use the final world-space size for rendering resolution.
         current_size = self.size
         if not current_size or current_size[0] <= 0 or current_size[1] <= 0:
             return None
@@ -372,9 +388,7 @@ class WorkPiece(DocItem):
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """Renders in chunks at the workpiece's current size.
         Yields nothing if size is not valid."""
-        # Use the final world-space size for rendering resolution. This is
-        # critical for preserving quality when scaling is applied to a
-        # parent group.
+        # Use the final world-space size for rendering resolution.
         current_size = self.size
         if not current_size or current_size[0] <= 0 or current_size[1] <= 0:
             return
@@ -410,11 +424,12 @@ class WorkPiece(DocItem):
             A tuple (min_x, min_y, max_x, max_y) representing the bounding
             box, or None if the workpiece has no vector geometry.
         """
-        if self.vectors is None or self.vectors.is_empty():
+        boundaries = self.boundaries
+        if boundaries is None or boundaries.is_empty():
             return None
 
         # Create a copy to avoid modifying the original normalized vectors
-        world_geometry = self.vectors.copy()
+        world_geometry = boundaries.copy()
 
         # Apply the full world transformation
         world_matrix = self.get_world_transform()
@@ -439,11 +454,12 @@ class WorkPiece(DocItem):
             A tuple (dx, dy) representing the direction vector, or None if
             the workpiece has no vector data or the path is open.
         """
-        if self.vectors is None:
+        boundaries = self.boundaries
+        if boundaries is None:
             return None
 
         # 1. Get the normal vector in the geometry's local space.
-        local_normal = self.vectors.get_outward_normal_at(
+        local_normal = boundaries.get_outward_normal_at(
             tab.segment_index, tab.pos
         )
         if local_normal is None:

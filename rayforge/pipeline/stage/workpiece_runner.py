@@ -132,7 +132,7 @@ def make_workpiece_artifact_in_subprocess(
             return
 
         # Path 1: True vector source (e.g., SVG).
-        if workpiece.vectors and not opsproducer.requires_full_render:
+        if workpiece.boundaries and not opsproducer.requires_full_render:
             logger.debug(
                 "Workpiece has vectors and producer does not require a full "
                 "render. Using direct vector processing."

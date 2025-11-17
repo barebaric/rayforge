@@ -197,8 +197,8 @@ class SvgImporter(Importer):
             return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
 
-        # 5. Normalize geometry to a 0-1 unit square and flip Y-axis.
-        self._normalize_and_flip_geometry(geo, width_px, height_px)
+        # 5. Normalize geometry to a 0-1 unit square (Y-down).
+        self._normalize_geometry(geo, width_px, height_px)
 
         # 6. Create the final workpiece.
         wp = self._create_workpiece(
@@ -362,26 +362,19 @@ class SvgImporter(Importer):
             t = i / num_steps
             p = seg.point(t)
             if p is not None and p.x is not None and p.y is not None:
-                # Assertions help type checkers confirm state in complex loops.
-                assert p and p.x is not None and p.y is not None
                 geo.line_to(float(p.x), float(p.y))
 
-    def _normalize_and_flip_geometry(
+    def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float
     ) -> None:
         """
-        Normalizes geometry to a 0-1 unit box and flips the Y-axis.
+        Normalizes geometry to a 0-1 unit box in a Y-down coordinate system.
         """
         # Normalize from pixel space to a (0,0)-(1,1) unit box.
-        norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
-        geo.transform(norm_matrix.to_4x4_numpy())
-
-        # Flip the Y-down SVG coordinate system to be Y-up.
-        # This is a scale by -1 on Y, then a translation by +1 on Y.
-        scale_flip_matrix = Matrix.scale(1.0, -1.0)
-        translate_flip_matrix = Matrix.translation(0, 1.0)
-        geo.transform(scale_flip_matrix.to_4x4_numpy())
-        geo.transform(translate_flip_matrix.to_4x4_numpy())
+        # Since SVG coordinates are already Y-down, we don't need to flip.
+        if width_px > 0 and height_px > 0:
+            norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
+            geo.transform(norm_matrix.to_4x4_numpy())
 
     def _create_workpiece(
         self,
@@ -391,18 +384,13 @@ class SvgImporter(Importer):
         height_mm: float,
     ) -> WorkPiece:
         """Creates and configures the final WorkPiece."""
-        passthrough_spec = PassthroughSpec()
-        # Create a copy of geometry for segment_mask_geometry
-        # This should be same as the vectors for direct import
-        segment_mask_geo = geo.copy()
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=segment_mask_geo,
-            vectorization_spec=passthrough_spec,
+            segment_mask_geometry=geo,
+            vectorization_spec=PassthroughSpec(),
         )
         wp = WorkPiece(
             name=self.source_file.stem,
-            vectors=geo,
             source_segment=gen_config,
         )
         wp.set_size(width_mm, height_mm)

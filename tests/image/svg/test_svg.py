@@ -148,16 +148,16 @@ class TestSvgImporter:
         assert wp.size == pytest.approx((80.0, 80.0), 5)
 
         # Check if vectors were successfully imported
-        assert wp.vectors is not None
-        assert isinstance(wp.vectors, Geometry)
+        assert wp.boundaries is not None
+        assert isinstance(wp.boundaries, Geometry)
 
         # A simple rectangle, when converted to Path by svgelements and then
         # to Geometry in _get_doc_items_direct, should typically result in:
         # MOVE_TO, LINE_TO, LINE_TO, LINE_TO, CLOSE_PATH -> 5 commands.
-        assert len(wp.vectors.commands) == 5
+        assert len(wp.boundaries.commands) == 5
 
         # Check the types of commands to ensure they are basic path elements
-        cmds = wp.vectors.commands
+        cmds = wp.boundaries.commands
         assert isinstance(cmds[0], MoveToCommand)
         assert isinstance(cmds[1], LineToCommand)
         assert isinstance(cmds[2], LineToCommand)
@@ -168,7 +168,7 @@ class TestSvgImporter:
         # Check the overall bounds of the imported geometry.
         # The geometry must be normalized to a 1x1 unit.
         geo_rect_min_x, geo_rect_min_y, geo_rect_max_x, geo_rect_max_y = (
-            wp.vectors.rect()
+            wp.boundaries.rect()
         )
         assert geo_rect_min_x == pytest.approx(0.0, abs=1e-3)
         assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)
@@ -199,8 +199,8 @@ class TestSvgImporter:
         # 2. Check that the vectors are normalized correctly. The vector
         # content (the rect) should only occupy the left half of the
         # normalized space, because the text occupies the right half.
-        assert wp.vectors is not None
-        min_v, _, max_v, _ = wp.vectors.rect()
+        assert wp.boundaries is not None
+        min_v, _, max_v, _ = wp.boundaries.rect()
         assert min_v == pytest.approx(0.0, abs=1e-3)
         # The vector data should only span half the width (0.5) of the
         # full content area because the other half is text, which is ignored.
@@ -245,15 +245,15 @@ class TestSvgImporter:
         assert wp.size[1] == pytest.approx(expected_content_size_mm, rel=1e-2)
 
         # Check if vectors were generated through tracing
-        assert wp.vectors is not None
-        assert isinstance(wp.vectors, Geometry)
-        assert len(wp.vectors.commands) > 4
+        assert wp.boundaries is not None
+        assert isinstance(wp.boundaries, Geometry)
+        assert len(wp.boundaries.commands) > 4
 
         # Check the overall bounds of the TRACED geometry.
         # Per the new architecture, the vectors MUST be normalized to a
         # 1x1 box.
         geo_rect_min_x, geo_rect_min_y, geo_rect_max_x, geo_rect_max_y = (
-            wp.vectors.rect()
+            wp.boundaries.rect()
         )
         assert geo_rect_min_x == pytest.approx(0.0, abs=1e-3)
         assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)

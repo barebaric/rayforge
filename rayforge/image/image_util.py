@@ -240,9 +240,8 @@ def create_single_workpiece_from_trace(
     name_stem: str,
 ) -> List[DocItem]:
     """
-    Combines all traced geometries into a single WorkPiece that is cropped
-    and masked to the bounds of the traced content. It creates both a
-    normalized (Y-down) mask and normalized (Y-up) vectors.
+    Combines all traced geometries into a single WorkPiece. It creates a
+    normalized (Y-down) mask geometry that defines the workpiece's shape.
     """
     combined_geo = Geometry()
     if geometries:
@@ -252,7 +251,14 @@ def create_single_workpiece_from_trace(
 
     if combined_geo.is_empty():
         logger.warning("Tracing produced no vectors, creating an empty item.")
-        return [WorkPiece(name=name_stem)]
+        # Create a workpiece with an empty segment to signify it came from
+        # this source
+        empty_segment = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            segment_mask_geometry=Geometry(),
+            vectorization_spec=vectorization_spec,
+        )
+        return [WorkPiece(name=name_stem, source_segment=empty_segment)]
 
     min_x, min_y, max_x, max_y = combined_geo.rect()
     width_px = max_x - min_x
@@ -265,45 +271,39 @@ def create_single_workpiece_from_trace(
     )
 
     normalized_mask_geo = pixel_space_geo.copy()
-    normalized_vectors = pixel_space_geo.copy()
-
     if width_px > 0 and height_px > 0:
-        # For the mask: normalize to a 0-1 box (Y-down coordinates).
+        # Normalize to a 0-1 box (Y-down coordinates). This is the only
+        # version we need to store.
         norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
         normalized_mask_geo.transform(norm_matrix.to_4x4_numpy())
-
-        # For the vectors: normalize to a 0-1 box AND flip the Y-axis.
-        # The flip is a scale by -1 on Y, then a translation by +1 on Y.
-        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-        final_transform = flip_matrix @ norm_matrix
-        normalized_vectors.transform(final_transform.to_4x4_numpy())
 
     mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
     width_mm = width_px * mm_per_px_x
     height_mm = height_px * mm_per_px_y
     pos_x_mm = min_x * mm_per_px_x
+    # Position calculation must also be Y-up
     pos_y_mm = (image.height - max_y) * mm_per_px_y
 
-    # Update the source asset with the image dimensions
+    # Update the source asset with the full image dimensions
     source.width_px = image.width
     source.height_px = image.height
 
     gen_config = SourceAssetSegment(
         source_asset_uid=source.uid,
-        segment_mask_geometry=normalized_mask_geo,
+        segment_mask_geometry=normalized_mask_geo,  # Store the Y-down version
         vectorization_spec=vectorization_spec,
         crop_window_px=(min_x, min_y, width_px, height_px),
         cropped_width_mm=width_mm,
         cropped_height_mm=height_mm,
     )
 
-    # Also store crop info in metadata for the transient preview dialog,
-    # which doesn't have access to the final workpiece's gen_config.
+    # Store crop info in metadata for the transient preview dialog
     source.metadata["crop_window_px"] = gen_config.crop_window_px
 
+    # The WorkPiece is now created purely from the source_segment.
+    # It no longer needs a separate 'boundaries' argument.
     final_wp = WorkPiece(
         name=name_stem,
-        vectors=normalized_vectors,
         source_segment=gen_config,
     )
 

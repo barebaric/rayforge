@@ -12,7 +12,9 @@ ImageModifierChain = List[Dict[str, Any]]
 @dataclass
 class SourceAssetSegment:
     """
-    A self-contained set of instructions for generating a WorkPiece's vectors.
+    Contains vectors describing the boundaries of a segment in a
+    SourceAsset, along with a set of instructions for generating those
+    boundary vectors.
     """
 
     source_asset_uid: str

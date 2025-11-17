@@ -175,7 +175,7 @@ class ActionManager:
         self.actions["add_stock"].set_enabled(True)
 
         target_workpieces = self._get_workpieces_for_tabbing()
-        can_add_tabs = any(wp.vectors for wp in target_workpieces)
+        can_add_tabs = any(wp.boundaries for wp in target_workpieces)
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
         self.actions["add-tabs-cardinal"].set_enabled(can_add_tabs)
 
@@ -221,7 +221,7 @@ class ActionManager:
         valid_workpieces = [
             wp
             for wp in workpieces_to_process
-            if wp.vectors
+            if wp.boundaries
             and wp.layer
             and wp.layer.workflow
             and wp.layer.workflow.has_steps()

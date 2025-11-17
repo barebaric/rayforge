@@ -31,12 +31,12 @@ class TestSegmentMaskGeometry:
         assert wp.source_segment.segment_mask_geometry is not None
         assert not wp.source_segment.segment_mask_geometry.is_empty()
 
-        # For raster imports, vectors and segment_mask_geometry are different
-        # (vectors are Y-up, segment_mask_geometry is Y-down)
+        # For raster imports, boundaries and segment_mask_geometry are
+        # different (boundaries are Y-up, segment_mask_geometry is Y-down)
         # But both should be non-empty
-        assert wp.vectors is not None
+        assert wp.boundaries is not None
         assert wp.source_segment.segment_mask_geometry is not None
-        assert not wp.vectors.is_empty()
+        assert not wp.boundaries.is_empty()
         assert not wp.source_segment.segment_mask_geometry.is_empty()
 
     def test_vector_import_populates_segment_mask_geometry(
@@ -58,9 +58,12 @@ class TestSegmentMaskGeometry:
         assert wp.source_segment.segment_mask_geometry is not None
         assert not wp.source_segment.segment_mask_geometry.is_empty()
 
-        # Assert that workpiece.vectors is identical to segment_mask_geometry
-        assert wp.vectors is not None
-        assert wp.vectors.to_dict() == (
+        # The boundaries property returns a Y-up version, while the source
+        # segment stores the original Y-down version. They should not be
+        # identical.
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
+        assert wp.boundaries.to_dict() != (
             wp.source_segment.segment_mask_geometry.to_dict()
         )
 
@@ -93,9 +96,12 @@ class TestSegmentMaskGeometry:
         assert payload.source.width_px == 300
         assert payload.source.height_px == 358
 
-        # Assert that workpiece.vectors is identical to segment_mask_geometry
-        assert wp.vectors is not None
-        assert wp.vectors.to_dict() == (
+        # The boundaries property returns a Y-up version, while the source
+        # segment stores the original Y-down version. They should not be
+        # identical.
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
+        assert wp.boundaries.to_dict() != (
             wp.source_segment.segment_mask_geometry.to_dict()
         )
 
