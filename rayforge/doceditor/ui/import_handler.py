@@ -71,68 +71,6 @@ def _on_raster_import_dialog_response(
         win.item_revealer.set_reveal_child(False)
 
 
-def _on_svg_options_response(
-    dialog,
-    response_id: str,
-    editor: "DocEditor",
-    file_path: Path,
-    mime_type: str,
-    win: "MainWindow",
-    position_mm: Optional[tuple[float, float]] = None,
-):
-    """Handles the user's choice from the initial SVG import dialog."""
-    if response_id == "direct":
-        # Direct import, no interactive dialog needed.
-        editor.file.load_file_from_path(
-            file_path, mime_type, None, position_mm
-        )
-        win.item_revealer.set_reveal_child(False)
-    elif response_id == "trace":
-        # User chose to trace, so now show the interactive raster dialog.
-        _start_interactive_raster_import(
-            win, editor, file_path, mime_type, position_mm
-        )
-    # else: user cancelled, do nothing.
-
-
-def _show_svg_import_dialog(
-    win: "MainWindow",
-    editor: "DocEditor",
-    file_path: Path,
-    mime_type: str,
-    position_mm: Optional[tuple[float, float]] = None,
-):
-    """Shows a dialog asking the user how to import an SVG."""
-    dialog = Adw.MessageDialog(
-        transient_for=win,
-        modal=True,
-        heading=_("SVG Import Options"),
-        body=_(
-            "How would you like to import this SVG file?\n\n"
-            "<b>Import Vectors Directly:</b> High-fidelity, but may not "
-            " support all SVG features.\n"
-            "<b>Trace Bitmap:</b> More robust, but converts the SVG to "
-            "pixels first, which may lose detail."
-        ),
-        body_use_markup=True,
-    )
-    dialog.add_response("direct", _("Import Vectors Directly"))
-    dialog.add_response("trace", _("Trace Bitmap"))
-    dialog.set_default_response("direct")
-    dialog.set_close_response("cancel")
-
-    dialog.connect(
-        "response",
-        _on_svg_options_response,
-        editor,
-        file_path,
-        mime_type,
-        win,
-        position_mm,
-    )
-    dialog.present()
-
-
 def _on_file_selected(dialog, result, user_data):
     """Callback for when the user selects a file from the dialog."""
     win, editor = user_data
@@ -149,16 +87,18 @@ def _on_file_selected(dialog, result, user_data):
         )
         mime_type = file_info.get_content_type()
 
-        if mime_type == "image/svg+xml":
-            _show_svg_import_dialog(win, editor, file_path, mime_type)
-        elif mime_type == "application/pdf":
-            # For PDFs, always go to the interactive trace dialog.
-            _start_interactive_raster_import(win, editor, file_path, mime_type)
-        elif mime_type and mime_type in bitmap_mime_types:
-            # For standard raster types, go to the interactive dialog.
+        is_raster_like = (
+            mime_type in bitmap_mime_types
+            or mime_type == "application/pdf"
+            or mime_type == "image/svg+xml"
+        )
+
+        if is_raster_like:
+            # For SVGs, PDFs, and standard raster types, go to the unified
+            # interactive dialog.
             _start_interactive_raster_import(win, editor, file_path, mime_type)
         else:
-            # For vector types (dxf, etc.) or unknown types, import
+            # For other vector types (dxf, etc.) or unknown types, import
             # directly without any dialogs.
             editor.file.load_file_from_path(file_path, mime_type, None)
             win.item_revealer.set_reveal_child(False)
@@ -193,16 +133,15 @@ def import_file_at_position(
         position_mm: Optional (x, y) tuple in world coordinates (mm)
             to center the imported item
     """
-    # For SVGs, ask the user how they want to import it
-    if mime_type == "image/svg+xml":
-        # Show SVG import dialog with position parameter
-        _show_svg_import_dialog(win, editor, file_path, mime_type, position_mm)
-    elif mime_type == "application/pdf":
-        # For PDFs, always go to the interactive trace dialog.
-        _start_interactive_raster_import(
-            win, editor, file_path, mime_type, position_mm
-        )
-    elif mime_type and mime_type in bitmap_mime_types:
+    is_raster_like = (
+        mime_type in bitmap_mime_types
+        or mime_type == "application/pdf"
+        or mime_type == "image/svg+xml"
+    )
+
+    if is_raster_like:
+        # For SVGs, PDFs, and standard raster types, go to the unified
+        # interactive dialog.
         _start_interactive_raster_import(
             win, editor, file_path, mime_type, position_mm
         )
