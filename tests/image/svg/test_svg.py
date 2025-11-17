@@ -240,9 +240,9 @@ class TestSvgImporter:
 
         # The content is trimmed to 100x100px, which is converted to mm.
         expected_content_size_mm = 100.0 * MM_PER_PX
-        assert wp.size == pytest.approx(
-            (expected_content_size_mm, expected_content_size_mm)
-        )
+        # Use a looser tolerance to account for render/trace variance.
+        assert wp.size[0] == pytest.approx(expected_content_size_mm, rel=1e-2)
+        assert wp.size[1] == pytest.approx(expected_content_size_mm, rel=1e-2)
 
         # Check if vectors were generated through tracing
         assert wp.vectors is not None

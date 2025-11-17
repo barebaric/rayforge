@@ -96,7 +96,7 @@ class EdgeTracer(OpsProducer):
             if px_width > 0 and px_height > 0:
                 scale_x = width_mm / px_width
                 scale_y = height_mm / px_height
-                scaling_matrix = Matrix.scale(scale_x, scale_y)
+                scaling_matrix = Matrix.scale(scale_x, -scale_y)
             else:
                 scaling_matrix = Matrix.identity()
         else:

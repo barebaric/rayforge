@@ -1,30 +1,36 @@
 import io
-from typing import Optional, List, Tuple, Union
+import math
 import logging
+from typing import List, Optional, Tuple, Union
 from xml.etree import ElementTree as ET
+
 from svgelements import (
     SVG,
-    Path,
-    Move,
-    Line,
-    Close,
     Arc,
+    Close,
     CubicBezier,
+    Line,
+    Move,
+    Path,
     QuadraticBezier,
 )
 
 from ...core.geo import Geometry
-from ...core.source_asset import SourceAsset
+from ...core.generation_config import GenerationConfig
 from ...core.item import DocItem
 from ...core.matrix import Matrix
-from ...core.vectorization_spec import VectorizationSpec, TraceSpec
+from ...core.source_asset import SourceAsset
+from ...core.vectorization_spec import (
+    PassthroughSpec,
+    TraceSpec,
+    VectorizationSpec,
+)
 from ...core.workpiece import WorkPiece
-from ...core.generation_config import GenerationConfig
-from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import Importer, ImportPayload
-from ..tracing import trace_surface
+from .. import image_util
+from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
-from .svgutil import get_natural_size, trim_svg, PPI
+from .svgutil import PPI, get_natural_size, trim_svg
 
 logger = logging.getLogger(__name__)
 
@@ -46,48 +52,20 @@ class SvgImporter(Importer):
         Otherwise, it attempts to parse the SVG path and shape data
         directly for a high-fidelity vector import.
         """
-        # Process the SVG: trim it
-        trimmed_data = trim_svg(self.raw_data)
-
-        # Create import source.
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=SVG_RENDERER,
         )
-        # Store the trimmed data as the base render data for tracing.
-        source.base_render_data = trimmed_data
-
-        # Read metadata.
-        metadata = {}
-        try:
-            # Get size of original, untrimmed SVG
-            untrimmed_size = get_natural_size(self.raw_data)
-            if untrimmed_size:
-                metadata["untrimmed_width_mm"] = untrimmed_size[0]
-                metadata["untrimmed_height_mm"] = untrimmed_size[1]
-
-            # Get size of the new, trimmed SVG
-            trimmed_size = get_natural_size(trimmed_data)
-            if trimmed_size:
-                metadata["trimmed_width_mm"] = trimmed_size[0]
-                metadata["trimmed_height_mm"] = trimmed_size[1]
-
-            # Get viewBox from trimmed SVG for direct import
-            root = ET.fromstring(trimmed_data)
-            vb_str = root.get("viewBox")
-            if vb_str:
-                metadata["viewbox"] = tuple(map(float, vb_str.split()))
-
-            source.metadata.update(metadata)
-        except Exception as e:
-            logger.warning(f"Could not calculate SVG metadata: {e}")
 
         if isinstance(vectorization_spec, TraceSpec):
             # Path 1: Render to bitmap and trace
             items = self._get_doc_items_from_trace(source, vectorization_spec)
         else:
-            # Path 2: Direct vector parsing
+            # Path 2: Direct vector parsing with pre-trimming
+            trimmed_data = trim_svg(self.raw_data)
+            source.base_render_data = trimmed_data
+            self._populate_metadata(source)
             items = self._get_doc_items_direct(source)
 
         if not items:
@@ -95,74 +73,89 @@ class SvgImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
+    def _populate_metadata(self, source: SourceAsset):
+        """Calculates and stores metadata for direct SVG import."""
+        metadata = {}
+        try:
+            # Get size of original, untrimmed SVG
+            untrimmed_size = get_natural_size(source.original_data)
+            if untrimmed_size:
+                metadata["untrimmed_width_mm"] = untrimmed_size[0]
+                metadata["untrimmed_height_mm"] = untrimmed_size[1]
+
+            # Get size of the new, trimmed SVG
+            if source.base_render_data:
+                trimmed_size = get_natural_size(source.base_render_data)
+                if trimmed_size:
+                    metadata["trimmed_width_mm"] = trimmed_size[0]
+                    metadata["trimmed_height_mm"] = trimmed_size[1]
+
+                # Get viewBox from trimmed SVG for direct import
+                root = ET.fromstring(source.base_render_data)
+                vb_str = root.get("viewBox")
+                if vb_str:
+                    metadata["viewbox"] = tuple(map(float, vb_str.split()))
+
+            source.metadata.update(metadata)
+        except Exception as e:
+            logger.warning(f"Could not calculate SVG metadata: {e}")
+
     def _get_doc_items_from_trace(
         self, source: SourceAsset, vectorization_spec: TraceSpec
     ) -> Optional[List[DocItem]]:
         """
-        Renders trimmed SVG data to a bitmap, traces it, and creates a
-        WorkPiece.
+        Renders the original SVG data to a bitmap, traces it, and creates a
+        single masked WorkPiece.
         """
-        size_mm = None
-        if source.metadata:
-            w = source.metadata.get("trimmed_width_mm")
-            h = source.metadata.get("trimmed_height_mm")
-            if w is not None and h is not None:
-                size_mm = (w, h)
-
-        # If we can't determine a size, we can't trace. Return None.
+        size_mm = get_natural_size(source.original_data)
         if not size_mm or not size_mm[0] or not size_mm[1]:
-            logger.warning("failed to find a size")
+            logger.warning("Cannot trace SVG: failed to determine size.")
             return None
 
-        if not source.base_render_data:
-            logger.error("source has no data to trace")
-            return None
-
+        # Calculate render dimensions that preserve the original aspect ratio,
+        # maximizing the render resolution for better tracing quality.
         w_mm, h_mm = size_mm
-        w_px, h_px = 2048, 2048
+        aspect = w_mm / h_mm if h_mm > 0 else 1.0
+        TARGET_DIM = math.sqrt(VTRACER_PIXEL_LIMIT)
 
-        surface = SVG_RENDERER.render_to_pixels_from_data(
-            source.base_render_data, w_px, h_px
+        if aspect >= 1.0:  # Landscape or square
+            w_px = int(TARGET_DIM)
+            h_px = int(TARGET_DIM / aspect)
+        else:  # Portrait
+            h_px = int(TARGET_DIM)
+            w_px = int(TARGET_DIM * aspect)
+        w_px, h_px = max(1, w_px), max(1, h_px)
+
+        vips_image = SVG_RENDERER._render_vips_from_data(
+            source.original_data, w_px, h_px
         )
+        if not vips_image:
+            logger.error("Failed to render SVG to vips image for tracing.")
+            return None
 
-        wp = WorkPiece(name=self.source_file.stem)
+        # Manually set the resolution metadata on the rendered image. This is
+        # crucial for create_single_workpiece_from_trace to calculate the
+        # correct physical size of the cropped area.
+        if w_mm > 0 and h_mm > 0:
+            xres = w_px / w_mm  # pixels per mm
+            yres = h_px / h_mm  # pixels per mm
+            vips_image = vips_image.copy(xres=xres, yres=yres)
 
-        if surface:
-            geometries = trace_surface(surface)
-            if geometries:
-                combined_geo = Geometry()
-                for geo in geometries:
-                    geo.close_gaps()
-                    combined_geo.commands.extend(geo.commands)
+        normalized_vips = image_util.normalize_to_rgba(vips_image)
+        if not normalized_vips:
+            return None
+        surface = image_util.vips_rgba_to_cairo_surface(normalized_vips)
 
-                min_x, min_y, max_x, max_y = combined_geo.rect()
-                mask_geo = Geometry()
-                mask_geo.move_to(min_x, min_y)
-                mask_geo.line_to(max_x, min_y)
-                mask_geo.line_to(max_x, max_y)
-                mask_geo.line_to(min_x, max_y)
-                mask_geo.close_path()
+        geometries = trace_surface(surface, vectorization_spec)
 
-                # Normalize the pixel-based geometry to a 1x1 unit square
-                if surface.get_width() > 0 and surface.get_height() > 0:
-                    norm_x = 1.0 / surface.get_width()
-                    norm_y = 1.0 / surface.get_height()
-                    norm_matrix = Matrix.scale(norm_x, norm_y)
-                    combined_geo.transform(norm_matrix.to_4x4_numpy())
-
-                wp.vectors = combined_geo
-                gen_config = GenerationConfig(
-                    source_asset_uid=source.uid,
-                    segment_mask_geometry=mask_geo,
-                    vectorization_spec=vectorization_spec,
-                )
-                wp.generation_config = gen_config
-
-        # Always set the size. If tracing failed, the workpiece will be empty
-        # but correctly sized.
-        wp.set_size(size_mm[0], size_mm[1])
-
-        return [wp]
+        # Use the standard helper for creating a single, masked workpiece
+        return image_util.create_single_workpiece_from_trace(
+            geometries,
+            source,
+            vips_image,
+            vectorization_spec,
+            self.source_file.stem,
+        )
 
     def _get_doc_items_direct(
         self, source: SourceAsset

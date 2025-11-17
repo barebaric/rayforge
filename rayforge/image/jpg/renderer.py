@@ -17,9 +17,13 @@ class JpgRenderer(Renderer):
     def get_natural_size(
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
+        if config := workpiece.generation_config:
+            w = config.cropped_width_mm
+            h = config.cropped_height_mm
+            if w is not None and h is not None:
+                return w, h
         if not workpiece.data:
             return None
-        # This utility function is format-agnostic
         try:
             image = pyvips.Image.jpegload_buffer(workpiece.data)
         except pyvips.Error:
@@ -31,36 +35,45 @@ class JpgRenderer(Renderer):
     ) -> Optional[pyvips.Image]:
         if not workpiece.data:
             return None
-
-        # This utility function is format-agnostic
         try:
-            image = pyvips.Image.jpegload_buffer(workpiece.data)
+            full_image = pyvips.Image.jpegload_buffer(workpiece.data)
         except pyvips.Error:
             return None
-        if not image:
+        if not full_image:
             return None
 
-        if image.width == 0 or image.height == 0:
-            return image
+        image_to_process = full_image
+        if config := workpiece.generation_config:
+            if crop := config.crop_window_px:
+                x, y, w, h = map(int, crop)
+                image_to_process = image_util.safe_crop(full_image, x, y, w, h)
+                if image_to_process is None:
+                    return pyvips.Image.black(width, height, bands=4)
 
-        h_scale = width / image.width
-        v_scale = height / image.height
-        return image.resize(h_scale, vscale=v_scale)
+            mask_geo = config.segment_mask_geometry
+            masked_image = image_util.apply_mask_to_vips_image(
+                image_to_process, mask_geo
+            )
+            if masked_image:
+                image_to_process = masked_image
+
+        if image_to_process.width == 0 or image_to_process.height == 0:
+            return image_to_process
+
+        h_scale = width / image_to_process.width
+        v_scale = height / image_to_process.height
+        return image_to_process.resize(h_scale, vscale=v_scale)
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        resized_image = self._render_to_vips_image(workpiece, width, height)
+        resized_image = self.get_or_create_vips_image(workpiece, width, height)
         if not resized_image:
             return None
-
-        # The rest of the rendering pipeline is also format-agnostic
         normalized_image = image_util.normalize_to_rgba(resized_image)
         if not normalized_image:
             return None
-
         return image_util.vips_rgba_to_cairo_surface(normalized_image)
 
 
-# Create an instance for the importer to use
 JPG_RENDERER = JpgRenderer()

@@ -3,15 +3,72 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gi.repository import Gio, Adw
-
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
+from ...image import bitmap_mime_types
 from . import file_dialogs
+from .raster_import_dialog import RasterImportDialog
 
 if TYPE_CHECKING:
     from ...mainwindow import MainWindow
     from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)
+
+
+def _start_interactive_raster_import(
+    win: "MainWindow",
+    editor: "DocEditor",
+    file_path: Path,
+    mime_type: str,
+    position_mm: Optional[tuple[float, float]] = None,
+):
+    """Creates and presents the main interactive raster import dialog."""
+    logger.info("Starting interactive raster import...")
+
+    import_dialog = RasterImportDialog(
+        parent=win, editor=editor, file_path=file_path, mime_type=mime_type
+    )
+
+    # Define the handler locally to capture context from its closure.
+    def on_dialog_response(
+        sender, *, response_id: str, spec: VectorizationSpec
+    ):
+        _on_raster_import_dialog_response(
+            sender,
+            response_id,
+            spec,
+            win,
+            editor,
+            file_path,
+            mime_type,
+            position_mm,
+        )
+
+    # Use weak=False to prevent the handler from being garbage collected.
+    import_dialog.response.connect(on_dialog_response, weak=False)
+    import_dialog.present()
+
+
+def _on_raster_import_dialog_response(
+    dialog,
+    response_id: str,
+    spec: VectorizationSpec,
+    win: "MainWindow",
+    editor: "DocEditor",
+    file_path: Path,
+    mime_type: str,
+    position_mm: Optional[tuple[float, float]] = None,
+):
+    """Callback for when the interactive raster import dialog is closed."""
+    logger.info(f"Received response '{response_id}' from RasterImportDialog.")
+    if response_id == "import":
+        logger.info(
+            f"Executing final import for {file_path} with spec: {spec}"
+        )
+        editor.file.load_file_from_path(
+            file_path, mime_type, spec, position_mm
+        )
+        win.item_revealer.set_reveal_child(False)
 
 
 def _on_svg_options_response(
@@ -23,20 +80,19 @@ def _on_svg_options_response(
     win: "MainWindow",
     position_mm: Optional[tuple[float, float]] = None,
 ):
-    """Handles the user's choice from the SVG import dialog."""
-    vectorization_spec: Optional[VectorizationSpec] = None
-    if response_id == "trace":
-        vectorization_spec = TraceSpec()
-    elif response_id == "direct":
-        vectorization_spec = None  # None now signifies direct vector import
-    else:  # "cancel" or the dialog was closed
-        return
-
-    editor.file.load_file_from_path(
-        file_path, mime_type, vectorization_spec, position_mm
-    )
-    # Hide properties widget in case something was selected before import
-    win.item_revealer.set_reveal_child(False)
+    """Handles the user's choice from the initial SVG import dialog."""
+    if response_id == "direct":
+        # Direct import, no interactive dialog needed.
+        editor.file.load_file_from_path(
+            file_path, mime_type, None, position_mm
+        )
+        win.item_revealer.set_reveal_child(False)
+    elif response_id == "trace":
+        # User chose to trace, so now show the interactive raster dialog.
+        _start_interactive_raster_import(
+            win, editor, file_path, mime_type, position_mm
+        )
+    # else: user cancelled, do nothing.
 
 
 def _show_svg_import_dialog(
@@ -93,17 +149,18 @@ def _on_file_selected(dialog, result, user_data):
         )
         mime_type = file_info.get_content_type()
 
-        # For SVGs, ask the user how they want to import it.
         if mime_type == "image/svg+xml":
             _show_svg_import_dialog(win, editor, file_path, mime_type)
+        elif mime_type == "application/pdf":
+            # For PDFs, always go to the interactive trace dialog.
+            _start_interactive_raster_import(win, editor, file_path, mime_type)
+        elif mime_type and mime_type in bitmap_mime_types:
+            # For standard raster types, go to the interactive dialog.
+            _start_interactive_raster_import(win, editor, file_path, mime_type)
         else:
-            # For all other raster types, default to tracing.
-            vectorization_spec = TraceSpec()
-            editor.file.load_file_from_path(
-                file_path, mime_type, vectorization_spec
-            )
-            # Hide properties widget in case something was selected before
-            # import
+            # For vector types (dxf, etc.) or unknown types, import
+            # directly without any dialogs.
+            editor.file.load_file_from_path(file_path, mime_type, None)
             win.item_revealer.set_reveal_child(False)
 
     except Exception:
@@ -140,11 +197,19 @@ def import_file_at_position(
     if mime_type == "image/svg+xml":
         # Show SVG import dialog with position parameter
         _show_svg_import_dialog(win, editor, file_path, mime_type, position_mm)
+    elif mime_type == "application/pdf":
+        # For PDFs, always go to the interactive trace dialog.
+        _start_interactive_raster_import(
+            win, editor, file_path, mime_type, position_mm
+        )
+    elif mime_type and mime_type in bitmap_mime_types:
+        _start_interactive_raster_import(
+            win, editor, file_path, mime_type, position_mm
+        )
     else:
-        # For all other raster types, default to tracing
-        vectorization_spec = TraceSpec()
+        # Direct import for other types
         editor.file.load_file_from_path(
-            file_path, mime_type, vectorization_spec, position_mm
+            file_path, mime_type, None, position_mm
         )
 
     # Hide properties widget in case something was selected before import

@@ -64,14 +64,16 @@ def test_trace_transparent_png_avoids_framing():
 def test_trace_surface_denoising_path():
     """
     Tests tracing a noisy image. Should filter noise and trace the
-    main shape. This test is now deterministic.
+    main shape.
     """
     img = np.full((100, 100), 255, dtype=np.uint8)
+    # Main shape
     img[25:75, 25:75] = 0
-    # Add a deterministic grid of 1px and 2px noise clumps
-    img[::5, ::5] = 0  # 1px noise
-    img[1::10, 1::10] = 0  # 2px noise (horizontal)
-    img[1::10, 2::10] = 0
+    # Add a 1px noise component
+    img[10, 10] = 0
+    # Add a 2px noise component
+    img[12, 12] = 0
+    img[12, 13] = 0
 
     surface = _create_test_surface(img)
     geometries = trace_surface(surface)

@@ -219,6 +219,10 @@ class Geometry:
         return self
 
     def rect(self) -> Tuple[float, float, float, float]:
+        """
+        Returns a rectangle (x1, y1, x2, y2) that encloses the
+        occupied area in the XY plane.
+        """
         return get_bounding_rect(self.commands)
 
     def distance(self) -> float:

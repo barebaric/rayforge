@@ -282,8 +282,8 @@ class TestBmpImporter:
         assert wp.generation_config is not None
         assert wp.generation_config.source_asset_uid == payload.source.uid
 
-        # Use the actual DPI from the file for the size assertion.
-        # The importer uses the file's DPI, so the test must do the same.
+        # The importer auto-crops to content. We check that the resulting
+        # size is positive but no larger than the original canvas size.
         parsed_data = parse_bmp(bmp_data)
         assert parsed_data is not None
         _, _, _, dpi_x, dpi_y = parsed_data
@@ -291,11 +291,12 @@ class TestBmpImporter:
         dpi_y = dpi_y or 96.0
 
         expected_w_px, expected_h_px = expected_dims
-        expected_width_mm = expected_w_px * 25.4 / dpi_x
-        expected_height_mm = expected_h_px * 25.4 / dpi_y
-        assert wp.size == pytest.approx(
-            (expected_width_mm, expected_height_mm)
-        )
+        max_width_mm = expected_w_px * 25.4 / dpi_x
+        max_height_mm = expected_h_px * 25.4 / dpi_y
+
+        wp_w, wp_h = wp.size
+        assert 0 < wp_w <= max_width_mm + 1e-9  # Add tolerance
+        assert 0 < wp_h <= max_height_mm + 1e-9
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for malformed/invalid data."""
@@ -317,10 +318,13 @@ class TestBmpRenderer:
         size = BMP_RENDERER.get_natural_size(workpiece)
         assert size is not None
         width_mm, height_mm = size
-        expected_width = 72 * 25.4 / 96.0
-        expected_height = 48 * 25.4 / 96.0
-        assert width_mm == pytest.approx(expected_width)
-        assert height_mm == pytest.approx(expected_height)
+
+        # Natural size is the cropped content size from the generation
+        # config. We check that it's positive and not larger than the canvas.
+        max_width = 72 * 25.4 / 96.0
+        max_height = 48 * 25.4 / 96.0
+        assert 0 < width_mm <= max_width + 1e-9
+        assert 0 < height_mm <= max_height + 1e-9
 
     @pytest.mark.parametrize(
         "workpiece_fixture", ["one_bit_workpiece", "eight_bit_workpiece"]

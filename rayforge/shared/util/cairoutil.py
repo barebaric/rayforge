@@ -1,5 +1,16 @@
 import cairo
 import numpy as np
+import math
+from typing import TYPE_CHECKING
+from ...core.geo.geometry import (
+    MoveToCommand,
+    LineToCommand,
+    ArcToCommand,
+    MovingCommand,
+)
+
+if TYPE_CHECKING:
+    from ...core.geo.geometry import Geometry
 
 
 def convert_surface_to_grayscale(surface):
@@ -52,3 +63,45 @@ def make_transparent(surface, threshold=250):
     argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
 
     # No need to return anything as the surface is modified in place
+
+
+def draw_geometry_to_cairo_context(geometry: "Geometry", ctx: cairo.Context):
+    """
+    Draws a Geometry object's path to a Cairo context.
+
+    This function iterates through the geometry's commands and translates
+    them into the corresponding Cairo drawing operations.
+
+    Args:
+        geometry: The Geometry object to draw.
+        ctx: The Cairo context to draw on.
+    """
+
+    last_point = (0.0, 0.0)
+    for cmd in geometry.commands:
+        if isinstance(cmd, MoveToCommand):
+            ctx.move_to(cmd.end[0], cmd.end[1])
+        elif isinstance(cmd, LineToCommand):
+            ctx.line_to(cmd.end[0], cmd.end[1])
+        elif isinstance(cmd, ArcToCommand):
+            # Cairo's arc needs center, radius, and angles.
+            center_x = last_point[0] + cmd.center_offset[0]
+            center_y = last_point[1] + cmd.center_offset[1]
+            radius = math.hypot(cmd.center_offset[0], cmd.center_offset[1])
+
+            start_angle = math.atan2(
+                -cmd.center_offset[1], -cmd.center_offset[0]
+            )
+            end_angle = math.atan2(
+                cmd.end[1] - center_y, cmd.end[0] - center_x
+            )
+
+            if cmd.clockwise:
+                ctx.arc_negative(
+                    center_x, center_y, radius, start_angle, end_angle
+                )
+            else:
+                ctx.arc(center_x, center_y, radius, start_angle, end_angle)
+
+        if isinstance(cmd, MovingCommand):
+            last_point = (cmd.end[0], cmd.end[1])

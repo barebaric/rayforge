@@ -4,9 +4,10 @@ import cv2
 import vtracer
 import xml.etree.ElementTree as ET
 import re
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import logging
 from ..core.geo import Geometry
+from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
 from .hull import get_enclosing_hull, get_hulls_from_image
 from .denoise import denoise_boolean_image
@@ -40,32 +41,14 @@ def _get_image_from_surface(
     return img, channels
 
 
-def _get_boolean_image_from_alpha(img: np.ndarray) -> np.ndarray:
-    """
-    Creates a boolean image from the alpha channel, adding a transparent
-    border.
-    """
-    logger.debug("Entering _get_boolean_image_from_alpha")
-    border_color = [0, 0, 0, 0]
-    img_with_border = cv2.copyMakeBorder(
-        img,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        BORDER_SIZE,
-        cv2.BORDER_CONSTANT,
-        value=border_color,
-    )
-    alpha = img_with_border[:, :, 3]
-    return alpha > 10
-
-
 def _get_boolean_image_from_color(
-    img: np.ndarray, channels: int
+    img: np.ndarray,
+    channels: int,
+    vectorization_spec: Optional[VectorizationSpec] = None,
 ) -> np.ndarray:
     """
     Creates a boolean image from color channels, adding a white border and
-    using Otsu's thresholding.
+    using a specified threshold or Otsu's method.
     """
     logger.debug("Entering _get_boolean_image_from_color")
     border_color = [255] * channels
@@ -82,30 +65,57 @@ def _get_boolean_image_from_color(
         img_with_border,
         cv2.COLOR_BGRA2GRAY if channels == 4 else cv2.COLOR_BGR2GRAY,
     )
-    otsu_threshold, _ = cv2.threshold(
-        gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-    )
-    threshold_type = (
-        cv2.THRESH_BINARY_INV if 255 > otsu_threshold else cv2.THRESH_BINARY
-    )
-    _, thresh_img = cv2.threshold(gray, otsu_threshold, 255, threshold_type)
+
+    spec = vectorization_spec
+    if not isinstance(spec, TraceSpec):
+        spec = TraceSpec()  # Use defaults
+
+    # Use auto-threshold (Otsu) if requested
+    if spec.auto_threshold:
+        otsu_threshold, _ = cv2.threshold(
+            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        threshold_val = otsu_threshold
+    else:
+        # The threshold is 0.0 (black) to 1.0 (white).
+        threshold_val = int(spec.threshold * 255)
+
+    # Apply inversion if requested
+    if spec.invert:
+        threshold_type = cv2.THRESH_BINARY
+    else:
+        threshold_type = cv2.THRESH_BINARY_INV
+
+    _, thresh_img = cv2.threshold(gray, threshold_val, 255, threshold_type)
     return thresh_img > 0
 
 
-def prepare_surface(surface: cairo.ImageSurface) -> np.ndarray:
+def prepare_surface(
+    surface: cairo.ImageSurface,
+    vectorization_spec: Optional[VectorizationSpec] = None,
+) -> np.ndarray:
     """
-    Prepares a Cairo surface for tracing, including an adaptive denoising
-    pipeline to remove small, irrelevant features before tracing.
+    Prepares a Cairo surface for tracing. It handles transparency by
+    compositing onto a white background, then thresholds the result and
+    applies denoising.
     """
     logger.debug("Entering prepare_surface")
     img, channels = _get_image_from_surface(surface)
 
-    use_alpha = channels == 4 and not np.all(img[:, :, 3] == 255)
+    # If the image has an alpha channel, composite it onto a white background
+    # to correctly handle transparency for thresholding.
+    if channels == 4 and surface.get_format() == cairo.FORMAT_ARGB32:
+        alpha = img[:, :, 3:4] / 255.0
+        rgb = img[:, :, :3]
+        white_bg = np.full_like(rgb, 255)
+        # Alpha blend the RGB channels with white
+        img = (rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8)
+        channels = 3  # The image is now effectively 3-channel
 
-    if use_alpha:
-        boolean_image = _get_boolean_image_from_alpha(img)
-    else:
-        boolean_image = _get_boolean_image_from_color(img, channels)
+    # Now, with transparency handled, we can always use the color path.
+    boolean_image = _get_boolean_image_from_color(
+        img, channels, vectorization_spec
+    )
 
     return denoise_boolean_image(boolean_image)
 
@@ -165,11 +175,15 @@ def _transform_point_for_geometry(
     scale_x: float,
     scale_y: float,
 ) -> Tuple[float, float]:
-    """Transforms a point from SVG coordinates to geometry coordinates."""
-    logger.debug("Entering _transform_point_for_geometry")
+    """
+    Transforms a point from vtracer's SVG coordinates to Y-down pixel
+    coordinates relative to the original image (border removed).
+    """
     px, py = p
+    # The tracer outputs Y-down SVG coordinates. We just need to remove
+    # the border offset to get into the original image's pixel space.
     ops_px = px - BORDER_SIZE
-    ops_py = height_px - (py - BORDER_SIZE)
+    ops_py = py - BORDER_SIZE
     return ops_px / scale_x, ops_py / scale_y
 
 
@@ -458,7 +472,7 @@ def _convert_png_to_svg_with_vtracer(png_bytes: bytes) -> str:
         img_format="png",
         colormode="binary",
         mode="polygon",
-        filter_speckle=26,
+        filter_speckle=0,
         length_threshold=3.5,
     )
 
@@ -614,6 +628,7 @@ def _apply_upscaling(
 
 def trace_surface(
     surface: cairo.ImageSurface,
+    vectorization_spec: Optional[VectorizationSpec] = None,
 ) -> List[Geometry]:
     """
     Traces a Cairo surface and returns a list of Geometry objects. It uses
@@ -622,7 +637,7 @@ def trace_surface(
     vector results.
     """
     logger.debug("Entering trace_surface")
-    cleaned_boolean_image = prepare_surface(surface)
+    cleaned_boolean_image = prepare_surface(surface, vectorization_spec)
 
     if not np.any(cleaned_boolean_image):
         logger.debug("No shapes found in the cleaned image, returning empty.")
