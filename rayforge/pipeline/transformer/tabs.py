@@ -52,7 +52,7 @@ class TabOpsTransformer(OpsTransformer):
         workpiece's local coordinate space. This matches the coordinate space
         of the incoming Ops object during the generation phase.
         """
-        if not workpiece.vectors:
+        if not workpiece.boundaries:
             logger.debug(
                 "TabOps: workpiece has no vectors, cannot generate clip data."
             )
@@ -67,11 +67,11 @@ class TabOpsTransformer(OpsTransformer):
             f"'{workpiece.name}'"
         )
         logger.debug(
-            f"TabOps: Workpiece vectors bbox: {workpiece.vectors.rect()}"
+            f"TabOps: Workpiece vectors bbox: {workpiece.boundaries.rect()}"
         )
 
         for tab in workpiece.tabs:
-            if tab.segment_index >= len(workpiece.vectors.commands):
+            if tab.segment_index >= len(workpiece.boundaries.commands):
                 logger.warning(
                     f"Tab {tab.uid} has invalid segment_index "
                     f"{tab.segment_index}, skipping."
@@ -82,12 +82,12 @@ class TabOpsTransformer(OpsTransformer):
             # Find the start point of the command segment by looking backwards
             # for the last command that had an endpoint.
             for i in range(tab.segment_index - 1, -1, -1):
-                prev_cmd = workpiece.vectors.commands[i]
+                prev_cmd = workpiece.boundaries.commands[i]
                 if isinstance(prev_cmd, GeoMovingCommand) and prev_cmd.end:
                     p_start_3d = prev_cmd.end
                     break
 
-            cmd = workpiece.vectors.commands[tab.segment_index]
+            cmd = workpiece.boundaries.commands[tab.segment_index]
             if (
                 not isinstance(cmd, (GeoLineToCommand, GeoArcToCommand))
                 or not cmd.end
@@ -181,10 +181,10 @@ class TabOpsTransformer(OpsTransformer):
         # incoming Ops object should represent). If so, we must scale the tab
         # points.
         # This handles cases like FrameProducer where Ops are generated at
-        # final size, but the workpiece.vectors are still normalized to a
+        # final size, but the workpiece.boundaries are still normalized to a
         # 1x1 box.
-        if workpiece.vectors and not workpiece.vectors.is_empty():
-            vector_rect = workpiece.vectors.rect()
+        if workpiece.boundaries and not workpiece.boundaries.is_empty():
+            vector_rect = workpiece.boundaries.rect()
             if vector_rect:
                 final_w, final_h = workpiece.size
                 _vx, _vy, vector_w, vector_h = vector_rect

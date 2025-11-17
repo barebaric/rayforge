@@ -34,7 +34,7 @@ class OpsRenderer(Renderer):
         static and correct. If not found, it falls back to the workpiece's
         current dynamic size.
         """
-        if not workpiece.vectors or workpiece.vectors.is_empty():
+        if not workpiece.boundaries or workpiece.boundaries.is_empty():
             return None
 
         # Prioritize the static, pre-calculated size from the importer.
@@ -50,7 +50,7 @@ class OpsRenderer(Renderer):
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        if not workpiece.vectors or workpiece.vectors.is_empty():
+        if not workpiece.boundaries or workpiece.boundaries.is_empty():
             return None
 
         render_width, render_height = width, height
@@ -82,7 +82,9 @@ class OpsRenderer(Renderer):
 
         # Calculate scaling to fit the workpiece's local geometry into
         # the surface
-        geo_min_x, geo_min_y, geo_max_x, geo_max_y = workpiece.vectors.rect()
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = (
+            workpiece.boundaries.rect()
+        )
         geo_width = geo_max_x - geo_min_x
         geo_height = geo_max_y - geo_min_y
 
@@ -97,7 +99,7 @@ class OpsRenderer(Renderer):
 
         # The CairoEncoder expects an Ops object, so we convert our pure
         # geometry into a temporary Ops object for rendering.
-        render_ops = Ops.from_geometry(workpiece.vectors)
+        render_ops = Ops.from_geometry(workpiece.boundaries)
 
         encoder = CairoEncoder()
 

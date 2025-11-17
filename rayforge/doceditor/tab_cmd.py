@@ -219,7 +219,7 @@ class TabCmd:
             width: The width of each tab in millimeters.
             strategy: The placement strategy (currently only 'equidistant').
         """
-        if not workpiece.vectors:
+        if not workpiece.boundaries:
             logger.warning(
                 f"Cannot add tabs to workpiece '{workpiece.name}' "
                 "because it has no vector geometry."
@@ -228,7 +228,7 @@ class TabCmd:
 
         if strategy == "equidistant":
             new_tabs = self._calculate_equidistant_tabs(
-                workpiece.vectors, count, width
+                workpiece.boundaries, count, width
             )
         else:
             raise NotImplementedError(
@@ -252,14 +252,14 @@ class TabCmd:
             workpiece: The WorkPiece to add tabs to.
             width: The width of each tab in millimeters.
         """
-        if not workpiece.vectors:
+        if not workpiece.boundaries:
             logger.warning(
                 f"Cannot add tabs to workpiece '{workpiece.name}' "
                 "because it has no vector geometry."
             )
             return
 
-        new_tabs = self._calculate_cardinal_tabs(workpiece.vectors, width)
+        new_tabs = self._calculate_cardinal_tabs(workpiece.boundaries, width)
 
         cmd = SetWorkpieceTabsCommand(
             editor=self._editor,

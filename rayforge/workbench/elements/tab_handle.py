@@ -132,7 +132,7 @@ class TabHandleElement(CanvasElement):
         modified during this operation.
         """
         parent_view = cast("WorkPieceElement", self.parent)
-        vectors = parent_view.data.vectors
+        vectors = parent_view.data.boundaries
         if not self.canvas or not vectors:
             return world_dx, world_dy
 
@@ -201,12 +201,12 @@ class TabHandleElement(CanvasElement):
         """
         parent_view = cast("WorkPieceElement", self.parent)
         tab = cast(Tab, self.data)
-        if not parent_view.data.vectors or tab.segment_index >= len(
-            parent_view.data.vectors.commands
+        if not parent_view.data.boundaries or tab.segment_index >= len(
+            parent_view.data.boundaries.commands
         ):
             return
 
-        result = parent_view.data.vectors.get_point_and_tangent_at(
+        result = parent_view.data.boundaries.get_point_and_tangent_at(
             tab.segment_index, tab.pos
         )
         if not result:

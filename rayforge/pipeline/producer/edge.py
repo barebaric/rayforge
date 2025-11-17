@@ -81,12 +81,12 @@ class EdgeTracer(OpsProducer):
         base_contours = []
         is_vector_source = (
             workpiece
-            and workpiece.vectors
-            and not workpiece.vectors.is_empty()
+            and workpiece.boundaries
+            and not workpiece.boundaries.is_empty()
         )
         if is_vector_source:
-            assert workpiece.vectors
-            base_contours = workpiece.vectors.split_into_contours()
+            assert workpiece.boundaries
+            base_contours = workpiece.boundaries.split_into_contours()
             sx, sy = workpiece.matrix.get_abs_scale()
             scaling_matrix = Matrix.scale(sx, sy)
         elif surface:  # Fall back to raster tracing if a surface is provided

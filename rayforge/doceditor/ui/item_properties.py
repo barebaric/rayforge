@@ -710,11 +710,11 @@ class DocItemPropertiesWidget(Expander):
     def _update_workpiece_specific_rows(self, workpiece: WorkPiece):
         is_debug_and_has_vectors = (
             logging.getLogger().getEffectiveLevel() == logging.DEBUG
-            and workpiece.vectors is not None
+            and workpiece.boundaries is not None
         )
         self.vector_count_row.set_visible(is_debug_and_has_vectors)
         if is_debug_and_has_vectors:
-            vectors = len(workpiece.vectors) if workpiece.vectors else 0
+            vectors = len(workpiece.boundaries) if workpiece.boundaries else 0
             self.vector_count_row.set_subtitle(f"{vectors} commands")
 
         self._update_source_file_row(workpiece)
@@ -744,7 +744,7 @@ class DocItemPropertiesWidget(Expander):
             self.metadata_info_button.set_sensitive(False)
 
     def _update_tabs_rows(self, workpiece: WorkPiece):
-        can_have_tabs = workpiece.vectors is not None
+        can_have_tabs = workpiece.boundaries is not None
         self.tabs_row.set_visible(can_have_tabs)
         self.tab_width_row.set_visible(
             can_have_tabs and workpiece.tabs_enabled

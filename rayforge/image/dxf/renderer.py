@@ -31,7 +31,7 @@ class DxfRenderer(Renderer):
         # OPS_RENDERER. This gives us a surface with the correct dimensions
         # and transformations for the outlines.
         surface = OPS_RENDERER.render_to_pixels(workpiece, width, height)
-        if not surface or not workpiece.vectors:
+        if not surface or not workpiece.boundaries:
             return None
 
         # Now, check the ImportSource metadata for filled solids.
@@ -44,7 +44,7 @@ class DxfRenderer(Renderer):
                 # OPS_RENDERER used to draw the outlines, so the fills
                 # align perfectly.
                 ops_min_x, ops_min_y, ops_max_x, ops_max_y = (
-                    workpiece.vectors.rect()
+                    workpiece.boundaries.rect()
                 )
                 ops_width = ops_max_x - ops_min_x
                 ops_height = ops_max_y - ops_min_y

@@ -87,8 +87,8 @@ class ProceduralImporter(Importer):
         )
 
         # Step 3: Create and configure the WorkPiece.
-        # Per the architectural contract, we generate normalized vectors
-        # (a 1x1 frame) and then apply the physical size.
+        # Per the architectural contract, we generate a normalized Y-down
+        # geometry (a 1x1 frame) for the segment mask.
         frame_geo = Geometry()
         frame_geo.move_to(0, 0)
         frame_geo.line_to(1, 0)
@@ -97,18 +97,14 @@ class ProceduralImporter(Importer):
         frame_geo.close_path()
 
         procedural_spec = ProceduralSpec()
-        # Create a copy of geometry for segment_mask_geometry
-        # This should be same as the vectors for procedural import
-        segment_mask_geo = frame_geo.copy()
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=segment_mask_geo,
+            segment_mask_geometry=frame_geo,
             vectorization_spec=procedural_spec,
         )
 
         wp = WorkPiece(
             name=self.name,
-            vectors=frame_geo,
             source_segment=gen_config,
         )
         wp.set_size(width_mm, height_mm)

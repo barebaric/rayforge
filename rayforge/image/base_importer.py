@@ -40,7 +40,7 @@ class Importer(ABC):
         original aspect ratio.
 
     2.  **Assign to WorkPiece**: This normalized `Geometry` is assigned to
-        `WorkPiece.vectors`. At this point, the `WorkPiece`'s transformation
+        `WorkPiece.boundaries`. At this point, the `WorkPiece`'s transformation
         matrix should be the identity matrix (scale=1).
 
     3.  **Apply Physical Size via Matrix**: The importer then determines the
@@ -50,7 +50,7 @@ class Importer(ABC):
         normalized vectors to their final size.
 
     This ensures that the scale is applied only once, through the matrix,
-    and that `WorkPiece.vectors` remains a pure representation of shape.
+    and that `WorkPiece.boundaries` remains a pure representation of shape.
     """
 
     label: str
