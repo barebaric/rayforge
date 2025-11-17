@@ -1,14 +1,45 @@
-import warnings
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List, TYPE_CHECKING
 import logging
 import cairo
 import numpy
+import pyvips
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips
+from ..core.generation_config import GenerationConfig
+from ..core.item import DocItem
+from ..core.matrix import Matrix
+from ..core.workpiece import WorkPiece
+from ..core.geo import Geometry, MoveToCommand, LineToCommand
+
+if TYPE_CHECKING:
+    from ..core.source_asset import SourceAsset
+    from ..core.vectorization_spec import TraceSpec
 
 logger = logging.getLogger(__name__)
+
+
+def safe_crop(
+    image: pyvips.Image, x: int, y: int, w: int, h: int
+) -> Optional[pyvips.Image]:
+    """
+    Crops a pyvips image, safely handling cases where the crop window is
+    partially or completely outside the image bounds by calculating the
+    intersection.
+
+    Returns the cropped image, or None if the intersection is empty.
+    """
+    img_w, img_h = image.width, image.height
+    # Calculate the intersection of the crop rectangle and the image bounds.
+    final_x = max(0, x)
+    final_y = max(0, y)
+    end_x = min(x + w, img_w)
+    end_y = min(y + h, img_h)
+    final_w = max(0, end_x - final_x)
+    final_h = max(0, end_y - final_y)
+
+    if final_w > 0 and final_h > 0:
+        return image.crop(final_x, final_y, final_w, final_h)
+
+    return None
 
 
 def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
@@ -50,29 +81,40 @@ def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
     return metadata
 
 
-def get_physical_size_mm(image: pyvips.Image) -> Tuple[float, float]:
+def get_mm_per_pixel(image: pyvips.Image) -> Tuple[float, float]:
     """
-    Determines the physical size of a vips image in mm.
+    Determines mm per pixel from a vips image metadata. Falls back to 96 DPI.
     """
     try:
+        # xres/yres are in pixels/mm
         xres = image.get("xres")
         yres = image.get("yres")
 
         # pyvips can default to a resolution of 1 pixel/mm if no resolution
-        # info is available when creating an image in memory. This is a very
-        # low resolution (25.4 DPI) and is usually not the intended value.
-        # We treat this specific case as "resolution not set" and fall back
-        # to the more common default of 96 DPI.
+        # info is available. This is a very low resolution (25.4 DPI) and is
+        # usually not the intended value. We treat this specific case as
+        # "resolution not set" and fall back to the more common 96 DPI.
         if xres == 1.0 and yres == 1.0:
             raise pyvips.Error(
                 "Default resolution of 1.0 px/mm detected, using fallback."
             )
 
-        width_mm = image.width / xres
-        height_mm = image.height / yres
+        # Invert to get mm/px
+        return 1.0 / xres, 1.0 / yres
     except pyvips.Error:
-        width_mm = image.width * (25.4 / 96.0)
-        height_mm = image.height * (25.4 / 96.0)
+        # fallback to 96 DPI
+        mm_per_inch = 25.4
+        dpi = 96.0
+        return (mm_per_inch / dpi), (mm_per_inch / dpi)
+
+
+def get_physical_size_mm(image: pyvips.Image) -> Tuple[float, float]:
+    """
+    Determines the physical size of a vips image in mm.
+    """
+    mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
+    width_mm = image.width * mm_per_px_x
+    height_mm = image.height * mm_per_px_y
     return width_mm, height_mm
 
 
@@ -130,3 +172,144 @@ def vips_rgba_to_cairo_surface(image: pyvips.Image) -> cairo.ImageSurface:
         premultiplied_uchar.height,
     )
     return surface
+
+
+def _render_geometry_to_vips_mask(
+    geometry: Geometry, width: int, height: int
+) -> pyvips.Image:
+    """Renders a Geometry object to a single-band 8-bit vips mask image."""
+    surface = cairo.ImageSurface(cairo.FORMAT_A8, width, height)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgba(0, 0, 0, 0)
+    ctx.paint()
+
+    # Draw the geometry filled with white
+    ctx.set_source_rgba(1, 1, 1, 1)
+    for cmd in geometry.commands:
+        if isinstance(cmd, MoveToCommand):
+            assert cmd.end is not None
+            ctx.move_to(cmd.end[0], cmd.end[1])
+        elif isinstance(cmd, LineToCommand):
+            assert cmd.end is not None
+            ctx.line_to(cmd.end[0], cmd.end[1])
+    ctx.fill()
+
+    # Convert the cairo surface data to a vips image
+    return pyvips.Image.new_from_memory(
+        surface.get_data(), width, height, 1, "uchar"
+    )
+
+
+def apply_mask_to_vips_image(
+    full_image: pyvips.Image, mask_geo: Geometry
+) -> Optional[pyvips.Image]:
+    """
+    Masks a vips image using a geometry mask, making areas outside the
+    geometry transparent. Does NOT crop the image.
+
+    Expects the mask_geo to be NORMALIZED to a 0-1 coordinate space.
+    """
+    if mask_geo.is_empty():
+        # If the mask is empty, we return the image as-is, which is the
+        # expected behavior for unmasked "as-is" PDF imports.
+        return full_image
+
+    # Scale the normalized mask geometry to the image's pixel dimensions.
+    scaled_mask = mask_geo.copy()
+    scale_matrix = Matrix.scale(full_image.width, full_image.height)
+    scaled_mask.transform(scale_matrix.to_4x4_numpy())
+
+    mask_vips = _render_geometry_to_vips_mask(
+        scaled_mask, full_image.width, full_image.height
+    )
+
+    # Ensure the image has an alpha channel before masking
+    image_with_alpha = full_image
+    if not image_with_alpha.hasalpha():
+        image_with_alpha = image_with_alpha.addalpha()
+
+    # Insert the mask as the new alpha channel
+    return image_with_alpha.copy(interpretation="srgb").bandjoin(mask_vips)
+
+
+def create_single_workpiece_from_trace(
+    geometries: List[Geometry],
+    source: "SourceAsset",
+    image: pyvips.Image,
+    vectorization_spec: "TraceSpec",
+    name_stem: str,
+) -> List[DocItem]:
+    """
+    Combines all traced geometries into a single WorkPiece that is cropped
+    and masked to the bounds of the traced content. It creates both a
+    normalized (Y-down) mask and normalized (Y-up) vectors.
+    """
+    combined_geo = Geometry()
+    if geometries:
+        for geo in geometries:
+            geo.close_gaps()
+            combined_geo.commands.extend(geo.commands)
+
+    if combined_geo.is_empty():
+        logger.warning("Tracing produced no vectors, creating an empty item.")
+        return [WorkPiece(name=name_stem)]
+
+    min_x, min_y, max_x, max_y = combined_geo.rect()
+    width_px = max_x - min_x
+    height_px = max_y - min_y
+
+    # Create a geometry in the pixel space of the cropped image area.
+    pixel_space_geo = combined_geo.copy()
+    pixel_space_geo.transform(
+        Matrix.translation(-min_x, -min_y).to_4x4_numpy()
+    )
+
+    normalized_mask_geo = pixel_space_geo.copy()
+    normalized_vectors = pixel_space_geo.copy()
+
+    if width_px > 0 and height_px > 0:
+        # For the mask: normalize to a 0-1 box (Y-down coordinates).
+        norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
+        normalized_mask_geo.transform(norm_matrix.to_4x4_numpy())
+
+        # For the vectors: normalize to a 0-1 box AND flip the Y-axis.
+        # The flip is a scale by -1 on Y, then a translation by +1 on Y.
+        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+        final_transform = flip_matrix @ norm_matrix
+        normalized_vectors.transform(final_transform.to_4x4_numpy())
+
+    mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
+    width_mm = width_px * mm_per_px_x
+    height_mm = height_px * mm_per_px_y
+    pos_x_mm = min_x * mm_per_px_x
+    pos_y_mm = (image.height - max_y) * mm_per_px_y
+
+    gen_config = GenerationConfig(
+        source_asset_uid=source.uid,
+        segment_mask_geometry=normalized_mask_geo,
+        vectorization_spec=vectorization_spec,
+        crop_window_px=(min_x, min_y, width_px, height_px),
+        source_image_width_px=image.width,
+        source_image_height_px=image.height,
+        cropped_width_mm=width_mm,
+        cropped_height_mm=height_mm,
+    )
+
+    # Also store crop info in metadata for the transient preview dialog,
+    # which doesn't have access to the final workpiece's gen_config.
+    source.metadata["crop_window_px"] = gen_config.crop_window_px
+    source.metadata["trace_image_width_px"] = gen_config.source_image_width_px
+    source.metadata["trace_image_height_px"] = (
+        gen_config.source_image_height_px
+    )
+
+    final_wp = WorkPiece(
+        name=name_stem,
+        vectors=normalized_vectors,
+        generation_config=gen_config,
+    )
+
+    final_wp.set_size(width_mm, height_mm)
+    final_wp.pos = (pos_x_mm, pos_y_mm)
+
+    return [final_wp]

@@ -73,14 +73,18 @@ def large_pdf_data() -> bytes:
 def basic_workpiece(basic_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the basic PDF data, sized by the importer."""
     importer = PdfImporter(basic_pdf_data)
-    return _setup_workpiece_with_context(importer)
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
 
 
 @pytest.fixture
 def large_workpiece(large_pdf_data: bytes) -> WorkPiece:
     """A WorkPiece created from the large PDF data, sized by the importer."""
     importer = PdfImporter(large_pdf_data)
-    return _setup_workpiece_with_context(importer)
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
 
 
 class TestPdfImporter:
@@ -91,7 +95,7 @@ class TestPdfImporter:
         Tests the importer creates a WorkPiece with the correct initial size.
         """
         importer = PdfImporter(basic_pdf_data)
-        payload = importer.get_doc_items(vectorization_spec=None)
+        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
 
         assert payload
         assert isinstance(payload.source, SourceAsset)
@@ -103,17 +107,19 @@ class TestPdfImporter:
         assert wp.generation_config is not None
         assert wp.generation_config.source_asset_uid == payload.source.uid
 
-        # The importer should set the size based on the PDF's natural
-        # dimensions.
+        # The importer traces and auto-crops. For a full-page PDF, the size
+        # should be very close to the PDF's natural dimensions.
         # 1pt = 25.4/72 mm
         expected_width = 100 * 25.4 / 72
         expected_height = 50 * 25.4 / 72
-        assert wp.size == pytest.approx((expected_width, expected_height))
+        # Use a tolerance to account for render/trace variance.
+        assert wp.size[0] == pytest.approx(expected_width, rel=1e-3)
+        assert wp.size[1] == pytest.approx(expected_height, rel=1e-3)
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer creates a WorkPiece even with invalid data."""
         importer = PdfImporter(b"this is not a pdf")
-        payload = importer.get_doc_items(vectorization_spec=None)
+        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
         assert payload is not None
         assert isinstance(payload.source, SourceAsset)
         assert len(payload.items) == 0
@@ -158,15 +164,16 @@ class TestPdfRenderer:
                 max_chunk_height=200,
             )
         )
-        # Expected total pixels: 1000x500
+        # Expected total pixels: ~1000x500
         # Chunks: 4 cols (ceil(1000/300)) x 3 rows (ceil(500/200)) = 12
         assert len(chunks) == 12
 
         chunk, (x, y) = chunks[-1]  # Last chunk
-        assert x == 900
-        assert y == 400
-        assert chunk.get_width() == 100  # 1000 - 3*300
-        assert chunk.get_height() == 100  # 500 - 2*200
+        assert x == pytest.approx(900, abs=1)
+        assert y == pytest.approx(400, abs=1)
+        # Use approx to account for potential 1px rounding errors in rendering
+        assert chunk.get_width() == pytest.approx(100, abs=1)  # 1000 - 3*300
+        assert chunk.get_height() == pytest.approx(100, abs=1)  # 500 - 2*200
 
     def test_renderer_handles_invalid_data_gracefully(self):
         """

@@ -71,7 +71,13 @@ def _find_adaptive_area_threshold(areas: np.ndarray) -> int:
     last_noisy_area = present_areas[largest_gap_idx]
     threshold = last_noisy_area + 1
 
-    return max(2, threshold)
+    # Cap the threshold at a sane upper limit for what can be
+    # considered "noise" to prevent it from deleting large features.
+    # 100 pixels is a generous but safe limit for noise.
+    MAX_NOISE_AREA = 100
+    capped_threshold = min(threshold, MAX_NOISE_AREA)
+
+    return max(2, capped_threshold)
 
 
 def _filter_image_by_component_area(

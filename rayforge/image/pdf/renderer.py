@@ -11,6 +11,7 @@ with warnings.catch_warnings():
 
 from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
+from .. import image_util
 from ..util import to_mm
 
 logger = logging.getLogger(__name__)
@@ -20,25 +21,16 @@ class PdfRenderer(Renderer):
     """Renders PDF data from a WorkPiece."""
 
     def render_data_to_vips_image(
-        self, data: bytes, width: int, height: int
+        self, data: bytes, dpi: int
     ) -> Optional[pyvips.Image]:
-        """Renders raw PDF data to a pyvips Image of specific dimensions."""
+        """Renders raw PDF data to a pyvips Image at a specific DPI."""
         if not data:
             return None
         try:
-            reader = PdfReader(io.BytesIO(data))
-            media_box = reader.pages[0].mediabox
-            natural_w_mm = to_mm(float(media_box.width), "pt")
-
-            dpi = (width / natural_w_mm) * 25.4 if natural_w_mm > 0 else 300
-
             image = pyvips.Image.pdfload_buffer(data, dpi=dpi)
             if not isinstance(image, pyvips.Image) or image.width == 0:
                 return None
-
-            h_scale = width / image.width
-            v_scale = height / image.height
-            return image.resize(h_scale, vscale=v_scale)
+            return image
         except Exception:
             logger.warning(
                 "Failed to render PDF data to vips image.", exc_info=True
@@ -48,17 +40,66 @@ class PdfRenderer(Renderer):
     def _render_to_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[pyvips.Image]:
-        if not workpiece.data:
+        # Prioritize workpiece.data for transient objects (previewer),
+        # fall back to original_data for fully loaded workpieces.
+        data_to_render = workpiece.data or workpiece.original_data
+        if not data_to_render:
             return None
-        return self.render_data_to_vips_image(workpiece.data, width, height)
+
+        config = workpiece.generation_config
+        source_w_px = config.source_image_width_px if config else None
+
+        # Determine DPI for the initial full-page render.
+        size_mm = self.get_natural_size(workpiece)
+        if source_w_px and size_mm and size_mm[0] > 0:
+            dpi = int((source_w_px / size_mm[0]) * 25.4)
+        else:
+            dpi = 300
+
+        full_image = self.render_data_to_vips_image(data_to_render, dpi=dpi)
+        if not full_image:
+            return None
+
+        image_to_process = full_image
+        if config:
+            if crop := config.crop_window_px:
+                x, y, w, h = map(int, crop)
+                image_to_process = image_util.safe_crop(full_image, x, y, w, h)
+                if image_to_process is None:
+                    # If there's no intersection, the result is an empty image
+                    return pyvips.Image.black(width, height, bands=4)
+
+            mask_geo = config.segment_mask_geometry
+            masked_image = image_util.apply_mask_to_vips_image(
+                image_to_process, mask_geo
+            )
+            if masked_image:
+                image_to_process = masked_image
+
+        if image_to_process.width == 0 or image_to_process.height == 0:
+            return image_to_process
+
+        h_scale = width / image_to_process.width
+        v_scale = height / image_to_process.height
+        return image_to_process.resize(h_scale, vscale=v_scale)
 
     def get_natural_size(
         self, workpiece: "WorkPiece"
     ) -> Optional[Tuple[float, float]]:
-        if not workpiece.data:
+        """
+        Calculates the natural size of a PDF from its data. The "natural
+        size" for a PDF source is always the full page size, which is needed
+        to calculate the correct DPI for rendering.
+        """
+        # Prioritize workpiece.data, as it's set for transient objects like
+        # in the import previewer. Fall back to original_data for fully
+        # loaded workpieces.
+        data_to_read = workpiece.data or workpiece.original_data
+        if not data_to_read:
             return None
+
         try:
-            reader = PdfReader(io.BytesIO(workpiece.data))
+            reader = PdfReader(io.BytesIO(data_to_read))
             media_box = reader.pages[0].mediabox
             return (
                 to_mm(float(media_box.width), "pt"),
@@ -76,25 +117,12 @@ class PdfRenderer(Renderer):
         final_image = self.get_or_create_vips_image(workpiece, width, height)
         if not final_image:
             return None
-        if final_image.bands < 4:
-            final_image = final_image.bandjoin(255)
 
-        b, g, r, a = (
-            final_image[2],
-            final_image[1],
-            final_image[0],
-            final_image[3],
-        )
-        bgra_image = b.bandjoin([g, r, a])
-        mem_buffer = bgra_image.write_to_memory()
+        normalized_image = image_util.normalize_to_rgba(final_image)
+        if not normalized_image:
+            return None
 
-        return cairo.ImageSurface.create_for_data(
-            mem_buffer,
-            cairo.FORMAT_ARGB32,
-            final_image.width,
-            final_image.height,
-            final_image.width * 4,
-        )
+        return image_util.vips_rgba_to_cairo_surface(normalized_image)
 
 
 PDF_RENDERER = PdfRenderer()

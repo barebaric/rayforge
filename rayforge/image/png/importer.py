@@ -6,15 +6,11 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
-from ...core.matrix import Matrix
-from ...core.workpiece import WorkPiece
-from ...core.vectorization_spec import VectorizationSpec, TraceSpec
-from ...core.generation_config import GenerationConfig
+from ...core.vectorization_spec import TraceSpec, VectorizationSpec
+from .. import image_util
 from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
-from .. import image_util
 from .renderer import PNG_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -70,63 +66,16 @@ class PngImporter(Importer):
             f"{surface.get_width()}x{surface.get_height()}"
         )
 
-        # Determine physical size first
-        width_mm, height_mm = image_util.get_physical_size_mm(image)
+        # Trace the surface to get vector geometries
+        geometries = trace_surface(surface, vectorization_spec)
 
-        # Trace the surface to get geometry in PIXEL coordinates
-        geometries = trace_surface(surface)
-        combined_geo = Geometry()
-
-        if geometries:
-            logger.info(f"Successfully traced {len(geometries)} vector paths.")
-            for geo in geometries:
-                geo.close_gaps()
-                combined_geo.commands.extend(geo.commands)
-        else:
-            logger.warning(
-                "Tracing did not produce any vector geometries. "
-                "Creating a workpiece with a frame around the image instead."
-            )
-            # Create a rectangle representing the full image boundary in PIXEL
-            # coordinates.
-            combined_geo.move_to(0, 0)
-            combined_geo.line_to(image.width, 0)
-            combined_geo.line_to(image.width, image.height)
-            combined_geo.line_to(0, image.height)
-            combined_geo.close_path()
-
-        # Get the pixel-space bounding box for the segmentation mask.
-        min_x, min_y, max_x, max_y = combined_geo.rect()
-        mask_geo = Geometry()
-        mask_geo.move_to(min_x, min_y)
-        mask_geo.line_to(max_x, min_y)
-        mask_geo.line_to(max_x, max_y)
-        mask_geo.line_to(min_x, max_y)
-        mask_geo.close_path()
-
-        # 1. Normalize the pixel-based geometry to a 1x1 unit square.
-        if image.width > 0 and image.height > 0:
-            norm_scale_x = 1.0 / image.width
-            norm_scale_y = 1.0 / image.height
-            normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
-            combined_geo.transform(normalization_matrix.to_4x4_numpy())
-
-        # 2. Create the GenerationConfig.
-        gen_config = GenerationConfig(
-            source_asset_uid=source.uid,
-            segment_mask_geometry=mask_geo,
-            vectorization_spec=vectorization_spec,
+        # Use the helper to create a single, masked workpiece
+        items = image_util.create_single_workpiece_from_trace(
+            geometries,
+            source,
+            image,
+            vectorization_spec,
+            self.source_file.stem,
         )
 
-        # 3. Create the WorkPiece with the now-normalized vectors and config.
-        final_wp = WorkPiece(
-            name=self.source_file.stem,
-            vectors=combined_geo,
-            generation_config=gen_config,
-        )
-
-        # 4. Apply the final physical size via the matrix.
-        final_wp.set_size(width_mm, height_mm)
-        final_wp.pos = (0, 0)
-
-        return ImportPayload(source=source, items=[final_wp])
+        return ImportPayload(source=source, items=items)

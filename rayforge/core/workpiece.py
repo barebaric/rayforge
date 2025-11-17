@@ -104,14 +104,23 @@ class WorkPiece(DocItem):
         return None
 
     @property
+    def original_data(self) -> Optional[bytes]:
+        """
+        Retrieves the original, unmodified data from the source asset.
+        """
+        source = self.source
+        return source.original_data if source else None
+
+    @property
     def data(self) -> Optional[bytes]:
         """
         Retrieves the appropriate source data for rendering.
 
         This property intelligently selects the correct data:
         1. Prioritizes transient data for isolated/subprocess instances.
-        2. Prioritizes the `base_render_data` (e.g., a trimmed SVG) if it
-           exists, as this is what the workpiece's size is based on.
+        2. Prioritizes the `base_render_data` (e.g., a trimmed SVG or
+           cropped PDF) if it exists, as this is what the workpiece's size
+           is based on.
         3. Falls back to the `original_data` if no specific render data
            is available.
         """

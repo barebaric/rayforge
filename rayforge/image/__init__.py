@@ -2,8 +2,11 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import Dict, Optional, Type, Union
+from typing import Dict, Optional, Type, Union, List
 from ..core.vectorization_spec import VectorizationSpec
+from ..core.workpiece import WorkPiece
+from ..core.item import DocItem
+from ..core.source_asset import SourceAsset
 from .base_importer import Importer, ImportPayload
 from .base_renderer import Renderer
 from .bmp.importer import BmpImporter
@@ -23,7 +26,6 @@ from .ruida.importer import RuidaImporter
 from .ruida.renderer import RUIDA_RENDERER
 from .svg.importer import SvgImporter
 from .svg.renderer import SVG_RENDERER
-
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,69 @@ bitmap_mime_types = set()
 for base in importers:
     if base.is_bitmap:
         bitmap_mime_types.update(base.mime_types)
+
+
+def _hydrate_workpieces_for_preview(
+    items: List["DocItem"], source: "SourceAsset"
+):
+    """
+    Recursively finds all WorkPieces in a list of items and attaches the
+    transient renderer and data required for previews.
+    """
+    for item in items:
+        if isinstance(item, WorkPiece):
+            item._renderer = source.renderer
+            # Set the transient data, preferring the processed version
+            # (e.g., cropped SVG) if it exists.
+            item._data = source.base_render_data or source.original_data
+
+        # Recurse into children of containers (like Groups)
+        if hasattr(item, "children") and item.children:
+            _hydrate_workpieces_for_preview(item.children, source)
+
+
+def import_file_from_bytes(
+    file_data: bytes,
+    source_file_name: str,
+    mime_type: str,
+    vectorization_spec: Optional[VectorizationSpec] = None,
+) -> Optional[ImportPayload]:
+    """
+    Imports a file from raw byte data. Used for previews and in-memory
+    operations where a file path is not available or desirable.
+
+    Args:
+        file_data: The raw bytes of the file.
+        source_file_name: The original name of the file (for context).
+        mime_type: The MIME type to determine the importer.
+        vectorization_spec: An optional VectorizationSpec for vectorization.
+
+    Returns:
+        An ImportPayload or None on failure.
+    """
+    importer_class = importer_by_mime_type.get(mime_type)
+    if not importer_class:
+        logger.error(f"No importer found for MIME type: {mime_type}")
+        return None
+
+    try:
+        source_file = Path(source_file_name)
+        importer = importer_class(file_data, source_file=source_file)
+        payload = importer.get_doc_items(vectorization_spec)
+
+        # Hydrate the temporary WorkPiece(s) with a direct renderer AND data
+        # link so they can be rendered without being part of a full document.
+        if payload and payload.source:
+            _hydrate_workpieces_for_preview(payload.items, payload.source)
+
+        return payload
+    except Exception as e:
+        logger.error(
+            f"Importer {importer_class.__name__} "
+            f"failed for {source_file_name}",
+            exc_info=e,
+        )
+        return None
 
 
 def import_file(
@@ -154,6 +219,7 @@ __all__ = [
     "RuidaImporter",
     "SvgImporter",
     "import_file",
+    "import_file_from_bytes",
     "importers",
     "importer_by_name",
     "importer_by_mime_type",

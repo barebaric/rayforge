@@ -1,7 +1,6 @@
 import warnings
 from typing import Optional
 import logging
-import cairo
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -10,14 +9,11 @@ with warnings.catch_warnings():
     except ImportError:
         raise ImportError("The BMP importer requires the pyvips library.")
 
-from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
-from ...core.vectorization_spec import VectorizationSpec, TraceSpec
-from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
-from ...core.matrix import Matrix
-from ...core.generation_config import GenerationConfig
+from ...core.vectorization_spec import TraceSpec, VectorizationSpec
+from ..base_importer import Importer, ImportPayload
 from ..tracing import trace_surface
+from .. import image_util
 from .parser import parse_bmp
 from .renderer import BMP_RENDERER
 
@@ -54,98 +50,39 @@ class BmpImporter(Importer):
             return None
 
         rgba_bytes, width, height, dpi_x, dpi_y = parsed_data
+        dpi_x = dpi_x or 96.0
+        dpi_y = dpi_y or 96.0
 
         try:
             # Step 3: Create a clean pyvips image from the RGBA buffer.
             image = pyvips.Image.new_from_memory(
                 rgba_bytes, width, height, 4, "uchar"
             )
-            # Explicitly set the color interpretation.
-            # This tells pyvips that the 4 bands are sRGB + Alpha, which is
-            # required for band extraction to work reliably.
-            image = image.copy(interpretation=pyvips.Interpretation.SRGB)
-
+            # Explicitly set the color interpretation and resolution.
+            image = image.copy(
+                interpretation=pyvips.Interpretation.SRGB,
+                xres=dpi_x / 25.4,  # px/mm
+                yres=dpi_y / 25.4,
+            )
         except pyvips.Error as e:
             logger.error(
                 "Failed to create pyvips image from parsed BMP data: %s", e
             )
             return None
 
-        # Step 4: Proceed with the known-good pyvips image for tracing.
-        # Avoid division by zero if DPI is missing/invalid.
-        dpi_x = dpi_x or 96.0
-        dpi_y = dpi_y or 96.0
-        width_mm = width * (25.4 / dpi_x)
-        height_mm = height * (25.4 / dpi_y)
+        # Step 4: Convert to a Cairo surface for tracing.
+        surface = image_util.vips_rgba_to_cairo_surface(image)
 
-        # Convert to BGRA for Cairo (which expects ARGB32 in machine
-        # byte order, effectively BGRA on little-endian systems).
-        b, g, r, a = image[2], image[1], image[0], image[3]
-        bgra_image = b.bandjoin([g, r, a])
+        # Step 5: Trace the surface and create the WorkPiece(s).
+        geometries = trace_surface(surface, vectorization_spec)
 
-        # Create a self-managed Cairo surface and copy data into it row-by-row.
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        cairo_buffer = surface.get_data()
-        vips_pixel_data = bgra_image.write_to_memory()
-        cairo_stride = surface.get_stride()
-        vips_row_bytes = width * 4
-
-        for y in range(height):
-            cairo_row_start = y * cairo_stride
-            vips_row_start = y * vips_row_bytes
-
-            cairo_buffer[
-                cairo_row_start : cairo_row_start + vips_row_bytes
-            ] = vips_pixel_data[
-                vips_row_start : vips_row_start + vips_row_bytes
-            ]
-
-        surface.mark_dirty()
-
-        # Step 5: Trace the surface and create the WorkPiece.
-        geometries = trace_surface(surface)
-
-        # Always combine geometries into a single WorkPiece, even if the
-        # list is empty. An empty list results in a WorkPiece with empty
-        # vectors.
-        combined_geo = Geometry()
-        if geometries:
-            for geo in geometries:
-                geo.close_gaps()
-                combined_geo.commands.extend(geo.commands)
-
-        # Get the pixel-space bounding box for the segmentation mask.
-        min_x, min_y, max_x, max_y = combined_geo.rect()
-        mask_geo = Geometry()
-        mask_geo.move_to(min_x, min_y)
-        mask_geo.line_to(max_x, min_y)
-        mask_geo.line_to(max_x, max_y)
-        mask_geo.line_to(min_x, max_y)
-        mask_geo.close_path()
-
-        # Normalize the pixel-based geometry to a 1x1 unit square.
-        if width > 0 and height > 0:
-            norm_scale_x = 1.0 / width
-            norm_scale_y = 1.0 / height
-            normalization_matrix = Matrix.scale(norm_scale_x, norm_scale_y)
-            combined_geo.transform(normalization_matrix.to_4x4_numpy())
-
-        # Create the GenerationConfig.
-        gen_config = GenerationConfig(
-            source_asset_uid=source.uid,
-            segment_mask_geometry=mask_geo,
-            vectorization_spec=vectorization_spec,
+        # Step 6: Use helper to create a single, masked workpiece
+        items = image_util.create_single_workpiece_from_trace(
+            geometries,
+            source,
+            image,
+            vectorization_spec,
+            self.source_file.stem,
         )
 
-        # Create the WorkPiece with the normalized vectors and new config.
-        final_wp = WorkPiece(
-            name=self.source_file.stem,
-            vectors=combined_geo,
-            generation_config=gen_config,
-        )
-
-        # Apply the final physical size via the matrix. This is now correct.
-        final_wp.set_size(width_mm, height_mm)
-        final_wp.pos = (0, 0)
-
-        return ImportPayload(source=source, items=[final_wp])
+        return ImportPayload(source=source, items=items)

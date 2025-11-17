@@ -34,29 +34,45 @@ class PngRenderer(Renderer):
             return None
 
         try:
-            image = pyvips.Image.pngload_buffer(
+            loaded_image = pyvips.Image.pngload_buffer(
                 workpiece.data, access=pyvips.Access.RANDOM
             )
+            full_image = image_util.normalize_to_rgba(loaded_image)
         except pyvips.Error:
             return None
-        if not image:
+        if not full_image:
             return None
 
-        if image.width == 0 or image.height == 0:
-            return image
+        image_to_process = full_image
+        if config := workpiece.generation_config:
+            if crop := config.crop_window_px:
+                x, y, w, h = map(int, crop)
+                image_to_process = image_util.safe_crop(full_image, x, y, w, h)
+                if image_to_process is None:
+                    return pyvips.Image.black(width, height, bands=4)
 
-        h_scale = width / image.width
-        v_scale = height / image.height
-        return image.resize(h_scale, vscale=v_scale)
+            mask_geo = config.segment_mask_geometry
+            masked_image = image_util.apply_mask_to_vips_image(
+                image_to_process, mask_geo
+            )
+            if masked_image:
+                image_to_process = masked_image
+
+        if image_to_process.width == 0 or image_to_process.height == 0:
+            return image_to_process
+
+        h_scale = width / image_to_process.width
+        v_scale = height / image_to_process.height
+        return image_to_process.resize(h_scale, vscale=v_scale)
 
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        resized_image = self._render_to_vips_image(workpiece, width, height)
-        if not resized_image:
+        final_image = self.get_or_create_vips_image(workpiece, width, height)
+        if not final_image:
             return None
 
-        normalized_image = image_util.normalize_to_rgba(resized_image)
+        normalized_image = image_util.normalize_to_rgba(final_image)
         if not normalized_image:
             return None
 
