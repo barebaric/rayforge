@@ -231,6 +231,7 @@ class WorkPiecePipelineStage(PipelineStage):
         renderer = workpiece.renderer
         if renderer:
             workpiece_dict["data"] = workpiece.data
+            workpiece_dict["original_data"] = workpiece.original_data
             workpiece_dict["renderer_name"] = renderer.__class__.__name__
 
         task = self._task_manager.run_process(

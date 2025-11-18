@@ -58,6 +58,7 @@ class WorkPiece(DocItem):
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: Optional[bytes] = None
+        self._original_data: Optional[bytes] = None
         self._renderer: Optional["Renderer"] = None
 
         self._tabs: List[Tab] = []
@@ -90,6 +91,9 @@ class WorkPiece(DocItem):
         """
         Retrieves the original, unmodified data from the source asset.
         """
+        # Prioritize transient data for isolated/subprocess instances
+        if self._original_data is not None:
+            return self._original_data
         source = self.source
         return source.original_data if source else None
 
@@ -238,6 +242,7 @@ class WorkPiece(DocItem):
         if source:
             # Use the public .data property to get the correct render data
             world_wp._data = self.data
+            world_wp._original_data = self.original_data
             world_wp._renderer = source.renderer
 
         # Do NOT link back to the parent. The point of this method is to
@@ -296,6 +301,8 @@ class WorkPiece(DocItem):
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:
             wp._data = data["data"]
+        if "original_data" in data:
+            wp._original_data = data["original_data"]
         if "renderer_name" in data:
             renderer_name = data["renderer_name"]
             from ..image import renderer_by_name
