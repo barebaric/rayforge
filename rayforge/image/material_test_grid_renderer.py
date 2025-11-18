@@ -20,6 +20,10 @@ from .base_renderer import Renderer
 
 if TYPE_CHECKING:
     from ..core.workpiece import WorkPiece
+    from ..core.source_asset_segment import SourceAssetSegment
+    from ..core.geo import Geometry
+    from ..core.matrix import Matrix
+    import pyvips
 
 logger = logging.getLogger(__name__)
 
@@ -38,30 +42,13 @@ class MaterialTestRenderer(Renderer):
         """Initializes the renderer."""
         super().__init__()
 
-    def render_to_pixels(
+    def _render_to_pixels_internal(
         self,
-        workpiece: WorkPiece,
+        *,
+        params: Dict[str, Any],
         width: int,
         height: int,
     ) -> Optional[cairo.ImageSurface]:
-        """
-        Renders the material test grid preview.
-
-        Args:
-            workpiece: WorkPiece to render (must have material_test
-                ImportSource)
-            width: Target width in pixels.
-            height: Target height in pixels.
-
-        Returns:
-            Cairo ImageSurface with the rendered preview.
-        """
-        # Extract parameters from the workpiece's ImportSource data
-        params = self._get_params_from_workpiece(workpiece)
-        if not params:
-            logger.warning("Could not extract material test parameters")
-            return None
-
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         ctx = cairo.Context(surface)
 
@@ -118,20 +105,53 @@ class MaterialTestRenderer(Renderer):
 
         return surface
 
-    def _get_params_from_workpiece(
-        self, workpiece: WorkPiece
-    ) -> Optional[Dict[str, Any]]:
-        """Extracts producer parameters from workpiece data."""
-        if not workpiece.data:
+    def render_to_pixels(
+        self,
+        workpiece: WorkPiece,
+        width: int,
+        height: int,
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Renders the material test grid preview.
+
+        Args:
+            workpiece: WorkPiece to render (must have material_test
+                ImportSource)
+            width: Target width in pixels.
+            height: Target height in pixels.
+
+        Returns:
+            Cairo ImageSurface with the rendered preview.
+        """
+        # Extract parameters from the workpiece's ImportSource data
+        params = self._get_params_from_workpiece(workpiece)
+        if not params:
+            logger.warning("Could not extract material test parameters")
             return None
 
+        return self._render_to_pixels_internal(
+            params=params, width=width, height=height
+        )
+
+    def _get_params_from_data(
+        self, data: Optional[bytes]
+    ) -> Optional[Dict[str, Any]]:
+        """Extracts producer parameters from raw byte data."""
+        if not data:
+            return None
         try:
             # Data is JSON-encoded parameters
-            params = json.loads(workpiece.data.decode("utf-8"))
+            params = json.loads(data.decode("utf-8"))
             return params
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             logger.error(f"Failed to decode material test parameters: {e}")
             return None
+
+    def _get_params_from_workpiece(
+        self, workpiece: WorkPiece
+    ) -> Optional[Dict[str, Any]]:
+        """Extracts producer parameters from workpiece data."""
+        return self._get_params_from_data(workpiece.data)
 
     def _draw_grid(self, ctx: cairo.Context, params: Dict[str, Any]):
         cols, rows = (
@@ -202,14 +222,9 @@ class MaterialTestRenderer(Renderer):
                 ctx.rectangle(x, y, shape_size, shape_size)
                 ctx.stroke()
 
-    def get_natural_size(
-        self, workpiece: WorkPiece
+    def _get_natural_size_internal(
+        self, *, params: Dict[str, Any]
     ) -> Optional[Tuple[float, float]]:
-        """Returns the natural size of the test grid in mm."""
-        params = self._get_params_from_workpiece(workpiece)
-        if not params:
-            return None
-
         cols, rows = (
             int(params["grid_dimensions"][0]),
             int(params["grid_dimensions"][1]),
@@ -232,3 +247,59 @@ class MaterialTestRenderer(Renderer):
             height = grid_height
 
         return width, height
+
+    def get_natural_size(
+        self, workpiece: WorkPiece
+    ) -> Optional[Tuple[float, float]]:
+        """Returns the natural size of the test grid in mm."""
+        params = self._get_params_from_workpiece(workpiece)
+        if not params:
+            return None
+        return self._get_natural_size_internal(params=params)
+
+    def get_natural_size_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
+        source_metadata: Optional[Dict[str, Any]],
+        boundaries: Optional["Geometry"] = None,
+        current_size: Optional[Tuple[float, float]] = None,
+    ) -> Optional[Tuple[float, float]]:
+        params = self._get_params_from_data(render_data)
+        if not params:
+            return None
+        return self._get_natural_size_internal(params=params)
+
+    def render_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        original_data: Optional[bytes] = None,
+        source_segment: Optional["SourceAssetSegment"] = None,
+        source_px_dims: Optional[Tuple[int, int]] = None,
+        source_metadata: Optional[Dict[str, Any]] = None,
+        boundaries: Optional["Geometry"] = None,
+        workpiece_matrix: Optional["Matrix"] = None,
+        width: int,
+        height: int,
+    ) -> Optional["pyvips.Image"]:
+        params = self._get_params_from_data(render_data)
+        if not params:
+            logger.warning("Could not extract material test parameters")
+            return None
+
+        surface = self._render_to_pixels_internal(
+            params=params, width=width, height=height
+        )
+        if not surface:
+            return None
+
+        import pyvips
+
+        h, w = surface.get_height(), surface.get_width()
+        vips_image = pyvips.Image.new_from_memory(
+            surface.get_data(), w, h, 4, "uchar"
+        )
+        b, g, r, a = vips_image[0], vips_image[1], vips_image[2], vips_image[3]
+        return r.bandjoin([g, b, a])

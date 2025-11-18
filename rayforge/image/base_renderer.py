@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, Generator, Tuple, cast
+from typing import Optional, TYPE_CHECKING, Generator, Tuple, cast, Dict, Any
 import cairo
 import math
 import logging
@@ -14,6 +14,9 @@ from . import image_util
 
 if TYPE_CHECKING:
     from ..core.workpiece import WorkPiece
+    from ..core.source_asset_segment import SourceAssetSegment
+    from ..core.geo import Geometry
+    from ..core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,38 @@ class Renderer(ABC):
         Renders the workpiece to a Cairo surface of specific pixel dimensions.
         """
         pass
+
+    @abstractmethod
+    def render_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        original_data: Optional[bytes] = None,
+        source_segment: Optional["SourceAssetSegment"] = None,
+        source_px_dims: Optional[Tuple[int, int]] = None,
+        source_metadata: Optional[Dict[str, Any]] = None,
+        boundaries: Optional["Geometry"] = None,
+        workpiece_matrix: Optional["Matrix"] = None,
+        width: int,
+        height: int,
+    ) -> Optional[pyvips.Image]:
+        """
+        Renders a vips image from explicit data, decoupled from a WorkPiece.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_natural_size_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
+        source_metadata: Optional[Dict[str, Any]],
+        boundaries: Optional["Geometry"] = None,
+        current_size: Optional[Tuple[float, float]] = None,
+    ) -> Optional[Tuple[float, float]]:
+        """Calculates natural size from explicit data."""
+        raise NotImplementedError
 
     def _render_to_vips_image(
         self, workpiece: "WorkPiece", width: int, height: int

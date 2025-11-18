@@ -1,6 +1,6 @@
 import cairo
 import warnings
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING, Dict, Any
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -10,32 +10,47 @@ from ...core.workpiece import WorkPiece
 from ..base_renderer import Renderer
 from .. import image_util
 
+if TYPE_CHECKING:
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.geo import Geometry
+    from ...core.matrix import Matrix
+
 
 class PngRenderer(Renderer):
     """Renders PNG data from a WorkPiece."""
 
-    def get_natural_size(
-        self, workpiece: "WorkPiece"
+    def _get_natural_size_internal(
+        self, *, render_data: Optional[bytes]
     ) -> Optional[Tuple[float, float]]:
-        if not workpiece.data:
+        if not render_data:
             return None
         try:
             image = pyvips.Image.pngload_buffer(
-                workpiece.data, access=pyvips.Access.RANDOM
+                render_data, access=pyvips.Access.RANDOM
             )
         except pyvips.Error:
             return None
         return image_util.get_physical_size_mm(image) if image else None
 
-    def _render_to_vips_image(
-        self, workpiece: "WorkPiece", width: int, height: int
+    def get_natural_size(
+        self, workpiece: "WorkPiece"
+    ) -> Optional[Tuple[float, float]]:
+        return self._get_natural_size_internal(render_data=workpiece.data)
+
+    def _render_to_vips_internal(
+        self,
+        *,
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
+        width: int,
+        height: int,
     ) -> Optional[pyvips.Image]:
-        if not workpiece.data:
+        if not render_data:
             return None
 
         try:
             loaded_image = pyvips.Image.pngload_buffer(
-                workpiece.data, access=pyvips.Access.RANDOM
+                render_data, access=pyvips.Access.RANDOM
             )
             full_image = image_util.normalize_to_rgba(loaded_image)
         except pyvips.Error:
@@ -44,14 +59,14 @@ class PngRenderer(Renderer):
             return None
 
         image_to_process = full_image
-        if config := workpiece.source_segment:
-            if crop := config.crop_window_px:
+        if source_segment:
+            if crop := source_segment.crop_window_px:
                 x, y, w, h = map(int, crop)
                 image_to_process = image_util.safe_crop(full_image, x, y, w, h)
                 if image_to_process is None:
                     return pyvips.Image.black(width, height, bands=4)
 
-            mask_geo = config.segment_mask_geometry
+            mask_geo = source_segment.segment_mask_geometry
             masked_image = image_util.apply_mask_to_vips_image(
                 image_to_process, mask_geo
             )
@@ -65,6 +80,16 @@ class PngRenderer(Renderer):
         v_scale = height / image_to_process.height
         return image_to_process.resize(h_scale, vscale=v_scale)
 
+    def _render_to_vips_image(
+        self, workpiece: "WorkPiece", width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        return self._render_to_vips_internal(
+            render_data=workpiece.data,
+            source_segment=workpiece.source_segment,
+            width=width,
+            height=height,
+        )
+
     def render_to_pixels(
         self, workpiece: "WorkPiece", width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
@@ -77,6 +102,37 @@ class PngRenderer(Renderer):
             return None
 
         return image_util.vips_rgba_to_cairo_surface(normalized_image)
+
+    def get_natural_size_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
+        source_metadata: Optional[Dict[str, Any]],
+        boundaries: Optional["Geometry"] = None,
+        current_size: Optional[Tuple[float, float]] = None,
+    ) -> Optional[Tuple[float, float]]:
+        return self._get_natural_size_internal(render_data=render_data)
+
+    def render_from_data(
+        self,
+        *,
+        render_data: Optional[bytes],
+        original_data: Optional[bytes] = None,
+        source_segment: Optional["SourceAssetSegment"] = None,
+        source_px_dims: Optional[Tuple[int, int]] = None,
+        source_metadata: Optional[Dict[str, Any]] = None,
+        boundaries: Optional["Geometry"] = None,
+        workpiece_matrix: Optional["Matrix"] = None,
+        width: int,
+        height: int,
+    ) -> Optional[pyvips.Image]:
+        return self._render_to_vips_internal(
+            render_data=render_data,
+            source_segment=source_segment,
+            width=width,
+            height=height,
+        )
 
 
 PNG_RENDERER = PngRenderer()
