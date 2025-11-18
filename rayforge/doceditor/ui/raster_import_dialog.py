@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
-from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,
     PassthroughSpec,
     VectorizationSpec,
 )
 from ...core.workpiece import WorkPiece
-from ...image import ImportPayload, import_file_from_bytes, image_util
+from ...image import ImportPayload, import_file_from_bytes
 from ...shared.util.cairoutil import draw_geometry_to_cairo_context
 
 if TYPE_CHECKING:
@@ -250,16 +249,36 @@ class RasterImportDialog(Adw.Window):
             if not payload or not payload.items:
                 raise ValueError("Import process failed to produce any items.")
 
-            # Background Rendering
-            # We access dimensions directly from the source asset, avoiding
-            # dummy workpiece creation.
-            w_mm = payload.source.width_mm
-            h_mm = payload.source.height_mm
+            workpiece = payload.items[0]
+            if not isinstance(workpiece, WorkPiece):
+                # Should be impossible given importer contracts
+                raise ValueError("Imported item is not a WorkPiece")
+
+            # Hydrate the workpiece with source data for standalone rendering.
+            # This enables correct behavior for cropping and high-res tracing,
+            # as WorkPiece.get_vips_image needs access to the original data
+            # and source dimensions which are normally accessed via self.doc.
+            workpiece._data = payload.source.original_data
+            workpiece._original_data = payload.source.original_data
+            workpiece._renderer = payload.source.renderer
+            if (
+                payload.source.width_px is not None
+                and payload.source.height_px is not None
+            ):
+                workpiece._transient_source_px_dims = (
+                    payload.source.width_px,
+                    payload.source.height_px,
+                )
+
+            # Calculate preview dimensions preserving aspect ratio
+            # get_natural_size now returns the Segment dimensions
+            size_mm = workpiece.get_natural_size()
+            w_mm, h_mm = size_mm if size_mm else (0, 0)
 
             if w_mm <= 0 or h_mm <= 0:
                 raise ValueError("Source has invalid physical dimensions.")
 
-            aspect = w_mm / h_mm if h_mm > 0 else 1.0
+            aspect = w_mm / h_mm
             if aspect >= 1.0:
                 render_w = PREVIEW_RENDER_SIZE_PX
                 render_h = int(PREVIEW_RENDER_SIZE_PX / aspect)
@@ -267,50 +286,22 @@ class RasterImportDialog(Adw.Window):
                 render_h = PREVIEW_RENDER_SIZE_PX
                 render_w = int(PREVIEW_RENDER_SIZE_PX * aspect)
 
-            vips_image = payload.source.renderer.render_base_image(
-                payload.source.original_data,
-                max(1, render_w),
-                max(1, render_h),
-                # Pass dummy matrix to satisfy strict renderers if needed
-                workpiece_matrix=Matrix.identity(),
+            # Delegate rendering to the WorkPiece
+            # This handles renderer selection, data retrieval, and cropping
+            # defined by the SourceAssetSegment.
+            vips_image = workpiece.get_vips_image(
+                max(1, render_w), max(1, render_h)
             )
+
             if not vips_image:
-                raise ValueError("Renderer failed to create a preview image.")
+                raise ValueError("Failed to render preview image.")
 
-            # For traced items, crop the background to match the content
-            # bounds.
-            if isinstance(spec, TraceSpec):
-                if crop_px := payload.source.metadata.get("crop_window_px"):
-                    trace_w = payload.source.width_px
-                    trace_h = payload.source.height_px
-
-                    if trace_w and trace_h and trace_w > 0 and trace_h > 0:
-                        preview_w, preview_h = (
-                            vips_image.width,
-                            vips_image.height,
-                        )
-                        scale_x, scale_y = (
-                            preview_w / trace_w,
-                            preview_h / trace_h,
-                        )
-
-                        x, y, w, h = crop_px
-                        crop_x = int(x * scale_x)
-                        crop_y = int(y * scale_y)
-                        crop_w = int(w * scale_x)
-                        crop_h = int(h * scale_y)
-
-                        cropped = image_util.safe_crop(
-                            vips_image, crop_x, crop_y, crop_w, crop_h
-                        )
-                        if cropped is not None:
-                            vips_image = cropped
-
-                # Invert the background preview if the user has toggled invert.
-                if spec.invert:
-                    vips_image = vips_image.flatten(
-                        background=[255, 255, 255]
-                    ).invert()
+            # Dialog-specific visualization: Invert background for
+            # dark-on-light traces
+            if isinstance(spec, TraceSpec) and spec.invert:
+                vips_image = vips_image.flatten(
+                    background=[255, 255, 255]
+                ).invert()
 
             png_bytes = vips_image.pngsave_buffer()
 
