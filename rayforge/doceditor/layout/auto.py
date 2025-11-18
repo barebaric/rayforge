@@ -682,11 +682,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             )
             if unrotated_w_mm <= 0 or unrotated_h_mm <= 0:
                 return None
-            renderer = item.renderer
-            if renderer is None:
-                return None
-            source_surface = renderer.render_to_pixels(
-                item,
+            # Use the item's own render method which now delegates to the hub
+            source_surface = item.render_to_pixels(
                 width=int(unrotated_w_mm * self.resolution),
                 height=int(unrotated_h_mm * self.resolution),
             )
@@ -716,12 +713,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     ctx.restore()
                     continue
 
-                wp_renderer = wp.renderer
-                if wp_renderer is None:
-                    ctx.restore()
-                    continue
-                wp_surf = wp_renderer.render_to_pixels(
-                    wp,
+                wp_surf = wp.render_to_pixels(
                     width=int(wp_w * self.resolution),
                     height=int(wp_h * self.resolution),
                 )

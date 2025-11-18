@@ -9,58 +9,40 @@ from __future__ import annotations
 import cairo
 import json
 import logging
-from typing import (
-    Dict,
-    Any,
-    Tuple,
-    TYPE_CHECKING,
-    Optional,
-)
+from typing import Dict, Any, Tuple, TYPE_CHECKING, Optional
 from .base_renderer import Renderer
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 
 if TYPE_CHECKING:
-    from ..core.workpiece import WorkPiece
-    from ..core.source_asset_segment import SourceAssetSegment
     from ..core.geo import Geometry
-    from ..core.matrix import Matrix
-    import pyvips
+    from ..core.source_asset_segment import SourceAssetSegment
 
 logger = logging.getLogger(__name__)
 
 
 class MaterialTestRenderer(Renderer):
-    """
-    Renders a visual preview of a material test grid.
+    """Renders material test grid previews."""
 
-    The preview shows:
-    - Grid cells with gradient shading (darker = more intense)
-    - Speed and power labels
-    - Axis labels
-    """
+    def _get_params_from_data(
+        self, data: Optional[bytes]
+    ) -> Optional[Dict[str, Any]]:
+        if not data:
+            return None
+        try:
+            return json.loads(data.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            logger.error(f"Failed to decode material test parameters: {e}")
+            return None
 
-    def __init__(self):
-        """Initializes the renderer."""
-        super().__init__()
-
-    def _render_to_pixels_internal(
-        self,
-        *,
-        params: Dict[str, Any],
-        width: int,
-        height: int,
-    ) -> Optional[cairo.ImageSurface]:
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        ctx = cairo.Context(surface)
-
-        # White background
-        ctx.set_source_rgb(1, 1, 1)
-        ctx.paint()
-
-        # Calculate dimensions
-        cols, rows = (
-            int(params["grid_dimensions"][0]),
-            int(params["grid_dimensions"][1]),
-        )
+    def _get_natural_size_internal(
+        self, *, params: Dict[str, Any]
+    ) -> Optional[Tuple[float, float]]:
+        cols = int(params["grid_dimensions"][0])
+        rows = int(params["grid_dimensions"][1])
         shape_size = params["shape_size"]
         spacing = params["spacing"]
 
@@ -74,84 +56,26 @@ class MaterialTestRenderer(Renderer):
             font_scale = 4.375 / 2.5
             label_margin = 15.0 * font_scale
             # Total content area includes negative label space
-            total_width = grid_width + label_margin
-            total_height = grid_height + label_margin
-            # Grid starts at (0,0), but we need to account for negative
-            # label space
-            offset_x = label_margin
-            offset_y = label_margin
+            width = grid_width + label_margin
+            height = grid_height + label_margin
         else:
-            total_width = grid_width
-            total_height = grid_height
-            offset_x = 0
-            offset_y = 0
+            width = grid_width
+            height = grid_height
+        return width, height
 
-        # Scale context to fit total content area
-        scale_x = width / total_width if total_width > 0 else 1
-        scale_y = height / total_height if total_height > 0 else 1
-
-        # Flip Y-axis by using negative scale, then translate to correct
-        # position
-        ctx.scale(scale_x, -scale_y)
-
-        # After Y-flip, translate to account for negative label
-        # coordinates and flip
-        # Y is now flipped, so we need to translate by -total_height to
-        # position correctly
-        ctx.translate(offset_x, -total_height + offset_y)
-
-        # Draw the grid
-        self._draw_grid(ctx, params)
-
-        return surface
-
-    def render_to_pixels(
+    def get_natural_size_from_data(
         self,
-        workpiece: WorkPiece,
-        width: int,
-        height: int,
-    ) -> Optional[cairo.ImageSurface]:
-        """
-        Renders the material test grid preview.
-
-        Args:
-            workpiece: WorkPiece to render (must have material_test
-                ImportSource)
-            width: Target width in pixels.
-            height: Target height in pixels.
-
-        Returns:
-            Cairo ImageSurface with the rendered preview.
-        """
-        # Extract parameters from the workpiece's ImportSource data
-        params = self._get_params_from_workpiece(workpiece)
+        *,
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
+        source_metadata: Optional[Dict[str, Any]],
+        boundaries: Optional["Geometry"] = None,
+        current_size: Optional[Tuple[float, float]] = None,
+    ) -> Optional[Tuple[float, float]]:
+        params = self._get_params_from_data(render_data)
         if not params:
-            logger.warning("Could not extract material test parameters")
             return None
-
-        return self._render_to_pixels_internal(
-            params=params, width=width, height=height
-        )
-
-    def _get_params_from_data(
-        self, data: Optional[bytes]
-    ) -> Optional[Dict[str, Any]]:
-        """Extracts producer parameters from raw byte data."""
-        if not data:
-            return None
-        try:
-            # Data is JSON-encoded parameters
-            params = json.loads(data.decode("utf-8"))
-            return params
-        except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            logger.error(f"Failed to decode material test parameters: {e}")
-            return None
-
-    def _get_params_from_workpiece(
-        self, workpiece: WorkPiece
-    ) -> Optional[Dict[str, Any]]:
-        """Extracts producer parameters from workpiece data."""
-        return self._get_params_from_data(workpiece.data)
+        return self._get_natural_size_internal(params=params)
 
     def _draw_grid(self, ctx: cairo.Context, params: Dict[str, Any]):
         cols, rows = (
@@ -222,9 +146,22 @@ class MaterialTestRenderer(Renderer):
                 ctx.rectangle(x, y, shape_size, shape_size)
                 ctx.stroke()
 
-    def _get_natural_size_internal(
-        self, *, params: Dict[str, Any]
-    ) -> Optional[Tuple[float, float]]:
+    def render_base_image(
+        self,
+        data: bytes,
+        width: int,
+        height: int,
+        **kwargs,
+    ) -> Optional[pyvips.Image]:
+        params = self._get_params_from_data(data)
+        if not params:
+            return None
+
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+
         cols, rows = (
             int(params["grid_dimensions"][0]),
             int(params["grid_dimensions"][1]),
@@ -237,69 +174,35 @@ class MaterialTestRenderer(Renderer):
 
         # Add margins for labels if enabled (using shared layout)
         include_labels = params.get("include_labels", True)
+        offset_x = 0
+        offset_y = 0
+        total_width = grid_width
+        total_height = grid_height
+
         if include_labels:
             font_scale = 4.375 / 2.5
             label_margin = 15.0 * font_scale
-            width = grid_width + label_margin
-            height = grid_height + label_margin
-        else:
-            width = grid_width
-            height = grid_height
+            total_width = grid_width + label_margin
+            total_height = grid_height + label_margin
+            offset_x = label_margin
+            offset_y = label_margin
 
-        return width, height
+        scale_x = width / total_width if total_width > 0 else 1
+        scale_y = height / total_height if total_height > 0 else 1
 
-    def get_natural_size(
-        self, workpiece: WorkPiece
-    ) -> Optional[Tuple[float, float]]:
-        """Returns the natural size of the test grid in mm."""
-        params = self._get_params_from_workpiece(workpiece)
-        if not params:
-            return None
-        return self._get_natural_size_internal(params=params)
+        ctx.scale(scale_x, -scale_y)
+        ctx.translate(offset_x, -total_height + offset_y)
 
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        params = self._get_params_from_data(render_data)
-        if not params:
-            return None
-        return self._get_natural_size_internal(params=params)
-
-    def render_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        original_data: Optional[bytes] = None,
-        source_segment: Optional["SourceAssetSegment"] = None,
-        source_px_dims: Optional[Tuple[int, int]] = None,
-        source_metadata: Optional[Dict[str, Any]] = None,
-        boundaries: Optional["Geometry"] = None,
-        workpiece_matrix: Optional["Matrix"] = None,
-        width: int,
-        height: int,
-    ) -> Optional["pyvips.Image"]:
-        params = self._get_params_from_data(render_data)
-        if not params:
-            logger.warning("Could not extract material test parameters")
-            return None
-
-        surface = self._render_to_pixels_internal(
-            params=params, width=width, height=height
-        )
-        if not surface:
-            return None
-
-        import pyvips
+        self._draw_grid(ctx, params)
 
         h, w = surface.get_height(), surface.get_width()
         vips_image = pyvips.Image.new_from_memory(
             surface.get_data(), w, h, 4, "uchar"
         )
-        b, g, r, a = vips_image[0], vips_image[1], vips_image[2], vips_image[3]
+        b, g, r, a = (
+            vips_image[0],
+            vips_image[1],
+            vips_image[2],
+            vips_image[3],
+        )
         return r.bandjoin([g, b, a])

@@ -66,13 +66,14 @@ class TestWorkPiece:
         assert wp.name == "test_rect"
         assert wp.source_file is not None
         assert wp.source_file.name == "test_rect.svg"
-        assert isinstance(wp.renderer, SvgRenderer)
+        # Renderer is accessed via the source asset now
+        assert wp.source is not None
+        assert isinstance(wp.source.renderer, SvgRenderer)
         # For a trimmed SVG, wp.data should return the base_render_data
         assert wp.data is not None
         # This test is no longer valid, as a simple SVG might not be modified
         # by the importer, so base_render_data can equal original_data.
         # assert str(wp.data) != str(wp.source.original_data)
-        assert wp.source is not None
         assert sample_svg_data in wp.source.original_data
         assert wp.pos == pytest.approx((0.0, 0.0))
         assert wp.size == pytest.approx((100.0, 50.0))
@@ -109,7 +110,7 @@ class TestWorkPiece:
 
         # A free-floating workpiece cannot access its source properties
         assert new_wp.data is None
-        assert new_wp.renderer is None
+        assert new_wp.source is None
         assert new_wp.source_file is None
 
         # Add it to the doc to link it to its source
@@ -117,7 +118,8 @@ class TestWorkPiece:
 
         assert new_wp.name == wp.name
         assert new_wp.source_file == source.source_file
-        assert isinstance(new_wp.renderer, SvgRenderer)
+        assert new_wp.source is not None
+        assert isinstance(new_wp.source.renderer, SvgRenderer)
         assert new_wp.pos == pytest.approx(wp.pos)
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
@@ -201,7 +203,7 @@ class TestWorkPiece:
         """
 
         class MockNoSizeRenderer(SvgRenderer):
-            def get_natural_size(self, workpiece: "WorkPiece"):
+            def get_natural_size_from_data(self, **kwargs):
                 return None
 
         # Setup doc and source with the mock renderer

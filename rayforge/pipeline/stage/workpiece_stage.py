@@ -226,13 +226,9 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error(f"Cannot select laser for step '{step.name}': {e}")
             return
 
+        # Prepare the fully-hydrated, serializable WorkPiece dictionary.
         world_workpiece = workpiece.in_world()
         workpiece_dict = world_workpiece.to_dict()
-        renderer = workpiece.renderer
-        if renderer:
-            workpiece_dict["data"] = workpiece.data
-            workpiece_dict["original_data"] = workpiece.original_data
-            workpiece_dict["renderer_name"] = renderer.__class__.__name__
 
         task = self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,

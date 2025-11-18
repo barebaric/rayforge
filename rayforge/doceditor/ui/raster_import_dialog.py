@@ -261,9 +261,6 @@ class RasterImportDialog(Adw.Window):
             w_mm, h_mm = natural_size
             bg_wp.set_size(w_mm, h_mm)
 
-            if not bg_wp.renderer:
-                raise ValueError("Background workpiece has no renderer.")
-
             aspect = w_mm / h_mm if h_mm > 0 else 1.0
             if aspect >= 1.0:
                 render_w = PREVIEW_RENDER_SIZE_PX
@@ -272,8 +269,8 @@ class RasterImportDialog(Adw.Window):
                 render_h = PREVIEW_RENDER_SIZE_PX
                 render_w = int(PREVIEW_RENDER_SIZE_PX * aspect)
 
-            vips_image = bg_wp.renderer.get_or_create_vips_image(
-                bg_wp, max(1, render_w), max(1, render_h)
+            vips_image = bg_wp.get_vips_image(
+                max(1, render_w), max(1, render_h)
             )
             if not vips_image:
                 raise ValueError("Renderer failed to create a preview image.")

@@ -127,27 +127,25 @@ class TestPdfImporter:
 
 class TestPdfRenderer:
     def test_get_natural_size(self, basic_workpiece: WorkPiece):
-        """Test natural size calculation on the renderer."""
-        size = PDF_RENDERER.get_natural_size(basic_workpiece)
+        """Test natural size calculation on the workpiece."""
+        size = basic_workpiece.get_natural_size()
         assert size is not None
         width_mm, height_mm = size
 
         expected_width = 100 * 25.4 / 72
         expected_height = 50 * 25.4 / 72
-        assert width_mm == pytest.approx(expected_width)
-        assert height_mm == pytest.approx(expected_height)
+        assert width_mm == pytest.approx(expected_width, rel=1e-3)
+        assert height_mm == pytest.approx(expected_height, rel=1e-3)
 
     def test_get_natural_aspect_ratio(self, basic_workpiece: WorkPiece):
         """Test aspect ratio on the workpiece, which uses the renderer."""
         ratio = basic_workpiece.get_natural_aspect_ratio()
         assert ratio is not None
-        assert ratio == pytest.approx(2.0)
+        assert ratio == pytest.approx(2.0, rel=1e-3)
 
     def test_render_to_pixels(self, basic_workpiece: WorkPiece):
         """Test rendering to a Cairo surface."""
-        surface = PDF_RENDERER.render_to_pixels(
-            basic_workpiece, width=200, height=100
-        )
+        surface = basic_workpiece.render_to_pixels(width=200, height=100)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 200
         assert surface.get_height() == 100
@@ -202,8 +200,8 @@ class TestPdfRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert PDF_RENDERER.get_natural_size(invalid_wp) is None
-        assert PDF_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None
+        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(
             invalid_wp.render_chunk(

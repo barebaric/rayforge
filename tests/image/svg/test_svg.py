@@ -267,15 +267,13 @@ class TestSvgRenderer:
         assert parse_length("200") == (200.0, "px")
 
     def test_get_natural_size(self, basic_workpiece: WorkPiece):
-        size = SVG_RENDERER.get_natural_size(basic_workpiece)
+        size = basic_workpiece.get_natural_size()
         assert size is not None
         assert size[0] == pytest.approx(100.0)
         assert size[1] == pytest.approx(50.0)
 
     def test_render_to_pixels(self, basic_workpiece: WorkPiece):
-        surface = SVG_RENDERER.render_to_pixels(
-            basic_workpiece, width=200, height=100
-        )
+        surface = basic_workpiece.render_to_pixels(width=200, height=100)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 200
         assert surface.get_height() == 100
@@ -342,7 +340,8 @@ class TestSvgRenderer:
         )
         mock_parent = Mock()
         mock_parent.doc = mock_doc
+        mock_parent.get_world_transform.return_value = Matrix.identity()
         workpiece.parent = mock_parent
 
         # The renderer should not find a size for a workpiece with no metadata
-        assert SVG_RENDERER.get_natural_size(workpiece) is None
+        assert workpiece.get_natural_size() is None

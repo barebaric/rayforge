@@ -3,16 +3,18 @@ import numpy as np
 from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 
 if TYPE_CHECKING:
-    from ..core.workpiece import WorkPiece
     from ..core.geo import Geometry
     from ..core.source_asset_segment import SourceAssetSegment
-    from ..core.matrix import Matrix
-    import pyvips
 
 from ..core.ops import Ops
 from ..pipeline.encoder.cairoencoder import CairoEncoder
 from ..shared.util.colors import ColorSet
 from .base_renderer import Renderer
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 
 # Cairo has a hard limit on surface dimensions, often 32767.
 # We use a slightly more conservative value to be safe.
@@ -21,17 +23,17 @@ CAIRO_MAX_DIMENSION = 16384
 
 class OpsRenderer(Renderer):
     """
-    A stateless, shared renderer for any WorkPiece that contains vector
-    data in its `vectors` attribute. It uses the CairoEncoder to draw
-    the geometry.
+    Renders vector geometry (Ops/Geometry) to an image.
     """
 
-    def _get_natural_size_internal(
+    def get_natural_size_from_data(
         self,
         *,
-        boundaries: Optional["Geometry"],
+        render_data: Optional[bytes],
+        source_segment: Optional["SourceAssetSegment"],
         source_metadata: Optional[Dict[str, Any]],
-        current_size: Optional[Tuple[float, float]],
+        boundaries: Optional["Geometry"] = None,
+        current_size: Optional[Tuple[float, float]] = None,
     ) -> Optional[Tuple[float, float]]:
         if not boundaries or boundaries.is_empty():
             return None
@@ -45,28 +47,10 @@ class OpsRenderer(Renderer):
         # Fallback: Use current size
         return current_size
 
-    def get_natural_size(
-        self, workpiece: "WorkPiece"
-    ) -> Optional[Tuple[float, float]]:
-        """
-        For vector geometry, the "natural size" is the intrinsic physical
-        size of the content from the original file, in millimeters.
-
-        This implementation prioritizes the 'natural_size' value stored in
-        the ImportSource metadata by the importer. This ensures the size is
-        static and correct. If not found, it falls back to the workpiece's
-        current dynamic size.
-        """
-        source = workpiece.source
-        return self._get_natural_size_internal(
-            boundaries=workpiece.boundaries,
-            source_metadata=source.metadata if source else None,
-            current_size=workpiece.size,
-        )
-
-    def _render_to_pixels_internal(
-        self, *, boundaries: "Geometry", width: int, height: int
+    def _render_to_cairo_surface(
+        self, boundaries: Any, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
+        """Internal helper for DXF renderer reuse."""
         render_width, render_height = width, height
         if render_width <= 0 or render_height <= 0:
             return None
@@ -137,61 +121,32 @@ class OpsRenderer(Renderer):
 
         return surface
 
-    def render_to_pixels(
-        self, workpiece: "WorkPiece", width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
-        if not workpiece.boundaries or workpiece.boundaries.is_empty():
-            return None
-        return self._render_to_pixels_internal(
-            boundaries=workpiece.boundaries, width=width, height=height
-        )
-
-    def get_natural_size_from_data(
+    def render_base_image(
         self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        return self._get_natural_size_internal(
-            boundaries=boundaries,
-            source_metadata=source_metadata,
-            current_size=current_size,
-        )
-
-    def render_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        original_data: Optional[bytes] = None,
-        source_segment: Optional["SourceAssetSegment"] = None,
-        source_px_dims: Optional[Tuple[int, int]] = None,
-        source_metadata: Optional[Dict[str, Any]] = None,
-        boundaries: Optional["Geometry"] = None,
-        workpiece_matrix: Optional["Matrix"] = None,
+        data: bytes,
         width: int,
         height: int,
-    ) -> Optional["pyvips.Image"]:
+        **kwargs,
+    ) -> Optional[pyvips.Image]:
+        boundaries = kwargs.get("boundaries")
         if not boundaries or boundaries.is_empty():
             return None
 
-        surface = self._render_to_pixels_internal(
-            boundaries=boundaries, width=width, height=height
-        )
+        surface = self._render_to_cairo_surface(boundaries, width, height)
         if not surface:
             return None
-
-        import pyvips
 
         h, w = surface.get_height(), surface.get_width()
         vips_image = pyvips.Image.new_from_memory(
             surface.get_data(), w, h, 4, "uchar"
         )
-        b, g, r, a = vips_image[0], vips_image[1], vips_image[2], vips_image[3]
+        b, g, r, a = (
+            vips_image[0],
+            vips_image[1],
+            vips_image[2],
+            vips_image[3],
+        )
         return r.bandjoin([g, b, a])
 
 
-# A shared, stateless singleton instance of the renderer.
 OPS_RENDERER = OpsRenderer()

@@ -126,8 +126,8 @@ class SvgImporter(Importer):
             w_px = int(TARGET_DIM * aspect)
         w_px, h_px = max(1, w_px), max(1, h_px)
 
-        vips_image = SVG_RENDERER._render_vips_from_data(
-            source.original_data, w_px, h_px
+        vips_image = SVG_RENDERER.render_base_image(
+            source.original_data, width=w_px, height=h_px
         )
         if not vips_image:
             logger.error("Failed to render SVG to vips image for tracing.")

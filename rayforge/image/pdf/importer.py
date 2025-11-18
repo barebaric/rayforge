@@ -65,10 +65,12 @@ class PdfImporter(Importer):
         render_w_px, render_h_px = self._calculate_render_resolution(
             w_mm, h_mm
         )
-        dpi = int((render_w_px / w_mm) * 25.4) if w_mm > 0 else 300
+        # DPI calculation is handled internally by the renderer based on
+        # target dimensions.
+        dpi = (render_w_px / w_mm) * 25.4 if w_mm > 0 else 300.0
 
-        vips_image = PDF_RENDERER.render_data_to_vips_image(
-            source.original_data, dpi=dpi
+        vips_image = PDF_RENDERER.render_base_image(
+            source.original_data, width=render_w_px, height=render_h_px
         )
         if not vips_image:
             logger.error("Failed to render PDF to an image for processing.")
