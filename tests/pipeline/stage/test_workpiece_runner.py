@@ -180,10 +180,6 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
     # Hydrate the workpiece dictionary like Pipeline does
     workpiece_dict = rasterable_workpiece.to_dict()
-    workpiece_dict["data"] = rasterable_workpiece.data
-    workpiece_dict["renderer_name"] = (
-        rasterable_workpiece.renderer.__class__.__name__
-    )
 
     try:
         # Act

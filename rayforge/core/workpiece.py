@@ -36,6 +36,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+CAIRO_MAX_DIMENSION = 16384
+
 
 class WorkPiece(DocItem):
     """
@@ -60,6 +62,8 @@ class WorkPiece(DocItem):
         self._data: Optional[bytes] = None
         self._original_data: Optional[bytes] = None
         self._renderer: Optional["Renderer"] = None
+        self._transient_source_px_dims: Optional[Tuple[int, int]] = None
+        self._transient_natural_size_mm: Optional[Tuple[float, float]] = None
 
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
@@ -131,9 +135,8 @@ class WorkPiece(DocItem):
         return source.source_file if source else None
 
     @property
-    def renderer(self) -> "Optional[Renderer]":
-        """Retrieves the renderer."""
-        # Prioritize transient renderer for isolated/subprocess instances
+    def _active_renderer(self) -> "Optional[Renderer]":
+        """Retrieves the renderer (internal use)."""
         if self._renderer is not None:
             return self._renderer
         source = self.source
@@ -231,7 +234,7 @@ class WorkPiece(DocItem):
         # Create a new instance to avoid side effects with signals,
         # parents, etc.
         world_wp = WorkPiece(self.name, deepcopy(self.source_segment))
-        world_wp.uid = self.uid  # Preserve UID for tracking
+        world_wp.uid = self.uid
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
@@ -240,14 +243,150 @@ class WorkPiece(DocItem):
         # like subprocesses where the document link is lost.
         source = self.source
         if source:
-            # Use the public .data property to get the correct render data
             world_wp._data = self.data
             world_wp._original_data = self.original_data
             world_wp._renderer = source.renderer
+            if source.width_px is not None and source.height_px is not None:
+                world_wp._transient_source_px_dims = (
+                    source.width_px,
+                    source.height_px,
+                )
+        world_wp._transient_natural_size_mm = self.get_natural_size()
 
-        # Do NOT link back to the parent. The point of this method is to
-        # create a self-contained object suitable for serialization.
         return world_wp
+
+    def get_vips_image(
+        self, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        """
+        The central hub for rendering a vips image for this workpiece.
+        Orchestrates data retrieval, rendering, cropping, and masking.
+        """
+        key = (width, height)
+        if key in self._render_cache:
+            return self._render_cache[key]
+
+        renderer = self._active_renderer
+        if not renderer:
+            return None
+
+        from ..image import image_util
+
+        # Prepare data for rendering
+        data_to_render = self.data
+        source = self.source
+        source_segment = self.source_segment
+        source_metadata = source.metadata if source else {}
+
+        # Resolve source dimensions early
+        source_px_dims = self._transient_source_px_dims
+        if not source_px_dims and source:
+            if source.width_px is not None and source.height_px is not None:
+                source_px_dims = (source.width_px, source.height_px)
+
+        # Determine if we are in a high-res crop workflow
+        is_cropped = False
+        if source_segment and source_segment.crop_window_px is not None:
+            is_cropped = True
+
+        render_width, render_height = width, height
+
+        # If cropping, we must render the *original* full image at a scaled-up
+        # resolution such that the crop window matches the target dimensions.
+        if is_cropped and self.original_data and source_px_dims:
+            # Prefer original data for tracing/cropping
+            data_to_render = self.original_data
+            source_w, source_h = source_px_dims
+
+            # source_segment.crop_window_px is checked by is_cropped, but we
+            # use a direct check here to satisfy the type checker.
+            if source_segment and source_segment.crop_window_px:
+                crop_x, crop_y, crop_w, crop_h = map(
+                    float, source_segment.crop_window_px
+                )
+
+                if crop_w > 0 and crop_h > 0:
+                    scale_x = width / crop_w
+                    scale_y = height / crop_h
+                    render_width = max(1, int(source_w * scale_x))
+                    render_height = max(1, int(source_h * scale_y))
+
+        # Format-specific kwargs
+        kwargs = {}
+        # Ops/DXF renderers need geometry data
+        renderer_name = renderer.__class__.__name__
+        if renderer_name in ("OpsRenderer", "DxfRenderer"):
+            kwargs["boundaries"] = self.boundaries
+        if renderer_name == "DxfRenderer":
+            kwargs["source_metadata"] = source_metadata
+            kwargs["workpiece_matrix"] = self.matrix
+
+        if data_to_render is None:
+            return None
+
+        # 1. Call the stateless renderer
+        image = renderer.render_base_image(
+            data_to_render, render_width, render_height, **kwargs
+        )
+
+        if not image:
+            return None
+
+        # 2. Apply Crop (if applicable)
+        if is_cropped and source_segment and source_segment.crop_window_px:
+            crop_x, crop_y, crop_w, crop_h = map(
+                float, source_segment.crop_window_px
+            )
+            # Scale the crop window to the rendered image's actual size
+            actual_w = image.width
+            actual_h = image.height
+
+            # Re-derive scale from actual output vs assumed source
+            scale_x = 1.0
+            scale_y = 1.0
+            if source_px_dims:
+                if source_px_dims[0] > 0:
+                    scale_x = actual_w / source_px_dims[0]
+                if source_px_dims[1] > 0:
+                    scale_y = actual_h / source_px_dims[1]
+
+            scaled_x = int(crop_x * scale_x)
+            scaled_y = int(crop_y * scale_y)
+
+            # Use scale factors to calculate the crop size in the source image,
+            # rather than using the target size directly. This handles cases
+            # where the renderer ignores non-uniform scaling (e.g. PDFs).
+            scaled_w = int(crop_w * scale_x)
+            scaled_h = int(crop_h * scale_y)
+
+            image = image_util.safe_crop(
+                image, scaled_x, scaled_y, scaled_w, scaled_h
+            )
+            if not image:
+                return None
+
+        # 3. Apply Mask (if applicable)
+        if (
+            source_segment
+            and source_segment.segment_mask_geometry
+            and not source_segment.segment_mask_geometry.is_empty()
+        ):
+            image = image_util.apply_mask_to_vips_image(
+                image, source_segment.segment_mask_geometry
+            )
+            if not image:
+                return None
+
+        # 4. Final Resize Check
+        # Ensure the result exactly matches the requested width/height
+        if image.width != width or image.height != height:
+            if image.width > 0 and image.height > 0:
+                h_scale = width / image.width
+                v_scale = height / image.height
+                image = image.resize(h_scale, vscale=v_scale)
+
+        self._render_cache[key] = image
+        return image
 
     def get_local_size(self) -> Tuple[float, float]:
         """
@@ -259,9 +398,10 @@ class WorkPiece(DocItem):
 
     def to_dict(self) -> Dict[str, Any]:
         """
-        Serializes the WorkPiece state to a dictionary.
+        Serializes the WorkPiece state to a dictionary. Includes transient
+        data if it has been hydrated.
         """
-        return {
+        state = {
             "uid": self.uid,
             "name": self.name,
             "matrix": self._matrix.to_list(),
@@ -271,6 +411,18 @@ class WorkPiece(DocItem):
                 self.source_segment.to_dict() if self.source_segment else None
             ),
         }
+        # Include hydrated data for subprocesses
+        if self._data is not None:
+            state["data"] = self._data
+        if self._original_data is not None:
+            state["original_data"] = self._original_data
+        if self._renderer is not None:
+            state["renderer_name"] = self._renderer.__class__.__name__
+        if self._transient_source_px_dims is not None:
+            state["source_px_dims"] = self._transient_source_px_dims
+        if self._transient_natural_size_mm is not None:
+            state["natural_size_mm"] = self._transient_natural_size_mm
+        return state
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WorkPiece":
@@ -303,6 +455,10 @@ class WorkPiece(DocItem):
             wp._data = data["data"]
         if "original_data" in data:
             wp._original_data = data["original_data"]
+        if "source_px_dims" in data:
+            wp._transient_source_px_dims = tuple(data["source_px_dims"])
+        if "natural_size_mm" in data:
+            wp._transient_natural_size_mm = tuple(data["natural_size_mm"])
         if "renderer_name" in data:
             renderer_name = data["renderer_name"]
             from ..image import renderer_by_name
@@ -313,8 +469,26 @@ class WorkPiece(DocItem):
         return wp
 
     def get_natural_size(self) -> Optional[Tuple[float, float]]:
-        renderer = self.renderer
-        return renderer.get_natural_size(self) if renderer else None
+        """
+        Returns the natural (untransformed) size of the content in mm.
+        """
+        if self._transient_natural_size_mm is not None:
+            return self._transient_natural_size_mm
+
+        renderer = self._active_renderer
+        if not renderer:
+            return None
+
+        source = self.source
+        source_metadata = source.metadata if source else None
+
+        return renderer.get_natural_size_from_data(
+            render_data=self.data,
+            source_segment=self.source_segment,
+            source_metadata=source_metadata,
+            boundaries=self.boundaries,
+            current_size=self.size,
+        )
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         size = self.get_natural_size()
@@ -360,12 +534,16 @@ class WorkPiece(DocItem):
     def render_to_pixels(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        renderer = self.renderer
-        return (
-            renderer.render_to_pixels(self, width, height)
-            if renderer
-            else None
-        )
+        from ..image import image_util
+
+        # This now uses the central hub for rendering.
+        final_image = self.get_vips_image(width, height)
+        if not final_image:
+            return None
+        normalized_image = image_util.normalize_to_rgba(final_image)
+        if not normalized_image:
+            return None
+        return image_util.vips_rgba_to_cairo_surface(normalized_image)
 
     def render_for_ops(
         self,
@@ -385,6 +563,42 @@ class WorkPiece(DocItem):
 
         return self.render_to_pixels(target_width_px, target_height_px)
 
+    def _calculate_chunk_layout(
+        self,
+        real_width: int,
+        real_height: int,
+        max_chunk_width: Optional[int],
+        max_chunk_height: Optional[int],
+        max_memory_size: Optional[int],
+    ) -> Tuple[int, int, int, int]:
+        bytes_per_pixel = 4
+        effective_max_width = min(
+            max_chunk_width
+            if max_chunk_width is not None
+            else CAIRO_MAX_DIMENSION,
+            CAIRO_MAX_DIMENSION,
+        )
+        chunk_width = min(real_width, effective_max_width)
+        possible_heights = []
+        effective_max_height = min(
+            max_chunk_height
+            if max_chunk_height is not None
+            else CAIRO_MAX_DIMENSION,
+            CAIRO_MAX_DIMENSION,
+        )
+        possible_heights.append(effective_max_height)
+        if max_memory_size is not None and chunk_width > 0:
+            height_from_mem = math.floor(
+                max_memory_size / (chunk_width * bytes_per_pixel)
+            )
+            possible_heights.append(height_from_mem)
+        chunk_height = min(real_height, *possible_heights)
+        chunk_width = max(1, chunk_width)
+        chunk_height = max(1, chunk_height)
+        cols = math.ceil(real_width / chunk_width)
+        rows = math.ceil(real_height / chunk_height)
+        return chunk_width, cols, chunk_height, rows
+
     def render_chunk(
         self,
         pixels_per_mm_x: float,
@@ -395,26 +609,68 @@ class WorkPiece(DocItem):
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """Renders in chunks at the workpiece's current size.
         Yields nothing if size is not valid."""
+        from ..image import image_util
+
         # Use the final world-space size for rendering resolution.
         current_size = self.size
         if not current_size or current_size[0] <= 0 or current_size[1] <= 0:
             return
 
-        width = int(current_size[0] * pixels_per_mm_x)
-        height = int(current_size[1] * pixels_per_mm_y)
+        width_px = current_size[0] * pixels_per_mm_x
+        height_px = current_size[1] * pixels_per_mm_y
 
-        renderer = self.renderer
-        if not renderer:
+        if all(
+            arg is None
+            for arg in [max_chunk_width, max_chunk_height, max_memory_size]
+        ):
+            raise ValueError(
+                "At least one of max_chunk_width, max_chunk_height, "
+                "or max_memory_size must be provided."
+            )
+
+        vips_image = self.get_vips_image(round(width_px), round(height_px))
+        if not vips_image or not isinstance(vips_image, pyvips.Image):
+            logger.warning("Failed to load image for chunking.")
             return
 
-        yield from renderer.render_chunk(
-            self,
-            width,
-            height,
-            max_chunk_width=max_chunk_width,
-            max_chunk_height=max_chunk_height,
-            max_memory_size=max_memory_size,
+        real_width = cast(int, vips_image.width)
+        real_height = cast(int, vips_image.height)
+        if not real_width or not real_height:
+            return
+
+        chunk_width, cols, chunk_height, rows = self._calculate_chunk_layout(
+            real_width,
+            real_height,
+            max_chunk_width,
+            max_chunk_height,
+            max_memory_size,
         )
+
+        overlap_x, overlap_y = 1, 0  # Default overlap values
+
+        for row in range(rows):
+            for col in range(cols):
+                left = col * chunk_width
+                top = row * chunk_height
+                width = min(chunk_width + overlap_x, real_width - left)
+                height = min(chunk_height + overlap_y, real_height - top)
+
+                if width <= 0 or height <= 0:
+                    continue
+
+                chunk: pyvips.Image = vips_image.crop(left, top, width, height)
+
+                normalized_chunk = image_util.normalize_to_rgba(chunk)
+                if not normalized_chunk:
+                    logger.warning(
+                        f"Could not normalize chunk at ({left},{top})"
+                    )
+                    continue
+
+                surface = image_util.vips_rgba_to_cairo_surface(
+                    normalized_chunk
+                )
+                yield surface, (left, top)
 
     def get_geometry_world_bbox(
         self,
@@ -493,7 +749,7 @@ class WorkPiece(DocItem):
 
     def dump(self, indent=0):
         source_file = self.source_file
-        renderer = self.renderer
+        renderer = self._active_renderer
         renderer_name = renderer.__class__.__name__ if renderer else "None"
         print("  " * indent, source_file, renderer_name)
 

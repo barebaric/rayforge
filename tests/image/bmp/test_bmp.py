@@ -315,7 +315,7 @@ class TestBmpRenderer:
     def test_get_natural_size(self, workpiece_fixture, request):
         """Test natural size calculation on the renderer."""
         workpiece = request.getfixturevalue(workpiece_fixture)
-        size = BMP_RENDERER.get_natural_size(workpiece)
+        size = workpiece.get_natural_size()
         assert size is not None
         width_mm, height_mm = size
 
@@ -332,9 +332,7 @@ class TestBmpRenderer:
     def test_render_to_pixels(self, workpiece_fixture, request):
         """Test rendering to a Cairo surface."""
         workpiece = request.getfixturevalue(workpiece_fixture)
-        surface = BMP_RENDERER.render_to_pixels(
-            workpiece, width=144, height=96
-        )
+        surface = workpiece.render_to_pixels(width=144, height=96)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 144
         assert surface.get_height() == 96
@@ -367,5 +365,5 @@ class TestBmpRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert BMP_RENDERER.get_natural_size(invalid_wp) is None
-        assert BMP_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None
+        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.render_to_pixels(100, 100) is None

@@ -93,9 +93,14 @@ def bilevel_workpiece(bilevel_png_data: bytes) -> WorkPiece:
 def color_workpiece(color_png_data: bytes) -> WorkPiece:
     """A WorkPiece created from the color PNG data."""
     importer = PngImporter(color_png_data)
-    return _setup_workpiece_with_context(
+    wp = _setup_workpiece_with_context(
         importer, vectorization_spec=TraceSpec()
     )
+    # Clear the mask geometry to ensure we test the raw color rendering
+    # without trace-based masking potentially hiding light pixels.
+    assert wp.source_segment is not None
+    wp.source_segment.segment_mask_geometry = Geometry()
+    return wp
 
 
 @pytest.fixture
@@ -195,7 +200,7 @@ class TestPngImporter:
 class TestPngRenderer:
     def test_get_natural_size(self, bilevel_workpiece: WorkPiece):
         """Test natural size calculation on the renderer."""
-        size = PNG_RENDERER.get_natural_size(bilevel_workpiece)
+        size = bilevel_workpiece.get_natural_size()
         assert size is not None
         width_mm, height_mm = size
         expected_width_mm = 243 * (25.4 / 96.0)
@@ -203,9 +208,7 @@ class TestPngRenderer:
 
     def test_render_to_pixels(self, bilevel_workpiece: WorkPiece):
         """Test rendering to a Cairo surface."""
-        surface = PNG_RENDERER.render_to_pixels(
-            bilevel_workpiece, width=200, height=26
-        )
+        surface = bilevel_workpiece.render_to_pixels(width=200, height=26)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 200
 
@@ -216,9 +219,7 @@ class TestPngRenderer:
         Checks for the R/B swap and red tint bugs by sampling known pixel
         colors. This implicitly tests that the premultiply path is taken.
         """
-        surface = PNG_RENDERER.render_to_pixels(
-            color_workpiece, width=300, height=358
-        )
+        surface = color_workpiece.render_to_pixels(width=300, height=358)
         assert surface is not None
         b, g, r, a = get_pixel_bgra(surface, x=150, y=50)
         assert (r, g, b, a) == (136, 189, 245, 255)
@@ -230,9 +231,7 @@ class TestPngRenderer:
         Checks that the bilevel image is not blank and preserves transparency.
         This implicitly tests that the non-premultiply path is taken.
         """
-        surface = PNG_RENDERER.render_to_pixels(
-            bilevel_workpiece, width=243, height=31
-        )
+        surface = bilevel_workpiece.render_to_pixels(width=243, height=31)
         assert surface is not None
 
         # Sample a pixel that should be part of the black text (opaque)
@@ -252,9 +251,7 @@ class TestPngRenderer:
         Checks that a grayscale image renders with R=G=B, not with a color
         tint.
         """
-        surface = PNG_RENDERER.render_to_pixels(
-            grayscale_workpiece, width=300, height=358
-        )
+        surface = grayscale_workpiece.render_to_pixels(width=300, height=358)
         assert surface is not None
 
         # Sample a known gray pixel from the image
@@ -287,8 +284,8 @@ class TestPngRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert PNG_RENDERER.get_natural_size(invalid_wp) is None
-        assert PNG_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None
+        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(
             invalid_wp.render_chunk(

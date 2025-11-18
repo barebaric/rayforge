@@ -17,6 +17,55 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def resize_and_crop_from_full_image(
+    full_image: pyvips.Image,
+    target_w: int,
+    target_h: int,
+    crop_window_px: Tuple[float, float, float, float],
+) -> Optional[pyvips.Image]:
+    """
+    Scales a full source image up to a high resolution and then crops a
+    window from it. This preserves maximum detail in the final cropped image.
+
+    Args:
+        full_image: The original, full-resolution pyvips image.
+        target_w: The final desired width of the cropped image in pixels.
+        target_h: The final desired height of the cropped image in pixels.
+        crop_window_px: A tuple (x, y, w, h) defining the crop area in the
+                        *original* full_image's pixel coordinates.
+
+    Returns:
+        The high-resolution cropped image, or None on failure.
+    """
+    crop_x, crop_y, crop_w, crop_h = map(int, crop_window_px)
+    if crop_w <= 0 or crop_h <= 0:
+        return pyvips.Image.black(target_w, target_h, bands=4)
+
+    # 1. Calculate scaling factors to determine how large the full image
+    #    needs to be so that the cropped section matches the target size.
+    scale_x = target_w / crop_w
+    scale_y = target_h / crop_h
+
+    # 2. Resize the entire source image to this new high resolution.
+    # Check for and apply EXIF orientation tag if it exists.
+    if full_image.get_typeof("orientation") != 0:
+        try:
+            full_image = full_image.autorot()
+        except pyvips.Error:
+            logger.warning("Failed to apply autorotate to image.")
+
+    scaled_full_image = full_image.resize(scale_x, vscale=scale_y)
+
+    # 3. Calculate the new crop window coordinates in the scaled image.
+    scaled_crop_x = int(crop_x * scale_x)
+    scaled_crop_y = int(crop_y * scale_y)
+
+    # 4. Crop the final high-resolution window from the scaled full image.
+    return safe_crop(
+        scaled_full_image, scaled_crop_x, scaled_crop_y, target_w, target_h
+    )
+
+
 def safe_crop(
     image: pyvips.Image, x: int, y: int, w: int, h: int
 ) -> Optional[pyvips.Image]:
@@ -194,10 +243,18 @@ def _render_geometry_to_vips_mask(
             ctx.line_to(cmd.end[0], cmd.end[1])
     ctx.fill()
 
-    # Convert the cairo surface data to a vips image
-    return pyvips.Image.new_from_memory(
-        surface.get_data(), width, height, 1, "uchar"
-    )
+    # Handle Cairo stride padding (e.g. if width is not multiple of 4)
+    stride = surface.get_stride()
+    data = surface.get_data()
+
+    if stride == width:
+        return pyvips.Image.new_from_memory(data, width, height, 1, "uchar")
+
+    # Remove stride padding using numpy to prevent mask distortion
+    arr = numpy.frombuffer(data, dtype=numpy.uint8).reshape((height, stride))
+    clean_data = numpy.ascontiguousarray(arr[:, :width]).tobytes()
+
+    return pyvips.Image.new_from_memory(clean_data, width, height, 1, "uchar")
 
 
 def apply_mask_to_vips_image(
@@ -214,22 +271,27 @@ def apply_mask_to_vips_image(
         # expected behavior for unmasked "as-is" PDF imports.
         return full_image
 
+    rgba_image = normalize_to_rgba(full_image)
+    if not rgba_image:
+        return None
+
     # Scale the normalized mask geometry to the image's pixel dimensions.
     scaled_mask = mask_geo.copy()
-    scale_matrix = Matrix.scale(full_image.width, full_image.height)
+    scale_matrix = Matrix.scale(rgba_image.width, rgba_image.height)
     scaled_mask.transform(scale_matrix.to_4x4_numpy())
 
     mask_vips = _render_geometry_to_vips_mask(
-        scaled_mask, full_image.width, full_image.height
+        scaled_mask, rgba_image.width, rgba_image.height
     )
 
-    # Ensure the image has an alpha channel before masking
-    image_with_alpha = full_image
-    if not image_with_alpha.hasalpha():
-        image_with_alpha = image_with_alpha.addalpha()
+    # Intersect the mask with the original alpha channel.
+    # mask_vips is 255 inside the geometry, 0 outside.
+    # We want: FinalAlpha = OriginalAlpha if Mask else 0.
+    original_alpha = rgba_image[3]
+    final_alpha = (mask_vips > 128).ifthenelse(original_alpha, 0)
 
-    # Insert the mask as the new alpha channel
-    return image_with_alpha.copy(interpretation="srgb").bandjoin(mask_vips)
+    # Return RGBA with the new intersected alpha
+    return rgba_image[0:3].bandjoin(final_alpha)
 
 
 def create_single_workpiece_from_trace(

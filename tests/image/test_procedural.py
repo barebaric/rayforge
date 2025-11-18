@@ -140,7 +140,7 @@ class TestProceduralRenderer:
         Tests that the renderer can correctly call the size function from the
         workpiece's recipe.
         """
-        size = PROCEDURAL_RENDERER.get_natural_size(procedural_workpiece)
+        size = procedural_workpiece.get_natural_size()
         assert size is not None
         assert size == (MOCK_PARAMS["width"], MOCK_PARAMS["height"])
 
@@ -149,9 +149,7 @@ class TestProceduralRenderer:
         Tests that the renderer can correctly call the drawing function and
         produce a rendered surface.
         """
-        surface = PROCEDURAL_RENDERER.render_to_pixels(
-            procedural_workpiece, width=10, height=10
-        )
+        surface = procedural_workpiece.render_to_pixels(width=10, height=10)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 10
         assert surface.get_height() == 10
@@ -184,10 +182,13 @@ class TestProceduralRenderer:
         mock_doc.get_source_asset_by_uid.side_effect = (
             mock_doc.source_assets.get
         )
-        wp.parent = Mock(doc=mock_doc)
+        # Configure the mock parent to return a valid transform
+        mock_parent = Mock(doc=mock_doc)
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        wp.parent = mock_parent
 
-        assert PROCEDURAL_RENDERER.get_natural_size(wp) is None
-        assert PROCEDURAL_RENDERER.render_to_pixels(wp, 10, 10) is None
+        assert wp.get_natural_size() is None
+        assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_invalid_function_path(self):
         """
@@ -213,10 +214,12 @@ class TestProceduralRenderer:
         mock_doc.get_source_asset_by_uid.side_effect = (
             mock_doc.source_assets.get
         )
-        wp.parent = Mock(doc=mock_doc)
+        mock_parent = Mock(doc=mock_doc)
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        wp.parent = mock_parent
 
-        assert PROCEDURAL_RENDERER.get_natural_size(wp) is None
-        assert PROCEDURAL_RENDERER.render_to_pixels(wp, 10, 10) is None
+        assert wp.get_natural_size() is None
+        assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_function_exception(self):
         """
@@ -242,7 +245,9 @@ class TestProceduralRenderer:
         mock_doc.get_source_asset_by_uid.side_effect = (
             mock_doc.source_assets.get
         )
-        wp.parent = Mock(doc=mock_doc)
+        mock_parent = Mock(doc=mock_doc)
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        wp.parent = mock_parent
 
-        assert PROCEDURAL_RENDERER.get_natural_size(wp) is None
-        assert PROCEDURAL_RENDERER.render_to_pixels(wp, 10, 10) is None
+        assert wp.get_natural_size() is None
+        assert wp.render_to_pixels(10, 10) is None

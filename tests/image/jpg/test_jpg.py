@@ -164,7 +164,7 @@ class TestJpgImporter:
 class TestJpgRenderer:
     def test_get_natural_size(self, color_workpiece: WorkPiece):
         """Test natural size calculation on the renderer."""
-        size = JPG_RENDERER.get_natural_size(color_workpiece)
+        size = color_workpiece.get_natural_size()
         assert size is not None
         width_mm, height_mm = size
         expected_width_mm = 300 * (25.4 / 96.0)
@@ -172,9 +172,7 @@ class TestJpgRenderer:
 
     def test_render_to_pixels(self, color_workpiece: WorkPiece):
         """Test rendering to a Cairo surface."""
-        surface = JPG_RENDERER.render_to_pixels(
-            color_workpiece, width=150, height=179
-        )
+        surface = color_workpiece.render_to_pixels(width=150, height=179)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 150
 
@@ -184,9 +182,7 @@ class TestJpgRenderer:
         """
         Checks that colors are rendered correctly by sampling a known pixel.
         """
-        surface = JPG_RENDERER.render_to_pixels(
-            color_workpiece, width=300, height=358
-        )
+        surface = color_workpiece.render_to_pixels(width=300, height=358)
         assert surface is not None
         # Sample a known blue pixel from the test image
         b, g, r, a = get_pixel_bgra(surface, x=150, y=50)
@@ -222,8 +218,8 @@ class TestJpgRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert JPG_RENDERER.get_natural_size(invalid_wp) is None
-        assert JPG_RENDERER.render_to_pixels(invalid_wp, 100, 100) is None
+        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(
             invalid_wp.render_chunk(
