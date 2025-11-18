@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+from typing import Optional, TYPE_CHECKING
 from ..base_renderer import Renderer
 from ..ops_renderer import OPS_RENDERER
 import warnings
@@ -8,8 +8,7 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    from ...core.geo import Geometry
-    from ...core.source_asset_segment import SourceAssetSegment
+    pass
 
 
 class DxfRenderer(Renderer):
@@ -17,24 +16,6 @@ class DxfRenderer(Renderer):
     A renderer for DXF workpieces. Uses OpsRenderer for vector outlines
     and overlays solid fills if present.
     """
-
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        # DXF size is determined by its geometry
-        return OPS_RENDERER.get_natural_size_from_data(
-            render_data=render_data,
-            source_segment=source_segment,
-            source_metadata=source_metadata,
-            boundaries=boundaries,
-            current_size=current_size,
-        )
 
     def render_base_image(
         self,

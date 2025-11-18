@@ -47,6 +47,9 @@ class JpgImporter(Importer):
         metadata = image_util.extract_vips_metadata(image)
         metadata["image_format"] = "JPEG"
 
+        # Extract physical dimensions from the VIPS image
+        width_mm, height_mm = image_util.get_physical_size_mm(image)
+
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
@@ -54,6 +57,8 @@ class JpgImporter(Importer):
             metadata=metadata,
             width_px=image.width,
             height_px=image.height,
+            width_mm=width_mm,
+            height_mm=height_mm,
         )
 
         normalized_image = image_util.normalize_to_rgba(image)

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
+from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,
     PassthroughSpec,
@@ -250,16 +251,13 @@ class RasterImportDialog(Adw.Window):
                 raise ValueError("Import process failed to produce any items.")
 
             # Background Rendering
-            # For a consistent preview, we always render the source file to a
-            # bitmap to serve as the background, regardless of import mode.
-            bg_wp = WorkPiece(name="preview-bg")
-            bg_wp._renderer = payload.source.renderer
-            bg_wp._data = payload.source.original_data
-            natural_size = bg_wp.get_natural_size()
-            if not natural_size or not all(natural_size):
-                raise ValueError("Source has invalid size for background.")
-            w_mm, h_mm = natural_size
-            bg_wp.set_size(w_mm, h_mm)
+            # We access dimensions directly from the source asset, avoiding
+            # dummy workpiece creation.
+            w_mm = payload.source.width_mm
+            h_mm = payload.source.height_mm
+
+            if w_mm <= 0 or h_mm <= 0:
+                raise ValueError("Source has invalid physical dimensions.")
 
             aspect = w_mm / h_mm if h_mm > 0 else 1.0
             if aspect >= 1.0:
@@ -269,8 +267,12 @@ class RasterImportDialog(Adw.Window):
                 render_h = PREVIEW_RENDER_SIZE_PX
                 render_w = int(PREVIEW_RENDER_SIZE_PX * aspect)
 
-            vips_image = bg_wp.get_vips_image(
-                max(1, render_w), max(1, render_h)
+            vips_image = payload.source.renderer.render_base_image(
+                payload.source.original_data,
+                max(1, render_w),
+                max(1, render_h),
+                # Pass dummy matrix to satisfy strict renderers if needed
+                workpiece_matrix=Matrix.identity(),
             )
             if not vips_image:
                 raise ValueError("Renderer failed to create a preview image.")

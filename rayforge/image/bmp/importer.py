@@ -33,14 +33,7 @@ class BmpImporter(Importer):
             logger.error("BmpImporter requires a TraceSpec to trace.")
             return None
 
-        # Step 1: Create the SourceAsset to hold the original data and config
-        source = SourceAsset(
-            source_file=self.source_file,
-            original_data=self.raw_data,
-            renderer=BMP_RENDERER,
-        )
-
-        # Step 2: Use the parser to get clean pixel data and metadata.
+        # Step 1: Use the parser to get clean pixel data and metadata.
         parsed_data = parse_bmp(self.raw_data)
         if not parsed_data:
             logger.error(
@@ -53,12 +46,12 @@ class BmpImporter(Importer):
         dpi_x = dpi_x or 96.0
         dpi_y = dpi_y or 96.0
 
-        # Update the source asset with the image dimensions
-        source.width_px = width
-        source.height_px = height
+        # Calculate physical dimensions based on parsed DPI
+        width_mm = float(width) * (25.4 / dpi_x)
+        height_mm = float(height) * (25.4 / dpi_y)
 
         try:
-            # Step 3: Create a clean pyvips image from the RGBA buffer.
+            # Step 2: Create a clean pyvips image from the RGBA buffer.
             image = pyvips.Image.new_from_memory(
                 rgba_bytes, width, height, 4, "uchar"
             )
@@ -73,6 +66,17 @@ class BmpImporter(Importer):
                 "Failed to create pyvips image from parsed BMP data: %s", e
             )
             return None
+
+        # Step 3: Create the SourceAsset with dimensions
+        source = SourceAsset(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=BMP_RENDERER,
+            width_px=width,
+            height_px=height,
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
 
         # Step 4: Convert to a Cairo surface for tracing.
         surface = image_util.vips_rgba_to_cairo_surface(image)

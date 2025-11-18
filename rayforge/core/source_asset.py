@@ -22,6 +22,8 @@ class SourceAsset:
     metadata: Dict[str, Any] = field(default_factory=dict)
     width_px: Optional[int] = None
     height_px: Optional[int] = None
+    width_mm: float = 0.0
+    height_mm: float = 0.0
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -35,6 +37,8 @@ class SourceAsset:
             "metadata": self.metadata,
             "width_px": self.width_px,
             "height_px": self.height_px,
+            "width_mm": self.width_mm,
+            "height_mm": self.height_mm,
         }
 
     @classmethod
@@ -53,4 +57,6 @@ class SourceAsset:
             metadata=state.get("metadata", {}),
             width_px=state.get("width_px"),
             height_px=state.get("height_px"),
+            width_mm=state.get("width_mm", 0.0),
+            height_mm=state.get("height_mm", 0.0),
         )

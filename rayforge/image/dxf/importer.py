@@ -66,6 +66,8 @@ class DxfImporter(Importer):
             return ImportPayload(source=source, items=[])
 
         _, _, width_mm, height_mm = bounds
+        source.width_mm = width_mm
+        source.height_mm = height_mm
         source.metadata["natural_size"] = (width_mm, height_mm)
 
         scale = self._get_scale_to_mm(doc)
@@ -184,6 +186,8 @@ class DxfImporter(Importer):
                     source_asset_uid=source.uid,
                     segment_mask_geometry=segment_mask_geo,
                     vectorization_spec=PassthroughSpec(),
+                    width_mm=width,
+                    height_mm=height,
                 )
 
                 wp = WorkPiece(

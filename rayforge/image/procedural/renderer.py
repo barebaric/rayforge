@@ -2,7 +2,7 @@ import cairo
 import json
 import logging
 import importlib
-from typing import Optional, Tuple, Dict, Any, Callable, TYPE_CHECKING
+from typing import Optional, Tuple, Callable, TYPE_CHECKING
 from ..base_renderer import Renderer
 import warnings
 
@@ -11,8 +11,7 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    from ...core.geo import Geometry
-    from ...core.source_asset_segment import SourceAssetSegment
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -60,30 +59,6 @@ class ProceduralRenderer(Renderer):
                 f"Failed to load procedural function: {e}", exc_info=True
             )
             return None, None, None
-
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        # For procedural content, the recipe is passed as render_data (which
-        # is the same as original_data).
-        _recipe, params, size_func = self._get_recipe_and_func_internal(
-            render_data, "size_function_path"
-        )
-        if not size_func or params is None:
-            return None
-        try:
-            return size_func(params)
-        except Exception as e:
-            logger.error(
-                f"Error executing procedural size function: {e}", exc_info=True
-            )
-            return None
 
     def render_base_image(
         self,

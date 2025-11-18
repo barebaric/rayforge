@@ -59,15 +59,19 @@ class PdfImporter(Importer):
             # If size can't be determined, return with just the source.
             return ImportPayload(source=source, items=[])
 
+        # Populate the intrinsic dimensions of the source asset
+        w_mm, h_mm = original_size_mm
+        source.width_mm = w_mm
+        source.height_mm = h_mm
+
         # We always render the PDF to a bitmap to find the content bounds
         # and to trace.
-        w_mm, h_mm = original_size_mm
         render_w_px, render_h_px = self._calculate_render_resolution(
             w_mm, h_mm
         )
         # DPI calculation is handled internally by the renderer based on
         # target dimensions.
-        dpi = (render_w_px / w_mm) * 25.4 if w_mm > 0 else 300.0
+        dpi = float(render_w_px / w_mm) * 25.4 if w_mm > 0 else 300.0
 
         vips_image = PDF_RENDERER.render_base_image(
             source.original_data, width=render_w_px, height=render_h_px

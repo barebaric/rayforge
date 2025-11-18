@@ -1,10 +1,9 @@
 import cairo
 import numpy as np
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+from typing import Optional, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..core.geo import Geometry
-    from ..core.source_asset_segment import SourceAssetSegment
+    pass
 
 from ..core.ops import Ops
 from ..pipeline.encoder.cairoencoder import CairoEncoder
@@ -25,27 +24,6 @@ class OpsRenderer(Renderer):
     """
     Renders vector geometry (Ops/Geometry) to an image.
     """
-
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        if not boundaries or boundaries.is_empty():
-            return None
-
-        # Prioritize the static, pre-calculated size from the importer.
-        if source_metadata:
-            natural_size = source_metadata.get("natural_size")
-            if natural_size:
-                return natural_size
-
-        # Fallback: Use current size
-        return current_size
 
     def _render_to_cairo_surface(
         self, boundaries: Any, width: int, height: int

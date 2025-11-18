@@ -9,7 +9,7 @@ from __future__ import annotations
 import cairo
 import json
 import logging
-from typing import Dict, Any, Tuple, TYPE_CHECKING, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from .base_renderer import Renderer
 import warnings
 
@@ -18,8 +18,7 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    from ..core.geo import Geometry
-    from ..core.source_asset_segment import SourceAssetSegment
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -37,45 +36,6 @@ class MaterialTestRenderer(Renderer):
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             logger.error(f"Failed to decode material test parameters: {e}")
             return None
-
-    def _get_natural_size_internal(
-        self, *, params: Dict[str, Any]
-    ) -> Optional[Tuple[float, float]]:
-        cols = int(params["grid_dimensions"][0])
-        rows = int(params["grid_dimensions"][1])
-        shape_size = params["shape_size"]
-        spacing = params["spacing"]
-
-        grid_width = cols * (shape_size + spacing) - spacing
-        grid_height = rows * (shape_size + spacing) - spacing
-
-        # Get margins if labels are enabled
-        include_labels = params.get("include_labels", True)
-        if include_labels:
-            # Scale margins with font size to accommodate larger labels
-            font_scale = 4.375 / 2.5
-            label_margin = 15.0 * font_scale
-            # Total content area includes negative label space
-            width = grid_width + label_margin
-            height = grid_height + label_margin
-        else:
-            width = grid_width
-            height = grid_height
-        return width, height
-
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        params = self._get_params_from_data(render_data)
-        if not params:
-            return None
-        return self._get_natural_size_internal(params=params)
 
     def _draw_grid(self, ctx: cairo.Context, params: Dict[str, Any]):
         cols, rows = (

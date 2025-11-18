@@ -357,6 +357,8 @@ def create_single_workpiece_from_trace(
         crop_window_px=(min_x, min_y, width_px, height_px),
         cropped_width_mm=width_mm,
         cropped_height_mm=height_mm,
+        width_mm=width_mm,
+        height_mm=height_mm,
     )
 
     # Store crop info in metadata for the transient preview dialog

@@ -63,7 +63,6 @@ class WorkPiece(DocItem):
         self._original_data: Optional[bytes] = None
         self._renderer: Optional["Renderer"] = None
         self._transient_source_px_dims: Optional[Tuple[int, int]] = None
-        self._transient_natural_size_mm: Optional[Tuple[float, float]] = None
 
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
@@ -251,7 +250,6 @@ class WorkPiece(DocItem):
                     source.width_px,
                     source.height_px,
                 )
-        world_wp._transient_natural_size_mm = self.get_natural_size()
 
         return world_wp
 
@@ -420,8 +418,6 @@ class WorkPiece(DocItem):
             state["renderer_name"] = self._renderer.__class__.__name__
         if self._transient_source_px_dims is not None:
             state["source_px_dims"] = self._transient_source_px_dims
-        if self._transient_natural_size_mm is not None:
-            state["natural_size_mm"] = self._transient_natural_size_mm
         return state
 
     @classmethod
@@ -457,8 +453,6 @@ class WorkPiece(DocItem):
             wp._original_data = data["original_data"]
         if "source_px_dims" in data:
             wp._transient_source_px_dims = tuple(data["source_px_dims"])
-        if "natural_size_mm" in data:
-            wp._transient_natural_size_mm = tuple(data["natural_size_mm"])
         if "renderer_name" in data:
             renderer_name = data["renderer_name"]
             from ..image import renderer_by_name
@@ -472,23 +466,12 @@ class WorkPiece(DocItem):
         """
         Returns the natural (untransformed) size of the content in mm.
         """
-        if self._transient_natural_size_mm is not None:
-            return self._transient_natural_size_mm
-
-        renderer = self._active_renderer
-        if not renderer:
-            return None
-
-        source = self.source
-        source_metadata = source.metadata if source else None
-
-        return renderer.get_natural_size_from_data(
-            render_data=self.data,
-            source_segment=self.source_segment,
-            source_metadata=source_metadata,
-            boundaries=self.boundaries,
-            current_size=self.size,
-        )
+        if self.source_segment and self.source_segment.width_mm > 0:
+            return (
+                self.source_segment.width_mm,
+                self.source_segment.height_mm,
+            )
+        return None
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         size = self.get_natural_size()
