@@ -80,6 +80,8 @@ class SvgImporter(Importer):
             # Get size of original, untrimmed SVG
             untrimmed_size = get_natural_size(source.original_data)
             if untrimmed_size:
+                source.width_mm = untrimmed_size[0]
+                source.height_mm = untrimmed_size[1]
                 metadata["untrimmed_width_mm"] = untrimmed_size[0]
                 metadata["untrimmed_height_mm"] = untrimmed_size[1]
 
@@ -111,6 +113,9 @@ class SvgImporter(Importer):
         if not size_mm or not size_mm[0] or not size_mm[1]:
             logger.warning("Cannot trace SVG: failed to determine size.")
             return None
+
+        # Populate intrinsic dimensions
+        source.width_mm, source.height_mm = size_mm
 
         # Calculate render dimensions that preserve the original aspect ratio,
         # maximizing the render resolution for better tracing quality.
@@ -388,6 +393,8 @@ class SvgImporter(Importer):
             source_asset_uid=source.uid,
             segment_mask_geometry=geo,
             vectorization_spec=PassthroughSpec(),
+            width_mm=width_mm,
+            height_mm=height_mm,
         )
         wp = WorkPiece(
             name=self.source_file.stem,

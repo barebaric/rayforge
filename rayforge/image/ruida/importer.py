@@ -50,6 +50,8 @@ class RuidaImporter(Importer):
         width_mm = max_x - min_x
         height_mm = max_y - min_y
         if width_mm > 0 and height_mm > 0:
+            source.width_mm = width_mm
+            source.height_mm = height_mm
             source.metadata["natural_size"] = (width_mm, height_mm)
 
         component_geometries = geometry.split_into_components()
@@ -83,6 +85,8 @@ class RuidaImporter(Importer):
                 source_asset_uid=source.uid,
                 segment_mask_geometry=segment_mask_geo,
                 vectorization_spec=passthrough_spec,
+                width_mm=width,
+                height_mm=height,
             )
             wp = WorkPiece(
                 name=self.source_file.stem,

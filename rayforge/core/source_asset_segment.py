@@ -27,6 +27,9 @@ class SourceAssetSegment:
     cropped_width_mm: Optional[float] = None
     cropped_height_mm: Optional[float] = None
 
+    width_mm: float = 0.0
+    height_mm: float = 0.0
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the configuration to a dictionary."""
         return {
@@ -37,6 +40,8 @@ class SourceAssetSegment:
             "crop_window_px": self.crop_window_px,
             "cropped_width_mm": self.cropped_width_mm,
             "cropped_height_mm": self.cropped_height_mm,
+            "width_mm": self.width_mm,
+            "height_mm": self.height_mm,
         }
 
     @classmethod
@@ -59,4 +64,6 @@ class SourceAssetSegment:
             crop_window_px=crop_window,
             cropped_width_mm=data.get("cropped_width_mm"),
             cropped_height_mm=data.get("cropped_height_mm"),
+            width_mm=data.get("width_mm", 0.0),
+            height_mm=data.get("height_mm", 0.0),
         )

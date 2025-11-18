@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import logging
 import warnings
 
@@ -9,8 +9,7 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    from ..core.source_asset_segment import SourceAssetSegment
-    from ..core.geo import Geometry
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -44,21 +43,5 @@ class Renderer(ABC):
 
         Returns:
             A pyvips.Image, or None if rendering fails.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_natural_size_from_data(
-        self,
-        *,
-        render_data: Optional[bytes],
-        source_segment: Optional["SourceAssetSegment"],
-        source_metadata: Optional[Dict[str, Any]],
-        boundaries: Optional["Geometry"] = None,
-        current_size: Optional[Tuple[float, float]] = None,
-    ) -> Optional[Tuple[float, float]]:
-        """
-        Calculates the natural (intrinsic) size of the content in millimeters
-        based on the provided data.
         """
         raise NotImplementedError
