@@ -9,6 +9,7 @@ from typing import (
     Any,
     TYPE_CHECKING,
     List,
+    NamedTuple,
 )
 from pathlib import Path
 import warnings
@@ -37,6 +38,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 CAIRO_MAX_DIMENSION = 16384
+
+
+class RenderContext(NamedTuple):
+    """Encapsulates the resources required for rendering."""
+
+    data: bytes
+    renderer: "Renderer"
+    source_pixel_dims: Optional[Tuple[int, int]]
+    metadata: Dict[str, Any]
 
 
 class WorkPiece(DocItem):
@@ -253,91 +263,155 @@ class WorkPiece(DocItem):
 
         return world_wp
 
-    def get_vips_image(
-        self, width: int, height: int
-    ) -> Optional[pyvips.Image]:
+    def _resolve_render_context(self) -> Optional[RenderContext]:
         """
-        The central hub for rendering a vips image for this workpiece.
-        Orchestrates data retrieval, rendering, cropping, and masking.
+        Resolves the data, renderer, and metadata needed for rendering.
+        Unifies logic for transient (subprocess) vs. managed (document) states.
         """
-        key = (width, height)
-        if key in self._render_cache:
-            return self._render_cache[key]
-
+        # 1. Renderer
         renderer = self._active_renderer
         if not renderer:
             return None
 
-        from ..image import image_util
-
-        # Prepare data for rendering
+        # 2. Data
+        # We default to self.data (which handles transient vs source logic).
+        # However, for high-res tracing/cropping, we might prefer
+        # original_data.
+        # We'll resolve that decision in the geometry calculation step or
+        # simply provide both and let the geometry step decide which to use.
+        # For simplicity here, we start with the standard data.
         data_to_render = self.data
-        source = self.source
-        source_segment = self.source_segment
-        source_metadata = source.metadata if source else {}
+        if data_to_render is None:
+            return None
 
-        # Resolve source dimensions early
+        # 3. Source Pixel Dimensions
         source_px_dims = self._transient_source_px_dims
-        if not source_px_dims and source:
-            if source.width_px is not None and source.height_px is not None:
-                source_px_dims = (source.width_px, source.height_px)
+        if not source_px_dims and self.source:
+            if (
+                self.source.width_px is not None
+                and self.source.height_px is not None
+            ):
+                source_px_dims = (
+                    self.source.width_px,
+                    self.source.height_px,
+                )
 
-        # Determine if we are in a high-res crop workflow
-        is_cropped = False
-        if source_segment and source_segment.crop_window_px is not None:
-            is_cropped = True
+        # 4. Metadata
+        metadata = self.source.metadata if self.source else {}
 
-        render_width, render_height = width, height
+        return RenderContext(
+            data=data_to_render,
+            renderer=renderer,
+            source_pixel_dims=source_px_dims,
+            metadata=metadata,
+        )
+
+    def _calculate_render_geometry(
+        self,
+        target_width: int,
+        target_height: int,
+        source_px_dims: Optional[Tuple[int, int]],
+    ) -> Tuple[int, int, Optional[Tuple[int, int, int, int]], Optional[bytes]]:
+        """
+        Calculates the required render dimensions and optional crop rectangle.
+        Handles the logic for high-res rendering of cropped segments.
+
+        Returns:
+            (render_width, render_height, crop_rect, data_override)
+            - render_width/height: The size to ask the renderer for.
+            - crop_rect: The (x, y, w, h) tuple for post-render cropping,
+              or None.
+            - data_override: Specific bytes to use if switching to
+              original_data is required (e.g. for cropping), or None to
+              use default.
+        """
+        render_width, render_height = target_width, target_height
+        crop_rect = None
+        data_override = None
+
+        is_cropped = (
+            self.source_segment
+            and self.source_segment.crop_window_px is not None
+        )
 
         # If cropping, we must render the *original* full image at a scaled-up
         # resolution such that the crop window matches the target dimensions.
         if is_cropped and self.original_data and source_px_dims:
-            # Prefer original data for tracing/cropping
-            data_to_render = self.original_data
+            # We need to switch to the original data for the full render
+            data_override = self.original_data
             source_w, source_h = source_px_dims
 
-            # source_segment.crop_window_px is checked by is_cropped, but we
-            # use a direct check here to satisfy the type checker.
-            if source_segment and source_segment.crop_window_px:
-                crop_x, crop_y, crop_w, crop_h = map(
-                    float, source_segment.crop_window_px
+            if self.source_segment and self.source_segment.crop_window_px:
+                crop_x_f, crop_y_f, crop_w_f, crop_h_f = (
+                    self.source_segment.crop_window_px
                 )
+                crop_w = float(crop_w_f)
+                crop_h = float(crop_h_f)
 
                 if crop_w > 0 and crop_h > 0:
-                    scale_x = width / crop_w
-                    scale_y = height / crop_h
+                    scale_x = target_width / crop_w
+                    scale_y = target_height / crop_h
                     render_width = max(1, int(source_w * scale_x))
                     render_height = max(1, int(source_h * scale_y))
 
-        # Format-specific kwargs
+                    # Calculate the expected crop rectangle in the scaled
+                    # image.
+                    # We return this as integers for the crop function.
+                    # Note: We recalculate this precisely based on the *actual*
+                    # rendered image size in _process_rendered_image to handle
+                    # renderer rounding, but this gives us the intent.
+                    scaled_x = int(crop_x_f * scale_x)
+                    scaled_y = int(crop_y_f * scale_y)
+                    scaled_w = int(crop_w * scale_x)
+                    scaled_h = int(crop_h * scale_y)
+                    crop_rect = (scaled_x, scaled_y, scaled_w, scaled_h)
+
+        return render_width, render_height, crop_rect, data_override
+
+    def _build_renderer_kwargs(
+        self, renderer: "Renderer", metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Constructs format-specific arguments for the renderer."""
         kwargs = {}
-        # Ops/DXF renderers need geometry data
         renderer_name = renderer.__class__.__name__
+
         if renderer_name in ("OpsRenderer", "DxfRenderer"):
             kwargs["boundaries"] = self.boundaries
+
         if renderer_name == "DxfRenderer":
-            kwargs["source_metadata"] = source_metadata
+            kwargs["source_metadata"] = metadata
             kwargs["workpiece_matrix"] = self.matrix
 
-        if data_to_render is None:
-            return None
+        return kwargs
 
-        # 1. Call the stateless renderer
-        image = renderer.render_base_image(
-            data_to_render, render_width, render_height, **kwargs
-        )
+    def _process_rendered_image(
+        self,
+        image: pyvips.Image,
+        crop_rect_hint: Optional[Tuple[int, int, int, int]],
+        target_size: Tuple[int, int],
+        source_px_dims: Optional[Tuple[int, int]],
+    ) -> Optional[pyvips.Image]:
+        """
+        Applies post-processing steps: cropping, masking, and final resizing.
+        """
+        from ..image import image_util
 
-        if not image:
-            return None
+        processed_image = image
+        target_w, target_h = target_size
 
-        # 2. Apply Crop (if applicable)
-        if is_cropped and source_segment and source_segment.crop_window_px:
+        # 1. Apply Crop
+        # We re-calculate the crop rect based on the actual image dimensions
+        # to be robust against renderers that might snap to nearest DPI/size.
+        if (
+            crop_rect_hint
+            and self.source_segment
+            and self.source_segment.crop_window_px
+        ):
             crop_x, crop_y, crop_w, crop_h = map(
-                float, source_segment.crop_window_px
+                float, self.source_segment.crop_window_px
             )
-            # Scale the crop window to the rendered image's actual size
-            actual_w = image.width
-            actual_h = image.height
+            actual_w = processed_image.width
+            actual_h = processed_image.height
 
             # Re-derive scale from actual output vs assumed source
             scale_x = 1.0
@@ -350,41 +424,87 @@ class WorkPiece(DocItem):
 
             scaled_x = int(crop_x * scale_x)
             scaled_y = int(crop_y * scale_y)
-
-            # Use scale factors to calculate the crop size in the source image,
-            # rather than using the target size directly. This handles cases
-            # where the renderer ignores non-uniform scaling (e.g. PDFs).
             scaled_w = int(crop_w * scale_x)
             scaled_h = int(crop_h * scale_y)
 
-            image = image_util.safe_crop(
-                image, scaled_x, scaled_y, scaled_w, scaled_h
+            processed_image = image_util.safe_crop(
+                processed_image, scaled_x, scaled_y, scaled_w, scaled_h
             )
-            if not image:
+            if not processed_image:
                 return None
 
-        # 3. Apply Mask (if applicable)
+        # 2. Apply Mask
         if (
-            source_segment
-            and source_segment.segment_mask_geometry
-            and not source_segment.segment_mask_geometry.is_empty()
+            self.source_segment
+            and self.source_segment.segment_mask_geometry
+            and not self.source_segment.segment_mask_geometry.is_empty()
         ):
-            image = image_util.apply_mask_to_vips_image(
-                image, source_segment.segment_mask_geometry
+            processed_image = image_util.apply_mask_to_vips_image(
+                processed_image, self.source_segment.segment_mask_geometry
             )
-            if not image:
+            if not processed_image:
                 return None
 
-        # 4. Final Resize Check
-        # Ensure the result exactly matches the requested width/height
-        if image.width != width or image.height != height:
-            if image.width > 0 and image.height > 0:
-                h_scale = width / image.width
-                v_scale = height / image.height
-                image = image.resize(h_scale, vscale=v_scale)
+        # 3. Final Resize Check
+        if (
+            processed_image.width != target_w
+            or processed_image.height != target_h
+        ):
+            if processed_image.width > 0 and processed_image.height > 0:
+                h_scale = target_w / processed_image.width
+                v_scale = target_h / processed_image.height
+                processed_image = processed_image.resize(
+                    h_scale, vscale=v_scale
+                )
 
-        self._render_cache[key] = image
-        return image
+        return processed_image
+
+    def get_vips_image(
+        self, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        """
+        The central hub for rendering a vips image for this workpiece.
+        Orchestrates data retrieval, rendering, cropping, and masking.
+        """
+        key = (width, height)
+        if key in self._render_cache:
+            return self._render_cache[key]
+
+        # 1. Resolve Context
+        ctx = self._resolve_render_context()
+        if not ctx:
+            return None
+
+        # 2. Calculate Geometry
+        (
+            render_w,
+            render_h,
+            crop_rect_hint,
+            data_override,
+        ) = self._calculate_render_geometry(
+            width, height, ctx.source_pixel_dims
+        )
+        final_data = data_override if data_override else ctx.data
+
+        # 3. Build Config
+        kwargs = self._build_renderer_kwargs(ctx.renderer, ctx.metadata)
+
+        # 4. Render
+        raw_image = ctx.renderer.render_base_image(
+            final_data, render_w, render_h, **kwargs
+        )
+        if not raw_image:
+            return None
+
+        # 5. Process (Crop/Mask/Resize)
+        final_image = self._process_rendered_image(
+            raw_image, crop_rect_hint, (width, height), ctx.source_pixel_dims
+        )
+
+        if final_image:
+            self._render_cache[key] = final_image
+
+        return final_image
 
     def get_local_size(self) -> Tuple[float, float]:
         """
