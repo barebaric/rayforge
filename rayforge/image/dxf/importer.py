@@ -87,7 +87,6 @@ class DxfImporter(Importer):
             min_y_mm,
             source,
             blocks_cache,
-            split_components=True,
         )
         return ImportPayload(source=source, items=items)
 
@@ -103,7 +102,6 @@ class DxfImporter(Importer):
         """Recursively parses all block definitions into lists of DocItems."""
         blocks_cache.clear()
         for block in doc.blocks:
-            # When parsing blocks, treat them as single units. Do NOT split.
             blocks_cache[block.name] = self._entities_to_doc_items(
                 block,
                 doc,
@@ -113,7 +111,6 @@ class DxfImporter(Importer):
                 source,
                 blocks_cache,
                 ezdxf.math.Matrix44(),
-                split_components=False,
             )
 
     def _entities_to_doc_items(
@@ -126,7 +123,6 @@ class DxfImporter(Importer):
         source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
-        split_components: bool = False,
     ) -> List[DocItem]:
         """
         Converts a list of DXF entities into a list of DocItems (WorkPieces
@@ -136,100 +132,71 @@ class DxfImporter(Importer):
         current_geo = Geometry()
         current_solids: List[List[Tuple[float, float]]] = []
 
-        def flush_geo_to_workpiece(split: bool):
+        def flush_geo_to_workpiece():
             """
-            Converts the accumulated Geometry and solid data into one or more
-            WorkPieces. If multiple distinct shapes are found, they are
-            returned within a Group.
+            Converts the accumulated Geometry and solid data into a single
+            WorkPiece.
             """
             nonlocal current_geo, current_solids
             if current_geo.is_empty():
                 return
-
-            if split:
-                component_geometries = current_geo.split_into_components()
-            else:
-                component_geometries = [current_geo]
 
             if source and current_solids:
                 existing_solids = source.metadata.get("solids", [])
                 existing_solids.extend(current_solids)
                 source.metadata["solids"] = existing_solids
 
-            workpieces = []
-            for i, component_geo in enumerate(component_geometries):
-                min_x, min_y, max_x, max_y = component_geo.rect()
-                width = max(max_x - min_x, 1e-9)
-                height = max(max_y - min_y, 1e-9)
+            min_x, min_y, max_x, max_y = current_geo.rect()
+            width = max(max_x - min_x, 1e-9)
+            height = max(max_y - min_y, 1e-9)
 
-                # The geometry from the DXF is Y-up. We must convert it to a
-                # normalized Y-down geometry for storage in the segment.
-                segment_mask_geo = component_geo.copy()
-                segment_mask_geo.close_gaps()
+            # The geometry from the DXF is Y-up. We must convert it to a
+            # normalized Y-down geometry for storage in the segment.
+            segment_mask_geo = current_geo.copy()
+            segment_mask_geo.close_gaps()
 
-                # 1. Translate to origin (0,0 is bottom-left).
-                translation_matrix = Matrix.translation(-min_x, -min_y)
-                segment_mask_geo.transform(translation_matrix.to_4x4_numpy())
+            # 1. Translate to origin (0,0 is bottom-left).
+            translation_matrix = Matrix.translation(-min_x, -min_y)
+            segment_mask_geo.transform(translation_matrix.to_4x4_numpy())
 
-                # 2. Normalize to a 1x1 box. The geometry is now in a
-                #    (0,0)-(1,1) box, but is still Y-up.
-                if width > 0 and height > 0:
-                    norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
-                    segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
+            # 2. Normalize to a 1x1 box. The geometry is now in a
+            #    (0,0)-(1,1) box, but is still Y-up.
+            if width > 0 and height > 0:
+                norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
+                segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
 
-                # 3. Flip the Y-axis to convert to the required Y-down format.
-                #    This is a scale by -1 on Y, then a translation by +1 on Y.
-                flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-                segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
+            # 3. Flip the Y-axis to convert to the required Y-down format.
+            #    This is a scale by -1 on Y, then a translation by +1 on Y.
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
 
-                gen_config = SourceAssetSegment(
-                    source_asset_uid=source.uid,
-                    segment_mask_geometry=segment_mask_geo,
-                    vectorization_spec=PassthroughSpec(),
-                    width_mm=width,
-                    height_mm=height,
-                )
+            gen_config = SourceAssetSegment(
+                source_asset_uid=source.uid,
+                segment_mask_geometry=segment_mask_geo,
+                vectorization_spec=PassthroughSpec(),
+                width_mm=width,
+                height_mm=height,
+            )
 
-                wp = WorkPiece(
-                    name=self.source_file.stem,
-                    source_segment=gen_config,
-                )
+            wp = WorkPiece(
+                name=self.source_file.stem,
+                source_segment=gen_config,
+            )
 
-                # Set the workpiece's matrix to position and scale it.
-                # This matrix operates on the Y-up geometry that the
-                # WorkPiece.boundaries property will provide.
-                wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
-                    width, height
-                )
-                workpieces.append(wp)
+            # Set the workpiece's matrix to position and scale it.
+            # This matrix operates on the Y-up geometry that the
+            # WorkPiece.boundaries property will provide.
+            wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
+                width, height
+            )
 
-            if len(workpieces) > 1:
-                # Use a dummy Group as a parent for calculation purposes.
-                # It's a concrete class and won't cause abstract usage errors.
-                dummy_parent = Group()
-                group_result = Group.create_from_items(
-                    workpieces, dummy_parent
-                )
-
-                if group_result:
-                    new_group = group_result.new_group
-                    child_matrices = group_result.child_matrices
-                    for wp in workpieces:
-                        wp.matrix = child_matrices[wp.uid]
-                    new_group.set_children(workpieces)
-                    result_items.append(new_group)
-                else:
-                    result_items.extend(workpieces)
-
-            elif workpieces:
-                result_items.append(workpieces[0])
-
+            result_items.append(wp)
             current_geo = Geometry()
             current_solids = []
 
         for entity in entities:
             if entity.dxftype() == "INSERT":
-                flush_geo_to_workpiece(split_components)
+                flush_geo_to_workpiece()
                 block_items = blocks_cache.get(entity.dxf.name)
                 if not block_items:
                     continue
@@ -268,7 +235,7 @@ class DxfImporter(Importer):
                     current_geo, entity, doc, scale, tx, ty, parent_transform
                 )
 
-        flush_geo_to_workpiece(split_components)
+        flush_geo_to_workpiece()
         return result_items
 
     def _entity_to_geo(self, geo, entity, doc, scale, tx, ty, transform):

@@ -85,6 +85,7 @@ class TestWorkPiece:
         assert wp.tabs == []
         assert wp.tabs_enabled is True
         assert wp.source_segment is not None
+        assert wp._edited_boundaries is None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -95,6 +96,13 @@ class TestWorkPiece:
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
+
+        # Set edited boundaries to verify persistence
+        edited_geo = Geometry()
+        edited_geo.move_to(0.1, 0.1)
+        edited_geo.line_to(0.9, 0.9)
+        wp._edited_boundaries = edited_geo
+
         data_dict = wp.to_dict()
 
         assert "renderer_name" not in data_dict
@@ -105,6 +113,7 @@ class TestWorkPiece:
         assert isinstance(data_dict["matrix"], list)
         assert "source_segment" in data_dict
         assert data_dict["source_segment"]["source_asset_uid"] == source.uid
+        assert "edited_boundaries" in data_dict
 
         new_wp = WorkPiece.from_dict(data_dict)
 
@@ -127,6 +136,93 @@ class TestWorkPiece:
         assert new_wp.get_natural_size() == (100.0, 50.0)
         assert new_wp.source_segment is not None
         assert new_wp.source_segment.source_asset_uid == source.uid
+        assert new_wp._edited_boundaries is not None
+        assert len(new_wp._edited_boundaries.commands) == len(
+            edited_geo.commands
+        )
+
+    def test_boundaries_override(self, workpiece_instance):
+        """
+        Test that _edited_boundaries overrides the source segment geometry.
+        """
+        wp = workpiece_instance
+
+        # Create a distinct edited geometry
+        edited_geo = Geometry()
+        edited_geo.move_to(0.2, 0.2)
+        edited_geo.line_to(0.8, 0.8)
+
+        # Initially, boundaries should come from source segment
+        assert wp._edited_boundaries is None
+        original_boundaries = wp.boundaries
+        assert original_boundaries is not None
+        assert original_boundaries is not edited_geo
+
+        # Set override
+        wp._edited_boundaries = edited_geo
+        assert wp.boundaries is edited_geo
+
+        # Clear override
+        wp._edited_boundaries = None
+        # Should revert to cached original (y-up version)
+        assert wp.boundaries is not edited_geo
+
+    def test_apply_split(self, workpiece_instance):
+        """Test the splitting logic."""
+        wp = workpiece_instance
+        # Set up a workpiece with two disjoint components in 0-1 space
+        # Component 1: Rect at (0,0) size 0.2x0.2
+        comp1 = Geometry()
+        comp1.move_to(0, 0)
+        comp1.line_to(0.2, 0)
+        comp1.line_to(0.2, 0.2)
+        comp1.line_to(0, 0.2)
+        comp1.close_path()
+
+        # Component 2: Rect at (0.5, 0.5) size 0.4x0.4
+        comp2 = Geometry()
+        comp2.move_to(0.5, 0.5)
+        comp2.line_to(0.9, 0.5)
+        comp2.line_to(0.9, 0.9)
+        comp2.line_to(0.5, 0.9)
+        comp2.close_path()
+
+        # Set up WP dimensions: 100x100 at (0,0)
+        wp.set_size(100, 100)
+        wp.pos = (0, 0)
+
+        fragments = [comp1, comp2]
+        new_workpieces = wp.apply_split(fragments)
+
+        assert len(new_workpieces) == 2
+        wp1, wp2 = new_workpieces
+
+        # Check WP1 (Derived from comp1)
+        # Original size 100x100. Comp1 is 0.2x0.2 of that.
+        # Expected physical size: 20x20
+        # Expected pos: (0, 0)
+        assert wp1.size == pytest.approx((20.0, 20.0))
+        assert wp1.pos == pytest.approx((0.0, 0.0))
+        assert wp1._edited_boundaries is not None
+        # Normalized boundary should fill 0-1 box
+        min_x, min_y, max_x, max_y = wp1.boundaries.rect()
+        assert min_x == pytest.approx(0.0)
+        assert min_y == pytest.approx(0.0)
+        assert max_x == pytest.approx(1.0)
+        assert max_y == pytest.approx(1.0)
+
+        # Check WP2 (Derived from comp2)
+        # Original size 100x100. Comp2 is 0.4x0.4.
+        # Expected physical size: 40x40
+        # Expected pos: (50, 50)
+        assert wp2.size == pytest.approx((40.0, 40.0))
+        assert wp2.pos == pytest.approx((50.0, 50.0))
+        assert wp2._edited_boundaries is not None
+        min_x, min_y, max_x, max_y = wp2.boundaries.rect()
+        assert min_x == pytest.approx(0.0)
+        assert min_y == pytest.approx(0.0)
+        assert max_x == pytest.approx(1.0)
+        assert max_y == pytest.approx(1.0)
 
     def test_serialization_with_tabs(self, workpiece_instance):
         """Tests that tabs are correctly serialized and deserialized."""
@@ -457,24 +553,6 @@ class TestWorkPiece:
         direction = wp.get_tab_direction(tab)
         assert direction is not None
 
-        # Logic for expected result:
-        # The Y-down segment (1,0)->(2,1) becomes the
-        #     Y-up segment (1,1)->(2,0).
-        # Its local tangent is proportional to (1, -1).
-        # Since the path is now CCW, its local outward normal is (-1, -1).
-        # The world matrix has a scale of (10, 5) because the 2x2 local
-        # geometry is sized to 20x10.
-        # The normal must be transformed by the inverse transpose of the
-        # scale matrix.
-        # M = [[10, 0], [0, 5]]. M_inv_T = [[0.1, 0], [0, 0.2]].
-        # new_normal = M_inv_T @ [-1, -1] = [-0.1, -0.2].
-        # This is proportional to (-1, -2).
-        #
-        # The path defined is CW in Y-down, which becomes CCW in Y-up.
-        # The tangent of segment 1 is (1,-1). The right-hand normal is (1,1).
-        # `get_outward_normal_at` correctly identifies this as the outward
-        # normal for CCW.
-        # new_normal = M_inv_T @ [1, 1] = [0.1, 0.2], proportional to (1,2).
         expected_x, expected_y = (1.0, 2.0)
         norm = (expected_x**2 + expected_y**2) ** 0.5
         expected_direction = (expected_x / norm, expected_y / norm)
