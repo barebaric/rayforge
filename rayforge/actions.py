@@ -112,6 +112,9 @@ class ActionManager:
         self._add_action("group", self.on_group_action)
         self._add_action("ungroup", self.on_ungroup_action)
 
+        # Split Action
+        self._add_action("split", self.on_split_action)
+
         # Tabbing Actions
         self._add_action("add-tabs-equidistant", self.on_add_tabs_equidistant)
         self._add_action("add-tabs-cardinal", self.on_add_tabs_cardinal)
@@ -193,6 +196,10 @@ class ActionManager:
             current_layer and len(current_layer.get_descendants(WorkPiece)) > 0
         )
         self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
+
+        # Update split action state
+        selected_items = self.win.surface.get_selected_workpieces()
+        self.actions["split"].set_enabled(bool(selected_items))
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""
@@ -326,6 +333,7 @@ class ActionManager:
             # Arrange
             "win.group": "<Primary>g",
             "win.ungroup": "<Primary>u",
+            "win.split": "<Alt>w",
             "win.layer-move-up": "<Primary>Page_Up",
             "win.layer-move-down": "<Primary>Page_Down",
             "win.align-left": "<Primary><Shift>Left",
@@ -405,6 +413,16 @@ class ActionManager:
         self.editor.group.ungroup_items(groups_to_ungroup)
         # The selection will be automatically updated by the history changed
         # signal handler.
+
+    def on_split_action(self, action, param):
+        """Handler for the 'split' action."""
+        selected_workpieces = self.win.surface.get_selected_workpieces()
+        if not selected_workpieces:
+            return
+
+        new_items = self.editor.split.split_items(selected_workpieces)
+        if new_items:
+            self.win.surface.select_items(new_items)
 
     # --- Alignment Action Handlers ---
 

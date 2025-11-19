@@ -65,6 +65,12 @@ class WorkPiece(DocItem):
         self.source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
 
+        # An optional override for the workpiece geometry. If set, this takes
+        # precedence over the source_segment's geometry. It allows for
+        # non-destructive editing (like splitting) without modifying the
+        # shared source segment.
+        self._edited_boundaries: Optional[Geometry] = None
+
         # The cache for rendered vips images. Key is (width, height).
         self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
 
@@ -161,6 +167,9 @@ class WorkPiece(DocItem):
         intrinsic shape from its world transformation is crucial for
         preventing rendering and processing errors.
 
+        If `_edited_boundaries` is set (e.g. from a split operation), it is
+        returned. Otherwise, the geometry from the `source_segment` is used.
+
         The local coordinate space of this normalized geometry has the
         following properties:
 
@@ -172,10 +181,10 @@ class WorkPiece(DocItem):
         - **Transformation**: The vector data itself is static. All physical
           sizing, positioning, and rotation are handled by applying the
           `WorkPiece.matrix` to this normalized shape.
-
-        This property reads the Y-down geometry from the source segment,
-        transforms it to the Y-up system, and caches the result.
         """
+        if self._edited_boundaries is not None:
+            return self._edited_boundaries
+
         if self._boundaries_cache:
             return self._boundaries_cache
 
@@ -247,6 +256,10 @@ class WorkPiece(DocItem):
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
+
+        # Ensure any edited boundaries are carried over.
+        if self._edited_boundaries:
+            world_wp._edited_boundaries = self._edited_boundaries.copy()
 
         # Hydrate with data and renderer for use in isolated contexts
         # like subprocesses where the document link is lost.
@@ -434,13 +447,10 @@ class WorkPiece(DocItem):
                 return None
 
         # 2. Apply Mask
-        if (
-            self.source_segment
-            and self.source_segment.segment_mask_geometry
-            and not self.source_segment.segment_mask_geometry.is_empty()
-        ):
+        # Use boundaries property which respects _edited_boundaries
+        if self.boundaries and not self.boundaries.is_empty():
             processed_image = image_util.apply_mask_to_vips_image(
-                processed_image, self.source_segment.segment_mask_geometry
+                processed_image, self.boundaries
             )
             if not processed_image:
                 return None
@@ -528,6 +538,11 @@ class WorkPiece(DocItem):
             "source_segment": (
                 self.source_segment.to_dict() if self.source_segment else None
             ),
+            "edited_boundaries": (
+                self._edited_boundaries.to_dict()
+                if self._edited_boundaries
+                else None
+            ),
         }
         # Include hydrated data for subprocesses
         if self._data is not None:
@@ -565,6 +580,11 @@ class WorkPiece(DocItem):
             loaded_tabs.append(Tab(**t_data_copy))
         wp.tabs = loaded_tabs
         wp.tabs_enabled = data.get("tabs_enabled", True)
+
+        if "edited_boundaries" in data and data["edited_boundaries"]:
+            wp._edited_boundaries = Geometry.from_dict(
+                data["edited_boundaries"]
+            )
 
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:
@@ -912,3 +932,67 @@ class WorkPiece(DocItem):
             model_pos = machine_x, machine_y
 
         self.pos = model_pos
+
+    def apply_split(self, fragments: List[Geometry]) -> List["WorkPiece"]:
+        """
+        Creates new WorkPiece instances from a list of normalized geometry
+        fragments. Each fragment represents a subset of this workpiece's
+        current geometry.
+
+        The new workpieces will share the same source segment but have
+        their `_edited_boundaries` set to the fragment geometry. Their
+        transform matrices will be offset so they appear in the correct
+        physical location.
+
+        Args:
+            fragments: A list of Geometry objects. Each must be a subset of
+                       self.boundaries, defined in the same 0-1 Y-up
+                       normalized coordinate space.
+
+        Returns:
+            A list of new WorkPiece instances.
+        """
+        if len(fragments) <= 1:
+            return [self]
+
+        new_workpieces = []
+        original_matrix = self.matrix
+
+        for frag_geo in fragments:
+            # 1. Calculate bounding box of the fragment in the local 0-1 space.
+            #    These are normalized coordinates (0.0 to 1.0).
+            min_x, min_y, max_x, max_y = frag_geo.rect()
+            w = max(max_x - min_x, 1e-9)
+            h = max(max_y - min_y, 1e-9)
+
+            # 2. Clone the workpiece to preserve metadata/source/settings.
+            #    We create a new instance instead of deepcopy to ensure a fresh
+            #    UID and clean state.
+            new_wp = WorkPiece(self.name, self.source_segment)
+            new_wp.tabs_enabled = self.tabs_enabled
+
+            # 3. Normalize the fragment geometry.
+            #    We shift it to (0,0) and scale it to fit a 1x1 box.
+            #    This becomes the new canonical shape for this piece.
+            normalized_frag = frag_geo.copy()
+            norm_matrix = Matrix.scale(1.0 / w, 1.0 / h) @ Matrix.translation(
+                -min_x, -min_y
+            )
+            normalized_frag.transform(norm_matrix.to_4x4_numpy())
+            new_wp._edited_boundaries = normalized_frag
+
+            # 4. Calculate the matrix for the new piece.
+            #    It must be positioned such that it aligns with where this
+            #    fragment was in the original object.
+            #    Correct logic: Translate in local space first, then scale.
+            #    The Matrix operation order is parent @ child.
+            #    So we compose: M_orig @ T_local_offset @ S_local_scale.
+            #    min_x, min_y are in the 0..1 space, so we translate by them.
+            #    w, h are the fraction of the original size this piece takes.
+            offset_matrix = original_matrix @ Matrix.translation(min_x, min_y)
+            final_matrix = offset_matrix @ Matrix.scale(w, h)
+
+            new_wp.matrix = final_matrix
+            new_workpieces.append(new_wp)
+
+        return new_workpieces

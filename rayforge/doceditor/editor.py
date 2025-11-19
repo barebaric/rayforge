@@ -12,6 +12,7 @@ from ..pipeline.pipeline import Pipeline
 from ..machine.cmd import MachineCmd
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from .edit_cmd import EditCmd
+from .split_cmd import SplitCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
@@ -84,10 +85,11 @@ class DocEditor:
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
         self.material_test = MaterialTestCmd(self)
-        self.transform = TransformCmd(self)
+        self.split = SplitCmd(self)
         self.stock = StockCmd(self)
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
+        self.transform = TransformCmd(self)
         self.machine = MachineCmd(self)
 
     def cleanup(self):
