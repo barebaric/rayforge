@@ -203,7 +203,12 @@ class TestWorkPiece:
         # Expected pos: (0, 0)
         assert wp1.size == pytest.approx((20.0, 20.0))
         assert wp1.pos == pytest.approx((0.0, 0.0))
-        assert wp1._edited_boundaries is not None
+
+        # The split implementation creates clean segments instead of using
+        # edited_boundaries
+        assert wp1._edited_boundaries is None
+        assert wp1.boundaries is not None
+
         # Normalized boundary should fill 0-1 box
         min_x, min_y, max_x, max_y = wp1.boundaries.rect()
         assert min_x == pytest.approx(0.0)
@@ -217,7 +222,10 @@ class TestWorkPiece:
         # Expected pos: (50, 50)
         assert wp2.size == pytest.approx((40.0, 40.0))
         assert wp2.pos == pytest.approx((50.0, 50.0))
-        assert wp2._edited_boundaries is not None
+
+        assert wp2._edited_boundaries is None
+        assert wp2.boundaries is not None
+
         min_x, min_y, max_x, max_y = wp2.boundaries.rect()
         assert min_x == pytest.approx(0.0)
         assert min_y == pytest.approx(0.0)

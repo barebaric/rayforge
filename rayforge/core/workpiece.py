@@ -489,7 +489,7 @@ class WorkPiece(DocItem):
                     h_scale, vscale=v_scale
                 )
 
-        return processed_image
+        return image_util.normalize_to_rgba(processed_image)
 
     def get_vips_image(
         self, width: int, height: int
@@ -961,10 +961,8 @@ class WorkPiece(DocItem):
         fragments. Each fragment represents a subset of this workpiece's
         current geometry.
 
-        The new workpieces will share the same source segment but have
-        their `_edited_boundaries` set to the fragment geometry. Their
-        transform matrices will be offset so they appear in the correct
-        physical location.
+        The new workpieces will have their own independent SourceAssetSegment
+        containing only the specific fragment geometry.
 
         Args:
             fragments: A list of Geometry objects. Each must be a subset of
@@ -980,37 +978,60 @@ class WorkPiece(DocItem):
         new_workpieces = []
         original_matrix = self.matrix
 
+        # Get current physical dimensions to filter noise.
+        # self.size returns (width_mm, height_mm).
+        phys_w, phys_h = self.size
+
         for frag_geo in fragments:
             # 1. Calculate bounding box of the fragment in the local 0-1 space.
-            #    These are normalized coordinates (0.0 to 1.0).
             min_x, min_y, max_x, max_y = frag_geo.rect()
             w = max(max_x - min_x, 1e-9)
             h = max(max_y - min_y, 1e-9)
 
-            # 2. Clone the workpiece to preserve metadata/source/settings.
-            #    We create a new instance instead of deepcopy to ensure a fresh
-            #    UID and clean state.
-            new_wp = WorkPiece(self.name, self.source_segment)
-            new_wp.tabs_enabled = self.tabs_enabled
+            # 2. Filter out noise / dust.
+            # Calculate physical dimensions of the fragment.
+            # Fragments smaller than 0.1mm in both dimensions are discarded
+            # to prevent creating hundreds of invisible workpieces that clog
+            # the renderer and UI.
+            if (w * phys_w < 0.1) and (h * phys_h < 0.1):
+                continue
 
-            # 3. Normalize the fragment geometry.
-            #    We shift it to (0,0) and scale it to fit a 1x1 box.
-            #    This becomes the new canonical shape for this piece.
+            # 3. Clone the source segment.
+            # We create a clean segment for the shard containing ONLY the
+            # shard's geometry.
+            # This prevents O(N^2) serialization costs where every shard
+            # carries the entire parent geometry to the worker processes.
+            new_segment = (
+                deepcopy(self.source_segment) if self.source_segment else None
+            )
+
+            # 4. Normalize the fragment geometry.
+            # We shift it to (0,0) and scale it to fit a 1x1 box.
+            # This becomes the new canonical shape for this piece.
             normalized_frag = frag_geo.copy()
             norm_matrix = Matrix.scale(1.0 / w, 1.0 / h) @ Matrix.translation(
                 -min_x, -min_y
             )
             normalized_frag.transform(norm_matrix.to_4x4_numpy())
-            new_wp._edited_boundaries = normalized_frag
 
-            # 4. Calculate the matrix for the new piece.
-            #    It must be positioned such that it aligns with where this
-            #    fragment was in the original object.
-            #    Correct logic: Translate in local space first, then scale.
-            #    The Matrix operation order is parent @ child.
-            #    So we compose: M_orig @ T_local_offset @ S_local_scale.
-            #    min_x, min_y are in the 0..1 space, so we translate by them.
-            #    w, h are the fraction of the original size this piece takes.
+            if new_segment:
+                # Convert the normalized Y-up geometry to the Y-down format
+                # expected by the SourceAssetSegment storage.
+                # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top)
+                y_down_frag = normalized_frag.copy()
+                flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+                y_down_frag.transform(flip_matrix.to_4x4_numpy())
+                new_segment.segment_mask_geometry = y_down_frag
+
+            # Initialize the new workpiece with the lightweight segment
+            new_wp = WorkPiece(self.name, new_segment)
+            new_wp.tabs_enabled = self.tabs_enabled
+
+            # 5. Calculate the matrix for the new piece.
+            # It must be positioned such that it aligns with where this
+            # fragment was in the original object.
+            # Matrix op order: parent @ child.
+            # Compose: M_orig @ T_local_offset @ S_local_scale.
             offset_matrix = original_matrix @ Matrix.translation(min_x, min_y)
             final_matrix = offset_matrix @ Matrix.scale(w, h)
 
