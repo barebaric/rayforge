@@ -264,7 +264,7 @@ def apply_mask_to_vips_image(
     Masks a vips image using a geometry mask, making areas outside the
     geometry transparent. Does NOT crop the image.
 
-    Expects the mask_geo to be NORMALIZED to a 0-1 coordinate space.
+    Expects the mask_geo to be NORMALIZED to a 0-1 Y-DOWN coordinate space.
     """
     if mask_geo.is_empty():
         # If the mask is empty, we return the image as-is, which is the
