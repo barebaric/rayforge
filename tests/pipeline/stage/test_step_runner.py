@@ -53,6 +53,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(100, 50),
+        generation_size=(20, 10),
     )
     base_handle = get_context().artifact_store.put(base_artifact)
 
@@ -144,6 +145,7 @@ def test_step_runner_handles_texture_data(machine):
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         texture_data=texture,
+        generation_size=(20, 10),
     )
     base_handle = get_context().artifact_store.put(base_artifact)
     assembly_info = [

@@ -157,6 +157,7 @@ def test_basic_ops_generation(
         surface=None,
         pixels_per_mm=None,
         workpiece=mock_workpiece,
+        settings={},
     )
     assert artifact is not None
     assert artifact.ops is not None
@@ -165,6 +166,7 @@ def test_basic_ops_generation(
         artifact.source_coordinate_system == CoordinateSystem.MILLIMETER_SPACE
     )
     assert artifact.source_dimensions == mock_workpiece.size
+    assert artifact.generation_size == mock_workpiece.size
 
 
 def test_risk_sorted_execution_order(laser: Laser, mock_workpiece: WorkPiece):
@@ -179,7 +181,11 @@ def test_risk_sorted_execution_order(laser: Laser, mock_workpiece: WorkPiece):
         include_labels=False,
     )
     artifact = producer.run(
-        laser=laser, surface=None, pixels_per_mm=None, workpiece=mock_workpiece
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        workpiece=mock_workpiece,
+        settings={},
     )
     speeds = [
         c.speed
@@ -202,7 +208,11 @@ def test_ops_contains_rectangles(laser: Laser, mock_workpiece: WorkPiece):
         include_labels=False,
     )
     artifact = producer.run(
-        laser=laser, surface=None, pixels_per_mm=None, workpiece=mock_workpiece
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        workpiece=mock_workpiece,
+        settings={},
     )
     move_count = sum(
         1 for cmd in artifact.ops.commands if isinstance(cmd, MoveToCommand)
@@ -225,7 +235,11 @@ def test_power_and_speed_ranges(laser: Laser, mock_workpiece: WorkPiece):
         include_labels=False,
     )
     artifact = producer.run(
-        laser=laser, surface=None, pixels_per_mm=None, workpiece=mock_workpiece
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        workpiece=mock_workpiece,
+        settings={},
     )
     speeds = [
         c.speed
@@ -255,7 +269,11 @@ def test_single_column_grid(laser: Laser, mock_workpiece: WorkPiece):
         include_labels=False,
     )
     artifact = producer.run(
-        laser=laser, surface=None, pixels_per_mm=None, workpiece=mock_workpiece
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        workpiece=mock_workpiece,
+        settings={},
     )
     speeds = [
         c.speed
@@ -280,7 +298,11 @@ def test_single_row_grid(laser: Laser, mock_workpiece: WorkPiece):
         include_labels=False,
     )
     artifact = producer.run(
-        laser=laser, surface=None, pixels_per_mm=None, workpiece=mock_workpiece
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        workpiece=mock_workpiece,
+        settings={},
     )
     speeds = [
         c.speed
@@ -306,6 +328,7 @@ def test_workpiece_uid_in_section_commands(
         surface=None,
         pixels_per_mm=None,
         workpiece=mock_workpiece,
+        settings={},
     )
     section_starts = [
         c
@@ -332,7 +355,11 @@ def test_grid_cell_count(laser: Laser):
         workpiece.set_size(wp_size[0], wp_size[1])
 
         artifact = producer.run(
-            laser=laser, surface=None, pixels_per_mm=None, workpiece=workpiece
+            laser=laser,
+            surface=None,
+            pixels_per_mm=None,
+            workpiece=workpiece,
+            settings={},
         )
         speeds = [
             c.speed

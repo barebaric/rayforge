@@ -145,9 +145,44 @@ class WorkPieceElement(CanvasElement):
             self._on_view_artifact_updated
         )
 
+        # Track the last known model size to detect size changes even when
+        # the transform matrix is pre-synced (e.g. during interactive drags).
+        self._last_synced_size = self.data.size
+
         self._on_transform_changed(self.data)
         self._create_or_update_tab_handles()
-        self.trigger_update()
+        self.invalidate_and_rerender()
+
+    def invalidate_and_rerender(self):
+        """
+        Invalidates all cached rendering artifacts (base image and all ops)
+        and schedules a full re-render. This should be called whenever the
+        element's content or size changes.
+        """
+        logger.debug(f"Full invalidation for workpiece '{self.data.name}'")
+        # Clear the local artifact cache to prevent drawing stale vectors
+        self._artifact_cache.clear()
+        if self.data.layer and self.data.layer.workflow:
+            for step in self.data.layer.workflow.steps:
+                self.clear_ops_surface(step.uid)
+        super().trigger_update()
+
+    def trigger_view_update(self):
+        """
+        Invalidates resolution-dependent caches (raster surfaces) and
+        triggers a re-render. This is called on view changes like zooming.
+        It preserves expensive-to-generate data like vector recordings.
+        """
+        logger.debug(f"View update for workpiece '{self.data.name}'")
+        # 1. Invalidate the base image buffer.
+        self._surface = None
+
+        # 2. Invalidate only the rasterized ops surfaces, not the recordings.
+        self._ops_surfaces.clear()
+
+        # 3. Trigger a re-render of everything at the new resolution.
+        self.trigger_ops_rerender()
+        super().trigger_update()  # Re-renders the base image.
 
     def _on_view_artifact_created(
         self,
@@ -420,7 +455,8 @@ class WorkPieceElement(CanvasElement):
         self._ops_surfaces.pop(step_uid, None)
         self._ops_recordings.pop(step_uid, None)
         self._texture_surfaces.pop(step_uid, None)
-        self._artifact_cache.pop(step_uid, None)
+        # Do NOT clear _artifact_cache here. We want to keep drawing the old
+        # artifact until the new one is ready to prevent flickering.
         self._view_artifact_surfaces.pop(step_uid, None)
         if old_tuple := self._progressive_view_surfaces.pop(step_uid, None):
             _, _, old_handle = old_tuple
@@ -457,7 +493,7 @@ class WorkPieceElement(CanvasElement):
             f"Model content changed for '{workpiece.name}', triggering update."
         )
         self._create_or_update_tab_handles()
-        self.trigger_update()
+        self.invalidate_and_rerender()
 
     def _on_transform_changed(self, workpiece: WorkPiece):
         """
@@ -469,23 +505,30 @@ class WorkPieceElement(CanvasElement):
         blurry), so we must trigger a full update to re-render it cleanly at
         the new resolution.
         """
-        if not self.canvas or self.transform == workpiece.matrix:
+        if not self.canvas:
             return
         logger.debug(
             f"Transform changed for '{workpiece.name}', updating view."
         )
 
-        # Get the size from the view's current (old) transform matrix.
-        old_w, old_h = self.transform.get_abs_scale()
-
+        # Always sync the view transform to the model.
         self.set_transform(workpiece.matrix)
 
-        # Get the size from the new transform that was just set.
-        new_w, new_h = self.transform.get_abs_scale()
+        # Check if the size has changed significantly since the last sync.
+        # We cannot rely on comparing self.transform vs workpiece.matrix here,
+        # because interactive tools update self.transform before the model
+        # commits, leading to them being equal when this signal finally fires.
+        # However, the cached artifacts/buffers correspond to the *old* size.
+        new_w, new_h = workpiece.size
+        old_w, old_h = self._last_synced_size
 
-        # Check for a meaningful change in size to invalidate the cache.
         if abs(new_w - old_w) > 1e-6 or abs(new_h - old_h) > 1e-6:
-            self.trigger_update()
+            self._last_synced_size = (new_w, new_h)
+            # Don't invalidate cache (which causes flashing), just trigger
+            # update. The old artifact will be drawn stretched until the
+            # pipeline finishes.
+            self.trigger_ops_rerender()
+            super().trigger_update()
 
     def _on_ops_generation_starting(
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
@@ -1219,19 +1262,6 @@ class WorkPieceElement(CanvasElement):
             # This call is now safe because we are on the main thread.
             self.canvas.queue_draw()
 
-    def _start_update(self) -> bool:
-        """
-        Extends the base class's update starter to also trigger a re-render
-        of all ops surfaces. This ensures that when a zoom-related update
-        occurs, both the base image and the ops get re-rendered at the
-        new resolution.
-        """
-        # Let the base class handle the main content surface update.
-        # This will return False for the GLib timer.
-        res = super()._start_update()
-
-        return res
-
     def render_to_surface(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
@@ -1244,15 +1274,11 @@ class WorkPieceElement(CanvasElement):
         if not self.canvas or not self._color_set:
             return
 
-        world_w, world_h = self.data.size
-        if world_w < 1e-9 or world_h < 1e-9:
-            return
-
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
 
-        # --- Aggregate artifacts and draw texture components first ---
-        artifacts_to_draw: List[WorkPieceArtifact] = []
+        # --- Collect artifacts to draw ---
+        artifacts_to_draw = []
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
                 if not self._ops_visibility.get(step.uid, True):
@@ -1261,10 +1287,8 @@ class WorkPieceElement(CanvasElement):
                 artifact = self._artifact_cache.get(step.uid)
                 if artifact:
                     # The final artifact is present and will be drawn.
-                    # It now supersedes any intermediate chunks, so we can
-                    # safely clean them up to prevent double-drawing and leaks.
+                    # It supersedes any intermediate chunks.
                     self._ops_surfaces.pop(step.uid, None)
-
                     artifacts_to_draw.append(artifact)
                     if artifact.texture_data:
                         self._draw_texture(ctx, step, artifact)
@@ -1272,74 +1296,82 @@ class WorkPieceElement(CanvasElement):
         if not artifacts_to_draw:
             return
 
-        # --- Aggregate vector components from all artifacts ---
-        all_powered_v = [
-            a.vertex_data.powered_vertices
-            for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data.powered_vertices.size > 0
-        ]
-        all_powered_c = [
-            a.vertex_data.powered_colors
-            for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data.powered_colors.size > 0
-        ]
-        all_travel_v = [
-            a.vertex_data.travel_vertices
-            for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data.travel_vertices.size > 0
-        ]
-        all_zero_power_v = [
-            a.vertex_data.zero_power_vertices
-            for a in artifacts_to_draw
-            if a.vertex_data and a.vertex_data.zero_power_vertices.size > 0
-        ]
+        # We draw each artifact individually because they might have different
+        # generation sizes (e.g. if one step is stale and another is new).
+        # This allows correct scaling of stale artifacts during resize.
 
-        # --- Draw all aggregated vector components ---
         ctx.save()
-        # The context is for a 1x1 Y-UP space. Scale to workpiece mm space.
-        ctx.scale(1.0 / world_w, 1.0 / world_h)
         ctx.set_hairline(True)
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
-        # --- Draw Travel & Zero-Power Moves ---
-        if show_travel:
-            if all_travel_v:
-                travel_v = np.concatenate(all_travel_v).reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
-                for start, end in travel_v:
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
-            if all_zero_power_v:
-                zero_v = np.concatenate(all_zero_power_v).reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("zero_power"))
-                for start, end in zero_v:
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
+        for artifact in artifacts_to_draw:
+            # Determine the normalization scale based on the artifact's
+            # intrinsic size, NOT the current workpiece size.
+            if artifact.is_scalable and artifact.source_dimensions:
+                aw, ah = artifact.source_dimensions
+            else:
+                aw, ah = artifact.generation_size
 
-        # --- Draw Powered Moves (Grouped by Color) ---
-        if all_powered_v:
-            powered_v = np.concatenate(all_powered_v).reshape(-1, 2, 3)
-            powered_c = np.concatenate(all_powered_c)
-            cut_lut = self._color_set.get_lut("cut")
+            if aw < 1e-9 or ah < 1e-9:
+                continue
 
-            # Use power from the first vertex of each segment for color.
-            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-            themed_colors_per_segment = cut_lut[power_indices]
+            ctx.save()
+            ctx.scale(1.0 / aw, 1.0 / ah)
 
-            unique_colors, inverse_indices = np.unique(
-                themed_colors_per_segment, axis=0, return_inverse=True
-            )
+            # Draw Powered Moves
+            if (
+                artifact.vertex_data
+                and artifact.vertex_data.powered_vertices.size > 0
+            ):
+                powered_v = artifact.vertex_data.powered_vertices.reshape(
+                    -1, 2, 3
+                )
+                powered_c = artifact.vertex_data.powered_colors
+                cut_lut = self._color_set.get_lut("cut")
 
-            for i, color in enumerate(unique_colors):
-                ctx.set_source_rgba(*color)
-                segment_indices = np.where(inverse_indices == i)[0]
-                for seg_idx in segment_indices:
-                    start, end = powered_v[seg_idx]
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
+                # Use power from the first vertex of each segment for color.
+                power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+                themed_colors_per_segment = cut_lut[power_indices]
+
+                unique_colors, inverse_indices = np.unique(
+                    themed_colors_per_segment, axis=0, return_inverse=True
+                )
+
+                for i, color in enumerate(unique_colors):
+                    ctx.set_source_rgba(*color)
+                    segment_indices = np.where(inverse_indices == i)[0]
+                    for seg_idx in segment_indices:
+                        start, end = powered_v[seg_idx]
+                        ctx.move_to(start[0], start[1])
+                        ctx.line_to(end[0], end[1])
+                    ctx.stroke()
+
+            if show_travel and artifact.vertex_data:
+                # Draw Travel Moves
+                if artifact.vertex_data.travel_vertices.size > 0:
+                    travel_v = artifact.vertex_data.travel_vertices.reshape(
+                        -1, 2, 3
+                    )
+                    ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
+                    for start, end in travel_v:
+                        ctx.move_to(start[0], start[1])
+                        ctx.line_to(end[0], end[1])
+                    ctx.stroke()
+
+                # Draw Zero-Power Moves
+                if artifact.vertex_data.zero_power_vertices.size > 0:
+                    zero_v = artifact.vertex_data.zero_power_vertices.reshape(
+                        -1, 2, 3
+                    )
+                    ctx.set_source_rgba(
+                        *self._color_set.get_rgba("zero_power")
+                    )
+                    for start, end in zero_v:
+                        ctx.move_to(start[0], start[1])
+                        ctx.line_to(end[0], end[1])
+                    ctx.stroke()
+
+            ctx.restore()
 
         ctx.restore()
 
@@ -1350,7 +1382,16 @@ class WorkPieceElement(CanvasElement):
         if not artifact.texture_data:
             return
 
-        world_w, world_h = self.data.size
+        # Use artifact dimensions for normalization to ensure correctness
+        # even if the current model size differs.
+        if artifact.is_scalable and artifact.source_dimensions:
+            world_w, world_h = artifact.source_dimensions
+        else:
+            world_w, world_h = artifact.generation_size
+
+        if world_w < 1e-9 or world_h < 1e-9:
+            return
+
         texture = self._texture_surfaces.get(step.uid)
 
         # The expensive generation is done asynchronously. This method

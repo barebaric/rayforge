@@ -325,6 +325,7 @@ class Rasterizer(OpsProducer):
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=workpiece.size,
         )
 
     def is_vector_producer(self) -> bool:

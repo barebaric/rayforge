@@ -50,6 +50,7 @@ def mock_artifact_cache():
         is_scalable=True,
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
+        generation_size=(10, 10),
         shm_name="dummy_wp_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",

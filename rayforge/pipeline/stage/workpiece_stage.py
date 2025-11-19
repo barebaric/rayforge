@@ -85,9 +85,11 @@ class WorkPiecePipelineStage(PipelineStage):
         }
         cached_pairs = self._artifact_cache.get_all_workpiece_keys()
 
+        # Clean up artifacts for (step, workpiece) pairs that no longer exist
         for s_uid, w_uid in cached_pairs - all_current_pairs:
             self._cleanup_entry((s_uid, w_uid))
 
+        # Check all valid pairs and generate artifacts for those that are stale
         for layer in doc.layers:
             if layer.workflow is None:
                 continue
@@ -96,54 +98,32 @@ class WorkPiecePipelineStage(PipelineStage):
                     if self._is_stale(step, workpiece):
                         self._launch_task(step, workpiece)
 
-    def on_workpiece_transform_changed(self, workpiece: "WorkPiece"):
-        """
-        Handles transform changes. Invalidates non-scalable artifacts only
-        if their size has changed, as position/rotation do not affect the
-        base artifact generation for rasters.
-        """
-        if not workpiece.layer or not workpiece.layer.workflow:
-            return
-        for step in workpiece.layer.workflow.steps:
-            key = (step.uid, workpiece.uid)
-            handle = self._artifact_cache.get_workpiece_handle(*key)
-
-            # Guard clauses for clarity
-            if not handle or handle.is_scalable:
-                continue
-
-            # If the size is still close enough, the artifact is valid.
-            if self._sizes_are_close(handle.generation_size, workpiece.size):
-                continue
-
-            # If we reach here, the artifact is non-scalable and its size has
-            # meaningfully changed. Invalidate it.
-            logger.debug(
-                f"Invalidating non-scalable artifact for {key} due to size "
-                f"change from {handle.generation_size} to {workpiece.size}."
-            )
-            self._cleanup_entry(key)
-
     def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
         """
         Checks if the artifact for a (step, workpiece) pair is missing
-        or invalid (e.g., due to a size change on a non-scalable item).
+        or invalid.
         """
         handle = self._artifact_cache.get_workpiece_handle(
             step.uid, workpiece.uid
         )
         if handle is None:
+            # Artifact is missing, so it's stale.
             return True
 
-        if isinstance(handle, WorkPieceArtifactHandle):
-            if not handle.is_scalable:
-                # A non-scalable artifact is stale if its generation size
-                # doesn't match the workpiece's current size (within
-                # tolerance).
-                if not self._sizes_are_close(
-                    handle.generation_size, workpiece.size
-                ):
-                    return True
+        # If the artifact's content is scalable (e.g., pure vectors), it does
+        # not need to be regenerated when the workpiece is resized. The
+        # scaling is applied dynamically by downstream stages.
+        if handle.is_scalable:
+            return False
+
+        # For non-scalable artifacts (like rasters), the content is baked to a
+        # specific size. It IS stale if the workpiece's current size doesn't
+        # match the size it was generated for.
+        if not self._sizes_are_close(handle.generation_size, workpiece.size):
+            return True
+
+        # If we reach here, the artifact exists, is non-scalable, and its
+        # size matches. It is not stale.
         return False
 
     def invalidate_for_step(self, step_uid: str):
@@ -281,13 +261,7 @@ class WorkPiecePipelineStage(PipelineStage):
             get_context().artifact_store.adopt(handle)
 
             if event_name == "artifact_created":
-                # This is now the atomic swap. `put_workpiece_handle` should
-                # return the old handle it replaced.
-                old_handle = self._artifact_cache.put_workpiece_handle(
-                    s_uid, w_uid, handle
-                )
-                if old_handle:
-                    get_context().artifact_store.release(old_handle)
+                self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
                 return
 
             if event_name == "visual_chunk_ready":
@@ -423,14 +397,13 @@ class WorkPiecePipelineStage(PipelineStage):
         if handle is None:
             return None
 
-        if isinstance(handle, WorkPieceArtifactHandle):
-            if not handle.is_scalable:
-                # When fetching an artifact, ensure its generation size
-                # matches the requested size within tolerance.
-                if not self._sizes_are_close(
-                    handle.generation_size, workpiece_size
-                ):
-                    return None
+        # For non-scalable artifacts, the generation size must match.
+        # For scalable artifacts, this check is skipped.
+        if not handle.is_scalable:
+            if not self._sizes_are_close(
+                handle.generation_size, workpiece_size
+            ):
+                return None
 
         artifact = get_context().artifact_store.get(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None

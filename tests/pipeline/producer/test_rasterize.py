@@ -14,6 +14,7 @@ from rayforge.core.ops import (
 )
 from unittest.mock import MagicMock
 from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture
@@ -50,6 +51,15 @@ def checkerboard_surface():
             ctx.rectangle(i, j, 1, 1)
             ctx.fill()
     return surface
+
+
+@pytest.fixture
+def mock_workpiece() -> WorkPiece:
+    """Returns a mock workpiece with a default size."""
+    wp = WorkPiece(name="test_wp")
+    wp.uid = "wp_test_123"
+    wp.set_size(1.0, 1.0)  # Corresponds to 10x10 surface at 10ppm
+    return wp
 
 
 def test_rasterize_horizontally_white(white_surface):
@@ -109,7 +119,7 @@ def test_rasterizer_run_requires_workpiece(white_surface):
     laser = MagicMock()
     rasterizer = Rasterizer()
     with pytest.raises(ValueError, match="requires a workpiece context"):
-        rasterizer.run(laser, white_surface, (10, 10))
+        rasterizer.run(laser, white_surface, (10, 10), settings={})
 
 
 def test_run_with_empty_surface_returns_empty_ops():
@@ -117,46 +127,49 @@ def test_run_with_empty_surface_returns_empty_ops():
     empty_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
     laser = MagicMock()
     rasterizer = Rasterizer()
-    mock_workpiece = MagicMock(uid="wp_123")
+    mock_workpiece = WorkPiece(name="wp_123")
+    mock_workpiece.uid = "wp_123"
+    mock_workpiece.set_size(0, 0)
     artifact = rasterizer.run(
-        laser, empty_surface, (10, 10), workpiece=mock_workpiece
+        laser, empty_surface, (10, 10), workpiece=mock_workpiece, settings={}
     )
     assert len(artifact.ops.commands) == 2  # Start, End
     assert isinstance(artifact.ops.commands[0], OpsSectionStartCommand)
     assert isinstance(artifact.ops.commands[1], OpsSectionEndCommand)
 
 
-def test_rasterizer_run_wraps_ops_in_section_markers(white_surface):
+def test_rasterizer_run_wraps_ops_in_section_markers(
+    white_surface, mock_workpiece
+):
     """
     Even with an empty result from a white surface, the output should be
     correctly wrapped.
     """
     laser = MagicMock()
     rasterizer = Rasterizer()
-    mock_workpiece = MagicMock(uid="wp_123")
     artifact = rasterizer.run(
-        laser, white_surface, (10, 10), workpiece=mock_workpiece
+        laser, white_surface, (10, 10), workpiece=mock_workpiece, settings={}
     )
     assert len(artifact.ops.commands) == 2  # Start, End
     start_cmd, end_cmd = artifact.ops.commands[0], artifact.ops.commands[1]
     assert isinstance(start_cmd, OpsSectionStartCommand)
     assert start_cmd.section_type == SectionType.RASTER_FILL
-    assert start_cmd.workpiece_uid == "wp_123"
+    assert start_cmd.workpiece_uid == "wp_test_123"
     assert isinstance(end_cmd, OpsSectionEndCommand)
     assert end_cmd.section_type == SectionType.RASTER_FILL
 
 
-def test_rasterizer_cross_hatch(black_surface):
+def test_rasterizer_cross_hatch(black_surface, mock_workpiece):
     """Tests the Rasterizer class with cross-hatch enabled."""
     laser = MagicMock()
     laser.spot_size_mm = (0.1, 0.1)
-    workpiece = MagicMock()
-    workpiece.uid = "test_workpiece"
-    workpiece.bbox = (0, 0, 10, 10)
-
     rasterizer = Rasterizer(cross_hatch=True)
     artifact = rasterizer.run(
-        laser, black_surface, pixels_per_mm=(10, 10), workpiece=workpiece
+        laser,
+        black_surface,
+        pixels_per_mm=(10, 10),
+        workpiece=mock_workpiece,
+        settings={},
     )
 
     horizontal_lines = 0

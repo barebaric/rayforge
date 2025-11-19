@@ -34,6 +34,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             is_scalable=True,
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=(10, 10),
+            generation_size=(10, 10),
         )
         self.mock_artifact_cache.get_workpiece_handle.return_value = (
             source_handle
@@ -72,6 +73,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             is_scalable=True,
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=(10, 10),
+            generation_size=(10, 10),
         )
         self.mock_artifact_cache.get_workpiece_handle.return_value = (
             source_handle

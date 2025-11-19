@@ -17,13 +17,13 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
         # Required arguments
         is_scalable: bool,
         source_coordinate_system_name: str,
-        source_dimensions: Optional[Tuple[float, float]],
+        generation_size: Tuple[float, float],
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
         # Optional arguments
+        source_dimensions: Optional[Tuple[float, float]] = None,
         array_metadata: Optional[Dict[str, Any]] = None,
-        generation_size: Optional[Tuple[float, float]] = None,
         dimensions_mm: Optional[Tuple[float, float]] = None,
         position_mm: Optional[Tuple[float, float]] = None,
         **_kwargs,
@@ -53,10 +53,10 @@ class WorkPieceArtifact(BaseArtifact):
         ops: "Ops",
         is_scalable: bool,
         source_coordinate_system: CoordinateSystem,
+        generation_size: Tuple[float, float],
         source_dimensions: Optional[Tuple[float, float]] = None,
         vertex_data: Optional[VertexData] = None,
         texture_data: Optional[TextureData] = None,
-        generation_size: Optional[Tuple[float, float]] = None,
     ):
         super().__init__()
         self.ops = ops
@@ -65,7 +65,7 @@ class WorkPieceArtifact(BaseArtifact):
         self.source_dimensions = source_dimensions
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_data: Optional[TextureData] = texture_data
-        self.generation_size: Optional[Tuple[float, float]] = generation_size
+        self.generation_size = generation_size
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
@@ -74,9 +74,8 @@ class WorkPieceArtifact(BaseArtifact):
             "is_scalable": self.is_scalable,
             "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
+            "generation_size": self.generation_size,
         }
-        if self.generation_size:
-            result["generation_size"] = self.generation_size
         if self.vertex_data:
             result["vertex_data"] = self.vertex_data.to_dict()
         if self.texture_data:
@@ -96,9 +95,8 @@ class WorkPieceArtifact(BaseArtifact):
                 data["source_coordinate_system"]
             ],
             "source_dimensions": data.get("source_dimensions"),
+            "generation_size": tuple(data["generation_size"]),
         }
-        if "generation_size" in data:
-            common_args["generation_size"] = tuple(data["generation_size"])
         if "vertex_data" in data:
             common_args["vertex_data"] = VertexData.from_dict(
                 data["vertex_data"]
