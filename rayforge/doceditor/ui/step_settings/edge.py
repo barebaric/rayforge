@@ -83,6 +83,40 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         offset_adj.set_value(producer.path_offset_mm)
         self.add(self.offset_row)
 
+        # Threshold Override Toggle
+        self.override_switch_row = Adw.SwitchRow(
+            title=_("Rescan Content"),
+            subtitle=_(
+                "Ignore source geometry and re-trace within the workpiece"
+            ),
+        )
+        self.override_switch_row.set_active(producer.override_threshold)
+        self.add(self.override_switch_row)
+
+        # Threshold Slider (using ActionRow + Gtk.Scale)
+        self.threshold_row = Adw.ActionRow(
+            title=_("Tracing Threshold"),
+            subtitle=_("Brightness level (0.0-1.0) to define edges"),
+        )
+
+        threshold_adj = Gtk.Adjustment(
+            lower=0.0,
+            upper=1.0,
+            step_increment=0.01,
+            page_increment=0.1,
+        )
+        threshold_adj.set_value(producer.threshold)
+
+        self.threshold_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            adjustment=threshold_adj,
+            digits=2,
+            draw_value=True,
+        )
+        self.threshold_scale.set_size_request(150, -1)  # Ensure it has width
+        self.threshold_row.add_suffix(self.threshold_scale)
+        self.add(self.threshold_row)
+
         # Connect signals
         switch_row.connect(
             "notify::active",
@@ -99,8 +133,20 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         cut_side_row.connect("notify::selected", self._on_cut_side_changed)
         cut_order_row.connect("notify::selected", self._on_cut_order_changed)
 
+        self.override_switch_row.connect(
+            "notify::active", self._on_override_changed
+        )
+        self.threshold_scale.connect(
+            "value-changed",
+            lambda s: self._debounce(
+                self._on_param_changed, "threshold", s.get_value()
+            ),
+        )
+
         # Set initial sensitivity
         self._update_offset_sensitivity(producer.cut_side)
+        self._update_threshold_sensitivity(producer.override_threshold)
+
         cut_side_row.connect(
             "notify::selected",
             lambda r, _: self._update_offset_sensitivity(
@@ -110,6 +156,10 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _update_offset_sensitivity(self, cut_side: CutSide):
         self.offset_row.set_sensitive(cut_side != CutSide.CENTERLINE)
+
+    def _update_threshold_sensitivity(self, active: bool):
+        # Disable the entire ActionRow which contains the slider
+        self.threshold_row.set_sensitive(active)
 
     def _on_param_changed(self, key: str, new_value: Any):
         params_dict = self.target_dict.setdefault("params", {})
@@ -130,3 +180,8 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         selected_idx = row.get_selected()
         new_mode = list(CutOrder)[selected_idx]
         self._on_param_changed("cut_order", new_mode.name)
+
+    def _on_override_changed(self, row, _):
+        active = row.get_active()
+        self._update_threshold_sensitivity(active)
+        self._on_param_changed("override_threshold", active)

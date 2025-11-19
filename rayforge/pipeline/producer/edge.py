@@ -5,6 +5,7 @@ from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix
 from ...core.ops import Ops, SectionType
+from ...core.vectorization_spec import TraceSpec
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
@@ -36,6 +37,8 @@ class EdgeTracer(OpsProducer):
         path_offset_mm: float = 0.0,
         cut_side: CutSide = CutSide.OUTSIDE,
         cut_order: CutOrder = CutOrder.INSIDE_OUTSIDE,
+        override_threshold: bool = False,
+        threshold: float = 0.5,
     ):
         """
         Initializes the EdgeTracer.
@@ -46,12 +49,24 @@ class EdgeTracer(OpsProducer):
             path_offset_mm: An absolute distance to offset the generated path.
             cut_side: The rule for determining the final cut side.
             cut_order: The processing order for nested paths.
+            override_threshold: If True, ignores source vectors and re-traces
+                                the rendered surface.
+            threshold: The brightness threshold (0.0-1.0) for re-tracing.
         """
         super().__init__()
         self.remove_inner_paths = remove_inner_paths
         self.path_offset_mm = path_offset_mm
         self.cut_side = cut_side
         self.cut_order = cut_order
+        self.override_threshold = override_threshold
+        self.threshold = threshold
+
+    @property
+    def requires_full_render(self) -> bool:
+        # If we are overriding the threshold, we rely on the tracer, which
+        # operates on a raster surface. We must force the pipeline to
+        # render one.
+        return self.override_threshold
 
     def run(
         self,
@@ -79,24 +94,48 @@ class EdgeTracer(OpsProducer):
 
         # 2. Get base contours and determine the correct scaling matrix
         base_contours = []
-        is_vector_source = (
+
+        # Check if we have source vectors.
+        has_vector_source = (
             workpiece
             and workpiece.boundaries
             and not workpiece.boundaries.is_empty()
         )
-        if is_vector_source:
+
+        # If override_threshold is True, we SKIP the vector source and fall
+        # through to the raster tracing logic below.
+        if has_vector_source and not self.override_threshold:
             assert workpiece.boundaries
             base_contours = workpiece.boundaries.split_into_contours()
             sx, sy = workpiece.matrix.get_abs_scale()
             scaling_matrix = Matrix.scale(sx, sy)
-        elif surface:  # Fall back to raster tracing if a surface is provided
-            base_contours = trace_surface(surface)
+        elif surface:
+            # Fall back to raster tracing if no vectors OR if override
+            # is active
+            spec = None
+            if self.override_threshold:
+                # Create a spec to force the specific threshold
+                spec = TraceSpec(
+                    threshold=self.threshold,
+                    auto_threshold=False,
+                    invert=False,
+                )
+
+            base_contours = trace_surface(surface, vectorization_spec=spec)
+
             width_mm, height_mm = workpiece.size
             px_width, px_height = surface.get_width(), surface.get_height()
             if px_width > 0 and px_height > 0:
                 scale_x = width_mm / px_width
                 scale_y = height_mm / px_height
-                scaling_matrix = Matrix.scale(scale_x, -scale_y)
+
+                # Pixels are Y-down (Top-Left 0,0). World is Y-up.
+                # 1. Scale Y by negative to flip axis.
+                # 2. Translate Y by +height_mm to move the now-negative shape
+                #    back up into the positive quadrant.
+                scaling_matrix = Matrix.translation(
+                    0, height_mm
+                ) @ Matrix.scale(scale_x, -scale_y)
             else:
                 scaling_matrix = Matrix.identity()
         else:
@@ -112,7 +151,7 @@ class EdgeTracer(OpsProducer):
         # 4. Normalize.
         target_contours = []
         if mm_space_contours:
-            if is_vector_source:
+            if has_vector_source and not self.override_threshold:
                 # For direct vector sources, trust the input and don't
                 # perform polygon cleaning, which would discard open paths.
                 target_contours = mm_space_contours
@@ -224,6 +263,8 @@ class EdgeTracer(OpsProducer):
                 "path_offset_mm": self.path_offset_mm,
                 "cut_side": self.cut_side.name,
                 "cut_order": self.cut_order.name,
+                "override_threshold": self.override_threshold,
+                "threshold": self.threshold,
             },
         }
 
@@ -252,4 +293,6 @@ class EdgeTracer(OpsProducer):
             ),
             cut_side=cut_side,
             cut_order=cut_order,
+            override_threshold=params.get("override_threshold", False),
+            threshold=params.get("threshold", 0.5),
         )
