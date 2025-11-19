@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Dict, Any, List, Optional, Tuple
+from copy import deepcopy
 
 from .geo import Geometry
 from .vectorization_spec import VectorizationSpec
@@ -67,3 +68,22 @@ class SourceAssetSegment:
             width_mm=data.get("width_mm", 0.0),
             height_mm=data.get("height_mm", 0.0),
         )
+
+    def clone_with_geometry(
+        self, new_geometry: Geometry
+    ) -> "SourceAssetSegment":
+        """
+        Creates a deep copy of this segment but replaces the mask geometry.
+
+        This is essential for splitting operations. It ensures the new segment
+        is independent (deep copied mutable fields) and does not carry the
+        memory overhead of the parent's potentially large geometry.
+        """
+        # Use dataclasses.replace for a shallow copy of scalar fields
+        new_segment = replace(self, segment_mask_geometry=new_geometry)
+
+        # Manually deepcopy mutable fields to ensure independence
+        new_segment.image_modifier_chain = deepcopy(self.image_modifier_chain)
+        new_segment.vectorization_spec = deepcopy(self.vectorization_spec)
+
+        return new_segment
