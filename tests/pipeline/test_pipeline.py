@@ -4,6 +4,7 @@ import numpy as np
 from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
+import threading
 from rayforge.shared.tasker.task import Task
 from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
@@ -40,7 +41,8 @@ logger = logging.getLogger(__name__)
 @pytest.fixture
 def mock_task_mgr():
     """
-    Creates a MagicMock for the TaskManager that is "event-loop-aware".
+    Creates a MagicMock for the TaskManager that executes scheduled tasks
+    mmediately.
     """
     mock_mgr = MagicMock()
     created_tasks_info = []
@@ -64,18 +66,52 @@ def mock_task_mgr():
         created_tasks_info.append(task)
         return mock_returned_task
 
-    # Make scheduled calls run immediately
+    # Execute scheduled callbacks synchronously. This simplifies testing by
+    # removing one layer of asynchronous indirection (the thread dispatch).
     def schedule_awarely(callback, *args, **kwargs):
-        try:
-            loop = asyncio.get_running_loop()
-            loop.call_soon(callback, *args, **kwargs)
-        except RuntimeError:
-            callback(*args, **kwargs)
+        callback(*args, **kwargs)
 
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
     mock_mgr.schedule_on_main_thread = MagicMock(side_effect=schedule_awarely)
     mock_mgr.created_tasks = created_tasks_info
     return mock_mgr
+
+
+@pytest.fixture(autouse=True)
+def zero_debounce_delay(monkeypatch):
+    """
+    Sets the pipeline's debouncing delay to 0ms for all tests in this file.
+    Combined with mock_threading_timer, this effectively makes logic
+    synchronous.
+    """
+    monkeypatch.setattr(Pipeline, "RECONCILIATION_DELAY_MS", 0)
+
+
+@pytest.fixture(autouse=True)
+def mock_threading_timer(monkeypatch):
+    """
+    Mocks threading.Timer to execute synchronously.
+    This ensures that pipeline reconciliation runs immediately when triggered,
+    eliminating race conditions in tests.
+    """
+
+    class SyncTimer:
+        def __init__(self, interval, function, args=None, kwargs=None):
+            self.interval = interval
+            self.function = function
+            self.args = args or []
+            self.kwargs = kwargs or {}
+            self._cancelled = False
+
+        def start(self):
+            # Execute immediately if not cancelled
+            if not self._cancelled:
+                self.function(*self.args, **self.kwargs)
+
+        def cancel(self):
+            self._cancelled = True
+
+    monkeypatch.setattr(threading, "Timer", SyncTimer)
 
 
 @pytest.fixture
@@ -316,7 +352,8 @@ class TestPipeline:
         # Assert
         assert pipeline.get_ops(step, real_workpiece) is None
 
-    def test_step_change_triggers_full_regeneration(
+    @pytest.mark.asyncio
+    async def test_step_change_triggers_full_regeneration(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -339,13 +376,11 @@ class TestPipeline:
             mock_task_mgr.run_process.reset_mock()
 
             # Act
-            # Change a property on the step. This would normally fire a signal.
             step.power = 0.5
-            # Manually call the signal handler to simulate the pipeline's
-            # correct reaction to a step update.
             pipeline._on_descendant_updated(
                 sender=step, origin=step, parent_of_origin=layer.workflow
             )
+            await asyncio.sleep(0)  # Allow debounced task to run
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -358,7 +393,8 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_workpiece_transform_change_triggers_step_assembly(
+    @pytest.mark.asyncio
+    async def test_workpiece_transform_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -381,8 +417,7 @@ class TestPipeline:
 
             # Act
             real_workpiece.pos = (50, 50)
-            # This change fires a signal that the pipeline handles,
-            # so we don't need to do anything else to trigger it.
+            await asyncio.sleep(0)  # Allow debounced task to run
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -395,7 +430,8 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_multipass_change_triggers_step_assembly(
+    @pytest.mark.asyncio
+    async def test_multipass_change_triggers_step_assembly(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -420,6 +456,7 @@ class TestPipeline:
             # Act
             step.per_step_transformers_dicts = []
             pipeline._on_job_assembly_invalidated(sender=doc)
+            await asyncio.sleep(0)  # Allow debounced task to run
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -432,7 +469,8 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_workpiece_size_change_triggers_regeneration(
+    @pytest.mark.asyncio
+    async def test_workpiece_size_change_triggers_regeneration(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -455,7 +493,7 @@ class TestPipeline:
 
             # Act
             real_workpiece.set_size(10, 10)
-            # This change fires a signal that the pipeline handles.
+            await asyncio.sleep(0)  # Allow debounced task to run
 
             # Assert
             tasks = mock_task_mgr.created_tasks
@@ -577,7 +615,8 @@ class TestPipeline:
         # Assert - should not be busy anymore
         assert pipeline.is_busy is False
 
-    def test_pause_resume_functionality(
+    @pytest.mark.asyncio
+    async def test_pause_resume_functionality(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -600,11 +639,13 @@ class TestPipeline:
         # Resume the pipeline
         pipeline.resume()
         assert pipeline.is_paused is False
+        await asyncio.sleep(0)  # Allow debounced task to run
 
         # Assert - reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
-    def test_paused_context_manager(
+    @pytest.mark.asyncio
+    async def test_paused_context_manager(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         # Arrange
@@ -625,6 +666,7 @@ class TestPipeline:
 
         # Assert - should be resumed after context
         assert pipeline.is_paused is False
+        await asyncio.sleep(0)  # Allow debounced task to run
         # Reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
@@ -1258,7 +1300,8 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(wp_handle)
 
-    def test_rapid_step_change_emits_correct_final_signal(
+    @pytest.mark.asyncio
+    async def test_rapid_step_change_emits_correct_final_signal(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         """
@@ -1280,6 +1323,7 @@ class TestPipeline:
         pipeline.workpiece_artifact_ready.connect(mock_signal_handler)
 
         # Act 1: The initial pipeline creation starts the first task.
+        await asyncio.sleep(0)
         mock_task_mgr.run_process.assert_called_once()
         assert len(mock_task_mgr.created_tasks) == 1
         task1_info = mock_task_mgr.created_tasks[0]
@@ -1295,6 +1339,7 @@ class TestPipeline:
         pipeline._on_descendant_updated(
             sender=step, origin=step, parent_of_origin=layer.workflow
         )
+        await asyncio.sleep(0)
 
         # Assert 2: A new task was created, and the old one was cancelled.
         mock_task_mgr.run_process.assert_called_once()
@@ -1356,7 +1401,8 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(handle)
 
-    def test_rapid_invalidation_does_not_corrupt_busy_state(
+    @pytest.mark.asyncio
+    async def test_rapid_invalidation_does_not_corrupt_busy_state(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         """
@@ -1398,6 +1444,7 @@ class TestPipeline:
         # Act 2: Set the doc property. This triggers reconcile_all() and starts
         # task1.
         pipeline.doc = doc
+        await asyncio.sleep(0)
 
         # Assert 2: Pipeline is now busy, and the state change signal was
         # fired.
@@ -1425,6 +1472,7 @@ class TestPipeline:
         pipeline._on_descendant_updated(
             sender=step, origin=step, parent_of_origin=layer.workflow
         )
+        await asyncio.sleep(0)
 
         # Assert 3: A new task was created and the pipeline remains busy,
         # without firing redundant state change signals.
@@ -1493,6 +1541,9 @@ class TestPipeline:
             step_task_obj.get_status.return_value = "completed"
             if step_task_info.when_done:
                 step_task_info.when_done(step_task_obj)
+
+            # Allow the final scheduled state check to run
+            await asyncio.sleep(0)
 
             # Assert 5: The final signals were emitted correctly.
             mock_artifact_ready_handler.assert_called_once()

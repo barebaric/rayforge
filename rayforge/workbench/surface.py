@@ -617,7 +617,7 @@ class WorkSurface(Canvas):
             # Propagate the view change to elements that depend on it.
             for elem in self.find_by_type(WorkPieceElement):
                 wp_view = cast(WorkPieceElement, elem)
-                wp_view.trigger_update()
+                wp_view.trigger_view_update()
                 wp_view.update_handle_transforms()
 
             # Update laser dot size to maintain a constant size in pixels.

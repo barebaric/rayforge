@@ -12,6 +12,7 @@ appropriate pipeline stages.
 from __future__ import annotations
 import logging
 import asyncio
+import threading
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -82,6 +83,8 @@ class Pipeline:
             entire pipeline changes.
     """
 
+    RECONCILIATION_DELAY_MS = 200
+
     def __init__(self, doc: Optional["Doc"], task_manager: "TaskManager"):
         """
         Initializes the Pipeline.
@@ -95,6 +98,9 @@ class Pipeline:
         self._task_manager = task_manager
         self._pause_count = 0
         self._last_known_busy_state = False
+        self._reconciliation_timer: Optional[threading.Timer] = None
+        self._step_invalidation_timer: Optional[threading.Timer] = None
+        self._pending_step_invalidations: set[str] = set()
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -180,6 +186,12 @@ class Pipeline:
         called before application exit to prevent memory leaks.
         """
         logger.debug(f"[{id(self)}] Pipeline shutdown called")
+        if self._reconciliation_timer:
+            self._reconciliation_timer.cancel()
+            self._reconciliation_timer = None
+        if self._step_invalidation_timer:
+            self._step_invalidation_timer.cancel()
+            self._step_invalidation_timer = None
         logger.info("Pipeline shutting down...")
         self._artifact_cache.shutdown()
         self._workpiece_stage.shutdown()
@@ -218,12 +230,44 @@ class Pipeline:
             self._connect_signals()
             self.reconcile_all()
 
+    def _request_step_assembly(self, step_uid: str) -> None:
+        """
+        Schedules a debounced assembly trigger for the given step.
+        """
+        self._pending_step_invalidations.add(step_uid)
+        if self._step_invalidation_timer is None:
+            self._step_invalidation_timer = threading.Timer(
+                0.05, self._on_step_invalidation_timer
+            )
+            self._step_invalidation_timer.start()
+
+    def _on_step_invalidation_timer(self) -> None:
+        self._task_manager.schedule_on_main_thread(
+            self._execute_pending_step_assemblies
+        )
+
+    def _execute_pending_step_assemblies(self) -> None:
+        self._step_invalidation_timer = None
+        if not self._doc:
+            return
+        uids_to_process = list(self._pending_step_invalidations)
+        self._pending_step_invalidations.clear()
+        for uid in uids_to_process:
+            step = self._find_step_by_uid(uid)
+            if step:
+                self._step_stage.mark_stale_and_trigger(step)
+
     @property
     def is_busy(self) -> bool:
-        """Returns True if any pipeline stage is currently running tasks."""
+        """
+        Returns True if the pipeline has pending work (debouncing) or if any
+        pipeline stage is currently running tasks.
+        """
         return (
-            self._workpiece_stage.is_busy
+            self._reconciliation_timer is not None
+            or self._workpiece_stage.is_busy
             or self._step_stage.is_busy
+            or self._step_invalidation_timer is not None
             or self._job_stage.is_busy
             or self._workpiece_view_stage.is_busy
         )
@@ -281,14 +325,14 @@ class Pipeline:
     def resume(self) -> None:
         """
         Decrements the pause counter. If it reaches 0, the pipeline is
-        resumed and reconciles all changes.
+        resumed and schedules a reconciliation of all changes.
         """
         if self._pause_count == 0:
             return
         self._pause_count -= 1
         if self._pause_count == 0:
             logger.debug("Pipeline resumed.")
-            self.reconcile_all()
+            self._schedule_reconciliation()
 
     @contextmanager
     def paused(self) -> Generator[None, None, None]:
@@ -303,6 +347,40 @@ class Pipeline:
     def is_paused(self) -> bool:
         """Returns True if the pipeline is currently paused."""
         return self._pause_count > 0
+
+    def _schedule_reconciliation(self) -> None:
+        """Schedules a debounced call to the reconciliation logic."""
+        if self.is_paused:
+            return
+
+        if self._reconciliation_timer:
+            self._reconciliation_timer.cancel()
+        else:
+            # If there was no timer, we are transitioning from idle to busy.
+            # Immediately update the state.
+            self._task_manager.schedule_on_main_thread(
+                self._check_and_update_processing_state
+            )
+
+        self._reconciliation_timer = threading.Timer(
+            self.RECONCILIATION_DELAY_MS / 1000.0,
+            self._trigger_main_thread_reconciliation,
+        )
+        self._reconciliation_timer.start()
+
+    def _trigger_main_thread_reconciliation(self) -> None:
+        """
+        This is called by the threading.Timer from a background thread.
+        It uses the task manager to run the actual logic on the main thread.
+        """
+        self._task_manager.schedule_on_main_thread(
+            self._execute_reconciliation
+        )
+
+    def _execute_reconciliation(self) -> None:
+        """The debounced method that actually runs reconciliation."""
+        self._reconciliation_timer = None
+        self.reconcile_all()
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
         """Finds a step anywhere in the document by its UID."""
@@ -328,8 +406,7 @@ class Pipeline:
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
         """Handles the addition of a new model object."""
-        if not self.is_paused:
-            self.reconcile_all()
+        self._schedule_reconciliation()
 
     def _on_descendant_removed(
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
@@ -355,8 +432,7 @@ class Pipeline:
                 for step in layer.workflow.steps:
                     self._step_stage.invalidate(step.uid)
 
-        if not self.is_paused:
-            self.reconcile_all()
+        self._schedule_reconciliation()
 
     def _on_descendant_updated(
         self,
@@ -372,8 +448,7 @@ class Pipeline:
         elif isinstance(origin, WorkPiece):
             self._workpiece_stage.invalidate_for_workpiece(origin.uid)
 
-        if not self.is_paused:
-            self.reconcile_all()
+        self._schedule_reconciliation()
 
     def _on_descendant_transform_changed(
         self,
@@ -392,13 +467,18 @@ class Pipeline:
             )
 
         for wp in workpieces_to_check:
-            self._workpiece_stage.on_workpiece_transform_changed(wp)
+            # The WorkPieceArtifact is generated based on its size, not its
+            # position. The reconciliation logic in WorkPiecePipelineStage will
+            # check if the size has changed and invalidate if necessary.
+            # We no longer need to invalidate it eagerly here.
+
+            # The StepArtifact, however, depends on the world-space positions
+            # of all its workpieces, so it must be invalidated.
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
-                    self._step_stage.mark_stale_and_trigger(step)
+                    self._request_step_assembly(step.uid)
 
-        if not self.is_paused:
-            self.reconcile_all()
+        self._schedule_reconciliation()
 
     def _on_job_assembly_invalidated(self, sender: Any) -> None:
         """
@@ -411,9 +491,8 @@ class Pipeline:
             for layer in self.doc.layers:
                 if layer.workflow:
                     for step in layer.workflow.steps:
-                        self._step_stage.mark_stale_and_trigger(step)
-        if not self.is_paused:
-            self.reconcile_all()
+                        self._request_step_assembly(step.uid)
+        self._schedule_reconciliation()
 
     def _on_workpiece_generation_starting(
         self,
@@ -465,7 +544,7 @@ class Pipeline:
         self.workpiece_artifact_ready.send(
             step, workpiece=workpiece, generation_id=generation_id
         )
-        self._step_stage.mark_stale_and_trigger(step)
+        self._request_step_assembly(step.uid)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )

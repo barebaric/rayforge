@@ -133,6 +133,7 @@ class MaterialTestGridProducer(OpsProducer):
                     is_scalable=False,
                     source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
                     source_dimensions=workpiece.size or (0, 0),
+                    generation_size=workpiece.size,
                 )
 
         width_mm, height_mm = workpiece.size
@@ -175,6 +176,7 @@ class MaterialTestGridProducer(OpsProducer):
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(width_mm, height_mm),
+            generation_size=workpiece.size,
         )
 
     @classmethod

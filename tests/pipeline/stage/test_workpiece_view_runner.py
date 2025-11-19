@@ -63,6 +63,7 @@ def vector_artifact_handle(context_initializer):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         vertex_data=VertexData(powered_vertices=verts, powered_colors=colors),
+        generation_size=(20, 20),
     )
     handle = get_context().artifact_store.put(artifact)
     yield handle
@@ -91,6 +92,7 @@ def texture_artifact_handle(context_initializer):
             dimensions_mm=(50.0, 50.0),
             position_mm=(0.0, 0.0),
         ),
+        generation_size=(50, 50),
     )
     handle = get_context().artifact_store.put(artifact)
     yield handle

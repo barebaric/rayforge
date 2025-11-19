@@ -15,6 +15,7 @@ class TestWorkPieceArtifact(unittest.TestCase):
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=(1, 1),
         )
         self.assertEqual(artifact.artifact_type, "WorkPieceArtifact")
 
@@ -57,6 +58,7 @@ class TestWorkPieceArtifact(unittest.TestCase):
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             vertex_data=vertex_data,
+            generation_size=(1, 1),
         )
 
         artifact_dict = artifact.to_dict()
@@ -98,6 +100,7 @@ class TestWorkPieceArtifact(unittest.TestCase):
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             vertex_data=vertex_data,
             texture_data=texture_data,
+            generation_size=(1, 1),
         )
 
         artifact_dict = artifact.to_dict()
