@@ -489,7 +489,7 @@ class WorkPiece(DocItem):
                     h_scale, vscale=v_scale
                 )
 
-        return image_util.normalize_to_rgba(processed_image)
+        return processed_image
 
     def get_vips_image(
         self, width: int, height: int
@@ -996,16 +996,7 @@ class WorkPiece(DocItem):
             if (w * phys_w < 0.1) and (h * phys_h < 0.1):
                 continue
 
-            # 3. Clone the source segment.
-            # We create a clean segment for the shard containing ONLY the
-            # shard's geometry.
-            # This prevents O(N^2) serialization costs where every shard
-            # carries the entire parent geometry to the worker processes.
-            new_segment = (
-                deepcopy(self.source_segment) if self.source_segment else None
-            )
-
-            # 4. Normalize the fragment geometry.
+            # 3. Normalize the fragment geometry.
             # We shift it to (0,0) and scale it to fit a 1x1 box.
             # This becomes the new canonical shape for this piece.
             normalized_frag = frag_geo.copy()
@@ -1014,14 +1005,18 @@ class WorkPiece(DocItem):
             )
             normalized_frag.transform(norm_matrix.to_4x4_numpy())
 
-            if new_segment:
-                # Convert the normalized Y-up geometry to the Y-down format
-                # expected by the SourceAssetSegment storage.
-                # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top)
+            # 4. Create the new segment using the cleaner API.
+            new_segment = None
+            if self.source_segment:
+                # Convert Y-up to Y-down format expected by storage
                 y_down_frag = normalized_frag.copy()
                 flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
                 y_down_frag.transform(flip_matrix.to_4x4_numpy())
-                new_segment.segment_mask_geometry = y_down_frag
+
+                # The clone method to efficiently creates a separate segment
+                new_segment = self.source_segment.clone_with_geometry(
+                    y_down_frag
+                )
 
             # Initialize the new workpiece with the lightweight segment
             new_wp = WorkPiece(self.name, new_segment)

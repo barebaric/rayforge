@@ -232,6 +232,39 @@ class TestWorkPiece:
         assert max_x == pytest.approx(1.0)
         assert max_y == pytest.approx(1.0)
 
+    def test_apply_split_filters_noise(self, workpiece_instance):
+        """
+        Tests that apply_split filters out fragments that are physically
+        microscopic.
+        """
+        wp = workpiece_instance
+        wp.set_size(100, 100)  # 100mm x 100mm
+
+        # 1. Valid component (10mm x 10mm) -> 0.1 x 0.1 in normalized space
+        valid = Geometry()
+        valid.move_to(0, 0)
+        valid.line_to(0.1, 0)
+        valid.line_to(0.1, 0.1)
+        valid.line_to(0, 0.1)
+        valid.close_path()
+
+        # 2. Noise component (0.0005mm x 0.0005mm) -> 0.000005 in normalized
+        # space. Threshold is 0.1mm.
+        noise = Geometry()
+        noise.move_to(0.5, 0.5)
+        noise.line_to(0.500005, 0.5)
+        noise.line_to(0.500005, 0.500005)
+        noise.line_to(0.5, 0.500005)
+        noise.close_path()
+
+        fragments = [valid, noise]
+        new_workpieces = wp.apply_split(fragments)
+
+        assert len(new_workpieces) == 1
+        # Ensure the resulting WP corresponds to the valid fragment
+        # (size ~ 10mm)
+        assert new_workpieces[0].size == pytest.approx((10.0, 10.0))
+
     def test_serialization_with_tabs(self, workpiece_instance):
         """Tests that tabs are correctly serialized and deserialized."""
         wp = workpiece_instance
