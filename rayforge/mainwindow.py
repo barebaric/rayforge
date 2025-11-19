@@ -133,6 +133,8 @@ class MainWindow(Adw.ApplicationWindow):
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
+        # Track active toasts so they can be cleared programmatically
+        self._active_toasts: List[Adw.Toast] = []
 
         # The main content box is now the child of the ToastOverlay
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -396,6 +398,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.transform_initiated.connect(
             self._on_surface_transform_initiated
         )
+        self.surface.transform_end.connect(self._on_surface_transform_end)
 
         # Create and add the status monitor widget.
         self.status_monitor = TaskBar(task_mgr)
@@ -781,13 +784,32 @@ class MainWindow(Adw.ApplicationWindow):
         If 'persistent' is True, the toast will have a dismiss button and
         remain visible until closed.
         """
+        toast = Adw.Toast.new(message)
         if persistent:
-            toast = Adw.Toast.new(message)
             toast.set_timeout(0)  # 0 = persistent
             toast.set_priority(Adw.ToastPriority.HIGH)
-            self.toast_overlay.add_toast(toast)
-        else:
-            self.toast_overlay.add_toast(Adw.Toast.new(message))
+
+        self._add_toast(toast)
+
+    def _add_toast(self, toast: Adw.Toast):
+        """Helper to add a toast to the overlay and track it."""
+        self._active_toasts.append(toast)
+        # Connect to dismissed signal to clean up our reference
+        toast.connect("dismissed", self._on_toast_dismissed)
+        self.toast_overlay.add_toast(toast)
+
+    def _on_toast_dismissed(self, toast):
+        """Removes the toast from the tracking list when dismissed."""
+        if toast in self._active_toasts:
+            self._active_toasts.remove(toast)
+
+    def _on_surface_transform_end(self, sender, *args, **kwargs):
+        """Clears all active toasts from the toast overlay."""
+        logger.debug("Clearing all toasts from overlay.")
+
+        # Iterate over a copy of the list because dismiss() triggers removal
+        for toast in list(self._active_toasts):
+            toast.dismiss()
 
     def _on_assembly_for_preview_finished(
         self,
@@ -1200,7 +1222,8 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""
-        self.toast_overlay.add_toast(Adw.Toast.new(message))
+        toast = Adw.Toast.new(message)
+        self._add_toast(toast)
 
     def on_quit_action(self, action, parameter):
         self.close()
