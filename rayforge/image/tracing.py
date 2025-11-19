@@ -32,12 +32,32 @@ def _get_image_from_surface(
     surface_format = surface.get_format()
     channels = 4 if surface_format == cairo.FORMAT_ARGB32 else 3
     width, height = surface.get_width(), surface.get_height()
+    stride = surface.get_stride()
     buf = surface.get_data()
-    img = (
-        np.frombuffer(buf, dtype=np.uint8)
-        .reshape(height, width, channels)
-        .copy()
-    )
+
+    # Cairo surfaces may have padding at the end of each row (stride).
+    # We must attempt to respect the stride, but fall back to dense reading
+    # if the buffer size doesn't match the stride expectation (common with
+    # manually created surfaces).
+    try:
+        img_data = np.frombuffer(buf, dtype=np.uint8)
+        img_stride_view = img_data.reshape(height, stride)
+        # Slice out the valid bytes: width * 4 bytes (ARGB32 is 4 bytes/px)
+        valid_row_bytes = width * 4
+        img = (
+            img_stride_view[:, :valid_row_bytes]
+            .reshape(height, width, 4)[:, :, :channels]
+            .copy()
+        )
+    except ValueError:
+        # Fallback for cases where buffer is packed dense (no stride padding)
+        # but Cairo reports a default padded stride.
+        img = (
+            np.frombuffer(buf, dtype=np.uint8)
+            .reshape(height, width, channels)
+            .copy()
+        )
+
     return img, channels
 
 
@@ -51,19 +71,28 @@ def _get_boolean_image_from_color(
     using a specified threshold or Otsu's method.
     """
     logger.debug("Entering _get_boolean_image_from_color")
-    border_color = [255] * channels
-    img_with_border = cv2.copyMakeBorder(
-        img,
+
+    # If the input is already a single channel (Alpha), treat it as grayscale
+    if len(img.shape) == 2:
+        gray = img
+    else:
+        # It's BGR or BGRA, convert to grayscale first
+        gray = cv2.cvtColor(
+            img,
+            cv2.COLOR_BGRA2GRAY if channels == 4 else cv2.COLOR_BGR2GRAY,
+        )
+
+    # Add border to the grayscale image directly.
+    # value=[255] ensures a white border on the single-channel image
+    # and satisfies type checkers expecting a Sequence (Scalar).
+    gray_with_border = cv2.copyMakeBorder(
+        gray,
         BORDER_SIZE,
         BORDER_SIZE,
         BORDER_SIZE,
         BORDER_SIZE,
         cv2.BORDER_CONSTANT,
-        value=border_color,
-    )
-    gray = cv2.cvtColor(
-        img_with_border,
-        cv2.COLOR_BGRA2GRAY if channels == 4 else cv2.COLOR_BGR2GRAY,
+        value=[255],
     )
 
     spec = vectorization_spec
@@ -73,7 +102,7 @@ def _get_boolean_image_from_color(
     # Use auto-threshold (Otsu) if requested
     if spec.auto_threshold:
         otsu_threshold, _ = cv2.threshold(
-            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            gray_with_border, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
         threshold_val = otsu_threshold
     else:
@@ -86,7 +115,9 @@ def _get_boolean_image_from_color(
     else:
         threshold_type = cv2.THRESH_BINARY_INV
 
-    _, thresh_img = cv2.threshold(gray, threshold_val, 255, threshold_type)
+    _, thresh_img = cv2.threshold(
+        gray_with_border, threshold_val, 255, threshold_type
+    )
     return thresh_img > 0
 
 
@@ -95,26 +126,45 @@ def prepare_surface(
     vectorization_spec: Optional[VectorizationSpec] = None,
 ) -> np.ndarray:
     """
-    Prepares a Cairo surface for tracing. It handles transparency by
-    compositing onto a white background, then thresholds the result and
-    applies denoising.
+    Prepares a Cairo surface for tracing.
     """
     logger.debug("Entering prepare_surface")
     img, channels = _get_image_from_surface(surface)
 
-    # If the image has an alpha channel, composite it onto a white background
-    # to correctly handle transparency for thresholding.
+    # Handling Transparency for Vectorization:
+    # If the image has an alpha channel and contains actual transparency
+    # (min alpha < 250), we assume the user wants to trace the SHAPE of the
+    # opaque object, regardless of its color.
+    #
+    # In this case, we ignore the RGB colors (which might be white on a
+    # white background) and generate the boolean image from the Alpha channel.
+    use_alpha_channel = False
     if channels == 4 and surface.get_format() == cairo.FORMAT_ARGB32:
-        alpha = img[:, :, 3:4] / 255.0
-        rgb = img[:, :, :3]
-        white_bg = np.full_like(rgb, 255)
-        # Alpha blend the RGB channels with white
-        img = (rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8)
-        channels = 3  # The image is now effectively 3-channel
+        alpha = img[:, :, 3]
+        if np.min(alpha) < 250:
+            use_alpha_channel = True
 
-    # Now, with transparency handled, we can always use the color path.
+    if use_alpha_channel:
+        # Extract Alpha
+        alpha = img[:, :, 3]
+        # We invert Alpha so that Opaque (255) becomes Black (0) and
+        # Transparent (0) becomes White (255). This matches the
+        # "Ink on Paper" expectation of the thresholding logic.
+        img_for_threshold = 255 - alpha
+        # Effectively single channel
+        channels = 1
+    else:
+        # Standard Color/B&W image logic.
+        # If there is an alpha channel but it's fully opaque, we just use RGB.
+        if channels == 4:
+            # Drop alpha channel if it exists but isn't used for transparency
+            img_for_threshold = img[:, :, :3]
+            channels = 3
+        else:
+            img_for_threshold = img
+
     boolean_image = _get_boolean_image_from_color(
-        img, channels, vectorization_spec
+        img_for_threshold, channels, vectorization_spec
     )
 
     return denoise_boolean_image(boolean_image)
@@ -538,8 +588,9 @@ def _handle_oversized_image(
     )
 
     img_uint8 = image.astype(np.uint8) * 255
+    # Use INTER_AREA to prevent loss of thin features during downscaling
     resized_img = cv2.resize(
-        img_uint8, (new_w, new_h), interpolation=cv2.INTER_NEAREST
+        img_uint8, (new_w, new_h), interpolation=cv2.INTER_AREA
     )
     image_to_trace = resized_img > 127
 
