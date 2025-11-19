@@ -208,6 +208,28 @@ class WorkPiece(DocItem):
         return self._boundaries_cache
 
     @property
+    def _boundaries_y_down(self) -> Optional[Geometry]:
+        """
+        Internal helper to get the appropriate Y-DOWN normalized geometry
+        for use in image masking, which operates in a Y-down pixel space.
+        """
+        # Case 1: An edit (like a split) has occurred. The authoritative
+        # geometry is `_edited_boundaries`, which is Y-UP. We must flip it.
+        if self._edited_boundaries is not None:
+            y_down_geo = self._edited_boundaries.copy()
+            # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top)
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            y_down_geo.transform(flip_matrix.to_4x4_numpy())
+            return y_down_geo
+
+        # Case 2: No edits. The authoritative geometry is the one stored
+        # in the source segment, which is already in Y-DOWN format.
+        if self.source_segment:
+            return self.source_segment.segment_mask_geometry
+
+        return None
+
+    @property
     def tabs(self) -> List[Tab]:
         """The list of Tab objects for this workpiece."""
         return self._tabs
@@ -447,10 +469,10 @@ class WorkPiece(DocItem):
                 return None
 
         # 2. Apply Mask
-        # Use boundaries property which respects _edited_boundaries
-        if self.boundaries and not self.boundaries.is_empty():
+        mask_geo = self._boundaries_y_down
+        if mask_geo and not mask_geo.is_empty():
             processed_image = image_util.apply_mask_to_vips_image(
-                processed_image, self.boundaries
+                processed_image, mask_geo
             )
             if not processed_image:
                 return None
