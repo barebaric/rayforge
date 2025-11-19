@@ -491,11 +491,11 @@ class WorkPieceElement(CanvasElement):
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
     ):
         """Handler for when ops generation for a step begins."""
+        if workpiece is not self.data:
+            return
         logger.debug(
             f"START _on_ops_generation_starting for step '{sender.uid}'"
         )
-        if workpiece is not self.data:
-            return
         step_uid = sender.uid
         self._ops_generation_ids[step_uid] = (
             generation_id  # Sets the ID when generation starts.
@@ -513,6 +513,8 @@ class WorkPieceElement(CanvasElement):
         This runs on a background thread, so it schedules the actual work
         on the main thread to prevent UI deadlocks.
         """
+        if workpiece is not self.data:
+            return
         logger.debug(
             f"START _on_ops_generation_finished for step '{sender.uid}'"
         )

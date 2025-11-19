@@ -165,6 +165,7 @@ def setup_logging(loglevel_str: str):
     root_logger.addHandler(ui_handler)
 
     # Silence noisy third-party loggers
+    logging.getLogger("pyvips").setLevel(logging.WARNING)
     logging.getLogger("pyvips.vobject").setLevel(logging.WARNING)
 
     logging.info(f"Logging configured. Console level: {loglevel_str}")

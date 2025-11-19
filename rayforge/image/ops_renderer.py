@@ -124,7 +124,7 @@ class OpsRenderer(Renderer):
             vips_image[2],
             vips_image[3],
         )
-        return r.bandjoin([g, b, a])
+        return r.bandjoin([g, b, a]).copy(interpretation="srgb")
 
 
 OPS_RENDERER = OpsRenderer()

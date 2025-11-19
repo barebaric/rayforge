@@ -107,14 +107,15 @@ class SplitCmd:
                 for piece in new_pieces:
                     # Assign a unique ID to each new piece
                     piece.uid = str(uuid.uuid4())
-                    add_cmd = ListItemCommand(
-                        owner_obj=parent,
-                        item=piece,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                        name=_("Add split fragment"),
-                    )
-                    t.execute(add_cmd)
-                    newly_created_items.append(piece)
+
+                add_cmd = ListItemCommand(
+                    owner_obj=parent,
+                    item=new_pieces,
+                    undo_command="remove_children",
+                    redo_command="add_children",
+                    name=_("Add split fragments"),
+                )
+                t.execute(add_cmd)
+                newly_created_items.extend(new_pieces)
 
         return newly_created_items

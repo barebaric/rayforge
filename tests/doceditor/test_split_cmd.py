@@ -18,11 +18,11 @@ class MockSplitStrategy(SplitStrategy):
     def calculate_fragments(self, workpiece: WorkPiece) -> List[Geometry]:
         g1 = Geometry()
         g1.move_to(0, 0)
-        g1.line_to(0.1, 0.1)
+        g1.line_to(0.2, 0.2)  # Increased size to pass >0.1mm dust filter
 
         g2 = Geometry()
         g2.move_to(0.5, 0.5)
-        g2.line_to(0.6, 0.6)
+        g2.line_to(0.7, 0.7)  # Increased size to pass >0.1mm dust filter
 
         return [g1, g2]
 
