@@ -164,7 +164,7 @@ class TestJpgImporter:
 class TestJpgRenderer:
     def test_get_natural_size(self, color_workpiece: WorkPiece):
         """Test natural size calculation on the renderer."""
-        size = color_workpiece.get_natural_size()
+        size = color_workpiece.natural_size
         assert size is not None
         width_mm, height_mm = size
         expected_width_mm = 300 * (25.4 / 96.0)
@@ -218,7 +218,7 @@ class TestJpgRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.natural_sizes() == (0.0, 0.0)
         assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(

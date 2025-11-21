@@ -273,7 +273,7 @@ class DocItemPropertiesWidget(Expander):
         """Calculates new width and height maintaining aspect ratio."""
         # This now works for both WorkPiece and StockItem via duck-typing.
         aspect_ratio = None
-        if isinstance(item, (WorkPiece, StockItem)):
+        if isinstance(item, (WorkPiece, StockItem, Group)):
             aspect_ratio = item.get_current_aspect_ratio()
 
         if not aspect_ratio:
@@ -418,7 +418,7 @@ class DocItemPropertiesWidget(Expander):
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
         # Check if the primary selected item is a workpiece or stock item
         is_ratio_lockable = self.items and isinstance(
-            self.items[0], (WorkPiece, StockItem)
+            self.items[0], (WorkPiece, StockItem, Group)
         )
         if not is_ratio_lockable:
             # For groups or multi-select, lock-ratio doesn't have a clear
@@ -468,11 +468,18 @@ class DocItemPropertiesWidget(Expander):
 
         items_to_resize = []
         for item in self.items:
-            if not isinstance(item, (WorkPiece, StockItem)):
+            if not isinstance(item, (WorkPiece, StockItem, Group)):
                 continue
             current_size = item.size
             current_width = current_size[0]
-            default_aspect = item.get_natural_aspect_ratio()
+
+            default_aspect = None
+            if isinstance(item, (WorkPiece, StockItem)):
+                default_aspect = item.get_natural_aspect_ratio()
+            elif item.natural_size:
+                nw, nh = item.natural_size
+                default_aspect = nw / nh if nh > 0 else None
+
             if not default_aspect or default_aspect == 0:
                 continue
             new_height = current_width / default_aspect
@@ -486,9 +493,16 @@ class DocItemPropertiesWidget(Expander):
             # This is a limitation of the new command structure.
             # A better approach would be to pass a list of (uid, w, h) tuples.
             first_item = items_to_resize[0]
-            if isinstance(first_item, (WorkPiece, StockItem)):
+            if isinstance(first_item, (WorkPiece, StockItem, Group)):
                 current_width = first_item.size[0]
-                default_aspect = first_item.get_natural_aspect_ratio()
+
+                default_aspect = None
+                if isinstance(first_item, (WorkPiece, StockItem)):
+                    default_aspect = first_item.get_natural_aspect_ratio()
+                elif first_item.natural_size:
+                    nw, nh = first_item.natural_size
+                    default_aspect = nw / nh if nh > 0 else None
+
                 if default_aspect and default_aspect != 0:
                     new_height = current_width / default_aspect
                     self.editor.transform.set_size(
@@ -501,16 +515,14 @@ class DocItemPropertiesWidget(Expander):
     def _on_reset_dimension_clicked(self, button, dimension_to_reset: str):
         if not self.items:
             return
-        machine = get_context().machine
-        bounds = machine.dimensions if machine else default_dim
 
         sizes_to_set = []
         items_to_resize = []
         for item in self.items:
-            if not isinstance(item, (WorkPiece, StockItem)):
+            if not isinstance(item, (WorkPiece, StockItem, Group)):
                 continue
 
-            natural_width, natural_height = item.get_default_size(*bounds)
+            natural_width, natural_height = item.natural_size
             current_width, current_height = item.size
 
             new_width = current_width
@@ -519,13 +531,25 @@ class DocItemPropertiesWidget(Expander):
             if dimension_to_reset == "width":
                 new_width = natural_width
                 if self.fixed_ratio_switch.get_active():
-                    aspect = item.get_natural_aspect_ratio()
+                    aspect = None
+                    if isinstance(item, (WorkPiece, StockItem)):
+                        aspect = item.get_natural_aspect_ratio()
+                    elif item.natural_size:
+                        nw, nh = item.natural_size
+                        aspect = nw / nh if nh > 0 else None
+
                     if aspect and new_width > 1e-9:
                         new_height = new_width / aspect
             else:  # dimension_to_reset == "height"
                 new_height = natural_height
                 if self.fixed_ratio_switch.get_active():
-                    aspect = item.get_natural_aspect_ratio()
+                    aspect = None
+                    if isinstance(item, (WorkPiece, StockItem)):
+                        aspect = item.get_natural_aspect_ratio()
+                    elif item.natural_size:
+                        nw, nh = item.natural_size
+                        aspect = nw / nh if nh > 0 else None
+
                     if aspect and new_height > 1e-9:
                         new_width = new_height * aspect
 
@@ -676,26 +700,40 @@ class DocItemPropertiesWidget(Expander):
         is_single_stockitem = len(self.items) == 1 and isinstance(
             item, StockItem
         )
-        is_single_item_with_size = is_single_workpiece or is_single_stockitem
+        is_single_group = len(self.items) == 1 and isinstance(item, Group)
+        is_single_item_with_size = (
+            is_single_workpiece or is_single_stockitem or is_single_group
+        )
 
         self.source_file_row.set_visible(is_single_workpiece)
-        self.fixed_ratio_switch.set_sensitive(is_single_item_with_size)
+        self.fixed_ratio_switch.set_sensitive(
+            is_single_item_with_size or is_single_group
+        )
         self.reset_width_button.set_sensitive(is_single_item_with_size)
         self.reset_height_button.set_sensitive(is_single_item_with_size)
         self.reset_aspect_button.set_sensitive(is_single_item_with_size)
         self.shear_row.set_visible(not isinstance(item, Group))
 
         if is_single_item_with_size:
-            assert isinstance(item, (WorkPiece, StockItem))
-            machine = get_context().machine
-            bounds = machine.dimensions if machine else default_dim
-            natural_width, natural_height = item.get_default_size(*bounds)
-            self.width_row.set_subtitle(
-                _("Natural: {val:.2f}").format(val=natural_width)
-            )
-            self.height_row.set_subtitle(
-                _("Natural: {val:.2f}").format(val=natural_height)
-            )
+            natural_width, natural_height = None, None
+
+            if isinstance(item, (WorkPiece, StockItem)):
+                machine = get_context().machine
+                bounds = machine.dimensions if machine else default_dim
+                natural_width, natural_height = item.get_default_size(*bounds)
+            elif item.natural_size:
+                natural_width, natural_height = item.natural_size
+
+            if natural_width is not None:
+                self.width_row.set_subtitle(
+                    _("Natural: {val:.2f}").format(val=natural_width)
+                )
+                self.height_row.set_subtitle(
+                    _("Natural: {val:.2f}").format(val=natural_height)
+                )
+            else:
+                self.width_row.set_subtitle("")
+                self.height_row.set_subtitle("")
         else:
             self.width_row.set_subtitle("")
             self.height_row.set_subtitle("")

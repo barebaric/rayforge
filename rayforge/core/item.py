@@ -58,6 +58,8 @@ class DocItem(ABC):
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
 
+        self._natural_size: Tuple[float, float] = (0.0, 0.0)
+
     @property
     def bbox(self) -> Tuple[float, float, float, float]:
         """
@@ -220,6 +222,83 @@ class DocItem(ABC):
         self.matrix = new_local_matrix
 
     @property
+    def natural_size(self) -> Tuple[float, float]:
+        """
+        Returns the natural size (untransformed width and height) of this item.
+
+        For generic items (like Groups), this is the size of the bounding box
+        that encloses all children in the item's local coordinate space,
+        calculated at the time of the last structural change (adding or
+        removing children).
+
+        If an item has no children and provides no intrinsic size (like
+        WorkPiece or StockItem do), this returns None.
+        """
+        return self._natural_size
+
+    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+        """
+        Returns the bounding box of the item in its own local coordinate space
+        (before the local matrix is applied).
+
+        Returns:
+            (min_x, min_y, width, height) or None
+        """
+        if self.natural_size:
+            return (0.0, 0.0, self.natural_size[0], self.natural_size[1])
+        return None
+
+    def _recalculate_natural_size(self):
+        """
+        Recalculates the natural size based on the current children.
+        """
+        if not self.children:
+            self._natural_size = (0.0, 0.0)
+            return
+
+        min_x, min_y = float("inf"), float("inf")
+        max_x, max_y = float("-inf"), float("-inf")
+        has_valid_children = False
+
+        for child in self.children:
+            child_bbox = child.get_local_bbox()
+            if child_bbox is None:
+                continue
+
+            bx, by, bw, bh = child_bbox
+            # The child's local bounds.
+            # We transform these corners to the parent's (self) local space.
+            corners = [
+                (bx, by),
+                (bx + bw, by),
+                (bx + bw, by + bh),
+                (bx, by + bh),
+            ]
+            transformed_corners = [
+                child.matrix.transform_point(c) for c in corners
+            ]
+
+            has_valid_children = True
+            for x, y in transformed_corners:
+                if x < min_x:
+                    min_x = x
+                if x > max_x:
+                    max_x = x
+                if y < min_y:
+                    min_y = y
+                if y > max_y:
+                    max_y = y
+
+        if has_valid_children:
+            self._natural_size = (max_x - min_x, max_y - min_y)
+        else:
+            self._natural_size = (0.0, 0.0)
+
+    def get_current_aspect_ratio(self) -> Optional[float]:
+        w, h = self.size
+        return w / h if h else None
+
+    @property
     def angle(self) -> float:
         """
         The rotation angle (in degrees) of the item.
@@ -361,6 +440,7 @@ class DocItem(ABC):
 
         child.parent = self
         self._connect_child_signals(child)
+        self._recalculate_natural_size()
         self.descendant_added.send(self, origin=child, parent_of_origin=self)
         return child
 
@@ -372,6 +452,7 @@ class DocItem(ABC):
         child.parent = None
         self.descendant_removed.send(self, origin=child, parent_of_origin=self)
         self._disconnect_child_signals(child)
+        self._recalculate_natural_size()
 
     def add_children(
         self, children_to_add: Iterable[DocItem], index: Optional[int] = None
@@ -397,6 +478,7 @@ class DocItem(ABC):
                     # Manually remove from old parent's list without signals
                     child.parent.children.remove(child)
                     child.parent._disconnect_child_signals(child)
+                    child.parent._recalculate_natural_size()
                 except (ValueError, AttributeError):
                     pass  # Failsafe if tree is in an inconsistent state
             child.parent = None
@@ -412,6 +494,7 @@ class DocItem(ABC):
             child.parent = self
             self._connect_child_signals(child)
 
+        self._recalculate_natural_size()
         self.updated.send(self)
 
     def remove_children(self, children_to_remove: Iterable[DocItem]):
@@ -438,6 +521,7 @@ class DocItem(ABC):
             child.parent = None
             self._disconnect_child_signals(child)
 
+        self._recalculate_natural_size()
         self.updated.send(self)
 
     def set_children(self, new_children: Iterable[DocItem]):
@@ -472,6 +556,8 @@ class DocItem(ABC):
             self.descendant_added.send(
                 self, origin=child, parent_of_origin=self
             )
+
+        self._recalculate_natural_size()
 
     def get_depth(self) -> int:
         """

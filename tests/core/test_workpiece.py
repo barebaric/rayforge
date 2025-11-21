@@ -133,7 +133,7 @@ class TestWorkPiece:
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
-        assert new_wp.get_natural_size() == (100.0, 50.0)
+        assert new_wp.natural_size == (100.0, 50.0)
         assert new_wp.source_segment is not None
         assert new_wp.source_segment.source_asset_uid == source.uid
         assert new_wp._edited_boundaries is not None
@@ -599,3 +599,19 @@ class TestWorkPiece:
         expected_direction = (expected_x / norm, expected_y / norm)
 
         assert direction == pytest.approx(expected_direction)
+
+    def test_natural_size_override(self, workpiece_instance):
+        """
+        Tests that WorkPiece.natural_size returns the intrinsic source size
+        and does not change if children are added (which is illegal generally,
+        but the base class mechanism should be ignored).
+        """
+        wp = workpiece_instance
+        assert wp.natural_size == (100.0, 50.0)
+
+        # Even if we add a child (simulating a structural change on DocItem),
+        # WorkPiece should ignore it and return source dims.
+        child = WorkPiece("child")
+        wp.add_child(child)
+
+        assert wp.natural_size == (100.0, 50.0)

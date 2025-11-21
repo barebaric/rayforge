@@ -349,7 +349,7 @@ class WorkPieceElement(CanvasElement):
         except Exception:
             return None  # Transform not invertible
 
-        natural_size = self.data.get_natural_size()
+        natural_size = self.data.natural_size
         if natural_size and None not in natural_size:
             natural_w, natural_h = cast(Tuple[float, float], natural_size)
         else:

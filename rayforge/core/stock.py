@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple
 
 from ..context import get_context
 from .item import DocItem
@@ -38,6 +38,14 @@ class StockItem(DocItem):
             # Set the internal _matrix directly to avoid firing signals during
             # construction, which is good practice.
             self._matrix = Matrix.scale(width, height)
+
+    @property
+    def natural_size(self) -> Tuple[float, float]:
+        """
+        Returns the natural size of the stock item, defined by its
+        internal geometry bounding box.
+        """
+        return self.get_default_size()
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the StockItem to a dictionary."""

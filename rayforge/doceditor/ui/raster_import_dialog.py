@@ -271,8 +271,7 @@ class RasterImportDialog(Adw.Window):
                 )
 
             # Calculate preview dimensions preserving aspect ratio
-            # get_natural_size now returns the Segment dimensions
-            size_mm = workpiece.get_natural_size()
+            size_mm = workpiece.natural_size
             w_mm, h_mm = size_mm if size_mm else (0, 0)
 
             if w_mm <= 0 or h_mm <= 0:
