@@ -143,6 +143,7 @@ def test_workflow_from_dict_ignores_non_step_children():
 
     with patch("rayforge.core.step.Step.from_dict") as mock_step_from_dict:
         mock_step = MagicMock()
+        mock_step.get_local_bbox.return_value = None
         mock_step_from_dict.return_value = mock_step
 
         workflow = Workflow.from_dict(workflow_dict)

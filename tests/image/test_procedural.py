@@ -140,7 +140,7 @@ class TestProceduralRenderer:
         Tests that the renderer can correctly call the size function from the
         workpiece's recipe.
         """
-        size = procedural_workpiece.get_natural_size()
+        size = procedural_workpiece.natural_size
         assert size is not None
         assert size == (MOCK_PARAMS["width"], MOCK_PARAMS["height"])
 
@@ -187,7 +187,7 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.get_natural_size() is None
+        assert wp.natural_sizes() == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_invalid_function_path(self):
@@ -218,7 +218,7 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.get_natural_size() is None
+        assert wp.natural_sizes() == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_function_exception(self):
@@ -249,5 +249,5 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.get_natural_size() is None
+        assert wp.natural_sizes() == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None

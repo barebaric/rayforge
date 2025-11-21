@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import cairo
 from typing import (
@@ -82,6 +83,27 @@ class WorkPiece(DocItem):
 
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
+
+    @property
+    def natural_size(self) -> Tuple[float, float]:
+        """
+        Returns the natural (untransformed) size of the content in mm.
+        Overrides the base class behavior to rely solely on intrinsic source
+        properties, ignoring any children or structural changes.
+        """
+        if self.source_segment and self.source_segment.width_mm > 0:
+            return (
+                self.source_segment.width_mm,
+                self.source_segment.height_mm,
+            )
+        return (0.0, 0.0)
+
+    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+        """
+        WorkPieces are geometrically defined as a unit square (0,0,1,1) that is
+        scaled by their matrix.
+        """
+        return (0.0, 0.0, 1.0, 1.0)
 
     def clear_render_cache(self):
         """
@@ -624,19 +646,14 @@ class WorkPiece(DocItem):
 
         return wp
 
-    def get_natural_size(self) -> Optional[Tuple[float, float]]:
+    def natural_sizes(self) -> Optional[Tuple[float, float]]:
         """
-        Returns the natural (untransformed) size of the content in mm.
+        Legacy method alias. Use property `natural_size` instead.
         """
-        if self.source_segment and self.source_segment.width_mm > 0:
-            return (
-                self.source_segment.width_mm,
-                self.source_segment.height_mm,
-            )
-        return None
+        return self.natural_size
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
-        size = self.get_natural_size()
+        size = self.natural_size
         if size:
             w, h = size
             if w and h and h > 0:
@@ -656,8 +673,8 @@ class WorkPiece(DocItem):
     ) -> Tuple[float, float]:
         """Calculates a sensible default size based on the content's aspect
         ratio and the provided container bounds."""
-        size = self.get_natural_size()
-        if size and None not in size:
+        size = self.natural_size
+        if size and size[0] > 0 and size[1] > 0:
             return cast(Tuple[float, float], size)
 
         aspect = self.get_natural_aspect_ratio()
@@ -671,10 +688,6 @@ class WorkPiece(DocItem):
             width_mm = height_mm * aspect
 
         return width_mm, height_mm
-
-    def get_current_aspect_ratio(self) -> Optional[float]:
-        w, h = self.size
-        return w / h if h else None
 
     def render_to_pixels(
         self, width: int, height: int

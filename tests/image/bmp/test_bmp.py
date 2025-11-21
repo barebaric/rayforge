@@ -315,7 +315,7 @@ class TestBmpRenderer:
     def test_get_natural_size(self, workpiece_fixture, request):
         """Test natural size calculation on the renderer."""
         workpiece = request.getfixturevalue(workpiece_fixture)
-        size = workpiece.get_natural_size()
+        size = workpiece.natural_size
         assert size is not None
         width_mm, height_mm = size
 
@@ -365,5 +365,5 @@ class TestBmpRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert invalid_wp.get_natural_size() is None
+        assert invalid_wp.natural_size == (0.0, 0.0)
         assert invalid_wp.render_to_pixels(100, 100) is None

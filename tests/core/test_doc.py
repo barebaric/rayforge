@@ -246,6 +246,7 @@ def test_doc_from_dict_deserialization():
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
         mock_layer = MagicMock()
+        mock_layer.get_local_bbox.return_value = None
         mock_layer_from_dict.return_value = mock_layer
 
         doc = Doc.from_dict(doc_dict)
@@ -299,6 +300,7 @@ def test_doc_from_dict_with_default_active_layer_index():
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
         mock_layer = MagicMock()
+        mock_layer.get_local_bbox.return_value = None
         mock_layer_from_dict.return_value = mock_layer
 
         doc = Doc.from_dict(doc_dict)

@@ -267,7 +267,7 @@ class TestSvgRenderer:
         assert parse_length("200") == (200.0, "px")
 
     def test_get_natural_size(self, basic_workpiece: WorkPiece):
-        size = basic_workpiece.get_natural_size()
+        size = basic_workpiece.natural_size
         assert size is not None
         assert size[0] == pytest.approx(100.0)
         assert size[1] == pytest.approx(50.0)
@@ -344,4 +344,5 @@ class TestSvgRenderer:
         workpiece.parent = mock_parent
 
         # The renderer should not find a size for a workpiece with no metadata
-        assert workpiece.get_natural_size() is None
+        # Since WorkPiece initialization sets (0.0, 0.0) when size is unknown
+        assert workpiece.natural_size == (0.0, 0.0)

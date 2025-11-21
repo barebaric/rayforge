@@ -431,3 +431,13 @@ def test_group_roundtrip_serialization():
     assert all(
         child.name in ["wp1.svg", "wp2.svg"] for child in restored.children
     )
+
+
+def test_group_aspect_ratio():
+    """Tests that Groups (as DocItems) now have aspect ratio capabilities."""
+    group = Group()
+    # Groups default to identity (1x1 scale), so aspect is 1.0
+    assert group.get_current_aspect_ratio() == pytest.approx(1.0)
+
+    group.matrix = Matrix.scale(100, 50)
+    assert group.get_current_aspect_ratio() == pytest.approx(2.0)

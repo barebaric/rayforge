@@ -33,6 +33,9 @@ def mock_workpiece_with_signals():
     mock_wp.descendant_transform_changed = Signal()
     mock_wp.parent = None
     mock_wp.name = "Mock WP"
+    mock_wp.natural_size = (10.0, 10.0)
+    mock_wp.get_local_bbox.return_value = (0.0, 0.0, 10.0, 10.0)
+    mock_wp.matrix = Matrix.identity()
     return mock_wp
 
 
@@ -292,6 +295,7 @@ def test_layer_from_dict_ignores_unknown_child_types():
         "rayforge.core.workflow.Workflow.from_dict"
     ) as mock_workflow_from_dict:
         mock_workflow = MagicMock()
+        mock_workflow.get_local_bbox.return_value = None
         mock_workflow_from_dict.return_value = mock_workflow
 
         layer = Layer.from_dict(layer_dict)

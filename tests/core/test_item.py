@@ -76,6 +76,7 @@ def test_initialization():
     assert item.children == []
     assert item.matrix == Matrix.identity()
     assert isinstance(item.updated, Signal)
+    assert item.natural_size == (0.0, 0.0)
 
 
 def test_parent_and_doc_properties():
@@ -549,3 +550,90 @@ def test_bulk_operations_fire_single_signal():
     catcher.reset()
     parent.remove_children([])
     assert catcher.call_count == 0
+
+
+def test_current_aspect_ratio():
+    """Tests that aspect ratio is calculated correctly for any DocItem."""
+    item = GroupItem()
+
+    # Case 1: Landscape
+    item.matrix = Matrix.scale(20, 10)
+    assert item.get_current_aspect_ratio() == pytest.approx(2.0)
+
+    # Case 2: Portrait
+    item.matrix = Matrix.scale(10, 20)
+    assert item.get_current_aspect_ratio() == pytest.approx(0.5)
+
+    # Case 3: Zero height (division by zero protection)
+    item.matrix = Matrix.scale(10, 0)
+    assert item.get_current_aspect_ratio() is None
+
+    # Case 4: Zero width (valid 0.0)
+    item.matrix = Matrix.scale(0, 10)
+    assert item.get_current_aspect_ratio() == pytest.approx(0.0)
+
+
+def test_natural_size_behavior(mocker):
+    """
+    Tests the calculation and persistence of natural_size on generic items.
+    """
+    group = GroupItem("G")
+    assert group.natural_size == (0.0, 0.0)
+
+    # Mock children with fixed natural sizes.
+    # We cannot use GroupItem for children unless we mock their natural_size
+    # property because generic items depend on *their* children.
+    # So we mock the property on a DocItem.
+
+    # We must manually attach Mock objects for signals because the spec=DocItem
+    # doesn't cover instance attributes created in __init__.
+    c1 = mocker.Mock(spec=DocItem)
+    c1.updated = mocker.Mock()
+    c1.transform_changed = mocker.Mock()
+    c1.descendant_added = mocker.Mock()
+    c1.descendant_removed = mocker.Mock()
+    c1.descendant_updated = mocker.Mock()
+    c1.descendant_transform_changed = mocker.Mock()
+    c1.natural_size = (10.0, 10.0)
+    c1.get_local_bbox.return_value = (0.0, 0.0, 10.0, 10.0)
+    c1.matrix = Matrix.identity()
+    c1.parent = None
+
+    c2 = mocker.Mock(spec=DocItem)
+    c2.updated = mocker.Mock()
+    c2.transform_changed = mocker.Mock()
+    c2.descendant_added = mocker.Mock()
+    c2.descendant_removed = mocker.Mock()
+    c2.descendant_updated = mocker.Mock()
+    c2.descendant_transform_changed = mocker.Mock()
+    c2.natural_size = (20.0, 5.0)
+    c2.get_local_bbox.return_value = (0.0, 0.0, 20.0, 5.0)
+    c2.matrix = Matrix.translation(15, 0)  # Shifted to right
+    c2.parent = None
+
+    # Add child c1
+    group.add_child(c1)
+    # Natural size should be (10, 10)
+    assert group.natural_size == pytest.approx((10.0, 10.0))
+
+    # Add child c2
+    # c1 rect: (0,0) to (10,10)
+    # c2 rect: (15,0) to (35, 5)
+    # Union: min_x=0, min_y=0, max_x=35, max_y=10
+    # Size: 35 x 10
+    group.add_child(c2)
+    assert group.natural_size == pytest.approx((35.0, 10.0))
+
+    # Test "freeze" behavior: modifying a child's transform should NOT
+    # update the parent's natural_size automatically.
+    c2.matrix = Matrix.translation(100, 100)
+    # natural_size should remain the calculated value at add_child time
+    assert group.natural_size == pytest.approx((35.0, 10.0))
+
+    # Remove a child triggers recalculation
+    group.remove_child(c2)
+    assert group.natural_size == pytest.approx((10.0, 10.0))
+
+    # Empty group
+    group.remove_child(c1)
+    assert group.natural_size == (0.0, 0.0)
