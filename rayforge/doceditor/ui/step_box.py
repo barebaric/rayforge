@@ -66,11 +66,7 @@ class StepBox(Adw.ActionRow):
         # Update title and subtitle
         self.set_title(f"{self.prefix}{self.step.name}")
 
-        power_percent = (
-            int(self.step.power / self.step.max_power * 100)
-            if self.step.max_power
-            else 0
-        )
+        power_percent = int(self.step.power * 100)
         formatted_speed = format_value(self.step.cut_speed, "speed")
         self.set_subtitle(f"{power_percent}% power, {formatted_speed}")
 
