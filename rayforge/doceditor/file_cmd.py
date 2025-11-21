@@ -279,17 +279,11 @@ class FileCmd:
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
         machine_w, machine_h = machine.dimensions
 
-        # Add a margin so items don't touch the edge.
-        # Use 90% of the work area for fitting.
-        margin_factor = 0.90
-        effective_machine_w = machine_w * margin_factor
-        effective_machine_h = machine_h * margin_factor
-
         # 1. Scale to fit if necessary, preserving aspect ratio
         scale_factor = 1.0
-        if bbox_w > effective_machine_w or bbox_h > effective_machine_h:
-            scale_w = effective_machine_w / bbox_w if bbox_w > 1e-9 else 1.0
-            scale_h = effective_machine_h / bbox_h if bbox_h > 1e-9 else 1.0
+        if bbox_w > machine_w or bbox_h > machine_h:
+            scale_w = machine_w / bbox_w if bbox_w > 1e-9 else 1.0
+            scale_h = machine_h / bbox_h if bbox_h > 1e-9 else 1.0
             scale_factor = min(scale_w, scale_h)
 
         if scale_factor < 1.0:
