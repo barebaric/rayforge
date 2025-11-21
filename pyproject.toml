@@ -11,6 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Manufacturing",
 ]
@@ -69,6 +70,9 @@ test = [
     "pytest-mock",
     "pytest-cov", # Add coverage tool
     "pygobject-stubs",
+]
+build = [
+    "pyinstaller>=6.11,<7",
 ]
 
 [tool.pytest.ini_options]

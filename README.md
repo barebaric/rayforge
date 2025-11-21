@@ -67,6 +67,17 @@ For detailed information about developing for Rayforge, including setup instruct
 testing, and contribution guidelines, please see the
 [Developer Documentation](https://rayforge.org/docs/latest/developer/getting-started/).
 
+## macOS build notes
+
+macOS builds rely on Homebrew because libadwaita is not available from the
+conda-forge stack used by the Linux tooling. To prepare a build:
+
+1. Run `scripts/mac_setup.sh --install` to install the native GTK stack
+   (gtk4, libadwaita, libvips, etc.) and write `.mac_env`.
+2. Source the environment with `source .mac_env`.
+3. Build the wheel with `scripts/mac_build.sh`. Pass `--bundle` to also produce
+   a PyInstaller `.app` directory that uses the Homebrew libraries on the host.
+
 ## License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.

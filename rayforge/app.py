@@ -47,14 +47,32 @@ gettext.install("rayforge", locale_dir)
 # --------------------------------------------------------
 # GObject Introspection Repository (gi)
 # --------------------------------------------------------
-# When running in a PyInstaller bundle, we need to set the GI_TYPELIB_PATH
-# environment variable to point to the bundled typelib files.
+# When running in a PyInstaller bundle, point GI to the typelibs we ship.
 if hasattr(sys, "_MEIPASS"):
-    typelib_path = base_dir / "gi" / "repository"
-    logger.info(f"GI_TYPELIB_PATH is {typelib_path}")
-    os.environ["GI_TYPELIB_PATH"] = str(typelib_path)
-    files = [p.name for p in typelib_path.iterdir()]
-    logger.info(f"Files in typelib path: {files}")
+    frameworks_dir = Path(sys._MEIPASS).parent / "Frameworks"
+    bundled_typelibs = frameworks_dir / "gi_typelibs"
+    bundled_gio_modules = frameworks_dir / "gio_modules"
+    lib_path = str(frameworks_dir)
+    existing_dyld = os.environ.get("DYLD_LIBRARY_PATH")
+    os.environ["DYLD_LIBRARY_PATH"] = (
+        lib_path if not existing_dyld else f"{lib_path}:{existing_dyld}"
+    )
+    os.environ.setdefault("DYLD_FALLBACK_LIBRARY_PATH", lib_path)
+    seen = set()
+    candidates = []
+    for path in [bundled_typelibs]:
+        if path.exists():
+            resolved = str(path.resolve())
+            if resolved not in seen:
+                seen.add(resolved)
+                candidates.append(resolved)
+    if candidates:
+        os.environ["GI_TYPELIB_PATH"] = ":".join(candidates)
+        logger.info(f"GI_TYPELIB_PATH is {os.environ['GI_TYPELIB_PATH']}")
+    else:
+        logger.warning("No GI typelibs found for bundled build.")
+    if bundled_gio_modules.exists():
+        os.environ.setdefault("GIO_EXTRA_MODULES", str(bundled_gio_modules))
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):

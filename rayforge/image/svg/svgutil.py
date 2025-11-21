@@ -1,7 +1,6 @@
 import warnings
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Tuple, Optional
 from xml.etree import ElementTree as ET
-import logging
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -9,42 +8,12 @@ with warnings.catch_warnings():
 
 from ..util import parse_length, to_mm
 
-logger = logging.getLogger(__name__)
-
 # A standard fallback conversion factor for pixel units. Corresponds to 96 DPI.
 PPI: float = 96.0
 """Standard Pixels Per Inch, used for fallback conversions."""
 
 MM_PER_PX: float = 25.4 / PPI
 """Conversion factor for pixels to millimeters, based on 96 PPI."""
-
-INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
-SVG_NS = "http://www.w3.org/2000/svg"
-
-# Tags that represent vector geometry
-SHAPE_TAGS = {
-    "path",
-    "rect",
-    "circle",
-    "ellipse",
-    "line",
-    "polyline",
-    "polygon",
-    "text",
-    "image",
-}
-
-
-# Register namespaces to prevent ElementTree from mangling them (ns0:tags)
-try:
-    ET.register_namespace("", SVG_NS)
-    ET.register_namespace("inkscape", INKSCAPE_NS)
-    ET.register_namespace(
-        "sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-    )
-    ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
-except Exception:
-    pass  # Best effort registration
 
 
 def _get_margins_from_data(
@@ -84,21 +53,22 @@ def _get_margins_from_data(
             render_w = measurement_size * aspect_ratio
 
         # 3. Modify SVG for a large, proportional render.
+        # DO NOT set preserveAspectRatio="none", as this causes distortion.
         root.set("width", f"{render_w}px")
         root.set("height", f"{render_h}px")
-        root.set("preserveAspectRatio", "none")
 
         # Create viewBox if it's missing, which is crucial for the renderer
         # to have a coordinate system.
         if not root.get("viewBox"):
             root.set("viewBox", f"0 0 {orig_w} {orig_h}")
 
-        # Add overflow:visible to ensure all geometry, including parts
-        # defined by control points outside the viewBox, is rendered for
-        # accurate margin calculation.
-        root.set("style", "overflow: visible")
+        try:
+            svg_loader = getattr(pyvips.Image, "svgload_buffer")
+        except Exception:
+            # Libvips compiled without SVG loader; skip trimming.
+            return 0.0, 0.0, 0.0, 0.0
 
-        img = pyvips.Image.svgload_buffer(ET.tostring(root))
+        img = svg_loader(ET.tostring(root))
         if img.bands < 4:
             img = img.bandjoin(255)  # Ensure alpha channel for trimming
 
@@ -119,7 +89,13 @@ def _get_margins_from_data(
             (render_w - (left + w)) / render_w,
             (render_h - (top + h)) / render_h,
         )
-    except (pyvips.Error, ET.ParseError, ValueError):
+    except (
+        pyvips.Error,
+        ET.ParseError,
+        ValueError,
+        AttributeError,
+        ModuleNotFoundError,
+    ):
         # Return zero margins if SVG is invalid or processing fails
         return 0.0, 0.0, 0.0, 0.0
 
@@ -183,11 +159,8 @@ def trim_svg(data: bytes) -> bytes:
         root.set("width", f"{new_w_val}{w_unit or 'px'}")
         root.set("height", f"{new_h_val}{h_unit or 'px'}")
 
-        # This attribute forces non-proportional scaling and causes issues
-        # when rendering filtered layers. It's safer to rely on librsvg's
-        # default proportional scaling.
-        if "preserveAspectRatio" in root.attrib:
-            del root.attrib["preserveAspectRatio"]
+        # The content should fill the new view, so set aspect ratio to none
+        root.set("preserveAspectRatio", "none")
 
         return ET.tostring(root)
 
@@ -228,80 +201,3 @@ def get_natural_size(data: bytes) -> Optional[Tuple[float, float]]:
 
     except (ValueError, ET.ParseError):
         return None
-
-
-def _get_local_tag_name(element: ET.Element) -> str:
-    """Robustly gets the local tag name, ignoring any namespace."""
-    return element.tag.rsplit("}", 1)[-1]
-
-
-def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:
-    """
-    Parses the SVG to find top-level groups with IDs, treating them as layers.
-    Also counts the number of geometric elements in each layer.
-    """
-    if not data:
-        return []
-
-    layers = []
-    logger.debug("--- Starting SVG Layer Extraction ---")
-    try:
-        root = ET.fromstring(data)
-        for child in root:
-            tag = _get_local_tag_name(child)
-            layer_id = child.get("id")
-
-            if tag == "g" and layer_id:
-                label = child.get(f"{{{INKSCAPE_NS}}}label") or layer_id
-
-                # Count visual elements recursively to detect empty layers
-                feature_count = 0
-                for elem in child.iter():
-                    if _get_local_tag_name(elem) in SHAPE_TAGS:
-                        feature_count += 1
-
-                layers.append(
-                    {
-                        "id": layer_id,
-                        "name": label,
-                        "count": feature_count,
-                    }
-                )
-                logger.debug(
-                    f"Found layer: ID='{layer_id}', "
-                    f"Name='{label}', Count={feature_count}"
-                )
-    except ET.ParseError as e:
-        logger.error(f"Failed to parse SVG for layer extraction: {e}")
-        return []
-
-    return layers
-
-
-def filter_svg_layers(data: bytes, visible_layer_ids: List[str]) -> bytes:
-    """
-    Returns a modified SVG with only specified top-level groups visible.
-    """
-    if not data:
-        return b""
-
-    try:
-        root = ET.fromstring(data)
-        elements_to_remove = []
-
-        for child in root:
-            tag = _get_local_tag_name(child)
-            if tag == "g":
-                layer_id = child.get("id")
-                # If ID exists AND it is NOT in the visible list, remove it.
-                if layer_id and layer_id not in visible_layer_ids:
-                    elements_to_remove.append(child)
-
-        for elem in elements_to_remove:
-            root.remove(elem)
-
-        # Registering namespaces at module level helps, but ET.tostring
-        # needs to know we want to preserve the environment.
-        return ET.tostring(root, encoding="utf-8")
-    except ET.ParseError:
-        return data
