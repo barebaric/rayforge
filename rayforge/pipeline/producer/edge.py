@@ -154,7 +154,10 @@ class EdgeTracer(OpsProducer):
             if has_vector_source and not self.override_threshold:
                 # For direct vector sources, trust the input and don't
                 # perform polygon cleaning, which would discard open paths.
-                target_contours = mm_space_contours
+                target_contours = contours.normalize_winding_orders(
+                    mm_space_contours
+                )
+
             else:
                 # For raster-traced sources, clean up the contours.
                 target_contours = contours.normalize_winding_orders(
