@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload to PPA
         # Trigger on tags OR main branch push
-        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: |
           CHANGES_FILE=${{ steps.sign_source_package.outputs.changes_file_path }}
           echo "Uploading $CHANGES_FILE to PPA..."
