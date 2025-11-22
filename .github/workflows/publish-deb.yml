@@ -3,7 +3,7 @@ name: Publish .deb to PPA
 on:
   push:
     branches:
-      - "*"
+      - "main"
     tags:
       - "*"
   pull_request:
@@ -53,7 +53,7 @@ jobs:
           rustc
 
       - name: Import GPG key
-        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
@@ -101,35 +101,22 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
 
-      - name: Build Source Package for PPA
-        id: build_source_package
-        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
-        run: |
-          # debuild expects the original tarball in the parent directory (../)
-          mv dist/*.orig.tar.gz ../
-          
-          # Now, build the source package. This creates the .dsc and a _source.changes file.
-          debuild -S -us -uc
-
-          # Find the source changes file created by debuild for signing and uploading
-          CHANGES_FILE=$(find ../ -name "*_source.changes" -type f | head -n 1)
-          if [ -z "$CHANGES_FILE" ]; then
-            echo "::error::Source package build failed, no _source.changes file found."
-            exit 1
-          fi
-          echo "changes_file_path=$CHANGES_FILE" >> $GITHUB_OUTPUT
-
       - name: Sign source package
-        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           KEY_ID: ${{ env.KEY_ID }}
         run: |
-          CHANGES_FILE=${{ steps.build_source_package.outputs.changes_file_path }}
+          CHANGES_FILE=$(find dist -name "*_source.changes" -type f | head -n 1)
+          if [ -z "$CHANGES_FILE" ]; then
+            echo "::error::Source changes file not found in dist/."
+            exit 1
+          fi
           echo "Signing $CHANGES_FILE..."
           echo "$GPG_PASSPHRASE" > /tmp/passphrase.txt
           debsign -p"gpg --batch --yes --pinentry-mode loopback --passphrase-file /tmp/passphrase.txt" -k"$KEY_ID" "$CHANGES_FILE"
           rm /tmp/passphrase.txt
+          echo "changes_file_path=$CHANGES_FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Binary Artifact for Release
         uses: actions/upload-artifact@v4
@@ -138,8 +125,12 @@ jobs:
           path: ${{ steps.build_test_packages.outputs.deb_file_path }}
 
       - name: Upload to PPA
-        if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge' && github.event_name == 'push'
+        if: github.repository == 'barebaric/rayforge' && github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
         run: |
-          CHANGES_FILE=${{ steps.build_source_package.outputs.changes_file_path }}
+          CHANGES_FILE=${{ steps.sign_source_package.outputs.changes_file_path }}
+          # Fallback if output variable isn't set (because outputs belong to steps)
+          if [ -z "$CHANGES_FILE" ]; then
+             CHANGES_FILE=$(find dist -name "*_source.changes" -type f | head -n 1)
+          fi
           echo "Uploading $CHANGES_FILE to PPA..."
           dput ppa:knipknap/rayforge "$CHANGES_FILE"
