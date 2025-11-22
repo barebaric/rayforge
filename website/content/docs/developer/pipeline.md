@@ -15,7 +15,7 @@ graph TD
             direction LR
             A(Single WorkPiece + Step Config);
             A --> B(Modifiers<br/><i>e.g., ToGrayscale</i>);
-            B --> C(Producer<br/><i>e.g., EdgeTracer,<br/>Rasterizer</i>);
+            B --> C(Producer<br/><i>e.g., ContourProducer,<br/>Rasterizer</i>);
             C -- "Creates Artifact" --> D("Toolpaths<br/><i>Ops + Metadata</i>");
             D --> E(Transformers<br/><i>e.g., Tabs,<br/>Smooth</i>);
             E -- "Modifies Ops in-place" --> F(Vertex Encoder);
@@ -87,7 +87,7 @@ create a cached `WorkPieceArtifact`. This artifact contains toolpaths in the
 
 1.  **Modifiers:** (Optional) If the input is a raster image, modifiers
     perform initial image conditioning, such as converting it to grayscale.
-2.  **Producer:** A `Producer` (like `EdgeTracer` or `Rasterizer`) analyzes
+2.  **Producer:** A `Producer` (like `ContourProducer` or `Rasterizer`) analyzes
     the input and creates the raw toolpaths (`Ops`) and metadata.
 3.  **Per-Workpiece Transformers:** The newly generated `Ops` are passed
     through transformers specific to that workpiece, such as adding

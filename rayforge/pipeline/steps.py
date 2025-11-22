@@ -6,7 +6,7 @@ from ..core.capability import CUT, SCORE, ENGRAVE
 from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
     DepthEngraver,
-    EdgeTracer,
+    ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
     Rasterizer,
@@ -33,7 +33,7 @@ def create_contour_step(
         name=name,
     )
     step.capabilities = {CUT, SCORE}
-    step.opsproducer_dict = EdgeTracer().to_dict()
+    step.opsproducer_dict = ContourProducer().to_dict()
     step.modifiers_dicts = [
         MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),

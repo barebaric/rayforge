@@ -1,7 +1,7 @@
 from typing import Dict, Type
 from .base import StepComponentSettingsWidget
 from .depth_engraver import DepthEngraverSettingsWidget
-from .edge import EdgeTracerSettingsWidget
+from .contour import ContourProducerSettingsWidget
 from .frame import FrameProducerSettingsWidget
 from .material_test_grid import MaterialTestGridSettingsWidget
 from .multipass import MultiPassSettingsWidget
@@ -16,7 +16,7 @@ from .smooth import SmoothSettingsWidget
 # to their corresponding UI widget classes (Type).
 WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "DepthEngraver": DepthEngraverSettingsWidget,
-    "EdgeTracer": EdgeTracerSettingsWidget,
+    "ContourProducer": ContourProducerSettingsWidget,
     "FrameProducer": FrameProducerSettingsWidget,
     "MaterialTestGridProducer": MaterialTestGridSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
@@ -30,7 +30,7 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
 __all__ = [
     "WIDGET_REGISTRY",
     "DepthEngraverSettingsWidget",
-    "EdgeTracerSettingsWidget",
+    "ContourProducerSettingsWidget",
     "FrameProducerSettingsWidget",
     "MaterialTestGridSettingsWidget",
     "MultiPassSettingsWidget",

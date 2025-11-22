@@ -25,7 +25,7 @@ class CutOrder(Enum):
     OUTSIDE_INSIDE = auto()
 
 
-class EdgeTracer(OpsProducer):
+class ContourProducer(OpsProducer):
     """
     Uses the tracer to find all paths in a shape. Can optionally trace
     only the outermost paths, ignoring any holes.
@@ -41,7 +41,7 @@ class EdgeTracer(OpsProducer):
         threshold: float = 0.5,
     ):
         """
-        Initializes the EdgeTracer.
+        Initializes the ContourProducer.
 
         Args:
             remove_inner_paths: If True, only the outermost paths (outlines)
@@ -79,7 +79,7 @@ class EdgeTracer(OpsProducer):
         y_offset_mm: float = 0.0,
     ) -> WorkPieceArtifact:
         if workpiece is None:
-            raise ValueError("EdgeTracer requires a workpiece context.")
+            raise ValueError("ContourProducer requires a workpiece context.")
 
         # 1. Calculate total offset from producer and step settings
         kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
@@ -177,7 +177,7 @@ class EdgeTracer(OpsProducer):
             # This can happen with complex or malformed input shapes.
             if grown_geometry.is_empty() and not composite_geo.is_empty():
                 logger.warning(
-                    f"EdgeTracer for '{workpiece.name}' failed to apply "
+                    f"ContourProducer for '{workpiece.name}' failed to apply "
                     f"an offset of {total_offset:.3f} mm. This can be "
                     "caused by micro-gaps or self-intersections in the "
                     "source geometry. Falling back to the un-offset path."
@@ -272,8 +272,8 @@ class EdgeTracer(OpsProducer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "EdgeTracer":
-        """Deserializes a dictionary into an EdgeTracer instance."""
+    def from_dict(cls, data: Dict[str, Any]) -> "ContourProducer":
+        """Deserializes a dictionary into an ContourProducer instance."""
         params = data.get("params", {})
         cut_side_str = params.get(
             "cut_side", params.get("kerf_mode", "OUTSIDE")

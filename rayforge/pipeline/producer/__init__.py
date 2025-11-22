@@ -2,7 +2,7 @@
 import inspect
 from .base import OpsProducer, CutSide
 from .depth import DepthEngraver
-from .edge import EdgeTracer
+from .contour import ContourProducer
 from .frame import FrameProducer
 from .material_test_grid import MaterialTestGridProducer, MaterialTestGridType
 from .shrinkwrap import ShrinkWrapProducer
@@ -22,7 +22,7 @@ __all__ = [
     "OpsProducer",
     "CutSide",
     "DepthEngraver",
-    "EdgeTracer",
+    "ContourProducer",
     "FrameProducer",
     "MaterialTestGridProducer",
     "MaterialTestGridType",
