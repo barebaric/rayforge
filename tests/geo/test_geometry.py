@@ -1,4 +1,3 @@
-from copy import deepcopy
 import pytest
 import math
 import numpy as np
@@ -12,47 +11,6 @@ from rayforge.core.geo import (
     ArcToCommand,
 )
 from rayforge.core.geo.query import get_total_distance
-
-
-def _create_translate_matrix(x, y, z):
-    """Creates a NumPy translation matrix."""
-    return np.array(
-        [
-            [1, 0, 0, x],
-            [0, 1, 0, y],
-            [0, 0, 1, z],
-            [0, 0, 0, 1],
-        ],
-        dtype=float,
-    )
-
-
-def _create_scale_matrix(sx, sy, sz):
-    """Creates a NumPy scaling matrix."""
-    return np.array(
-        [
-            [sx, 0, 0, 0],
-            [0, sy, 0, 0],
-            [0, 0, sz, 0],
-            [0, 0, 0, 1],
-        ],
-        dtype=float,
-    )
-
-
-def _create_z_rotate_matrix(angle_rad):
-    """Creates a NumPy Z-axis rotation matrix."""
-    c = math.cos(angle_rad)
-    s = math.sin(angle_rad)
-    return np.array(
-        [
-            [c, -s, 0, 0],
-            [s, c, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ],
-        dtype=float,
-    )
 
 
 @pytest.fixture
@@ -143,68 +101,6 @@ def test_from_dict_ignores_state_commands():
     assert len(geo.commands) == 2
     assert isinstance(geo.commands[0], MoveToCommand)
     assert isinstance(geo.commands[1], LineToCommand)
-
-
-def test_transform_identity():
-    geo = Geometry()
-    geo.move_to(10, 20, 30)
-    geo.arc_to(50, 60, i=5, j=7, z=40)
-    original_geo = deepcopy(geo)
-
-    identity_matrix = np.identity(4, dtype=float)
-    geo.transform(identity_matrix)
-
-    arc_cmd = cast(ArcToCommand, geo.commands[1])
-    orig_arc_cmd = cast(ArcToCommand, original_geo.commands[1])
-
-    assert geo.commands[0].end == pytest.approx(original_geo.commands[0].end)
-    assert arc_cmd.end == pytest.approx(orig_arc_cmd.end)
-    assert arc_cmd.center_offset == pytest.approx(orig_arc_cmd.center_offset)
-    assert geo.last_move_to == pytest.approx(original_geo.last_move_to)
-
-
-def test_transform_translate():
-    geo = Geometry()
-    geo.move_to(10, 20, 30)
-    geo.arc_to(50, 60, i=5, j=7, z=40)
-
-    translate_matrix = _create_translate_matrix(10, -5, 15)
-    geo.transform(translate_matrix)
-    arc_cmd = cast(ArcToCommand, geo.commands[1])
-
-    assert geo.commands[0].end == pytest.approx((20, 15, 45))
-    assert arc_cmd.end == pytest.approx((60, 55, 55))
-    assert arc_cmd.center_offset == pytest.approx((5, 7))
-    assert geo.last_move_to == pytest.approx((20, 15, 45))
-
-
-def test_transform_scale_non_uniform_linearizes_arc():
-    geo = Geometry()
-    geo.move_to(10, 20, 5)
-    geo.arc_to(22, 22, i=5, j=7, z=-10)
-    scale_matrix = _create_scale_matrix(2, 3, 4)
-    geo.transform(scale_matrix)
-
-    assert geo.commands[0].end == pytest.approx((20, 60, 20))
-    # Arcs are linearized on non-uniform scale
-    assert isinstance(geo.commands[1], LineToCommand)
-    final_cmd = geo.commands[-1]
-    assert final_cmd.end is not None
-    final_point = final_cmd.end
-    expected_final_point = (22 * 2, 22 * 3, -10 * 4)
-    assert final_point == pytest.approx(expected_final_point)
-
-
-def test_transform_rotate_preserves_z():
-    geo = Geometry()
-    geo.move_to(10, 10, -5)
-    rotate_matrix = _create_z_rotate_matrix(math.radians(90))
-    geo.transform(rotate_matrix)
-    assert geo.commands[0].end is not None
-    x, y, z = geo.commands[0].end
-    assert z == -5
-    assert x == pytest.approx(-10)
-    assert y == pytest.approx(10)
 
 
 def test_copy_method(sample_geometry):
@@ -551,3 +447,27 @@ def test_grow_wrapper(mock_grow, sample_geometry):
     """Tests the Geometry.grow() wrapper method."""
     sample_geometry.grow(amount=5.0)
     mock_grow.assert_called_once_with(sample_geometry, offset=5.0)
+
+
+@patch("rayforge.core.geo.transform.apply_affine_transform")
+def test_transform_wrapper(mock_transform, sample_geometry):
+    """
+    Tests that Geometry.transform() delegates correctly to
+    apply_affine_transform.
+    """
+    matrix = np.identity(4)
+    # Mock the return to ensure the wrapper updates self.commands
+    mock_cmds = [LineToCommand((99, 99, 99))]
+    mock_transform.return_value = mock_cmds
+
+    # We must capture the original commands list before calling transform,
+    # because transform() updates self.commands to point to the result
+    # (mock_cmds).
+    # The mock records the argument passed (original commands), but
+    # self.commands will be different when we assert.
+    original_commands = sample_geometry.commands
+
+    sample_geometry.transform(matrix)
+
+    mock_transform.assert_called_once_with(original_commands, matrix)
+    assert sample_geometry.commands == mock_cmds

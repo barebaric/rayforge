@@ -1,8 +1,149 @@
 import pytest
 import math
 import numpy as np
-from rayforge.core.geo import Geometry
-from rayforge.core.geo.transform import grow_geometry
+from copy import deepcopy
+from typing import cast
+from rayforge.core.geo import (
+    Geometry,
+    ArcToCommand,
+    LineToCommand,
+)
+from rayforge.core.geo.transform import (
+    grow_geometry,
+    apply_affine_transform,
+)
+
+
+def _create_translate_matrix(x, y, z):
+    """Creates a NumPy translation matrix."""
+    return np.array(
+        [
+            [1, 0, 0, x],
+            [0, 1, 0, y],
+            [0, 0, 1, z],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+
+
+def _create_scale_matrix(sx, sy, sz):
+    """Creates a NumPy scaling matrix."""
+    return np.array(
+        [
+            [sx, 0, 0, 0],
+            [0, sy, 0, 0],
+            [0, 0, sz, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+
+
+def _create_z_rotate_matrix(angle_rad):
+    """Creates a NumPy Z-axis rotation matrix."""
+    c = math.cos(angle_rad)
+    s = math.sin(angle_rad)
+    return np.array(
+        [
+            [c, -s, 0, 0],
+            [s, c, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+
+
+# --- Affine Transform Tests ---
+
+
+def test_transform_identity():
+    geo = Geometry()
+    geo.move_to(10, 20, 30)
+    geo.arc_to(50, 60, i=5, j=7, z=40)
+    original_geo = deepcopy(geo)
+
+    identity_matrix = np.identity(4, dtype=float)
+    transformed_cmds = apply_affine_transform(geo.commands, identity_matrix)
+
+    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
+    orig_arc_cmd = cast(ArcToCommand, original_geo.commands[1])
+
+    assert transformed_cmds[0].end == pytest.approx(
+        original_geo.commands[0].end
+    )
+    assert arc_cmd.end == pytest.approx(orig_arc_cmd.end)
+    assert arc_cmd.center_offset == pytest.approx(orig_arc_cmd.center_offset)
+
+
+def test_transform_translate():
+    geo = Geometry()
+    geo.move_to(10, 20, 30)
+    geo.arc_to(50, 60, i=5, j=7, z=40)
+
+    translate_matrix = _create_translate_matrix(10, -5, 15)
+    transformed_cmds = apply_affine_transform(geo.commands, translate_matrix)
+
+    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
+
+    assert transformed_cmds[0].end == pytest.approx((20, 15, 45))
+    assert arc_cmd.end == pytest.approx((60, 55, 55))
+    # Translation should NOT affect arc center offsets (vectors)
+    assert arc_cmd.center_offset == pytest.approx((5, 7))
+
+
+def test_transform_scale_non_uniform_linearizes_arc():
+    geo = Geometry()
+    geo.move_to(10, 20, 5)
+    geo.arc_to(22, 22, i=5, j=7, z=-10)
+    scale_matrix = _create_scale_matrix(2, 3, 4)
+
+    # This should trigger _transform_commands_non_uniform
+    transformed_cmds = apply_affine_transform(geo.commands, scale_matrix)
+
+    assert transformed_cmds[0].end == pytest.approx((20, 60, 20))
+    # Arcs are linearized on non-uniform scale
+    assert isinstance(transformed_cmds[1], LineToCommand)
+    final_cmd = transformed_cmds[-1]
+    assert final_cmd.end is not None
+    final_point = final_cmd.end
+    expected_final_point = (22 * 2, 22 * 3, -10 * 4)
+    assert final_point == pytest.approx(expected_final_point)
+
+
+def test_transform_rotate_preserves_z():
+    geo = Geometry()
+    geo.move_to(10, 10, -5)
+    rotate_matrix = _create_z_rotate_matrix(math.radians(90))
+
+    transformed_cmds = apply_affine_transform(geo.commands, rotate_matrix)
+
+    assert transformed_cmds[0].end is not None
+    x, y, z = transformed_cmds[0].end
+    assert z == -5
+    assert x == pytest.approx(-10)
+    assert y == pytest.approx(10)
+
+
+def test_transform_uniform_scale_preserves_arcs():
+    geo = Geometry()
+    geo.move_to(0, 0, 0)
+    # Arc from (0,0) to (10,0) with center at (5,0) -> radius 5
+    geo.arc_to(10, 0, i=5, j=0, clockwise=True)
+
+    # Uniform scale by 2
+    scale_matrix = _create_scale_matrix(2, 2, 2)
+    transformed_cmds = apply_affine_transform(geo.commands, scale_matrix)
+
+    assert isinstance(transformed_cmds[1], ArcToCommand)
+    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
+    assert arc_cmd.end == pytest.approx((20, 0, 0))
+    # Offset should also scale
+    assert arc_cmd.center_offset == pytest.approx((10, 0))
+
+
+# --- Grow/Offset Tests ---
 
 
 def test_grow_simple_square():

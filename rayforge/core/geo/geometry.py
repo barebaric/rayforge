@@ -15,7 +15,6 @@ from typing import (
 )
 from copy import deepcopy
 import numpy as np
-from .linearize import linearize_arc
 from .analysis import (
     is_closed,
     get_path_winding_order,
@@ -298,52 +297,10 @@ class Geometry:
         return all_segments
 
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
-        v_x = matrix @ np.array([1, 0, 0, 0])
-        v_y = matrix @ np.array([0, 1, 0, 0])
-        len_x = np.linalg.norm(v_x[:2])
-        len_y = np.linalg.norm(v_y[:2])
-        is_non_uniform = not np.isclose(len_x, len_y)
+        from . import transform  # Local import to prevent circular dependency
 
-        transformed_commands: List[Command] = []
-        last_point_untransformed: Optional[Tuple[float, float, float]] = None
+        self.commands = transform.apply_affine_transform(self.commands, matrix)
 
-        for cmd in self.commands:
-            original_cmd_end = (
-                cmd.end if isinstance(cmd, MovingCommand) else None
-            )
-
-            if isinstance(cmd, ArcToCommand) and is_non_uniform:
-                start_point = last_point_untransformed or (0.0, 0.0, 0.0)
-                segments = linearize_arc(cmd, start_point)
-                for p1, p2 in segments:
-                    point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
-                    transformed_vec = matrix @ point_vec
-                    transformed_commands.append(
-                        LineToCommand(tuple(transformed_vec[:3]))
-                    )
-            elif isinstance(cmd, MovingCommand):
-                point_vec = np.array([*cmd.end, 1.0])
-                transformed_vec = matrix @ point_vec
-                cmd.end = tuple(transformed_vec[:3])
-
-                if isinstance(cmd, ArcToCommand):
-                    offset_vec_3d = np.array(
-                        [cmd.center_offset[0], cmd.center_offset[1], 0]
-                    )
-                    rot_scale_matrix = matrix[:3, :3]
-                    new_offset_vec_3d = rot_scale_matrix @ offset_vec_3d
-                    cmd.center_offset = (
-                        new_offset_vec_3d[0],
-                        new_offset_vec_3d[1],
-                    )
-                transformed_commands.append(cmd)
-            else:
-                transformed_commands.append(cmd)
-
-            if original_cmd_end is not None:
-                last_point_untransformed = original_cmd_end
-
-        self.commands = transformed_commands
         last_move_vec = np.array([*self.last_move_to, 1.0])
         transformed_last_move_vec = matrix @ last_move_vec
         self.last_move_to = tuple(transformed_last_move_vec[:3])

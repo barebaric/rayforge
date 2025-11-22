@@ -1,10 +1,13 @@
 import math
 import logging
-from typing import Tuple, Optional, TYPE_CHECKING, TypeVar
+from typing import Tuple, Optional, TYPE_CHECKING, TypeVar, List
+import numpy as np
 import pyclipper
 
+from .linearize import linearize_arc
+
 if TYPE_CHECKING:
-    from .geometry import Geometry
+    from .geometry import Geometry, Command
 
 # Define a TypeVar to make the function generic over Geometry and its
 # subclasses.
@@ -112,3 +115,137 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
     logger.debug("Grow_geometry finished")
     return new_geo
+
+
+def _transform_commands_non_uniform(
+    commands: List["Command"], matrix: "np.ndarray"
+) -> List["Command"]:
+    """
+    Handles transformation when non-uniform scaling is present.
+    Arcs must be linearized as they become elliptical.
+    """
+    # Local import to avoid circular dependency
+    from .geometry import LineToCommand, ArcToCommand, MovingCommand
+
+    transformed_commands: List["Command"] = []
+    last_point_untransformed: Optional[Tuple[float, float, float]] = None
+
+    for cmd in commands:
+        original_cmd_end = cmd.end if isinstance(cmd, MovingCommand) else None
+
+        if isinstance(cmd, ArcToCommand):
+            start_point = last_point_untransformed or (0.0, 0.0, 0.0)
+            segments = linearize_arc(cmd, start_point)
+            for p1, p2 in segments:
+                point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
+                transformed_vec = matrix @ point_vec
+                transformed_commands.append(
+                    LineToCommand(tuple(transformed_vec[:3]))
+                )
+        elif isinstance(cmd, MovingCommand):
+            point_vec = np.array([*cmd.end, 1.0])
+            transformed_vec = matrix @ point_vec
+            cmd.end = tuple(transformed_vec[:3])
+
+            if isinstance(cmd, ArcToCommand):
+                # Recalculate offset (vector transform)
+                offset_vec_3d = np.array(
+                    [cmd.center_offset[0], cmd.center_offset[1], 0]
+                )
+                rot_scale_matrix = matrix[:3, :3]
+                new_offset_vec_3d = rot_scale_matrix @ offset_vec_3d
+                cmd.center_offset = (
+                    new_offset_vec_3d[0],
+                    new_offset_vec_3d[1],
+                )
+            transformed_commands.append(cmd)
+        else:
+            transformed_commands.append(cmd)
+
+        if original_cmd_end is not None:
+            last_point_untransformed = original_cmd_end
+
+    return transformed_commands
+
+
+def _transform_commands_uniform(
+    commands: List["Command"], matrix: "np.ndarray"
+) -> List["Command"]:
+    """
+    Handles transformation for uniform scaling, rotation, and translation.
+    Uses vectorized numpy operations for high performance.
+    Updates commands in-place where possible.
+    """
+    # Local import to avoid circular dependency
+    from .geometry import ArcToCommand, MovingCommand
+
+    points: List[Tuple[float, float, float]] = []
+    cmd_indices: List[int] = []
+    arc_offsets: List[Tuple[float, float, float]] = []
+    arc_indices: List[int] = []
+
+    for i, cmd in enumerate(commands):
+        if isinstance(cmd, MovingCommand) and cmd.end:
+            points.append(cmd.end)
+            cmd_indices.append(i)
+            if isinstance(cmd, ArcToCommand):
+                # 2D offsets to 3D vectors
+                arc_offsets.append((*cmd.center_offset, 0.0))
+                arc_indices.append(i)
+
+    if points:
+        # Batch transform points
+        pts_array = np.array(points)
+        ones = np.ones((pts_array.shape[0], 1))
+        pts_homo = np.hstack([pts_array, ones])
+        transformed_pts = pts_homo @ matrix.T
+        res_pts = transformed_pts[:, :3].tolist()
+
+        for i, original_idx in enumerate(cmd_indices):
+            commands[original_idx].end = tuple(res_pts[i])
+
+        # Batch transform arc offsets (rotation/scale only)
+        if arc_offsets:
+            vec_array = np.array(arc_offsets)
+            rot_scale_matrix = matrix[:3, :3]
+            transformed_offsets = vec_array @ rot_scale_matrix.T
+            res_offsets = transformed_offsets.tolist()
+
+            for i, original_idx in enumerate(arc_indices):
+                off = res_offsets[i]
+                cmd_to_update = commands[original_idx]
+                if isinstance(cmd_to_update, ArcToCommand):
+                    cmd_to_update.center_offset = (off[0], off[1])
+
+    return commands
+
+
+def apply_affine_transform(
+    commands: List["Command"], matrix: "np.ndarray"
+) -> List["Command"]:
+    """
+    Applies an affine transformation matrix to a list of commands.
+    Automatically selects between a fast vectorized path for uniform transforms
+    and a linearization path for non-uniform scaling.
+
+    Args:
+        commands: The list of commands to transform.
+        matrix: A 4x4 numpy affine transformation matrix.
+
+    Returns:
+        The list of transformed commands (may be a new list or modified
+        original).
+    """
+    if not commands:
+        return commands
+
+    v_x = matrix @ np.array([1, 0, 0, 0])
+    v_y = matrix @ np.array([0, 1, 0, 0])
+    len_x = np.linalg.norm(v_x[:2])
+    len_y = np.linalg.norm(v_y[:2])
+    is_non_uniform = not np.isclose(len_x, len_y)
+
+    if is_non_uniform:
+        return _transform_commands_non_uniform(commands, matrix)
+    else:
+        return _transform_commands_uniform(commands, matrix)
