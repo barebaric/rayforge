@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-07 15:35+0100\n"
+"POT-Creation-Date: 2025-11-22 13:11+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -83,7 +83,9 @@ msgstr "Por favor, selecione um dispositivo de câmera disponível"
 #: rayforge/camera/ui/selection_dialog.py:41
 #: rayforge/camera/ui/alignment_dialog.py:133
 #: rayforge/machine/ui/preferences_page.py:143
-#: rayforge/machine/ui/hook_list.py:117 rayforge/machine/ui/gcode_editor.py:54
+#: rayforge/machine/ui/dialect_editor.py:39
+#: rayforge/machine/ui/hook_list.py:116 rayforge/machine/ui/gcode_editor.py:51
+#: rayforge/machine/ui/dialect_list.py:90
 #: rayforge/machine/ui/profile_selector.py:65
 #: rayforge/doceditor/ui/material_library_list.py:207
 #: rayforge/doceditor/ui/material_library_list.py:235
@@ -93,10 +95,11 @@ msgstr "Por favor, selecione um dispositivo de câmera disponível"
 #: rayforge/doceditor/ui/add_material_dialog.py:32
 #: rayforge/doceditor/ui/recipe_list.py:193
 #: rayforge/doceditor/ui/recipe_selector_dialog.py:98
+#: rayforge/doceditor/ui/raster_import_dialog.py:73
 #: rayforge/doceditor/ui/material_selector.py:98
 #: rayforge/doceditor/ui/recipe_control_widget.py:222
 #: rayforge/doceditor/ui/material_list.py:189
-#: rayforge/doceditor/ui/import_handler.py:211
+#: rayforge/doceditor/ui/import_handler.py:215
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -138,7 +141,7 @@ msgid "Device ID"
 msgstr "ID do Dispositivo"
 
 #: rayforge/camera/ui/properties_widget.py:28
-#: rayforge/machine/ui/gcode_editor.py:87
+#: rayforge/machine/ui/gcode_editor.py:76
 #: rayforge/machine/ui/laser_preferences_page.py:221
 #: rayforge/machine/ui/general_preferences_page.py:41
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:148
@@ -399,7 +402,7 @@ msgstr "Porta"
 msgid "Check"
 msgstr "Verificação"
 
-#: rayforge/machine/driver/driver.py:77 rayforge/main_menu.py:151
+#: rayforge/machine/driver/driver.py:77 rayforge/main_menu.py:152
 msgid "Home"
 msgstr "Referenciar"
 
@@ -504,39 +507,86 @@ msgstr ""
 msgid "Laser Head"
 msgstr "Cabeça de Laser"
 
-#: rayforge/machine/models/dialect.py:83
-msgid "GRBL (universal)"
-msgstr "GRBL (universal)"
+#: rayforge/machine/models/dialect.py:78
+msgid "General Information"
+msgstr "Informações Gerais"
+
+#: rayforge/machine/models/dialect.py:82
+msgid "Label"
+msgstr "Rótulo"
 
 #: rayforge/machine/models/dialect.py:84
-msgid "Standard GRBL for most diode lasers and hobby CNCs."
-msgstr "GRBL padrão para a maioria dos lasers de diodo e CNCs de hobby."
+msgid "User-facing name"
+msgstr "Nome de exibição para o usuário"
+
+#: rayforge/machine/models/dialect.py:91
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:157
+msgid "Description"
+msgstr "Descrição"
+
+#: rayforge/machine/models/dialect.py:93
+msgid "Short description"
+msgstr "Descrição Curta"
+
+#: rayforge/machine/models/dialect.py:98
+msgid "Command Templates"
+msgstr "Modelos de Comando"
+
+#: rayforge/machine/models/dialect.py:100
+msgid "Laser On"
+msgstr "Ligar Laser"
+
+#: rayforge/machine/models/dialect.py:101
+msgid "Laser Off"
+msgstr "Desligar Laser"
+
+#: rayforge/machine/models/dialect.py:102
+msgid "Travel Move"
+msgstr "Movimento de Deslocamento"
+
+#: rayforge/machine/models/dialect.py:103
+msgid "Linear Move"
+msgstr "Movimento Linear"
 
 #: rayforge/machine/models/dialect.py:104
-msgid "GRBL (no Z axis)"
-msgstr "GRBL (sem eixo Z)"
+msgid "Arc (CW)"
+msgstr "Arco (Horário)"
+
+#: rayforge/machine/models/dialect.py:105
+msgid "Arc (CCW)"
+msgstr "Arco (Anti-horário)"
 
 #: rayforge/machine/models/dialect.py:106
-msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
-msgstr ""
-"GRBL padrão, mas remove comandos do eixo Z para um G-code mais eficiente."
+msgid "Tool Change"
+msgstr "Troca de Ferramenta"
 
-#: rayforge/machine/models/dialect.py:127
-msgid "Smoothieware"
-msgstr "Smoothieware"
+#: rayforge/machine/models/dialect.py:107
+msgid "Set Speed"
+msgstr "Definir Velocidade"
 
-#: rayforge/machine/models/dialect.py:128
-msgid "G-code dialect for Smoothieware-based controllers."
-msgstr "Dialeto G-code para controladores baseados em Smoothieware."
+#: rayforge/machine/models/dialect.py:108
+msgid "Air On"
+msgstr "Ligar Ar"
 
-#: rayforge/machine/models/dialect.py:148
-msgid "Marlin"
-msgstr "Marlin"
+#: rayforge/machine/models/dialect.py:109
+msgid "Air Off"
+msgstr "Desligar Ar"
 
-#: rayforge/machine/models/dialect.py:150
-msgid "G-code for Marlin-based controllers, common in 3D printers."
-msgstr ""
-"G-code para controladores baseados em Marlin, comuns em impressoras 3D."
+#: rayforge/machine/models/dialect.py:114
+msgid "Scripts"
+msgstr "Scripts"
+
+#: rayforge/machine/models/dialect.py:117
+msgid "Preamble"
+msgstr "Preâmbulo"
+
+#: rayforge/machine/models/dialect.py:123
+msgid "Postscript"
+msgstr "Pós-escrito"
+
+#: rayforge/machine/models/dialect.py:170
+msgid "Unnamed Dialect"
+msgstr "Dialeto Sem Nome"
 
 #: rayforge/machine/models/machine.py:45
 msgid "Default Machine"
@@ -556,13 +606,52 @@ msgstr "Driver '{driver}' não encontrado."
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "Ocorreu um erro inesperado durante a validação: {error}"
 
+#: rayforge/machine/models/machine.py:753
+#, python-brace-format
+msgid "{label} (for {machine_name})"
+msgstr "{label} (para {machine_name})"
+
 #: rayforge/machine/models/profile.py:171
 msgid "Other Device"
 msgstr "Outro Dispositivo"
 
-#: rayforge/machine/models/macro.py:42
+#: rayforge/machine/models/macro.py:40
 msgid "Unnamed Macro"
 msgstr "Macro Sem Nome"
+
+#: rayforge/machine/models/dialect_builtins.py:6
+msgid "GRBL (universal)"
+msgstr "GRBL (universal)"
+
+#: rayforge/machine/models/dialect_builtins.py:7
+msgid "Standard GRBL for most diode lasers and hobby CNCs."
+msgstr "GRBL padrão para a maioria dos lasers de diodo e CNCs de hobby."
+
+#: rayforge/machine/models/dialect_builtins.py:27
+msgid "GRBL (no Z axis)"
+msgstr "GRBL (sem eixo Z)"
+
+#: rayforge/machine/models/dialect_builtins.py:29
+msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
+msgstr ""
+"GRBL padrão, mas remove comandos do eixo Z para um G-code mais eficiente."
+
+#: rayforge/machine/models/dialect_builtins.py:50
+msgid "Smoothieware"
+msgstr "Smoothieware"
+
+#: rayforge/machine/models/dialect_builtins.py:51
+msgid "G-code dialect for Smoothieware-based controllers."
+msgstr "Dialeto G-code para controladores baseados em Smoothieware."
+
+#: rayforge/machine/models/dialect_builtins.py:71
+msgid "Marlin"
+msgstr "Marlin"
+
+#: rayforge/machine/models/dialect_builtins.py:73
+msgid "G-code for Marlin-based controllers, common in 3D printers."
+msgstr ""
+"G-code para controladores baseados em Marlin, comuns em impressoras 3D."
 
 #: rayforge/machine/cmd.py:194
 msgid "{job_name.capitalize()} failed: {e}"
@@ -662,32 +751,51 @@ msgstr ""
 "permanentemente. Esta ação não pode ser desfeita."
 
 #: rayforge/machine/ui/preferences_page.py:144
+#: rayforge/machine/ui/dialect_list.py:91
 #: rayforge/doceditor/ui/material_library_list.py:208
 #: rayforge/doceditor/ui/recipe_list.py:194
 #: rayforge/doceditor/ui/material_list.py:190
 msgid "Delete"
 msgstr "Excluir"
 
-#: rayforge/machine/ui/hook_list.py:16
+#: rayforge/machine/ui/dialect_editor.py:31
+#, python-brace-format
+msgid "Edit Dialect: {label}"
+msgstr "Editar Dialeto: {label}"
+
+#: rayforge/machine/ui/dialect_editor.py:33
+#: rayforge/machine/ui/dialect_list.py:146
+msgid "New Dialect"
+msgstr "Novo Dialeto"
+
+#: rayforge/machine/ui/dialect_editor.py:43
+#: rayforge/machine/ui/gcode_editor.py:71
+#: rayforge/doceditor/ui/material_library_list.py:236
+#: rayforge/doceditor/ui/edit_recipe_dialog.py:121
+#: rayforge/doceditor/ui/add_material_dialog.py:24
+msgid "Save"
+msgstr "Salvar"
+
+#: rayforge/machine/ui/hook_list.py:15
 msgid "G-code Hooks"
 msgstr "Hooks de G-code"
 
-#: rayforge/machine/ui/hook_list.py:31
+#: rayforge/machine/ui/hook_list.py:30
 msgid "Add custom G-code to be executed at specific points in the job."
 msgstr ""
 "Adicione G-code personalizado para ser executado em pontos específicos do "
 "trabalho."
 
-#: rayforge/machine/ui/hook_list.py:50
+#: rayforge/machine/ui/hook_list.py:49
 msgid "Reset to Default"
 msgstr "Redefinir para Padrão"
 
-#: rayforge/machine/ui/hook_list.py:108
+#: rayforge/machine/ui/hook_list.py:107
 #, python-brace-format
 msgid "Reset '{hook_name}' to Default?"
 msgstr "Redefinir '{hook_name}' para padrão?"
 
-#: rayforge/machine/ui/hook_list.py:112
+#: rayforge/machine/ui/hook_list.py:111
 msgid ""
 "This will remove your custom G-code for this hook. The machine will revert "
 "to using its built-in default macro. This action cannot be undone."
@@ -695,60 +803,49 @@ msgstr ""
 "Isso removerá seu G-code personalizado para este hook. A máquina voltará a "
 "usar sua macro padrão integrada. Esta ação não pode ser desfeita."
 
-#: rayforge/machine/ui/hook_list.py:118
+#: rayforge/machine/ui/hook_list.py:117
 msgid "Reset"
 msgstr "Redefinir"
 
-#: rayforge/machine/ui/hook_list.py:160
+#: rayforge/machine/ui/hook_list.py:151
 msgid "# Your G-code here"
 msgstr "# Seu G-code aqui"
 
-#: rayforge/machine/ui/gcode_editor.py:45
+#: rayforge/machine/ui/gcode_editor.py:42
 msgid "Edit Macro"
 msgstr "Editar Macro"
 
-#: rayforge/machine/ui/gcode_editor.py:60
-msgid "Append Default"
-msgstr "Anexar Padrão"
-
-#: rayforge/machine/ui/gcode_editor.py:69
+#: rayforge/machine/ui/gcode_editor.py:58
 msgid "Insert Variable"
 msgstr "Inserir Variável"
 
-#: rayforge/machine/ui/gcode_editor.py:77
+#: rayforge/machine/ui/gcode_editor.py:66
 msgid "Include Macro"
 msgstr "Incluir Macro"
 
-#: rayforge/machine/ui/gcode_editor.py:82
-#: rayforge/doceditor/ui/material_library_list.py:236
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:121
-#: rayforge/doceditor/ui/add_material_dialog.py:24
-msgid "Save"
-msgstr "Salvar"
-
-#: rayforge/machine/ui/gcode_editor.py:100
+#: rayforge/machine/ui/gcode_editor.py:89
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "Editar Macro para {name}"
 
-#: rayforge/machine/ui/gcode_editor.py:169
+#: rayforge/machine/ui/gcode_editor.py:158
 msgid "Available Variables"
 msgstr "Variáveis Disponíveis"
 
-#: rayforge/machine/ui/gcode_editor.py:222
+#: rayforge/machine/ui/gcode_editor.py:211
 msgid "No other macros to include."
 msgstr "Nenhuma outra macro para incluir."
 
-#: rayforge/machine/ui/gcode_editor.py:280
+#: rayforge/machine/ui/gcode_editor.py:253
 msgid "Name cannot be empty."
 msgstr "O nome não pode estar vazio."
 
-#: rayforge/machine/ui/gcode_editor.py:283
+#: rayforge/machine/ui/gcode_editor.py:256
 #, python-brace-format
 msgid "Name contains invalid characters: {chars}"
 msgstr "O nome contém caracteres inválidos: {chars}"
 
-#: rayforge/machine/ui/gcode_editor.py:293
+#: rayforge/machine/ui/gcode_editor.py:266
 msgid "This name is already used by another macro."
 msgstr "Este nome já está em uso por outra macro."
 
@@ -823,44 +920,86 @@ msgstr "Configuração aplicada com sucesso."
 msgid "Machine activated."
 msgstr "Máquina ativada."
 
-#: rayforge/machine/ui/advanced_preferences_page.py:15
+#: rayforge/machine/ui/advanced_preferences_page.py:17
 msgid "Advanced"
 msgstr "Avançado"
 
-#: rayforge/machine/ui/advanced_preferences_page.py:22
+#: rayforge/machine/ui/advanced_preferences_page.py:26
 msgid "Output"
 msgstr "Saída"
 
-#: rayforge/machine/ui/advanced_preferences_page.py:24
+#: rayforge/machine/ui/advanced_preferences_page.py:28
 msgid "Configure the G-code flavor and format for your machine."
 msgstr "Configure a variante e o formato do G-code para a sua máquina."
 
-#: rayforge/machine/ui/advanced_preferences_page.py:34
-#: rayforge/machine/ui/advanced_preferences_page.py:112
+#: rayforge/machine/ui/advanced_preferences_page.py:32
+#: rayforge/machine/ui/advanced_preferences_page.py:135
 msgid "G-Code Dialect"
 msgstr "Dialeto G-Code"
 
-#: rayforge/machine/ui/advanced_preferences_page.py:51
+#: rayforge/machine/ui/advanced_preferences_page.py:48
 msgid "G-code Precision"
 msgstr "Precisão do G-code"
 
-#: rayforge/machine/ui/advanced_preferences_page.py:53
+#: rayforge/machine/ui/advanced_preferences_page.py:50
 msgid "Number of decimal places for coordinates (e.g., 3 for mm, 6 for µm)."
 msgstr ""
 "Número de casas decimais para as coordenadas (ex: 3 para mm, 6 para µm)."
 
-#: rayforge/machine/ui/advanced_preferences_page.py:89
-#: rayforge/main_menu.py:161
+#: rayforge/machine/ui/advanced_preferences_page.py:79
+#: rayforge/main_menu.py:162
 msgid "Macros"
 msgstr "Macros"
 
-#: rayforge/machine/ui/advanced_preferences_page.py:90
+#: rayforge/machine/ui/advanced_preferences_page.py:80
 msgid "Create and manage reusable G-code snippets."
 msgstr "Crie e gerencie trechos de G-code reutilizáveis."
 
-#: rayforge/machine/ui/advanced_preferences_page.py:113
+#: rayforge/machine/ui/advanced_preferences_page.py:86
+msgid "Dialect Management"
+msgstr "Gerenciamento de Dialetos"
+
+#: rayforge/machine/ui/advanced_preferences_page.py:88
+msgid "Create and manage custom G-code dialect definitions."
+msgstr "Crie e gerencie definições personalizadas de dialeto G-code."
+
+#: rayforge/machine/ui/advanced_preferences_page.py:136
 msgid "No dialects available."
 msgstr "Nenhum dialeto disponível."
+
+#: rayforge/machine/ui/dialect_list.py:53
+msgid "Copy & Edit"
+msgstr "Copiar & Editar"
+
+#: rayforge/machine/ui/dialect_list.py:59
+#, python-brace-format
+msgid "{label} (Copy)"
+msgstr "{label} (Cópia)"
+
+#: rayforge/machine/ui/dialect_list.py:84
+#, python-brace-format
+msgid "Delete '{label}'?"
+msgstr "Excluir '{label}'?"
+
+#: rayforge/machine/ui/dialect_list.py:86
+msgid ""
+"This custom dialect will be permanently removed. This action cannot be "
+"undone."
+msgstr ""
+"Este dialeto personalizado será removido permanentemente. Esta ação não pode "
+"ser desfeita."
+
+#: rayforge/machine/ui/dialect_list.py:107
+msgid "Add New Dialect"
+msgstr "Adicionar Novo Dialeto"
+
+#: rayforge/machine/ui/dialect_list.py:117
+msgid "No custom dialects configured"
+msgstr "Nenhum dialeto personalizado configurado"
+
+#: rayforge/machine/ui/dialect_list.py:147
+msgid "A new custom dialect"
+msgstr "Um novo dialeto personalizado"
 
 #: rayforge/machine/ui/connection_status_widget.py:93
 #: rayforge/machine/ui/status_widget.py:101
@@ -1323,11 +1462,11 @@ msgstr "A porta não pode estar vazia."
 msgid "Port must be a number."
 msgstr "A porta deve ser um número."
 
-#: rayforge/shared/varset/varsetwidget.py:20
+#: rayforge/shared/varset/varsetwidget.py:21
 msgid "None Selected"
 msgstr "Nenhum Selecionado"
 
-#: rayforge/shared/varset/varsetwidget.py:184
+#: rayforge/shared/varset/varsetwidget.py:202
 msgid "Apply Change"
 msgstr "Aplicar Alteração"
 
@@ -1516,11 +1655,11 @@ msgstr "Mover uma Camada para Cima"
 msgid "Move Down a Layer"
 msgstr "Mover uma Camada para Baixo"
 
-#: rayforge/workbench/context_menu.py:22 rayforge/main_menu.py:104
+#: rayforge/workbench/context_menu.py:22 rayforge/main_menu.py:105
 msgid "Group"
 msgstr "Agrupar"
 
-#: rayforge/workbench/context_menu.py:23 rayforge/main_menu.py:105
+#: rayforge/workbench/context_menu.py:23 rayforge/main_menu.py:106
 msgid "Ungroup"
 msgstr "Desagrupar"
 
@@ -1668,139 +1807,143 @@ msgstr "_Exibir"
 msgid "Add Stock"
 msgstr "Adicionar Material"
 
-#: rayforge/main_menu.py:95 rayforge/toolbar.py:186
+#: rayforge/main_menu.py:92
+msgid "Split"
+msgstr "Dividir"
+
+#: rayforge/main_menu.py:96 rayforge/toolbar.py:186
 msgid "Add Equidistant Tabs…"
 msgstr "Adicionar Abas de Fixação Equidistantes…"
 
-#: rayforge/main_menu.py:97 rayforge/doceditor/tab_cmd.py:268
+#: rayforge/main_menu.py:98 rayforge/doceditor/tab_cmd.py:268
 msgid "Add Cardinal Tabs"
 msgstr "Adicionar Abas de Fixação Cardeais"
 
-#: rayforge/main_menu.py:98 rayforge/doceditor/tab_cmd.py:242
+#: rayforge/main_menu.py:99 rayforge/doceditor/tab_cmd.py:242
 msgid "Add Tabs"
 msgstr "Adicionar Abas de Fixação"
 
-#: rayforge/main_menu.py:99
+#: rayforge/main_menu.py:100
 msgid "_Object"
 msgstr "_Objeto"
 
-#: rayforge/main_menu.py:110
+#: rayforge/main_menu.py:111
 msgid "Move Selection to Layer Above"
 msgstr "Mover Seleção para a Camada de Cima"
 
-#: rayforge/main_menu.py:113
+#: rayforge/main_menu.py:114
 msgid "Move Selection to Layer Below"
 msgstr "Mover Seleção para a Camada de Baixo"
 
-#: rayforge/main_menu.py:118
+#: rayforge/main_menu.py:119
 msgid "Left"
 msgstr "Esquerda"
 
-#: rayforge/main_menu.py:119
+#: rayforge/main_menu.py:120
 msgid "Right"
 msgstr "Direita"
 
-#: rayforge/main_menu.py:120
+#: rayforge/main_menu.py:121
 msgid "Top"
 msgstr "Topo"
 
-#: rayforge/main_menu.py:121
+#: rayforge/main_menu.py:122
 msgid "Bottom"
 msgstr "Base"
 
-#: rayforge/main_menu.py:122
+#: rayforge/main_menu.py:123
 msgid "Horizontally Center"
 msgstr "Centralizar Horizontalmente"
 
-#: rayforge/main_menu.py:123
+#: rayforge/main_menu.py:124
 msgid "Vertically Center"
 msgstr "Centralizar Verticalmente"
 
-#: rayforge/main_menu.py:124
+#: rayforge/main_menu.py:125
 msgid "Align"
 msgstr "Alinhar"
 
-#: rayforge/main_menu.py:127 rayforge/toolbar.py:154
+#: rayforge/main_menu.py:128 rayforge/toolbar.py:154
 #: rayforge/doceditor/layout_cmd.py:183
 msgid "Spread Horizontally"
 msgstr "Distribuir Horizontalmente"
 
-#: rayforge/main_menu.py:128 rayforge/toolbar.py:159
+#: rayforge/main_menu.py:129 rayforge/toolbar.py:159
 #: rayforge/doceditor/layout_cmd.py:191
 msgid "Spread Vertically"
 msgstr "Distribuir Verticalmente"
 
-#: rayforge/main_menu.py:129
+#: rayforge/main_menu.py:130
 msgid "Distribute"
 msgstr "Distribuir"
 
-#: rayforge/main_menu.py:132 rayforge/toolbar.py:164
+#: rayforge/main_menu.py:133 rayforge/toolbar.py:164
 #: rayforge/doceditor/transform_cmd.py:99
 msgid "Flip Horizontal"
 msgstr "Virar Horizontalmente"
 
-#: rayforge/main_menu.py:133 rayforge/toolbar.py:169
+#: rayforge/main_menu.py:134 rayforge/toolbar.py:169
 #: rayforge/doceditor/transform_cmd.py:133
 msgid "Flip Vertical"
 msgstr "Virar Verticalmente"
 
-#: rayforge/main_menu.py:134
+#: rayforge/main_menu.py:135
 msgid "Flip"
 msgstr "Virar"
 
-#: rayforge/main_menu.py:137 rayforge/doceditor/layout_cmd.py:241
+#: rayforge/main_menu.py:138 rayforge/doceditor/layout_cmd.py:241
 msgid "Auto Layout"
 msgstr "Layout Automático"
 
-#: rayforge/main_menu.py:139
+#: rayforge/main_menu.py:140
 msgid "Arrange"
 msgstr "Organizar"
 
-#: rayforge/main_menu.py:144
+#: rayforge/main_menu.py:145
 msgid "Create Material Test Grid"
 msgstr "Criar Grade de Teste de Material"
 
-#: rayforge/main_menu.py:146
+#: rayforge/main_menu.py:147
 msgid "_Tools"
 msgstr "_Ferramentas"
 
-#: rayforge/main_menu.py:152
+#: rayforge/main_menu.py:153
 msgid "Frame"
 msgstr "Enquadrar"
 
-#: rayforge/main_menu.py:153
+#: rayforge/main_menu.py:154
 msgid "Jog Controls..."
 msgstr "Controles Jog..."
 
-#: rayforge/main_menu.py:164
+#: rayforge/main_menu.py:165
 msgid "Send Job"
 msgstr "Enviar Trabalho"
 
-#: rayforge/main_menu.py:165
+#: rayforge/main_menu.py:166
 msgid "Pause / Resume Job"
 msgstr "Pausar / Retomar Trabalho"
 
-#: rayforge/main_menu.py:166
+#: rayforge/main_menu.py:167
 msgid "Cancel Job"
 msgstr "Cancelar Trabalho"
 
-#: rayforge/main_menu.py:167
+#: rayforge/main_menu.py:168
 msgid "Clear Alarm"
 msgstr "Limpar Alarme"
 
-#: rayforge/main_menu.py:172
+#: rayforge/main_menu.py:173
 msgid "Machine Settings…"
 msgstr "Configurações da Máquina…"
 
-#: rayforge/main_menu.py:175
+#: rayforge/main_menu.py:176
 msgid "_Machine"
 msgstr "_Máquina"
 
-#: rayforge/main_menu.py:179
+#: rayforge/main_menu.py:180
 msgid "About"
 msgstr "Sobre"
 
-#: rayforge/main_menu.py:180
+#: rayforge/main_menu.py:181
 msgid "_Help"
 msgstr "_Ajuda"
 
@@ -1808,39 +1951,39 @@ msgstr "_Ajuda"
 msgid "Rayforge"
 msgstr "Rayforge"
 
-#: rayforge/mainwindow.py:1006
+#: rayforge/mainwindow.py:1028
 msgid "Select a machine to enable G-code export"
 msgstr "Selecione uma máquina para habilitar a exportação de G-code"
 
-#: rayforge/mainwindow.py:1018 rayforge/toolbar.py:38
+#: rayforge/mainwindow.py:1040 rayforge/toolbar.py:38
 msgid "Generate G-code"
 msgstr "Gerar G-code"
 
-#: rayforge/mainwindow.py:1020
+#: rayforge/mainwindow.py:1042
 msgid "Add a workpiece to enable export"
 msgstr "Adicione uma peça de trabalho para habilitar a exportação"
 
-#: rayforge/mainwindow.py:1023
+#: rayforge/mainwindow.py:1045
 msgid "Cannot export while other tasks are running"
 msgstr "Não é possível exportar enquanto outras tarefas estão em execução"
 
-#: rayforge/mainwindow.py:1050
+#: rayforge/mainwindow.py:1072
 msgid "Configure frame power to enable"
 msgstr "Configure a potência de enquadramento para habilitar"
 
-#: rayforge/mainwindow.py:1054 rayforge/toolbar.py:211
+#: rayforge/mainwindow.py:1076 rayforge/toolbar.py:211
 msgid "Cycle laser head around the occupied area"
 msgstr "Percorrer a área ocupada com a cabeça do laser"
 
-#: rayforge/mainwindow.py:1065 rayforge/toolbar.py:217
+#: rayforge/mainwindow.py:1087 rayforge/toolbar.py:217
 msgid "Send to machine"
 msgstr "Enviar para a máquina"
 
-#: rayforge/mainwindow.py:1079
+#: rayforge/mainwindow.py:1101
 msgid "Resume machine"
 msgstr "Retomar máquina"
 
-#: rayforge/mainwindow.py:1082 rayforge/toolbar.py:225
+#: rayforge/mainwindow.py:1104 rayforge/toolbar.py:225
 msgid "Pause machine"
 msgstr "Pausar máquina"
 
@@ -1866,7 +2009,7 @@ msgstr "Importar imagem"
 
 #: rayforge/toolbar.py:68
 msgid "Toggle workpiece visibility"
-msgstr "Alternar visibilidade da peça de trabalho"
+msgstr "Alternar visibilidad da peça de trabalho"
 
 #: rayforge/toolbar.py:80
 msgid "Toggle camera image visibility"
@@ -2190,7 +2333,7 @@ msgstr "Falha na importação."
 msgid "Import complete!"
 msgstr "Importação concluída!"
 
-#: rayforge/doceditor/file_cmd.py:297
+#: rayforge/doceditor/file_cmd.py:291
 msgid ""
 "⚠️ Imported item was larger than the work area and has been scaled down to "
 "fit."
@@ -2198,12 +2341,12 @@ msgstr ""
 "⚠️ O item importado era maior que a área de trabalho e foi redimensionado "
 "para caber."
 
-#: rayforge/doceditor/file_cmd.py:381
+#: rayforge/doceditor/file_cmd.py:375
 #, python-brace-format
 msgid "Export successful: {name}"
 msgstr "Exportação bem-sucedida: {name}"
 
-#: rayforge/doceditor/file_cmd.py:391
+#: rayforge/doceditor/file_cmd.py:385
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "Exportação falhou: {error}"
@@ -2372,13 +2515,13 @@ msgid "Change Overscan Distance"
 msgstr "Alterar Distância Overscan"
 
 #: rayforge/doceditor/ui/step_settings/frame.py:43
-#: rayforge/doceditor/ui/step_settings/edge.py:50
+#: rayforge/doceditor/ui/step_settings/contour.py:52
 #: rayforge/doceditor/ui/step_settings/shrinkwrap.py:64
 msgid "Cut Side"
 msgstr "Lado de Corte"
 
 #: rayforge/doceditor/ui/step_settings/frame.py:56
-#: rayforge/doceditor/ui/step_settings/edge.py:63
+#: rayforge/doceditor/ui/step_settings/contour.py:77
 #: rayforge/doceditor/ui/step_settings/shrinkwrap.py:77
 msgid "Path Offset (mm)"
 msgstr "Deslocamento do Caminho (mm)"
@@ -2507,6 +2650,7 @@ msgid "Change Grid Dimensions"
 msgstr "Alterar Dimensões da Grade"
 
 #: rayforge/doceditor/ui/step_settings/rasterizer.py:34
+#: rayforge/doceditor/ui/raster_import_dialog.py:139
 msgid "Threshold"
 msgstr "Limiar"
 
@@ -2567,15 +2711,23 @@ msgstr "Alterar suavidade"
 msgid "Change corner angle"
 msgstr "Alterar ângulo de canto"
 
-#: rayforge/doceditor/ui/step_settings/edge.py:39
+#: rayforge/doceditor/ui/step_settings/contour.py:41
 msgid "Remove Inner Paths"
 msgstr "Remover Caminhos Internos"
 
-#: rayforge/doceditor/ui/step_settings/edge.py:40
+#: rayforge/doceditor/ui/step_settings/contour.py:42
 msgid "If enabled, only trace the outer outline of shapes"
 msgstr "Se ativado, traça apenas o contorno externo das formas."
 
-#: rayforge/doceditor/ui/step_settings/edge.py:65
+#: rayforge/doceditor/ui/step_settings/contour.py:62
+msgid "Cut Order"
+msgstr "Ordem de Corte"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:63
+msgid "Processing order for nested paths"
+msgstr "Ordem de processamento para caminhos aninhados"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:79
 #: rayforge/doceditor/ui/step_settings/shrinkwrap.py:79
 msgid ""
 "Absolute distance from original path, direction is controlled by Cut Side"
@@ -2583,7 +2735,23 @@ msgstr ""
 "Distância absoluta do caminho original. A direção é controlada pelo Lado de "
 "Corte."
 
-#: rayforge/doceditor/ui/step_settings/edge.py:107
+#: rayforge/doceditor/ui/step_settings/contour.py:90
+msgid "Rescan Content"
+msgstr "Reexaminar Conteúdo"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:92
+msgid "Ignore source geometry and re-trace within the workpiece"
+msgstr "Ignorar geometria de origem e retraçar dentro da peça de trabalho"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:100
+msgid "Tracing Threshold"
+msgstr "Limiar de Rastreamento"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:101
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Nível de brilho (0.0-1.0) para definir bordas"
+
+#: rayforge/doceditor/ui/step_settings/contour.py:172
 msgid "Change Edge Tracer Setting"
 msgstr "Alterar Configuração do Traçador de Bordas"
 
@@ -2841,10 +3009,6 @@ msgstr ""
 "Uma predefinição de configurações nomeada que pode ser aplicada "
 "automaticamente mais tarde."
 
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:157
-msgid "Description"
-msgstr "Descrição"
-
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:163
 msgid "Applicability"
 msgstr "Aplicabilidade"
@@ -3012,7 +3176,7 @@ msgid "Show only compatible recipes"
 msgstr "Mostrar apenas receitas compatíveis"
 
 #: rayforge/doceditor/ui/stock_properties_dialog.py:40
-#: rayforge/doceditor/ui/item_properties.py:638
+#: rayforge/doceditor/ui/item_properties.py:662
 msgid "Stock Properties"
 msgstr "Propriedades do Material"
 
@@ -3041,6 +3205,54 @@ msgstr "Receitas"
 msgid "Manage your saved recipes for different materials and processes."
 msgstr "Gerencie suas receitas salvas para diferentes materiais e processos."
 
+#: rayforge/doceditor/ui/raster_import_dialog.py:52
+msgid "Import Image"
+msgstr "Importar imagem"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:68
+msgid "Import"
+msgstr "Importar"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:96
+msgid "Import Mode"
+msgstr "Modo de Importação"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:100
+msgid "Use Original Vectors"
+msgstr "Usar Vetores Originais"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:101
+msgid "Import vector data directly (SVG only)"
+msgstr "Importar Vetores Diretamente (Apenas SVG)"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:111
+msgid "Trace Settings"
+msgstr "Configurações de Rastreamento"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:116
+msgid "Auto Threshold"
+msgstr "Limiar Automático"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:117
+msgid "Automatically determine the trace threshold"
+msgstr "Determinar automaticamente o limiar de rastreamento"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:140
+msgid "Trace objects darker than this value"
+msgstr "Rastrear objetos mais escuros que este valor"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:148
+msgid "Invert"
+msgstr "Inverter"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:149
+msgid "Trace light objects on a dark background"
+msgstr "Rastrear objetos claros em um fundo escuro"
+
+#: rayforge/doceditor/ui/raster_import_dialog.py:236
+msgid "Generating preview..."
+msgstr "Gerando pré-visualização..."
+
 #: rayforge/doceditor/ui/material_selector.py:54
 msgid "Select Material"
 msgstr "Selecionar Material"
@@ -3061,7 +3273,7 @@ msgstr "Largura da Aba (mm)"
 msgid "Adjust Equidistant Tabs"
 msgstr "Ajustar Abas Equidistantes"
 
-#: rayforge/doceditor/ui/step_box.py:87
+#: rayforge/doceditor/ui/step_box.py:83
 msgid "Toggle step visibility"
 msgstr "Alternar visibilidade da etapa"
 
@@ -3142,7 +3354,7 @@ msgstr ""
 "etapa atual. Esta ação não pode ser desfeita."
 
 #: rayforge/doceditor/ui/item_properties.py:38
-#: rayforge/doceditor/ui/item_properties.py:644
+#: rayforge/doceditor/ui/item_properties.py:668
 msgid "Item Properties"
 msgstr "Propriedades do Item"
 
@@ -3203,9 +3415,9 @@ msgid "Tab Width"
 msgstr "Largura da Aba"
 
 #: rayforge/doceditor/ui/item_properties.py:166
-#: rayforge/doceditor/ui/item_properties.py:766
-#: rayforge/doceditor/ui/item_properties.py:777
-#: rayforge/doceditor/ui/item_properties.py:782
+#: rayforge/doceditor/ui/item_properties.py:804
+#: rayforge/doceditor/ui/item_properties.py:815
+#: rayforge/doceditor/ui/item_properties.py:820
 msgid "Length along the path"
 msgstr "Comprimento ao longo do caminho"
 
@@ -3241,56 +3453,56 @@ msgstr "Restaurar inclinação para 0°"
 msgid "Reset tab width to default (1.0 mm)"
 msgstr "Redefinir largura da aba para o padrão (1.0 mm)"
 
-#: rayforge/doceditor/ui/item_properties.py:624
+#: rayforge/doceditor/ui/item_properties.py:648
 msgid "1 item selected"
 msgstr "1 item selecionado"
 
-#: rayforge/doceditor/ui/item_properties.py:626
+#: rayforge/doceditor/ui/item_properties.py:650
 #, python-brace-format
 msgid "{count} items selected"
 msgstr "{count} itens selecionados"
 
-#: rayforge/doceditor/ui/item_properties.py:636
+#: rayforge/doceditor/ui/item_properties.py:660
 msgid "Multiple Items"
 msgstr "Vários Itens"
 
-#: rayforge/doceditor/ui/item_properties.py:640
+#: rayforge/doceditor/ui/item_properties.py:664
 msgid "Workpiece Properties"
 msgstr "Propriedades da Peça de Trabalho"
 
-#: rayforge/doceditor/ui/item_properties.py:642
+#: rayforge/doceditor/ui/item_properties.py:666
 msgid "Group Properties"
 msgstr "Propriedades do Grupo"
 
-#: rayforge/doceditor/ui/item_properties.py:657
+#: rayforge/doceditor/ui/item_properties.py:681
 msgid "Zero is at the top"
 msgstr "O zero fica na parte superior"
 
-#: rayforge/doceditor/ui/item_properties.py:662
+#: rayforge/doceditor/ui/item_properties.py:686
 msgid "Zero is at the bottom"
 msgstr "O zero fica na parte inferior"
 
-#: rayforge/doceditor/ui/item_properties.py:694
-#: rayforge/doceditor/ui/item_properties.py:697
+#: rayforge/doceditor/ui/item_properties.py:729
+#: rayforge/doceditor/ui/item_properties.py:732
 #, python-brace-format
 msgid "Natural: {val:.2f}"
 msgstr "Natural: {val:.2f}"
 
-#: rayforge/doceditor/ui/item_properties.py:737
+#: rayforge/doceditor/ui/item_properties.py:775
 #, python-brace-format
 msgid "{name} (not found)"
 msgstr "{name} (não encontrado)"
 
-#: rayforge/doceditor/ui/item_properties.py:742
+#: rayforge/doceditor/ui/item_properties.py:780
 msgid "(No source file)"
 msgstr "(Nenhum arquivo de origem)"
 
-#: rayforge/doceditor/ui/item_properties.py:759
+#: rayforge/doceditor/ui/item_properties.py:797
 #, python-brace-format
 msgid "{num_tabs} tabs"
 msgstr "{num_tabs} abas de fixação"
 
-#: rayforge/doceditor/ui/item_properties.py:775
+#: rayforge/doceditor/ui/item_properties.py:813
 msgid "Mixed values"
 msgstr "Valores mistos"
 
@@ -3344,40 +3556,12 @@ msgstr "Falha ao atualizar material."
 msgid "Failed to add material to library."
 msgstr "Falha ao adicionar material à biblioteca."
 
-#: rayforge/doceditor/ui/import_handler.py:53
-msgid "SVG Import Options"
-msgstr "Opções de Importação de SVG"
-
-#: rayforge/doceditor/ui/import_handler.py:55
-msgid ""
-"How would you like to import this SVG file?\n"
-"\n"
-"<b>Import Vectors Directly:</b> High-fidelity, but may not  support all SVG "
-"features.\n"
-"<b>Trace Bitmap:</b> More robust, but converts the SVG to pixels first, "
-"which may lose detail."
-msgstr ""
-"Como você gostaria de importar este arquivo SVG?\n"
-"\n"
-"<b>Importar Vetores Diretamente:</b> Alta fidelidade, mas pode não suportar "
-"todos os recursos SVG.\n"
-"<b>Rastrear Bitmap:</b> Mais robusto, mas converte o SVG para pixels "
-"primeiro, o que pode causar perda de detalhes."
-
-#: rayforge/doceditor/ui/import_handler.py:63
-msgid "Import Vectors Directly"
-msgstr "Importar Vetores Diretamente"
-
-#: rayforge/doceditor/ui/import_handler.py:64
-msgid "Trace Bitmap"
-msgstr "Rastrear Bitmap"
-
-#: rayforge/doceditor/ui/import_handler.py:204
+#: rayforge/doceditor/ui/import_handler.py:208
 #, python-brace-format
 msgid "Batch Import {file_count} Images"
 msgstr "Importação em Lote de {file_count} Imagens"
 
-#: rayforge/doceditor/ui/import_handler.py:206
+#: rayforge/doceditor/ui/import_handler.py:210
 #, python-brace-format
 msgid ""
 "Import {file_count} raster images:\n"
@@ -3388,7 +3572,7 @@ msgstr ""
 "{file_names}\n"
 "\n"
 
-#: rayforge/doceditor/ui/import_handler.py:212
+#: rayforge/doceditor/ui/import_handler.py:216
 msgid "Import All"
 msgstr "Importar Tudo"
 
@@ -3426,13 +3610,25 @@ msgstr "Remover etapa '{name}'"
 msgid "Reorder steps"
 msgstr "Reordenar etapas"
 
-#: rayforge/doceditor/group_cmd.py:239
+#: rayforge/doceditor/group_cmd.py:242
 msgid "Grouping items..."
 msgstr "Agrupando itens..."
 
-#: rayforge/doceditor/group_cmd.py:303
+#: rayforge/doceditor/group_cmd.py:313
 msgid "Ungrouping items..."
 msgstr "Desagrupando itens..."
+
+#: rayforge/doceditor/split_cmd.py:80
+msgid "Split item(s)"
+msgstr "Dividir item(ns)"
+
+#: rayforge/doceditor/split_cmd.py:102
+msgid "Remove original item"
+msgstr "Remover item original"
+
+#: rayforge/doceditor/split_cmd.py:116
+msgid "Add split fragments"
+msgstr "Adicionar fragmentos divididos"
 
 #: rayforge/doceditor/edit_cmd.py:100
 msgid "Paste item(s)"
