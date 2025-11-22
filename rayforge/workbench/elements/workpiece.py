@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Cairo has a hard limit on surface dimensions.
-CAIRO_MAX_DIMENSION = 30000
+CAIRO_MAX_DIMENSION = 8192
 OPS_MARGIN_PX = 5
 REC_MARGIN_MM = 0.1  # A small "safe area" margin in mm for recordings
 
