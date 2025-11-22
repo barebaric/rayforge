@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Tuple, Sequence
+from typing import List, Dict, Optional, Tuple, Sequence, TYPE_CHECKING
 from dataclasses import dataclass
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece
+
+if TYPE_CHECKING:
+    from .layer import Layer
 
 
 @dataclass
@@ -24,6 +27,18 @@ class Group(DocItem):
     def __init__(self, name: str = "Group"):
         """Initializes a Group instance."""
         super().__init__(name=name)
+
+    @property
+    def layer(self) -> Optional["Layer"]:
+        """Traverses the hierarchy to find the parent Layer."""
+        from .layer import Layer  # Local import to avoid circular dependency
+
+        p = self.parent
+        while p:
+            if isinstance(p, Layer):
+                return p
+            p = p.parent
+        return None
 
     @property
     def all_workpieces(self) -> List["WorkPiece"]:
