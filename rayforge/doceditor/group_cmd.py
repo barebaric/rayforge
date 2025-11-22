@@ -235,6 +235,9 @@ class GroupCmd:
         if not items_to_group:
             return
 
+        # Notify editor that we are starting a background task
+        self._editor.notify_task_started()
+
         async def group_coro(context: "ExecutionContext"):
             context.set_message(_("Grouping items..."))
             context.flush()
@@ -246,24 +249,28 @@ class GroupCmd:
             return result
 
         def when_done(task: "Task"):
-            if task.get_status() != "completed":
-                logger.error(
-                    "Group task did not complete successfully. Status: %s",
-                    task.get_status(),
+            try:
+                if task.get_status() != "completed":
+                    logger.error(
+                        "Group task did not complete successfully. Status: %s",
+                        task.get_status(),
+                    )
+                    return
+
+                result: Optional[GroupingResult] = task.result()
+                if not result:
+                    return
+
+                command = _CreateGroupCommand(
+                    layer=layer,
+                    items_to_group=items_to_group,
+                    pipeline=self._editor.pipeline,
+                    precalculated_result=result,
                 )
-                return
-
-            result: Optional[GroupingResult] = task.result()
-            if not result:
-                return
-
-            command = _CreateGroupCommand(
-                layer=layer,
-                items_to_group=items_to_group,
-                pipeline=self._editor.pipeline,
-                precalculated_result=result,
-            )
-            self._editor.history_manager.execute(command)
+                self._editor.history_manager.execute(command)
+            finally:
+                # Always notify editor when done, even on failure
+                self._editor.notify_task_ended()
 
         self._task_manager.add_coroutine(
             group_coro,
@@ -278,6 +285,9 @@ class GroupCmd:
         """
         if not groups_to_ungroup:
             return
+
+        # Notify editor that we are starting a background task
+        self._editor.notify_task_started()
 
         def do_calculation_sync() -> Dict[str, Dict[str, Matrix]]:
             results = {}
@@ -310,23 +320,27 @@ class GroupCmd:
             return calculated_matrices
 
         def when_done(task: "Task"):
-            if task.get_status() != "completed":
-                logger.error(
-                    "Ungroup task did not complete successfully. Status: %s",
-                    task.get_status(),
+            try:
+                if task.get_status() != "completed":
+                    logger.error(
+                        "Ungroup task did not complete successfully. "
+                        f"Status: {task.get_status()}",
+                    )
+                    return
+
+                calculated_matrices = task.result()
+                if not calculated_matrices:
+                    return
+
+                command = _UngroupCommand(
+                    groups_to_ungroup=groups_to_ungroup,
+                    pipeline=self._editor.pipeline,
+                    precalculated_matrices=calculated_matrices,
                 )
-                return
-
-            calculated_matrices = task.result()
-            if not calculated_matrices:
-                return
-
-            command = _UngroupCommand(
-                groups_to_ungroup=groups_to_ungroup,
-                pipeline=self._editor.pipeline,
-                precalculated_matrices=calculated_matrices,
-            )
-            self._editor.history_manager.execute(command)
+                self._editor.history_manager.execute(command)
+            finally:
+                # Always notify editor when done, even on failure
+                self._editor.notify_task_ended()
 
         self._task_manager.add_coroutine(
             ungroup_coro,
