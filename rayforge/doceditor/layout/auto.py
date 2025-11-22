@@ -166,23 +166,6 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 prepared_items, canvas, context
             )
 
-            # Apply transformations to place items
-            for placed_item in placements:
-                # Convert pixel coordinates to world coordinates
-                y_px, x_px = placed_item.position_px
-                x_world = group_offset[0] + (x_px / self.resolution)
-                y_world = group_offset[1] + (y_px / self.resolution)
-                placed_item.variant.item.pos = (x_world, y_world)
-
-            if context:
-                context.set_message(
-                    f"Arranged {len(placements)} items. "
-                    f"{len(self.unplaced_items)} could not be placed."
-                )
-
-            # Return empty dict since we're applying positions directly
-            return {}
-
         if self.unplaced_items:
             item_names = ", ".join(item.name for item in self.unplaced_items)
             message = _(
