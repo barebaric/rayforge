@@ -35,7 +35,7 @@ class ContourProducer(OpsProducer):
         self,
         remove_inner_paths: bool = False,
         path_offset_mm: float = 0.0,
-        cut_side: CutSide = CutSide.OUTSIDE,
+        cut_side: CutSide = CutSide.CENTERLINE,
         cut_order: CutOrder = CutOrder.INSIDE_OUTSIDE,
         override_threshold: bool = False,
         threshold: float = 0.5,
@@ -276,12 +276,12 @@ class ContourProducer(OpsProducer):
         """Deserializes a dictionary into an ContourProducer instance."""
         params = data.get("params", {})
         cut_side_str = params.get(
-            "cut_side", params.get("kerf_mode", "OUTSIDE")
+            "cut_side", params.get("kerf_mode", "CENTERLINE")
         )
         try:
             cut_side = CutSide[cut_side_str]
         except KeyError:
-            cut_side = CutSide.OUTSIDE
+            cut_side = CutSide.CENTERLINE
 
         cut_order_str = params.get("cut_order", "INSIDE_OUTSIDE")
         try:
