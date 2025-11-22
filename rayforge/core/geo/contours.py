@@ -204,26 +204,75 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
     if not contours:
         return []
 
-    # Pre-calculate vertices for each contour to avoid repeated computation
-    contour_vertices = [c.segments()[0] for c in contours]
-    contour_points_2d = [[p[:2] for p in v] for v in contour_vertices]
+    count = len(contours)
 
-    normalized_contours: List[Geometry] = []
-    for i, contour_to_normalize in enumerate(contours):
-        if contour_to_normalize.is_empty():
+    # 1. Pre-calculate data to avoid re-computing per iteration
+    # Store: (geometry, start_point_2d, bounding_box)
+    contour_data = []
+
+    for c in contours:
+        if c.is_empty():
+            contour_data.append(None)
             continue
 
-        test_point = contour_points_2d[i][0]
+        segments = c.segments()
+        if not segments:
+            contour_data.append(None)
+            continue
+
+        # Get vertices for point-in-poly check
+        verts_3d = segments[0]
+        verts_2d = [p[:2] for p in verts_3d]
+
+        # Get Bounding Box (min_x, min_y, max_x, max_y)
+        rect = c.rect()
+
+        # We only need one test point to determine nesting
+        test_point = verts_2d[0]
+
+        contour_data.append(
+            {
+                "geo": c,
+                "verts": verts_2d,
+                "rect": rect,
+                "test_point": test_point,
+            }
+        )
+
+    normalized_contours: List[Geometry] = []
+
+    for i in range(count):
+        current = contour_data[i]
+        if current is None:
+            continue
+
         nesting_level = 0
-        for j, other_points in enumerate(contour_points_2d):
+        tx, ty = current["test_point"]
+
+        # Optimization: Filter candidates by Bounding Box first
+        # We check if 'current' is inside 'other'
+        for j in range(count):
             if i == j:
                 continue
-            # Use the raw point-in-polygon test, which is independent of
-            # winding order. This breaks the circular dependency.
-            if is_point_in_polygon(test_point, other_points):
+
+            other = contour_data[j]
+            if other is None:
+                continue
+
+            # Bounding Box Check:
+            # If current.x is outside other.bbox, it strictly cannot be
+            # inside other.
+            o_min_x, o_min_y, o_max_x, o_max_y = other["rect"]
+
+            if tx < o_min_x or tx > o_max_x or ty < o_min_y or ty > o_max_y:
+                continue
+
+            # Detailed Check:
+            # Use the raw point-in-polygon test
+            if is_point_in_polygon(current["test_point"], other["verts"]):
                 nesting_level += 1
 
-        signed_area = get_subpath_area(contour_to_normalize.commands, 0)
+        signed_area = get_subpath_area(current["geo"].commands, 0)
         is_ccw = signed_area > 0
         is_nested_odd = nesting_level % 2 != 0
 
@@ -231,9 +280,9 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
         # A hole (odd nesting) should be CW.
         # If the current state is wrong, reverse the contour.
         if (is_nested_odd and is_ccw) or (not is_nested_odd and not is_ccw):
-            normalized_contours.append(reverse_contour(contour_to_normalize))
+            normalized_contours.append(reverse_contour(current["geo"]))
         else:
-            normalized_contours.append(contour_to_normalize)
+            normalized_contours.append(current["geo"])
 
     return normalized_contours
 
