@@ -287,15 +287,6 @@ class FileCmd:
             scale_factor = min(scale_w, scale_h)
 
         if scale_factor < 1.0:
-            msg = _(
-                "⚠️ Imported item was larger than the work area and has been "
-                "scaled down to fit."
-            )
-            logger.info(msg)
-            self._editor.notification_requested.send(
-                self, message=msg, persistent=True
-            )
-
             # The pivot for scaling should be the center of the bounding box
             bbox_center_x = bbox_x + bbox_w / 2
             bbox_center_y = bbox_y + bbox_h / 2
@@ -327,6 +318,54 @@ class FileCmd:
             for item in items:
                 # Pre-multiply to apply translation in world space
                 item.matrix = translation_matrix @ item.matrix
+
+        # 3. Notification with Undo logic
+        # We define this after centering so the callback can handle the
+        # final position correctly.
+        if scale_factor < 1.0:
+
+            def _undo_scaling_callback():
+                """
+                Reverts the auto-scaling applied during import.
+                It scales the items back up around their CURRENT center.
+                """
+                # Calculate current bounding box to find the center
+                current_bbox = self._calculate_items_bbox(items)
+                if not current_bbox:
+                    return
+
+                cur_x, cur_y, cur_w, cur_h = current_bbox
+                cur_cx = cur_x + cur_w / 2
+                cur_cy = cur_y + cur_h / 2
+
+                inv_scale = 1.0 / scale_factor
+
+                # Create a matrix that scales by 1/factor around the current
+                # center
+                undo_matrix = Matrix.scale(
+                    inv_scale, inv_scale, center=(cur_cx, cur_cy)
+                )
+
+                changes = []
+                for item in items:
+                    current = item.matrix
+                    new_m = undo_matrix @ current
+                    changes.append((item, current, new_m))
+
+                self._editor.transform.create_transform_transaction(changes)
+
+            msg = _(
+                "⚠️ Imported item was larger than the work area and has been "
+                "scaled down to fit."
+            )
+            logger.info(msg)
+            self._editor.notification_requested.send(
+                self,
+                message=msg,
+                persistent=True,
+                action_label=_("Reset"),
+                action_callback=_undo_scaling_callback,
+            )
 
     def assemble_job_in_background(
         self,

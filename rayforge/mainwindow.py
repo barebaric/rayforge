@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, cast, Coroutine
+from typing import List, Optional, cast, Coroutine, Callable
 from gi.repository import Gtk, Gio, GLib, Gdk, Adw
 import asyncio
 from concurrent.futures import Future
@@ -777,17 +777,30 @@ class MainWindow(Adw.ApplicationWindow):
             self.workflowview.set_workflow(activated_layer.workflow)
 
     def _on_editor_notification(
-        self, sender, message: str, persistent: bool = False
+        self,
+        sender,
+        message: str,
+        persistent: bool = False,
+        action_label: Optional[str] = None,
+        action_callback: Optional[Callable] = None,
     ):
         """
         Shows a toast when requested by the DocEditor.
         If 'persistent' is True, the toast will have a dismiss button and
         remain visible until closed.
+        If 'action_label' and 'action_callback' are provided, a button
+        will be added to the toast that triggers the callback.
         """
         toast = Adw.Toast.new(message)
         if persistent:
             toast.set_timeout(0)  # 0 = persistent
             toast.set_priority(Adw.ToastPriority.HIGH)
+
+        if action_label and action_callback:
+            toast.set_button_label(action_label)
+            # Connecting directly to 'button-clicked' is the simplest way
+            # to handle a callback without defining a GAction.
+            toast.connect("button-clicked", lambda t: action_callback())
 
         self._add_toast(toast)
 
