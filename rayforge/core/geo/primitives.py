@@ -8,11 +8,30 @@ def is_point_in_polygon(
 ) -> bool:
     """
     Checks if a point is inside or on the boundary of a polygon using a
-    robust, two-stage process.
+    robust, multi-stage process (AABB -> Boundary -> Ray-Casting).
     """
     x, y = point
     n = len(polygon)
     if n < 3:
+        return False
+
+    # --- Stage 0: AABB Optimization ---
+    # Fast fail if the point is outside the bounding box of the polygon.
+    # We compute min/max manually to avoid creating intermediate lists.
+    min_x = max_x = polygon[0][0]
+    min_y = max_y = polygon[0][1]
+
+    for px, py in polygon:
+        if px < min_x:
+            min_x = px
+        elif px > max_x:
+            max_x = px
+        if py < min_y:
+            min_y = py
+        elif py > max_y:
+            max_y = py
+
+    if x < min_x or x > max_x or y < min_y or y > max_y:
         return False
 
     # --- Stage 1: Boundary Check ---
