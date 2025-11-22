@@ -94,6 +94,8 @@ class WorkPiecePipelineStage(PipelineStage):
             if layer.workflow is None:
                 continue
             for step in layer.workflow.steps:
+                if not step.visible:
+                    continue
                 for workpiece in layer.all_workpieces:
                     if self._is_stale(step, workpiece):
                         self._launch_task(step, workpiece)
