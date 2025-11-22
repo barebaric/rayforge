@@ -32,11 +32,9 @@ if [[ ! -f "$REQUIREMENTS_FILE" ]]; then
     exit 1
 fi
 
-if ! command -v jq &> /dev/null; then
-    echo "::error::jq is not installed. Please install it to continue."
-    exit 1
-fi
-
+# Use pip download instead of curl/jq to ensure ABI compatibility
+# This grabs wheels matching the current system (Ubuntu 24.04/Py3.12)
+# which matches both the runner and the PPA builder.
 while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" ]] && continue
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -44,36 +42,16 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         echo "::error::Invalid requirement format (must contain '=='): $line"
         exit 1
     fi
-    package="${line%%==*}"
-    version="${line##*==}"
-    if [[ -z "$package" ]] || [[ -z "$version" ]]; then
-        echo "::error::Invalid requirement format: $line"
-        exit 1
-    fi
-    echo "Fetching artifact for $package==$version..."
-    json_url="https://pypi.org/pypi/${package}/${version}/json"
-    response=$(curl -sSL --fail --user-agent "Mozilla/5.0 (compatible; Debian-PPA-Build/1.0)" "$json_url")
-    if ! echo "$response" | jq . >/dev/null 2>&1; then
-        echo "::error::PyPI returned invalid JSON for $package==$version"
-        exit 1
-    fi
+    
+    echo "Downloading artifact for $line..."
+    # --prefer-binary: Get wheels (prevents compilation on Launchpad)
+    # --no-deps: Only vendor the specific packages listed
+    python3 -m pip download \
+        --dest "${TMP_SRC_DIR}/vendor/sdist" \
+        --no-deps \
+        --prefer-binary \
+        "$line"
 
-    # TRY WHEEL FIRST (manylinux x86_64) to avoid offline compilation
-    # issues (e.g. Cargo/Rust)
-    source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "bdist_wheel" and (.filename | test("manylinux.*x86_64"))) | .url' | head -n 1)
-
-    if [[ -z "$source_url" ]]; then
-        echo "No binary wheel found, falling back to sdist..."
-        source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "sdist") | .url' | head -n 1)
-    fi
-
-    if [[ -z "$source_url" ]]; then
-        echo "::error::No compatible artifact found for $package==$version"
-        exit 1
-    fi
-    filename=$(basename "$source_url")
-    echo "Downloading: $filename"
-    curl -sSL "$source_url" -o "${TMP_SRC_DIR}/vendor/sdist/${filename}"
 done < "$REQUIREMENTS_FILE"
 
 if [[ -z "$(ls -A "${TMP_SRC_DIR}/vendor/sdist/" 2>/dev/null)" ]]; then
