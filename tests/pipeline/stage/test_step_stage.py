@@ -68,6 +68,7 @@ def mock_doc_and_step():
     step = MagicMock(spec=Step)
     step.uid = "step1"
     step.per_step_transformers_dicts = []
+    step.visible = True
 
     # Mock the read-only 'layer' property to return our mock layer
     type(step).layer = PropertyMock(return_value=layer)
