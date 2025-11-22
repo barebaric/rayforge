@@ -70,6 +70,10 @@ class DocEditor:
         # that don't live in the Pipeline cache.
         self._transient_artifact_handles: set[JobArtifactHandle] = set()
 
+        # Track the number of active background tasks initiated by editor
+        # commands
+        self._busy_task_count: int = 0
+
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
@@ -265,10 +269,41 @@ class DocEditor:
     @property
     def is_processing(self) -> bool:
         """Returns True if the document is currently generating operations."""
-        return self.pipeline.is_busy
+        # The editor is busy if the pipeline is active OR if there are
+        # outstanding background tasks (like grouping calculations)
+        # running.
+        return self.pipeline.is_busy or self._busy_task_count > 0
+
+    def notify_task_started(self):
+        """
+        Notifies the editor that a background task (e.g. calculation) has
+        started.
+        This prevents wait_until_settled from returning prematurely.
+        """
+        was_processing = self.is_processing
+        self._busy_task_count += 1
+
+        # If we transitioned from idle to busy, emit the signal.
+        if not was_processing:
+            self.processing_state_changed.send(self, is_processing=True)
+
+    def notify_task_ended(self):
+        """
+        Notifies the editor that a background task has ended.
+        """
+        if self._busy_task_count > 0:
+            self._busy_task_count -= 1
+
+        # If we transitioned from busy to idle, emit the signals.
+        if not self.is_processing:
+            self.processing_state_changed.send(self, is_processing=False)
+            self.document_settled.send(self)
 
     def _on_processing_state_changed(self, sender, is_processing: bool):
         """Proxies the signal from the Pipeline."""
-        self.processing_state_changed.send(self, is_processing=is_processing)
-        if not is_processing:
+        # Use the effective state (pipeline + tasks) rather than just
+        # pipeline state
+        effective_state = self.is_processing
+        self.processing_state_changed.send(self, is_processing=effective_state)
+        if not effective_state:
             self.document_settled.send(self)
