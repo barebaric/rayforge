@@ -84,6 +84,11 @@ class WorkPiece(DocItem):
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
 
+        # Transient cache for UI view artifacts (Cairo surfaces, etc.)
+        # This persists across view element destruction/creation
+        # (e.g. Grouping) but is not serialized to disk.
+        self._view_cache: Dict[str, Any] = {}
+
     @property
     def natural_size(self) -> Tuple[float, float]:
         """

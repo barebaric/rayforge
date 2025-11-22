@@ -149,9 +149,59 @@ class WorkPieceElement(CanvasElement):
         # the transform matrix is pre-synced (e.g. during interactive drags).
         self._last_synced_size = self.data.size
 
+        # Attempt to hydrate visual state from the model's transient cache
+        hydrated = self._hydrate_from_cache()
+
         self._on_transform_changed(self.data)
         self._create_or_update_tab_handles()
-        self.invalidate_and_rerender()
+
+        # Only invalidate if we didn't recover state from the cache.
+        if not hydrated:
+            self.invalidate_and_rerender()
+        else:
+            # We recovered state, but verify if a repaint is needed
+            super().trigger_update()
+
+    def _hydrate_from_cache(self) -> bool:
+        """
+        Restores visual state from the persistent model cache if available.
+        Returns True if significant state was restored.
+        """
+        cache = self.data._view_cache
+        if not cache:
+            return False
+
+        # Restore caches. We copy the dictionaries to avoid modification
+        # issues, but the heavy objects (Surfaces) are shared references.
+        self._surface = cache.get("surface")
+        self._ops_surfaces = cache.get("ops_surfaces", {}).copy()
+        self._ops_recordings = cache.get("ops_recordings", {}).copy()
+        self._texture_surfaces = cache.get("texture_surfaces", {}).copy()
+        self._artifact_cache = cache.get("artifact_cache", {}).copy()
+        self._ops_generation_ids = cache.get("ops_generation_ids", {}).copy()
+
+        # Note: We do NOT restore _progressive_view_surfaces because they rely
+        # on shared memory handles which may have been released or are hard
+        # to manage across view lifecycles.
+
+        # Consider hydrated if we have a base surface or artifacts
+        return (
+            self._surface is not None
+            or len(self._artifact_cache) > 0
+            or len(self._ops_surfaces) > 0
+        )
+
+    def _update_model_view_cache(self):
+        """
+        Updates the persistent cache on the model with current view state.
+        """
+        cache = self.data._view_cache
+        cache["surface"] = self._surface
+        cache["ops_surfaces"] = self._ops_surfaces
+        cache["ops_recordings"] = self._ops_recordings
+        cache["texture_surfaces"] = self._texture_surfaces
+        cache["artifact_cache"] = self._artifact_cache
+        cache["ops_generation_ids"] = self._ops_generation_ids
 
     def invalidate_and_rerender(self):
         """
@@ -162,6 +212,10 @@ class WorkPieceElement(CanvasElement):
         logger.debug(f"Full invalidation for workpiece '{self.data.name}'")
         # Clear the local artifact cache to prevent drawing stale vectors
         self._artifact_cache.clear()
+
+        # Clear the model cache as well, since the data is invalid
+        self.data._view_cache.clear()
+
         if self.data.layer and self.data.layer.workflow:
             for step in self.data.layer.workflow.steps:
                 self.clear_ops_surface(step.uid)
@@ -179,6 +233,10 @@ class WorkPieceElement(CanvasElement):
 
         # 2. Invalidate only the rasterized ops surfaces, not the recordings.
         self._ops_surfaces.clear()
+
+        # Note: We do NOT clear the model cache here, as view updates
+        # (like zooming) shouldn't erase the persistent data needed by
+        # other views or future rebuilds.
 
         # 3. Trigger a re-render of everything at the new resolution.
         self.trigger_ops_rerender()
@@ -593,6 +651,7 @@ class WorkPieceElement(CanvasElement):
 
         # Fetch and cache the final artifact, making it available to all paths.
         self._artifact_cache[step.uid] = artifact
+        self._update_model_view_cache()
 
         # Asynchronously prepare texture surface if it exists
         if artifact and artifact.texture_data:
@@ -675,6 +734,8 @@ class WorkPieceElement(CanvasElement):
 
         step_uid, texture_surface = result
         self._texture_surfaces[step_uid] = texture_surface
+        self._update_model_view_cache()
+
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -860,6 +921,7 @@ class WorkPieceElement(CanvasElement):
 
         logger.debug(f"Applying new ops recording for step '{step_uid}'.")
         self._ops_recordings[step_uid] = recording
+        self._update_model_view_cache()
 
         # Find the Step object to trigger the initial rasterization.
         if self.data.layer and self.data.layer.workflow:
@@ -1257,6 +1319,7 @@ class WorkPieceElement(CanvasElement):
             f"Applying newly rendered ops surface for step '{step_uid}'."
         )
         self._ops_surfaces[step_uid] = (new_surface, bbox_mm)
+        self._update_model_view_cache()  # Save to model cache
         self._ops_render_futures.pop(step_uid, None)
         if self.canvas:
             # This call is now safe because we are on the main thread.
@@ -1557,6 +1620,9 @@ class WorkPieceElement(CanvasElement):
         # simply trigger a redraw.
         self._ops_surfaces.clear()
         self._ops_recordings.clear()
+
+        # Also clear from persistent cache so they don't reappear on reload
+        self._update_model_view_cache()
 
         # Cancel any in-progress renders that might repopulate the caches.
         for future in list(self._ops_render_futures.values()):
