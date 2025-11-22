@@ -2,6 +2,7 @@ import logging
 from typing import cast, TYPE_CHECKING
 from ...core.workflow import Step
 from ..canvas import CanvasElement
+from .group import GroupElement
 from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
@@ -85,5 +86,5 @@ class StepElement(CanvasElement):
 
         # Iterate through all children of the parent (the LayerElement)
         for child in parent.children:
-            if isinstance(child, WorkPieceElement):
+            if isinstance(child, (WorkPieceElement, GroupElement)):
                 child.set_ops_visibility(step_uid, is_visible)
