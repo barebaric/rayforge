@@ -1,16 +1,18 @@
 # Importing Files
 
-Rayforge supports importing various file formats, both vector and raster. This page explains how to import files and optimize them for best results.
+Rayforge supports importing various file formats, both vector and raster. This page explains
+how to import files and optimize them for best results.
 
 ## Supported File Formats
 
 ### Vector Formats
 
-| Format  | Extension | Import Method           | Best For                        |
-| ------- | --------- | ----------------------- | ------------------------------- |
-| **SVG** | `.svg`    | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF** | `.dxf`    | Direct vectors          | CAD drawings, technical designs |
-| **PDF** | `.pdf`    | Render and trace        | Documents with vector content   |
+| Format    | Extension | Import Method           | Best For                        |
+| --------- | --------- | ----------------------- | ------------------------------- |
+| **SVG**   | `.svg`    | Direct vectors or trace | Vector graphics, logos, designs |
+| **DXF**   | `.dxf`    | Direct vectors          | CAD drawings, technical designs |
+| **PDF**   | `.pdf`    | Render and trace        | Documents with vector content   |
+| **Ruida** | `.rd`     | Direct vectors          | Ruida controller job files      |
 
 ### Raster Formats
 
@@ -21,25 +23,39 @@ Rayforge supports importing various file formats, both vector and raster. This p
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
 !!! note "Raster Import"
-    All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
+All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
 
 ---
 
 ## Importing Files
 
+### The Import Dialog
+
+Rayforge features a unified import dialog that provides live preview and
+configuration options for all supported file types. The dialog allows you to:
+
+- **Preview your import** before adding it to the document
+- **Configure tracing settings** for raster images
+- **Choose import method** for SVG files (direct vectors or trace)
+- **Adjust parameters** like threshold, invert, and auto-threshold
+
+![Import Dialog](../images/import-dialog.png)
+
 ### Method 1: File Menu
 
 1. **File Import** (or Ctrl+I)
 2. **Select your file** from the file picker
-3. **For SVG:** Choose import method (see below)
-4. **For rasters:** Files are automatically traced
-5. **File appears** in the canvas and document tree
+3. **Configure import settings** in the import dialog
+4. **Preview** the result before importing
+5. **Click Import** to add to canvas and document tree
 
 ### Method 2: Drag and Drop
 
 1. **Drag file** from your file manager
 2. **Drop onto** the Rayforge canvas
-3. **Import proceeds** as above
+3. **Configure import settings** in the import dialog
+4. **Preview** the result before importing
+5. **Click Import** to add to canvas and document tree
 
 ### Method 3: Command Line
 
@@ -51,17 +67,39 @@ rayforge myfile.svg
 rayforge file1.svg file2.dxf
 ```
 
+### Auto-Resize on Import
+
+When importing files that are larger than your machine's work area, Rayforge will
+automatically:
+
+1. **Scale down** the imported content to fit within the machine boundaries
+2. **Preserve aspect ratio** during scaling
+3. **Center** the scaled content in the workspace
+4. **Show a notification** with the option to undo the resize
+
+The resize notification appears as a toast message:
+
+- ⚠️ "Imported item was larger than the work area and has been scaled down to fit."
+- Includes a **"Reset"** button to undo the auto-resize
+- The toast remains visible until dismissed or the reset action is taken
+
+This ensures your designs always fit within your machine's capabilities while giving you
+the flexibility to restore the original size if needed.
+
 ---
 
 ## SVG Import
 
 SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
-### Import Options
+### Import Options in the Dialog
 
-When importing SVG, Rayforge offers two methods:
+When importing SVG, the import dialog provides a toggle switch to choose
+between two methods:
 
-#### 1. Import Vectors Directly (Recommended)
+#### 1. Use Original Vectors (Recommended)
+
+This option is enabled by default in the import dialog.
 
 **How it works:**
 
@@ -88,6 +126,8 @@ When importing SVG, Rayforge offers two methods:
 
 #### 2. Trace Bitmap
 
+Disable "Use Original Vectors" to use this method.
+
 **How it works:**
 
 - Renders SVG to a raster image first
@@ -112,24 +152,32 @@ When importing SVG, Rayforge offers two methods:
 - SVGs with effects, filters, gradients
 - When direct import produces errors
 
+### Live Preview
+
+The import dialog shows a live preview of how your SVG will be imported:
+
+- Vector paths are displayed in blue overlay
+- For trace mode, the original image is shown with the traced paths
+- Preview updates in real-time as you change settings
+
 ### SVG Best Practices
 
 **Prepare your SVG for best results:**
 
 1. **Convert text to paths:**
 
-   - Inkscape: `Path  Object to Path`
-   - Illustrator: `Type  Create Outlines`
+   - Inkscape: `Path → Object to Path`
+   - Illustrator: `Type → Create Outlines`
 
 2. **Simplify complex paths:**
 
-   - Inkscape: `Path  Simplify` (Ctrl+L)
+   - Inkscape: `Path → Simplify` (Ctrl+L)
    - Remove unnecessary nodes
 
 3. **Ungroup nested groups:**
 
    - Flatten hierarchy where possible
-   - `Object  Ungroup` (Ctrl+Shift+G)
+   - `Object → Ungroup` (Ctrl+Shift+G)
 
 4. **Remove hidden elements:**
 
@@ -207,13 +255,15 @@ PDF files can contain vector graphics, raster images, or both.
 
 ### How PDF Import Works
 
-Rayforge **renders the PDF** to an image, then **traces** it to create vectors.
+When importing PDF files through the import dialog, Rayforge **renders the PDF**
+to an image, then **traces** it to create vectors.
 
 **Process:**
 
-1. PDF rendered at specified DPI (default 300)
-2. Rendered image traced using vectorization
-3. Resulting paths added to document
+1. PDF rendered and displayed in the import dialog preview
+2. You can adjust tracing settings in real-time
+3. Rendered image traced using vectorization with your settings
+4. Resulting paths added to document when you click Import
 
 **Limitations:**
 
@@ -236,36 +286,63 @@ Rayforge **renders the PDF** to an image, then **traces** it to create vectors.
    - SVG will have better quality than PDF import
 
 3. **For documents with text:**
+
    - Export as SVG with fonts converted to paths
    - Or render PDF at high DPI (600+) and trace
+
+4. **Use the import dialog preview:**
+   - Adjust threshold and invert settings for best results
+   - Preview shows exactly how the PDF will be traced
+
+---
+
+## Ruida Import
+
+Ruida (.rd) files are proprietary binary job files used by Ruida controllers in many
+laser cutting machines. These files contain both vector geometry and laser settings
+organized in layers (colors).
+
+**After import:**
+
+- **Check scale** - Verify dimensions match expected size
+- **Review layers** - Ensure all layers imported correctly
+- **Validate paths** - Confirm all cutting paths are present
+
+### Limitations
+
+- **Read-only import** - Ruida files can only be imported, not exported
+- **Binary format** - Direct editing of original .rd files not supported
+- **Proprietary features** - Some advanced Ruida features may not be fully supported
 
 ---
 
 ## Raster Image Import (PNG, JPG, BMP)
 
-Raster images are **automatically traced** to create vector paths.
+Raster images are **traced** to create vector paths using the import dialog.
 
-### Tracing Process
+### Tracing Process in the Dialog
 
 **How it works:**
 
-1. **Image loaded** into Rayforge
-2. **Tracing algorithm** detects edges and shapes
-3. **Vector paths created** from the traced edges
-4. **Paths added** to the document as workpieces
+1. **Image loaded** into the import dialog
+2. **Live preview** shows the traced result
+3. **Tracing settings** can be adjusted in real-time
+4. **Vector paths created** from the traced edges
+5. **Paths added** to the document as workpieces when imported
 
-### Tracing Configuration
+### Tracing Configuration in the Dialog
 
-**Adjustable parameters:**
+The import dialog provides these adjustable parameters:
 
-| Parameter            | Description             | Effect                                  |
-| -------------------- | ----------------------- | --------------------------------------- |
-| **Threshold**        | Black/white cutoff      | Lower = more detail, higher = simpler   |
-| **Despeckle**        | Remove noise            | Higher = cleaner, removes small details |
-| **Smoothing**        | Curve smoothing         | Higher = smoother but less accurate     |
-| **Corner Threshold** | Sharp vs smooth corners | Lower = more sharp corners              |
+| Parameter          | Description         | Effect                                              |
+| ------------------ | ------------------- | --------------------------------------------------- |
+| **Auto Threshold** | Automatic detection | When enabled, automatically finds optimal threshold |
+| **Threshold**      | Black/white cutoff  | Lower = more detail, higher = simpler               |
+| **Invert**         | Reverse colors      | Trace light objects on dark background              |
 
-**Default settings** work well for most images.
+**Default settings** work well for most images. The dialog shows a live preview
+that updates as you adjust these settings, allowing you to fine-tune the trace
+before importing.
 
 ### Preparing Images for Tracing
 
@@ -329,10 +406,11 @@ Raster images are **automatically traced** to create vector paths.
 **Solutions:**
 
 1. **Check file format** - Ensure it's a supported type
-2. **Try different format** - Convert SVG DXF or vice versa
+2. **Try different format** - Convert SVG to DXF or vice versa
 3. **Re-export from source** - Original software may have export issues
 4. **Check file corruption** - Open in another application first
 5. **Simplify the file** - Remove complex features and retry
+6. **For Ruida files** - Verify file has proper .rd extension and isn't corrupted
 
 ### Import is Empty
 
@@ -346,7 +424,7 @@ Raster images are **automatically traced** to create vector paths.
 
 **Solutions:**
 
-- **Zoom out significantly** or `View  Zoom to Fit`
+- **Zoom out significantly** or `View → Zoom to Fit`
 - **Check source file** in original application
 - **Simplify and re-export** from design software
 - **Check document tree** - objects may be there but not visible
@@ -361,6 +439,7 @@ Raster images are **automatically traced** to create vector paths.
 2. **Scale issue** - DPI or export settings wrong
 3. **Transform matrix** - Complex transformations not handled
 4. **Curved paths** - Arc/bezier conversion issues
+5. **For Ruida files** - Coordinate system conversion issues
 
 **Solutions:**
 
@@ -368,6 +447,7 @@ Raster images are **automatically traced** to create vector paths.
 - **Scale manually** - Measure and correct after import
 - **Simplify paths** - Convert complex curves to simpler forms
 - **Export as simpler format** - Try different export settings
+- **For Ruida files** - Check that all layers imported correctly
 
 ### Trace Quality Poor
 
@@ -428,6 +508,7 @@ Before importing:
 - [ ] Appropriate file format selected
 - [ ] File tested in original software
 - [ ] Exported with compatible settings
+- [ ] For Ruida files: verify file integrity and .rd extension
 
 ### Design Software Recommendations
 
