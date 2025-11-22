@@ -46,6 +46,7 @@ jobs:
           python3-maturin
           python3-numpy
           pybuild-plugin-pyproject
+          python3-pip
           python3-poetry-core
           python3-pyclipper
           cython3
