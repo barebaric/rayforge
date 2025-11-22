@@ -79,6 +79,8 @@ class StepPipelineStage(PipelineStage):
         for layer in doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
+                    if not step.visible:
+                        continue
                     # Trigger assembly if the render artifact is missing.
                     if not self._artifact_cache.has_step_render_handle(
                         step.uid
