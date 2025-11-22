@@ -65,6 +65,14 @@ class GroupElement(ShrinkWrapGroup):
         self.data.descendant_removed.disconnect(self.sync_with_model)
         super().remove()
 
+    def set_ops_visibility(self, step_uid: str, visible: bool):
+        """
+        Propagates the ops visibility setting to all child elements.
+        """
+        for child in self.children:
+            assert isinstance(child, (WorkPieceElement, GroupElement))
+            child.set_ops_visibility(step_uid, visible)
+
     def get_elem_hit(
         self, world_x: float, world_y: float, selectable: bool = False
     ) -> Optional["CanvasElement"]:
