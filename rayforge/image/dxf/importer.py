@@ -78,17 +78,41 @@ class DxfImporter(Importer):
         self._prepare_blocks_cache(
             doc, scale, min_x_mm, min_y_mm, source, blocks_cache
         )
-        # Parse the main modelspace into a list of DocItems.
-        items = self._entities_to_doc_items(
-            doc.modelspace(),
-            doc,
-            scale,
-            min_x_mm,
-            min_y_mm,
-            source,
-            blocks_cache,
-        )
-        return ImportPayload(source=source, items=items)
+
+        # Group entities by layer to support layer-based grouping
+        layer_map: Dict[str, List] = {}
+        for entity in doc.modelspace():
+            layer = entity.dxf.layer
+            if layer not in layer_map:
+                layer_map[layer] = []
+            layer_map[layer].append(entity)
+
+        active_layers = []
+        for layer_name, entities in layer_map.items():
+            items = self._entities_to_doc_items(
+                entities,
+                doc,
+                scale,
+                min_x_mm,
+                min_y_mm,
+                source,
+                blocks_cache,
+            )
+            if items:
+                active_layers.append((layer_name, items))
+
+        result_items: List[DocItem] = []
+
+        # If only one single layer exist, it should not be grouped.
+        if len(active_layers) == 1:
+            result_items = active_layers[0][1]
+        else:
+            for layer_name, items in active_layers:
+                group = Group(name=layer_name)
+                group.set_children(items)
+                result_items.append(group)
+
+        return ImportPayload(source=source, items=result_items)
 
     def _prepare_blocks_cache(
         self,

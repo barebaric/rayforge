@@ -18,7 +18,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
 )
 from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
-from rayforge.pipeline.producer.edge import EdgeTracer
+from rayforge.pipeline.producer.contour import ContourProducer
 from rayforge.pipeline.producer.depth import DepthEngraver
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
@@ -109,7 +109,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 ):
     # Arrange
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = EdgeTracer().to_dict()
+    step.opsproducer_dict = ContourProducer().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 1
@@ -247,7 +247,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     empty_workpiece.set_size(10, 10)
 
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = EdgeTracer().to_dict()
+    step.opsproducer_dict = ContourProducer().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 3
@@ -281,7 +281,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
 def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
     # Arrange
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = EdgeTracer().to_dict()
+    step.opsproducer_dict = ContourProducer().to_dict()
     transformers = [MultiPassTransformer(passes=2).to_dict()]
     settings = step.get_settings()
     laser = Laser()
@@ -290,7 +290,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
     handle = None
 
     # Expected command count:
-    # 4 initial state + 8 from EdgeTracer = 12 commands
+    # 4 initial state + 8 from ContourProducer = 12 commands
     # It may contain more due to inner/outer edge separation
     # MultiPass(2) duplicates the whole block -> 12 * 2 = 24 commands
 

@@ -174,7 +174,7 @@ def make_workpiece_artifact_in_subprocess(
         if not surface:
             return
 
-        # The producer (e.g., EdgeTracer) will trace the bitmap and return
+        # The producer (e.g., ContourProducer) will trace the bitmap and return
         # an artifact with pixel coordinates.
         artifact = _trace_and_modify_surface(
             surface, None, step_settings=settings

@@ -2,17 +2,19 @@ from typing import Dict, Any, TYPE_CHECKING, cast
 from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer, CutSide
-from ....pipeline.producer.edge import EdgeTracer, CutOrder
+from ....pipeline.producer.contour import ContourProducer, CutOrder
 from ....shared.util.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....core.step import Step
-    from ....doceditor.editor import DocEditor
+    from ...editor import DocEditor
 
 
-class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    """UI for configuring the EdgeTracer."""
+class ContourProducerSettingsWidget(
+    DebounceMixin, StepComponentSettingsWidget
+):
+    """UI for configuring the ContourProducer."""
 
     def __init__(
         self,
@@ -23,7 +25,7 @@ class EdgeTracerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         step: "Step",
         **kwargs,
     ):
-        producer = cast(EdgeTracer, OpsProducer.from_dict(target_dict))
+        producer = cast(ContourProducer, OpsProducer.from_dict(target_dict))
 
         super().__init__(
             editor,

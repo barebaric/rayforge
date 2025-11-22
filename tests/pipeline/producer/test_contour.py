@@ -5,7 +5,11 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.pipeline.producer.edge import EdgeTracer, CutSide, CutOrder
+from rayforge.pipeline.producer.contour import (
+    ContourProducer,
+    CutSide,
+    CutOrder,
+)
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -100,8 +104,8 @@ def vector_workpiece() -> WorkPiece:
 
 
 def test_serialization():
-    """Test to_dict and from_dict for EdgeTracer."""
-    tracer = EdgeTracer(
+    """Test to_dict and from_dict for ContourProducer."""
+    tracer = ContourProducer(
         remove_inner_paths=True,
         path_offset_mm=0.5,
         cut_side=CutSide.INSIDE,
@@ -110,7 +114,7 @@ def test_serialization():
     data = tracer.to_dict()
     recreated = OpsProducer.from_dict(data)
 
-    assert isinstance(recreated, EdgeTracer)
+    assert isinstance(recreated, ContourProducer)
     assert recreated.remove_inner_paths is True
     assert recreated.path_offset_mm == 0.5
     assert recreated.cut_side == CutSide.INSIDE
@@ -119,7 +123,7 @@ def test_serialization():
 
 def test_centerline_preserves_geometry(laser, dummy_surface, vector_workpiece):
     """Test CutSide.CENTERLINE (No offset)."""
-    tracer = EdgeTracer(cut_side=CutSide.CENTERLINE)
+    tracer = ContourProducer(cut_side=CutSide.CENTERLINE)
 
     artifact = tracer.run(
         laser, dummy_surface, (10, 10), workpiece=vector_workpiece
@@ -155,7 +159,7 @@ def test_outside_cut_expands_outer_shrinks_hole(
     Kerf = 1.0mm (override in settings).
     Offset = Kerf / 2 = 0.5mm.
     """
-    tracer = EdgeTracer(cut_side=CutSide.OUTSIDE)
+    tracer = ContourProducer(cut_side=CutSide.OUTSIDE)
     settings = {"kerf_mm": 1.0}
 
     artifact = tracer.run(
@@ -191,7 +195,7 @@ def test_inside_cut_shrinks_outer_expands_hole(
 
     Kerf = 1.0mm. Offset = -0.5mm.
     """
-    tracer = EdgeTracer(cut_side=CutSide.INSIDE)
+    tracer = ContourProducer(cut_side=CutSide.INSIDE)
     settings = {"kerf_mm": 1.0}
 
     artifact = tracer.run(
@@ -220,7 +224,7 @@ def test_manual_path_offset(laser, dummy_surface, vector_workpiece):
     Offset = 2.0mm. CutSide=OUTSIDE. Kerf=0.
     Total Offset = +2.0mm.
     """
-    tracer = EdgeTracer(cut_side=CutSide.OUTSIDE, path_offset_mm=2.0)
+    tracer = ContourProducer(cut_side=CutSide.OUTSIDE, path_offset_mm=2.0)
     settings = {"kerf_mm": 0.0}
 
     artifact = tracer.run(
@@ -244,7 +248,9 @@ def test_manual_path_offset(laser, dummy_surface, vector_workpiece):
 
 def test_remove_inner_paths(laser, dummy_surface, vector_workpiece):
     """Test that remove_inner_paths=True deletes the hole."""
-    tracer = EdgeTracer(cut_side=CutSide.CENTERLINE, remove_inner_paths=True)
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE, remove_inner_paths=True
+    )
 
     artifact = tracer.run(
         laser, dummy_surface, (10, 10), workpiece=vector_workpiece
@@ -262,7 +268,7 @@ def test_cut_order_inside_outside(laser, dummy_surface, vector_workpiece):
     The artifact ops are grouped. The first group of ops generated should
     be the hole.
     """
-    tracer = EdgeTracer(
+    tracer = ContourProducer(
         cut_side=CutSide.CENTERLINE, cut_order=CutOrder.INSIDE_OUTSIDE
     )
     artifact = tracer.run(
@@ -291,7 +297,7 @@ def test_cut_order_outside_inside(laser, dummy_surface, vector_workpiece):
     Test CutOrder.OUTSIDE_INSIDE.
     The first group of ops generated should be the outer perimeter.
     """
-    tracer = EdgeTracer(
+    tracer = ContourProducer(
         cut_side=CutSide.CENTERLINE, cut_order=CutOrder.OUTSIDE_INSIDE
     )
     artifact = tracer.run(
@@ -315,8 +321,8 @@ def test_winding_normalization_on_import(laser, dummy_surface):
     as outer), CutSide.OUTSIDE would normally interpret it as a solid and
     expand it, potentially overlapping or confusing the logic.
 
-    The fix in EdgeTracer.run should call normalize_winding_orders, forcing
-    the hole to CW before offset.
+    The fix in ContourProducer.run should call normalize_winding_orders,
+    forcing the hole to CW before offset.
     """
     # Create a geometry with WRONG winding for the hole (CCW)
     # Normalized coordinates (0..1)
@@ -334,7 +340,7 @@ def test_winding_normalization_on_import(laser, dummy_surface):
     wp.set_size(20, 20)
 
     # CutSide.OUTSIDE + 1mm Kerf -> Offset +0.5mm
-    tracer = EdgeTracer(cut_side=CutSide.OUTSIDE)
+    tracer = ContourProducer(cut_side=CutSide.OUTSIDE)
     settings = {"kerf_mm": 1.0}
 
     artifact = tracer.run(
