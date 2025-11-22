@@ -313,8 +313,10 @@ def make_workpiece_artifact_in_subprocess(
             if not is_vector and final_artifact.texture_data:
                 size_mm = workpiece.size
                 px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-                full_width_px = int(size_mm[0] * px_per_mm_x)
-                full_height_px = int(size_mm[1] * px_per_mm_y)
+                # Use round() to match WorkPiece.render_chunk calculation logic
+                # to ensure buffer is large enough for all chunks.
+                full_width_px = int(round(size_mm[0] * px_per_mm_x))
+                full_height_px = int(round(size_mm[1] * px_per_mm_y))
                 if full_width_px > 0 and full_height_px > 0:
                     full_power_texture = np.zeros(
                         (full_height_px, full_width_px), dtype=np.uint8
@@ -340,19 +342,31 @@ def make_workpiece_artifact_in_subprocess(
             y_end_px = y_start_px + chunk_h_px
             x_end_px = x_start_px + chunk_w_px
 
-            # Check bounds to prevent errors from floating point inaccuracies
-            if (
-                y_end_px <= full_power_texture.shape[0]
-                and x_end_px <= full_power_texture.shape[1]
-            ):
+            # Safe copy with slicing to handle minor rounding differences
+            dest_h, dest_w = full_power_texture.shape
+
+            # Clip source and destination coordinates to valid ranges
+            dst_y_start = max(0, y_start_px)
+            dst_y_end = min(dest_h, y_end_px)
+            dst_x_start = max(0, x_start_px)
+            dst_x_end = min(dest_w, x_end_px)
+
+            # Calculate corresponding source offsets
+            src_y_start = dst_y_start - y_start_px
+            src_y_end = src_y_start + (dst_y_end - dst_y_start)
+            src_x_start = dst_x_start - x_start_px
+            src_x_end = src_x_start + (dst_x_end - dst_x_start)
+
+            if dst_y_end > dst_y_start and dst_x_end > dst_x_start:
                 full_power_texture[
-                    y_start_px:y_end_px, x_start_px:x_end_px
-                ] = texture_data
+                    dst_y_start:dst_y_end, dst_x_start:dst_x_end
+                ] = texture_data[src_y_start:src_y_end, src_x_start:src_x_end]
             else:
-                logger.warning(
-                    f"Chunk texture out of bounds. Target: "
-                    f"[{y_start_px}:{y_end_px}, {x_start_px}:{x_end_px}] "
-                    f"in {full_power_texture.shape}"
+                logger.debug(
+                    f"Chunk texture out of bounds or empty intersection. "
+                    f"Chunk: "
+                    f"[{y_start_px}:{y_end_px}, {x_start_px}:{x_end_px}], "
+                    f"Buffer: {full_power_texture.shape}"
                 )
 
         # Send intermediate chunks for raster operations
