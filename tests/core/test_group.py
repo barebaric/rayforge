@@ -39,6 +39,47 @@ def test_group_initialization():
     assert group.matrix.is_identity()
 
 
+def test_group_layer_property():
+    """
+    Tests the recursive lookup of the 'layer' property.
+    Verifies it handles immediate parents, nested ancestors, and detached
+    states.
+    """
+    # 1. Test with no parent
+    group = Group("Orphan Group")
+    assert group.layer is None
+
+    # 2. Test with direct Layer parent
+    layer = Layer("Target Layer")
+    group.parent = None  # Reset just in case
+    layer.add_child(group)
+
+    assert group.layer is not None
+    assert group.layer is layer
+    assert group.layer.name == "Target Layer"
+
+    # 3. Test with nested Group (Layer -> OuterGroup -> InnerGroup)
+    outer_group = Group("Outer Group")
+    inner_group = Group("Inner Group")
+
+    # Re-arrange hierarchy
+    layer.remove_child(group)  # clean up previous test
+
+    layer.add_child(outer_group)
+    outer_group.add_child(inner_group)
+
+    assert outer_group.layer is layer
+    assert inner_group.layer is layer
+
+    # 4. Test that breaking the chain updates the property result
+    layer.remove_child(outer_group)
+
+    # outer_group is now orphaned, so inner_group (its child) should also
+    # find no layer
+    assert outer_group.layer is None
+    assert inner_group.layer is None
+
+
 def test_group_add_and_remove_child(workpiece_factory):
     """Tests adding and removing children from a group."""
     group = Group()
