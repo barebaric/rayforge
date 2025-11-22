@@ -50,16 +50,25 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         echo "::error::Invalid requirement format: $line"
         exit 1
     fi
-    echo "Fetching wheel for $package==$version..."
+    echo "Fetching artifact for $package==$version..."
     json_url="https://pypi.org/pypi/${package}/${version}/json"
     response=$(curl -sSL --fail --user-agent "Mozilla/5.0 (compatible; Debian-PPA-Build/1.0)" "$json_url")
     if ! echo "$response" | jq . >/dev/null 2>&1; then
         echo "::error::PyPI returned invalid JSON for $package==$version"
         exit 1
     fi
-    source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "sdist") | .url' | head -n 1)
+
+    # TRY WHEEL FIRST (manylinux x86_64) to avoid offline compilation
+    # issues (e.g. Cargo/Rust)
+    source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "bdist_wheel" and (.filename | test("manylinux.*x86_64"))) | .url' | head -n 1)
+
     if [[ -z "$source_url" ]]; then
-        echo "::error::No compatible wheel found for $package==$version"
+        echo "No binary wheel found, falling back to sdist..."
+        source_url=$(echo "$response" | jq -r '.urls[] | select(.packagetype == "sdist") | .url' | head -n 1)
+    fi
+
+    if [[ -z "$source_url" ]]; then
+        echo "::error::No compatible artifact found for $package==$version"
         exit 1
     fi
     filename=$(basename "$source_url")
@@ -101,7 +110,7 @@ export DEBFULLNAME=$(echo "$MAINTAINER_INFO" | sed -E 's/ <.*//')
 
 # Set the version string based on whether --source is passed (for PPA) or not (for local testing)
 if [[ "${1:-}" == "--source" ]]; then
-    # Use the TARGET_DISTRIBUTION from the environment, defaulting to 'noble' if not set
+# Use the TARGET_DISTRIBUTION from the environment, defaulting to 'noble' if not set
     TARGET_DIST="${TARGET_DISTRIBUTION:-noble}"
     dch --newversion "${UPSTREAM_VERSION}-1~ppa1~${TARGET_DIST}1" --distribution "$TARGET_DIST" "New PPA release for ${TARGET_DIST}."
 else
