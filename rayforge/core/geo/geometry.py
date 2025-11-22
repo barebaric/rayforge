@@ -42,6 +42,8 @@ T_Geometry = TypeVar("T_Geometry", bound="Geometry")
 class Command:
     """Base for all geometric commands."""
 
+    __slots__ = ("end",)
+
     def __init__(
         self, end: Optional[Tuple[float, float, float]] = None
     ) -> None:
@@ -50,7 +52,7 @@ class Command:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Command):
             return NotImplemented
-        return self.__dict__ == other.__dict__
+        return self.end == other.end
 
     def to_dict(self) -> Dict[str, Any]:
         return {"type": self.__class__.__name__}
@@ -64,6 +66,8 @@ class Command:
 
 class MovingCommand(Command):
     """A geometric command that involves movement."""
+
+    __slots__ = ()
 
     end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
 
@@ -88,17 +92,19 @@ class MovingCommand(Command):
 class MoveToCommand(MovingCommand):
     """A move-to command."""
 
-    pass
+    __slots__ = ()
 
 
 class LineToCommand(MovingCommand):
     """A line-to command."""
 
-    pass
+    __slots__ = ()
 
 
 class ArcToCommand(MovingCommand):
     """An arc-to command."""
+
+    __slots__ = ("center_offset", "clockwise")
 
     def __init__(
         self,
@@ -109,6 +115,15 @@ class ArcToCommand(MovingCommand):
         super().__init__(end)
         self.center_offset = center_offset
         self.clockwise = clockwise
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ArcToCommand):
+            return NotImplemented
+        return (
+            self.end == other.end
+            and self.center_offset == other.center_offset
+            and self.clockwise == other.clockwise
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
@@ -147,7 +162,7 @@ class Geometry:
     def __hash__(self):
         # A simple hash based on the commands. This allows Geometry objects
         # to be used in sets and as dictionary keys.
-        return hash(tuple(str(cmd.__dict__) for cmd in self.commands))
+        return hash(tuple(str(cmd.to_dict()) for cmd in self.commands))
 
     def copy(self: T_Geometry) -> T_Geometry:
         """Creates a deep copy of the Geometry object."""
