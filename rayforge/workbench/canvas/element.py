@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # Reserve 2 threads for UI responsiveness
 max_workers = max(1, (os.cpu_count() or 1) - 2)
 # Define a maximum dimension for our rendering buffers to prevent cairo errors.
-MAX_BUFFER_DIM = 30000
+MAX_BUFFER_DIM = 8192
 
 
 class CanvasElement:
