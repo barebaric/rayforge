@@ -308,8 +308,7 @@ class SmoothieDriver(Driver):
         else:
             # Enable power with specified percentage
             power_abs = percent * head.max_power
-            power_val = dialect.format_laser_power(power_abs)
-            cmd = dialect.laser_on.format(power=power_val)
+            cmd = dialect.laser_on.format(power=power_abs)
 
         await self._send_and_wait(cmd.encode("utf-8"))
 
