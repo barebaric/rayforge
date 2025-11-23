@@ -43,9 +43,12 @@ class Shader:
         fragment_source = frag_header + fragment_source
 
         try:
+            # Disable validation on macOS to avoid "invalid framebuffer" errors
+            # during initialization when no framebuffer is bound yet
             self.program = shaders.compileProgram(
                 shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
                 shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
+                validate=False,
             )
         except Exception as e:
             logger.error(f"Shader Compilation Failed: {e}", exc_info=True)

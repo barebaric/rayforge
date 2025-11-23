@@ -83,7 +83,9 @@ class ArtifactStore:
         total_bytes = sum(arr.nbytes for arr in arrays.values())
 
         # Create the shared memory block
-        shm_name = f"rayforge_artifact_{creator_tag}_{uuid.uuid4()}"
+        # macOS has a 31-character limit for shared memory names
+        short_uuid = str(uuid.uuid4())[:8]
+        shm_name = f"rf_{short_uuid}"
         try:
             # Prevent creating a zero-size block, which raises a ValueError.
             # A 1-byte block is a safe, minimal placeholder.

@@ -1,3 +1,4 @@
+import logging
 import warnings
 import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
@@ -6,6 +7,8 @@ from ..base_renderer import Renderer, RenderSpecification
 from .svgutil import filter_svg_layers
 from ...core.vectorization_spec import TraceSpec
 
+
+logger = logging.getLogger(__name__)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

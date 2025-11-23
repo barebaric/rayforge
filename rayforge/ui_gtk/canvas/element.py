@@ -370,6 +370,7 @@ class CanvasElement:
             self._update_future.cancel()
 
         if not self.canvas:
+            logger.debug(f"{self.__class__.__name__}: No canvas, skipping update")
             return False
 
         # Calculate the total transformation from this element's local space
@@ -386,17 +387,24 @@ class CanvasElement:
         render_width = round(self.width * scale_x)
         render_height = round(self.height * scale_y)
 
+        logger.debug(
+            f"{self.__class__.__name__}: Calculated render size: {render_width}x{render_height} "
+            f"(element size: {self.width}x{self.height}, scale: {scale_x:.2f}x{scale_y:.2f})"
+        )
+
         # Clamp the render dimensions to the maximum allowed size
         render_width = min(render_width, MAX_BUFFER_DIM)
         render_height = min(render_height, MAX_BUFFER_DIM)
 
         if render_width <= 0 or render_height <= 0:
             # Don't try to render to a zero or negative size surface.
+            logger.debug(f"{self.__class__.__name__}: Render size is zero or negative, clearing surface")
             self.surface = None  # Ensure any old surface is cleared
             if self.canvas:
                 self.canvas.queue_draw()
             return False
 
+        logger.debug(f"{self.__class__.__name__}: Submitting render_to_surface task ({render_width}x{render_height})")
         # Submit the thread-safe part to the executor with correct pixel dims.
         self._update_future = self._executor.submit(
             self.render_to_surface, render_width, render_height
@@ -957,12 +965,14 @@ class CanvasElement:
             source_h = self.surface.get_height()
 
             if source_w > 0 and source_h > 0:
-                # Draw the buffered surface. We need to scale it to fit the
-                # element's width and height.
+                # Draw the buffered surface. The surface was rendered at screen
+                # resolution (pixels), but the Cairo context is in element space
+                # (where element dimensions are self.width x self.height).
+                # We need to scale from pixel space back to element space.
                 ctx.save()
-                scale_x = self.width / source_w
-                scale_y = self.height / source_h
-                ctx.scale(scale_x, scale_y)
+                scale_x = source_w / self.width
+                scale_y = source_h / self.height
+                ctx.scale(1.0 / scale_x, 1.0 / scale_y)
                 ctx.set_source_surface(self.surface, 0, 0)
                 ctx.get_source().set_filter(cairo.FILTER_GOOD)
                 ctx.paint()

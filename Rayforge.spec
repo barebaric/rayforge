@@ -7,8 +7,15 @@ a = Analysis(
     binaries=[],
     datas=[('rayforge/version.txt', 'rayforge'), ('rayforge/resources', 'rayforge/resources'), ('rayforge/locale', 'rayforge/locale')],
     hiddenimports=['gi._gi_cairo'],
-    hookspath=[],
-    hooksconfig={},
+    hookspath=['hooks'],
+    hooksconfig={
+        'gi': {
+            'module-versions': {
+                'Gtk': '4.0',
+                'Adw': '1',
+            },
+        },
+    },
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
@@ -32,6 +39,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['rayforge/resources/icons/icon.icns'],
 )
 coll = COLLECT(
     exe,
@@ -45,6 +53,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Rayforge.app',
-    icon=None,
+    icon='rayforge/resources/icons/icon.icns',
     bundle_identifier='org.rayforge.rayforge',
 )
