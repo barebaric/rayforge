@@ -31,6 +31,11 @@ def show_import_dialog(
         file_filter = Gtk.FileFilter()
         if importer_class.label:
             file_filter.set_name(_(importer_class.label))
+        if importer_class.extensions:
+            for ext in importer_class.extensions:
+                pattern = f"*{ext}"
+                file_filter.add_pattern(pattern)
+                all_supported.add_pattern(pattern)
         if importer_class.mime_types:
             for mime_type in importer_class.mime_types:
                 file_filter.add_mime_type(mime_type)
