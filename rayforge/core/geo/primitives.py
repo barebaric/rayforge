@@ -74,6 +74,30 @@ def is_point_in_polygon(
     return inside
 
 
+def line_intersection(
+    p1: Tuple[float, float],
+    p2: Tuple[float, float],
+    p3: Tuple[float, float],
+    p4: Tuple[float, float],
+) -> Optional[Tuple[float, float]]:
+    """
+    Finds the intersection point of two infinite lines defined by pairs of
+    points (p1, p2) and (p3, p4).
+    Returns the intersection point or None if lines are parallel.
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = p3
+    x4, y4 = p4
+
+    denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+    if denom == 0:
+        return None
+
+    ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
+    return (x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
+
+
 def line_segment_intersection(
     p1: Tuple[float, float],
     p2: Tuple[float, float],
