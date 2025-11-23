@@ -4,6 +4,7 @@ from rayforge.core.geo.primitives import (
     is_point_in_polygon,
     line_segment_intersection,
     get_segment_region_intersections,
+    line_intersection,
 )
 
 
@@ -76,3 +77,21 @@ def test_get_segment_region_intersections():
     intersections = get_segment_region_intersections(p_out1, p_out2, [region])
     # Should only return the start and end points
     assert intersections == pytest.approx([0.0, 1.0])
+
+
+def test_line_intersection():
+    # Intersection
+    p1, p2 = (0, 0), (10, 10)
+    p3, p4 = (0, 10), (10, 0)
+    assert line_intersection(p1, p2, p3, p4) == pytest.approx((5, 5))
+
+    # Parallel lines
+    p1, p2 = (0, 0), (10, 0)
+    p3, p4 = (0, 1), (10, 1)
+    assert line_intersection(p1, p2, p3, p4) is None
+
+    # Intersection outside segments (infinite lines)
+    p1, p2 = (0, 0), (1, 0)
+    p3, p4 = (0, 1), (0, 2)
+    # x-axis and y-axis intersect at 0,0
+    assert line_intersection(p1, p2, p3, p4) == pytest.approx((0, 0))
