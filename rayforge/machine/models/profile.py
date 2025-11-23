@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from .machine import Machine, Laser
 from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
+from .dialect import get_dialect
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -31,6 +32,11 @@ class MachineProfile:
     home_on_start: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
+    # Dialect override fields
+    preamble: Optional[List[str]] = None
+    postscript: Optional[List[str]] = None
+    laser_on: Optional[str] = None
+    travel_move: Optional[str] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -55,8 +61,41 @@ class MachineProfile:
                     f" with args {self.driver_args}"
                 )
 
-        if self.dialect_uid is not None:
+        # Handle dialect creation. If the profile has any dialect overrides,
+        # create a new custom dialect for this machine.
+        override_fields = ["preamble", "postscript", "laser_on", "travel_move"]
+        has_overrides = any(
+            getattr(self, field) is not None for field in override_fields
+        )
+
+        if has_overrides:
+            base_dialect_uid = self.dialect_uid or "grbl"
+            try:
+                base_dialect = get_dialect(base_dialect_uid)
+            except ValueError:
+                logger.warning(
+                    f"Base dialect '{base_dialect_uid}' not found for "
+                    f"profile '{self.name}'. Falling back to 'grbl'."
+                )
+                base_dialect = get_dialect("grbl")
+
+            new_label = _("{label} (for {machine_name})").format(
+                label=base_dialect.label, machine_name=self.name
+            )
+            new_dialect = base_dialect.copy_as_custom(new_label=new_label)
+
+            # Apply all specified overrides from the profile to the new dialect
+            for field in override_fields:
+                value = getattr(self, field)
+                if value is not None:
+                    setattr(new_dialect, field, value)
+
+            # Add the new dialect to the manager (registers and saves it)
+            context.dialect_mgr.add_dialect(new_dialect)
+            m.dialect_uid = new_dialect.uid
+        elif self.dialect_uid is not None:
             m.dialect_uid = self.dialect_uid
+
         if self.gcode_precision is not None:
             m.gcode_precision = self.gcode_precision
         if self.dimensions is not None:
@@ -91,13 +130,49 @@ class MachineProfile:
                 # Create a laser head from the profile data. The dictionary
                 # for each head should have a flat structure with keys that
                 # Laser.from_dict can parse, such as "max_power",
-                # "frame_power", and "spot_size_mm".
+                # "frame_power_percent", and "spot_size_mm".
                 m.add_head(Laser.from_dict(head_profile))
 
         return m
 
 
 PROFILES: List[MachineProfile] = [
+    MachineProfile(
+        name="Carvera Air",
+        driver_class_name="SmoothieDriver",
+        dialect_uid="smoothieware",
+        gcode_precision=4,
+        dimensions=(300, 200),
+        y_axis_down=False,
+        max_travel_speed=3000,
+        max_cut_speed=3000,
+        home_on_start=True,
+        heads=[
+            {
+                "max_power": 1.0,
+                "frame_power_percent": 1.0,
+                "focus_power_percent": 1.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+        laser_on="M3 S{power:.3f}",
+        travel_move="G0 X{x} Y{y} Z{z}",
+        preamble=[
+            "M321",
+            "G0Z0",
+            "G00 G54",
+            "G21 ; Set units to mm",
+            "G90 ; Absolute positioning",
+        ],
+        postscript=[
+            "M5 ; Ensure laser is off",
+            "G0 X0 Y0 ; Return to origin",
+            ";USER END SCRIPT",
+            "M322",
+            ";USER END SCRIPT",
+            "M2",
+        ],
+    ),
     MachineProfile(
         name="Sculpfun iCube",
         driver_class_name="GrblDriver",
@@ -110,8 +185,9 @@ PROFILES: List[MachineProfile] = [
         home_on_start=True,
         heads=[
             {
-                "frame_power": 10.0,
-                "focus_power": 10.0,
+                "max_power": 1000,
+                "frame_power_percent": 1.0,  # 1% power for framing
+                "focus_power_percent": 1.0,  # 1% power for focusing
                 "spot_size_mm": [0.1, 0.1],
             }
         ],
@@ -127,8 +203,9 @@ PROFILES: List[MachineProfile] = [
         max_cut_speed=1000,
         heads=[
             {
-                "frame_power": 10.0,
-                "focus_power": 10.0,
+                "max_power": 1000,
+                "frame_power_percent": 1.0,
+                "focus_power_percent": 1.0,
                 "spot_size_mm": [0.1, 0.1],
             }
         ],
@@ -150,21 +227,18 @@ PROFILES: List[MachineProfile] = [
         },
         heads=[
             {
-                "frame_power": 10.0,
-                "focus_power": 10.0,
+                "max_power": 1000,
+                "frame_power_percent": 1.0,
+                "focus_power_percent": 1.0,
                 "spot_size_mm": [0.05, 0.05],
             }
         ],
-        hookmacros=[
-            {
-                "trigger": "JOB_START",
-                "code": [
-                    "M5",
-                    "G90",
-                    "M17",
-                    "M106 S0",
-                ],
-            }
+        preamble=[
+            "G21 ;Set units to mm",
+            "G90 ;Absolute positioning",
+            "M5",
+            "M17",
+            "M106 S0",
         ],
     ),
     MachineProfile(

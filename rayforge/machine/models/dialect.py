@@ -145,20 +145,6 @@ class GcodeDialect:
             label=new_label,
         )
 
-    def format_laser_power(self, power: float) -> int:
-        """
-        Formats laser power value. Default is to convert to integer.
-        Some dialects might require different scaling or formatting.
-        """
-        return int(power)
-
-    def format_feedrate(self, speed: Optional[float]) -> str:
-        """
-        Formats the feed rate (F-word) for a command. Returns an empty
-        string if the speed is None, preventing invalid G-code.
-        """
-        return f" F{int(speed)}" if speed is not None else ""
-
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the dialect to a dictionary."""
         return asdict(self)
