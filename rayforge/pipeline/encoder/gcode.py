@@ -79,12 +79,15 @@ class GcodeEncoder(OpsEncoder):
         self.active_laser_uid: Optional[str] = None
         self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
+        self._feed_format: str = "{:.3f}"
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
         """
         Factory method to create a GcodeEncoder instance configured for a
         specific machine's dialect.
+        Note: Precision is set in the `encode` method, which receives the
+        machine instance.
         """
         return cls(machine.dialect)
 
@@ -102,8 +105,9 @@ class GcodeEncoder(OpsEncoder):
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, GcodeOpMap]:
         """Main encoding workflow"""
-        # Set the coordinate format based on the machine's precision setting
+        # Set coordinate and feedrate format based on the machine's precision
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
+        self._feed_format = self._coord_format
         self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser_uid = None
 
@@ -279,8 +283,7 @@ class GcodeEncoder(OpsEncoder):
                 # Find the currently active laser head to get its max power
                 current_laser = self._get_current_laser_head(context)
                 power_abs = power * current_laser.max_power
-                power_val = self.dialect.format_laser_power(power_abs)
-                gcode.append(self.dialect.laser_on.format(power=power_val))
+                gcode.append(self.dialect.laser_on.format(power=power_abs))
             else:  # power <= 0
                 self._laser_off(context, gcode)
 
@@ -310,7 +313,11 @@ class GcodeEncoder(OpsEncoder):
         """Rapid movement with laser safety"""
         self._laser_off(context, gcode)
         self._emit_modal_speed(gcode, self.travel_speed or 0)
-        f_command = self.dialect.format_feedrate(self.travel_speed)
+        f_command = (
+            f" F{self._feed_format.format(self.travel_speed)}"
+            if self.travel_speed is not None
+            else ""
+        )
         gcode.append(
             self.dialect.travel_move.format(
                 x=self._coord_format.format(x),
@@ -331,7 +338,11 @@ class GcodeEncoder(OpsEncoder):
         """Cutting movement with laser activation"""
         self._laser_on(context, gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
-        f_command = self.dialect.format_feedrate(self.cut_speed)
+        f_command = (
+            f" F{self._feed_format.format(self.cut_speed)}"
+            if self.cut_speed is not None
+            else ""
+        )
         gcode.append(
             self.dialect.linear_move.format(
                 x=self._coord_format.format(x),
@@ -355,7 +366,11 @@ class GcodeEncoder(OpsEncoder):
         x, y, z = end
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
-        f_command = self.dialect.format_feedrate(self.cut_speed)
+        f_command = (
+            f" F{self._feed_format.format(self.cut_speed)}"
+            if self.cut_speed is not None
+            else ""
+        )
         gcode.append(
             template.format(
                 x=self._coord_format.format(x),
@@ -372,8 +387,7 @@ class GcodeEncoder(OpsEncoder):
         if not self.laser_active and self.power:
             current_laser = self._get_current_laser_head(context)
             power_abs = self.power * current_laser.max_power
-            power_val = self.dialect.format_laser_power(power_abs)
-            gcode.append(self.dialect.laser_on.format(power=power_val))
+            gcode.append(self.dialect.laser_on.format(power=power_abs))
             self.laser_active = True
 
     def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:

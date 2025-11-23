@@ -5,7 +5,7 @@ GRBL_DIALECT = GcodeDialect(
     uid="grbl",
     label=_("GRBL (universal)"),
     description=_("Standard GRBL for most diode lasers and hobby CNCs."),
-    laser_on="M4 S{power}",
+    laser_on="M4 S{power:.0f}",
     laser_off="M5",
     tool_change="T{tool_number}",
     set_speed="",
@@ -28,7 +28,7 @@ GRBL_DIALECT_NOZ = GcodeDialect(
     description=_(
         "Standard GRBL, but removes Z axis commands for more efficient G-code."
     ),
-    laser_on="M4 S{power}",
+    laser_on="M4 S{power:.0f}",
     laser_off="M5",
     tool_change="T{tool_number}",
     set_speed="",
@@ -49,7 +49,7 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     uid="smoothieware",
     label=_("Smoothieware"),
     description=_("G-code dialect for Smoothieware-based controllers."),
-    laser_on="M3 S{power}",
+    laser_on="M3 S{power:.0f}",
     laser_off="M5",
     tool_change="T{tool_number}",
     set_speed="",
@@ -72,7 +72,7 @@ MARLIN_DIALECT = GcodeDialect(
     description=_(
         "G-code for Marlin-based controllers, common in 3D printers."
     ),
-    laser_on="M4 S{power}",
+    laser_on="M4 S{power:.0f}",
     laser_off="M5",
     tool_change="T{tool_number}",
     set_speed="",
