@@ -250,3 +250,34 @@ def test_constraint_zero_length_protection(setup_env):
     # Error is dist_to_pt^2 - radius^2. Here dist is 0, radius is 10.
     # Error = 0^2 - 10^2 = -100
     assert c_tan.error(reg, params) == pytest.approx(-100.0)
+
+
+def test_constraint_serialization_round_trip():
+    """Tests to_dict and from_dict for all constraint types."""
+    # List all constraint classes and their constructor arguments
+    constraints_to_test = [
+        DistanceConstraint(p1=0, p2=1, value=10.0),
+        DistanceConstraint(p1=0, p2=1, value="width"),
+        EqualDistanceConstraint(p1=0, p2=1, p3=2, p4=3),
+        HorizontalConstraint(p1=0, p2=1),
+        VerticalConstraint(p1=0, p2=1),
+        CoincidentConstraint(p1=0, p2=1),
+        PointOnLineConstraint(point_id=2, line_id=4),
+        RadiusConstraint(arc_id=5, radius=20.0),
+        PerpendicularConstraint(l1_id=4, l2_id=6),
+        TangentConstraint(line_id=4, arc_id=5),
+    ]
+
+    for constr in constraints_to_test:
+        data = constr.to_dict()
+        assert "type" in data
+        # Get the class from globals() using the type string
+        cls = globals()[data["type"]]
+        new_constr = cls.from_dict(data)
+
+        # Check that all attributes were restored correctly
+        assert new_constr.__dict__ == constr.__dict__
+
+    # DragConstraint is not serializable
+    drag = DragConstraint(0, 1, 2)
+    assert drag.to_dict() == {}

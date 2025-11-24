@@ -1,5 +1,5 @@
 import math
-from typing import Dict
+from typing import Dict, Any
 
 
 class ParameterContext:
@@ -17,6 +17,18 @@ class ParameterContext:
         self._math_context = {
             k: v for k, v in vars(math).items() if not k.startswith("_")
         }
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the parameter context to a dictionary."""
+        return {"expressions": self._expressions}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ParameterContext":
+        """Deserializes a dictionary into a ParameterContext instance."""
+        new_context = cls()
+        new_context._expressions = data.get("expressions", {})
+        new_context._dirty = True  # Force re-evaluation on next get
+        return new_context
 
     def set(self, name: str, value: float | str) -> None:
         """Sets a parameter. Can be a float or a math string."""

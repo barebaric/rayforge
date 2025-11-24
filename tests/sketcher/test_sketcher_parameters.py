@@ -92,3 +92,26 @@ def test_parameter_overwrite(params):
 
     params.set("base", 5)
     assert params.get("res") == 10.0
+
+
+def test_parameter_context_serialization_round_trip(params):
+    """Tests to_dict and from_dict for ParameterContext."""
+    params.set("width", 100)
+    params.set("height", "width / 2")
+    params.set("depth", "sqrt(width)")
+
+    data = params.to_dict()
+    assert data == {
+        "expressions": {
+            "width": "100",
+            "height": "width / 2",
+            "depth": "sqrt(width)",
+        }
+    }
+
+    new_params = ParameterContext.from_dict(data)
+
+    # Check that expressions were loaded and evaluate correctly
+    assert new_params.get("width") == 100.0
+    assert new_params.get("height") == 50.0
+    assert new_params.get("depth") == 10.0

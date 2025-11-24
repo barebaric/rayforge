@@ -87,3 +87,48 @@ def test_registry_lookup_failures(registry):
 
     # get_entity returns None, doesn't raise
     assert registry.get_entity(999) is None
+
+
+def test_entity_registry_serialization_round_trip():
+    """Tests to_dict and from_dict for the entire EntityRegistry."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(10, 10)
+    p4 = reg.add_point(0, 10)
+    _ = reg.add_line(p1, p2)
+    l2 = reg.add_line(p2, p3, construction=True)
+    arc = reg.add_arc(p3, p4, p1, cw=True)
+
+    data = reg.to_dict()
+
+    # Basic structure check
+    assert "points" in data
+    assert "entities" in data
+    assert "id_counter" in data
+    assert len(data["points"]) == 4
+    assert len(data["entities"]) == 3
+    assert data["id_counter"] == 7  # 4 points + 3 entities
+
+    new_reg = EntityRegistry.from_dict(data)
+
+    # Check integrity
+    assert new_reg._id_counter == 7
+    assert len(new_reg.points) == 4
+    assert len(new_reg.entities) == 3
+
+    # Check point details
+    new_p1 = new_reg.get_point(p1)
+    assert new_p1.x == 0
+    assert new_p1.fixed is True
+
+    # Check entity details and map
+    new_l2 = new_reg.get_entity(l2)
+    assert isinstance(new_l2, Line)
+    assert new_l2.p1_idx == p2
+    assert new_l2.construction is True
+
+    new_arc = new_reg.get_entity(arc)
+    assert isinstance(new_arc, Arc)
+    assert new_arc.center_idx == p1
+    assert new_arc.clockwise is True
