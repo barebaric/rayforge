@@ -1,4 +1,4 @@
-from typing import Union, List, Optional, Set
+from typing import Union, List, Optional, Set, Dict, Any
 from ..geo import Geometry
 from .params import ParameterContext
 from .entities import EntityRegistry, Line, Arc
@@ -17,6 +17,19 @@ from .constraints import (
 from .solver import Solver
 
 
+_CONSTRAINT_CLASSES = {
+    "DistanceConstraint": DistanceConstraint,
+    "EqualDistanceConstraint": EqualDistanceConstraint,
+    "HorizontalConstraint": HorizontalConstraint,
+    "VerticalConstraint": VerticalConstraint,
+    "CoincidentConstraint": CoincidentConstraint,
+    "RadiusConstraint": RadiusConstraint,
+    "PointOnLineConstraint": PointOnLineConstraint,
+    "PerpendicularConstraint": PerpendicularConstraint,
+    "TangentConstraint": TangentConstraint,
+}
+
+
 class Sketch:
     """
     A parametric sketcher that allows defining geometry via constraints
@@ -30,6 +43,49 @@ class Sketch:
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Sketch to a dictionary."""
+        return {
+            "params": self.params.to_dict(),
+            "registry": self.registry.to_dict(),
+            "constraints": [c.to_dict() for c in self.constraints],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Sketch":
+        """Deserializes a dictionary into a Sketch instance."""
+        # Check for required keys to prevent creating an empty sketch from
+        # invalid data.
+        if not all(
+            key in data for key in ["params", "registry", "constraints"]
+        ):
+            raise KeyError(
+                "Sketch data is missing one of the required keys: "
+                "'params', 'registry', 'constraints'."
+            )
+
+        new_sketch = cls.__new__(
+            cls
+        )  # Create instance without calling __init__
+
+        new_sketch.params = ParameterContext.from_dict(data["params"])
+        new_sketch.registry = EntityRegistry.from_dict(data["registry"])
+        new_sketch.constraints = []
+
+        # Find the origin_id from the loaded registry points
+        origin_point = next(
+            (p for p in new_sketch.registry.points if p.fixed), None
+        )
+        new_sketch.origin_id = origin_point.id if origin_point else -1
+
+        for c_data in data["constraints"]:
+            c_type = c_data.get("type")
+            c_cls = _CONSTRAINT_CLASSES.get(c_type)
+            if c_cls:
+                new_sketch.constraints.append(c_cls.from_dict(c_data))
+
+        return new_sketch
 
     def set_param(self, name: str, value: Union[str, float]) -> None:
         """Define a parameter like 'width'=100 or 'height'='width/2'."""

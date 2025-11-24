@@ -1,4 +1,4 @@
-from typing import Protocol, Union, Tuple
+from typing import Protocol, Union, Tuple, Dict, Any
 from .entities import EntityRegistry, Line, Arc
 from .params import ParameterContext
 
@@ -10,6 +10,8 @@ class Constraint(Protocol):
         self, reg: EntityRegistry, params: ParameterContext
     ) -> Union[float, Tuple[float, float]]: ...
 
+    def to_dict(self) -> Dict[str, Any]: ...
+
 
 class DistanceConstraint:
     """Enforces distance between two points."""
@@ -18,6 +20,18 @@ class DistanceConstraint:
         self.p1 = p1
         self.p2 = p2
         self.value = value
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "DistanceConstraint",
+            "p1": self.p1,
+            "p2": self.p2,
+            "value": self.value,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DistanceConstraint":
+        return cls(p1=data["p1"], p2=data["p2"], value=data["value"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt1 = reg.get_point(self.p1)
@@ -38,6 +52,19 @@ class EqualDistanceConstraint:
         self.p3 = p3
         self.p4 = p4
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "EqualDistanceConstraint",
+            "p1": self.p1,
+            "p2": self.p2,
+            "p3": self.p3,
+            "p4": self.p4,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EqualDistanceConstraint":
+        return cls(p1=data["p1"], p2=data["p2"], p3=data["p3"], p4=data["p4"])
+
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
@@ -57,6 +84,13 @@ class HorizontalConstraint:
         self.p1 = p1
         self.p2 = p2
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {"type": "HorizontalConstraint", "p1": self.p1, "p2": self.p2}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "HorizontalConstraint":
+        return cls(p1=data["p1"], p2=data["p2"])
+
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         return reg.get_point(self.p1).y - reg.get_point(self.p2).y
 
@@ -68,6 +102,13 @@ class VerticalConstraint:
         self.p1 = p1
         self.p2 = p2
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {"type": "VerticalConstraint", "p1": self.p1, "p2": self.p2}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VerticalConstraint":
+        return cls(p1=data["p1"], p2=data["p2"])
+
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         return reg.get_point(self.p1).x - reg.get_point(self.p2).x
 
@@ -78,6 +119,13 @@ class CoincidentConstraint:
     def __init__(self, p1: int, p2: int):
         self.p1 = p1
         self.p2 = p2
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"type": "CoincidentConstraint", "p1": self.p1, "p2": self.p2}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CoincidentConstraint":
+        return cls(p1=data["p1"], p2=data["p2"])
 
     def error(
         self, reg: EntityRegistry, params: ParameterContext
@@ -94,6 +142,17 @@ class PointOnLineConstraint:
     def __init__(self, point_id: int, line_id: int):
         self.point_id = point_id
         self.line_id = line_id
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "PointOnLineConstraint",
+            "point_id": self.point_id,
+            "line_id": self.line_id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
+        return cls(point_id=data["point_id"], line_id=data["line_id"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt = reg.get_point(self.point_id)
@@ -121,6 +180,17 @@ class RadiusConstraint:
         self.arc_id = arc_id
         self.value = radius
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "RadiusConstraint",
+            "arc_id": self.arc_id,
+            "value": self.value,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
+        return cls(arc_id=data["arc_id"], radius=data["value"])
+
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         # O(1) lookup
         arc_entity = reg.get_entity(self.arc_id)
@@ -143,6 +213,17 @@ class PerpendicularConstraint:
     def __init__(self, l1_id: int, l2_id: int):
         self.l1_id = l1_id
         self.l2_id = l2_id
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "PerpendicularConstraint",
+            "l1_id": self.l1_id,
+            "l2_id": self.l2_id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "PerpendicularConstraint":
+        return cls(l1_id=data["l1_id"], l2_id=data["l2_id"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         l1 = reg.get_entity(self.l1_id)
@@ -172,6 +253,17 @@ class TangentConstraint:
     def __init__(self, line_id: int, arc_id: int):
         self.line_id = line_id
         self.arc_id = arc_id
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "TangentConstraint",
+            "line_id": self.line_id,
+            "arc_id": self.arc_id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
+        return cls(line_id=data["line_id"], arc_id=data["arc_id"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         line = reg.get_entity(self.line_id)
@@ -229,6 +321,10 @@ class DragConstraint:
         # constraints. It should be << 1.0 to prevent breaking geometry,
         # as geometric constraints have an implicit weight of 1.0.
         self.weight = weight
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Drag constraints are transient and should not be serialized."""
+        return {}
 
     def error(
         self, reg: EntityRegistry, params: ParameterContext

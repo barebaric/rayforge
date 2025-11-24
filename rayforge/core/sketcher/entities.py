@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 
 
 class Point:
@@ -12,6 +12,25 @@ class Point:
 
     def pos(self) -> Tuple[float, float]:
         return (self.x, self.y)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Point to a dictionary."""
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "fixed": self.fixed,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Point":
+        """Deserializes a dictionary into a Point instance."""
+        return cls(
+            id=data["id"],
+            x=data["x"],
+            y=data["y"],
+            fixed=data.get("fixed", False),
+        )
 
     def __repr__(self) -> str:
         return (
@@ -29,6 +48,14 @@ class Entity:
         # Constrained state is calculated by solver
         self.constrained = False
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Base serialization method for entities."""
+        return {
+            "id": self.id,
+            "type": self.type,
+            "construction": self.construction,
+        }
+
     def __repr__(self) -> str:
         return f"Entity(id={self.id}, type={self.type})"
 
@@ -41,6 +68,22 @@ class Line(Entity):
         self.p1_idx = p1_idx
         self.p2_idx = p2_idx
         self.type = "line"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Line to a dictionary."""
+        data = super().to_dict()
+        data.update({"p1_idx": self.p1_idx, "p2_idx": self.p2_idx})
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Line":
+        """Deserializes a dictionary into a Line instance."""
+        return cls(
+            id=data["id"],
+            p1_idx=data["p1_idx"],
+            p2_idx=data["p2_idx"],
+            construction=data.get("construction", False),
+        )
 
     def __repr__(self) -> str:
         return (
@@ -66,11 +109,39 @@ class Arc(Entity):
         self.clockwise = clockwise
         self.type = "arc"
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Arc to a dictionary."""
+        data = super().to_dict()
+        data.update(
+            {
+                "start_idx": self.start_idx,
+                "end_idx": self.end_idx,
+                "center_idx": self.center_idx,
+                "clockwise": self.clockwise,
+            }
+        )
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Arc":
+        """Deserializes a dictionary into an Arc instance."""
+        return cls(
+            id=data["id"],
+            start_idx=data["start_idx"],
+            end_idx=data["end_idx"],
+            center_idx=data["center_idx"],
+            clockwise=data.get("clockwise", False),
+            construction=data.get("construction", False),
+        )
+
     def __repr__(self) -> str:
         return (
             f"Arc(id={self.id}, start={self.start_idx}, end={self.end_idx}, "
             f"center={self.center_idx}, cw={self.clockwise})"
         )
+
+
+_ENTITY_CLASSES = {"line": Line, "arc": Arc}
 
 
 class EntityRegistry:
@@ -81,6 +152,33 @@ class EntityRegistry:
         self.entities: List[Entity] = []
         self._entity_map: Dict[int, Entity] = {}
         self._id_counter = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the registry to a dictionary."""
+        return {
+            "points": [p.to_dict() for p in self.points],
+            "entities": [e.to_dict() for e in self.entities],
+            "id_counter": self._id_counter,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EntityRegistry":
+        """Deserializes a dictionary into an EntityRegistry instance."""
+        new_reg = cls()
+        new_reg.points = [
+            Point.from_dict(p_data) for p_data in data.get("points", [])
+        ]
+        entities_data = data.get("entities", [])
+        for e_data in entities_data:
+            e_type = e_data.get("type")
+            e_cls = _ENTITY_CLASSES.get(e_type)
+            if e_cls:
+                entity = e_cls.from_dict(e_data)
+                new_reg.entities.append(entity)
+                new_reg._entity_map[entity.id] = entity
+
+        new_reg._id_counter = data.get("id_counter", 0)
+        return new_reg
 
     def add_point(self, x: float, y: float, fixed: bool = False) -> int:
         pid = self._id_counter

@@ -114,3 +114,42 @@ def test_sketch_constraint_shortcuts():
     assert isinstance(s.constraints[0], EqualDistanceConstraint)
     assert isinstance(s.constraints[2], PointOnLineConstraint)
     assert isinstance(s.constraints[3], PerpendicularConstraint)
+
+
+def test_sketch_serialization_round_trip():
+    """Tests to_dict and from_dict for a complete Sketch."""
+    s = Sketch()
+    s.set_param("width", 50.0)
+    p1 = s.origin_id
+    p2 = s.add_point(40, 0)
+    p3 = s.add_point(40, 20)
+    l1 = s.add_line(p1, p2)
+    l2 = s.add_line(p2, p3)
+    s.constrain_horizontal(p1, p2)
+    s.constrain_distance(p1, p2, "width")
+    s.constrain_perpendicular(l1, l2)
+    s.solve()
+
+    # Serialize
+    data = s.to_dict()
+
+    # Deserialize
+    new_sketch = Sketch.from_dict(data)
+
+    # Validate integrity
+    assert new_sketch.params.get("width") == 50.0
+    assert len(new_sketch.registry.points) == 3
+    assert len(new_sketch.registry.entities) == 2
+    assert len(new_sketch.constraints) == 3  # Now has 3 constraints
+    assert new_sketch.origin_id == p1
+
+    # Validate functional equivalence
+    assert new_sketch.solve() is True
+    pt2 = new_sketch.registry.get_point(p2)
+    pt3 = new_sketch.registry.get_point(p3)
+
+    abs_tol = 1e-7
+    assert pt2.x == pytest.approx(50.0, abs=abs_tol)
+    assert pt2.y == pytest.approx(0.0, abs=abs_tol)
+    # Perpendicular constraint should make p3.x == p2.x
+    assert pt3.x == pytest.approx(50.0, abs=abs_tol)
