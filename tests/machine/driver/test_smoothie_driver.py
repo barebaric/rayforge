@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import socket
 import pytest
 import pytest_asyncio
 from unittest.mock import MagicMock
@@ -57,7 +58,20 @@ class MockSmoothieServer:
             self.server = None
 
         # 2. Aggressively close all active writers to break connections
+        # We access the socket to force a shutdown, which ensures the
+        # client receives an EOF/Error immediately.
         for writer in list(self._writers):
+            try:
+                sock = writer.get_extra_info("socket")
+                if sock:
+                    try:
+                        sock.shutdown(socket.SHUT_RDWR)
+                    except (OSError, AttributeError):
+                        pass
+                    sock.close()
+            except Exception:
+                pass
+
             try:
                 writer.close()
             except Exception:
@@ -72,7 +86,7 @@ class MockSmoothieServer:
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*self._tasks, return_exceptions=True),
-                    timeout=1.0,
+                    timeout=2.0,
                 )
             except asyncio.TimeoutError:
                 logger.warning(
@@ -92,13 +106,14 @@ class MockSmoothieServer:
             await writer.drain()
 
             while not self._stopping:
-                # Use wait_for to allow checking self._stopping periodically
                 try:
+                    # Use timeout to allow checking self._stopping periodically
+                    # and to prevent hanging on read during shutdown
                     data = await asyncio.wait_for(
                         reader.read(1024), timeout=0.5
                     )
-                except asyncio.TimeoutError:
-                    continue  # Check stopping flag
+                except (asyncio.TimeoutError, TimeoutError):
+                    continue
                 except asyncio.CancelledError:
                     raise
                 except Exception:
@@ -109,29 +124,41 @@ class MockSmoothieServer:
 
                 self.received_data.extend(data)
 
-                # Simulate Smoothie's response behavior
+                # Process data for responses
+                # Note: On Windows/CI, packet coalescing may merge '?'
+                # and commands.
+                # We must check for both independently.
+
+                # 1. Status Poll Response
                 if b"?" in data:
                     writer.write(b"<Idle|MPos:1.2,3.4,5.6|FS:100,0>\n")
-                elif data.strip():
+
+                # 2. Command Acknowledgement
+                # Strip '?' and whitespace to see if there is a real command
+                # payload
+                cmd_part = data.replace(b"?", b"").strip()
+                if cmd_part:
+                    # If we received a command (like G28), send 'ok'
                     writer.write(b"ok\n")
 
-                await writer.drain()
-        except (ConnectionResetError, BrokenPipeError):
+                if b"?" in data or cmd_part:
+                    await writer.drain()
+
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
             pass
         except asyncio.CancelledError:
             pass
         except Exception as e:
             if not self._stopping:
-                logger.error(f"Mock server error: {e}")
+                logger.error(f"Mock server client error: {e}")
         finally:
-            try:
-                writer.close()
-                # Do not await wait_closed() here to avoid potential hangs
-                # during cancellation
-            except Exception:
-                pass
             self._writers.discard(writer)
             self._tasks.discard(task)
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
 
 
 @pytest_asyncio.fixture
@@ -155,8 +182,10 @@ async def driver(context_initializer, machine, smoothie_server):
 
     yield driver_instance
 
-    # Robust cleanup
+    # Robust cleanup to prevent test leakage
     await driver_instance.cleanup()
+    # Explicitly cancel connection task if it's still running (e.g. test
+    # failure)
     if (
         driver_instance._connection_task
         and not driver_instance._connection_task.done()
@@ -172,8 +201,8 @@ async def driver(context_initializer, machine, smoothie_server):
 async def connected_driver(driver: SmoothieDriver):
     """An async fixture that connects a driver and handles teardown."""
     await driver.connect()
-    # Allow connection and initial tasks to settle
-    await asyncio.sleep(0.01)
+    # Allow connection and initial tasks to settle. Increased for Windows CI.
+    await asyncio.sleep(0.1)
     yield driver
     # The driver fixture handles the actual cleanup
     await driver.cleanup()
@@ -213,6 +242,7 @@ class TestSmoothieDriver:
         await driver.connect()
 
         # The driver polls periodically. Wait for state update.
+        # Use a loop with timeout for robustness
         for _ in range(50):
             if driver.state.status == DeviceStatus.IDLE:
                 break
@@ -229,7 +259,7 @@ class TestSmoothieDriver:
         """Test executing a simple command that waits for 'ok'."""
         driver = connected_driver
         await driver.home(Axis.X)
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.1)
         assert b"G28 X0" in smoothie_server.received_data
 
     @pytest.mark.asyncio
@@ -249,10 +279,12 @@ class TestSmoothieDriver:
 
         await driver.run(ops, doc, callback_mock)
 
+        # Check that the server received the correct G-code
         received_str = smoothie_server.received_data.decode()
         assert "G0 X10.000 Y10.000 Z0.000" in received_str
         assert "G1 X20.000 Y20.000 Z0.000" in received_str
 
+        # Check that callbacks were fired
         job_finished_mock.assert_called_once_with(driver)
         assert callback_mock.call_count == 2
 
