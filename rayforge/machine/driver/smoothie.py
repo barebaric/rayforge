@@ -47,7 +47,7 @@ class SmoothieDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self.telnet = None
+        self.telnet: Optional[TelnetTransport] = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
         self._ok_event = asyncio.Event()
@@ -329,7 +329,7 @@ class SmoothieDriver(Driver):
             if not line.startswith("<") or not line.endswith(">"):
                 continue
             state = parse_state(
-                line[1:-1], self.state, lambda message: logger.info(message)
+                line, self.state, lambda message: logger.info(message)
             )
             if state != self.state:
                 self.state = state
