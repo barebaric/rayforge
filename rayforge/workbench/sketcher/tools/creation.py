@@ -31,6 +31,13 @@ class LineTool(SketchTool):
         pass
 
     def _handle_click(self, pid_hit, mx, my) -> bool:
+        if self.line_start_id is not None:
+            try:
+                self.element.sketch.registry.get_point(self.line_start_id)
+            except IndexError:
+                # Start point was deleted, reset the tool
+                self.line_start_id = None
+
         if pid_hit is None:
             pid_hit = self.element.sketch.add_point(mx, my)
             self.element.update_bounds_from_sketch()
@@ -80,6 +87,21 @@ class ArcTool(SketchTool):
 
     def _handle_click(self, pid_hit, mx, my) -> bool:
         # State machine: Center -> Start -> End
+
+        if self.center_id is not None:
+            try:
+                self.element.sketch.registry.get_point(self.center_id)
+            except IndexError:
+                # Center point was deleted, reset the tool completely
+                self.center_id = None
+                self.start_id = None
+
+        if self.start_id is not None:
+            try:
+                self.element.sketch.registry.get_point(self.start_id)
+            except IndexError:
+                # Start point was deleted, reset to expecting start point
+                self.start_id = None
 
         if self.center_id is None:
             # Step 1: Center Point
