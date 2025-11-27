@@ -141,7 +141,49 @@ class Arc(Entity):
         )
 
 
-_ENTITY_CLASSES = {"line": Line, "arc": Arc}
+class Circle(Entity):
+    def __init__(
+        self,
+        id: int,
+        center_idx: int,
+        radius_pt_idx: int,
+        construction: bool = False,
+    ):
+        super().__init__(id, construction)
+        self.center_idx = center_idx
+        self.radius_pt_idx = radius_pt_idx
+        self.type = "circle"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Circle to a dictionary."""
+        data = super().to_dict()
+        data.update(
+            {
+                "center_idx": self.center_idx,
+                "radius_pt_idx": self.radius_pt_idx,
+            }
+        )
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Circle":
+        """Deserializes a dictionary into a Circle instance."""
+        return cls(
+            id=data["id"],
+            center_idx=data["center_idx"],
+            radius_pt_idx=data["radius_pt_idx"],
+            construction=data.get("construction", False),
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Circle(id={self.id}, center={self.center_idx}, "
+            f"radius_pt={self.radius_pt_idx}, "
+            f"construction={self.construction})"
+        )
+
+
+_ENTITY_CLASSES = {"line": Line, "arc": Arc, "circle": Circle}
 
 
 class EntityRegistry:
@@ -213,6 +255,18 @@ class EntityRegistry:
         self._id_counter += 1
         return eid
 
+    def add_circle(
+        self, center_idx: int, radius_pt_idx: int, construction: bool = False
+    ) -> int:
+        eid = self._id_counter
+        entity = Circle(
+            eid, center_idx, radius_pt_idx, construction=construction
+        )
+        self.entities.append(entity)
+        self._entity_map[eid] = entity
+        self._id_counter += 1
+        return eid
+
     def get_point(self, idx: int) -> Point:
         """Retrieves a point by its ID."""
         if 0 <= idx < len(self.points) and self.points[idx].id == idx:
@@ -224,5 +278,5 @@ class EntityRegistry:
         raise IndexError(f"Point with ID {idx} not found")
 
     def get_entity(self, idx: int) -> Optional[Entity]:
-        """Retrieves a geometric entity (Line/Arc) by ID in O(1)."""
+        """Retrieves a geometric entity (Line/Arc/Circle) by ID in O(1)."""
         return self._entity_map.get(idx)

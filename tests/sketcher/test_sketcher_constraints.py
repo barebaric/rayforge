@@ -7,6 +7,7 @@ from rayforge.core.sketcher.constraints import (
     VerticalConstraint,
     CoincidentConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     PerpendicularConstraint,
     TangentConstraint,
     DragConstraint,
@@ -140,6 +141,21 @@ def test_radius_constraint(setup_env):
     assert c2.error(reg, params) == pytest.approx(75.0)
 
 
+def test_radius_constraint_on_circle(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Current radius is 10. Target is 10. Error = 10^2 - 10^2 = 0
+    c = RadiusConstraint(circ_id, 10.0)
+    assert c.error(reg, params) == pytest.approx(0.0)
+
+    # Target is 5. Error = 10^2 - 5^2 = 75
+    c2 = RadiusConstraint(circ_id, 5.0)
+    assert c2.error(reg, params) == pytest.approx(75.0)
+
+
 def test_radius_constraint_invalid_entity(setup_env):
     reg, params = setup_env
     # Add a line, try to constrain radius (should fail gracefully/return 0)
@@ -149,6 +165,22 @@ def test_radius_constraint_invalid_entity(setup_env):
 
     c = RadiusConstraint(line_id, 5.0)
     assert c.error(reg, params) == 0.0
+
+
+def test_diameter_constraint(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    # Radius is 5, so diameter is 10
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Target diam is 10, actual is 10. Error = 4*5^2 - 10^2 = 100 - 100 = 0
+    c = DiameterConstraint(circ_id, 10.0)
+    assert c.error(reg, params) == pytest.approx(0.0)
+
+    # Target diam is 20, actual is 10. Error = 4*5^2 - 20^2 = 100 - 400 = -300
+    c2 = DiameterConstraint(circ_id, 20.0)
+    assert c2.error(reg, params) == pytest.approx(-300.0)
 
 
 def test_perpendicular_constraint(setup_env):
@@ -212,6 +244,31 @@ def test_tangent_constraint(setup_env):
     assert c.error(reg, params) == pytest.approx(300.0)
 
 
+def test_tangent_constraint_on_circle(setup_env):
+    reg, params = setup_env
+
+    # Circle: Center at (0,0), Radius 10
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Line: Horizontal at y=10, from x=-5 to x=5
+    # dist_to_line_sq = 100. radius_sq = 100. Error = 0.
+    lp1 = reg.add_point(-5, 10)
+    lp2 = reg.add_point(5, 10)
+    line_id = reg.add_line(lp1, lp2)
+
+    c = TangentConstraint(line_id, circ_id)
+    assert c.error(reg, params) == pytest.approx(0.0)
+
+    # Move line to y=20
+    # dist_to_line_sq = 400. radius_sq = 100. Error = 300.
+    reg.get_point(lp1).y = 20
+    reg.get_point(lp2).y = 20
+
+    assert c.error(reg, params) == pytest.approx(300.0)
+
+
 def test_drag_constraint(setup_env):
     reg, params = setup_env
     p1 = reg.add_point(0, 0)
@@ -263,9 +320,10 @@ def test_constraint_serialization_round_trip():
         VerticalConstraint(p1=0, p2=1),
         CoincidentConstraint(p1=0, p2=1),
         PointOnLineConstraint(point_id=2, line_id=4),
-        RadiusConstraint(arc_id=5, radius=20.0),
+        RadiusConstraint(entity_id=5, radius=20.0),
+        DiameterConstraint(circle_id=7, value=40.0),
         PerpendicularConstraint(l1_id=4, l2_id=6),
-        TangentConstraint(line_id=4, arc_id=5),
+        TangentConstraint(line_id=4, shape_id=5),
     ]
 
     for constr in constraints_to_test:

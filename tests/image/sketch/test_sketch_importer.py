@@ -44,7 +44,7 @@ def complex_sketch() -> Sketch:
     p_end = s.add_point(120, 35)
 
     arc_id = s.add_arc(p_start, p_end, p_center, clockwise=False)
-    s.constrain_radius(arc_id=arc_id, radius="radius")
+    s.constrain_radius(entity_id=arc_id, radius="radius")
 
     s.solve()  # Solve it to ensure a consistent state
     return s

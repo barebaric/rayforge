@@ -25,8 +25,9 @@ from rayforge.core.sketcher.constraints import Constraint
 
 
 class SketchCanvas(Canvas):
-    def __init__(self, **kwargs):
+    def __init__(self, parent_window: Gtk.Window, **kwargs):
         super().__init__(**kwargs)
+        self.parent_window = parent_window
 
         # 1. Edit Key Controller (Delete key)
         self._edit_key_ctrl = Gtk.EventControllerKey.new()
@@ -35,7 +36,7 @@ class SketchCanvas(Canvas):
         self.add_controller(self._edit_key_ctrl)
 
         # 2. Pie Menu Setup
-        self.pie_menu = SketchPieMenu(self)
+        self.pie_menu = SketchPieMenu(self.parent_window)
 
         # Connect signals
         self.pie_menu.tool_selected.connect(self.on_tool_selected)
@@ -144,8 +145,16 @@ class SketchCanvas(Canvas):
             # 3. Pass Context (Sketch, Target, Type)
             self.pie_menu.set_context(sketch_elem, target, target_type)
 
-        logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")
-        self.pie_menu.popup_at_location(x, y)
+        # Translate coordinates from canvas-local to window-local
+        # for the popover, which is parented to the window.
+        win_coords = self.translate_coordinates(self.parent_window, x, y)
+        if win_coords:
+            win_x, win_y = win_coords
+            logger.info(
+                f"Opening Pie Menu at {win_x}, {win_y} (Type: {target_type})"
+            )
+            self.pie_menu.popup_at_location(win_x, win_y)
+
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def on_tool_selected(self, sender, tool):
@@ -243,7 +252,7 @@ class SketcherApp(Gtk.Application):
         vbox.append(header)
 
         # Canvas
-        self.canvas = SketchCanvas()
+        self.canvas = SketchCanvas(parent_window=self.window)
         self.canvas.set_vexpand(True)
         vbox.append(self.canvas)
 
