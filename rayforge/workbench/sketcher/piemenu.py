@@ -6,7 +6,7 @@ from gi.repository import Gtk
 from rayforge.shared.ui.piemenu import PieMenu, PieMenuItem
 
 if TYPE_CHECKING:
-    from rayforge.workbench.sketcher.element import SketchElement
+    from rayforge.workbench.sketcher.sketchelement import SketchElement
     from rayforge.core.sketcher.entities import Point, Entity
     from rayforge.core.sketcher.constraints import Constraint
 
