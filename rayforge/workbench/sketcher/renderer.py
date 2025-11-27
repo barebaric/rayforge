@@ -294,13 +294,23 @@ class SketchRenderer:
         ctx.move_to(mx - ext.width / 2, my + ext.height / 2 - 2)
         ctx.show_text(label)
 
-        # Draw Dash Line
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
-        ctx.set_line_width(1)
-        ctx.set_dash([4, 4])
-        ctx.move_to(s1[0], s1[1])
-        ctx.line_to(s2[0], s2[1])
-        ctx.stroke()
+        # Draw Dash Line - only if no solid line entity connects these points
+        has_geometry = False
+        entities = self.element.sketch.registry.entities or []
+        for entity in entities:
+            if isinstance(entity, Line):
+                if {entity.p1_idx, entity.p2_idx} == {constr.p1, constr.p2}:
+                    has_geometry = True
+                    break
+
+        if not has_geometry:
+            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+            ctx.set_line_width(1)
+            ctx.set_dash([4, 4])
+            ctx.move_to(s1[0], s1[1])
+            ctx.line_to(s2[0], s2[1])
+            ctx.stroke()
+
         ctx.restore()
 
     def _draw_hv_constraint(self, ctx, constr, to_screen):
