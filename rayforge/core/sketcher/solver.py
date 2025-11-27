@@ -4,7 +4,7 @@ from scipy.optimize import least_squares
 from typing import Sequence, List
 from .entities import EntityRegistry, Point, Line, Arc, Circle
 from .params import ParameterContext
-from .constraints import Constraint
+from .constraints import Constraint, RadiusConstraint, DiameterConstraint
 
 
 class Solver:
@@ -133,7 +133,8 @@ class Solver:
         """
         Updates the constrained status of Entities based on their points.
         An entity is constrained only if all its defining points are
-        constrained.
+        constrained. For circles, it is constrained if its center and radius
+        are defined.
         """
         registry = self.registry
         for entity in registry.entities:
@@ -153,8 +154,33 @@ class Solver:
                 )
 
             elif isinstance(entity, Circle):
-                c = registry.get_point(entity.center_idx)
-                r = registry.get_point(entity.radius_pt_idx)
-                is_fully_constrained = c.constrained and r.constrained
+                center_pt = registry.get_point(entity.center_idx)
+                radius_pt = registry.get_point(entity.radius_pt_idx)
+
+                # A circle's geometry is defined by its center and radius.
+                center_is_constrained = center_pt.constrained
+
+                # The radius is defined if:
+                # 1. An explicit Radius or Diameter constraint exists.
+                # 2. Or, the radius point itself is fully constrained.
+                radius_is_defined = radius_pt.constrained
+                if not radius_is_defined:
+                    for constr in self.constraints:
+                        if (
+                            isinstance(constr, RadiusConstraint)
+                            and constr.entity_id == entity.id
+                        ):
+                            radius_is_defined = True
+                            break
+                        if (
+                            isinstance(constr, DiameterConstraint)
+                            and constr.circle_id == entity.id
+                        ):
+                            radius_is_defined = True
+                            break
+
+                is_fully_constrained = (
+                    center_is_constrained and radius_is_defined
+                )
 
             entity.constrained = is_fully_constrained
