@@ -329,7 +329,10 @@ class SvgImporter(Importer):
 
         center_offset_x = center_x - start_x
         center_offset_y = center_y - start_y
-        is_clockwise = seg.sweep == 0
+        # Per SVG spec, sweep-flag=1 is positive-angle (clockwise).
+        # svgelements preserves this as sweep=1 and correctly flips it on
+        # transforms with negative determinants.
+        is_clockwise = bool(seg.sweep)
         geo.arc_to(
             float(end.x),
             float(end.y),
