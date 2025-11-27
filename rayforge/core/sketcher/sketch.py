@@ -1,4 +1,4 @@
-from typing import Union, List, Optional, Set, Dict, Any
+from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
 from .params import ParameterContext
 from .entities import EntityRegistry, Line, Arc
@@ -111,6 +111,76 @@ class Sketch:
         return self.registry.add_arc(
             start, end, center, clockwise, construction
         )
+
+    # --- Validation ---
+
+    def supports_constraint(
+        self,
+        constraint_type: str,
+        point_ids: Sequence[int],
+        entity_ids: Sequence[int],
+    ) -> bool:
+        """
+        Determines if a constraint type is valid for the given selection of
+        points and entities.
+        """
+        # Resolve entities
+        entities = []
+        for eid in entity_ids:
+            e = self.registry.get_entity(eid)
+            if e:
+                entities.append(e)
+
+        n_pts = len(point_ids)
+        n_ents = len(entities)
+
+        lines = [e for e in entities if isinstance(e, Line)]
+        arcs = [e for e in entities if isinstance(e, Arc)]
+        n_lines = len(lines)
+        n_arcs = len(arcs)
+
+        # 1. Linear/Distance Constraints (Horizontal, Vertical, Distance)
+        if constraint_type in ("dist", "horiz", "vert"):
+            # Case A: Two Points
+            if n_pts == 2 and n_ents == 0:
+                return True
+            # Case B: One Line
+            if n_pts == 0 and n_lines == 1 and n_ents == 1:
+                return True
+            return False
+
+        # 2. Radius
+        if constraint_type == "radius":
+            # Exactly one Arc
+            return n_arcs == 1 and n_ents == 1 and n_pts == 0
+
+        # 3. Perpendicular
+        if constraint_type == "perp":
+            # Exactly two Lines
+            return n_lines == 2 and n_ents == 2 and n_pts == 0
+
+        # 4. Tangent
+        if constraint_type == "tangent":
+            # One Line and One Arc
+            return n_lines == 1 and n_arcs == 1 and n_ents == 2 and n_pts == 0
+
+        # 5. Coincident (Point-to-Point)
+        if constraint_type == "coincident":
+            # Two points
+            return n_pts == 2 and n_ents == 0
+
+        # 6. Point On Line
+        if constraint_type == "point_on_line":
+            # One Point and One Line
+            if n_pts == 1 and n_lines == 1 and n_ents == 1:
+                # Ensure point is not one of the line's endpoints
+                line = lines[0]
+                pid = point_ids[0]
+                if pid not in (line.p1_idx, line.p2_idx):
+                    return True
+            return False
+
+        return False
 
     # --- Constraint Shortcuts ---
 

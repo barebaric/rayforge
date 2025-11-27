@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 class SketchElement(CanvasElement):
     constraint_edit_requested = Signal()
 
-    def __init__(self, **kwargs):
+    def __init__(self, x=0, y=0, width=1.0, height=1.0, **kwargs):
         kwargs["is_editable"] = True
-        super().__init__(**kwargs)
+        # Pass the required positional arguments to the parent class.
+        super().__init__(x=x, y=y, width=width, height=height, **kwargs)
 
         # Model
         self.sketch = Sketch()
@@ -137,6 +138,42 @@ class SketchElement(CanvasElement):
     def on_hover_motion(self, world_x: float, world_y: float):
         if hasattr(self.current_tool, "on_hover_motion"):
             self.current_tool.on_hover_motion(world_x, world_y)
+
+    # =========================================================================
+    # Capabilities Querying
+    # =========================================================================
+
+    def is_action_supported(self, action: str) -> bool:
+        """
+        Determines if a generic action is valid for the current selection.
+        """
+        has_points = len(self.selection.point_ids) > 0
+        has_entities = len(self.selection.entity_ids) > 0
+        has_constraints = self.selection.constraint_idx is not None
+        has_junctions = self.selection.junction_pid is not None
+
+        if action == "construction":
+            # Can toggle construction on entities
+            return has_entities
+
+        if action == "delete":
+            # Can delete almost anything selected
+            return (
+                has_points or has_entities or has_constraints or has_junctions
+            )
+
+        return False
+
+    def is_constraint_supported(self, constraint_type: str) -> bool:
+        """
+        Determines if a specific constraint type can be applied to the
+        current selection. Delegates to the backend Sketch model.
+        """
+        return self.sketch.supports_constraint(
+            constraint_type,
+            self.selection.point_ids,
+            self.selection.entity_ids,
+        )
 
     # =========================================================================
     # Command Actions
@@ -423,6 +460,10 @@ class SketchElement(CanvasElement):
         return None, None
 
     def add_horizontal_constraint(self):
+        if not self.is_constraint_supported("horiz"):
+            logger.warning("Horizontal constraint not valid for selection.")
+            return
+
         p1, p2 = self._get_two_points_from_selection()
         if p1 and p2:
             self.sketch.constrain_horizontal(p1.id, p2.id)
@@ -430,6 +471,10 @@ class SketchElement(CanvasElement):
             self.mark_dirty()
 
     def add_vertical_constraint(self):
+        if not self.is_constraint_supported("vert"):
+            logger.warning("Vertical constraint not valid for selection.")
+            return
+
         p1, p2 = self._get_two_points_from_selection()
         if p1 and p2:
             self.sketch.constrain_vertical(p1.id, p2.id)
@@ -437,6 +482,10 @@ class SketchElement(CanvasElement):
             self.mark_dirty()
 
     def add_distance_constraint(self):
+        if not self.is_constraint_supported("dist"):
+            logger.warning("Distance constraint not valid for selection.")
+            return
+
         p1, p2 = self._get_two_points_from_selection()
         if p1 and p2:
             dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
@@ -448,8 +497,8 @@ class SketchElement(CanvasElement):
 
     def add_radius_constraint(self):
         """Adds a radius constraint to a selected Arc."""
-        if len(self.selection.entity_ids) != 1:
-            logger.warning("Select exactly 1 Arc for Radius.")
+        if not self.is_constraint_supported("radius"):
+            logger.warning("Radius constraint requires exactly 1 Arc.")
             return
 
         eid = self.selection.entity_ids[0]
@@ -472,24 +521,20 @@ class SketchElement(CanvasElement):
         Adds a Coincident (Point-Point) or PointOnLine constraint based on
         the current selection.
         """
-        # Case: Two points selected -> Coincident
-        if (
-            len(self.selection.point_ids) == 2
-            and not self.selection.entity_ids
-        ):
+        if self.is_constraint_supported("coincident"):
             p1_id, p2_id = self.selection.point_ids
             self.sketch.constrain_coincident(p1_id, p2_id)
             self.sketch.solve()
             self.mark_dirty()
             return
 
-        # Case: One point and one line selected -> PointOnLine
-        selected_lines = [
-            ent
-            for eid in self.selection.entity_ids
-            if isinstance((ent := self._get_entity_by_id(eid)), Line)
-        ]
-        if len(self.selection.point_ids) == 1 and len(selected_lines) == 1:
+        if self.is_constraint_supported("point_on_line"):
+            # We need to find which is line and which is point
+            selected_lines = [
+                ent
+                for eid in self.selection.entity_ids
+                if isinstance((ent := self._get_entity_by_id(eid)), Line)
+            ]
             sel_line = selected_lines[0]
             target_pid = self.selection.point_ids[0]
 
@@ -509,14 +554,14 @@ class SketchElement(CanvasElement):
         )
 
     def add_perpendicular(self):
-        if len(self.selection.entity_ids) != 2:
-            logger.warning("Select exactly 2 lines for Perpendicular.")
+        if not self.is_constraint_supported("perp"):
+            logger.warning("Perpendicular constraint requires 2 Lines.")
             return
 
         e1 = self._get_entity_by_id(self.selection.entity_ids[0])
         e2 = self._get_entity_by_id(self.selection.entity_ids[1])
 
-        if isinstance(e1, Line) and isinstance(e2, Line):
+        if e1 and e2:
             self.sketch.constraints.append(
                 PerpendicularConstraint(e1.id, e2.id)
             )
@@ -526,6 +571,10 @@ class SketchElement(CanvasElement):
             logger.warning("Perpendicular constraint requires 2 Lines.")
 
     def add_tangent(self):
+        if not self.is_constraint_supported("tangent"):
+            logger.warning("Tangent: Select 1 Line and 1 Arc/Circle.")
+            return
+
         sel_line = None
         sel_arc = None
 
