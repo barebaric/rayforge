@@ -269,22 +269,32 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     # Test "align" (covers coincident and point-on-line)
     # Coincident (2 points)
     assert s.supports_constraint("align", [p1, p_ext], []) is True
-    # Point-on-Line (1 point, 1 line)
+    # Point-on-Shape (1 point, 1 shape)
     assert s.supports_constraint("align", [p_ext], [l1]) is True
+    assert s.supports_constraint("align", [p_ext], [a1]) is True
+    assert s.supports_constraint("align", [p_ext], [c1]) is True
+
     # Invalid: Endpoint on its own line
     assert s.supports_constraint("align", [p1], [l1]) is False
+    # Invalid: Control point on its own shape
+    arc_start_id = s.registry.get_entity(a1).start_idx
+    assert s.supports_constraint("align", [arc_start_id], [a1]) is False
+    circle_center_id = s.registry.get_entity(c1).center_idx
+    assert s.supports_constraint("align", [circle_center_id], [c1]) is False
+
     # Invalid: Other combos
     assert s.supports_constraint("align", [p1, p2, p3], []) is False
     assert s.supports_constraint("align", [p_ext], [l1, l2]) is False
-    assert s.supports_constraint("align", [p_ext], [a1]) is False
 
     # Test "coincident" (internal use)
     assert s.supports_constraint("coincident", [p1, p2], []) is True
     assert s.supports_constraint("coincident", [p1], []) is False
     assert s.supports_constraint("coincident", [p1], [l1]) is False
 
-    # Test "point_on_line" (internal use)
+    # Test "point_on_line" (internal use, now means point-on-shape)
     assert s.supports_constraint("point_on_line", [p_ext], [l1]) is True
+    assert s.supports_constraint("point_on_line", [p_ext], [a1]) is True
+    assert s.supports_constraint("point_on_line", [p_ext], [c1]) is True
     # Invalid: Endpoint on its own line
     assert s.supports_constraint("point_on_line", [p1], [l1]) is False
     # Invalid: wrong number of items
