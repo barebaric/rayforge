@@ -58,7 +58,6 @@ class SketchElement(CanvasElement):
         # Config
         self.point_radius = 5.0
         self.line_width = 2.0
-        self.auto_bounds_padding = 40.0
 
     @property
     def current_tool(self):
@@ -66,41 +65,35 @@ class SketchElement(CanvasElement):
 
     def update_bounds_from_sketch(self):
         """
-        Calculates the bounding box of the sketch content and updates the
+        Calculates the bounding box of the sketch geometry and updates the
         element's size and transform to encompass it without shifting the
         visual location of the content.
         """
-        points = self.sketch.registry.points
-        if not points:
-            return
+        geometry = self.sketch.to_geometry()
+        if geometry.is_empty():
+            # If there's no geometry, check for standalone points.
+            if not self.sketch.registry.points:
+                return
+            xs = [p.x for p in self.sketch.registry.points]
+            ys = [p.y for p in self.sketch.registry.points]
+            min_x, max_x = min(xs), max(xs)
+            min_y, max_y = min(ys), max(ys)
+        else:
+            min_x, min_y, max_x, max_y = geometry.rect()
 
-        # 1. Calculate Model Bounding Box
-        pad = self.auto_bounds_padding
-        xs = [p.x for p in points]
-        ys = [p.y for p in points]
+        # 1. Calculate new dimensions
+        new_w = max_x - min_x
+        new_h = max_y - min_y
 
-        min_x, max_x = min(xs), max(xs)
-        min_y, max_y = min(ys), max(ys)
-
-        # 2. Determine view offset to keep content inside [0, w], [0, h]
-        target_offset_x = pad - min_x
-        target_offset_y = pad - min_y
-
-        # 3. Calculate new dimensions
-        new_w = (max_x - min_x) + 2 * pad
-        new_h = (max_y - min_y) + 2 * pad
-
-        # 4. Calculate change in offset to adjust parent transform
+        # 2. Calculate change in offset to adjust parent transform
         current_offset_x, current_offset_y = (
             self.content_transform.get_translation()
         )
-        delta_x = target_offset_x - current_offset_x
-        delta_y = target_offset_y - current_offset_y
+        delta_x = -min_x - current_offset_x
+        delta_y = -min_y - current_offset_y
 
-        # 5. Apply updates
-        self.content_transform = Matrix.translation(
-            target_offset_x, target_offset_y
-        )
+        # 3. Apply updates
+        self.content_transform = Matrix.translation(-min_x, -min_y)
         self.width = max(new_w, 50)
         self.height = max(new_h, 50)
 
@@ -110,6 +103,10 @@ class SketchElement(CanvasElement):
         )
 
         self.mark_dirty()
+
+    def on_edit_mode_leave(self):
+        """Called when this element is no longer the Canvas's edit_context."""
+        self.update_bounds_from_sketch()
 
     # =========================================================================
     # Rendering
