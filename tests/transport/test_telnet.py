@@ -61,10 +61,15 @@ class MockTelnetServer:
         if self.server:
             self.server.close()
             await self.server.wait_closed()
-        for writer in self.clients:
+
+        # Close all client writers
+        for writer in list(self.clients):
             if not writer.is_closing():
                 writer.close()
-                await writer.wait_closed()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass
         self.clients.clear()
 
     async def send_to_clients(self, data: bytes):
@@ -85,8 +90,11 @@ class MockTelnetServer:
                 # Echo the data back
                 writer.write(data)
                 await writer.drain()
+        except Exception:
+            pass
         finally:
-            self.clients.remove(writer)
+            if writer in self.clients:
+                self.clients.remove(writer)
             writer.close()
 
 
@@ -120,7 +128,7 @@ class TestTelnetTransportIntegration:
         await transport.disconnect()
         assert not transport.is_connected
         # Allow a moment for the server to process the client disconnect
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.1)
         assert len(telnet_server.clients) == 0
 
         statuses = [call["kwargs"]["status"] for call in status_tracker.calls]
@@ -136,7 +144,9 @@ class TestTelnetTransportIntegration:
         transport = TelnetTransport(host="127.0.0.1", port=65530)
         status_tracker = SignalTracker(transport.status_changed)
 
-        with pytest.raises(ConnectionRefusedError):
+        with pytest.raises(
+            OSError
+        ):  # ConnectionRefusedError is an OSError subclass
             await transport.connect()
 
         assert not transport.is_connected
@@ -145,7 +155,9 @@ class TestTelnetTransportIntegration:
         error_call = status_tracker.last_call
         assert error_call is not None
         assert "message" in error_call["kwargs"]
-        assert "Connect call failed" in error_call["kwargs"]["message"]
+        # On Windows, the error message differs ([WinError 1225]), so we just
+        # check content presence
+        assert error_call["kwargs"]["message"]
 
     async def test_send_and_receive(self, telnet_server):
         """Test sending data to the server and receiving its echo back."""
@@ -161,12 +173,20 @@ class TestTelnetTransportIntegration:
             test_message = b"G1 X10 F1000\n"
             await transport.send(test_message)
 
-            # Yield control to allow the server to process and store the data
-            await asyncio.sleep(0.01)
+            # Wait for data with a timeout loop
+            for _ in range(20):  # Wait up to 2 seconds
+                if telnet_server.received_data == test_message:
+                    break
+                await asyncio.sleep(0.1)
+
             assert telnet_server.received_data == test_message
 
-            # The server should have echoed the data back. Check if we
-            # received it.
+            # Wait for echo
+            for _ in range(20):
+                if received_tracker.last_data == test_message:
+                    break
+                await asyncio.sleep(0.1)
+
             assert received_tracker.last_data == test_message
 
         finally:
@@ -185,7 +205,10 @@ class TestTelnetTransportIntegration:
             await telnet_server.send_to_clients(server_message)
 
             # Yield control to allow the transport to process the received data
-            await asyncio.sleep(0.01)
+            for _ in range(10):
+                if received_tracker.last_data == server_message:
+                    break
+                await asyncio.sleep(0.1)
 
             assert len(received_tracker.calls) > 0
             assert received_tracker.last_data == server_message
@@ -208,7 +231,10 @@ class TestTelnetTransportIntegration:
 
         # The transport's background task should detect the closed connection
         # and update its status. We wait for this to happen.
-        await asyncio.sleep(0.01)
+        for _ in range(20):
+            if not transport.is_connected:
+                break
+            await asyncio.sleep(0.1)
 
         assert not transport.is_connected
         last_call = status_tracker.last_call
