@@ -45,6 +45,10 @@ class SketchPieMenu(PieMenu):
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
+        item = PieMenuItem("sketch-circle-symbolic", "Circle", data="circle")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
         # Actions
         item = PieMenuItem(
             "sketch-construction-symbolic", "Construction", data="construction"
@@ -73,7 +77,13 @@ class SketchPieMenu(PieMenu):
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        item = PieMenuItem("sketch-distance-symbolic", "Radius", data="radius")
+        item = PieMenuItem("sketch-radius-symbolic", "Radius", data="radius")
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "sketch-diameter-symbolic", "Diameter", data="diameter"
+        )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
@@ -136,7 +146,7 @@ class SketchPieMenu(PieMenu):
 
                 # Tools (creation/select) are only visible if empty space was
                 # clicked
-                if key in ("select", "line", "arc"):
+                if key in ("select", "line", "arc", "circle"):
                     item.visible = not has_target
 
                 # Actions (delete, construction)

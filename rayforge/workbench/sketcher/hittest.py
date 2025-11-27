@@ -2,12 +2,13 @@ import math
 import cairo
 from collections import defaultdict
 from typing import Optional, Tuple, Any
-from rayforge.core.sketcher.entities import Line, Arc, Entity
+from rayforge.core.sketcher.entities import Line, Arc, Circle, Entity
 from rayforge.core.sketcher.constraints import (
     HorizontalConstraint,
     VerticalConstraint,
     DistanceConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     PerpendicularConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
@@ -80,7 +81,7 @@ class SketchHitTester:
         if hit_type is not None:
             return hit_type, hit_obj
 
-        # 3. Entities (Lines/Arcs)
+        # 3. Entities (Lines/Arcs/Circles)
         hit_entity = self._hit_test_entities(wx, wy, element)
         if hit_entity is not None:
             return "entity", hit_entity
@@ -143,6 +144,9 @@ class SketchHitTester:
                 point_counts[entity.start_idx] += 1
                 point_counts[entity.end_idx] += 1
                 point_counts[entity.center_idx] += 1
+            elif isinstance(entity, Circle):
+                point_counts[entity.center_idx] += 1
+                point_counts[entity.radius_pt_idx] += 1
 
         for pid, count in point_counts.items():
             if count > 1:
@@ -157,7 +161,7 @@ class SketchHitTester:
 
     def _is_constraint_hit(self, constr, sx, sy, to_screen, element) -> bool:
         registry = element.sketch.registry
-        click_radius = 13.0  # Increased from 12.0
+        click_radius = 13.0
 
         def safe_get(pid):
             try:
@@ -184,8 +188,8 @@ class SketchHitTester:
 
                 return math.hypot(sx - cx, sy - cy) < click_radius
 
-        elif isinstance(constr, RadiusConstraint):
-            pos_data = self.get_radius_label_pos(constr, to_screen, element)
+        elif isinstance(constr, (RadiusConstraint, DiameterConstraint)):
+            pos_data = self.get_circular_label_pos(constr, to_screen, element)
             if pos_data:
                 label_sx, label_sy, _, _ = pos_data
                 return math.hypot(sx - label_sx, sy - label_sy) < 15
@@ -231,7 +235,12 @@ class SketchHitTester:
 
     def _hit_test_entities(self, wx, wy, element) -> Optional[Entity]:
         mx, my = self.screen_to_model(wx, wy, element)
-        threshold = self.snap_distance
+
+        scale = 1.0
+        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+            scale_x, _ = element.canvas.get_view_scale()
+            scale = scale_x if scale_x > 1e-9 else 1.0
+        threshold = self.snap_distance / scale
 
         def safe_get(pid):
             try:
@@ -251,29 +260,55 @@ class SketchHitTester:
                     if dist_sq < threshold**2:
                         return entity
 
-            elif isinstance(entity, Arc):
-                c = safe_get(entity.center_idx)
-                s = safe_get(entity.start_idx)
-                e = safe_get(entity.end_idx)
-                if c and s and e:
-                    # 1. Dist check from center equals Radius (+- threshold)
-                    radius = math.hypot(s.x - c.x, s.y - c.y)
-                    dist_mouse = math.hypot(mx - c.x, my - c.y)
+            elif isinstance(entity, (Arc, Circle)):
+                center = safe_get(entity.center_idx)
+                if not center:
+                    continue
 
-                    if abs(dist_mouse - radius) < threshold:
-                        # 2. Angle check
-                        angle_mouse = math.atan2(my - c.y, mx - c.x)
-                        angle_start = math.atan2(s.y - c.y, s.x - c.x)
-                        angle_end = math.atan2(e.y - c.y, e.x - c.x)
+                radius = 0.0
+                if isinstance(entity, Arc):
+                    start = safe_get(entity.start_idx)
+                    if start:
+                        radius = math.hypot(
+                            start.x - center.x, start.y - center.y
+                        )
+                elif isinstance(entity, Circle):
+                    radius_pt = safe_get(entity.radius_pt_idx)
+                    if radius_pt:
+                        radius = math.hypot(
+                            radius_pt.x - center.x, radius_pt.y - center.y
+                        )
 
-                        if self._is_angle_between(
-                            angle_mouse,
-                            angle_start,
-                            angle_end,
-                            entity.clockwise,
-                        ):
-                            return entity
+                if radius == 0.0:
+                    continue
 
+                dist_mouse = math.hypot(mx - center.x, my - center.y)
+
+                if abs(dist_mouse - radius) < threshold:
+                    if isinstance(entity, Circle):
+                        return entity
+
+                    if isinstance(entity, Arc):
+                        start = safe_get(entity.start_idx)
+                        end = safe_get(entity.end_idx)
+                        if start and end:
+                            angle_mouse = math.atan2(
+                                my - center.y, mx - center.x
+                            )
+                            angle_start = math.atan2(
+                                start.y - center.y, start.x - center.x
+                            )
+                            angle_end = math.atan2(
+                                end.y - center.y, end.x - center.x
+                            )
+
+                            if self._is_angle_between(
+                                angle_mouse,
+                                angle_start,
+                                angle_end,
+                                entity.clockwise,
+                            ):
+                                return entity
         return None
 
     def _is_angle_between(self, target, start, end, clockwise):
@@ -298,42 +333,68 @@ class SketchHitTester:
                 target += 2 * math.pi
             return start <= target <= end
 
-    def get_radius_label_pos(self, constr, to_screen, element):
-        """Calculates the screen position for a radius constraint label."""
-        arc = element.sketch.registry.get_entity(constr.arc_id)
-        if not isinstance(arc, Arc):
+    def get_circular_label_pos(self, constr, to_screen, element):
+        """Calculates screen position for Radius/Diameter constraint labels."""
+        entity_id = -1
+        if isinstance(constr, RadiusConstraint):
+            entity_id = constr.entity_id
+        elif isinstance(constr, DiameterConstraint):
+            entity_id = constr.circle_id
+
+        entity = element.sketch.registry.get_entity(entity_id)
+        if not isinstance(entity, (Arc, Circle)):
             return None
 
-        c = element.sketch.registry.get_point(arc.center_idx)
-        s = element.sketch.registry.get_point(arc.start_idx)
-        e = element.sketch.registry.get_point(arc.end_idx)
-        if not (c and s and e):
+        center = element.sketch.registry.get_point(entity.center_idx)
+        if not center:
             return None
 
-        radius = math.hypot(s.x - c.x, s.y - c.y)
-        start_a = math.atan2(s.y - c.y, s.x - c.x)
-        end_a = math.atan2(e.y - c.y, e.x - c.x)
+        radius, mid_angle = 0.0, 0.0
 
-        # Find midpoint angle
-        angle_range = end_a - start_a
-        if arc.clockwise:
-            if angle_range > 0:
-                angle_range -= 2 * math.pi
-        else:
-            if angle_range < 0:
-                angle_range += 2 * math.pi
+        if isinstance(entity, Arc):
+            start = element.sketch.registry.get_point(entity.start_idx)
+            end = element.sketch.registry.get_point(entity.end_idx)
+            if not (start and end):
+                return None
 
-        mid_angle = start_a + angle_range / 2.0
+            radius = math.hypot(start.x - center.x, start.y - center.y)
+            start_a = math.atan2(start.y - center.y, start.x - center.x)
+            end_a = math.atan2(end.y - center.y, end.x - center.x)
 
-        # Position for the label itself (further out)
-        label_dist = radius + 20
-        label_mx = c.x + label_dist * math.cos(mid_angle)
-        label_my = c.y + label_dist * math.sin(mid_angle)
+            angle_range = end_a - start_a
+            if entity.clockwise:
+                if angle_range > 0:
+                    angle_range -= 2 * math.pi
+            else:
+                if angle_range < 0:
+                    angle_range += 2 * math.pi
+            mid_angle = start_a + angle_range / 2.0
+
+        elif isinstance(entity, Circle):
+            radius_pt = element.sketch.registry.get_point(entity.radius_pt_idx)
+            if not radius_pt:
+                return None
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            mid_angle = math.atan2(
+                radius_pt.y - center.y, radius_pt.x - center.x
+            )
+
+        if radius == 0.0:
+            return None
+
+        scale = 1.0
+        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+            scale_x, _ = element.canvas.get_view_scale()
+            scale = scale_x if scale_x > 1e-9 else 1.0
+
+        label_dist = radius + 20 / scale
+        label_mx = center.x + label_dist * math.cos(mid_angle)
+        label_my = center.y + label_dist * math.sin(mid_angle)
         label_sx, label_sy = to_screen.transform_point((label_mx, label_my))
 
         # Position on the arc for the leader line
-        arc_mid_mx = c.x + radius * math.cos(mid_angle)
-        arc_mid_my = c.y + radius * math.sin(mid_angle)
+        arc_mid_mx = center.x + radius * math.cos(mid_angle)
+        arc_mid_my = center.y + radius * math.sin(mid_angle)
         arc_mid_sx, arc_mid_sy = to_screen.transform_point(
             (arc_mid_mx, arc_mid_my)
         )
@@ -342,9 +403,8 @@ class SketchHitTester:
 
     def get_perp_intersection_screen(self, constr, to_screen, element):
         """Calculates intersection point and angles for perp visualization."""
-        entities = element.sketch.registry.entities or []
-        l1 = next((e for e in entities if e.id == constr.l1_id), None)
-        l2 = next((e for e in entities if e.id == constr.l2_id), None)
+        l1 = element.sketch.registry.get_entity(constr.l1_id)
+        l2 = element.sketch.registry.get_entity(constr.l2_id)
 
         if not (isinstance(l1, Line) and isinstance(l2, Line)):
             return None
