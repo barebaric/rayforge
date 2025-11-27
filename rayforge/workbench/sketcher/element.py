@@ -33,16 +33,10 @@ class SketchElement(CanvasElement):
     constraint_edit_requested = Signal()
 
     def __init__(self, x=0, y=0, width=1.0, height=1.0, **kwargs):
+        kwargs["is_editable"] = True
+        kwargs["clip"] = False
         # Pass the required positional arguments to the parent class.
-        super().__init__(
-            x=x,
-            y=y,
-            width=width,
-            height=height,
-            is_editable=True,
-            clip=False,
-            **kwargs,
-        )
+        super().__init__(x=x, y=y, width=width, height=height, **kwargs)
 
         # Model
         self.sketch = Sketch()
@@ -411,7 +405,7 @@ class SketchElement(CanvasElement):
                 elif isinstance(constr, DiameterConstraint):
                     entities_in_constraint = [constr.circle_id]
                 elif isinstance(constr, PointOnLineConstraint):
-                    entities_in_constraint = [constr.line_id]
+                    entities_in_constraint = [constr.shape_id]
 
                 if any(
                     e in to_delete_entities for e in entities_in_constraint
@@ -578,28 +572,18 @@ class SketchElement(CanvasElement):
             return
 
         if self.is_constraint_supported("point_on_line"):
-            # We need to find which is line and which is point
-            selected_lines = [
-                ent
-                for eid in self.selection.entity_ids
-                if isinstance((ent := self._get_entity_by_id(eid)), Line)
-            ]
-            sel_line = selected_lines[0]
+            # The support check guarantees we have 1 entity and 1 valid point
+            sel_entity_id = self.selection.entity_ids[0]
             target_pid = self.selection.point_ids[0]
 
-            # Ensure point is not one of the line's endpoints
-            if target_pid not in {sel_line.p1_idx, sel_line.p2_idx}:
-                self.sketch.constrain_point_on_line(target_pid, sel_line.id)
-                self.sketch.solve()
-                self.mark_dirty()
-                return
-            else:
-                logger.warning(
-                    "Point is already an endpoint of the selected line."
-                )
+            self.sketch.constrain_point_on_line(target_pid, sel_entity_id)
+            self.sketch.solve()
+            self.mark_dirty()
+            return
 
         logger.warning(
-            "For Align: Select 2 points, OR 1 line and 1 distinct point."
+            "For Align: Select 2 points, OR 1 line/arc/circle and 1 "
+            "distinct point."
         )
 
     def add_perpendicular(self):
