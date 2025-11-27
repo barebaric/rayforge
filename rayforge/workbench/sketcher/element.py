@@ -33,9 +33,16 @@ class SketchElement(CanvasElement):
     constraint_edit_requested = Signal()
 
     def __init__(self, x=0, y=0, width=1.0, height=1.0, **kwargs):
-        kwargs["is_editable"] = True
         # Pass the required positional arguments to the parent class.
-        super().__init__(x=x, y=y, width=width, height=height, **kwargs)
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            is_editable=True,
+            clip=False,
+            **kwargs,
+        )
 
         # Model
         self.sketch = Sketch()
