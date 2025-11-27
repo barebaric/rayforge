@@ -251,6 +251,7 @@ class SketchRenderer:
         bg_y = sy - ext.height / 2 - 4
         ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
         ctx.fill()
+        ctx.new_path()
 
         ctx.set_source_rgb(0, 0, 0.5)
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
@@ -288,11 +289,13 @@ class SketchRenderer:
         bg_y = my - ext.height / 2 - 4
         ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
         ctx.fill()
+        ctx.new_path()
 
         # Draw Text
         ctx.set_source_rgb(0, 0, 0.5)
         ctx.move_to(mx - ext.width / 2, my + ext.height / 2 - 2)
         ctx.show_text(label)
+        ctx.new_path()
 
         # Draw Dash Line - only if no solid line entity connects these points
         has_geometry = False
