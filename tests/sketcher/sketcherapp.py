@@ -4,25 +4,159 @@ import logging
 import gettext
 from pathlib import Path
 from typing import cast, Any
+from blinker import Signal
+
+# -- Setup Logging --
+logging.basicConfig(
+    level=logging.DEBUG, format="[%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("sketcherapp")
 
 base_path = Path(__file__).parent
 gettext.install("canvas", base_path / "rayforge" / "locale")
-logging.basicConfig(level=logging.DEBUG)
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk
 
 from rayforge.workbench.canvas import Canvas
 from rayforge.workbench.sketcher import SketchElement
+from rayforge.shared.ui.piemenu import PieMenu, PieMenuItem
+
+
+class SketchPieMenu(PieMenu):
+    """
+    Subclass of PieMenu specifically for the SketcherCanvas.
+    Maps menu item clicks to high-level signals.
+    """
+
+    def __init__(self, parent_widget: Gtk.Widget):
+        super().__init__(parent_widget)
+
+        # High-level Signals
+        self.tool_selected = Signal()
+        self.constraint_selected = Signal()
+        self.action_triggered = Signal()
+
+        # --- Tools ---
+        item = PieMenuItem("drag-handle-symbolic", "Select", data="select")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem("laser-path-symbolic", "Line", data="line")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem("laps-symbolic", "Arc", data="arc")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        # --- Actions ---
+        item = PieMenuItem(
+            "layer-symbolic", "Construction", data="construction"
+        )
+        item.on_click.connect(self._on_action_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem("delete-symbolic", "Delete", data="delete")
+        item.on_click.connect(self._on_action_clicked, weak=False)
+        self.add_item(item)
+
+        # --- Constraints ---
+        item = PieMenuItem(
+            "tabs-equidistant-symbolic", "Distance", data="dist"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "align-vertical-center-symbolic", "Horizontal", data="horiz"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "align-horizontal-center-symbolic", "Vertical", data="vert"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+    def _on_tool_clicked(self, sender):
+        """Handle tool selection signals."""
+        if sender.data:
+            logger.info(f"Emitting tool selection: {sender.data}")
+            self.tool_selected.send(self, tool=sender.data)
+
+    def _on_constraint_clicked(self, sender):
+        """Handle constraint selection signals."""
+        if sender.data:
+            logger.info(f"Emitting constraint: {sender.data}")
+            self.constraint_selected.send(self, constraint_type=sender.data)
+
+    def _on_action_clicked(self, sender):
+        """Handle generic action signals."""
+        if sender.data:
+            logger.info(f"Emitting action: {sender.data}")
+            self.action_triggered.send(self, action=sender.data)
 
 
 class SketchCanvas(Canvas):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # 1. Edit Key Controller (Delete key)
         self._edit_key_ctrl = Gtk.EventControllerKey.new()
         self._edit_key_ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._edit_key_ctrl.connect("key-pressed", self.on_edit_key_pressed)
         self.add_controller(self._edit_key_ctrl)
+
+        # 2. Pie Menu Setup
+        self.pie_menu = SketchPieMenu(self)
+
+        # Connect signals
+        self.pie_menu.tool_selected.connect(self.on_tool_selected)
+        self.pie_menu.constraint_selected.connect(self.on_constraint_selected)
+        self.pie_menu.action_triggered.connect(self.on_action_triggered)
+
+        # 3. Right Click Gesture for Pie Menu
+        right_click = Gtk.GestureClick()
+        right_click.set_button(3)  # Right Mouse Button
+        right_click.connect("pressed", self.on_right_click)
+        self.add_controller(right_click)
+
+    def on_right_click(self, gesture, n_press, x, y):
+        """Open the pie menu at the cursor location."""
+        logger.info(f"Opening Pie Menu at {x}, {y}")
+        self.pie_menu.popup_at_location(x, y)
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    def on_tool_selected(self, sender, tool):
+        logger.info(f"Tool activated: {tool}")
+        if self.edit_context and isinstance(self.edit_context, SketchElement):
+            self.edit_context.set_tool(tool)
+
+    def on_constraint_selected(self, sender, constraint_type):
+        logger.info(f"Constraint activated: {constraint_type}")
+        ctx = self.edit_context
+        if not (ctx and isinstance(ctx, SketchElement)):
+            return
+
+        if constraint_type == "dist":
+            ctx.add_distance_constraint()
+        elif constraint_type == "horiz":
+            ctx.add_horizontal_constraint()
+        elif constraint_type == "vert":
+            ctx.add_vertical_constraint()
+
+    def on_action_triggered(self, sender, action):
+        logger.info(f"Action activated: {action}")
+        ctx = self.edit_context
+        if not (ctx and isinstance(ctx, SketchElement)):
+            return
+
+        if action == "construction":
+            ctx.toggle_construction_on_selection()
+        elif action == "delete":
+            ctx.delete_selection()
 
     def on_edit_key_pressed(self, controller, keyval, keycode, state):
         if self.edit_context and isinstance(self.edit_context, SketchElement):
@@ -32,6 +166,10 @@ class SketchCanvas(Canvas):
         return False
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
+        # Ignore right clicks for the standard canvas logic
+        if gesture.get_current_button() == 3:
+            return
+
         if self.edit_context:
             self.grab_focus()
             self._was_dragging = False
@@ -59,107 +197,19 @@ class SketcherApp(Gtk.Application):
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_default_size(1200, 800)
+
+        # Main layout
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.window.set_child(vbox)
 
-        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        toolbar.set_margin_top(6)
-        toolbar.set_margin_start(6)
-        vbox.append(toolbar)
-
-        # Tools Group
-        btn_select = Gtk.ToggleButton(label="Select")
-        btn_select.set_active(True)
-        btn_select.connect("toggled", self.on_tool, "select")
-        toolbar.append(btn_select)
-
-        btn_line = Gtk.ToggleButton(label="Line")
-        btn_line.set_group(btn_select)
-        btn_line.connect("toggled", self.on_tool, "line")
-        toolbar.append(btn_line)
-
-        btn_arc = Gtk.ToggleButton(label="Arc")
-        btn_arc.set_group(btn_select)
-        btn_arc.connect("toggled", self.on_tool, "arc")
-        toolbar.append(btn_arc)
-
-        toolbar.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
-
-        # Constraints Group
-        btn_dist = Gtk.Button(label="Dist")
-        btn_dist.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_distance_constraint()
-            if self.sketch_elem
-            else None,
+        # Info Header
+        header = Gtk.Label(
+            label="Right-click on canvas for Tools & Constraints"
         )
-        toolbar.append(btn_dist)
-
-        btn_rad = Gtk.Button(label="Rad")
-        btn_rad.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_radius_constraint()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_rad)
-
-        btn_horiz = Gtk.Button(label="Horiz")
-        btn_horiz.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_horizontal_constraint()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_horiz)
-
-        btn_vert = Gtk.Button(label="Vert")
-        btn_vert.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_vertical_constraint()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_vert)
-
-        btn_align = Gtk.Button(label="Constrain")
-        btn_align.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_alignment_constraint()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_align)
-
-        btn_perp = Gtk.Button(label="Perp")
-        btn_perp.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_perpendicular()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_perp)
-
-        btn_tan = Gtk.Button(label="Tan")
-        btn_tan.connect(
-            "clicked",
-            lambda x: self.sketch_elem.add_tangent()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_tan)
-
-        # Geometry Toggles
-        toolbar.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
-
-        btn_constr = Gtk.Button(label="Toggle Construction Geometry")
-        btn_constr.connect(
-            "clicked",
-            lambda x: self.sketch_elem.toggle_construction_on_selection()
-            if self.sketch_elem
-            else None,
-        )
-        toolbar.append(btn_constr)
+        header.set_margin_top(10)
+        header.set_margin_bottom(10)
+        header.add_css_class("dim-label")
+        vbox.append(header)
 
         # Canvas
         self.canvas = SketchCanvas()
@@ -169,7 +219,7 @@ class SketcherApp(Gtk.Application):
         # Setup Element
         self.sketch_elem = SketchElement(x=100, y=100, width=1, height=1)
 
-        # Initialize demo geometry (moved from SketchElement)
+        # Initialize demo geometry
         sketch = self.sketch_elem.sketch
         origin_id = sketch.origin_id
 
@@ -190,7 +240,6 @@ class SketcherApp(Gtk.Application):
 
         # Add a construction line for reference
         mid_p = sketch.add_point(100, 0)
-        # Constraint to line p1-p2 (assumed to be the first entity added)
         if sketch.registry.entities:
             line_id = sketch.registry.entities[0].id
             sketch.constrain_point_on_line(mid_p, line_id)
@@ -201,24 +250,27 @@ class SketcherApp(Gtk.Application):
         sketch.solve()
         self.sketch_elem.update_bounds_from_sketch()
 
+        # Connect the constraint edit signal
         self.sketch_elem.constraint_edit_requested.connect(
             self.on_edit_constraint_val
         )
         self.canvas.add(self.sketch_elem)
 
+        # Set the active edit context so the pie menu has a target
+        self.canvas.edit_context = self.sketch_elem
+
         self.window.present()
 
-    def on_tool(self, btn, name):
-        if btn.get_active() and self.sketch_elem:
-            self.sketch_elem.set_tool(name)
-
     def on_edit_constraint_val(self, sender, constraint):
+        """Opens a dialog to edit a constraint value."""
         dialog = Gtk.Window(
             transient_for=self.window, modal=True, title="Edit Constraint"
         )
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         box.set_margin_top(10)
         box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_bottom(10)
         dialog.set_child(box)
 
         entry = Gtk.Entry()
