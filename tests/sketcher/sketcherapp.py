@@ -58,6 +58,8 @@ class SketchCanvas(Canvas):
         # Determine context if we are editing a sketch
         if self.edit_context and isinstance(self.edit_context, SketchElement):
             sketch_elem = self.edit_context
+            selection = sketch_elem.selection
+            selection_changed = False
 
             # 1. Hit Test
             hit_type, hit_obj = sketch_elem.hittester.get_hit_data(
@@ -65,28 +67,63 @@ class SketchCanvas(Canvas):
             )
             target_type = hit_type
 
-            # 2. Resolve Hit Object to Concrete Type
+            # 2. Resolve Hit Object to Concrete Type AND Update Selection
+            # If the clicked object is not already selected, select it (exclusive).
+
             if hit_type == "point":
                 assert isinstance(hit_obj, int)
-                target = sketch_elem.sketch.registry.get_point(hit_obj)
+                pid = hit_obj
+                target = sketch_elem.sketch.registry.get_point(pid)
+
+                if pid not in selection.point_ids:
+                    selection.select_point(pid, is_multi=False)
+                    selection_changed = True
 
             elif hit_type == "junction":
                 # Junctions are essentially points in the registry
                 assert isinstance(hit_obj, int)
-                target = sketch_elem.sketch.registry.get_point(hit_obj)
+                pid = hit_obj
+                target = sketch_elem.sketch.registry.get_point(pid)
+
+                if selection.junction_pid != pid:
+                    selection.select_junction(pid, is_multi=False)
+                    selection_changed = True
 
             elif hit_type == "entity":
                 assert isinstance(hit_obj, Entity)
-                target = hit_obj
+                entity = hit_obj
+                target = entity
+
+                if entity.id not in selection.entity_ids:
+                    selection.select_entity(entity, is_multi=False)
+                    selection_changed = True
 
             elif hit_type == "constraint":
                 assert isinstance(hit_obj, int)
+                idx = hit_obj
                 # hit_obj is index in constraints list
-                if 0 <= hit_obj < len(sketch_elem.sketch.constraints):
-                    target = sketch_elem.sketch.constraints[hit_obj]
+                if 0 <= idx < len(sketch_elem.sketch.constraints):
+                    target = sketch_elem.sketch.constraints[idx]
+
+                    if selection.constraint_idx != idx:
+                        selection.select_constraint(idx, is_multi=False)
+                        selection_changed = True
+
+            # If nothing was hit, clear selection
+            elif hit_type is None:
+                if (
+                    selection.point_ids
+                    or selection.entity_ids
+                    or selection.constraint_idx is not None
+                    or selection.junction_pid is not None
+                ):
+                    selection.clear()
+                    selection_changed = True
+
+            if selection_changed:
+                sketch_elem.mark_dirty()
 
             # 3. Pass Context (Sketch, Target, Type)
-            # The selection is accessible via sketch_elem.selection
             self.pie_menu.set_context(sketch_elem, target, target_type)
 
         logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")

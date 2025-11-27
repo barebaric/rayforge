@@ -23,6 +23,7 @@ class PieMenuItem:
         self.icon_name = icon_name
         self.label = label
         self.data = data
+        self.visible = True
         # Signal emitted when item is activated. argument: sender (PieMenuItem)
         self.on_click = Signal()
 
@@ -123,25 +124,22 @@ class PieMenu(Gtk.Popover):
 
     def _get_index_at(self, x, y):
         """Calculates which slice index is under the coordinates."""
+        items = [i for i in self.items if i.visible]
         dx = x - self._center_xy
         dy = y - self._center_xy
         dist = math.hypot(dx, dy)
 
         # Allow interaction all the way to the edge of the text margin,
         # but keep the inner hole dead zone.
-        if (
-            dist < self.radius_inner
-            or dist > self._center_xy
-            or not self.items
-        ):
+        if dist < self.radius_inner or dist > self.radius_outer or not items:
             return -1
 
         angle = math.atan2(dy, dx)
         if angle < 0:
             angle += 2 * math.pi
 
-        slice_angle = (2 * math.pi) / len(self.items)
-        return int(angle / slice_angle) % len(self.items)
+        slice_angle = (2 * math.pi) / len(items)
+        return int(angle / slice_angle) % len(items)
 
     def _on_motion(self, controller, x, y):
         new_index = self._get_index_at(x, y)
@@ -166,11 +164,12 @@ class PieMenu(Gtk.Popover):
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
         triggered_index = self._get_index_at(x, y)
+        items = [i for i in self.items if i.visible]
 
         self.popdown()
 
-        if triggered_index >= 0 and triggered_index < len(self.items):
-            item = self.items[triggered_index]
+        if triggered_index >= 0 and triggered_index < len(items):
+            item = items[triggered_index]
             logger.debug(f"Activating '{item.label}' with data '{item.data}'")
             item.on_click.send(item)
         else:
@@ -183,7 +182,8 @@ class PieMenu(Gtk.Popover):
         return False
 
     def _draw_func(self, drawing_area, ctx, width, height):
-        if not self.items:
+        items = [i for i in self.items if i.visible]
+        if not items:
             return
 
         # Fetch theme colors from the style context
@@ -201,11 +201,11 @@ class PieMenu(Gtk.Popover):
         color_border = (r, g, b, 0.2)
 
         cx, cy = self._center_xy, self._center_xy
-        count = len(self.items)
+        count = len(items)
         step = (2 * math.pi) / count
 
         # 1. Draw Slices and Icons
-        for i, item in enumerate(self.items):
+        for i, item in enumerate(items):
             start_angle = i * step
             end_angle = (i + 1) * step
             mid_angle = start_angle + (step / 2)
@@ -257,8 +257,8 @@ class PieMenu(Gtk.Popover):
                     ctx.restore()
 
         # 2. Draw Active Label (External)
-        if self._active_index >= 0:
-            active_item = self.items[self._active_index]
+        if self._active_index >= 0 and self._active_index < len(items):
+            active_item = items[self._active_index]
 
             # Calculate angle again for the active item
             start_angle = self._active_index * step

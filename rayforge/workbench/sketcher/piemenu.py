@@ -33,21 +33,21 @@ class SketchPieMenu(PieMenu):
         self.action_triggered = Signal()
 
         # Tools
-        item = PieMenuItem("drag-handle-symbolic", "Select", data="select")
+        item = PieMenuItem("sketch-select-symbolic", "Select", data="select")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
-        item = PieMenuItem("laser-path-symbolic", "Line", data="line")
+        item = PieMenuItem("sketch-line-symbolic", "Line", data="line")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
-        item = PieMenuItem("laps-symbolic", "Arc", data="arc")
+        item = PieMenuItem("sketch-arc-symbolic", "Arc", data="arc")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
         # Actions
         item = PieMenuItem(
-            "layer-symbolic", "Construction", data="construction"
+            "sketch-construction-symbolic", "Construction", data="construction"
         )
         item.on_click.connect(self._on_action_clicked, weak=False)
         self.add_item(item)
@@ -57,20 +57,18 @@ class SketchPieMenu(PieMenu):
         self.add_item(item)
 
         # Constraints
+        item = PieMenuItem("sketch-distance-symbolic", "Distance", data="dist")
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
         item = PieMenuItem(
-            "tabs-equidistant-symbolic", "Distance", data="dist"
+            "sketch-constrain-horizontal-symbolic", "Horizontal", data="horiz"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
         item = PieMenuItem(
-            "align-vertical-center-symbolic", "Horizontal", data="horiz"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        item = PieMenuItem(
-            "align-horizontal-center-symbolic", "Vertical", data="vert"
+            "sketch-constrain-vertical-symbolic", "Vertical", data="vert"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
@@ -97,7 +95,6 @@ class SketchPieMenu(PieMenu):
 
         sel_count = 0
         if self.sketch_element and self.sketch_element.selection:
-            # Just for debug logging context
             sel = self.sketch_element.selection
             sel_count = len(sel.point_ids) + len(sel.entity_ids)
 
@@ -105,6 +102,28 @@ class SketchPieMenu(PieMenu):
             f"PieMenu Context: Type={target_type}, Target={target}, "
             f"SelectionCount={sel_count}"
         )
+
+        has_target = target is not None
+
+        # Update item visibility based on supported actions/constraints
+        if self.sketch_element:
+            for item in self.items:
+                key = item.data
+
+                # Tools (creation/select) are only visible if empty space was
+                # clicked
+                if key in ("select", "line", "arc"):
+                    item.visible = not has_target
+
+                # Actions (delete, construction)
+                elif key in ("delete", "construction"):
+                    item.visible = self.sketch_element.is_action_supported(key)
+
+                # Constraints (dist, horiz, vert, etc.)
+                else:
+                    item.visible = self.sketch_element.is_constraint_supported(
+                        key
+                    )
 
     def _on_tool_clicked(self, sender):
         """Handle tool selection signals."""
