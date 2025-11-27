@@ -1,10 +1,11 @@
 import cairo
 import math
 from collections import defaultdict
-from rayforge.core.sketcher.entities import Line, Arc
+from rayforge.core.sketcher.entities import Line, Arc, Circle
 from rayforge.core.sketcher.constraints import (
     DistanceConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     HorizontalConstraint,
     VerticalConstraint,
     PerpendicularConstraint,
@@ -56,11 +57,20 @@ class SketchRenderer:
     def _draw_origin(self, ctx: cairo.Context):
         """Draws a fixed symbol at (0,0)."""
         # The Origin is physically at 0,0 in Model Space
+        scale = 1.0
+        # Check if the host canvas supports get_view_scale
+        if self.element.canvas and hasattr(
+            self.element.canvas, "get_view_scale"
+        ):
+            scale_x, _ = self.element.canvas.get_view_scale()
+            scale = scale_x if scale_x > 1e-9 else 1.0
+
         ctx.save()
         ctx.set_source_rgb(0.8, 0.2, 0.2)  # Reddish
-        ctx.set_line_width(2.0)
+        # Scale line width so it stays constant on screen
+        ctx.set_line_width(2.0 / scale)
 
-        len_ = 10.0
+        len_ = 10.0 / scale
         ctx.move_to(-len_, 0)
         ctx.line_to(len_, 0)
         ctx.move_to(0, -len_)
@@ -68,7 +78,7 @@ class SketchRenderer:
         ctx.stroke()
 
         # Circle
-        ctx.arc(0, 0, 4, 0, 2 * math.pi)
+        ctx.arc(0, 0, 4.0 / scale, 0, 2 * math.pi)
         ctx.stroke()
         ctx.restore()
 
@@ -97,6 +107,8 @@ class SketchRenderer:
                 self._draw_line_entity(ctx, entity)
             elif isinstance(entity, Arc):
                 self._draw_arc_entity(ctx, entity)
+            elif isinstance(entity, Circle):
+                self._draw_circle_entity(ctx, entity)
 
             ctx.restore()
 
@@ -143,6 +155,16 @@ class SketchRenderer:
         ctx.stroke()
 
     # --- Overlays (Constraints & Junctions) ---
+    def _draw_circle_entity(self, ctx: cairo.Context, circle: Circle):
+        center = self._safe_get_point(circle.center_idx)
+        radius_pt = self._safe_get_point(circle.radius_pt_idx)
+        if not (center and radius_pt):
+            return
+
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        ctx.new_sub_path()
+        ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
+        ctx.stroke()
 
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
         # Draw explicit constraints
@@ -157,8 +179,8 @@ class SketchRenderer:
 
             if isinstance(constr, DistanceConstraint):
                 self._draw_distance_constraint(ctx, constr, is_sel, to_screen)
-            elif isinstance(constr, RadiusConstraint):
-                self._draw_radius_constraint(ctx, constr, is_sel, to_screen)
+            elif isinstance(constr, (RadiusConstraint, DiameterConstraint)):
+                self._draw_circular_constraint(ctx, constr, is_sel, to_screen)
             elif isinstance(
                 constr, (HorizontalConstraint, VerticalConstraint)
             ):
@@ -195,6 +217,9 @@ class SketchRenderer:
                 point_counts[entity.start_idx] += 1
                 point_counts[entity.end_idx] += 1
                 point_counts[entity.center_idx] += 1
+            elif isinstance(entity, Circle):
+                point_counts[entity.center_idx] += 1
+                point_counts[entity.radius_pt_idx] += 1
 
         for pid, count in point_counts.items():
             if count > 1:
@@ -221,24 +246,30 @@ class SketchRenderer:
         ctx.save()
         ctx.set_line_width(1.5)
         if is_selected:
-            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)  # Selected color
+            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)
         else:
-            ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)  # Base constraint color
+            ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)
 
         radius = self.element.point_radius + 4
         ctx.arc(sx, sy, radius, 0, 2 * math.pi)
         ctx.stroke()
         ctx.restore()
 
-    def _draw_radius_constraint(self, ctx, constr, is_selected, to_screen):
-        pos_data = self.element.hittester.get_radius_label_pos(
+    def _draw_circular_constraint(self, ctx, constr, is_selected, to_screen):
+        pos_data = self.element.hittester.get_circular_label_pos(
             constr, to_screen, self.element
         )
         if not pos_data:
             return
         sx, sy, arc_mid_sx, arc_mid_sy = pos_data
 
-        label = f"R{float(constr.value):.1f}"
+        if isinstance(constr, RadiusConstraint):
+            label = f"R{float(constr.value):.1f}"
+        elif isinstance(constr, DiameterConstraint):
+            label = f"Ø{float(constr.value):.1f}"
+        else:
+            return
+
         ext = ctx.text_extents(label)
 
         ctx.save()
@@ -379,17 +410,15 @@ class SketchRenderer:
         ctx.restore()
 
     def _draw_tangent_constraint(self, ctx, constr, to_screen):
-        entities = self.element.sketch.registry.entities or []
-        line = next(
-            (e for e in entities if e.id == constr.line_id),
-            None,
-        )
-        if isinstance(line, Line):
-            p = self._safe_get_point(line.p1_idx)
-            if p:
-                sx, sy = to_screen.transform_point((p.x, p.y))
-                ctx.move_to(sx + 10, sy + 10)
-                ctx.show_text("O")
+        line = self.element.sketch.registry.get_entity(constr.line_id)
+        shape = self.element.sketch.registry.get_entity(constr.shape_id)
+        if not (isinstance(line, Line) and isinstance(shape, (Arc, Circle))):
+            return
+        p = self._safe_get_point(line.p1_idx)
+        if p:
+            sx, sy = to_screen.transform_point((p.x, p.y))
+            ctx.move_to(sx + 10, sy + 10)
+            ctx.show_text("⦸")
 
     # --- Points ---
 
@@ -409,6 +438,9 @@ class SketchRenderer:
                 entity_points.add(ent.start_idx)
                 entity_points.add(ent.end_idx)
                 entity_points.add(ent.center_idx)
+            elif isinstance(ent, Circle):
+                entity_points.add(ent.center_idx)
+                entity_points.add(ent.radius_pt_idx)
 
         for p in points:
             sx, sy = to_screen.transform_point((p.x, p.y))
@@ -450,5 +482,4 @@ class SketchRenderer:
             ctx.fill()
 
     def _get_entity_by_id(self, eid):
-        entities = self.element.sketch.registry.entities or []
-        return next((e for e in entities if e.id == eid), None)
+        return self.element.sketch.registry.get_entity(eid)

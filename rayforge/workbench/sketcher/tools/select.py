@@ -1,11 +1,12 @@
 import math
 from typing import Optional, Tuple, Dict, cast
-from rayforge.core.sketcher.entities import Entity, Line, Arc
+from rayforge.core.sketcher.entities import Entity, Line, Arc, Circle
 from rayforge.core.matrix import Matrix
 from rayforge.core.sketcher.constraints import (
     DragConstraint,
     DistanceConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
 )
@@ -49,7 +50,7 @@ class SelectTool(SketchTool):
                 for constr in constraints:
                     if (
                         isinstance(constr, RadiusConstraint)
-                        and constr.arc_id == entity.id
+                        and constr.entity_id == entity.id
                     ):
                         found_constr = constr
                         break
@@ -109,13 +110,46 @@ class SelectTool(SketchTool):
                         )
                 return True
 
+            elif isinstance(entity, Circle):
+                found_constr = None
+                constraints = self.element.sketch.constraints or []
+                for constr in constraints:
+                    if (
+                        isinstance(constr, DiameterConstraint)
+                        and constr.circle_id == entity.id
+                    ):
+                        found_constr = constr
+                        break
+
+                if found_constr:
+                    self.element.constraint_edit_requested.send(
+                        self.element, constraint=found_constr
+                    )
+                else:
+                    c = self._safe_get_point(entity.center_idx)
+                    r_pt = self._safe_get_point(entity.radius_pt_idx)
+                    if c and r_pt:
+                        radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
+                        new_constr = self.element.sketch.constrain_diameter(
+                            entity.id, radius * 2
+                        )
+                        self.element.sketch.solve()
+                        self.element.mark_dirty()
+                        self.element.constraint_edit_requested.send(
+                            self.element, constraint=new_constr
+                        )
+                return True
+
         # Double click edits constraint value
         if n_press == 2 and hit_type == "constraint":
             idx = cast(int, hit_obj)
             constraints = self.element.sketch.constraints
             if constraints and idx < len(constraints):
                 constr = constraints[idx]
-                if isinstance(constr, (DistanceConstraint, RadiusConstraint)):
+                if isinstance(
+                    constr,
+                    (DistanceConstraint, RadiusConstraint, DiameterConstraint),
+                ):
                     self.element.constraint_edit_requested.send(
                         self.element, constraint=constr
                     )
@@ -297,6 +331,9 @@ class SelectTool(SketchTool):
                 points_to_drag.add(entity.start_idx)
                 points_to_drag.add(entity.end_idx)
                 points_to_drag.add(entity.center_idx)
+            elif isinstance(entity, Circle):
+                points_to_drag.add(entity.center_idx)
+                points_to_drag.add(entity.radius_pt_idx)
 
         # 2. Build drag constraints for these points
         drag_constraints = []
@@ -397,6 +434,11 @@ class SelectTool(SketchTool):
                     adj[s].extend([e, c])
                     adj[e].extend([s, c])
                     adj[c].extend([s, e])
+            elif isinstance(entity, Circle):
+                c, r = entity.center_idx, entity.radius_pt_idx
+                if c in adj and r in adj:
+                    adj[c].append(r)
+                    adj[r].append(c)
 
         q = [(start_pid, 0)]
         distances = {p.id: -1 for p in registry.points}

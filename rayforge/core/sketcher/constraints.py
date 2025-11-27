@@ -222,9 +222,9 @@ class RadiusConstraint:
 class DiameterConstraint:
     """Enforces the diameter of a Circle."""
 
-    def __init__(self, circle_id: int, value: Union[str, float]):
+    def __init__(self, circle_id: int, diameter: Union[str, float]):
         self.circle_id = circle_id
-        self.value = value
+        self.value = diameter
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -235,7 +235,7 @@ class DiameterConstraint:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
-        return cls(circle_id=data["circle_id"], value=data["value"])
+        return cls(circle_id=data["circle_id"], diameter=data["value"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         circle_entity = reg.get_entity(self.circle_id)

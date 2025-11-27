@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # flake8: noqa: E402
 import gi
 import logging
@@ -14,6 +15,7 @@ logger = logging.getLogger("sketcherapp")
 base_path = Path(__file__).parent
 gettext.install("canvas", base_path / "rayforge" / "locale")
 
+gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk
 
@@ -176,6 +178,8 @@ class SketchCanvas(Canvas):
             ctx.add_vertical_constraint()
         elif constraint_type == "radius":
             ctx.add_radius_constraint()
+        elif constraint_type == "diameter":
+            ctx.add_diameter_constraint()
         elif constraint_type == "perp":
             ctx.add_perpendicular()
         elif constraint_type == "tangent":

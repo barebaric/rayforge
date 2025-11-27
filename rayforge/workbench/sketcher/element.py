@@ -7,11 +7,12 @@ from rayforge.workbench.canvas import CanvasElement
 from rayforge.core.matrix import Matrix
 
 from rayforge.core.sketcher import Sketch
-from rayforge.core.sketcher.entities import Line, Arc
+from rayforge.core.sketcher.entities import Line, Arc, Circle
 from rayforge.core.sketcher.constraints import (
     PerpendicularConstraint,
     TangentConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     DistanceConstraint,
     HorizontalConstraint,
     VerticalConstraint,
@@ -23,7 +24,7 @@ from rayforge.core.sketcher.constraints import (
 from .selection import SketchSelection
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
-from .tools import SelectTool, LineTool, ArcTool
+from .tools import SelectTool, LineTool, ArcTool, CircleTool
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ class SketchElement(CanvasElement):
             "select": SelectTool(self),
             "line": LineTool(self),
             "arc": ArcTool(self),
+            "circle": CircleTool(self),
         }
         self.active_tool_name = "select"
 
@@ -224,6 +226,8 @@ class SketchElement(CanvasElement):
                 p_ids = [e.p1_idx, e.p2_idx]
             elif isinstance(e, Arc):
                 p_ids = [e.start_idx, e.end_idx, e.center_idx]
+            elif isinstance(e, Circle):
+                p_ids = [e.center_idx, e.radius_pt_idx]
             if pid in p_ids:
                 entities_at_junction.append(e)
 
@@ -253,6 +257,11 @@ class SketchElement(CanvasElement):
                     e.end_idx = new_pid
                 if e.center_idx == pid:
                     e.center_idx = new_pid
+            elif isinstance(e, Circle):
+                if e.center_idx == pid:
+                    e.center_idx = new_pid
+                if e.radius_pt_idx == pid:
+                    e.radius_pt_idx = new_pid
         return True
 
     def delete_selection(self) -> bool:
@@ -296,6 +305,8 @@ class SketchElement(CanvasElement):
                 p_ids = [e.p1_idx, e.p2_idx]
             elif isinstance(e, Arc):
                 p_ids = [e.start_idx, e.end_idx, e.center_idx]
+            elif isinstance(e, Circle):
+                p_ids = [e.center_idx, e.radius_pt_idx]
 
             # If any control point is marked for deletion, the entity must go
             if any(pid in to_delete_points for pid in p_ids):
@@ -338,6 +349,8 @@ class SketchElement(CanvasElement):
                     p_ids = [e.p1_idx, e.p2_idx]
                 elif isinstance(e, Arc):
                     p_ids = [e.start_idx, e.end_idx, e.center_idx]
+                elif isinstance(e, Circle):
+                    p_ids = [e.center_idx, e.radius_pt_idx]
 
                 if e.id in to_delete_entities:
                     points_of_deleted_entities.update(p_ids)
@@ -385,9 +398,11 @@ class SketchElement(CanvasElement):
                 if isinstance(constr, PerpendicularConstraint):
                     entities_in_constraint = [constr.l1_id, constr.l2_id]
                 elif isinstance(constr, TangentConstraint):
-                    entities_in_constraint = [constr.line_id, constr.arc_id]
+                    entities_in_constraint = [constr.line_id, constr.shape_id]
                 elif isinstance(constr, RadiusConstraint):
-                    entities_in_constraint = [constr.arc_id]
+                    entities_in_constraint = [constr.entity_id]
+                elif isinstance(constr, DiameterConstraint):
+                    entities_in_constraint = [constr.circle_id]
                 elif isinstance(constr, PointOnLineConstraint):
                     entities_in_constraint = [constr.line_id]
 
@@ -496,25 +511,52 @@ class SketchElement(CanvasElement):
             logger.warning("Select 2 Points or 1 Line for Distance.")
 
     def add_radius_constraint(self):
-        """Adds a radius constraint to a selected Arc."""
+        """Adds a radius constraint to a selected Arc or Circle."""
         if not self.is_constraint_supported("radius"):
-            logger.warning("Radius constraint requires exactly 1 Arc.")
+            logger.warning("Radius constraint requires exactly 1 Arc/Circle.")
             return
 
         eid = self.selection.entity_ids[0]
         e = self._get_entity_by_id(eid)
 
+        radius = 0.0
         if isinstance(e, Arc):
-            # Calculate current radius as initial value
             s = self.sketch.registry.get_point(e.start_idx)
             c = self.sketch.registry.get_point(e.center_idx)
             if s and c:
-                r = math.hypot(s.x - c.x, s.y - c.y)
-                self.sketch.constrain_radius(e.id, r)
+                radius = math.hypot(s.x - c.x, s.y - c.y)
+        elif isinstance(e, Circle):
+            r_pt = self.sketch.registry.get_point(e.radius_pt_idx)
+            c = self.sketch.registry.get_point(e.center_idx)
+            if r_pt and c:
+                radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
+
+        if radius > 0 and e:
+            self.sketch.constrain_radius(e.id, radius)
+            self.sketch.solve()
+            self.mark_dirty()
+        else:
+            logger.warning("Could not add radius constraint.")
+
+    def add_diameter_constraint(self):
+        """Adds a diameter constraint to a selected Circle."""
+        if not self.is_constraint_supported("diameter"):
+            logger.warning("Diameter constraint requires exactly 1 Circle.")
+            return
+
+        eid = self.selection.entity_ids[0]
+        e = self._get_entity_by_id(eid)
+
+        if isinstance(e, Circle):
+            c = self.sketch.registry.get_point(e.center_idx)
+            r_pt = self.sketch.registry.get_point(e.radius_pt_idx)
+            if c and r_pt:
+                radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
+                self.sketch.constrain_diameter(e.id, radius * 2.0)
                 self.sketch.solve()
                 self.mark_dirty()
         else:
-            logger.warning("Selected entity is not an Arc.")
+            logger.warning("Selected entity is not a Circle.")
 
     def add_alignment_constraint(self):
         """
@@ -576,27 +618,24 @@ class SketchElement(CanvasElement):
             return
 
         sel_line = None
-        sel_arc = None
+        sel_shape = None
 
         for eid in self.selection.entity_ids:
             e = self._get_entity_by_id(eid)
             if isinstance(e, Line):
                 sel_line = e
-            elif isinstance(e, Arc):
-                sel_arc = e
+            elif isinstance(e, (Arc, Circle)):
+                sel_shape = e
 
-        if sel_line and sel_arc:
-            self.sketch.constraints.append(
-                TangentConstraint(sel_line.id, sel_arc.id)
-            )
+        if sel_line and sel_shape:
+            self.sketch.constrain_tangent(sel_line.id, sel_shape.id)
             self.sketch.solve()
             self.mark_dirty()
         else:
             logger.warning("Select 1 Line and 1 Arc/Circle for Tangent.")
 
     def _get_entity_by_id(self, eid):
-        entities = self.sketch.registry.entities or []
-        return next((e for e in entities if e.id == eid), None)
+        return self.sketch.registry.get_entity(eid)
 
     def mark_dirty(self, ancestors=False, recursive=False):
         super().mark_dirty(ancestors=ancestors, recursive=recursive)
