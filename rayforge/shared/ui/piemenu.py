@@ -39,6 +39,11 @@ class PieMenu(Gtk.Popover):
         self.set_parent(parent_widget)
         self.set_has_arrow(False)
 
+        # Signal emitted when user right-clicks the menu, to request
+        # repositioning.
+        # arguments: sender(PieMenu), gesture, n_press, x, y
+        self.right_clicked = Signal()
+
         # Disable autohide to prevent Gtk from aggressively closing the popover
         # on clicks it thinks are "outside".
         # We will manually handle closing in _on_release and _on_key_press.
@@ -85,6 +90,12 @@ class PieMenu(Gtk.Popover):
         key = Gtk.EventControllerKey()
         key.connect("key-pressed", self._on_key_press)
         self.add_controller(key)
+
+        # Handle right-clicks on the menu itself to allow repositioning.
+        right_click = Gtk.GestureClick()
+        right_click.set_button(3)
+        right_click.connect("pressed", self._on_right_press)
+        self.drawing_area.add_controller(right_click)
 
     def add_item(self, item: PieMenuItem):
         self.items.append(item)
@@ -175,6 +186,13 @@ class PieMenu(Gtk.Popover):
             self.popdown()
             return True
         return False
+
+    def _on_right_press(self, gesture, n_press, x, y):
+        """Fires a signal to let the parent handle repositioning."""
+        self.right_clicked.send(
+            self, gesture=gesture, n_press=n_press, x=x, y=y
+        )
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def _draw_func(self, drawing_area, ctx, width, height):
         items = [i for i in self.items if i.visible]
