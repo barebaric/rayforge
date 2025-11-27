@@ -72,38 +72,63 @@ class SketchElement(CanvasElement):
     def update_bounds_from_sketch(self):
         """
         Calculates the bounding box of the sketch geometry and updates the
-        element's size and transform to encompass it without shifting the
-        visual location of the content.
+        element's size and transform. For empty sketches, it creates a
+        minimum-sized box and centers the origin. For non-empty sketches,
+        it shrinks to fit the geometry exactly.
         """
-        geometry = self.sketch.to_geometry()
-        if geometry.is_empty():
-            # If there's no geometry, check for standalone points.
-            if not self.sketch.registry.points:
-                return
-            xs = [p.x for p in self.sketch.registry.points]
-            ys = [p.y for p in self.sketch.registry.points]
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
+        # A sketch is considered "empty" for bounding purposes if it has no
+        # entities and at most one point (which would be the origin).
+        is_truly_empty = (
+            len(self.sketch.registry.entities) == 0
+            and len(self.sketch.registry.points) <= 1
+        )
+
+        new_width: float
+        new_height: float
+        new_offset_x: float
+        new_offset_y: float
+
+        if is_truly_empty:
+            # Apply a minimum dimension for selectability and center the
+            # origin.
+            min_dim = 50.0
+            new_width = min_dim
+            new_height = min_dim
+            new_offset_x = min_dim / 2.0
+            new_offset_y = min_dim / 2.0
         else:
-            min_x, min_y, max_x, max_y = geometry.rect()
+            # Calculate the precise bounding box of all geometry.
+            geometry = self.sketch.to_geometry()
+            if geometry.is_empty():
+                # This case handles sketches with only points.
+                xs = [p.x for p in self.sketch.registry.points]
+                ys = [p.y for p in self.sketch.registry.points]
+                min_x, max_x = min(xs), max(xs)
+                min_y, max_y = min(ys), max(ys)
+            else:
+                min_x, min_y, max_x, max_y = geometry.rect()
 
-        # 1. Calculate new dimensions
-        new_w = max_x - min_x
-        new_h = max_y - min_y
+            # The element size is exactly the geometry size. No padding.
+            new_width = max_x - min_x
+            new_height = max_y - min_y
+            # The offset moves the geometry's top-left to the element's origin.
+            new_offset_x = -min_x
+            new_offset_y = -min_y
 
-        # 2. Calculate change in offset to adjust parent transform
+        # Calculate the change in offset needed to keep the content visually
+        # stationary on the canvas during the bounds update.
         current_offset_x, current_offset_y = (
             self.content_transform.get_translation()
         )
-        delta_x = -min_x - current_offset_x
-        delta_y = -min_y - current_offset_y
+        delta_x = new_offset_x - current_offset_x
+        delta_y = new_offset_y - current_offset_y
 
-        # 3. Apply updates
-        self.content_transform = Matrix.translation(-min_x, -min_y)
-        self.width = max(new_w, 50)
-        self.height = max(new_h, 50)
+        # Apply all the calculated updates.
+        self.content_transform = Matrix.translation(new_offset_x, new_offset_y)
+        self.width = new_width
+        self.height = new_height
 
-        # Update parent transform to counteract the content shift.
+        # Update the element's main transform to counteract the content shift.
         self.set_transform(
             self.transform @ Matrix.translation(-delta_x, -delta_y)
         )
