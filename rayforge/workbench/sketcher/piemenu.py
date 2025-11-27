@@ -73,6 +73,30 @@ class SketchPieMenu(PieMenu):
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
+        item = PieMenuItem("sketch-distance-symbolic", "Radius", data="radius")
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "sketch-constrain-perpendicular-symbolic",
+            "Perpendicular",
+            data="perp",
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "sketch-constrain-tangential-symbolic", "Tangent", data="tangent"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        item = PieMenuItem(
+            "sketch-constrain-point-symbolic", "Align", data="align"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
     def set_context(
         self,
         sketch_element: "SketchElement",

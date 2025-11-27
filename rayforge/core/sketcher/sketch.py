@@ -164,7 +164,21 @@ class Sketch:
             # One Line and One Arc
             return n_lines == 1 and n_arcs == 1 and n_ents == 2 and n_pts == 0
 
-        # 5. Coincident (Point-to-Point)
+        # 5. Align (Coincident or Point-on-Line)
+        if constraint_type == "align":
+            # Coincident: Two points
+            supports_coincident = n_pts == 2 and n_ents == 0
+            # Point on Line: One Point and One Line
+            supports_pol = False
+            if n_pts == 1 and n_lines == 1 and n_ents == 1:
+                # Ensure point is not one of the line's endpoints
+                line = lines[0]
+                pid = point_ids[0]
+                if pid not in (line.p1_idx, line.p2_idx):
+                    supports_pol = True
+            return supports_coincident or supports_pol
+
+        # Internal keys used by add_alignment_constraint
         if constraint_type == "coincident":
             # Two points
             return n_pts == 2 and n_ents == 0

@@ -50,6 +50,8 @@ class PieMenu(Gtk.Popover):
 
         # Margin to allow text to be drawn outside the pie without clipping
         self.text_margin = 120
+        # Total radius including margins for calculating the widget size
+        self.total_radius = self.radius_outer + self.text_margin
 
         self.add_css_class("pie-menu")
         apply_css(css)
@@ -57,20 +59,14 @@ class PieMenu(Gtk.Popover):
         self.items: List[PieMenuItem] = []
         self._active_index: int = -1
 
-        # Center of drawing is the center of the widget, including margins
-        self._center_xy = self.radius_outer + self.text_margin
-
         self.drawing_area = Gtk.DrawingArea()
         # Size needs to cover diameter + margins on both sides
-        size = int(self._center_xy * 2)
+        size = int(self.total_radius * 2)
         self.drawing_area.set_content_width(size)
         self.drawing_area.set_content_height(size)
 
-        # Explicitly request size to ensure hit-testing works correctly
-        self.drawing_area.set_size_request(size, size)
-        self.drawing_area.set_draw_func(self._draw_func)
-
         # Make drawing area focusable to help with event state accounting
+        self.drawing_area.set_draw_func(self._draw_func)
         self.drawing_area.set_focusable(True)
         self.set_child(self.drawing_area)
 
@@ -115,7 +111,7 @@ class PieMenu(Gtk.Popover):
         # Offset must account for the larger drawing area size due to text
         # margins. We shift up/left by the center coordinate to align the
         # pie center with the target rect.
-        self.set_offset(0, -int(self._center_xy))
+        self.set_offset(0, -int(self.total_radius))
 
         logger.debug(f"Popup at {widget_x}, {widget_y}")
         self.popup()
@@ -125,12 +121,11 @@ class PieMenu(Gtk.Popover):
     def _get_index_at(self, x, y):
         """Calculates which slice index is under the coordinates."""
         items = [i for i in self.items if i.visible]
-        dx = x - self._center_xy
-        dy = y - self._center_xy
+        dx = x - self.total_radius
+        dy = y - self.total_radius
         dist = math.hypot(dx, dy)
 
-        # Allow interaction all the way to the edge of the text margin,
-        # but keep the inner hole dead zone.
+        # Allow interaction only within the visible pie slices.
         if dist < self.radius_inner or dist > self.radius_outer or not items:
             return -1
 
@@ -188,7 +183,7 @@ class PieMenu(Gtk.Popover):
 
         # Fetch theme colors from the style context
         style = drawing_area.get_style_context()
-        fg = style.get_color()  # Gdk.RGBA
+        fg = style.get_color()
 
         # Base color components (0-1)
         r, g, b = fg.red, fg.green, fg.blue
@@ -200,7 +195,8 @@ class PieMenu(Gtk.Popover):
         color_slice_active = (r, g, b, 0.3)
         color_border = (r, g, b, 0.2)
 
-        cx, cy = self._center_xy, self._center_xy
+        # Use the actual center of the drawing area for robustness
+        cx, cy = width / 2, height / 2
         count = len(items)
         step = (2 * math.pi) / count
 
