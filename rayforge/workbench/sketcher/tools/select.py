@@ -311,7 +311,6 @@ class SelectTool(SketchTool):
         self.element.sketch.solve(
             extra_constraints=drag_constraints, update_constraint_status=False
         )
-        self.element.update_bounds_from_sketch()
         self.element.mark_dirty()
 
     def _handle_entity_drag(self, world_dx: float, world_dy: float):
@@ -369,7 +368,6 @@ class SelectTool(SketchTool):
         self.element.sketch.solve(
             extra_constraints=drag_constraints, update_constraint_status=False
         )
-        self.element.update_bounds_from_sketch()
         self.element.mark_dirty()
 
     # --- Drag Preparation ---
