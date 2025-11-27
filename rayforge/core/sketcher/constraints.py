@@ -137,40 +137,62 @@ class CoincidentConstraint:
 
 
 class PointOnLineConstraint:
-    """Enforces a point lies on the infinite line defined by a Line entity."""
+    """Enforces a point lies on the infinite geometry of a shape."""
 
-    def __init__(self, point_id: int, line_id: int):
+    def __init__(self, point_id: int, shape_id: int):
         self.point_id = point_id
-        self.line_id = line_id
+        self.shape_id = shape_id
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PointOnLineConstraint",
             "point_id": self.point_id,
-            "line_id": self.line_id,
+            "shape_id": self.shape_id,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
-        return cls(point_id=data["point_id"], line_id=data["line_id"])
+        # Handle legacy "line_id" key for backward compatibility
+        shape_id = data.get("shape_id", data.get("line_id"))
+        if shape_id is None:
+            raise KeyError(
+                "PointOnLineConstraint data missing 'shape_id' or 'line_id'"
+            )
+        return cls(point_id=data["point_id"], shape_id=shape_id)
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt = reg.get_point(self.point_id)
-        line = reg.get_entity(self.line_id)
+        shape = reg.get_entity(self.shape_id)
 
-        if not isinstance(line, Line):
-            return 0.0
+        if isinstance(shape, Line):
+            l1 = reg.get_point(shape.p1_idx)
+            l2 = reg.get_point(shape.p2_idx)
 
-        l1 = reg.get_point(line.p1_idx)
-        l2 = reg.get_point(line.p2_idx)
+            # Use the 2D cross-product of vectors (pt - l1) and (l2 - l1).
+            return (l2.x - l1.x) * (pt.y - l1.y) - (pt.x - l1.x) * (
+                l2.y - l1.y
+            )
 
-        # Use the 2D cross-product of vectors (pt - l1) and (l2 - l1).
-        # This value is 0 when the point is on the infinite line passing
-        # through l1 and l2. It is also twice the signed area of the
-        # triangle formed by the three points.
-        # This formulation avoids sqrt and abs(), making it much friendlier
-        # for the non-linear solver.
-        return (l2.x - l1.x) * (pt.y - l1.y) - (pt.x - l1.x) * (l2.y - l1.y)
+        elif isinstance(shape, (Arc, Circle)):
+            center = reg.get_point(shape.center_idx)
+            radius_sq = 0.0
+            if isinstance(shape, Arc):
+                start = reg.get_point(shape.start_idx)
+                radius_sq = (start.x - center.x) ** 2 + (
+                    start.y - center.y
+                ) ** 2
+            elif isinstance(shape, Circle):
+                radius_pt = reg.get_point(shape.radius_pt_idx)
+                radius_sq = (radius_pt.x - center.x) ** 2 + (
+                    radius_pt.y - center.y
+                ) ** 2
+
+            dist_to_point_sq = (pt.x - center.x) ** 2 + (pt.y - center.y) ** 2
+            # Error is diff in squared distances
+            # (dist_from_center^2 - radius^2)
+            return dist_to_point_sq - radius_sq
+
+        return 0.0
 
 
 class RadiusConstraint:

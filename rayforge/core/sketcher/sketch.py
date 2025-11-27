@@ -185,29 +185,44 @@ class Sketch:
         if constraint_type == "align":
             # Coincident: Two points
             supports_coincident = n_pts == 2 and n_ents == 0
-            # Point on Line: One Point and One Line
-            supports_pol = False
-            if n_pts == 1 and n_lines == 1 and n_ents == 1:
-                # Ensure point is not one of the line's endpoints
-                line = lines[0]
-                pid = point_ids[0]
-                if pid not in (line.p1_idx, line.p2_idx):
-                    supports_pol = True
-            return supports_coincident or supports_pol
+            # Point on Shape: One Point and One Shape (Line/Arc/Circle)
+            supports_pos = False
+            if n_pts == 1 and n_ents == 1:
+                # Reuse the more specific check's logic
+                supports_pos = self.supports_constraint(
+                    "point_on_line", point_ids, entity_ids
+                )
+            return supports_coincident or supports_pos
 
         # Internal keys used by add_alignment_constraint
         if constraint_type == "coincident":
             # Two points
             return n_pts == 2 and n_ents == 0
 
-        # 6. Point On Line
+        # 6. Point On Line (now Point On Shape)
         if constraint_type == "point_on_line":
-            # One Point and One Line
-            if n_pts == 1 and n_lines == 1 and n_ents == 1:
-                # Ensure point is not one of the line's endpoints
-                line = lines[0]
+            # One Point and One Shape (Line, Arc, or Circle)
+            if n_pts == 1 and n_ents == 1:
+                entity = entities[0]
                 pid = point_ids[0]
-                if pid not in (line.p1_idx, line.p2_idx):
+
+                # Ensure point is not one of the shape's control points
+                control_points = set()
+                if isinstance(entity, Line):
+                    control_points = {entity.p1_idx, entity.p2_idx}
+                elif isinstance(entity, Arc):
+                    control_points = {
+                        entity.start_idx,
+                        entity.end_idx,
+                        entity.center_idx,
+                    }
+                elif isinstance(entity, Circle):
+                    control_points = {
+                        entity.center_idx,
+                        entity.radius_pt_idx,
+                    }
+
+                if pid not in control_points:
                     return True
             return False
 
@@ -272,8 +287,8 @@ class Sketch:
     def constrain_coincident(self, p1: int, p2: int) -> None:
         self.constraints.append(CoincidentConstraint(p1, p2))
 
-    def constrain_point_on_line(self, point_id: int, line_id: int) -> None:
-        self.constraints.append(PointOnLineConstraint(point_id, line_id))
+    def constrain_point_on_line(self, point_id: int, shape_id: int) -> None:
+        self.constraints.append(PointOnLineConstraint(point_id, shape_id))
 
     def constrain_radius(
         self, entity_id: int, radius: Union[str, float]
