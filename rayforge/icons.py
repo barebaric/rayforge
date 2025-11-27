@@ -1,8 +1,9 @@
 import importlib.resources
 import logging
 import pathlib
+from functools import lru_cache
 from typing import Dict, Union
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GdkPixbuf
 from .resources import icons  # type: ignore
 
 
@@ -51,6 +52,35 @@ def get_icon(icon_name: str) -> Gtk.Image:
     logger.debug(f"Icon for '{icon_name}' not found. Falling back to theme.")
     _icon_cache[icon_name] = icon_name
     return Gtk.Image.new_from_icon_name(icon_name)
+
+
+@lru_cache()
+def get_icon_pixbuf(icon_name: str, size: int = 24):
+    """
+    Retrieve a GdkPixbuf for Cairo rendering, prioritizing a local file
+    from the resource directory.
+
+    Args:
+        icon_name: Name of the icon (without .svg extension)
+        size: Size of the icon in pixels
+
+    Returns:
+        GdkPixbuf.Pixbuf: The loaded icon as a pixbuf, or None if failed
+    """
+    # First, attempt to load the icon from a local file path.
+    path = get_icon_path(icon_name)
+    if path and path.is_file():
+        logger.debug(f"Using local icon for '{icon_name}' from: {path}")
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                str(path), size, size, True
+            )
+            return pixbuf
+        except Exception as e:
+            logger.error(f"Failed to load local icon '{icon_name}': {e}")
+
+    # Return None if icon couldn't be loaded
+    return None
 
 
 def clear_icon_cache():
