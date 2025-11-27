@@ -1,7 +1,7 @@
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
 from .params import ParameterContext
-from .entities import EntityRegistry, Line, Arc
+from .entities import EntityRegistry, Line, Arc, Circle
 from .constraints import (
     Constraint,
     DistanceConstraint,
@@ -10,6 +10,7 @@ from .constraints import (
     VerticalConstraint,
     CoincidentConstraint,
     RadiusConstraint,
+    DiameterConstraint,
     PointOnLineConstraint,
     PerpendicularConstraint,
     TangentConstraint,
@@ -24,6 +25,7 @@ _CONSTRAINT_CLASSES = {
     "VerticalConstraint": VerticalConstraint,
     "CoincidentConstraint": CoincidentConstraint,
     "RadiusConstraint": RadiusConstraint,
+    "DiameterConstraint": DiameterConstraint,
     "PointOnLineConstraint": PointOnLineConstraint,
     "PerpendicularConstraint": PerpendicularConstraint,
     "TangentConstraint": TangentConstraint,
@@ -112,6 +114,12 @@ class Sketch:
             start, end, center, clockwise, construction
         )
 
+    def add_circle(
+        self, center: int, radius_pt: int, construction: bool = False
+    ) -> int:
+        """Adds a circle defined by a center and a point on its radius."""
+        return self.registry.add_circle(center, radius_pt, construction)
+
     # --- Validation ---
 
     def supports_constraint(
@@ -136,8 +144,10 @@ class Sketch:
 
         lines = [e for e in entities if isinstance(e, Line)]
         arcs = [e for e in entities if isinstance(e, Arc)]
+        circles = [e for e in entities if isinstance(e, Circle)]
         n_lines = len(lines)
         n_arcs = len(arcs)
+        n_circles = len(circles)
 
         # 1. Linear/Distance Constraints (Horizontal, Vertical, Distance)
         if constraint_type in ("dist", "horiz", "vert"):
@@ -149,10 +159,13 @@ class Sketch:
                 return True
             return False
 
-        # 2. Radius
+        # 2. Radius / Diameter
         if constraint_type == "radius":
-            # Exactly one Arc
-            return n_arcs == 1 and n_ents == 1 and n_pts == 0
+            return (
+                (n_arcs == 1 or n_circles == 1) and n_ents == 1 and n_pts == 0
+            )
+        if constraint_type == "diameter":
+            return n_circles == 1 and n_ents == 1 and n_pts == 0
 
         # 3. Perpendicular
         if constraint_type == "perp":
@@ -161,8 +174,12 @@ class Sketch:
 
         # 4. Tangent
         if constraint_type == "tangent":
-            # One Line and One Arc
-            return n_lines == 1 and n_arcs == 1 and n_ents == 2 and n_pts == 0
+            return (
+                n_lines == 1
+                and (n_arcs == 1 or n_circles == 1)
+                and n_ents == 2
+                and n_pts == 0
+            )
 
         # 5. Align (Coincident or Point-on-Line)
         if constraint_type == "align":
@@ -259,17 +276,24 @@ class Sketch:
         self.constraints.append(PointOnLineConstraint(point_id, line_id))
 
     def constrain_radius(
-        self, arc_id: int, radius: Union[str, float]
+        self, entity_id: int, radius: Union[str, float]
     ) -> RadiusConstraint:
-        constr = RadiusConstraint(arc_id, radius)
+        constr = RadiusConstraint(entity_id, radius)
+        self.constraints.append(constr)
+        return constr
+
+    def constrain_diameter(
+        self, circle_id: int, diameter: Union[str, float]
+    ) -> DiameterConstraint:
+        constr = DiameterConstraint(circle_id, diameter)
         self.constraints.append(constr)
         return constr
 
     def constrain_perpendicular(self, l1: int, l2: int) -> None:
         self.constraints.append(PerpendicularConstraint(l1, l2))
 
-    def constrain_tangent(self, line: int, arc: int) -> None:
-        self.constraints.append(TangentConstraint(line, arc))
+    def constrain_tangent(self, line: int, shape: int) -> None:
+        self.constraints.append(TangentConstraint(line, shape))
 
     # --- Manipulation & Processing ---
 
@@ -342,5 +366,28 @@ class Sketch:
 
                 geo.move_to(start.x, start.y)
                 geo.arc_to(end.x, end.y, i, j, clockwise=entity.clockwise)
+
+            elif isinstance(entity, Circle):
+                center = self.registry.get_point(entity.center_idx)
+                radius_pt = self.registry.get_point(entity.radius_pt_idx)
+
+                # Draw as two semi-circles
+                dx = radius_pt.x - center.x
+                dy = radius_pt.y - center.y
+                opposite_pt_x = center.x - dx
+                opposite_pt_y = center.y - dy
+
+                # Center offset relative to start point
+                i1, j1 = -dx, -dy
+                # Center offset relative to mid-point
+                i2, j2 = dx, dy
+
+                geo.move_to(radius_pt.x, radius_pt.y)
+                # First semi-circle
+                geo.arc_to(
+                    opposite_pt_x, opposite_pt_y, i1, j1, clockwise=False
+                )
+                # Second semi-circle
+                geo.arc_to(radius_pt.x, radius_pt.y, i2, j2, clockwise=False)
 
         return geo

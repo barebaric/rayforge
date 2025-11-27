@@ -1,5 +1,5 @@
 from typing import Protocol, Union, Tuple, Dict, Any
-from .entities import EntityRegistry, Line, Arc
+from .entities import EntityRegistry, Line, Arc, Circle
 from .params import ParameterContext
 
 
@@ -174,37 +174,84 @@ class PointOnLineConstraint:
 
 
 class RadiusConstraint:
-    """Enforces distance between center and start point of an arc."""
+    """Enforces radius of an Arc or Circle."""
 
-    def __init__(self, arc_id: int, radius: Union[str, float]):
-        self.arc_id = arc_id
+    def __init__(self, entity_id: int, radius: Union[str, float]):
+        self.entity_id = entity_id
         self.value = radius
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "RadiusConstraint",
-            "arc_id": self.arc_id,
+            "entity_id": self.entity_id,
             "value": self.value,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
-        return cls(arc_id=data["arc_id"], radius=data["value"])
+        # Handle legacy "arc_id" key for backward compatibility
+        entity_id = data.get("entity_id", data.get("arc_id"))
+        if entity_id is None:
+            raise KeyError(
+                "RadiusConstraint data missing 'entity_id' or 'arc_id'"
+            )
+        # FIX: The __init__ parameter is 'radius', not 'value'.
+        return cls(entity_id=entity_id, radius=data["value"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
-        # O(1) lookup
-        arc_entity = reg.get_entity(self.arc_id)
+        entity = reg.get_entity(self.entity_id)
+        target = params.evaluate(self.value)
+        curr_r_sq = 0.0
 
-        if not isinstance(arc_entity, Arc):
+        if isinstance(entity, Arc):
+            center = reg.get_point(entity.center_idx)
+            start = reg.get_point(entity.start_idx)
+            curr_r_sq = (start.x - center.x) ** 2 + (start.y - center.y) ** 2
+        elif isinstance(entity, Circle):
+            center = reg.get_point(entity.center_idx)
+            radius_pt = reg.get_point(entity.radius_pt_idx)
+            curr_r_sq = (radius_pt.x - center.x) ** 2 + (
+                radius_pt.y - center.y
+            ) ** 2
+        else:
             return 0.0
 
-        center = reg.get_point(arc_entity.center_idx)
-        start = reg.get_point(arc_entity.start_idx)
-        target = params.evaluate(self.value)
-
-        # Use squared distances to avoid sqrt, which is better for the solver
-        curr_r_sq = (start.x - center.x) ** 2 + (start.y - center.y) ** 2
         return curr_r_sq - target**2
+
+
+class DiameterConstraint:
+    """Enforces the diameter of a Circle."""
+
+    def __init__(self, circle_id: int, value: Union[str, float]):
+        self.circle_id = circle_id
+        self.value = value
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "DiameterConstraint",
+            "circle_id": self.circle_id,
+            "value": self.value,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
+        return cls(circle_id=data["circle_id"], value=data["value"])
+
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+        circle_entity = reg.get_entity(self.circle_id)
+
+        if not isinstance(circle_entity, Circle):
+            return 0.0
+
+        center = reg.get_point(circle_entity.center_idx)
+        radius_pt = reg.get_point(circle_entity.radius_pt_idx)
+        target_diameter = params.evaluate(self.value)
+
+        # Error = 4 * r^2 - d^2
+        curr_r_sq = (radius_pt.x - center.x) ** 2 + (
+            radius_pt.y - center.y
+        ) ** 2
+        return 4 * curr_r_sq - target_diameter**2
 
 
 class PerpendicularConstraint:
@@ -247,35 +294,49 @@ class PerpendicularConstraint:
 class TangentConstraint:
     """
     Enforces tangency between a Line and an Arc/Circle.
-    Logic: Distance from Arc center to Line equals Arc Radius.
+    Logic: Distance from shape center to Line equals shape Radius.
     """
 
-    def __init__(self, line_id: int, arc_id: int):
+    def __init__(self, line_id: int, shape_id: int):
         self.line_id = line_id
-        self.arc_id = arc_id
+        self.shape_id = shape_id
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "TangentConstraint",
             "line_id": self.line_id,
-            "arc_id": self.arc_id,
+            "shape_id": self.shape_id,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
-        return cls(line_id=data["line_id"], arc_id=data["arc_id"])
+        # Handle legacy "arc_id" key for backward compatibility
+        shape_id = data.get("shape_id", data.get("arc_id"))
+        # FIX: Ensure shape_id is not None before passing to constructor
+        if shape_id is None:
+            raise KeyError(
+                "TangentConstraint data missing 'shape_id' or 'arc_id'"
+            )
+        return cls(line_id=data["line_id"], shape_id=shape_id)
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         line = reg.get_entity(self.line_id)
-        arc = reg.get_entity(self.arc_id)
+        shape = reg.get_entity(self.shape_id)
 
-        if not isinstance(line, Line) or not isinstance(arc, Arc):
+        if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
             return 0.0
 
-        # Arc Data
-        center = reg.get_point(arc.center_idx)
-        start = reg.get_point(arc.start_idx)
-        radius_sq = (start.x - center.x) ** 2 + (start.y - center.y) ** 2
+        # Shape Data
+        center = reg.get_point(shape.center_idx)
+        radius_sq = 0.0
+        if isinstance(shape, Arc):
+            start = reg.get_point(shape.start_idx)
+            radius_sq = (start.x - center.x) ** 2 + (start.y - center.y) ** 2
+        elif isinstance(shape, Circle):
+            radius_pt = reg.get_point(shape.radius_pt_idx)
+            radius_sq = (radius_pt.x - center.x) ** 2 + (
+                radius_pt.y - center.y
+            ) ** 2
 
         # Line Data
         lp1 = reg.get_point(line.p1_idx)

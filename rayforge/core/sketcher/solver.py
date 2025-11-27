@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
 from typing import Sequence, List
-from .entities import EntityRegistry, Point, Line, Arc
+from .entities import EntityRegistry, Point, Line, Arc, Circle
 from .params import ParameterContext
 from .constraints import Constraint
 
@@ -151,5 +151,10 @@ class Solver:
                 is_fully_constrained = (
                     s.constrained and e.constrained and c.constrained
                 )
+
+            elif isinstance(entity, Circle):
+                c = registry.get_point(entity.center_idx)
+                r = registry.get_point(entity.radius_pt_idx)
+                is_fully_constrained = c.constrained and r.constrained
 
             entity.constrained = is_fully_constrained

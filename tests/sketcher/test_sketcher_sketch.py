@@ -73,6 +73,32 @@ def test_sketch_arc_export():
     assert arc.clockwise is False
 
 
+def test_sketch_circle_workflow():
+    s = Sketch()
+    s.set_param("diam", 20.0)
+
+    center = s.add_point(10, 10, fixed=True)
+    radius_pt = s.add_point(15, 10)  # Initial radius is 5
+    circ_id = s.add_circle(center, radius_pt)
+
+    s.constrain_diameter(circ_id, "diam")
+
+    assert s.solve() is True
+
+    # After solve, radius should be 10, diameter 20.
+    # The radius point should be 10 units away from center.
+    p = s.registry.get_point(radius_pt)
+    c = s.registry.get_point(center)
+    dist = ((p.x - c.x) ** 2 + (p.y - c.y) ** 2) ** 0.5
+    assert dist == pytest.approx(10.0)
+
+    geo = s.to_geometry()
+    # Should export as two semi-circles -> 2 ArcToCommands
+    assert isinstance(geo, Geometry)
+    arcs = [cmd for cmd in geo.commands if isinstance(cmd, ArcToCommand)]
+    assert len(arcs) == 2
+
+
 def test_sketch_parameter_updates():
     """Test that changing a parameter and re-solving updates geometry."""
     s = Sketch()
@@ -99,18 +125,19 @@ def test_sketch_constraint_shortcuts():
     p2 = s.add_point(10, 0)
     p3 = s.add_point(0, 10)
     p4 = s.add_point(0, 14)
+    c = s.add_point(5, 5)
     l1 = s.add_line(p1, p2)
     l2 = s.add_line(p3, p4)
+    circ = s.add_circle(c, p1)
 
     # Call shortcuts not covered in main workflow test
     s.constrain_equal_distance(p1, p2, p3, p4)
     s.constrain_coincident(p1, p3)
     s.constrain_point_on_line(p3, l1)
     s.constrain_perpendicular(l1, l2)
+    s.constrain_diameter(circ, 20.0)
 
-    # Check if they were added to the list (4 added here)
-    # Since this is a new sketch, constraints list should be length 4
-    assert len(s.constraints) == 4
+    assert len(s.constraints) == 5
     assert isinstance(s.constraints[0], EqualDistanceConstraint)
     assert isinstance(s.constraints[2], PointOnLineConstraint)
     assert isinstance(s.constraints[3], PerpendicularConstraint)
@@ -125,9 +152,14 @@ def test_sketch_serialization_round_trip():
     p3 = s.add_point(40, 20)
     l1 = s.add_line(p1, p2)
     l2 = s.add_line(p2, p3)
+    circ = s.add_circle(p1, p3)
+
     s.constrain_horizontal(p1, p2)
     s.constrain_distance(p1, p2, "width")
     s.constrain_perpendicular(l1, l2)
+    # Since p3.x will be 50, the radius must be
+    # >= 50, so the diameter must be >= 100.
+    s.constrain_diameter(circ, 100.0)
     s.solve()
 
     # Serialize
@@ -139,20 +171,23 @@ def test_sketch_serialization_round_trip():
     # Validate integrity
     assert new_sketch.params.get("width") == 50.0
     assert len(new_sketch.registry.points) == 3
-    assert len(new_sketch.registry.entities) == 2
-    assert len(new_sketch.constraints) == 3  # Now has 3 constraints
+    assert len(new_sketch.registry.entities) == 3
+    assert len(new_sketch.constraints) == 4
     assert new_sketch.origin_id == p1
 
     # Validate functional equivalence
     assert new_sketch.solve() is True
     pt2 = new_sketch.registry.get_point(p2)
     pt3 = new_sketch.registry.get_point(p3)
+    radius = (pt3.x**2 + pt3.y**2) ** 0.5
+    diameter = radius * 2
 
     abs_tol = 1e-7
     assert pt2.x == pytest.approx(50.0, abs=abs_tol)
     assert pt2.y == pytest.approx(0.0, abs=abs_tol)
     # Perpendicular constraint should make p3.x == p2.x
     assert pt3.x == pytest.approx(50.0, abs=abs_tol)
+    assert diameter == pytest.approx(100.0, abs=abs_tol)
 
 
 @pytest.fixture
@@ -172,6 +207,7 @@ def setup_sketch_for_validation():
     arc_e = s.add_point(0, 20)
     arc_c = s.add_point(0, 0)
     a1 = s.add_arc(arc_s, arc_e, arc_c)
+    c1 = s.add_circle(p1, p2)
 
     return s, {
         "p1": p1,
@@ -181,6 +217,7 @@ def setup_sketch_for_validation():
         "l1": l1,
         "l2": l2,
         "a1": a1,
+        "c1": c1,
     }
 
 
@@ -188,7 +225,7 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     """Tests the logic of the `supports_constraint` method."""
     s, ids = setup_sketch_for_validation
     p1, p2, p3, p_ext = ids["p1"], ids["p2"], ids["p3"], ids["p_ext"]
-    l1, l2, a1 = ids["l1"], ids["l2"], ids["a1"]
+    l1, l2, a1, c1 = ids["l1"], ids["l2"], ids["a1"], ids["c1"]
 
     # Test "dist", "horiz", "vert"
     for c_type in ("dist", "horiz", "vert"):
@@ -204,9 +241,16 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
 
     # Test "radius"
     assert s.supports_constraint("radius", [], [a1]) is True
+    assert s.supports_constraint("radius", [], [c1]) is True
     assert s.supports_constraint("radius", [], [l1]) is False
     assert s.supports_constraint("radius", [p1], [a1]) is False
-    assert s.supports_constraint("radius", [], [a1, a1]) is False
+    assert s.supports_constraint("radius", [], [a1, c1]) is False
+
+    # Test "diameter"
+    assert s.supports_constraint("diameter", [], [c1]) is True
+    assert s.supports_constraint("diameter", [], [a1]) is False
+    assert s.supports_constraint("diameter", [], [l1]) is False
+    assert s.supports_constraint("diameter", [p1], [c1]) is False
 
     # Test "perp"
     assert s.supports_constraint("perp", [], [l1, l2]) is True
@@ -216,8 +260,9 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
 
     # Test "tangent"
     assert s.supports_constraint("tangent", [], [l1, a1]) is True
+    assert s.supports_constraint("tangent", [], [l1, c1]) is True
     assert s.supports_constraint("tangent", [], [l1, l2]) is False
-    assert s.supports_constraint("tangent", [], [a1, a1]) is False
+    assert s.supports_constraint("tangent", [], [a1, c1]) is False
     assert s.supports_constraint("tangent", [], [l1]) is False
     assert s.supports_constraint("tangent", [], [a1]) is False
 
