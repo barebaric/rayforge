@@ -1,3 +1,3 @@
-from .element import SketchElement
+from .sketchelement import SketchElement
 
 __all__ = ["SketchElement"]

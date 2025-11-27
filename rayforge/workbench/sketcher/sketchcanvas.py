@@ -2,7 +2,7 @@ import logging
 from typing import cast, Union, Optional
 from gi.repository import Gtk, Gdk
 from rayforge.workbench.canvas import Canvas
-from .element import SketchElement
+from .sketchelement import SketchElement
 from .piemenu import SketchPieMenu
 from rayforge.core.sketcher.entities import Point, Entity
 from rayforge.core.sketcher.constraints import Constraint
