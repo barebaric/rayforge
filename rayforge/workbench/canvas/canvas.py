@@ -270,8 +270,13 @@ class Canvas(Gtk.DrawingArea):
         """
         is_multi_select = self._selection_group is not None
 
-        # Draw frame for any selected element, respecting show_selection_frame.
-        if elem.selected and elem.show_selection_frame:
+        # Draw frame for any selected element, respecting show_selection_frame,
+        # but hide it if the element is the one currently being edited.
+        if (
+            elem.selected
+            and elem.show_selection_frame
+            and elem is not self.edit_context
+        ):
             self._draw_selection_frame(ctx, elem)
             if not is_multi_select:
                 self._render_single_selection_overlay(ctx, elem)
