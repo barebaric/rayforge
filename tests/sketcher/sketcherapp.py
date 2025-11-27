@@ -3,7 +3,7 @@ import gi
 import logging
 import gettext
 from pathlib import Path
-from typing import cast, Any
+from typing import cast, Union, Optional
 
 # -- Setup Logging --
 logging.basicConfig(
@@ -20,6 +20,8 @@ from gi.repository import Gtk, Gdk
 from rayforge.workbench.canvas import Canvas
 from rayforge.workbench.sketcher import SketchElement
 from rayforge.workbench.sketcher.piemenu import SketchPieMenu
+from rayforge.core.sketcher.entities import Point, Entity
+from rayforge.core.sketcher.constraints import Constraint
 
 
 class SketchCanvas(Canvas):
@@ -47,8 +49,47 @@ class SketchCanvas(Canvas):
         self.add_controller(right_click)
 
     def on_right_click(self, gesture, n_press, x, y):
-        """Open the pie menu at the cursor location."""
-        logger.info(f"Opening Pie Menu at {x}, {y}")
+        """Open the pie menu at the cursor location with resolved context."""
+        world_x, world_y = self._get_world_coords(x, y)
+
+        target: Optional[Union[Point, Entity, Constraint]] = None
+        target_type: Optional[str] = None
+
+        # Determine context if we are editing a sketch
+        if self.edit_context and isinstance(self.edit_context, SketchElement):
+            sketch_elem = self.edit_context
+
+            # 1. Hit Test
+            hit_type, hit_obj = sketch_elem.hittester.get_hit_data(
+                world_x, world_y, sketch_elem
+            )
+            target_type = hit_type
+
+            # 2. Resolve Hit Object to Concrete Type
+            if hit_type == "point":
+                assert isinstance(hit_obj, int)
+                target = sketch_elem.sketch.registry.get_point(hit_obj)
+
+            elif hit_type == "junction":
+                # Junctions are essentially points in the registry
+                assert isinstance(hit_obj, int)
+                target = sketch_elem.sketch.registry.get_point(hit_obj)
+
+            elif hit_type == "entity":
+                assert isinstance(hit_obj, Entity)
+                target = hit_obj
+
+            elif hit_type == "constraint":
+                assert isinstance(hit_obj, int)
+                # hit_obj is index in constraints list
+                if 0 <= hit_obj < len(sketch_elem.sketch.constraints):
+                    target = sketch_elem.sketch.constraints[hit_obj]
+
+            # 3. Pass Context (Sketch, Target, Type)
+            # The selection is accessible via sketch_elem.selection
+            self.pie_menu.set_context(sketch_elem, target, target_type)
+
+        logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")
         self.pie_menu.popup_at_location(x, y)
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
@@ -99,7 +140,7 @@ class SketchCanvas(Canvas):
             world_x, world_y = self._get_world_coords(x, y)
 
             if isinstance(self.edit_context, SketchElement):
-                ctx = cast(Any, self.edit_context)
+                ctx = cast(SketchElement, self.edit_context)
                 handled = ctx.handle_edit_press(world_x, world_y, n_press)
             else:
                 handled = self.edit_context.handle_edit_press(world_x, world_y)
@@ -115,7 +156,7 @@ class SketchCanvas(Canvas):
 class SketcherApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.SketcherApp")
-        self.sketch_elem = None
+        self.sketch_elem: Optional[SketchElement] = None
 
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)

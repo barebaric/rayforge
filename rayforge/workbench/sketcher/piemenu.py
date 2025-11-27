@@ -1,8 +1,14 @@
 import logging
+from typing import Optional, Union, TYPE_CHECKING
 from blinker import Signal
 from gi.repository import Gtk
 
 from rayforge.shared.ui.piemenu import PieMenu, PieMenuItem
+
+if TYPE_CHECKING:
+    from rayforge.workbench.sketcher.element import SketchElement
+    from rayforge.core.sketcher.entities import Point, Entity
+    from rayforge.core.sketcher.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +21,11 @@ class SketchPieMenu(PieMenu):
 
     def __init__(self, parent_widget: Gtk.Widget):
         super().__init__(parent_widget)
+
+        # Context Data
+        self.sketch_element: Optional["SketchElement"] = None
+        self.target: Optional[Union["Point", "Entity", "Constraint"]] = None
+        self.target_type: Optional[str] = None
 
         # High-level Signals
         self.tool_selected = Signal()
@@ -63,6 +74,37 @@ class SketchPieMenu(PieMenu):
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
+
+    def set_context(
+        self,
+        sketch_element: "SketchElement",
+        target: Optional[Union["Point", "Entity", "Constraint"]],
+        target_type: Optional[str],
+    ):
+        """
+        Updates the context for the menu before it is shown.
+
+        :param sketch_element: The parent SketchElement (provides access to
+                               Sketch, Selection, etc.).
+        :param target: The specific object under the cursor (Point, Entity,
+                       Constraint), or None.
+        :param target_type: String identifier for the target type
+                            (e.g., 'point', 'line', 'constraint', 'junction').
+        """
+        self.sketch_element = sketch_element
+        self.target = target
+        self.target_type = target_type
+
+        sel_count = 0
+        if self.sketch_element and self.sketch_element.selection:
+            # Just for debug logging context
+            sel = self.sketch_element.selection
+            sel_count = len(sel.point_ids) + len(sel.entity_ids)
+
+        logger.debug(
+            f"PieMenu Context: Type={target_type}, Target={target}, "
+            f"SelectionCount={sel_count}"
+        )
 
     def _on_tool_clicked(self, sender):
         """Handle tool selection signals."""
