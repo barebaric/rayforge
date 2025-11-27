@@ -110,6 +110,10 @@ compile-translations = "bash scripts/update_translations.sh --compile-only"
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "scripts/with_gdk.sh rayforge"
 
+[tasks.testapp]
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
+cmd = "scripts/with_gdk.sh"
+
 [tasks.test]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "pytest -v"
