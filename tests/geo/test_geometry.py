@@ -130,12 +130,25 @@ def test_copy_method(sample_geometry):
 
 
 def test_distance(sample_geometry):
-    """Tests the distance calculation for a Geometry object."""
-    # move(0,0) -> line(10,10) -> arc(20,0)
-    # Approximating arc as a line for distance calc
-    dist1 = math.hypot(10 - 0, 10 - 0)
-    dist2 = math.hypot(20 - 10, 0 - 10)
-    expected_dist = dist1 + dist2
+    """
+    Tests that the distance calculation correctly computes true arc length.
+    """
+    # The test must now expect the true distance, not an approximation.
+    dist_line = math.hypot(10 - 0, 10 - 0)
+
+    # Arc parameters for manual length calculation:
+    # Center is (10,10) + (5,-10) = (15,0). Radius = dist from center to start.
+    radius = math.hypot(10 - 15, 10 - 0)  # sqrt((-5)^2 + 10^2) = sqrt(125)
+    start_angle = math.atan2(10 - 0, 10 - 15)  # atan2(10, -5)
+    end_angle = math.atan2(0 - 0, 20 - 15)  # atan2(0, 5) -> 0
+
+    # The default for arc_to is clockwise=True.
+    # For a clockwise arc from a larger angle (start_angle in Q2) to a smaller
+    # one (end_angle on the axis), the span is just the difference.
+    angle_span = start_angle - end_angle
+    dist_arc = radius * angle_span
+
+    expected_dist = dist_line + dist_arc
 
     assert sample_geometry.distance() == pytest.approx(expected_dist)
     # Also test the query function directly
@@ -152,11 +165,16 @@ def test_geo_command_distance():
     move_cmd = MoveToCommand((-3.0, -4.0, 0.0))
     assert move_cmd.distance(last_point) == pytest.approx(5.0)
 
-    # Arc distance is approximated as a straight line
+    # We'll test a 90-degree arc from (10,0) to (0,10) centered at the origin.
+    start_point_for_arc = (10.0, 0.0, 0.0)
     arc_cmd = ArcToCommand(
-        end=(3.0, 4.0, 0.0), center_offset=(0, 0), clockwise=False
+        end=(0.0, 10.0, 0.0), center_offset=(-10.0, 0.0), clockwise=False
     )
-    assert arc_cmd.distance(last_point) == pytest.approx(5.0)
+    # Radius is 10, angle span is PI/2.
+    expected_arc_length = 0.5 * math.pi * 10
+    assert arc_cmd.distance(start_point_for_arc) == pytest.approx(
+        expected_arc_length
+    )
 
 
 def test_area():

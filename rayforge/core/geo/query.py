@@ -2,6 +2,7 @@ from typing import List, Tuple, Any, Optional
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
+    get_arc_bounding_box,
 )
 
 
@@ -35,9 +36,26 @@ def get_bounding_rect(
             and hasattr(cmd, "end")
             and cmd.end
         ):
-            if last_point is not None:
-                occupied_points.append(last_point)
+            start_point = last_point  # Capture start point for this command
+
+            if start_point is not None:
+                occupied_points.append(start_point)
             occupied_points.append(cmd.end)
+
+            # For arcs, we must also consider the curve's extent.
+            if cmd_type_name == "ArcToCommand" and start_point:
+                arc_box = get_arc_bounding_box(
+                    start_pos=start_point[:2],
+                    end_pos=cmd.end[:2],
+                    center_offset=cmd.center_offset,
+                    clockwise=cmd.clockwise,
+                )
+                # By adding the min and max corners of the arc's true
+                # bounding box, we ensure the final min/max calculation
+                # will correctly encompass the arc's full curve.
+                occupied_points.append((arc_box[0], arc_box[1], 0.0))
+                occupied_points.append((arc_box[2], arc_box[3], 0.0))
+
             last_point = cmd.end
 
     if not occupied_points:

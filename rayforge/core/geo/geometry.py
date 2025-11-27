@@ -130,6 +130,46 @@ class ArcToCommand(MovingCommand):
         d["clockwise"] = self.clockwise
         return d
 
+    def distance(
+        self, last_point: Optional[Tuple[float, float, float]]
+    ) -> float:
+        """
+        Calculates the true 2D length of the arc path.
+        """
+        if not last_point or not self.end:
+            return 0.0
+
+        # The center of the arc's circle in the XY plane
+        center_x = last_point[0] + self.center_offset[0]
+        center_y = last_point[1] + self.center_offset[1]
+
+        # The radius is the distance from the center to the start point
+        radius = math.hypot(self.center_offset[0], self.center_offset[1])
+
+        if radius < 1e-9:
+            # If the radius is zero, the arc is just a point.
+            return 0.0
+
+        # Calculate the start and end angles relative to the center
+        start_angle = math.atan2(
+            last_point[1] - center_y, last_point[0] - center_x
+        )
+        end_angle = math.atan2(self.end[1] - center_y, self.end[0] - center_x)
+
+        # Calculate the sweep of the angle
+        angle_span = end_angle - start_angle
+
+        # Adjust the angle span based on direction (clockwise/ccw) and wrapping
+        if self.clockwise:
+            if angle_span > 1e-9:  # Ensure we subtract to go negative
+                angle_span -= 2 * math.pi
+        else:  # Counter-clockwise
+            if angle_span < -1e-9:  # Ensure we add to go positive
+                angle_span += 2 * math.pi
+
+        # Arc length is radius times the absolute angle span in radians
+        return abs(angle_span * radius)
+
 
 class Geometry:
     """
