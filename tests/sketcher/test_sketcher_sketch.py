@@ -153,3 +153,95 @@ def test_sketch_serialization_round_trip():
     assert pt2.y == pytest.approx(0.0, abs=abs_tol)
     # Perpendicular constraint should make p3.x == p2.x
     assert pt3.x == pytest.approx(50.0, abs=abs_tol)
+
+
+@pytest.fixture
+def setup_sketch_for_validation():
+    """Provides a sketch with a variety of geometry for validation tests."""
+    s = Sketch()
+    # Points
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(10, 0)
+    p3 = s.add_point(0, 10)
+    p_ext = s.add_point(5, 5)
+    # Entities
+    l1 = s.add_line(p1, p2)
+    l2 = s.add_line(p1, p3)
+    # Arc points are separate to avoid endpoint conflicts
+    arc_s = s.add_point(20, 0)
+    arc_e = s.add_point(0, 20)
+    arc_c = s.add_point(0, 0)
+    a1 = s.add_arc(arc_s, arc_e, arc_c)
+
+    return s, {
+        "p1": p1,
+        "p2": p2,
+        "p3": p3,
+        "p_ext": p_ext,
+        "l1": l1,
+        "l2": l2,
+        "a1": a1,
+    }
+
+
+def test_sketch_supports_constraint(setup_sketch_for_validation):
+    """Tests the logic of the `supports_constraint` method."""
+    s, ids = setup_sketch_for_validation
+    p1, p2, p3, p_ext = ids["p1"], ids["p2"], ids["p3"], ids["p_ext"]
+    l1, l2, a1 = ids["l1"], ids["l2"], ids["a1"]
+
+    # Test "dist", "horiz", "vert"
+    for c_type in ("dist", "horiz", "vert"):
+        # Valid cases
+        assert s.supports_constraint(c_type, [p1, p2], []) is True
+        assert s.supports_constraint(c_type, [], [l1]) is True
+        # Invalid cases
+        assert s.supports_constraint(c_type, [p1], []) is False
+        assert s.supports_constraint(c_type, [p1, p2, p3], []) is False
+        assert s.supports_constraint(c_type, [p1], [l1]) is False
+        assert s.supports_constraint(c_type, [], [a1]) is False
+        assert s.supports_constraint(c_type, [], [l1, l2]) is False
+
+    # Test "radius"
+    assert s.supports_constraint("radius", [], [a1]) is True
+    assert s.supports_constraint("radius", [], [l1]) is False
+    assert s.supports_constraint("radius", [p1], [a1]) is False
+    assert s.supports_constraint("radius", [], [a1, a1]) is False
+
+    # Test "perp"
+    assert s.supports_constraint("perp", [], [l1, l2]) is True
+    assert s.supports_constraint("perp", [], [l1]) is False
+    assert s.supports_constraint("perp", [], [l1, a1]) is False
+    assert s.supports_constraint("perp", [], [l1, l2, l1]) is False
+
+    # Test "tangent"
+    assert s.supports_constraint("tangent", [], [l1, a1]) is True
+    assert s.supports_constraint("tangent", [], [l1, l2]) is False
+    assert s.supports_constraint("tangent", [], [a1, a1]) is False
+    assert s.supports_constraint("tangent", [], [l1]) is False
+    assert s.supports_constraint("tangent", [], [a1]) is False
+
+    # Test "align" (covers coincident and point-on-line)
+    # Coincident (2 points)
+    assert s.supports_constraint("align", [p1, p_ext], []) is True
+    # Point-on-Line (1 point, 1 line)
+    assert s.supports_constraint("align", [p_ext], [l1]) is True
+    # Invalid: Endpoint on its own line
+    assert s.supports_constraint("align", [p1], [l1]) is False
+    # Invalid: Other combos
+    assert s.supports_constraint("align", [p1, p2, p3], []) is False
+    assert s.supports_constraint("align", [p_ext], [l1, l2]) is False
+    assert s.supports_constraint("align", [p_ext], [a1]) is False
+
+    # Test "coincident" (internal use)
+    assert s.supports_constraint("coincident", [p1, p2], []) is True
+    assert s.supports_constraint("coincident", [p1], []) is False
+    assert s.supports_constraint("coincident", [p1], [l1]) is False
+
+    # Test "point_on_line" (internal use)
+    assert s.supports_constraint("point_on_line", [p_ext], [l1]) is True
+    # Invalid: Endpoint on its own line
+    assert s.supports_constraint("point_on_line", [p1], [l1]) is False
+    # Invalid: wrong number of items
+    assert s.supports_constraint("point_on_line", [p1, p_ext], [l1]) is False
+    assert s.supports_constraint("point_on_line", [p_ext], [l1, l2]) is False
