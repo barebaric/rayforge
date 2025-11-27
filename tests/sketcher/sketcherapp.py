@@ -147,6 +147,14 @@ class SketchCanvas(Canvas):
             ctx.add_horizontal_constraint()
         elif constraint_type == "vert":
             ctx.add_vertical_constraint()
+        elif constraint_type == "radius":
+            ctx.add_radius_constraint()
+        elif constraint_type == "perp":
+            ctx.add_perpendicular()
+        elif constraint_type == "tangent":
+            ctx.add_tangent()
+        elif constraint_type == "align":
+            ctx.add_alignment_constraint()
 
     def on_action_triggered(self, sender, action):
         logger.info(f"Action activated: {action}")
