@@ -1,7 +1,6 @@
 import logging
 import math
 import cairo
-
 from blinker import Signal
 from rayforge.workbench.canvas import CanvasElement
 from rayforge.core.matrix import Matrix
@@ -32,7 +31,14 @@ logger = logging.getLogger(__name__)
 class SketchElement(CanvasElement):
     constraint_edit_requested = Signal()
 
-    def __init__(self, x=0, y=0, width=1.0, height=1.0, **kwargs):
+    def __init__(
+        self,
+        x: float = 0,
+        y: float = 0,
+        width: float = 1.0,
+        height: float = 1.0,
+        **kwargs,
+    ):
         kwargs["is_editable"] = True
         kwargs["clip"] = False
         # Pass the required positional arguments to the parent class.
